@@ -14,10 +14,10 @@ Sub TallyOrders()
     Dim uom As String
     Dim lb As MSForms.ListBox
     
-    Set ws = ThisWorkbook.Sheets("Order Tally")
+    Set ws = ThisWorkbook.Sheets("OrdersTally")
     Set tbl = ws.ListObjects("OrdersTally")
     Set dict = CreateObject("Scripting.Dictionary")
-    Set lb = frmOrderTally.ListBox1
+    Set lb = frmOrderTally.lstBox
     
     ' Tally the orders
     For i = 1 To tbl.ListRows.Count
@@ -25,7 +25,7 @@ Sub TallyOrders()
         quantity = tbl.ListColumns("QUANTITY").DataBodyRange(i, 1).Value
         uom = tbl.ListColumns("UOM").DataBodyRange(i, 1).Value
         
-        If dict.exists(item & uom) Then
+        If dict.Exists(item & uom) Then
             dict(item & uom) = dict(item & uom) + quantity
         Else
             dict.Add item & uom, quantity
@@ -34,11 +34,14 @@ Sub TallyOrders()
     
     ' Display the tally in the list box
     lb.Clear
-    For Each key In dict.keys
+    For Each key In dict.Keys
         lb.AddItem Split(key, uom)(0)
         lb.List(lb.ListCount - 1, 1) = dict(key)
         lb.List(lb.ListCount - 1, 2) = uom
     Next key
+    
+    ' Open the form
+    frmOrderTally.Show
 End Sub
 
 Sub SendOrders()
@@ -51,7 +54,7 @@ Sub SendOrders()
     Dim i As Long
     
     Set wsOrdersLog = ThisWorkbook.Sheets("OrdersLog")
-    Set wsOrderTally = ThisWorkbook.Sheets("Order Tally")
+    Set wsOrderTally = ThisWorkbook.Sheets("OrdersTally")
     Set wsInvSys = ThisWorkbook.Sheets("invSys")
     Set tblOrdersLog = wsOrdersLog.ListObjects("OrdersLog")
     Set tblOrderTally = wsOrderTally.ListObjects("OrdersTally")
@@ -67,10 +70,10 @@ Sub SendOrders()
     tblOrderTally.DataBodyRange.ClearContents
     
     ' Send tally to SHIPMENTS header in invSys table
-    For i = 1 To frmOrderTally.ListBox1.ListCount
+    For i = 1 To frmOrderTally.lstBox.ListCount
         tblInvSys.ListRows.Add
-        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 1).Value = frmOrderTally.ListBox1.List(i - 1, 0)
-        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 2).Value = frmOrderTally.ListBox1.List(i - 1, 1)
-        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 3).Value = frmOrderTally.ListBox1.List(i - 1, 2)
+        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 1).Value = frmOrderTally.lstBox.List(i - 1, 0)
+        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 2).Value = frmOrderTally.lstBox.List(i - 1, 1)
+        tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 3).Value = frmOrderTally.lstBox.List(i - 1, 2)
     Next i
 End Sub
