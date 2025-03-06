@@ -3,7 +3,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmItemSearch
    Caption         =   "Item Search"
    ClientHeight    =   3645
    ClientLeft      =   120
-   ClientTop       =   470
+   ClientTop       =   465
    ClientWidth     =   5400
    OleObjectBlob   =   "frmItemSearch.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -22,8 +22,10 @@ Private Sub UserForm_MouseScroll()
 End Sub
 
 Private Sub UserForm_Activate()
-    ' Ensure the text box is active for immediate typing.
     Me.txtBox.SetFocus
+    ' Place the caret at the beginning with no selection.
+    Me.txtBox.SelStart = 0
+    Me.txtBox.SelLength = 0
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -32,16 +34,17 @@ Private Sub UserForm_Initialize()
     ' Populate lstBox with the full list.
     Call PopulateListBox(FullItemList)
     
-    ' Pre-populate txtBox with the current cell value (if any) and select all text.
+    ' Pre-populate txtBox with the current cell value (if any) without selecting it.
     If Not gSelectedCell Is Nothing Then
         If Not IsEmpty(gSelectedCell.Value) Then
             Me.txtBox.Text = CStr(gSelectedCell.Value)
+            ' Place the caret at the beginning without selecting text.
             Me.txtBox.SelStart = 0
-            Me.txtBox.SelLength = Len(Me.txtBox.Text)
+            Me.txtBox.SelLength = 0
         End If
     End If
     
-    ' Attempt to match the current txtBox content.
+    ' Attempt to match the current txtBox content without altering it.
     Call txtBox_Change
     EnableMouseScroll Me
 End Sub
@@ -73,11 +76,10 @@ End Sub
 
 ' When the user clicks on an item in the list box, update txtBox immediately.
 Private Sub lstBox_Click()
-    If Me.lstBox.ListIndex <> -1 Then
-        Me.txtBox.Text = Me.lstBox.Value
-        Me.txtBox.SelStart = 0
-        Me.txtBox.SelLength = Len(Me.txtBox.Text)
-    End If
+    ' Simply highlight the item in the listbox.
+    ' Do not update txtBox.Text here so that user typing is not interfered with.
+    ' The chosen listbox value will be used during CommitSelectionAndClose.
+    ' (Optionally, you might want to visually indicate the selection if needed.)
 End Sub
 
 ' Commit the selection if the user presses Tab or Enter.
@@ -98,13 +100,44 @@ End Sub
 ' - If an item is highlighted in lstBox, use that value.
 ' - Otherwise, use the text entered in txtBox.
 Public Sub CommitSelectionAndClose()
+    Dim chosenValue As String
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim orderCol As Long, itemsCol As Long
+    Dim currentRowIndex As Long, prevRowOrder As Variant
+
+    ' Decide on the value to commit. If nothing in txtBox then clear the cell.
     If Trim(Me.txtBox.Text) = "" Then
         If Not gSelectedCell Is Nothing Then gSelectedCell.ClearContents
     Else
+        ' Use the listbox-selected value if available; otherwise, use the textbox text.
         If Me.lstBox.ListIndex <> -1 Then
-            gSelectedCell.Value = Me.lstBox.Value
+            chosenValue = Me.lstBox.Value
         Else
-            gSelectedCell.Value = Me.txtBox.Text
+            chosenValue = Me.txtBox.Text
+        End If
+        gSelectedCell.Value = chosenValue
+        
+        ' If the active cell is part of a table, check if it belongs to the ITEMS column.
+        Set ws = gSelectedCell.Worksheet
+        If Not gSelectedCell.ListObject Is Nothing Then
+            Set tbl = gSelectedCell.ListObject
+            orderCol = modTS_Data.GetColumnIndexByHeader("ORDER_NUMBER")
+            itemsCol = modTS_Data.GetColumnIndexByHeader("ITEMS")
+            
+            ' Confirm that gSelectedCell is in the ITEMS column
+            If gSelectedCell.Column = tbl.Range.Cells(1, itemsCol).Column Then
+                ' Calculate which data row (1-based) we are in.
+                currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
+                If currentRowIndex > 1 Then
+                    ' Get the ORDER_NUMBER from the previous row in the table.
+                    prevRowOrder = tbl.DataBodyRange.Cells(currentRowIndex - 1, orderCol).Value
+                    If Not IsEmpty(prevRowOrder) Then
+                        ' Copy the ORDER_NUMBER value to the current row.
+                        tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value = prevRowOrder
+                    End If
+                End If
+            End If
         End If
     End If
     Unload Me

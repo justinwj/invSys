@@ -18,7 +18,7 @@ Private Sub Workbook_Open()
     Next ws
 
     ' Force login form to lock access
-    frmLogin.Show
+    ' frmLogin.Show
 End Sub
 Sub CheckForHiddenPasswords()
     Dim nm As Name

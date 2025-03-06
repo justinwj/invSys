@@ -7,11 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
- Private Sub Worksheet_Change(ByVal Target As Range)
+Private Sub Worksheet_Change(ByVal Target As Range)
     Dim tbl As ListObject
-    Dim totalInvCol As ListColumn, lastEditedCol As ListColumn
     Dim emptyRows As Range
-    Dim changedCell As Range
     Dim prefix As String
     Dim idNumber As Long
     Dim existingCodes As Object
@@ -19,22 +17,8 @@ Attribute VB_Exposed = True
 
     On Error GoTo ErrorHandler
 
-    ' Reference the inventory table
-    Set tbl = Me.ListObjects("invSys") ' Replace with the actual table name
+    Set tbl = Me.ListObjects("invSys")
     If tbl Is Nothing Then Exit Sub
-
-    ' ----- 1. Update LAST EDITED Column -----
-    Set totalInvCol = tbl.ListColumns("TOTAL INV")
-    Set lastEditedCol = tbl.ListColumns("LAST EDITED")
-    
-    If Not Intersect(Target, totalInvCol.DataBodyRange) Is Nothing Then
-        Application.EnableEvents = False
-        For Each changedCell In Intersect(Target, totalInvCol.DataBodyRange)
-            If Not IsEmpty(changedCell.Value) Then
-                tbl.ListRows(changedCell.row - tbl.HeaderRowRange.row).Range(lastEditedCol.Index).Value = Now
-            End If
-        Next changedCell
-    End If
 
     ' ----- 2. Generate Unique Item_Code for New Rows -----
     Set existingCodes = CreateObject("Scripting.Dictionary")
@@ -70,9 +54,5 @@ ExitHandler:
 ErrorHandler:
     Debug.Print "Error: " & Err.Description
     Resume ExitHandler
-End Sub
-
-Sub UpdateUndoRedoStatus()
-
 End Sub
 
