@@ -13,6 +13,8 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
 Private Sub btnLogin_Click()
     Dim ws As Worksheet
     Dim tbl As ListObject
@@ -81,5 +83,3 @@ Private Sub UserForm_Activate()
     ' Apply password masking in case the form reloads
     Me.txtPIN.PasswordChar = "*"
 End Sub
-
-

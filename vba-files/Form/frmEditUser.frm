@@ -13,6 +13,8 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
 Private Sub UserForm_Initialize()
     ' Load usernames into cmbUserName
     modUserAuth.LoadUsersIntoComboBox Me.cmbUserName
@@ -103,4 +105,3 @@ Private Sub btnNewPIN_Click()
     ' Display the generated PIN in txtPIN
     Me.txtNewPIN.Value = randomPIN
 End Sub
-

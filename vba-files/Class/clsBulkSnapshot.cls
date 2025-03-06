@@ -17,7 +17,7 @@ Public SchemaHash As String
 Public Timestamp As Date
 
 ' Initialize Dictionary in Class Constructor
-Private Sub Class_Initialize()
+Private Sub class_initialize()
     Set Formulas = CreateObject("Scripting.Dictionary") ' ? Fix: Initialize Dictionary
 End Sub
 

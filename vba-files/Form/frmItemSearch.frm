@@ -13,6 +13,8 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
 Option Explicit
 
 Private FullItemList As Variant
@@ -52,7 +54,7 @@ End Sub
 ' Instead of filtering out non-matching items, just move the highlighter to the nearest match.
 Private Sub txtBox_Change()
     Dim searchText As String
-    Dim i As Long
+    Dim i As Long, matchIndex As Long
     
     searchText = LCase(Me.txtBox.Text)
     
@@ -65,7 +67,14 @@ Private Sub txtBox_Change()
     ' Iterate through the list box items to find the first match.
     For i = 0 To Me.lstBox.ListCount - 1
         If InStr(1, LCase(Me.lstBox.List(i)), searchText) > 0 Then
-            Me.lstBox.ListIndex = i
+            matchIndex = i
+            Me.lstBox.ListIndex = matchIndex
+            
+            ' FIX 1: Better centering calculation
+            Dim visibleItems As Long, centerPos As Long
+            visibleItems = Int(Me.lstBox.Height / 15)  ' Approx height per item
+            centerPos = Application.Max(0, matchIndex - Int(visibleItems / 2))
+            Me.lstBox.TopIndex = centerPos
             Exit Sub
         End If
     Next i
@@ -74,19 +83,32 @@ Private Sub txtBox_Change()
     Me.lstBox.ListIndex = -1
 End Sub
 
-' When the user clicks on an item in the list box, update txtBox immediately.
+' When the user clicks on an item in the list box
 Private Sub lstBox_Click()
-    ' Simply highlight the item in the listbox.
-    ' Do not update txtBox.Text here so that user typing is not interfered with.
-    ' The chosen listbox value will be used during CommitSelectionAndClose.
-    ' (Optionally, you might want to visually indicate the selection if needed.)
+    ' Keep the item highlighted but don't update the search text
 End Sub
 
-' Commit the selection if the user presses Tab or Enter.
+' Commit the selection if the user presses Tab or Enter in textbox
 Private Sub txtBox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Then
         CommitSelectionAndClose
-        KeyCode = 0  ' Prevent default handling.
+        KeyCode = 0  ' Prevent default handling
+    End If
+End Sub
+
+' FIX 2: Ensure Enter key works when list box has focus
+Private Sub lstBox_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+    If KeyAscii = vbKeyReturn Then
+        CommitSelectionAndClose
+        KeyAscii = 0  ' Prevent default handling
+    End If
+End Sub
+
+' Also handle key down for Enter in list box
+Private Sub lstBox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Then
+        CommitSelectionAndClose
+        KeyCode = 0  ' Prevent default handling
     End If
 End Sub
 
@@ -95,51 +117,78 @@ Private Sub lstBox_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     CommitSelectionAndClose
 End Sub
 
-' On exit, commit the value:
-' - If txtBox is empty, clear the cell.
-' - If an item is highlighted in lstBox, use that value.
-' - Otherwise, use the text entered in txtBox.
+' FIX 3: Improved CommitSelectionAndClose to fix ORDER_NUMBER copying, more robust empty check
 Public Sub CommitSelectionAndClose()
+    Static isRunning As Boolean
+    
+    ' Prevent recursive calls or double-execution
+    If isRunning Then Exit Sub
+    isRunning = True
+    
     Dim chosenValue As String
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Dim orderCol As Long, itemsCol As Long
-    Dim currentRowIndex As Long, prevRowOrder As Variant
-
-    ' Decide on the value to commit. If nothing in txtBox then clear the cell.
-    If Trim(Me.txtBox.Text) = "" Then
-        If Not gSelectedCell Is Nothing Then gSelectedCell.ClearContents
+    Dim currentRowIndex As Long
+    Dim prevRowOrder As Variant, currentOrderValue As Variant
+    
+    ' Decide on the value to commit
+    If Me.lstBox.ListIndex <> -1 Then
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex)
+    ElseIf Trim(Me.txtBox.Text) <> "" Then
+        chosenValue = Me.txtBox.Text
     Else
-        ' Use the listbox-selected value if available; otherwise, use the textbox text.
-        If Me.lstBox.ListIndex <> -1 Then
-            chosenValue = Me.lstBox.Value
-        Else
-            chosenValue = Me.txtBox.Text
-        End If
+        If Not gSelectedCell Is Nothing Then gSelectedCell.ClearContents
+        isRunning = False
+        Unload Me
+        Exit Sub
+    End If
+    
+    ' Apply the chosen value
+    If Not gSelectedCell Is Nothing Then
         gSelectedCell.Value = chosenValue
         
-        ' If the active cell is part of a table, check if it belongs to the ITEMS column.
-        Set ws = gSelectedCell.Worksheet
+        ' Get the table and check if we're modifying the ITEMS column
         If Not gSelectedCell.ListObject Is Nothing Then
             Set tbl = gSelectedCell.ListObject
-            orderCol = modTS_Data.GetColumnIndexByHeader("ORDER_NUMBER")
-            itemsCol = modTS_Data.GetColumnIndexByHeader("ITEMS")
             
-            ' Confirm that gSelectedCell is in the ITEMS column
-            If gSelectedCell.Column = tbl.Range.Cells(1, itemsCol).Column Then
-                ' Calculate which data row (1-based) we are in.
-                currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
-                If currentRowIndex > 1 Then
-                    ' Get the ORDER_NUMBER from the previous row in the table.
-                    prevRowOrder = tbl.DataBodyRange.Cells(currentRowIndex - 1, orderCol).Value
-                    If Not IsEmpty(prevRowOrder) Then
-                        ' Copy the ORDER_NUMBER value to the current row.
-                        tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value = prevRowOrder
+            ' Find column indexes directly
+            Dim orderCol As Long, itemsCol As Long
+            
+            On Error Resume Next
+            ' Get columns by their exact names
+            orderCol = WorksheetFunction.Match("ORDER_NUMBER", tbl.HeaderRowRange, 0)
+            itemsCol = WorksheetFunction.Match("ITEMS", tbl.HeaderRowRange, 0)
+            On Error GoTo 0
+            
+            ' Only proceed if both columns exist
+            If orderCol > 0 And itemsCol > 0 Then
+                ' Check if we're in the ITEMS column
+                If gSelectedCell.Column = tbl.HeaderRowRange.Cells(1, itemsCol).Column Then
+                    ' Get data row number (1-based)
+                    currentRowIndex = gSelectedCell.row - tbl.HeaderRowRange.row
+                    
+                    ' If not in first row, check if we need to copy ORDER_NUMBER
+                    If currentRowIndex > 1 Then
+                        ' Get current ORDER_NUMBER cell value
+                        currentOrderValue = tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value
+                        
+                        ' More robust empty check - check if truly empty or just whitespace
+                        If IsEmpty(currentOrderValue) Or Trim(CStr(currentOrderValue)) = "" Then
+                            ' Get value from previous row
+                            prevRowOrder = tbl.DataBodyRange.Cells(currentRowIndex - 1, orderCol).Value
+                            
+                            ' Copy to current row only if previous row has a value
+                            If Not IsEmpty(prevRowOrder) Then
+                                tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value = prevRowOrder
+                            End If
+                        End If
                     End If
                 End If
             End If
         End If
     End If
+    
+    isRunning = False
     Unload Me
 End Sub
 
@@ -150,8 +199,4 @@ Private Sub PopulateListBox(itemArray As Variant)
     For i = LBound(itemArray) To UBound(itemArray)
         Me.lstBox.AddItem itemArray(i)
     Next i
-End Sub
-
-Private Sub UserForm_Deactivate()
-    CommitSelectionAndClose
 End Sub

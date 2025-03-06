@@ -10,7 +10,7 @@ Attribute VB_Exposed = True
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim tbl As ListObject
     Dim emptyRows As Range
-    Dim prefix As String
+    Dim PREFIX As String
     Dim idNumber As Long
     Dim existingCodes As Object
     Dim cell As Range
@@ -28,12 +28,12 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     For Each cell In tbl.ListColumns("Item_Code").DataBodyRange
         If IsEmpty(cell.Value) Then
-            prefix = "ITEM-"
+            PREFIX = "ITEM-"
             idNumber = 1
-            Do While existingCodes.Exists(prefix & Format(idNumber, "0000"))
+            Do While existingCodes.Exists(PREFIX & Format(idNumber, "0000"))
                 idNumber = idNumber + 1
             Loop
-            cell.Value = prefix & Format(idNumber, "0000")
+            cell.Value = PREFIX & Format(idNumber, "0000")
             existingCodes.Add cell.Value, True
         End If
     Next cell

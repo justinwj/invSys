@@ -15,7 +15,7 @@ Public Sub AddGoodsReceived_Click()
     Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
     Set tbl = ws.ListObjects("invSys")
 
-    If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+    If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
         GoTo Cleanup
     End If
@@ -27,7 +27,7 @@ Public Sub AddGoodsReceived_Click()
     totalInvCol = tbl.ListColumns("TOTAL INV").Index
     lastEditedCol = tbl.ListColumns("LAST EDITED").Index
 
-    rowCount = tbl.ListRows.Count
+    rowCount = tbl.ListRows.count
     Set rng = tbl.DataBodyRange
 
     Set LogEntries = New Collection
@@ -63,7 +63,7 @@ Public Sub AddGoodsReceived_Click()
         End If
     Next i
 
-    If LogEntries.Count > 0 Then
+    If LogEntries.count > 0 Then
         insertedCount = modInvLogs.LogMultipleInventoryChanges(LogEntries)
         Call modUR_Transaction.SetCurrentTransactionLogCount(insertedCount)
     End If
@@ -101,7 +101,7 @@ End Sub
         Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
         Set tbl = ws.ListObjects("invSys")
     
-        If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+        If tbl Is Nothing Or tbl.ListRows.count = 0 Then
             MsgBox "No data in invSys table.", vbExclamation, "Error"
             GoTo Cleanup
         End If
@@ -113,7 +113,7 @@ End Sub
         totalInvCol = tbl.ListColumns("TOTAL INV").Index
         lastEditedCol = tbl.ListColumns("LAST EDITED").Index
     
-        rowCount = tbl.ListRows.Count
+        rowCount = tbl.ListRows.count
         Set rng = tbl.DataBodyRange
     
         Set LogEntries = New Collection
@@ -149,21 +149,21 @@ End Sub
             End If
         Next i
     
-        If LogEntries.Count > 0 Then
+        If LogEntries.count > 0 Then
             insertedCount = modInvLogs.LogMultipleInventoryChanges(LogEntries)
             Call modUR_Transaction.SetCurrentTransactionLogCount(insertedCount)
         End If
     
         Call modUR_Transaction.CommitTransaction
     
-    Cleanup:
+Cleanup:
         Application.EnableEvents = True
         Application.Calculation = xlCalculationAutomatic
         Application.ScreenUpdating = True
         Call DisplayMessage("Used items deducted successfully.")
         Exit Sub
     
-    ErrorHandler:
+ErrorHandler:
         If modUR_Transaction.IsInTransaction() Then
             Call modUR_Transaction.RollbackTransaction
         End If
@@ -187,7 +187,7 @@ End Sub
             Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
             Set tbl = ws.ListObjects("invSys")
         
-            If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+            If tbl Is Nothing Or tbl.ListRows.count = 0 Then
                 MsgBox "No data in invSys table.", vbExclamation, "Error"
                 GoTo Cleanup
             End If
@@ -199,7 +199,7 @@ End Sub
             totalInvCol = tbl.ListColumns("TOTAL INV").Index
             lastEditedCol = tbl.ListColumns("LAST EDITED").Index
         
-            rowCount = tbl.ListRows.Count
+            rowCount = tbl.ListRows.count
             Set rng = tbl.DataBodyRange
         
             Set LogEntries = New Collection
@@ -235,21 +235,21 @@ End Sub
                 End If
             Next i
         
-            If LogEntries.Count > 0 Then
+            If LogEntries.count > 0 Then
                 insertedCount = modInvLogs.LogMultipleInventoryChanges(LogEntries)
                 Call modUR_Transaction.SetCurrentTransactionLogCount(insertedCount)
             End If
         
             Call modUR_Transaction.CommitTransaction
         
-        Cleanup:
+Cleanup:
             Application.EnableEvents = True
             Application.Calculation = xlCalculationAutomatic
             Application.ScreenUpdating = True
             Call DisplayMessage("Shipments deducted successfully.")
             Exit Sub
         
-        ErrorHandler:
+ErrorHandler:
             If modUR_Transaction.IsInTransaction() Then
                 Call modUR_Transaction.RollbackTransaction
             End If
@@ -273,7 +273,7 @@ End Sub
                 Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
                 Set tbl = ws.ListObjects("invSys")
             
-                If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+                If tbl Is Nothing Or tbl.ListRows.count = 0 Then
                     MsgBox "No data in invSys table.", vbExclamation, "Error"
                     GoTo Cleanup
                 End If
@@ -285,7 +285,7 @@ End Sub
                 totalInvCol = tbl.ListColumns("TOTAL INV").Index
                 lastEditedCol = tbl.ListColumns("LAST EDITED").Index
             
-                rowCount = tbl.ListRows.Count
+                rowCount = tbl.ListRows.count
                 Set rng = tbl.DataBodyRange
             
                 Set LogEntries = New Collection
@@ -321,21 +321,21 @@ End Sub
                     End If
                 Next i
             
-                If LogEntries.Count > 0 Then
+                If LogEntries.count > 0 Then
                     insertedCount = modInvLogs.LogMultipleInventoryChanges(LogEntries)
                     Call modUR_Transaction.SetCurrentTransactionLogCount(insertedCount)
                 End If
             
                 Call modUR_Transaction.CommitTransaction
             
-            Cleanup:
+Cleanup:
                 Application.EnableEvents = True
                 Application.Calculation = xlCalculationAutomatic
                 Application.ScreenUpdating = True
                 Call DisplayMessage("Adjustments applied successfully.")
                 Exit Sub
             
-            ErrorHandler:
+ErrorHandler:
                 If modUR_Transaction.IsInTransaction() Then
                     Call modUR_Transaction.RollbackTransaction
                 End If
@@ -359,7 +359,7 @@ End Sub
         Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
         Set tbl = ws.ListObjects("invSys")
     
-        If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+        If tbl Is Nothing Or tbl.ListRows.count = 0 Then
             MsgBox "No data in invSys table.", vbExclamation, "Error"
             GoTo Cleanup
         End If
@@ -371,7 +371,7 @@ End Sub
         totalInvCol = tbl.ListColumns("TOTAL INV").Index
         lastEditedCol = tbl.ListColumns("LAST EDITED").Index
     
-        rowCount = tbl.ListRows.Count
+        rowCount = tbl.ListRows.count
         Set rng = tbl.DataBodyRange
     
         Set LogEntries = New Collection
@@ -407,21 +407,21 @@ End Sub
             End If
         Next i
     
-        If LogEntries.Count > 0 Then
+        If LogEntries.count > 0 Then
             insertedCount = modInvLogs.LogMultipleInventoryChanges(LogEntries)
             Call modUR_Transaction.SetCurrentTransactionLogCount(insertedCount)
         End If
     
         Call modUR_Transaction.CommitTransaction
     
-    Cleanup:
+Cleanup:
         Application.EnableEvents = True
         Application.Calculation = xlCalculationAutomatic
         Application.ScreenUpdating = True
         Call DisplayMessage("Made items added successfully.")
         Exit Sub
     
-    ErrorHandler:
+ErrorHandler:
         If modUR_Transaction.IsInTransaction() Then
             Call modUR_Transaction.RollbackTransaction
         End If

@@ -13,6 +13,8 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
 Private Sub UserForm_Initialize()
     ' Load roles into the dropdown
     modUserAuth.LoadRolesIntoComboBox Me.cmbRole
@@ -123,5 +125,3 @@ Private Sub btnDeleteUser_Click()
         Me.lblMessage.Caption = "User not found."
     End If
 End Sub
-
-
