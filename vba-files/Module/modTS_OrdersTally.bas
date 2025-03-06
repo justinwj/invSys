@@ -34,10 +34,10 @@ Sub TallyOrders()
     
     ' Display the tally in the list box
     lb.Clear
+    lb.ColumnCount = 2
+    lb.AddItem "ITEMS" & vbTab & "QUANTITY"
     For Each key In dict.Keys
-        lb.AddItem Split(key, uom)(0)
-        lb.List(lb.ListCount - 1, 1) = dict(key)
-        lb.List(lb.ListCount - 1, 2) = uom
+        lb.AddItem Split(key, uom)(0) & vbTab & dict(key)
     Next key
     
     ' Open the form
