@@ -3,7 +3,8 @@ Public Sub AddGoodsReceived_Click()
     Dim ws As Worksheet
     Dim tbl As ListObject
     Dim rng As Range
-    Dim receivedCol As Long, totalInvCol As Long, itemCodeCol As Long, itemNameCol As Long, lastEditedCol As Long
+    Dim receivedCol As Long, totalInvCol As Long, itemCodeCol As Long, itemNameCol As Long
+    Dim lastEditedCol As Long, totalInvLastEditCol As Long
     Dim i As Long, rowCount As Long
     Dim LogEntries As Collection
     Dim insertedCount As Long
@@ -15,7 +16,7 @@ Public Sub AddGoodsReceived_Click()
     Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
     Set tbl = ws.ListObjects("invSys")
 
-    If tbl Is Nothing Or tbl.ListRows.count = 0 Then
+    If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
         GoTo Cleanup
     End If
@@ -26,8 +27,9 @@ Public Sub AddGoodsReceived_Click()
     receivedCol = tbl.ListColumns("RECEIVED").Index
     totalInvCol = tbl.ListColumns("TOTAL INV").Index
     lastEditedCol = tbl.ListColumns("LAST EDITED").Index
+    totalInvLastEditCol = tbl.ListColumns("TOTAL INV LAST EDIT").Index
 
-    rowCount = tbl.ListRows.count
+    rowCount = tbl.ListRows.Count
     Set rng = tbl.DataBodyRange
 
     Set LogEntries = New Collection
@@ -47,8 +49,11 @@ Public Sub AddGoodsReceived_Click()
             ' Update TOTAL INV
             rng.Cells(i, totalInvCol).Value = oldTotalInv + receivedVal
             
-            ' Update LAST EDITED
+            ' Update LAST EDITED (general)
             rng.Cells(i, lastEditedCol).Value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).Value = Now
             
             ' Track the change
             Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
