@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmItemSearch 
    Caption         =   "Item Search"
-   ClientHeight    =   4950
+   ClientHeight    =   5085
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   6480
@@ -37,6 +37,12 @@ Private Sub UserForm_Initialize()
     ' Configure the listbox for multiple columns
     Me.lstBox.ColumnCount = 3
     Me.lstBox.ColumnWidths = "47;80;180" ' Adjust widths as needed
+    
+    ' Configure the description textbox for word wrapping
+    Me.txtBox2.MultiLine = True
+    Me.txtBox2.WordWrap = True
+    Me.txtBox2.Locked = True ' Make it read-only
+    Me.txtBox2.BackColor = RGB(255, 255, 255) ' Keep white background even when locked
     
     ' Populate lstBox with the full list.
     Call PopulateListBox(FullItemList)
@@ -92,6 +98,12 @@ End Sub
 ' When the user clicks on an item in the list box
 Private Sub lstBox_Click()
     ' Keep the item highlighted but don't update the search text
+    UpdateDescription
+End Sub
+
+' Add handler for keyboard navigation in list box
+Private Sub lstBox_Change()
+    UpdateDescription
 End Sub
 
 ' Commit the selection if the user presses Tab or Enter in textbox
@@ -212,4 +224,24 @@ Private Sub PopulateListBox(itemArray As Variant)
         ' Add item name in third column
         Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemArray(i, 3)
     Next i
+End Sub
+
+' Helper function to update the description in txtBox2
+Private Sub UpdateDescription()
+    ' Clear existing description
+    Me.txtBox2.Text = ""
+    
+    ' If an item is selected in the main listbox
+    If Me.lstBox.ListIndex <> -1 Then
+        ' Get the selected index
+        Dim selectedIndex As Integer
+        selectedIndex = Me.lstBox.ListIndex
+        
+        ' Get the description for this item from the FullItemList
+        ' Add 1 because ListBox is 0-based but array is 1-based
+        If selectedIndex + 1 <= UBound(FullItemList, 1) Then
+            ' Set the description text
+            Me.txtBox2.Text = FullItemList(selectedIndex + 1, 4)
+        End If
+    End If
 End Sub
