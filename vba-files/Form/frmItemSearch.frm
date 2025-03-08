@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmItemSearch
    ClientHeight    =   4950
    ClientLeft      =   120
    ClientTop       =   465
-   ClientWidth     =   5400
+   ClientWidth     =   6480
    OleObjectBlob   =   "frmItemSearch.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -33,6 +33,11 @@ End Sub
 Private Sub UserForm_Initialize()
     ' Load the full list of items from the invSys table.
     FullItemList = modTS_Data.LoadItemList()
+    
+    ' Configure the listbox for multiple columns
+    Me.lstBox.ColumnCount = 3
+    Me.lstBox.ColumnWidths = "47;80;180" ' Adjust widths as needed
+    
     ' Populate lstBox with the full list.
     Call PopulateListBox(FullItemList)
     
@@ -64,9 +69,10 @@ Private Sub txtBox_Change()
         Exit Sub
     End If
     
-    ' Iterate through the list box items to find the first match.
+    ' Iterate through the list box items to find the first match
+    ' Now search in the third column (index 2) which contains the item name
     For i = 0 To Me.lstBox.ListCount - 1
-        If InStr(1, LCase(Me.lstBox.List(i)), searchText) > 0 Then
+        If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
             matchIndex = i
             Me.lstBox.ListIndex = matchIndex
             
@@ -131,9 +137,9 @@ Public Sub CommitSelectionAndClose()
     Dim currentRowIndex As Long
     Dim prevRowOrder As Variant, currentOrderValue As Variant
     
-    ' Decide on the value to commit
+    ' Decide on the value to commit - use the third column (index 2) for the item name
     If Me.lstBox.ListIndex <> -1 Then
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex)
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)
     ElseIf Trim(Me.txtBox.Text) <> "" Then
         chosenValue = Me.txtBox.Text
     Else
@@ -196,7 +202,14 @@ End Sub
 Private Sub PopulateListBox(itemArray As Variant)
     Dim i As Long
     Me.lstBox.Clear
-    For i = LBound(itemArray) To UBound(itemArray)
-        Me.lstBox.AddItem itemArray(i)
+    
+    For i = LBound(itemArray, 1) To UBound(itemArray, 1)
+        Me.lstBox.AddItem ""
+        ' Add item code in first column
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = itemArray(i, 1)
+        ' Add vendor in second column
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = itemArray(i, 2)
+        ' Add item name in third column
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemArray(i, 3)
     Next i
 End Sub

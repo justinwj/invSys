@@ -6,33 +6,30 @@ Option Explicit
 
 Public Function LoadItemList() As Variant
     Dim ws As Worksheet, tbl As ListObject
-    Dim items As Variant
-    Dim arr() As Variant, i As Long
+    Dim data As Variant
+    Dim result() As Variant, i As Long
     
     Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
     Set tbl = ws.ListObjects("invSys")
     
-    ' Get the ITEM column data (assumes header is "ITEM")
-    items = tbl.ListColumns("ITEM").DataBodyRange.Value
-    ' Convert the 2D array (n x 1) into a 1D array.
-    ReDim arr(LBound(items, 1) To UBound(items, 1))
-    For i = LBound(items, 1) To UBound(items, 1)
-        arr(i) = items(i, 1)
+    ' Get multiple columns: ITEM_CODE, VENDOR(s), and ITEM
+    Dim itemCodeCol As Range, vendorCol As Range, itemCol As Range
+    
+    Set itemCodeCol = tbl.ListColumns("ITEM_CODE").DataBodyRange
+    Set vendorCol = tbl.ListColumns("VENDOR(s)").DataBodyRange
+    Set itemCol = tbl.ListColumns("ITEM").DataBodyRange
+    
+    ' Prepare a 2D array to hold the data
+    ReDim result(1 To itemCol.Rows.count, 1 To 3)
+    
+    ' Fill the array with the three columns of data
+    For i = 1 To itemCol.Rows.count
+        result(i, 1) = itemCodeCol.Cells(i, 1).Value
+        result(i, 2) = vendorCol.Cells(i, 1).Value
+        result(i, 3) = itemCol.Cells(i, 1).Value
     Next i
-    LoadItemList = arr
-End Function
-Public Function GetColumnIndexByHeader(headerName As String) As Long
-    Dim ws As Worksheet, tbl As ListObject, headers As Variant, i As Long
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
-    Set tbl = ws.ListObjects("invSys")
-    headers = tbl.HeaderRowRange.Value
-    For i = LBound(headers, 2) To UBound(headers, 2)
-        If CStr(headers(1, i)) = headerName Then
-            GetColumnIndexByHeader = i
-            Exit Function
-        End If
-    Next i
-    GetColumnIndexByHeader = 0 ' if not found
+    
+    LoadItemList = result
 End Function
 
 
