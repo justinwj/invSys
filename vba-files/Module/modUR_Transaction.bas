@@ -38,7 +38,7 @@ Public Sub TrackTransactionChange( _
         .ColumnName = ColumnName
         .OldValue = OldValue
         .newValue = newValue
-        .Timestamp = Now
+        .timestamp = Now
     End With
     TransactionBuffer.Add Action
 End Sub
@@ -59,7 +59,7 @@ Public Sub CommitTransaction()
     Dim BulkAction As New clsUndoAction
     BulkAction.ActionType = "BulkTransaction"
     BulkAction.SnapshotID = PreTransactionSnapshotID
-    BulkAction.Timestamp = Now
+    BulkAction.timestamp = Now
     BulkAction.LogCount = CurrentTransactionLogCount   ' Store the number of log rows inserted
     
     Dim Action As clsUndoAction

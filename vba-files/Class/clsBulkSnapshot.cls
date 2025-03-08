@@ -14,7 +14,7 @@ Public SnapshotID As String
 Public data As Variant  ' Stores inventory values
 Public Formulas As Object ' Stores formulas using a Dictionary
 Public SchemaHash As String
-Public Timestamp As Date
+Public timestamp As Date
 
 ' Initialize Dictionary in Class Constructor
 Private Sub class_initialize()

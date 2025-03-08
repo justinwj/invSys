@@ -19,7 +19,7 @@ Public Sub TrackChange( _
         .ColumnName = ColumnName
         .OldValue = OldValue
         .newValue = newValue
-        .Timestamp = Now
+        .timestamp = Now
     End With
     
     UndoStack.Add Action

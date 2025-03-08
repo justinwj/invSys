@@ -16,7 +16,7 @@ Public ColumnName As String
 Public OldValue As Variant
 Public newValue As Variant
 Public SnapshotID As String
-Public Timestamp As Date
+Public timestamp As Date
 Public logData As Collection
 Public LogCount As Long
 Public RedoSnapshotID As String

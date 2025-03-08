@@ -29,33 +29,36 @@ Sub TallyOrders()
         quantity = tbl.ListColumns("QUANTITY").DataBodyRange(i, 1).Value
         uom = tbl.ListColumns("UOM").DataBodyRange(i, 1).Value
         
-        ' More thorough normalization to handle edge cases
-        ' First convert to string, then remove all excess spaces
-        normItem = CStr(item)
-        normItem = Application.WorksheetFunction.Trim(normItem)
-        ' Replace multiple spaces with single space
-        Do While InStr(normItem, "  ") > 0
-            normItem = Replace(normItem, "  ", " ")
-        Loop
-        normItem = LCase(normItem)
-        
-        ' Same thorough normalization for UOM
-        normUom = CStr(uom)
-        normUom = Application.WorksheetFunction.Trim(normUom)
-        Do While InStr(normUom, "  ") > 0
-            normUom = Replace(normUom, "  ", " ")
-        Loop
-        normUom = LCase(normUom)
-        
-        ' Force default unit if missing.
-        If normUom = "" Then normUom = "each"
-        
-        key = normItem & "|" & normUom
-        
-        If dict.Exists(key) Then
-            dict(key) = dict(key) + quantity
-        Else
-            dict.Add key, quantity
+        ' Skip rows where the item is empty or quantity is zero/empty
+        If Trim(CStr(item)) <> "" And quantity > 0 Then
+            ' More thorough normalization to handle edge cases
+            ' First convert to string, then remove all excess spaces
+            normItem = CStr(item)
+            normItem = Application.WorksheetFunction.Trim(normItem)
+            ' Replace multiple spaces with single space
+            Do While InStr(normItem, "  ") > 0
+                normItem = Replace(normItem, "  ", " ")
+            Loop
+            normItem = LCase(normItem)
+            
+            ' Same thorough normalization for UOM
+            normUom = CStr(uom)
+            normUom = Application.WorksheetFunction.Trim(normUom)
+            Do While InStr(normUom, "  ") > 0
+                normUom = Replace(normUom, "  ", " ")
+            Loop
+            normUom = LCase(normUom)
+            
+            ' Force default unit if missing.
+            If normUom = "" Then normUom = "each"
+            
+            key = normItem & "|" & normUom
+            
+            If dict.Exists(key) Then
+                dict(key) = dict(key) + quantity
+            Else
+                dict.Add key, quantity
+            End If
         End If
     Next i
     
@@ -69,14 +72,18 @@ Sub TallyOrders()
     lb.List(lb.ListCount - 1, 1) = "QUANTITY"
     lb.List(lb.ListCount - 1, 2) = "UOM"
     
-    ' Add data rows.
-    For Each key In dict.Keys
-        keyParts = Split(key, "|")
-        lb.AddItem
-        lb.List(lb.ListCount - 1, 0) = keyParts(0)
-        lb.List(lb.ListCount - 1, 1) = dict(key)
-        lb.List(lb.ListCount - 1, 2) = keyParts(1)
-    Next key
-    
-    frmOrderTally.Show
+    ' Add data rows only if there's data to add
+    If dict.count > 0 Then
+        For Each key In dict.Keys
+            keyParts = Split(key, "|")
+            lb.AddItem
+            lb.List(lb.ListCount - 1, 0) = keyParts(0)
+            lb.List(lb.ListCount - 1, 1) = dict(key)
+            lb.List(lb.ListCount - 1, 2) = keyParts(1)
+        Next key
+        ' Show the form only if there are items to display
+        frmOrderTally.Show
+    Else
+        MsgBox "No valid order items found to tally.", vbInformation
+    End If
 End Sub

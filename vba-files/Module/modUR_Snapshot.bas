@@ -35,7 +35,7 @@ Public Function CaptureSnapshot() As String
         .SnapshotID = GenerateGUID()
         .data = DataToStore
         .SchemaHash = GetSchemaHash()
-        .Timestamp = Now
+        .timestamp = Now
     End With
 
     If Snapshots.count >= 10 Then
