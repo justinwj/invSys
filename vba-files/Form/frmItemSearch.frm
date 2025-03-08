@@ -18,6 +18,10 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private FullItemList As Variant
+Private LastSearchText As String
+Private LastSearchTime As Double
+Private SearchFirstCharIndex() As Long  ' Array to store first character indexes
+Private Const MIN_SEARCH_INTERVAL As Double = 0.2  ' Minimum seconds between searches
 
 Private Sub UserForm_MouseScroll()
     EnableMouseScroll frmItemSearch
@@ -47,6 +51,9 @@ Private Sub UserForm_Initialize()
     ' Populate lstBox with the full list.
     Call PopulateListBox(FullItemList)
     
+    ' Create first character index for faster searching
+    BuildFirstCharIndex
+    
     ' Pre-populate txtBox with the current cell value (if any) without selecting it.
     If Not gSelectedCell Is Nothing Then
         If Not IsEmpty(gSelectedCell.Value) Then
@@ -62,37 +69,110 @@ Private Sub UserForm_Initialize()
     EnableMouseScroll Me
 End Sub
 
-' Instead of filtering out non-matching items, just move the highlighter to the nearest match.
-Private Sub txtBox_Change()
-    Dim searchText As String
-    Dim i As Long, matchIndex As Long
+' Build an index of where each first character appears in the list for faster searching
+Private Sub BuildFirstCharIndex()
+    Dim i As Long, char As String
+    Dim dict As Object
     
-    searchText = LCase(Me.txtBox.Text)
+    ' Create a dictionary to track the first occurrence of each character
+    Set dict = CreateObject("Scripting.Dictionary")
     
-    ' If the text box is empty, clear the list box selection and exit.
-    If Len(Trim(searchText)) = 0 Then
-        Me.lstBox.ListIndex = -1
-        Exit Sub
-    End If
+    ' Initialize the array with -1 (not found)
+    ReDim SearchFirstCharIndex(0 To 255)
+    For i = 0 To 255
+        SearchFirstCharIndex(i) = -1
+    Next i
     
-    ' Iterate through the list box items to find the first match
-    ' Now search in the third column (index 2) which contains the item name
+    ' Go through the list and record the first occurrence of each first character
     For i = 0 To Me.lstBox.ListCount - 1
-        If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
-            matchIndex = i
+        If Me.lstBox.List(i, 2) <> "" Then
+            char = UCase(Left$(Me.lstBox.List(i, 2), 1))
+            ' Only record the first occurrence
+            If Asc(char) <= 255 And SearchFirstCharIndex(Asc(char)) = -1 Then
+                SearchFirstCharIndex(Asc(char)) = i
+            End If
+        End If
+    Next i
+End Sub
+
+' Optimized txtBox_Change event
+Private Sub txtBox_Change()
+    Dim currentTime As Double
+    Dim searchText As String, firstChar As String
+    Dim i As Long, matchIndex As Long, startIndex As Long
+    Dim visibleItems As Long, centerPos As Long
+    
+    ' Get current time and search text
+    currentTime = Timer
+    searchText = LCase(Trim(Me.txtBox.Text))
+    
+    ' Only search if:
+    ' 1. Search text has changed significantly, OR
+    ' 2. Enough time has passed since last search, OR
+    ' 3. Text is empty or very short
+    If searchText <> LastSearchText And _
+       (currentTime - LastSearchTime >= MIN_SEARCH_INTERVAL Or _
+        Len(searchText) <= 2) Then
+        
+        ' Update tracking variables
+        LastSearchTime = currentTime
+        LastSearchText = searchText
+        
+        ' If the text box is empty, clear the list box selection and exit
+        If Len(searchText) = 0 Then
+            Me.lstBox.ListIndex = -1
+            Exit Sub
+        End If
+        
+        ' Get the first character and find its index position
+        firstChar = UCase(Left$(searchText, 1))
+        If Asc(firstChar) <= 255 Then
+            startIndex = SearchFirstCharIndex(Asc(firstChar))
+        Else
+            startIndex = 0
+        End If
+        
+        ' If first character not indexed, start from beginning
+        If startIndex = -1 Then startIndex = 0
+        
+        ' Optimized search strategy
+        matchIndex = -1
+        
+        ' First pass: Search from the first character index position
+        For i = startIndex To Me.lstBox.ListCount - 1
+            If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
+                matchIndex = i
+                Exit For
+            End If
+        Next i
+        
+        ' Second pass: If not found and we started from a specific index, 
+        ' search from beginning to that index
+        If matchIndex = -1 And startIndex > 0 Then
+            For i = 0 To startIndex - 1
+                If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
+                    matchIndex = i
+                    Exit For
+                End If
+            Next i
+        End If
+        
+        ' Update UI with results
+        If matchIndex <> -1 Then
             Me.lstBox.ListIndex = matchIndex
             
-            ' FIX 1: Better centering calculation
-            Dim visibleItems As Long, centerPos As Long
+            ' Better centering calculation
             visibleItems = Int(Me.lstBox.Height / 15)  ' Approx height per item
             centerPos = Application.Max(0, matchIndex - Int(visibleItems / 2))
             Me.lstBox.TopIndex = centerPos
-            Exit Sub
+            
+            ' Update description
+            UpdateDescription
+        Else
+            Me.lstBox.ListIndex = -1
+            Me.txtBox2.Text = ""
         End If
-    Next i
-    
-    ' If no match is found, deselect any item.
-    Me.lstBox.ListIndex = -1
+    End If
 End Sub
 
 ' When the user clicks on an item in the list box
@@ -165,45 +245,30 @@ Public Sub CommitSelectionAndClose()
     If Not gSelectedCell Is Nothing Then
         gSelectedCell.Value = chosenValue
         
-        ' Get the table and check if we're modifying the ITEMS column
-        If Not gSelectedCell.ListObject Is Nothing Then
-            Set tbl = gSelectedCell.ListObject
-            
-            ' Find column indexes directly
-            Dim orderCol As Long, itemsCol As Long
-            
-            On Error Resume Next
-            ' Get columns by their exact names
-            orderCol = WorksheetFunction.Match("ORDER_NUMBER", tbl.HeaderRowRange, 0)
-            itemsCol = WorksheetFunction.Match("ITEMS", tbl.HeaderRowRange, 0)
-            On Error GoTo 0
-            
-            ' Only proceed if both columns exist
-            If orderCol > 0 And itemsCol > 0 Then
-                ' Check if we're in the ITEMS column
-                If gSelectedCell.Column = tbl.HeaderRowRange.Cells(1, itemsCol).Column Then
-                    ' Get data row number (1-based)
-                    currentRowIndex = gSelectedCell.row - tbl.HeaderRowRange.row
+        ' Check if we're in the OrdersTally table and in the ITEMS column
+        On Error Resume Next
+        Set ws = gSelectedCell.Worksheet
+        If ws.Name = "OrdersTally" Then
+            Set tbl = ws.ListObjects("OrdersTally")
+            If Not tbl Is Nothing Then
+                ' Check if the selected cell is in the ITEMS column
+                If gSelectedCell.Column = tbl.ListColumns("ITEMS").Range.Column Then
+                    ' Find the row index within the table
+                    currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
                     
-                    ' If not in first row, check if we need to copy ORDER_NUMBER
-                    If currentRowIndex > 1 Then
-                        ' Get current ORDER_NUMBER cell value
-                        currentOrderValue = tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value
+                    ' If valid row, set the UOM
+                    If currentRowIndex > 0 Then
+                        ' Get the UOM for this item
+                        Dim itemUOM As String
+                        itemUOM = modTS_Data.GetItemUOM(chosenValue)
                         
-                        ' More robust empty check - check if truly empty or just whitespace
-                        If IsEmpty(currentOrderValue) Or Trim(CStr(currentOrderValue)) = "" Then
-                            ' Get value from previous row
-                            prevRowOrder = tbl.DataBodyRange.Cells(currentRowIndex - 1, orderCol).Value
-                            
-                            ' Copy to current row only if previous row has a value
-                            If Not IsEmpty(prevRowOrder) Then
-                                tbl.DataBodyRange.Cells(currentRowIndex, orderCol).Value = prevRowOrder
-                            End If
-                        End If
+                        ' Set the UOM cell value
+                        tbl.ListColumns("UOM").DataBodyRange(currentRowIndex, 1).Value = itemUOM
                     End If
                 End If
             End If
         End If
+        On Error GoTo 0
     End If
     
     isRunning = False
