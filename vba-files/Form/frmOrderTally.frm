@@ -14,6 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 Sub SendOrders()
    Dim wsOrdersLog As Worksheet
    Dim wsOrderTally As Worksheet
@@ -31,9 +32,9 @@ Sub SendOrders()
    Set tblInvSys = wsInvSys.ListObjects("SHIPMENTS")
    
    ' Send orders to OrdersLog table
-   For i = 1 To tblOrderTally.ListRows.Count
+   For i = 1 To tblOrderTally.ListRows.count
        tblOrdersLog.ListRows.Add
-       tblOrdersLog.ListRows(tblOrdersLog.ListRows.Count).Range.Value = tblOrderTally.ListRows(i).Range.Value
+       tblOrdersLog.ListRows(tblOrdersLog.ListRows.count).Range.Value = tblOrderTally.ListRows(i).Range.Value
    Next i
    
    ' Clear OrdersTally table
@@ -42,8 +43,8 @@ Sub SendOrders()
    ' Send tally to SHIPMENTS header in invSys table
    For i = 1 To frmOrderTally.lstBox.ListCount
        tblInvSys.ListRows.Add
-       tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 1).Value = frmOrderTally.lstBox.List(i - 1, 0)
-       tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 2).Value = frmOrderTally.lstBox.List(i - 1, 1)
-       tblInvSys.ListRows(tblInvSys.ListRows.Count).Range(1, 3).Value = frmOrderTally.lstBox.List(i - 1, 2)
+       tblInvSys.ListRows(tblInvSys.ListRows.count).Range(1, 1).Value = frmOrderTally.lstBox.List(i - 1, 0)
+       tblInvSys.ListRows(tblInvSys.ListRows.count).Range(1, 2).Value = frmOrderTally.lstBox.List(i - 1, 1)
+       tblInvSys.ListRows(tblInvSys.ListRows.count).Range(1, 3).Value = frmOrderTally.lstBox.List(i - 1, 2)
    Next i
 End Sub

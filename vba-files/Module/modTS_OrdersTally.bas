@@ -9,25 +9,49 @@ Sub TallyOrders()
     Dim tbl As ListObject
     Dim dict As Object
     Dim i As Long
-    Dim key As Variant              ' Changed from String to Variant
-    Dim item As String
-    Dim quantity As Double
-    Dim uom As String
+    Dim key As Variant
+    Dim item As Variant, quantity As Double, uom As Variant
+    Dim normItem As String, normUom As String
     Dim lb As MSForms.ListBox
     Dim keyParts As Variant
     
     Set ws = ThisWorkbook.Sheets("OrdersTally")
     Set tbl = ws.ListObjects("OrdersTally")
     Set dict = CreateObject("Scripting.Dictionary")
+    ' Make dictionary case-insensitive
+    dict.CompareMode = vbTextCompare
     Set lb = frmOrderTally.lstBox
     
-    ' Tally the orders. Use a delimiter (|) to separate item and uom.
-    For i = 1 To tbl.ListRows.Count
+    ' Tally the orders.
+    For i = 1 To tbl.ListRows.count
+        ' Get raw cell values.
         item = tbl.ListColumns("ITEMS").DataBodyRange(i, 1).Value
         quantity = tbl.ListColumns("QUANTITY").DataBodyRange(i, 1).Value
         uom = tbl.ListColumns("UOM").DataBodyRange(i, 1).Value
         
-        key = item & "|" & uom
+        ' More thorough normalization to handle edge cases
+        ' First convert to string, then remove all excess spaces
+        normItem = CStr(item)
+        normItem = Application.WorksheetFunction.Trim(normItem)
+        ' Replace multiple spaces with single space
+        Do While InStr(normItem, "  ") > 0
+            normItem = Replace(normItem, "  ", " ")
+        Loop
+        normItem = LCase(normItem)
+        
+        ' Same thorough normalization for UOM
+        normUom = CStr(uom)
+        normUom = Application.WorksheetFunction.Trim(normUom)
+        Do While InStr(normUom, "  ") > 0
+            normUom = Replace(normUom, "  ", " ")
+        Loop
+        normUom = LCase(normUom)
+        
+        ' Force default unit if missing.
+        If normUom = "" Then normUom = "each"
+        
+        key = normItem & "|" & normUom
+        
         If dict.Exists(key) Then
             dict(key) = dict(key) + quantity
         Else
@@ -35,12 +59,12 @@ Sub TallyOrders()
         End If
     Next i
     
-    ' Display the tally in the list box with three columns: ITEMS, QUANTITY and UOM.
+    ' Display the tally in the list box with three columns.
     lb.Clear
     lb.ColumnCount = 3
-    lb.ColumnWidths = "150;50;30"   ' Adjust the widths as needed
+    lb.ColumnWidths = "150;50;30"   ' adjust widths as needed
     
-    ' Manually add header row (headers now count as a normal row).
+    ' Manually add header row.
     lb.AddItem "ITEMS"
     lb.List(lb.ListCount - 1, 1) = "QUANTITY"
     lb.List(lb.ListCount - 1, 2) = "UOM"
@@ -54,6 +78,5 @@ Sub TallyOrders()
         lb.List(lb.ListCount - 1, 2) = keyParts(1)
     Next key
     
-    ' Open the form.
     frmOrderTally.Show
 End Sub

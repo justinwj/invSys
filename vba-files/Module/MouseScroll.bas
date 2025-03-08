@@ -690,7 +690,7 @@ Private Sub ScrollY(ByVal ctrl As Object, ByRef scrollAmount As SCROLL_AMOUNT)
             Call ListScrollY(ctrl, scrollAmount, ctrlType)
         Case ctFrame, ctPage, ctMulti, ctForm
             If ctrlType = ctMulti Then
-                Set ctrl = ctrl.SelectedItem
+                Set ctrl = ctrl.selectedItem
                 ctrlType = ctPage
             End If
             '
@@ -930,7 +930,7 @@ Private Sub ScrollX(ByVal ctrl As Object, ByRef scrollAmount As SCROLL_AMOUNT)
             Call ListScrollX(ctrl, scrollAmount)
         Case ctFrame, ctPage, ctMulti, ctForm
             If ctrlType = ctMulti Then
-                Set ctrl = ctrl.SelectedItem
+                Set ctrl = ctrl.selectedItem
                 ctrlType = ctPage
             End If
             '
@@ -1020,7 +1020,7 @@ Private Sub Zoom(ByVal ctrl As Object, ByRef scrollAmount As SCROLL_AMOUNT)
             Exit Sub
         Case ctFrame, ctPage, ctMulti, ctForm
             If ctrlType = ctMulti Then
-                Set ctrl = ctrl.SelectedItem
+                Set ctrl = ctrl.selectedItem
                 ctrlType = ctPage
             End If
             '
