@@ -35,12 +35,26 @@ Private Sub UserForm_Activate()
 End Sub
 
 Private Sub UserForm_Initialize()
-    ' Load the full list of items from the invSys table.
-    FullItemList = modTS_Data.LoadItemList()
+    ' Add variable declaration
+    Dim i As Long
     
-    ' Configure the listbox for multiple columns
-    Me.lstBox.ColumnCount = 3
-    Me.lstBox.ColumnWidths = "47;80;180" ' Adjust widths as needed
+    ' Set up the list box columns
+    Me.lstBox.ColumnCount = 4  ' ITEM_CODE, ROW#, ITEM, LOCATION
+    Me.lstBox.ColumnWidths = "70;40;150;80"
+    
+    ' Load inventory items
+    Dim items As Variant
+    items = modTS_Data.LoadItemList()
+    
+    ' Populate list box with items
+    If Not IsEmpty(items) Then
+        For i = LBound(items, 1) To UBound(items, 1)
+            Me.lstBox.AddItem items(i, 0)  ' ITEM_CODE
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = items(i, 1)  ' ROW#
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = items(i, 2)  ' ITEM name
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = items(i, 3)  ' LOCATION
+        Next i
+    End If
     
     ' Configure the description textbox for word wrapping
     Me.txtBox2.MultiLine = True
@@ -57,7 +71,7 @@ Private Sub UserForm_Initialize()
     ' Pre-populate txtBox with the current cell value (if any) without selecting it.
     If Not gSelectedCell Is Nothing Then
         If Not IsEmpty(gSelectedCell.Value) Then
-            Me.txtBox.Text = CStr(gSelectedCell.Value)
+            Me.txtBox.text = CStr(gSelectedCell.Value)
             ' Place the caret at the beginning without selecting text.
             Me.txtBox.SelStart = 0
             Me.txtBox.SelLength = 0
@@ -95,7 +109,7 @@ Private Sub BuildFirstCharIndex()
     Next i
 End Sub
 
-' Optimized txtBox_Change event
+' Update the txtBox_Change event with better error handling for fast typing
 Private Sub txtBox_Change()
     Dim currentTime As Double
     Dim searchText As String, firstChar As String
@@ -125,12 +139,14 @@ Private Sub txtBox_Change()
         End If
         
         ' Get the first character and find its index position
+        On Error Resume Next
         firstChar = UCase(Left$(searchText, 1))
-        If Asc(firstChar) <= 255 Then
+        If Len(firstChar) > 0 And Asc(firstChar) <= 255 Then
             startIndex = SearchFirstCharIndex(Asc(firstChar))
         Else
             startIndex = 0
         End If
+        On Error GoTo 0
         
         ' If first character not indexed, start from beginning
         If startIndex = -1 Then startIndex = 0
@@ -138,6 +154,7 @@ Private Sub txtBox_Change()
         ' Optimized search strategy
         matchIndex = -1
         
+        On Error Resume Next
         ' First pass: Search from the first character index position
         For i = startIndex To Me.lstBox.ListCount - 1
             If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
@@ -156,15 +173,28 @@ Private Sub txtBox_Change()
                 End If
             Next i
         End If
+        On Error GoTo 0
         
         ' Update UI with results
         If matchIndex <> -1 Then
             Me.lstBox.ListIndex = matchIndex
             
-            ' Better centering calculation
+            ' FIXED: Better centering calculation with error handling
+            On Error Resume Next
+            ' Calculate visible items - ensure it's at least 1
             visibleItems = Int(Me.lstBox.Height / 15)  ' Approx height per item
-            centerPos = Application.Max(0, matchIndex - Int(visibleItems / 2))
+            If visibleItems < 1 Then visibleItems = 1
+            
+            ' Safe calculation for center position
+            If matchIndex > Int(visibleItems / 2) Then
+                centerPos = matchIndex - Int(visibleItems / 2)
+            Else
+                centerPos = 0
+            End If
+            
+            ' Set top index safely
             Me.lstBox.TopIndex = centerPos
+            On Error GoTo 0
             
             ' Update description
             UpdateDescription
@@ -219,21 +249,26 @@ End Sub
 Public Sub CommitSelectionAndClose()
     Static isRunning As Boolean
     
-    ' Prevent recursive calls or double-execution
+    ' Prevent recursive calls
     If isRunning Then Exit Sub
     isRunning = True
     
     Dim chosenValue As String
+    Dim chosenItemCode As String
+    Dim chosenRowNum As String  ' Use actual ROW#
     Dim ws As Worksheet
     Dim tbl As ListObject
     Dim currentRowIndex As Long
-    Dim prevRowOrder As Variant, currentOrderValue As Variant
     
-    ' Decide on the value to commit - use the third column (index 2) for the item name
+    ' Get selected values
     If Me.lstBox.ListIndex <> -1 Then
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)
+        chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 0)  ' ITEM_CODE
+        chosenRowNum = Me.lstBox.List(Me.lstBox.ListIndex, 1)    ' ROW#
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)     ' Item name
     ElseIf Trim(Me.txtBox.Text) <> "" Then
         chosenValue = Me.txtBox.Text
+        chosenItemCode = ""
+        chosenRowNum = ""
     Else
         If Not gSelectedCell Is Nothing Then gSelectedCell.ClearContents
         isRunning = False
@@ -241,31 +276,69 @@ Public Sub CommitSelectionAndClose()
         Exit Sub
     End If
     
-    ' Apply the chosen value
+    ' Apply the chosen value to the cell
     If Not gSelectedCell Is Nothing Then
+        ' Set the visible item name in the cell
         gSelectedCell.Value = chosenValue
         
-        ' Check if we're in the OrdersTally table and in the ITEMS column
+        ' Store reference data in cell comment
+        On Error Resume Next
+        If gSelectedCell.Comment Is Nothing Then
+            gSelectedCell.AddComment
+        End If
+        gSelectedCell.Comment.Text "ITEM_CODE: " & chosenItemCode & vbCrLf & _
+                                  "ROW#: " & chosenRowNum
+        gSelectedCell.Comment.Visible = False
+        On Error GoTo 0
+        
+        ' Update the UOM in the current row if needed
         On Error Resume Next
         Set ws = gSelectedCell.Worksheet
-        If ws.Name = "OrdersTally" Then
-            Set tbl = ws.ListObjects("OrdersTally")
+        
+        If ws.Name = "ShipmentsTally" Or ws.Name = "ReceivedTally" Then
+            If ws.Name = "ShipmentsTally" Then
+                Set tbl = ws.ListObjects("ShipmentsTally")
+            Else
+                Set tbl = ws.ListObjects("ReceivedTally")
+            End If
+            
             If Not tbl Is Nothing Then
-                ' Check if the selected cell is in the ITEMS column
-                If gSelectedCell.Column = tbl.ListColumns("ITEMS").Range.Column Then
-                    ' Find the row index within the table
-                    currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
-                    
-                    ' If valid row, set the UOM
-                    If currentRowIndex > 0 Then
-                        ' Get the UOM for this item
-                        Dim itemUOM As String
-                        itemUOM = modTS_Data.GetItemUOM(chosenValue)
-                        
-                        ' Set the UOM cell value
-                        tbl.ListColumns("UOM").DataBodyRange(currentRowIndex, 1).Value = itemUOM
+                Dim itemsCol As Long, uomCol As Long, rowNumCol As Long
+                
+                ' Find column indexes
+                For itemsCol = 1 To tbl.ListColumns.Count
+                    If UCase(tbl.ListColumns(itemsCol).Name) = "ITEMS" Then
+                        If gSelectedCell.Column = tbl.ListColumns(itemsCol).Range.Column Then
+                            ' Found the ITEMS column and we're in it
+                            currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
+                            
+                            ' If we have a valid row
+                            If currentRowIndex > 0 Then
+                                ' Find UOM column
+                                For uomCol = 1 To tbl.ListColumns.Count
+                                    If UCase(tbl.ListColumns(uomCol).Name) = "UOM" Then
+                                        ' Get UOM using both item name and ROW#
+                                        Dim itemUOM As String
+                                        itemUOM = modTS_Data.GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
+                                        
+                                        ' Set UOM
+                                        tbl.DataBodyRange(currentRowIndex, uomCol).Value = itemUOM
+                                        Exit For
+                                    End If
+                                Next uomCol
+                                
+                                ' Store ROW# in hidden column if it exists
+                                For rowNumCol = 1 To tbl.ListColumns.Count
+                                    If UCase(tbl.ListColumns(rowNumCol).Name) = "ROW#" Then
+                                        tbl.DataBodyRange(currentRowIndex, rowNumCol).Value = chosenRowNum
+                                        Exit For
+                                    End If
+                                Next rowNumCol
+                            End If
+                            Exit For
+                        End If
                     End If
-                End If
+                Next itemsCol
             End If
         End If
         On Error GoTo 0
@@ -280,21 +353,23 @@ Private Sub PopulateListBox(itemArray As Variant)
     Dim i As Long
     Me.lstBox.Clear
     
+    ' Check if itemArray is properly initialized
+    If IsEmpty(itemArray) Or Not IsArray(itemArray) Then Exit Sub
+    
     For i = LBound(itemArray, 1) To UBound(itemArray, 1)
         Me.lstBox.AddItem ""
-        ' Add item code in first column
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = itemArray(i, 1)
-        ' Add vendor in second column
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = itemArray(i, 2)
-        ' Add item name in third column
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemArray(i, 3)
+        ' Match the array indices with how data is loaded
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = itemArray(i, 0)  ' ITEM_CODE
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = itemArray(i, 1)  ' ROW#
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemArray(i, 2)  ' ITEM name
+        Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = itemArray(i, 3)  ' LOCATION
     Next i
 End Sub
 
 ' Helper function to update the description in txtBox2
 Private Sub UpdateDescription()
     ' Clear existing description
-    Me.txtBox2.Text = ""
+    Me.txtBox2.text = ""
     
     ' If an item is selected in the main listbox
     If Me.lstBox.ListIndex <> -1 Then
@@ -306,7 +381,8 @@ Private Sub UpdateDescription()
         ' Add 1 because ListBox is 0-based but array is 1-based
         If selectedIndex + 1 <= UBound(FullItemList, 1) Then
             ' Set the description text
-            Me.txtBox2.Text = FullItemList(selectedIndex + 1, 4)
+            Me.txtBox2.text = FullItemList(selectedIndex + 1, 4)
         End If
     End If
 End Sub
+

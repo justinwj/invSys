@@ -16,7 +16,7 @@ Public Sub AddGoodsReceived_Click()
     Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
     Set tbl = ws.ListObjects("invSys")
 
-    If tbl Is Nothing Or tbl.ListRows.Count = 0 Then
+    If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
         GoTo Cleanup
     End If
@@ -29,7 +29,7 @@ Public Sub AddGoodsReceived_Click()
     lastEditedCol = tbl.ListColumns("LAST EDITED").Index
     totalInvLastEditCol = tbl.ListColumns("TOTAL INV LAST EDIT").Index
 
-    rowCount = tbl.ListRows.Count
+    rowCount = tbl.ListRows.count
     Set rng = tbl.DataBodyRange
 
     Set LogEntries = New Collection
@@ -468,7 +468,7 @@ Public Sub DisplayMessage(msg As String)
 
     ' If shape exists, update the text
     If Not shp Is Nothing Then
-        shp.TextFrame2.TextRange.Text = msg
+        shp.TextFrame2.TextRange.text = msg
     Else
         MsgBox "Error: lblMessage text box not found!", vbCritical, "DisplayMessage Error"
     End If
