@@ -17,8 +17,8 @@ Sub TestDataIntegrity()
     errorsFound = False
 
     ' Write header for TestSummary if empty
-    If summaryWs.Cells(1, 1).Value = "" Then
-        summaryWs.Range("A1:D1").Value = Array("Test Name", "Row", "Issue", "Timestamp")
+    If summaryWs.Cells(1, 1).value = "" Then
+        summaryWs.Range("A1:D1").value = Array("Test Name", "Row", "Issue", "Timestamp")
     End If
 
     ' Initialize log row
@@ -27,31 +27,31 @@ Sub TestDataIntegrity()
     For Each row In tbl.ListRows
         With row
             ' Test: Item_Code must not be blank
-            If IsEmpty(.Range("Item_Code").Value) Then
-                summaryWs.Cells(logRow, 1).Value = "TestDataIntegrity"
-                summaryWs.Cells(logRow, 2).Value = row.Index
-                summaryWs.Cells(logRow, 3).Value = "Missing Item_Code"
-                summaryWs.Cells(logRow, 4).Value = Now
+            If IsEmpty(.Range("Item_Code").value) Then
+                summaryWs.Cells(logRow, 1).value = "TestDataIntegrity"
+                summaryWs.Cells(logRow, 2).value = row.Index
+                summaryWs.Cells(logRow, 3).value = "Missing Item_Code"
+                summaryWs.Cells(logRow, 4).value = Now
                 logRow = logRow + 1
                 errorsFound = True
             End If
 
             ' Test: TOTAL INV must not be negative
-            If .Range("TOTAL INV").Value < 0 Then
-                summaryWs.Cells(logRow, 1).Value = "TestDataIntegrity"
-                summaryWs.Cells(logRow, 2).Value = row.Index
-                summaryWs.Cells(logRow, 3).Value = "Negative TOTAL INV"
-                summaryWs.Cells(logRow, 4).Value = Now
+            If .Range("TOTAL INV").value < 0 Then
+                summaryWs.Cells(logRow, 1).value = "TestDataIntegrity"
+                summaryWs.Cells(logRow, 2).value = row.Index
+                summaryWs.Cells(logRow, 3).value = "Negative TOTAL INV"
+                summaryWs.Cells(logRow, 4).value = Now
                 logRow = logRow + 1
                 errorsFound = True
             End If
 
             ' Test: Mandatory columns (ITEM, DESCRIPTION) must not be blank
-            If IsEmpty(.Range("ITEM").Value) Or IsEmpty(.Range("DESCRIPTION").Value) Then
-                summaryWs.Cells(logRow, 1).Value = "TestDataIntegrity"
-                summaryWs.Cells(logRow, 2).Value = row.Index
-                summaryWs.Cells(logRow, 3).Value = "Missing mandatory data (ITEM/DESCRIPTION)"
-                summaryWs.Cells(logRow, 4).Value = Now
+            If IsEmpty(.Range("ITEM").value) Or IsEmpty(.Range("DESCRIPTION").value) Then
+                summaryWs.Cells(logRow, 1).value = "TestDataIntegrity"
+                summaryWs.Cells(logRow, 2).value = row.Index
+                summaryWs.Cells(logRow, 3).value = "Missing mandatory data (ITEM/DESCRIPTION)"
+                summaryWs.Cells(logRow, 4).value = Now
                 logRow = logRow + 1
                 errorsFound = True
             End If
@@ -59,9 +59,9 @@ Sub TestDataIntegrity()
     Next row
 
     If Not errorsFound Then
-        summaryWs.Cells(logRow, 1).Value = "TestDataIntegrity"
-        summaryWs.Cells(logRow, 3).Value = "All tests passed successfully"
-        summaryWs.Cells(logRow, 4).Value = Now
+        summaryWs.Cells(logRow, 1).value = "TestDataIntegrity"
+        summaryWs.Cells(logRow, 3).value = "All tests passed successfully"
+        summaryWs.Cells(logRow, 4).value = Now
     End If
 
 ExitSub:
@@ -95,11 +95,11 @@ Sub TestBoundaryConditions()
     For Each row In tbl.ListRows
         With row
             ' Test: TOTAL INV must not exceed maxLimit
-            If .Range("TOTAL INV").Value > maxLimit Then
-                summaryWs.Cells(logRow, 1).Value = "TestBoundaryConditions"
-                summaryWs.Cells(logRow, 2).Value = row.Index
-                summaryWs.Cells(logRow, 3).Value = "TOTAL INV exceeds limit (" & .Range("TOTAL INV").Value & ")"
-                summaryWs.Cells(logRow, 4).Value = Now
+            If .Range("TOTAL INV").value > maxLimit Then
+                summaryWs.Cells(logRow, 1).value = "TestBoundaryConditions"
+                summaryWs.Cells(logRow, 2).value = row.Index
+                summaryWs.Cells(logRow, 3).value = "TOTAL INV exceeds limit (" & .Range("TOTAL INV").value & ")"
+                summaryWs.Cells(logRow, 4).value = Now
                 logRow = logRow + 1
                 errorsFound = True
             End If
@@ -107,9 +107,9 @@ Sub TestBoundaryConditions()
     Next row
 
     If Not errorsFound Then
-        summaryWs.Cells(logRow, 1).Value = "TestBoundaryConditions"
-        summaryWs.Cells(logRow, 3).Value = "All tests passed successfully"
-        summaryWs.Cells(logRow, 4).Value = Now
+        summaryWs.Cells(logRow, 1).value = "TestBoundaryConditions"
+        summaryWs.Cells(logRow, 3).value = "All tests passed successfully"
+        summaryWs.Cells(logRow, 4).value = Now
     End If
 
 ExitSub:

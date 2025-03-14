@@ -67,10 +67,10 @@ Public Sub LogError(ByVal procedureName As String, ByVal errNumber As Long, ByVa
     Set newRow = ws.Cells(ws.Rows.count, 1).End(xlUp).offset(1, 0)
     
     ' Record the error details
-    newRow.Cells(1, 1).Value = Now()  ' Timestamp
-    newRow.Cells(1, 2).Value = procedureName
-    newRow.Cells(1, 3).Value = errNumber
-    newRow.Cells(1, 4).Value = errDescription
+    newRow.Cells(1, 1).value = Now()  ' Timestamp
+    newRow.Cells(1, 2).value = procedureName
+    newRow.Cells(1, 3).value = errNumber
+    newRow.Cells(1, 4).value = errDescription
     
     ' Optional: Display an immediate alert (can be removed if not needed)
     MsgBox "An error occurred in " & procedureName & ": " & errDescription, vbExclamation, "Error " & errNumber

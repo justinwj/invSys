@@ -20,7 +20,7 @@ Public Function CaptureSnapshot() As String
     Set tbl = GetInventoryTable()
     If tbl Is Nothing Then Exit Function
 
-    DataToStore = tbl.DataBodyRange.Value
+    DataToStore = tbl.DataBodyRange.value
 
     Set Snapshot.Formulas = CreateObject("Scripting.Dictionary")
     For i = 1 To UBound(DataToStore, 1)
@@ -83,7 +83,7 @@ Public Sub RestoreSnapshot(ByVal SnapshotID As String)
         SafeRows = WorksheetFunction.Min(UBound(Snapshot.data, 1), rowCount)
         SafeCols = WorksheetFunction.Min(UBound(Snapshot.data, 2), colCount)
         Debug.Print "Restoring Table Data: Rows=", SafeRows, "Cols=", SafeCols
-        .Resize(SafeRows, SafeCols).Value = Snapshot.data
+        .Resize(SafeRows, SafeCols).value = Snapshot.data
     End With
 
     Debug.Print "Snapshot restore completed."
@@ -129,7 +129,7 @@ Private Function GetSchemaHash() As String
 
     HashValue = ""
     For Each col In tbl.HeaderRowRange
-        HashValue = HashValue & col.Value & "|"
+        HashValue = HashValue & col.value & "|"
     Next col
 
     HashTotal = 0

@@ -23,14 +23,14 @@ Public Function LogMultipleInventoryChanges(LogEntries As Collection) As Long
         newLogID = modUR_Snapshot.GenerateGUID()
         
         With newRow.Range
-            .Cells(1, 1).Value = newLogID       ' LOG_ID assigned explicitly
-            .Cells(1, 2).Value = logData(0)       ' USER
-            .Cells(1, 3).Value = logData(1)       ' ACTION
-            .Cells(1, 4).Value = logData(2)       ' ITEM_CODE
-            .Cells(1, 5).Value = logData(3)       ' ITEM_NAME
-            .Cells(1, 6).Value = logData(4)       ' QUANTITY_CHANGE
-            .Cells(1, 7).Value = logData(5)       ' NEW_QUANTITY
-            .Cells(1, 8).Value = Now              ' TIMESTAMP
+            .Cells(1, 1).value = newLogID       ' LOG_ID assigned explicitly
+            .Cells(1, 2).value = logData(0)       ' USER
+            .Cells(1, 3).value = logData(1)       ' ACTION
+            .Cells(1, 4).value = logData(2)       ' ITEM_CODE
+            .Cells(1, 5).value = logData(3)       ' ITEM_NAME
+            .Cells(1, 6).value = logData(4)       ' QUANTITY_CHANGE
+            .Cells(1, 7).value = logData(5)       ' NEW_QUANTITY
+            .Cells(1, 8).value = Now              ' TIMESTAMP
         End With
         
         rowsInserted = rowsInserted + 1
@@ -55,7 +55,7 @@ Public Function RemoveLastBulkLogEntries(ByVal CountToRemove As Long) As Collect
     For i = 1 To CountToRemove
         ' Capture columns 1 to 8 (LOG_ID, USER, ACTION, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP)
         logRowData = ws.Range(ws.Cells(tbl.DataBodyRange.row + lastRow - 1, 1), _
-                               ws.Cells(tbl.DataBodyRange.row + lastRow - 1, 8)).Value
+                               ws.Cells(tbl.DataBodyRange.row + lastRow - 1, 8)).value
         LogEntries.Add logRowData
         ws.Rows(tbl.DataBodyRange.row + lastRow - 1).Delete
         lastRow = lastRow - 1
@@ -79,14 +79,14 @@ Public Sub ReAddBulkLogEntries(ByVal LogDataCollection As Collection)
         logRowData = LogDataCollection(i)
         Set newRow = tbl.ListRows.Add
         With newRow.Range
-            .Cells(1, 1).Value = logRowData(1, 1)  ' LOG_ID
-            .Cells(1, 2).Value = logRowData(1, 2)  ' USER
-            .Cells(1, 3).Value = logRowData(1, 3)  ' ACTION
-            .Cells(1, 4).Value = logRowData(1, 4)  ' ITEM_CODE
-            .Cells(1, 5).Value = logRowData(1, 5)  ' ITEM_NAME
-            .Cells(1, 6).Value = logRowData(1, 6)  ' QUANTITY_CHANGE
-            .Cells(1, 7).Value = logRowData(1, 7)  ' NEW_QUANTITY
-            .Cells(1, 8).Value = logRowData(1, 8)  ' TIMESTAMP
+            .Cells(1, 1).value = logRowData(1, 1)  ' LOG_ID
+            .Cells(1, 2).value = logRowData(1, 2)  ' USER
+            .Cells(1, 3).value = logRowData(1, 3)  ' ACTION
+            .Cells(1, 4).value = logRowData(1, 4)  ' ITEM_CODE
+            .Cells(1, 5).value = logRowData(1, 5)  ' ITEM_NAME
+            .Cells(1, 6).value = logRowData(1, 6)  ' QUANTITY_CHANGE
+            .Cells(1, 7).value = logRowData(1, 7)  ' NEW_QUANTITY
+            .Cells(1, 8).value = logRowData(1, 8)  ' TIMESTAMP
         End With
     Next i
 End Sub

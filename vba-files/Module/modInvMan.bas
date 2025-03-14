@@ -40,31 +40,38 @@ Public Sub AddGoodsReceived_Click()
 
     For i = 1 To rowCount
         Dim receivedVal As Variant
-        receivedVal = rng.Cells(i, receivedCol).Value
+        receivedVal = rng.Cells(i, receivedCol).value
         
         If IsNumeric(receivedVal) And receivedVal > 0 Then
             Dim oldTotalInv As Variant
-            oldTotalInv = rng.Cells(i, totalInvCol).Value
+            oldTotalInv = rng.Cells(i, totalInvCol).value
             
             ' Update TOTAL INV
-            rng.Cells(i, totalInvCol).Value = oldTotalInv + receivedVal
+            rng.Cells(i, totalInvCol).value = oldTotalInv + receivedVal
             
             ' Update LAST EDITED (general)
+<<<<<<< HEAD
             rng.Cells(i, lastEditedCol).Value = Now
+=======
+            rng.Cells(i, lastEditedCol).value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).value = Now
+>>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
             
             ' Update TOTAL INV LAST EDIT (specific to inventory)
             rng.Cells(i, totalInvLastEditCol).Value = Now
             
             ' Track the change
             Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
-                rng.Cells(i, itemCodeCol).Value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).Value)
+                rng.Cells(i, itemCodeCol).value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).value)
             
             ' Log the change
             LogEntries.Add Array(Environ("USERNAME"), "Added Goods Received", _
-                rng.Cells(i, itemCodeCol).Value, rng.Cells(i, itemNameCol).Value, receivedVal, rng.Cells(i, totalInvCol).Value)
+                rng.Cells(i, itemCodeCol).value, rng.Cells(i, itemNameCol).value, receivedVal, rng.Cells(i, totalInvCol).value)
             
             ' Reset RECEIVED
-            rng.Cells(i, receivedCol).Value = 0
+            rng.Cells(i, receivedCol).value = 0
         End If
     Next i
 
@@ -131,6 +138,7 @@ Public Sub DeductUsed_Click()
 
     For i = 1 To rowCount
         Dim usedVal As Variant
+<<<<<<< HEAD
         usedVal = rng.Cells(i, usedCol).Value
         
         If IsNumeric(usedVal) And usedVal > 0 Then
@@ -156,6 +164,33 @@ Public Sub DeductUsed_Click()
             
             ' Reset USED
             rng.Cells(i, usedCol).Value = 0
+=======
+        usedVal = rng.Cells(i, usedCol).value
+        
+        If IsNumeric(usedVal) And usedVal > 0 Then
+            Dim oldTotalInv As Variant
+            oldTotalInv = rng.Cells(i, totalInvCol).value
+            
+            ' Update TOTAL INV
+            rng.Cells(i, totalInvCol).value = oldTotalInv - usedVal
+            
+            ' Update LAST EDITED (general)
+            rng.Cells(i, lastEditedCol).value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).value = Now
+            
+            ' Track the change
+            Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
+                rng.Cells(i, itemCodeCol).value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).value)
+            
+            ' Log the change
+            LogEntries.Add Array(Environ("USERNAME"), "Deducted Used Items", _
+                rng.Cells(i, itemCodeCol).value, rng.Cells(i, itemNameCol).value, -usedVal, rng.Cells(i, totalInvCol).value)
+            
+            ' Reset USED
+            rng.Cells(i, usedCol).value = 0
+>>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     Next i
 
@@ -222,6 +257,7 @@ Public Sub DeductShipments_Click()
 
     For i = 1 To rowCount
         Dim shipmentsVal As Variant
+<<<<<<< HEAD
         shipmentsVal = rng.Cells(i, shipmentsCol).Value
         
         If IsNumeric(shipmentsVal) And shipmentsVal > 0 Then
@@ -247,6 +283,33 @@ Public Sub DeductShipments_Click()
             
             ' Reset SHIPMENTS
             rng.Cells(i, shipmentsCol).Value = 0
+=======
+        shipmentsVal = rng.Cells(i, shipmentsCol).value
+        
+        If IsNumeric(shipmentsVal) And shipmentsVal > 0 Then
+            Dim oldTotalInv As Variant
+            oldTotalInv = rng.Cells(i, totalInvCol).value
+            
+            ' Update TOTAL INV
+            rng.Cells(i, totalInvCol).value = oldTotalInv - shipmentsVal
+            
+            ' Update LAST EDITED (general)
+            rng.Cells(i, lastEditedCol).value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).value = Now
+            
+            ' Track the change
+            Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
+                rng.Cells(i, itemCodeCol).value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).value)
+            
+            ' Log the change
+            LogEntries.Add Array(Environ("USERNAME"), "Shipments Deducted", _
+                rng.Cells(i, itemCodeCol).value, rng.Cells(i, itemNameCol).value, -shipmentsVal, rng.Cells(i, totalInvCol).value)
+            
+            ' Reset SHIPMENTS
+            rng.Cells(i, shipmentsCol).value = 0
+>>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     Next i
 
@@ -313,6 +376,7 @@ Public Sub Adjustments_Click()
 
     For i = 1 To rowCount
         Dim adjustmentVal As Variant
+<<<<<<< HEAD
         adjustmentVal = rng.Cells(i, adjustmentsCol).Value
         
         If IsNumeric(adjustmentVal) And adjustmentVal <> 0 Then
@@ -338,6 +402,33 @@ Public Sub Adjustments_Click()
             
             ' Reset ADJUSTMENTS
             rng.Cells(i, adjustmentsCol).Value = 0
+=======
+        adjustmentVal = rng.Cells(i, adjustmentsCol).value
+        
+        If IsNumeric(adjustmentVal) And adjustmentVal <> 0 Then
+            Dim oldTotalInv As Variant
+            oldTotalInv = rng.Cells(i, totalInvCol).value
+            
+            ' Update TOTAL INV (positive adds, negative subtracts)
+            rng.Cells(i, totalInvCol).value = oldTotalInv + adjustmentVal
+            
+            ' Update LAST EDITED (general)
+            rng.Cells(i, lastEditedCol).value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).value = Now
+            
+            ' Track the change
+            Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
+                rng.Cells(i, itemCodeCol).value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).value)
+            
+            ' Log the change
+            LogEntries.Add Array(Environ("USERNAME"), "Inventory Adjustment", _
+                rng.Cells(i, itemCodeCol).value, rng.Cells(i, itemNameCol).value, adjustmentVal, rng.Cells(i, totalInvCol).value)
+            
+            ' Reset ADJUSTMENTS
+            rng.Cells(i, adjustmentsCol).value = 0
+>>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     Next i
 
@@ -404,6 +495,7 @@ Public Sub AddMadeItems_Click()
 
     For i = 1 To rowCount
         Dim madeVal As Variant
+<<<<<<< HEAD
         madeVal = rng.Cells(i, madeCol).Value
         
         If IsNumeric(madeVal) And madeVal > 0 Then
@@ -429,6 +521,33 @@ Public Sub AddMadeItems_Click()
             
             ' Reset MADE
             rng.Cells(i, madeCol).Value = 0
+=======
+        madeVal = rng.Cells(i, madeCol).value
+        
+        If IsNumeric(madeVal) And madeVal > 0 Then
+            Dim oldTotalInv As Variant
+            oldTotalInv = rng.Cells(i, totalInvCol).value
+            
+            ' Update TOTAL INV
+            rng.Cells(i, totalInvCol).value = oldTotalInv + madeVal
+            
+            ' Update LAST EDITED (general)
+            rng.Cells(i, lastEditedCol).value = Now
+            
+            ' Update TOTAL INV LAST EDIT (specific to inventory)
+            rng.Cells(i, totalInvLastEditCol).value = Now
+            
+            ' Track the change
+            Call modUR_Transaction.TrackTransactionChange("CellUpdate", _
+                rng.Cells(i, itemCodeCol).value, "TOTAL INV", oldTotalInv, rng.Cells(i, totalInvCol).value)
+            
+            ' Log the change
+            LogEntries.Add Array(Environ("USERNAME"), "Made Items Added", _
+                rng.Cells(i, itemCodeCol).value, rng.Cells(i, itemNameCol).value, madeVal, rng.Cells(i, totalInvCol).value)
+            
+            ' Reset MADE
+            rng.Cells(i, madeCol).value = 0
+>>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     Next i
 

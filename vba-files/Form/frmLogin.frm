@@ -3,7 +3,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmLogin
    Caption         =   "Login Form"
    ClientHeight    =   5020
    ClientLeft      =   120
-   ClientTop       =   465
+   ClientTop       =   470
    ClientWidth     =   4950
    OleObjectBlob   =   "frmLogin.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -29,8 +29,8 @@ Private Sub btnLogin_Click()
     Set tbl = ws.ListObjects("UserCredentials") ' Ensure correct table name
 
     ' Get user input
-    username = Me.txtUsername.Value
-    pin = Me.txtPIN.Value
+    username = Me.txtUsername.value
+    pin = Me.txtPIN.value
 
     ' Validate inputs
     If username = "" Or pin = "" Then
@@ -48,9 +48,9 @@ Private Sub btnLogin_Click()
 
     If Not foundUser Is Nothing Then
         ' Check PIN
-        If foundUser.offset(0, pinCol - usernameCol).Value = pin Then
+        If foundUser.offset(0, pinCol - usernameCol).value = pin Then
             ' Update last login time
-            foundUser.offset(0, lastLoginCol - usernameCol).Value = Now
+            foundUser.offset(0, lastLoginCol - usernameCol).value = Now
 
             ' Update message label instead of showing a popup
             Me.lblMessage.Caption = "Login successful"

@@ -3,8 +3,8 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmCreateDeleteUser
    Caption         =   "UserForm1"
    ClientHeight    =   4080
    ClientLeft      =   120
-   ClientTop       =   465
-   ClientWidth     =   6435
+   ClientTop       =   470
+   ClientWidth     =   6440
    OleObjectBlob   =   "frmCreateDeleteUser.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -34,9 +34,9 @@ Private Sub btnCreateUser_Click()
     Set tbl = ws.ListObjects("UserCredentials")
     
     ' Get user input
-    username = Trim(Me.txtUsername.Value)
-    pin = Trim(Me.txtPIN.Value)
-    role = Me.cmbRole.Value
+    username = Trim(Me.txtUsername.value)
+    pin = Trim(Me.txtPIN.value)
+    role = Me.cmbRole.value
 
     ' Validate inputs
     If username = "" Or pin = "" Or role = "" Then
@@ -72,12 +72,12 @@ Private Sub btnCreateUser_Click()
 
     ' Add new user to UserCredentials table
     Set newRow = tbl.ListRows.Add
-    newRow.Range(1, colUserID).Value = userID  ' USER_ID
-    newRow.Range(1, colUsername).Value = username  ' USERNAME
-    newRow.Range(1, colPIN).Value = pin  ' PIN
-    newRow.Range(1, colRole).Value = role  ' ROLE
-    newRow.Range(1, colStatus).Value = "Active"  ' STATUS
-    newRow.Range(1, colLastLogin).Value = ""  ' LAST LOGIN (empty)
+    newRow.Range(1, colUserID).value = userID  ' USER_ID
+    newRow.Range(1, colUsername).value = username  ' USERNAME
+    newRow.Range(1, colPIN).value = pin  ' PIN
+    newRow.Range(1, colRole).value = role  ' ROLE
+    newRow.Range(1, colStatus).value = "Active"  ' STATUS
+    newRow.Range(1, colLastLogin).value = ""  ' LAST LOGIN (empty)
 
     ' Confirmation message
     Me.lblMessage.Caption = "User created successfully!"
@@ -89,7 +89,7 @@ Private Sub btnRandomPIN_Click()
     randomPIN = Format(Int((900000 * Rnd) + 100000), "000000")
 
     ' Display the generated PIN in txtPIN
-    Me.txtPIN.Value = randomPIN
+    Me.txtPIN.value = randomPIN
 End Sub
 Private Sub btnDeleteUser_Click()
     Dim ws As Worksheet
@@ -103,7 +103,7 @@ Private Sub btnDeleteUser_Click()
     Set tbl = ws.ListObjects("UserCredentials")
 
     ' Get the username from input field
-    username = Trim(Me.txtUsername.Value)
+    username = Trim(Me.txtUsername.value)
 
     ' Validate input
     If username = "" Then

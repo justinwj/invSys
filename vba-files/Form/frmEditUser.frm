@@ -3,7 +3,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmEditUser
    Caption         =   "Edit User"
    ClientHeight    =   3660
    ClientLeft      =   120
-   ClientTop       =   465
+   ClientTop       =   470
    ClientWidth     =   4560
    OleObjectBlob   =   "frmEditUser.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -39,10 +39,10 @@ Private Sub btnUpdateUser_Click()
     Set tbl = ws.ListObjects("UserCredentials")
 
     ' Get user input
-    selectedUsername = Trim(Me.cmbUserName.Value)
-    newUsername = Trim(Me.txtNewUserName.Value)
-    newPIN = Trim(Me.txtNewPIN.Value)
-    newRole = Trim(Me.cmbRoleChange.Value)
+    selectedUsername = Trim(Me.cmbUserName.value)
+    newUsername = Trim(Me.txtNewUserName.value)
+    newPIN = Trim(Me.txtNewPIN.value)
+    newRole = Trim(Me.cmbRoleChange.value)
 
     ' Validate selection
     If selectedUsername = "" Then
@@ -74,7 +74,7 @@ Private Sub btnUpdateUser_Click()
             Exit Sub
         End If
         
-        foundUser.Value = newUsername
+        foundUser.value = newUsername
     End If
 
     ' Update PIN if a new one is provided
@@ -83,12 +83,12 @@ Private Sub btnUpdateUser_Click()
             Me.lblMessages.Caption = "PIN must be exactly 6 digits."
             Exit Sub
         End If
-        foundUser.offset(0, colPIN - colUsername).Value = newPIN
+        foundUser.offset(0, colPIN - colUsername).value = newPIN
     End If
 
     ' Update role if a new one is selected
     If newRole <> "" Then
-        foundUser.offset(0, colRole - colUsername).Value = newRole
+        foundUser.offset(0, colRole - colUsername).value = newRole
     End If
 
     ' Confirmation message
@@ -103,5 +103,5 @@ Private Sub btnNewPIN_Click()
     randomPIN = Format(Int((900000 * Rnd) + 100000), "000000")
 
     ' Display the generated PIN in txtPIN
-    Me.txtNewPIN.Value = randomPIN
+    Me.txtNewPIN.value = randomPIN
 End Sub
