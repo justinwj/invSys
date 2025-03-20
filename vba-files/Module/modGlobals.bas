@@ -149,6 +149,16 @@ Public Sub AddExtendedRightClickMenu()
     On Error GoTo 0
 End Sub
 
+Public Sub TestFormOpening()
+    ' Clear any existing forms
+    On Error Resume Next
+    Unload frmItemSearch
+    On Error GoTo 0
+    
+    ' Direct test of form initialization
+    frmItemSearch.Show vbModeless
+End Sub
+
 ' Ensure a form is visible on screen
 Public Sub EnsureFormVisible(frm As Object)
     On Error Resume Next

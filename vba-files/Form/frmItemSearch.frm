@@ -35,11 +35,17 @@ Private Sub UserForm_Activate()
 End Sub
 
 Private Sub UserForm_Initialize()
-    ' Your existing initialization code...
+    ' Avoid any initialization errors by wrapping in error handling
+    On Error Resume Next
     
     ' Set up the columns in the list box
     Me.lstBox.ColumnCount = 4
     Me.lstBox.ColumnWidths = "40;60;80;150"
+
+    ' Center the form in the Excel window - SIMPLIFIED POSITIONING
+    Me.StartUpPosition = 0 ' Manual positioning
+    Me.Left = Application.Left + 100
+    Me.Top = Application.Top + 100
     
     ' Load items
     Dim items As Variant
@@ -54,8 +60,7 @@ Private Sub UserForm_Initialize()
     ' Apply any search text right away
     txtBox_Change
     
-    ' Ensure form opens in a visible location
-    EnsureFormVisible Me
+    On Error GoTo 0
 End Sub
 
 ' Build an index of where each first character appears in the list for faster searching

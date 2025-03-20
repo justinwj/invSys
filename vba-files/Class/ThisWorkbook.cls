@@ -23,17 +23,25 @@ Private Sub Workbook_Open()
            "2. Or press F4 when cursor is in ITEMS column" & vbCrLf & _
            "3. Or double-click in the ITEMS column", _
            vbInformation, "Item Search Available"
+
+     ' Schedule a timer function to check active cell periodically
+    Application.OnTime Now + TimeSerial(0, 0, 1), "CheckActiveCell"
 End Sub
 
-' Add these event handlers to ensure sheet events work
 Private Sub Workbook_SheetActivate(ByVal Sh As Object)
-    ' When a tally sheet is activated, ensure events are enabled
+    ' Re-enable events when activating sheets
+    Application.EnableEvents = True
+    
+    ' Force reset of event handlers
     If Sh.Name = "ShipmentsTally" Or Sh.Name = "ReceivedTally" Then
-        ' Force events enabled
+        ' Force event reconnection
+        Dim tempSetting As Boolean
+        tempSetting = Application.EnableEvents
+        Application.EnableEvents = False
         Application.EnableEvents = True
+        Application.EnableEvents = tempSetting
         
-        ' Debug message
-        Debug.Print "Sheet activated: " & Sh.Name & ", Events enabled: " & Application.EnableEvents
+        Debug.Print "Sheet " & Sh.Name & " activated - events reset"
     End If
 End Sub
 
@@ -50,3 +58,58 @@ Public Sub InitializeGlobalVariables()
     Set gSelectedCell = Nothing
     On Error GoTo 0
 End Sub
+
+Public Sub CheckActiveCell()
+    On Error Resume Next
+    
+    ' Only run if we're on a tally sheet and no form is already showing
+    If ActiveSheet.Name = "ShipmentsTally" Or ActiveSheet.Name = "ReceivedTally" Then
+        ' Don't show the form if it's already visible
+        If Not IsFormLoaded("frmItemSearch") Then
+            Dim tbl As ListObject
+            
+            ' Get the right table
+            If ActiveSheet.Name = "ShipmentsTally" Then
+                Set tbl = ActiveSheet.ListObjects("ShipmentsTally")
+            Else
+                Set tbl = ActiveSheet.ListObjects("ReceivedTally")
+            End If
+            
+            ' Check if active cell is in ITEMS column
+            If Not tbl Is Nothing Then
+                Dim itemsCol As ListColumn
+                Set itemsCol = tbl.ListColumns("ITEMS")
+                
+                If Not itemsCol Is Nothing Then
+                    If Not Intersect(ActiveCell, itemsCol.DataBodyRange) Is Nothing Then
+                        Static lastCell As String
+                        ' Only show if cell has changed since last check
+                        If ActiveCell.Address <> lastCell Then
+                            lastCell = ActiveCell.Address
+                            Set gSelectedCell = ActiveCell
+                            frmItemSearch.Show vbModeless
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    End If
+    
+    ' Schedule next check
+    Application.OnTime Now + TimeSerial(0, 0, 1), "CheckActiveCell"
+End Sub
+
+' Helper function to check if a form is already loaded
+Function IsFormLoaded(formName As String) As Boolean
+    Dim frm As Object
+    IsFormLoaded = False
+    
+    On Error Resume Next
+    For Each frm In UserForms
+        If frm.Name = formName Then
+            IsFormLoaded = True
+            Exit For
+        End If
+    Next frm
+    On Error GoTo 0
+End Function

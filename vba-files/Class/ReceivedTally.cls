@@ -10,26 +10,45 @@ Attribute VB_Exposed = True
 
 Option Explicit
 
-' ReceivedTally worksheet class module
-Option Explicit
+Private isShowingForm As Boolean
 
-' This event fires whenever a cell is selected - by clicking, tabbing, or arrow keys
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
-    ' Only activate for single cell selection
+    ' Prevent recursive calls
+    If isShowingForm Then Exit Sub
+    
+    ' Simplified version with minimal error sources
     If Target.Cells.Count > 1 Then Exit Sub
     
-    On Error Resume Next
+    On Error GoTo ErrorHandler
     Dim tbl As ListObject
     Set tbl = Me.ListObjects("ReceivedTally")
+    
+    ' Only proceed if we found the table
     If tbl Is Nothing Then Exit Sub
     
-    ' Check if it's in the ITEMS column
-    If Target.Column = tbl.ListColumns("ITEMS").Range.Column Then
-        If Target.Row > tbl.HeaderRowRange.Row Then
-            Set gSelectedCell = Target
+    ' Direct check for ITEMS column by name 
+    Dim itemsCol As ListColumn
+    Set itemsCol = tbl.ListColumns("ITEMS")
+    
+    ' Check if this is a cell in the ITEMS column's data range
+    If Not Intersect(Target, itemsCol.DataBodyRange) Is Nothing Then
+        ' Prevent recursive calls
+        isShowingForm = True
+        
+        Debug.Print "Cell in ITEMS column selected"
+        Set gSelectedCell = Target
+        
+        If Not IsFormLoaded("frmItemSearch") Then
             frmItemSearch.Show vbModeless
         End If
+        
+        isShowingForm = False
     End If
+    
+    Exit Sub
+ErrorHandler:
+    isShowingForm = False
+    Debug.Print "Error in Worksheet_SelectionChange: " & Err.Description
 End Sub
 
 Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
