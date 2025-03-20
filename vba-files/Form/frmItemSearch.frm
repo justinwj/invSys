@@ -290,7 +290,7 @@ Public Sub CommitSelectionAndClose()
             
             ' Get UOM for this item
             Dim itemUOM As String
-            itemUOM = GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
+            itemUOM = modGlobals.GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
             
             ' Add a row to the corresponding data table
             If Not dataTbl Is Nothing Then
@@ -578,5 +578,10 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
         End If
         KeyCode = 0 ' Prevent default tab handling
     End If
+End Sub
+
+Private Sub UserForm_Terminate()
+    ' Make sure timer can resume when form is closed
+    modGlobals.ResumeTimer
 End Sub
 

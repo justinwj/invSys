@@ -98,3 +98,18 @@ Private Sub Worksheet_BeforeRightClick(ByVal Target As Range, Cancel As Boolean)
     On Error GoTo 0
 End Sub
 
+
+Private Function IsFormLoaded(formName As String) As Boolean
+    Dim frm As Object
+    IsFormLoaded = False
+    
+    On Error Resume Next
+    For Each frm In UserForms
+        If frm.Name = formName Then
+            IsFormLoaded = True
+            Exit For
+        End If
+    Next frm
+    On Error GoTo 0
+End Function
+

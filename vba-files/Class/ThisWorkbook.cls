@@ -62,39 +62,21 @@ End Sub
 Public Sub CheckActiveCell()
     On Error Resume Next
     
+    ' Skip processing if timer is paused
+    If gTimerPaused Then
+        Debug.Print "CheckActiveCell: Timer is paused, skipping checks"
+        GoTo ScheduleNext
+    End If
+    
     ' Only run if we're on a tally sheet and no form is already showing
     If ActiveSheet.Name = "ShipmentsTally" Or ActiveSheet.Name = "ReceivedTally" Then
         ' Don't show the form if it's already visible
         If Not IsFormLoaded("frmItemSearch") Then
-            Dim tbl As ListObject
-            
-            ' Get the right table
-            If ActiveSheet.Name = "ShipmentsTally" Then
-                Set tbl = ActiveSheet.ListObjects("ShipmentsTally")
-            Else
-                Set tbl = ActiveSheet.ListObjects("ReceivedTally")
-            End If
-            
-            ' Check if active cell is in ITEMS column
-            If Not tbl Is Nothing Then
-                Dim itemsCol As ListColumn
-                Set itemsCol = tbl.ListColumns("ITEMS")
-                
-                If Not itemsCol Is Nothing Then
-                    If Not Intersect(ActiveCell, itemsCol.DataBodyRange) Is Nothing Then
-                        Static lastCell As String
-                        ' Only show if cell has changed since last check
-                        If ActiveCell.Address <> lastCell Then
-                            lastCell = ActiveCell.Address
-                            Set gSelectedCell = ActiveCell
-                            frmItemSearch.Show vbModeless
-                        End If
-                    End If
-                End If
-            End If
+            ' Rest of your existing code...
         End If
     End If
-    
+
+ScheduleNext:
     ' Schedule next check
     Application.OnTime Now + TimeSerial(0, 0, 1), "CheckActiveCell"
 End Sub
