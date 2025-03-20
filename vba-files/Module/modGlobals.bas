@@ -149,6 +149,46 @@ Public Sub AddExtendedRightClickMenu()
     On Error GoTo 0
 End Sub
 
+' Ensure a form is visible on screen
+Public Sub EnsureFormVisible(frm As Object)
+    On Error Resume Next
+    
+    ' Get screen dimensions
+    Dim screenWidth As Long, screenHeight As Long
+    screenWidth = Application.Width
+    screenHeight = Application.Height
+    
+    ' Calculate the visible area within Excel
+    Dim visibleLeft As Long, visibleTop As Long
+    visibleLeft = Application.Left
+    visibleTop = Application.Top
+    
+    ' Set minimum visible margins
+    Const MIN_VISIBLE As Long = 50
+    
+    ' Check if form is too far to the right
+    If frm.Left > (visibleLeft + screenWidth - MIN_VISIBLE) Then
+        frm.Left = visibleLeft + (screenWidth / 2) - (frm.Width / 2)
+    End If
+    
+    ' Check if form is too far to the left
+    If frm.Left < (visibleLeft + MIN_VISIBLE - frm.Width) Then
+        frm.Left = visibleLeft + MIN_VISIBLE
+    End If
+    
+    ' Check if form is too far down
+    If frm.Top > (visibleTop + screenHeight - MIN_VISIBLE) Then
+        frm.Top = visibleTop + (screenHeight / 2) - (frm.Height / 2)
+    End If
+    
+    ' Check if form is too far up
+    If frm.Top < (visibleTop + MIN_VISIBLE - frm.Height) Then
+        frm.Top = visibleTop + MIN_VISIBLE
+    End If
+    
+    On Error GoTo 0
+End Sub
+
 
 
 

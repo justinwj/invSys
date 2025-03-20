@@ -3,11 +3,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmItemSearch
    Caption         =   "Item Search"
    ClientHeight    =   5085
    ClientLeft      =   120
-<<<<<<< HEAD
-   ClientTop       =   465
-=======
    ClientTop       =   470
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
    ClientWidth     =   6480
    OleObjectBlob   =   "frmItemSearch.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -38,51 +34,9 @@ Private Sub UserForm_Activate()
     Me.txtBox.SelLength = 0
 End Sub
 
-<<<<<<< HEAD
 Private Sub UserForm_Initialize()
-    ' Add variable declaration
-    Dim i As Long
+    ' Your existing initialization code...
     
-    ' Set up the list box columns
-    Me.lstBox.ColumnCount = 4  ' ITEM_CODE, ROW#, ITEM, LOCATION
-    Me.lstBox.ColumnWidths = "70;40;150;80"
-    
-    ' Load inventory items
-    Dim items As Variant
-    items = modTS_Data.LoadItemList()
-    
-    ' Populate list box with items
-    If Not IsEmpty(items) Then
-        For i = LBound(items, 1) To UBound(items, 1)
-            Me.lstBox.AddItem items(i, 0)  ' ITEM_CODE
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = items(i, 1)  ' ROW#
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = items(i, 2)  ' ITEM name
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = items(i, 3)  ' LOCATION
-        Next i
-    End If
-    
-    ' Configure the description textbox for word wrapping
-    Me.txtBox2.MultiLine = True
-    Me.txtBox2.WordWrap = True
-    Me.txtBox2.Locked = True ' Make it read-only
-    Me.txtBox2.BackColor = RGB(255, 255, 255) ' Keep white background even when locked
-    
-    ' Populate lstBox with the full list.
-    Call PopulateListBox(FullItemList)
-    
-    ' Create first character index for faster searching
-    BuildFirstCharIndex
-    
-    ' Pre-populate txtBox with the current cell value (if any) without selecting it.
-    If Not gSelectedCell Is Nothing Then
-        If Not IsEmpty(gSelectedCell.Value) Then
-            Me.txtBox.text = CStr(gSelectedCell.Value)
-            ' Place the caret at the beginning without selecting text.
-            Me.txtBox.SelStart = 0
-            Me.txtBox.SelLength = 0
-        End If
-=======
-Public Sub UserForm_Initialize()
     ' Set up the columns in the list box
     Me.lstBox.ColumnCount = 4
     Me.lstBox.ColumnWidths = "40;60;80;150"
@@ -95,13 +49,13 @@ Public Sub UserForm_Initialize()
         PopulateListBox items
         FullItemList = items
         BuildFirstCharIndex
-    Else
-        Debug.Print "Failed to load items"
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     End If
     
     ' Apply any search text right away
     txtBox_Change
+    
+    ' Ensure form opens in a visible location
+    EnsureFormVisible Me
 End Sub
 
 ' Build an index of where each first character appears in the list for faster searching
@@ -120,14 +74,9 @@ Private Sub BuildFirstCharIndex()
     
     ' Go through the list and record the first occurrence of each first character
     For i = 0 To Me.lstBox.ListCount - 1
-<<<<<<< HEAD
-        If Me.lstBox.List(i, 2) <> "" Then
-            char = UCase(Left$(Me.lstBox.List(i, 2), 1))
-=======
         ' Use index 3 for ITEM name instead of 2 (which is VENDOR)
         If Me.lstBox.List(i, 3) <> "" Then
             char = UCase(Left$(Me.lstBox.List(i, 3), 1))
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
             ' Only record the first occurrence
             If Asc(char) <= 255 And SearchFirstCharIndex(Asc(char)) = -1 Then
                 SearchFirstCharIndex(Asc(char)) = i
@@ -145,11 +94,7 @@ Private Sub txtBox_Change()
     
     ' Get current time and search text
     currentTime = Timer
-<<<<<<< HEAD
-    searchText = LCase(Trim(Me.txtBox.Text))
-=======
     searchText = LCase(Trim(Me.txtBox.text))
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     
     ' Only search if:
     ' 1. Search text has changed significantly, OR
@@ -188,31 +133,19 @@ Private Sub txtBox_Change()
         On Error Resume Next
         ' First pass: Search from the first character index position
         For i = startIndex To Me.lstBox.ListCount - 1
-<<<<<<< HEAD
-            If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
-=======
             ' Use index 3 for ITEM name instead of 2
             If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
                 matchIndex = i
                 Exit For
             End If
         Next i
         
-<<<<<<< HEAD
-        ' Second pass: If not found and we started from a specific index, 
-        ' search from beginning to that index
-        If matchIndex = -1 And startIndex > 0 Then
-            For i = 0 To startIndex - 1
-                If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
-=======
         ' Second pass: If not found and we started from a specific index,
         ' search from beginning to that index
         If matchIndex = -1 And startIndex > 0 Then
             For i = 0 To startIndex - 1
                 ' Use index 3 for ITEM name instead of 2
                 If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
                     matchIndex = i
                     Exit For
                 End If
@@ -245,11 +178,7 @@ Private Sub txtBox_Change()
             UpdateDescription
         Else
             Me.lstBox.ListIndex = -1
-<<<<<<< HEAD
-            Me.txtBox2.Text = ""
-=======
             Me.txtBox2.text = ""
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     End If
 End Sub
@@ -304,18 +233,6 @@ Public Sub CommitSelectionAndClose()
     
     Dim chosenValue As String
     Dim chosenItemCode As String
-<<<<<<< HEAD
-    Dim chosenRowNum As String  ' Use actual ROW#
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim currentRowIndex As Long
-    
-    ' Get selected values
-    If Me.lstBox.ListIndex <> -1 Then
-        chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 0)  ' ITEM_CODE
-        chosenRowNum = Me.lstBox.List(Me.lstBox.ListIndex, 1)    ' ROW#
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)     ' Item name
-=======
     Dim chosenRowNum As String
     Dim chosenVendor As String
     Dim location As String
@@ -330,16 +247,12 @@ Public Sub CommitSelectionAndClose()
         chosenVendor = Me.lstBox.List(Me.lstBox.ListIndex, 2)    ' VENDOR
         chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 3)     ' Item name
         location = GetLocationByItem(chosenItemCode, chosenValue)
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     ElseIf Trim(Me.txtBox.Text) <> "" Then
         chosenValue = Me.txtBox.Text
         chosenItemCode = ""
         chosenRowNum = ""
-<<<<<<< HEAD
-=======
         chosenVendor = ""
         location = ""
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     Else
         ' No selection made, just exit
         isRunning = False
@@ -347,71 +260,6 @@ Public Sub CommitSelectionAndClose()
         Exit Sub
     End If
     
-<<<<<<< HEAD
-    ' Apply the chosen value to the cell
-    If Not gSelectedCell Is Nothing Then
-        ' Set the visible item name in the cell
-        gSelectedCell.Value = chosenValue
-        
-        ' Store reference data in cell comment
-        On Error Resume Next
-        If gSelectedCell.Comment Is Nothing Then
-            gSelectedCell.AddComment
-        End If
-        gSelectedCell.Comment.Text "ITEM_CODE: " & chosenItemCode & vbCrLf & _
-                                  "ROW#: " & chosenRowNum
-        gSelectedCell.Comment.Visible = False
-        On Error GoTo 0
-        
-        ' Update the UOM in the current row if needed
-        On Error Resume Next
-        Set ws = gSelectedCell.Worksheet
-        
-        If ws.Name = "ShipmentsTally" Or ws.Name = "ReceivedTally" Then
-            If ws.Name = "ShipmentsTally" Then
-                Set tbl = ws.ListObjects("ShipmentsTally")
-            Else
-                Set tbl = ws.ListObjects("ReceivedTally")
-            End If
-            
-            If Not tbl Is Nothing Then
-                Dim itemsCol As Long, uomCol As Long, rowNumCol As Long
-                
-                ' Find column indexes
-                For itemsCol = 1 To tbl.ListColumns.Count
-                    If UCase(tbl.ListColumns(itemsCol).Name) = "ITEMS" Then
-                        If gSelectedCell.Column = tbl.ListColumns(itemsCol).Range.Column Then
-                            ' Found the ITEMS column and we're in it
-                            currentRowIndex = gSelectedCell.Row - tbl.HeaderRowRange.Row
-                            
-                            ' If we have a valid row
-                            If currentRowIndex > 0 Then
-                                ' Find UOM column
-                                For uomCol = 1 To tbl.ListColumns.Count
-                                    If UCase(tbl.ListColumns(uomCol).Name) = "UOM" Then
-                                        ' Get UOM using both item name and ROW#
-                                        Dim itemUOM As String
-                                        itemUOM = modTS_Data.GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
-                                        
-                                        ' Set UOM
-                                        tbl.DataBodyRange(currentRowIndex, uomCol).Value = itemUOM
-                                        Exit For
-                                    End If
-                                Next uomCol
-                                
-                                ' Store ROW# in hidden column if it exists
-                                For rowNumCol = 1 To tbl.ListColumns.Count
-                                    If UCase(tbl.ListColumns(rowNumCol).Name) = "ROW#" Then
-                                        tbl.DataBodyRange(currentRowIndex, rowNumCol).Value = chosenRowNum
-                                        Exit For
-                                    End If
-                                Next rowNumCol
-                            End If
-                            Exit For
-                        End If
-                    End If
-                Next itemsCol
-=======
     ' Apply the selection to the cell
     If Not gSelectedCell Is Nothing Then
         ' Update the cell with item name
@@ -446,7 +294,6 @@ Public Sub CommitSelectionAndClose()
                 
                 ' Fill the data table row with all the item information
                 FillDataTableRow dataRow, itemUOM, chosenVendor, location, chosenItemCode, chosenRowNum
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
             End If
         End If
         On Error GoTo 0
@@ -466,20 +313,6 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     Set tbl = dataRow.Parent
     
     Dim i As Long
-<<<<<<< HEAD
-    Me.lstBox.Clear
-    
-    ' Check if itemArray is properly initialized
-    If IsEmpty(itemArray) Or Not IsArray(itemArray) Then Exit Sub
-    
-    For i = LBound(itemArray, 1) To UBound(itemArray, 1)
-        Me.lstBox.AddItem ""
-        ' Match the array indices with how data is loaded
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = itemArray(i, 0)  ' ITEM_CODE
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = itemArray(i, 1)  ' ROW#
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemArray(i, 2)  ' ITEM name
-        Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = itemArray(i, 3)  ' LOCATION
-=======
     
     ' Set UOM value
     colFound = False
@@ -489,7 +322,6 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
             colFound = True
             Exit For
         End If
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     Next i
     If Not colFound Then Debug.Print "UOM column not found in data table"
     
@@ -551,12 +383,6 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     On Error GoTo 0
 End Sub
 
-<<<<<<< HEAD
-' Helper function to update the description in txtBox2
-Private Sub UpdateDescription()
-    ' Clear existing description
-    Me.txtBox2.text = ""
-=======
 ' Helper function to get location information
 Private Function GetLocationByItem(itemCode As String, itemName As String) As String
     On Error GoTo ErrorHandler
@@ -718,7 +544,6 @@ End Function
 Private Sub UpdateDescription()
     ' Clear existing description
     Me.txtBox2.Text = ""  ' Changed from .text to .Text
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
     
     ' If an item is selected in the main listbox
     If Me.lstBox.ListIndex <> -1 Then
@@ -730,17 +555,11 @@ Private Sub UpdateDescription()
         ' Add 1 because ListBox is 0-based but array is 1-based
         If selectedIndex + 1 <= UBound(FullItemList, 1) Then
             ' Set the description text
-<<<<<<< HEAD
-            Me.txtBox2.text = FullItemList(selectedIndex + 1, 4)
-=======
             Me.txtBox2.Text = FullItemList(selectedIndex + 1, 4)  ' Changed from .text to .Text
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
         End If
     End If
 End Sub
 
-<<<<<<< HEAD
-=======
 ' Handle Tab key in the form 
 Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     ' If Tab is pressed, we want to handle it specially
@@ -756,4 +575,3 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
     End If
 End Sub
 
->>>>>>> 0e2f3dc (Refactored a lot, tally system does not work as intended but big button works)
