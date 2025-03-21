@@ -4,9 +4,7 @@ Attribute VB_Name = "modTS_Data"
 ' ========================
 Option Explicit
 
-Public Function LoadItemList(Optional ByVal wb As Workbook, _
-                             Optional ByVal wsName As String = "INVENTORY MANAGEMENT", _
-                             Optional ByVal tblName As String = "invSys") As Variant
+Public Function LoadItemList() As Variant
     On Error GoTo ErrorHandler
     
     Dim ws As Worksheet
@@ -16,24 +14,20 @@ Public Function LoadItemList(Optional ByVal wb As Workbook, _
     Dim rowCount As Long, colCount As Long
     Dim i As Long
     
+    ' Debug output
     Debug.Print "LoadItemList: Starting function"
     
-    ' If no workbook is specified, use ThisWorkbook
-    If wb Is Nothing Then
-        Set wb = ThisWorkbook
-    End If
-    
-    ' Get worksheet and table references from parameters
-    Set ws = wb.Worksheets(wsName)
-    Set tbl = ws.ListObjects(tblName)
+    ' Get worksheet and table reference
+    Set ws = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    Set tbl = ws.ListObjects("invSys")
     
     If tbl Is Nothing Then
-        Debug.Print "LoadItemList: Table '" & tblName & "' not found"
+        Debug.Print "LoadItemList: Table 'invSys' not found"
         GoTo ErrorHandler
     End If
     
     ' Get row count (exit if empty)
-    rowCount = tbl.ListRows.Count
+    rowCount = tbl.ListRows.count
     If rowCount = 0 Then
         Debug.Print "LoadItemList: No rows in table"
         GoTo ErrorHandler
@@ -41,13 +35,12 @@ Public Function LoadItemList(Optional ByVal wb As Workbook, _
     
     Debug.Print "LoadItemList: Found " & rowCount & " rows in table"
     
-    ' Create result array with space for ROW, ITEM_CODE, ITEM, LOCATION, DESCRIPTION
+    ' Create result array with space for ROW, ITEM_CODE, ITEM, LOCATION
     ReDim result(1 To rowCount, 0 To 4)
     
-    ' Get column references
-    Dim itemCodeCol As Integer, rowCol As Integer
-    Dim itemCol As Integer, locCol As Integer
-    Dim descCol As Integer
+    ' Get column references (safely)
+    Dim itemCodeCol As Integer, rowCol As Integer, itemCol As Integer
+    Dim locCol As Integer, descCol As Integer
     
     On Error Resume Next
     itemCodeCol = tbl.ListColumns("ITEM_CODE").Index
@@ -67,24 +60,23 @@ Public Function LoadItemList(Optional ByVal wb As Workbook, _
         GoTo ErrorHandler
     End If
     
-    ' Fill the result array
+    ' Fill the result array - CHANGED ORDER: ROW first, then ITEM_CODE
     For i = 1 To rowCount
-        ' Make sure we're getting the right data in the right order
-        result(i, 0) = tbl.DataBodyRange.Cells(i, rowCol).Value      ' ROW (index 0)
-        result(i, 1) = tbl.DataBodyRange.Cells(i, itemCodeCol).Value ' ITEM_CODE (index 1)
-        result(i, 2) = tbl.DataBodyRange.Cells(i, itemCol).Value     ' ITEM (index 2)
+        ' ROW (Column 0) - Now FIRST column
+        result(i, 0) = tbl.DataBodyRange.Cells(i, rowCol).value
         
-        ' For debugging - print what we're loading
-        Debug.Print "LoadItemList: Row " & i & " - ROW=" & result(i, 0) & ", ITEM_CODE=" & result(i, 1) & ", ITEM=" & result(i, 2)
+        ' ITEM_CODE (Column 1) - Now SECOND column
+        result(i, 1) = tbl.DataBodyRange.Cells(i, itemCodeCol).value
         
-        ' LOCATION
+        ' ITEM name (Column 2) - Same as before
+        result(i, 2) = tbl.DataBodyRange.Cells(i, itemCol).value
+        
+        ' LOCATION (Column 3) - Same as before
         If locCol > 0 Then
-            result(i, 3) = tbl.DataBodyRange.Cells(i, locCol).Value
+            result(i, 3) = tbl.DataBodyRange.Cells(i, locCol).value
         End If
-        ' DESCRIPTION
-        If descCol > 0 Then
-            result(i, 4) = tbl.DataBodyRange.Cells(i, descCol).Value
-        End If
+        
+     
     Next i
     
     Debug.Print "LoadItemList: Successfully loaded " & rowCount & " items"
@@ -94,118 +86,6 @@ Public Function LoadItemList(Optional ByVal wb As Workbook, _
 ErrorHandler:
     Debug.Print "LoadItemList: Error " & Err.Number & " - " & Err.Description
     LoadItemList = Empty
-End Function
-
-' Add this function to lookup UOM by item name
-Public Function GetItemUOM(itemName As String) As String
-    On Error GoTo ErrorHandler
-    
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim itemCol As Range, uomCol As Range
-    Dim foundCell As Range
-    Dim foundRow As Long
-    
-    ' Default return value if not found
-    GetItemUOM = "each"
-    
-    ' Check if itemName is empty
-    If Len(Trim(itemName)) = 0 Then Exit Function
-    
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
-    Set tbl = ws.ListObjects("invSys")
-    
-    Set itemCol = tbl.ListColumns("ITEM").DataBodyRange
-    Set uomCol = tbl.ListColumns("UOM").DataBodyRange
-    
-    ' Find the item in the invSys table
-    Set foundCell = itemCol.Find(What:=itemName, _
-                                 LookIn:=xlValues, _
-                                 LookAt:=xlWhole, _
-                                 SearchOrder:=xlByRows, _
-                                 MatchCase:=False)
-    
-    ' If found, return its UOM
-    If Not foundCell Is Nothing Then
-        foundRow = foundCell.row - itemCol.row + 1
-        GetItemUOM = uomCol.Cells(foundRow, 1).value
-        
-        ' If UOM is empty, return default
-        If Trim(GetItemUOM) = "" Then
-            GetItemUOM = "each"
-        End If
-    End If
-    
-    Exit Function
-    
-ErrorHandler:
-    ' Log the error for debugging
-    Debug.Print "Error in GetItemUOM: " & Err.Description
-    ' Ensure a default value is returned on error
-    GetItemUOM = "each"
-End Function
-
-' Function to lookup UOM by ITEM_CODE (preferred) or item name (fallback)
-Public Function GetItemUOMByCode(ItemCode As String, itemName As String) As String
-    On Error GoTo ErrorHandler
-    
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim foundCell As Range
-    Dim foundRow As Long
-    
-    ' Default return value if not found
-    GetItemUOMByCode = "each"
-    
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
-    Set tbl = ws.ListObjects("invSys")
-    
-    ' First try finding by ITEM_CODE if provided
-    If Trim(ItemCode) <> "" Then
-        Set foundCell = tbl.ListColumns("ITEM_CODE").DataBodyRange.Find( _
-                        What:=ItemCode, _
-                        LookIn:=xlValues, _
-                        LookAt:=xlWhole, _
-                        MatchCase:=False)
-                        
-        If Not foundCell Is Nothing Then
-            foundRow = foundCell.row - tbl.HeaderRowRange.row
-            GetItemUOMByCode = tbl.ListColumns("UOM").DataBodyRange(foundRow).value
-            
-            ' If UOM is empty, return default
-            If Trim(GetItemUOMByCode) = "" Then
-                GetItemUOMByCode = "each"
-            End If
-            
-            ' Found by code, return early
-            Exit Function
-        End If
-    End If
-    
-    ' Fallback: Find by item name if code search failed or no code provided
-    If Trim(itemName) <> "" Then
-        Set foundCell = tbl.ListColumns("ITEM").DataBodyRange.Find( _
-                        What:=itemName, _
-                        LookIn:=xlValues, _
-                        LookAt:=xlWhole, _
-                        MatchCase:=False)
-                        
-        If Not foundCell Is Nothing Then
-            foundRow = foundCell.row - tbl.HeaderRowRange.row
-            GetItemUOMByCode = tbl.ListColumns("UOM").DataBodyRange(foundRow).value
-            
-            ' If UOM is empty, return default
-            If Trim(GetItemUOMByCode) = "" Then
-                GetItemUOMByCode = "each"
-            End If
-        End If
-    End If
-    
-    Exit Function
-    
-ErrorHandler:
-    Debug.Print "Error in GetItemUOMByCode: " & Err.Description
-    GetItemUOMByCode = "each"
 End Function
 
 Public Sub GenerateRowNumbers()
@@ -257,88 +137,6 @@ ErrorHandler:
     MsgBox "Error generating row numbers: " & Err.Description, vbExclamation
 End Sub
 
-' Add these functions to help with form triggering via keyboard
-Public Sub InitializeKeyboardHandlers()
-    ' Set up key handlers for F2, Enter and Tab keys in Excel
-    On Error Resume Next
-    
-    ' Clear any existing handlers
-    Application.OnKey "{F2}"
-    Application.OnKey "~"
-    Application.OnKey "{TAB}"
-    
-    ' Set new handlers
-    Application.OnKey "{F2}", "modTS_Data.TryShowItemSearchForm"
-    Application.OnKey "~", "modTS_Data.TryShowItemSearchForm" ' ~ is the Enter key
-    Application.OnKey "{TAB}", "modTS_Data.TryShowItemSearchForm" 
-    
-    Debug.Print "Keyboard handlers initialized"
-    On Error GoTo 0
-End Sub
-
-' Checks if we're in an ITEMS column and shows the search form
-Public Sub TryShowItemSearchForm()
-    ' Check if the active cell is in an ITEMS column
-    On Error Resume Next
-    
-    Debug.Print "TryShowItemSearchForm called for cell " & ActiveCell.Address
-    
-    ' Only proceed if we're on one of the tally sheets
-    If ActiveSheet.Name <> "ShipmentsTally" And ActiveSheet.Name <> "ReceivedTally" Then Exit Sub
-    
-    ' Get the appropriate table
-    Dim tbl As ListObject
-    If ActiveSheet.Name = "ShipmentsTally" Then
-        Set tbl = ActiveSheet.ListObjects("ShipmentsTally")
-    Else
-        Set tbl = ActiveSheet.ListObjects("ReceivedTally")
-    End If
-    
-    If tbl Is Nothing Then Exit Sub
-    
-    ' Get the ITEMS column range
-    Dim itemsColIndex As Long
-    For itemsColIndex = 1 To tbl.ListColumns.Count
-        If UCase(tbl.ListColumns(itemsColIndex).Name) = "ITEMS" Then Exit For
-    Next itemsColIndex
-    
-    ' If we didn't find the ITEMS column
-    If itemsColIndex > tbl.ListColumns.Count Then Exit Sub
-    
-    ' Check if the active cell is in the data area of the ITEMS column
-    If ActiveCell.Column = tbl.ListColumns(itemsColIndex).Range.Column Then
-        If ActiveCell.Row > tbl.HeaderRowRange.Row Then
-            ' This is a cell in the ITEMS column - store it and show the form
-            Debug.Print "OnKey handler showing form for " & ActiveSheet.Name & " cell " & ActiveCell.Address
-            Set gSelectedCell = ActiveCell
-            frmItemSearch.Show vbModeless
-        End If
-    End If
-    
-    On Error GoTo 0
-End Sub
-
-Public Sub ShowItemSearchForm()
-    ' Check if the active cell is in an ITEMS column
-    If IsInItemsColumn(ActiveCell) Then
-        Set gSelectedCell = ActiveCell
-        frmItemSearch.Show vbModeless
-    End If
-End Sub
-
-Public Sub CheckForItemsColumn()
-    ' Check if we're about to enter an ITEMS column cell
-    On Error Resume Next
-    If IsInItemsColumn(ActiveCell) Then
-        Set gSelectedCell = ActiveCell
-        ' Only show for empty cells to avoid interfering with normal usage
-        If IsEmpty(ActiveCell.Value) Or Trim(ActiveCell.Value) = "" Then
-            frmItemSearch.Show vbModeless
-        End If
-    End If
-    On Error GoTo 0
-End Sub
-
 Public Function IsInItemsColumn(cell As Range) As Boolean
     ' Default return value
     IsInItemsColumn = False
@@ -370,55 +168,6 @@ Public Function IsInItemsColumn(cell As Range) As Boolean
     On Error GoTo 0
 End Function
 
-' Call this from Workbook_Open to set up the keyboard handlers
-Public Sub SetupAllHandlers()
-    ' Clear table filters
-    ClearTableFilters
-    
-    ' Initialize global variables
-    modGlobals.InitializeGlobalVariables
-    
-    ' Add a hotkey for opening the form - F4 key
-    On Error Resume Next
-    Application.OnKey "{F4}", "modGlobals.OpenItemSearchForCurrentCell"
-    On Error GoTo 0
-    
-    ' Add the big search buttons
-    AddBigSearchButton
-    
-    ' Add right-click menu option - now this will work correctly
-    modGlobals.AddExtendedRightClickMenu
-End Sub
-
-' Add buttons to tally sheets
-Public Sub AddItemSearchButtons()
-    On Error Resume Next
-    
-    ' Add button to ShipmentsTally
-    If Not ThisWorkbook.Worksheets("ShipmentsTally") Is Nothing Then
-        Dim shipBtn As Shape
-        ThisWorkbook.Worksheets("ShipmentsTally").Shapes.Delete "btnItemSearch"
-        Set shipBtn = ThisWorkbook.Worksheets("ShipmentsTally").Shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 100, 30)
-        With shipBtn
-            .Name = "btnItemSearch"
-            .TextFrame.Characters.Text = "Search Items"
-            .OnAction = "modGlobals.ShowItemSearchForm"
-        End With
-    End If
-    
-    ' Add button to ReceivedTally
-    If Not ThisWorkbook.Worksheets("ReceivedTally") Is Nothing Then
-        Dim recvBtn As Shape
-        ThisWorkbook.Worksheets("ReceivedTally").Shapes.Delete "btnItemSearch"
-        Set recvBtn = ThisWorkbook.Worksheets("ReceivedTally").Shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 100, 30)
-        With recvBtn
-            .Name = "btnItemSearch"
-            .TextFrame.Characters.Text = "Search Items"
-            .OnAction = "modGlobals.ShowItemSearchForm"
-        End With
-    End If
-End Sub
-
 ' Add this function since it's being called but not defined
 Public Sub ClearTableFilters()
     On Error Resume Next
@@ -448,44 +197,7 @@ Public Sub ClearTableFilters()
     On Error GoTo 0
 End Sub
 
-' Add this function to monitor selection changes using Application.OnTime
-Public Sub MonitorItemsSelection()
-    ' Check if we're on a tally sheet
-    If ActiveSheet.Name <> "ShipmentsTally" And ActiveSheet.Name <> "ReceivedTally" Then Exit Sub
-    
-    ' Exit if no cell is selected
-    If ActiveCell Is Nothing Then Exit Sub
-    
-    ' Get sheet references
-    Dim tbl As ListObject
-    On Error Resume Next
-    If ActiveSheet.Name = "ShipmentsTally" Then
-        Set tbl = ActiveSheet.ListObjects("ShipmentsTally")
-    Else
-        Set tbl = ActiveSheet.ListObjects("ReceivedTally")
-    End If
-    
-    If tbl Is Nothing Then Exit Sub
-    
-    ' Get the ITEMS column
-    Dim itemsCol As ListColumn
-    Set itemsCol = tbl.ListColumns("ITEMS")
-    If itemsCol Is Nothing Then Exit Sub
-    
-    ' Check if we're in the data area of the ITEMS column
-    If ActiveCell.Column = itemsCol.Range.Column And _
-       ActiveCell.Row > tbl.HeaderRowRange.Row Then
-        ' We're in an ITEMS cell
-        Debug.Print "MonitorItemsSelection: detected ITEMS cell at " & ActiveCell.Address
-        
-        ' Show the form
-        Set gSelectedCell = ActiveCell
-        frmItemSearch.Show vbModeless
-    End If
-    
-    ' Schedule next check
-    Application.OnTime Now + TimeValue("00:00:01"), "modTS_Data.MonitorItemsSelection"
-End Sub
+
 
 Public Sub AddBigSearchButton()
     On Error Resume Next
@@ -527,7 +239,18 @@ Public Sub AddBigSearchButton()
     End If
 End Sub
 
-
+Public Sub SetupAllHandlers()
+    ' Clear table filters if needed
+    ClearTableFilters
+    
+    ' Initialize global variables
+    modGlobals.InitializeGlobalVariables
+    
+    ' Setup F3 hotkey for search form
+    On Error Resume Next
+    Application.OnKey "{F3}", "modGlobals.OpenItemSearchForCurrentCell"
+    On Error GoTo 0
+End Sub
 
 
 

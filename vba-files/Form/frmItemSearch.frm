@@ -35,17 +35,12 @@ Private Sub UserForm_Activate()
 End Sub
 
 Private Sub UserForm_Initialize()
-    ' Simplify form initialization
-    On Error Resume Next
-    
-    ' Set up the columns in the list box
+    ' Set up the list box columns
     Me.lstBox.ColumnCount = 4
     Me.lstBox.ColumnWidths = "40;60;80;150"
     
-    ' Center form in Excel window
-    Me.StartUpPosition = 0 'Manual
-    Me.Left = Application.Left + (Application.Width - Me.Width) / 2
-    Me.Top = Application.Top + (Application.Height - Me.Height) / 2
+    ' Center the form
+    Me.StartUpPosition = 1 'CenterOwner
     
     ' Load items
     Dim items As Variant
@@ -59,8 +54,6 @@ Private Sub UserForm_Initialize()
     
     ' Apply any search text right away
     txtBox_Change
-    
-    On Error GoTo 0
 End Sub
 
 ' Build an index of where each first character appears in the list for faster searching
@@ -578,10 +571,5 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
         End If
         KeyCode = 0 ' Prevent default tab handling
     End If
-End Sub
-
-Private Sub UserForm_Terminate()
-    ' Resume the timer when form closes
-    modGlobals.ResumeTimer
 End Sub
 
