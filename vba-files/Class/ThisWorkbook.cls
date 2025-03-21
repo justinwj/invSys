@@ -7,7 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
 Private Sub Workbook_Open()
     ' Make sure Excel events are enabled
     Application.EnableEvents = True
@@ -29,4 +28,18 @@ End Sub
 Private Sub Workbook_SheetActivate(ByVal Sh As Object)
     ' Re-enable events when activating sheets
     Application.EnableEvents = True
+
+    ' Force login form to lock access
+    ' frmLogin.Show
 End Sub
+Sub CheckForHiddenPasswords()
+    Dim nm As Name
+    For Each nm In ThisWorkbook.Names
+        Debug.Print nm.Name & " = " & nm.RefersTo
+    Next nm
+End Sub
+
+
+
+
+

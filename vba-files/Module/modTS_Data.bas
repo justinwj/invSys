@@ -137,31 +137,37 @@ ErrorHandler:
     MsgBox "Error generating row numbers: " & Err.Description, vbExclamation
 End Sub
 
-Public Function IsInItemsColumn(cell As Range) As Boolean
-    ' Default return value
+Public Function IsInItemsColumn(Target As Range) As Boolean
+    ' Initialize to false
     IsInItemsColumn = False
     
     On Error Resume Next
     
-    ' Check for ShipmentsTally
-    If cell.Worksheet.Name = "ShipmentsTally" Then
-        Dim shipTbl As ListObject
-        Set shipTbl = cell.Worksheet.ListObjects("ShipmentsTally")
-        If Not shipTbl Is Nothing Then
-            If Not Intersect(cell, shipTbl.ListColumns("ITEMS").DataBodyRange) Is Nothing Then
-                IsInItemsColumn = True
-            End If
-        End If
-    End If
+    ' Get table that contains this cell
+    Dim lo As ListObject
+    Set lo = Target.ListObject
     
-    ' Check for ReceivedTally
-    If cell.Worksheet.Name = "ReceivedTally" Then
-        Dim recvTbl As ListObject
-        Set recvTbl = cell.Worksheet.ListObjects("ReceivedTally")
-        If Not recvTbl Is Nothing Then
-            If Not Intersect(cell, recvTbl.ListColumns("ITEMS").DataBodyRange) Is Nothing Then
-                IsInItemsColumn = True
-            End If
+    ' If not in a table, exit
+    If lo Is Nothing Then Exit Function
+    
+    ' Check if in one of our tally tables
+    If lo.Name <> "ShipmentsTally" And lo.Name <> "ReceivedTally" Then Exit Function
+    
+    ' Find the ITEMS column
+    Dim itemsCol As ListColumn
+    On Error Resume Next
+    Set itemsCol = lo.ListColumns("ITEMS")
+    On Error GoTo 0
+    
+    ' If ITEMS column doesn't exist, exit
+    If itemsCol Is Nothing Then Exit Function
+    
+    ' Check if Target is specifically in the ITEMS column data area
+    If Target.Column = itemsCol.Range.Column Then
+        ' Make sure we're below the header row
+        If Target.Row > lo.HeaderRowRange.Row Then
+            IsInItemsColumn = True
+            Debug.Print "Cell " & Target.Address & " IS in the ITEMS column"
         End If
     End If
     
@@ -210,7 +216,7 @@ Public Sub AddBigSearchButton()
         Set shipBtn = ThisWorkbook.Sheets("ShipmentsTally").Shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 180, 40)
         With shipBtn
             .Name = "BigSearchBtn"
-            .TextFrame.Characters.Text = "SEARCH ITEMS"
+            .TextFrame.Characters.text = "SEARCH ITEMS"
             .Fill.ForeColor.RGB = RGB(0, 112, 192)  ' Blue
             .Line.ForeColor.RGB = RGB(0, 0, 128)    ' Dark blue
             .TextFrame.Characters.Font.Color = RGB(255, 255, 255)  ' White
@@ -228,7 +234,7 @@ Public Sub AddBigSearchButton()
         Set recvBtn = ThisWorkbook.Sheets("ReceivedTally").Shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 180, 40)
         With recvBtn
             .Name = "BigSearchBtn"
-            .TextFrame.Characters.Text = "SEARCH ITEMS"
+            .TextFrame.Characters.text = "SEARCH ITEMS"
             .Fill.ForeColor.RGB = RGB(0, 112, 192)  ' Blue
             .Line.ForeColor.RGB = RGB(0, 0, 128)    ' Dark blue
             .TextFrame.Characters.Font.Color = RGB(255, 255, 255)  ' White

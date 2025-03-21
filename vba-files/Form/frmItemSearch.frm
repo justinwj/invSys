@@ -221,7 +221,7 @@ Private Sub lstBox_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     CommitSelectionAndClose
 End Sub
 
-' Improved CommitSelectionAndClose to handle data flow between tables
+' data flow between tables
 Public Sub CommitSelectionAndClose()
     Static isRunning As Boolean
     
@@ -260,7 +260,11 @@ Public Sub CommitSelectionAndClose()
     
     ' Apply the selection to the cell
     If Not gSelectedCell Is Nothing Then
-        ' Update the cell with item name
+        ' Store the original value before making changes
+        Dim originalValue As String
+        originalValue = gSelectedCell.Value
+        
+        ' Update the cell with new item name
         gSelectedCell.Value = chosenValue
         
         ' If we have a valid item selection, update the data table
@@ -285,6 +289,13 @@ Public Sub CommitSelectionAndClose()
             Dim itemUOM As String
             itemUOM = modGlobals.GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
             
+            ' Get the cell identifier (row number in the tally sheet)
+            Dim tallyRowNum As Long
+            tallyRowNum = gSelectedCell.Row - tbl.HeaderRowRange.Row
+            
+            ' ***** NEW CODE: Delete any existing data for this cell *****
+            DeleteExistingDataForCell dataTbl, tallyRowNum
+            
             ' Add a row to the corresponding data table
             If Not dataTbl Is Nothing Then
                 Dim dataRow As ListRow
@@ -292,6 +303,9 @@ Public Sub CommitSelectionAndClose()
                 
                 ' Fill the data table row with all the item information
                 FillDataTableRow dataRow, itemUOM, chosenVendor, location, chosenItemCode, chosenRowNum
+                
+                ' ***** NEW CODE: Add reference to the tally row number *****
+                SetTallyRowNumber dataRow, tallyRowNum
             End If
         End If
         On Error GoTo 0
@@ -302,7 +316,7 @@ Public Sub CommitSelectionAndClose()
 End Sub
 
 ' Helper function to fill a data table row with item information
-Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String, location As String, itemCode As String, rowNum As String)
+Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String, location As String, ItemCode As String, rowNum As String)
     On Error Resume Next
     
     ' Find the column indexes
@@ -316,7 +330,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "UOM" Then
-            dataRow.Range(1, i).Value = uom
+            dataRow.Range(1, i).value = uom
             colFound = True
             Exit For
         End If
@@ -327,7 +341,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "VENDOR" Then
-            dataRow.Range(1, i).Value = vendor
+            dataRow.Range(1, i).value = vendor
             colFound = True
             Exit For
         End If
@@ -338,7 +352,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "LOCATION" Then
-            dataRow.Range(1, i).Value = location
+            dataRow.Range(1, i).value = location
             colFound = True
             Exit For
         End If
@@ -349,7 +363,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "ITEM_CODE" Then
-            dataRow.Range(1, i).Value = itemCode  ' Using itemCode parameter
+            dataRow.Range(1, i).value = ItemCode  ' Using itemCode parameter
             colFound = True
             Exit For
         End If
@@ -360,7 +374,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "ROW" Then
-            dataRow.Range(1, i).Value = rowNum  ' Using rowNum parameter
+            dataRow.Range(1, i).value = rowNum  ' Using rowNum parameter
             colFound = True
             Exit For
         End If
@@ -371,7 +385,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
     colFound = False
     For i = 1 To tbl.ListColumns.count
         If UCase(tbl.ListColumns(i).Name) = "ENTRY_DATE" Then
-            dataRow.Range(1, i).Value = Now()
+            dataRow.Range(1, i).value = Now()
             colFound = True
             Exit For
         End If
@@ -382,7 +396,7 @@ Private Sub FillDataTableRow(dataRow As ListRow, uom As String, vendor As String
 End Sub
 
 ' Helper function to get location information
-Private Function GetLocationByItem(itemCode As String, itemName As String) As String
+Private Function GetLocationByItem(ItemCode As String, itemName As String) As String
     On Error GoTo ErrorHandler
     
     Dim ws As Worksheet
@@ -403,8 +417,8 @@ Private Function GetLocationByItem(itemCode As String, itemName As String) As St
     If locationCol = 0 Then Exit Function
     
     ' Try to find the item by code first
-    If itemCode <> "" Then
-        foundRow = FindRowByValue(tbl, "ITEM_CODE", itemCode)
+    If ItemCode <> "" Then
+        foundRow = FindRowByValue(tbl, "ITEM_CODE", ItemCode)
     End If
     
     ' If not found by code, try by name
@@ -414,7 +428,7 @@ Private Function GetLocationByItem(itemCode As String, itemName As String) As St
     
     ' If found, return the location
     If foundRow > 0 Then
-        GetLocationByItem = tbl.DataBodyRange(foundRow, locationCol).Value
+        GetLocationByItem = tbl.DataBodyRange(foundRow, locationCol).value
     End If
     
     Exit Function
@@ -425,6 +439,77 @@ ErrorHandler:
     GetLocationByItem = ""
 End Function
 
+' Delete existing data for this cell *****
+Private Sub DeleteExistingDataForCell(dataTbl As ListObject, tallyRowNum As Long)
+    On Error Resume Next
+    
+    ' Find the column that contains the tally row number
+    Dim tallyRowCol As Long
+    Dim i As Long
+    
+    ' First, try to find a TALLY_ROW column
+    For i = 1 To dataTbl.ListColumns.Count
+        If UCase(dataTbl.ListColumns(i).Name) = "TALLY_ROW" Then
+            tallyRowCol = i
+            Exit For
+        End If
+    Next i
+    
+    ' If we still haven't found it, add the column
+    If tallyRowCol = 0 Then
+        dataTbl.ListColumns.Add.Name = "TALLY_ROW"
+        tallyRowCol = dataTbl.ListColumns.Count
+    End If
+    
+    ' Find and delete all rows that match this tally row number
+    Dim rowsToDelete As Collection
+    Set rowsToDelete = New Collection
+    
+    ' Gather rows to delete (can't delete while iterating)
+    For i = dataTbl.ListRows.Count To 1 Step -1
+        If dataTbl.DataBodyRange(i, tallyRowCol).Value = tallyRowNum Then
+            rowsToDelete.Add i
+        End If
+    Next i
+    
+    ' Now delete them (in reverse order to avoid index changes)
+    For i = rowsToDelete.Count To 1 Step -1
+        dataTbl.ListRows(rowsToDelete(i)).Delete
+    Next i
+    
+    On Error GoTo 0
+End Sub
+
+' Set the tally row number in the data table *****
+Private Sub SetTallyRowNumber(dataRow As ListRow, tallyRowNum As Long)
+    On Error Resume Next
+    
+    ' Find the column for storing the tally row number
+    Dim tbl As ListObject
+    Dim colFound As Boolean
+    Set tbl = dataRow.Parent
+    
+    Dim i As Long
+    
+    ' Look for TALLY_ROW column
+    colFound = False
+    For i = 1 To tbl.ListColumns.Count
+        If UCase(tbl.ListColumns(i).Name) = "TALLY_ROW" Then
+            dataRow.Range(1, i).Value = tallyRowNum
+            colFound = True
+            Exit For
+        End If
+    Next i
+    
+    ' If we still haven't found it, add the column
+    If Not colFound Then
+        tbl.ListColumns.Add.Name = "TALLY_ROW"
+        dataRow.Range(1, tbl.ListColumns.Count).Value = tallyRowNum
+    End If
+    
+    On Error GoTo 0
+End Sub
+
 ' Populate the list box with items from invSys table - FIXED
 Private Sub PopulateListBox(itemArray As Variant)
     ' Debug what we're getting
@@ -433,7 +518,7 @@ Private Sub PopulateListBox(itemArray As Variant)
                 LBound(itemArray, 2) & " to " & UBound(itemArray, 2)
     
     Dim i As Long
-    Dim rowNum As String, itemCode As String, itemName As String, vendor As String
+    Dim rowNum As String, ItemCode As String, itemName As String, vendor As String
     
     Me.lstBox.Clear
     
@@ -449,7 +534,7 @@ Private Sub PopulateListBox(itemArray As Variant)
         If IsArray(itemArray) And UBound(itemArray, 2) >= 2 Then
             ' Extract values with appropriate error handling
             rowNum = CStr(itemArray(i, 0))  ' ROW - FIXED: Now correctly using index 0
-            itemCode = CStr(itemArray(i, 1))  ' ITEM_CODE - FIXED: Now correctly using index 1
+            ItemCode = CStr(itemArray(i, 1))  ' ITEM_CODE - FIXED: Now correctly using index 1
             
             ' Get the item name - column index 2 in the array
             If UBound(itemArray, 2) >= 2 Then
@@ -459,12 +544,12 @@ Private Sub PopulateListBox(itemArray As Variant)
             End If
             
             ' Get vendor data from the invSys table
-            vendor = GetVendorByItem(itemCode, itemName)
+            vendor = GetVendorByItem(ItemCode, itemName)
             
             ' Add the item to the list box - FIXED order
             Me.lstBox.AddItem ""
             Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = rowNum      ' ROW
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = itemCode    ' ITEM_CODE
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = ItemCode    ' ITEM_CODE
             Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = vendor      ' VENDOR
             Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = itemName    ' ITEM name
         End If
@@ -473,7 +558,7 @@ Private Sub PopulateListBox(itemArray As Variant)
 End Sub
 
 ' Helper function to get vendor information
-Private Function GetVendorByItem(itemCode As String, itemName As String) As String
+Private Function GetVendorByItem(ItemCode As String, itemName As String) As String
     On Error GoTo ErrorHandler
     
     Dim ws As Worksheet
@@ -494,8 +579,8 @@ Private Function GetVendorByItem(itemCode As String, itemName As String) As Stri
     If vendorCol = 0 Then Exit Function
     
     ' Try to find the item by code first
-    If itemCode <> "" Then
-        foundRow = FindRowByValue(tbl, "ITEM_CODE", itemCode)
+    If ItemCode <> "" Then
+        foundRow = FindRowByValue(tbl, "ITEM_CODE", ItemCode)
     End If
     
     ' If not found by code, try by name
@@ -505,7 +590,7 @@ Private Function GetVendorByItem(itemCode As String, itemName As String) As Stri
     
     ' If found, return the vendor
     If foundRow > 0 Then
-        GetVendorByItem = tbl.DataBodyRange(foundRow, vendorCol).Value
+        GetVendorByItem = tbl.DataBodyRange(foundRow, vendorCol).value
     End If
     
     Exit Function
@@ -529,9 +614,9 @@ Private Function FindRowByValue(tbl As ListObject, colName As String, value As V
     
     If colIndex = 0 Then Exit Function
     
-    For i = 1 To tbl.ListRows.Count
+    For i = 1 To tbl.ListRows.count
         ' Convert both values to strings for more reliable comparison
-        If CStr(tbl.DataBodyRange(i, colIndex).Value) = CStr(value) Then
+        If CStr(tbl.DataBodyRange(i, colIndex).value) = CStr(value) Then
             FindRowByValue = i
             Exit Function
         End If
@@ -541,7 +626,7 @@ End Function
 ' Helper function to update the description in txtBox2
 Private Sub UpdateDescription()
     ' Clear existing description
-    Me.txtBox2.Text = ""  ' Changed from .text to .Text
+    Me.txtBox2.text = ""  ' Changed from .text to .Text
     
     ' If an item is selected in the main listbox
     If Me.lstBox.ListIndex <> -1 Then
@@ -553,17 +638,17 @@ Private Sub UpdateDescription()
         ' Add 1 because ListBox is 0-based but array is 1-based
         If selectedIndex + 1 <= UBound(FullItemList, 1) Then
             ' Set the description text
-            Me.txtBox2.Text = FullItemList(selectedIndex + 1, 4)  ' Changed from .text to .Text
+            Me.txtBox2.text = FullItemList(selectedIndex + 1, 4)  ' Changed from .text to .Text
         End If
     End If
 End Sub
 
-' Handle Tab key in the form 
+' Handle Tab key in the form
 Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     ' If Tab is pressed, we want to handle it specially
     If KeyCode = vbKeyTab Then
         ' If user has made a selection or has text in the box, commit it
-        If Me.lstBox.ListIndex <> -1 Or Trim(Me.txtBox.Text) <> "" Then
+        If Me.lstBox.ListIndex <> -1 Or Trim(Me.txtBox.text) <> "" Then
             CommitSelectionAndClose
         Else
             ' Otherwise just close the form without changes

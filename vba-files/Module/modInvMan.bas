@@ -56,7 +56,7 @@ Public Sub AddGoodsReceived_Click()
             rng.Cells(i, totalInvLastEditCol).value = Now
             
             ' Update TOTAL INV LAST EDIT (specific to inventory)
-            rng.Cells(i, totalInvLastEditCol).Value = Now
+            rng.Cells(i, totalInvLastEditCol).value = Now
             
             ' Track the change
             Call modUR_Transaction.TrackTransactionChange("CellUpdate", _

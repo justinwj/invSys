@@ -7,13 +7,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
+'=================
+'ReceivedTally.cls
+'=================
 ' Simple event handler for both worksheet class modules
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     ' Only for single cell selection
-    If Target.Cells.Count > 1 Then Exit Sub
+    If Target.Cells.count > 1 Then Exit Sub
     
     ' Check if cell is in ITEMS column
     If modTS_Data.IsInItemsColumn(Target) Then
