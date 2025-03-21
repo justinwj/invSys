@@ -321,11 +321,14 @@ End Sub
 Sub PopulateReceivedForm(frm As frmReceivedTally)
     On Error GoTo ErrorHandler
     
+    ' Debug info - show what we're doing
+    Debug.Print "PopulateReceivedForm: Starting to populate form..."
+    
     Dim ws As Worksheet
     Dim tbl As ListObject, dataTbl As ListObject
     Dim dict As Object
-    Dim priceDict As Object  ' New dictionary to track prices
-    Dim i As Long, j As Long
+    Dim priceDict As Object
+    Dim i As Long, j As Long, k As Long
     Dim key As Variant
     Dim itemInfo As Variant
     
@@ -334,79 +337,76 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
     Set tbl = ws.ListObjects("ReceivedTally")
     Set dataTbl = ws.ListObjects("invSysData_Receiving")
     
-    Set dict = CreateObject("Scripting.Dictionary")
-    Set priceDict = CreateObject("Scripting.Dictionary")  ' For tracking prices
-    dict.CompareMode = vbTextCompare
+    ' Check if table exists
+    If tbl Is Nothing Then
+        MsgBox "Error: ReceivedTally table not found!", vbCritical
+        Exit Sub
+    End If
     
-    ' Debug info
-    Debug.Print "Processing ReceivedTally table with " & tbl.ListRows.Count & " rows"
+    ' DEBUG: Print column names to check actual structure
+    Debug.Print "Table columns in ReceivedTally:"
+    For i = 1 To tbl.ListColumns.Count
+        Debug.Print i & ": " & tbl.ListColumns(i).Name
+    Next i
+    
+    ' Verify required columns exist
+    Dim itemsColIndex As Long, qtyColIndex As Long, uomColIndex As Long
+    itemsColIndex = 0: qtyColIndex = 0: uomColIndex = 0
+    
+    For i = 1 To tbl.ListColumns.Count
+        Select Case UCase(tbl.ListColumns(i).Name)
+            Case "ITEMS": itemsColIndex = i
+            Case "QUANTITY": qtyColIndex = i
+            Case "UOM": uomColIndex = i
+        End Select
+    Next i
+    
+    ' Exit if required columns are missing
+    If itemsColIndex = 0 Then
+        MsgBox "Required column 'ITEMS' not found in ReceivedTally table", vbExclamation
+        Exit Sub
+    End If
+    
+    If qtyColIndex = 0 Then
+        MsgBox "Required column 'QUANTITY' not found in ReceivedTally table", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Create dictionaries
+    Set dict = CreateObject("Scripting.Dictionary")
+    Set priceDict = CreateObject("Scripting.Dictionary")
+    dict.CompareMode = vbTextCompare
     
     ' Process and tally items from the table
     For i = 1 To tbl.ListRows.Count
         On Error Resume Next
         
-        ' Get basic values with error handling
+        ' Use verified column indexes
         Dim item As String, quantity As Double, uom As String, price As Double
-        item = CStr(tbl.DataBodyRange(i, tbl.ListColumns("ITEMS").Index).Value)
+        item = CStr(tbl.DataBodyRange(i, itemsColIndex).Value)
         
-        ' Handle quantity conversion
         Dim rawQuantity As Variant
-        rawQuantity = tbl.DataBodyRange(i, tbl.ListColumns("QUANTITY").Index).Value
+        rawQuantity = tbl.DataBodyRange(i, qtyColIndex).Value
         If IsNumeric(rawQuantity) Then
             quantity = CDbl(rawQuantity)
         Else
             quantity = 0
         End If
         
-        ' Handle UOM and price
-        On Error Resume Next
-        uom = CStr(tbl.DataBodyRange(i, tbl.ListColumns("UOM").Index).Value)
-        
-        ' Get price from data table if available
-        Dim priceColIndex As Long
-        For j = 1 To tbl.ListColumns.Count
-            If UCase(tbl.ListColumns(j).Name) = "PRICE" Then
-                priceColIndex = j
-                Exit For
-            End If
-        Next j
-        
-        If priceColIndex > 0 Then
-            If IsNumeric(tbl.DataBodyRange(i, priceColIndex).Value) Then
-                price = CDbl(tbl.DataBodyRange(i, priceColIndex).Value)
-            End If
+        ' UOM is optional
+        If uomColIndex > 0 Then
+            uom = CStr(tbl.DataBodyRange(i, uomColIndex).Value)
+        Else
+            uom = "each" ' Default
         End If
         
-        On Error GoTo ErrorHandler
-        
-        ' Skip empty rows or rows with zero quantity
+        ' Skip empty or zero quantity items
         If Trim(item) <> "" And quantity > 0 Then
-            ' Get ROW and ITEM_CODE
+            ' Get ROW and ITEM_CODE from data table
             Dim rowNum As String, ItemCode As String
-            rowNum = ""
-            ItemCode = ""
+            rowNum = "": ItemCode = ""
             
-            ' Check data tables for metadata
-            If Not dataTbl Is Nothing Then
-                ' Look for matching entry in data table
-                For j = 1 To dataTbl.ListRows.Count
-                    If CStr(dataTbl.DataBodyRange(j, dataTbl.ListColumns("ITEMS").Index).Value) = item Then
-                        ' Get ROW and ITEM_CODE from data table
-                        On Error Resume Next
-                        For k = 1 To dataTbl.ListColumns.Count
-                            If UCase(dataTbl.ListColumns(k).Name) = "ROW" Then
-                                rowNum = CStr(dataTbl.DataBodyRange(j, k).Value)
-                            ElseIf UCase(dataTbl.ListColumns(k).Name) = "ITEM_CODE" Then
-                                ItemCode = CStr(dataTbl.DataBodyRange(j, k).Value)
-                            End If
-                        Next k
-                        On Error GoTo ErrorHandler
-                        Exit For
-                    End If
-                Next j
-            End If
-            
-            ' If still no ROW, look it up in inventory
+            ' Get items directly from inventory
             If rowNum = "" Then
                 Dim invWs As Worksheet
                 Dim invTbl As ListObject
@@ -415,22 +415,12 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
                 Set invWs = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
                 Set invTbl = invWs.ListObjects("invSys")
                 
-                If ItemCode <> "" Then
-                    lookupRow = FindRowByValue(invTbl, "ITEM_CODE", ItemCode)
-                End If
-                
-                If lookupRow = 0 Then
-                    lookupRow = FindRowByValue(invTbl, "ITEM", item)
-                End If
+                lookupRow = FindRowByValue(invTbl, "ITEM", item)
                 
                 If lookupRow > 0 Then
                     On Error Resume Next
                     rowNum = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ROW").Index).Value)
-                    
-                    ' If we have a row number but no UOM, get it from inventory
-                    If Trim(uom) = "" Then
-                        uom = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("UOM").Index).Value)
-                    End If
+                    ItemCode = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ITEM_CODE").Index).Value)
                     On Error GoTo ErrorHandler
                 End If
             End If
@@ -439,31 +429,27 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
             Dim uniqueKey As String
             If rowNum <> "" Then
                 uniqueKey = "ROW_" & rowNum
-                Debug.Print "Using ROW key for " & item & ": " & uniqueKey
             ElseIf ItemCode <> "" Then
                 uniqueKey = "CODE_" & ItemCode
-                Debug.Print "Using CODE key for " & item & ": " & uniqueKey
             Else
-                uniqueKey = "NAME_" & LCase(Trim(item)) & "|" & LCase(Trim(uom))
-                Debug.Print "Using NAME key for " & item & ": " & uniqueKey
+                uniqueKey = "NAME_" & LCase(Trim(item))
             End If
             
             ' Tally items
             If dict.Exists(uniqueKey) Then
                 dict(uniqueKey) = dict(uniqueKey) + quantity
-                priceDict(uniqueKey) = priceDict(uniqueKey) + price * quantity
             Else
                 dict.Add uniqueKey, quantity
                 dict.Add "info_" & uniqueKey, Array(item, ItemCode, rowNum, uom)
-                priceDict.Add uniqueKey, price * quantity
             End If
         End If
+        On Error GoTo ErrorHandler
     Next i
     
     ' Configure form list box
     frm.lstBox.Clear
-    frm.lstBox.ColumnCount = 6 ' ITEM, QTY, UOM, PRICE, ITEM_CODE(hidden), ROW(hidden)
-    frm.lstBox.ColumnWidths = "150;50;50;70;0;0" ' Show price, hide ITEM_CODE and ROW
+    frm.lstBox.ColumnCount = 6 ' ITEM, QTY, UOM, PRICE, ITEM_CODE, ROW
+    frm.lstBox.ColumnWidths = "150;50;50;70;0;0" ' Hide ITEM_CODE and ROW
     
     ' Add header row
     frm.lstBox.AddItem "ITEMS"
@@ -476,22 +462,11 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
         For Each key In dict.Keys
             If Left$(key, 5) <> "info_" Then
                 itemInfo = dict("info_" & key)
-                Dim totalQty As Double, totalPrice As Double, unitPrice As Double
-                
-                totalQty = dict(key)
-                totalPrice = priceDict(key)
-                
-                ' Calculate unit price (price per unit)
-                If totalQty > 0 Then
-                    unitPrice = totalPrice / totalQty
-                Else
-                    unitPrice = 0
-                End If
                 
                 frm.lstBox.AddItem itemInfo(0) ' Item name
-                frm.lstBox.List(frm.lstBox.ListCount - 1, 1) = totalQty      ' Quantity
+                frm.lstBox.List(frm.lstBox.ListCount - 1, 1) = dict(key)      ' Quantity
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 2) = itemInfo(3)   ' UOM
-                frm.lstBox.List(frm.lstBox.ListCount - 1, 3) = Round(unitPrice, 2) ' Price (per unit)
+                frm.lstBox.List(frm.lstBox.ListCount - 1, 3) = 0             ' Price (placeholder)
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 4) = itemInfo(1)   ' ITEM_CODE
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 5) = itemInfo(2)   ' ROW
             End If
