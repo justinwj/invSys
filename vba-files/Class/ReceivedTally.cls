@@ -12,43 +12,32 @@ Option Explicit
 
 Private isShowingForm As Boolean
 
+Option Explicit
+
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
-    ' Prevent recursive calls
-    If isShowingForm Then Exit Sub
-    
-    ' Simplified version with minimal error sources
+    ' Only process single cells
     If Target.Cells.Count > 1 Then Exit Sub
     
-    On Error GoTo ErrorHandler
+    ' Skip if the form is already open
+    If modGlobals.IsFormOpen("frmItemSearch") Then Exit Sub
+    
+    On Error Resume Next
+    ' Check if we're in the ITEMS column of ReceivedTally table
     Dim tbl As ListObject
     Set tbl = Me.ListObjects("ReceivedTally")
     
-    ' Only proceed if we found the table
-    If tbl Is Nothing Then Exit Sub
-    
-    ' Direct check for ITEMS column by name 
-    Dim itemsCol As ListColumn
-    Set itemsCol = tbl.ListColumns("ITEMS")
-    
-    ' Check if this is a cell in the ITEMS column's data range
-    If Not Intersect(Target, itemsCol.DataBodyRange) Is Nothing Then
-        ' Prevent recursive calls
-        isShowingForm = True
-        
-        Debug.Print "Cell in ITEMS column selected"
-        Set gSelectedCell = Target
-        
-        If Not IsFormLoaded("frmItemSearch") Then
+    If Not tbl Is Nothing Then
+        ' Direct check if this cell is in the ITEMS column
+        If Target.Column = tbl.ListColumns("ITEMS").Range.Column And _
+           Target.Row > tbl.HeaderRowRange.Row Then
+            
+            ' Set selected cell and show form
+            Set gSelectedCell = Target
+            modGlobals.PauseTimer
             frmItemSearch.Show vbModeless
         End If
-        
-        isShowingForm = False
     End If
-    
-    Exit Sub
-ErrorHandler:
-    isShowingForm = False
-    Debug.Print "Error in Worksheet_SelectionChange: " & Err.Description
+    On Error GoTo 0
 End Sub
 
 Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)

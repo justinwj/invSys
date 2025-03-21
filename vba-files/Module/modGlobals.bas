@@ -8,6 +8,20 @@ Public gSelectedCell As Range
 ' Global flag to track if the timer is paused
 Public gTimerPaused As Boolean
 
+' Add this at the top of modGlobals
+Public Function IsFormOpen(formName As String) As Boolean
+    Dim i As Integer
+    IsFormOpen = False
+    
+    ' Check all open UserForms
+    For i = 0 To UserForms.Count - 1
+        If UserForms(i).Name = formName Then
+            IsFormOpen = True
+            Exit Function
+        End If
+    Next i
+End Function
+
 Public Sub CommitSelectionAndCloseWrapper()
     frmItemSearch.CommitSelectionAndClose
 End Sub

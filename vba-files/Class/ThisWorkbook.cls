@@ -7,25 +7,28 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+
 Private Sub Workbook_Open()
     ' Make sure Excel events are enabled
     Application.EnableEvents = True
-
+    
     ' Set up all handlers
     modTS_Data.SetupAllHandlers
     
-    ' Add the big search buttons
+    ' Add the big search buttons (these work well)
     modTS_Data.AddBigSearchButton
     
-    ' Display message to user about using F4 key
+    ' Create a backup keyboard shortcut for when events don't work
+    On Error Resume Next
+    Application.OnKey "{F3}", "modGlobals.OpenItemSearchForCurrentCell"
+    On Error GoTo 0
+    
+    ' Show user instructions
     MsgBox "To search for items:" & vbCrLf & _
            "1. Click the blue 'SEARCH ITEMS' button" & vbCrLf & _
-           "2. Or press F4 when cursor is in ITEMS column" & vbCrLf & _
-           "3. Or double-click in the ITEMS column", _
+           "2. Press F3 to open the search form with the current cell" & vbCrLf & _
+           "3. Try clicking directly in ITEMS cells", _
            vbInformation, "Item Search Available"
-
-     ' Schedule a timer function to check active cell periodically
-    Application.OnTime Now + TimeSerial(0, 0, 1), "CheckActiveCell"
 End Sub
 
 Private Sub Workbook_SheetActivate(ByVal Sh As Object)

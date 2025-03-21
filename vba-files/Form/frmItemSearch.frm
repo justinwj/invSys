@@ -35,21 +35,21 @@ Private Sub UserForm_Activate()
 End Sub
 
 Private Sub UserForm_Initialize()
-    ' Avoid any initialization errors by wrapping in error handling
+    ' Simplify form initialization
     On Error Resume Next
     
     ' Set up the columns in the list box
     Me.lstBox.ColumnCount = 4
     Me.lstBox.ColumnWidths = "40;60;80;150"
-
-    ' Center the form in the Excel window - SIMPLIFIED POSITIONING
-    Me.StartUpPosition = 0 ' Manual positioning
-    Me.Left = Application.Left + 100
-    Me.Top = Application.Top + 100
+    
+    ' Center form in Excel window
+    Me.StartUpPosition = 0 'Manual
+    Me.Left = Application.Left + (Application.Width - Me.Width) / 2
+    Me.Top = Application.Top + (Application.Height - Me.Height) / 2
     
     ' Load items
     Dim items As Variant
-    items = modTS_Data.LoadItemList() 
+    items = modTS_Data.LoadItemList()
     
     If Not IsEmpty(items) Then
         PopulateListBox items
@@ -581,7 +581,7 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
 End Sub
 
 Private Sub UserForm_Terminate()
-    ' Make sure timer can resume when form is closed
+    ' Resume the timer when form closes
     modGlobals.ResumeTimer
 End Sub
 
