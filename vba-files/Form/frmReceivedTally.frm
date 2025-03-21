@@ -310,3 +310,47 @@ Private Sub LogInventoryChange(Action As String, ItemCode As String, itemName As
     On Error Resume Next
     ' You might want to use the modTS_Log module for this
 End Sub
+
+' Add this function to frmReceivedTally.frm:
+Private Function GetUOMFromDataTable(item As String, itemCode As String, rowNum As String) As String
+    On Error Resume Next
+    
+    Dim ws As Worksheet, dataTbl As ListObject
+    Set ws = ThisWorkbook.Sheets("ReceivedTally")
+    Set dataTbl = ws.ListObjects("invSysData_Receiving")
+    
+    Dim uom As String
+    uom = "each" ' Default
+    
+    ' Find UOM column
+    Dim uomCol As Long, itemCol As Long, codeCol As Long, rowCol As Long
+    For i = 1 To dataTbl.ListColumns.Count
+        Select Case UCase(dataTbl.ListColumns(i).Name)
+            Case "UOM": uomCol = i
+            Case "ITEMS": itemCol = i
+            Case "ITEM_CODE": codeCol = i
+            Case "ROW": rowCol = i
+        End Select
+    Next i
+    
+    ' Search for match
+    For i = 1 To dataTbl.ListRows.Count
+        Dim found As Boolean
+        found = False
+        
+        If rowNum <> "" And rowCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, rowCol).Value) = rowNum Then found = True
+        ElseIf itemCode <> "" And codeCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, codeCol).Value) = itemCode Then found = True
+        ElseIf item <> "" And itemCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, itemCol).Value) = item Then found = True
+        End If
+        
+        If found And uomCol > 0 Then
+            uom = CStr(dataTbl.DataBodyRange(i, uomCol).Value)
+            Exit For
+        End If
+    Next i
+    
+    GetUOMFromDataTable = uom
+End Function

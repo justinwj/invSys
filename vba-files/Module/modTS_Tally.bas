@@ -103,6 +103,7 @@ Sub TallyItems(sheetName As String, tableName As String, formToShow As Object)
             Else
                 dict.Add uniqueKey, quantity
                 ' Store reference information
+                uom = GetUOMFromDataTable(item, ItemCode, rowNum)
                 dict.Add "info_" & uniqueKey, Array(item, ItemCode, rowNum, uom)
             End If
         End If
@@ -328,6 +329,7 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
     Dim tbl As ListObject, dataTbl As ListObject
     Dim dict As Object
     Dim priceDict As Object
+    Dim uomDict As Object
     Dim i As Long, j As Long, k As Long
     Dim key As Variant
     Dim itemInfo As Variant
@@ -350,14 +352,15 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
     Next i
     
     ' Verify required columns exist
-    Dim itemsColIndex As Long, qtyColIndex As Long, uomColIndex As Long
-    itemsColIndex = 0: qtyColIndex = 0: uomColIndex = 0
+    Dim itemsColIndex As Long, qtyColIndex As Long, uomColIndex As Long, priceColIndex As Long
+    itemsColIndex = 0: qtyColIndex = 0: uomColIndex = 0: priceColIndex = 0
     
     For i = 1 To tbl.ListColumns.Count
         Select Case UCase(tbl.ListColumns(i).Name)
             Case "ITEMS": itemsColIndex = i
             Case "QUANTITY": qtyColIndex = i
             Case "UOM": uomColIndex = i
+            Case "PRICE": priceColIndex = i
         End Select
     Next i
     
@@ -373,9 +376,67 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
     End If
     
     ' Create dictionaries
-    Set dict = CreateObject("Scripting.Dictionary")
-    Set priceDict = CreateObject("Scripting.Dictionary")
+    Set dict = CreateObject("Scripting.Dictionary")     ' For quantities
+    Set priceDict = CreateObject("Scripting.Dictionary") ' For prices
+    Set uomDict = CreateObject("Scripting.Dictionary")   ' For UOMs
     dict.CompareMode = vbTextCompare
+    
+    ' Process items from invSysData_Receiving to get UOMs and prices
+    Dim dataItemsColIndex As Long, dataUOMColIndex As Long, dataPriceColIndex As Long
+    Dim dataItemCodeColIndex As Long, dataRowColIndex As Long
+    dataItemsColIndex = 0: dataUOMColIndex = 0: dataPriceColIndex = 0
+    dataItemCodeColIndex = 0: dataRowColIndex = 0
+    
+    ' Get column indexes in data table
+    If Not dataTbl Is Nothing Then
+        For i = 1 To dataTbl.ListColumns.Count
+            Select Case UCase(dataTbl.ListColumns(i).Name)
+                Case "ITEMS": dataItemsColIndex = i
+                Case "UOM": dataUOMColIndex = i
+                Case "PRICE": dataPriceColIndex = i
+                Case "ITEM_CODE": dataItemCodeColIndex = i
+                Case "ROW": dataRowColIndex = i
+            End Select
+        Next i
+        
+        ' Build lookup dictionaries from data table
+        Dim dataUOMByItem As Object, dataPriceByItem As Object
+        Set dataUOMByItem = CreateObject("Scripting.Dictionary")
+        Set dataPriceByItem = CreateObject("Scripting.Dictionary")
+        
+        For i = 1 To dataTbl.ListRows.Count
+            Dim dataItem As String, dataUOM As String, dataPrice As Double
+            Dim dataItemCode As String, dataRow As String
+            
+            On Error Resume Next
+            If dataItemsColIndex > 0 Then dataItem = CStr(dataTbl.DataBodyRange(i, dataItemsColIndex).Value)
+            If dataUOMColIndex > 0 Then dataUOM = CStr(dataTbl.DataBodyRange(i, dataUOMColIndex).Value)
+            If dataPriceColIndex > 0 Then
+                If IsNumeric(dataTbl.DataBodyRange(i, dataPriceColIndex).Value) Then
+                    dataPrice = CDbl(dataTbl.DataBodyRange(i, dataPriceColIndex).Value)
+                End If
+            End If
+            If dataItemCodeColIndex > 0 Then dataItemCode = CStr(dataTbl.DataBodyRange(i, dataItemCodeColIndex).Value)
+            If dataRowColIndex > 0 Then dataRow = CStr(dataTbl.DataBodyRange(i, dataRowColIndex).Value)
+            On Error GoTo ErrorHandler
+            
+            ' Store by ROW first (most precise), ITEM_CODE second, item name last
+            If dataRow <> "" Then
+                If Not dataUOMByItem.Exists("ROW_" & dataRow) Then dataUOMByItem.Add "ROW_" & dataRow, dataUOM
+                If Not dataPriceByItem.Exists("ROW_" & dataRow) Then dataPriceByItem.Add "ROW_" & dataRow, dataPrice
+            End If
+            
+            If dataItemCode <> "" Then
+                If Not dataUOMByItem.Exists("CODE_" & dataItemCode) Then dataUOMByItem.Add "CODE_" & dataItemCode, dataUOM
+                If Not dataPriceByItem.Exists("CODE_" & dataItemCode) Then dataPriceByItem.Add "CODE_" & dataItemCode, dataPrice
+            End If
+            
+            If dataItem <> "" Then
+                If Not dataUOMByItem.Exists("NAME_" & LCase(Trim(dataItem))) Then dataUOMByItem.Add "NAME_" & LCase(Trim(dataItem)), dataUOM
+                If Not dataPriceByItem.Exists("NAME_" & LCase(Trim(dataItem))) Then dataPriceByItem.Add "NAME_" & LCase(Trim(dataItem)), dataPrice
+            End If
+        Next i
+    End If
     
     ' Process and tally items from the table
     For i = 1 To tbl.ListRows.Count
@@ -393,36 +454,44 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
             quantity = 0
         End If
         
-        ' UOM is optional
+        ' Get UOM from table first
         If uomColIndex > 0 Then
             uom = CStr(tbl.DataBodyRange(i, uomColIndex).Value)
-        Else
-            uom = "each" ' Default
+        End If
+        
+        ' Get price if available
+        If priceColIndex > 0 Then
+            If IsNumeric(tbl.DataBodyRange(i, priceColIndex).Value) Then
+                price = CDbl(tbl.DataBodyRange(i, priceColIndex).Value)
+            End If
         End If
         
         ' Skip empty or zero quantity items
         If Trim(item) <> "" And quantity > 0 Then
-            ' Get ROW and ITEM_CODE from data table
+            ' Get ROW and ITEM_CODE from inventory
             Dim rowNum As String, ItemCode As String
             rowNum = "": ItemCode = ""
             
             ' Get items directly from inventory
-            If rowNum = "" Then
-                Dim invWs As Worksheet
-                Dim invTbl As ListObject
-                Dim lookupRow As Long
+            Dim invWs As Worksheet
+            Dim invTbl As ListObject
+            Dim lookupRow As Long
+            
+            Set invWs = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+            Set invTbl = invWs.ListObjects("invSys")
+            
+            lookupRow = FindRowByValue(invTbl, "ITEM", item)
+            
+            If lookupRow > 0 Then
+                On Error Resume Next
+                rowNum = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ROW").Index).Value)
+                ItemCode = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ITEM_CODE").Index).Value)
                 
-                Set invWs = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
-                Set invTbl = invWs.ListObjects("invSys")
-                
-                lookupRow = FindRowByValue(invTbl, "ITEM", item)
-                
-                If lookupRow > 0 Then
-                    On Error Resume Next
-                    rowNum = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ROW").Index).Value)
-                    ItemCode = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("ITEM_CODE").Index).Value)
-                    On Error GoTo ErrorHandler
+                ' Get UOM from inventory if not set yet
+                If Trim(uom) = "" Then
+                    uom = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("UOM").Index).Value)
                 End If
+                On Error GoTo ErrorHandler
             End If
             
             ' Create a unique key for tallying
@@ -438,9 +507,23 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
             ' Tally items
             If dict.Exists(uniqueKey) Then
                 dict(uniqueKey) = dict(uniqueKey) + quantity
+                priceDict(uniqueKey) = priceDict(uniqueKey) + price  ' Just add prices directly
             Else
                 dict.Add uniqueKey, quantity
+                priceDict.Add uniqueKey, price  ' Store price without multiplication
+                
+                ' Get UOM from data table if available
+                If dataUOMByItem.Exists(uniqueKey) And Trim(uom) = "" Then
+                    uom = dataUOMByItem(uniqueKey)
+                ElseIf Trim(uom) = "" Then
+                    uom = "each" ' Default only if no other UOM found
+                End If
+                
+                ' Store row information and UOM
                 dict.Add "info_" & uniqueKey, Array(item, ItemCode, rowNum, uom)
+                
+                ' Store UOM for this key
+                uomDict.Add uniqueKey, uom
             End If
         End If
         On Error GoTo ErrorHandler
@@ -462,11 +545,25 @@ Sub PopulateReceivedForm(frm As frmReceivedTally)
         For Each key In dict.Keys
             If Left$(key, 5) <> "info_" Then
                 itemInfo = dict("info_" & key)
+                Dim unitPrice As Double
+                
+                ' Calculate unit price (price per unit)
+                If dict(key) > 0 Then
+                    ' First try to get price from priceDict
+                    If priceDict.Exists(key) Then
+                        unitPrice = priceDict(key) / dict(key)
+                    ' Then from data table lookup
+                    ElseIf dataPriceByItem.Exists(key) Then
+                        unitPrice = dataPriceByItem(key)
+                    Else
+                        unitPrice = 0
+                    End If
+                End If
                 
                 frm.lstBox.AddItem itemInfo(0) ' Item name
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 1) = dict(key)      ' Quantity
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 2) = itemInfo(3)   ' UOM
-                frm.lstBox.List(frm.lstBox.ListCount - 1, 3) = 0             ' Price (placeholder)
+                frm.lstBox.List(frm.lstBox.ListCount - 1, 3) = priceDict(key)  ' Display total price
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 4) = itemInfo(1)   ' ITEM_CODE
                 frm.lstBox.List(frm.lstBox.ListCount - 1, 5) = itemInfo(2)   ' ROW
             End If
@@ -573,4 +670,101 @@ Private Function FindRowByValue(tbl As ListObject, colName As String, value As V
     Next i
     
     Debug.Print "No match found in " & colName & " column for value: " & CStr(value)
+End Function
+
+' Helper function to get UOM from data table
+Private Function GetUOMFromDataTable(item As String, itemCode As String, rowNum As String) As String
+    On Error Resume Next
+    
+    Dim ws As Worksheet
+    Dim dataTbl As ListObject
+    Dim i As Long
+    
+    ' Default UOM if none found
+    GetUOMFromDataTable = "each"
+    
+    ' Get data table
+    Set ws = ThisWorkbook.Sheets("ReceivedTally")
+    Set dataTbl = ws.ListObjects("invSysData_Receiving")
+    
+    If dataTbl Is Nothing Then
+        Debug.Print "GetUOMFromDataTable: invSysData_Receiving table not found"
+        Exit Function
+    End If
+    
+    ' Find column indexes
+    Dim itemsColIndex As Long, uomColIndex As Long
+    Dim itemCodeColIndex As Long, rowColIndex As Long
+    itemsColIndex = 0: uomColIndex = 0: itemCodeColIndex = 0: rowColIndex = 0
+    
+    For i = 1 To dataTbl.ListColumns.Count
+        Select Case UCase(dataTbl.ListColumns(i).Name)
+            Case "ITEMS": itemsColIndex = i
+            Case "UOM": uomColIndex = i
+            Case "ITEM_CODE": itemCodeColIndex = i
+            Case "ROW": rowColIndex = i
+        End Select
+    Next i
+    
+    ' If UOM column doesn't exist, exit
+    If uomColIndex = 0 Then
+        Debug.Print "GetUOMFromDataTable: UOM column not found in invSysData_Receiving"
+        Exit Function
+    End If
+    
+    ' Search for a matching row
+    For i = 1 To dataTbl.ListRows.Count
+        Dim found As Boolean
+        found = False
+        
+        ' Try to match by ROW first (most specific)
+        If rowNum <> "" And rowColIndex > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, rowColIndex).Value) = rowNum Then
+                found = True
+            End If
+        ' Then by ITEM_CODE
+        ElseIf itemCode <> "" And itemCodeColIndex > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, itemCodeColIndex).Value) = itemCode Then
+                found = True
+            End If
+        ' Finally by item name
+        ElseIf item <> "" And itemsColIndex > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, itemsColIndex).Value) = item Then
+                found = True
+            End If
+        End If
+        
+        ' If found, return the UOM
+        If found Then
+            GetUOMFromDataTable = CStr(dataTbl.DataBodyRange(i, uomColIndex).Value)
+            Exit Function
+        End If
+    Next i
+    
+    ' If not found in data table, check inventory
+    Dim invWs As Worksheet
+    Dim invTbl As ListObject
+    Dim lookupRow As Long
+    
+    Set invWs = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set invTbl = invWs.ListObjects("invSys")
+    
+    ' Look up by ITEM_CODE first
+    If itemCode <> "" Then
+        lookupRow = FindRowByValue(invTbl, "ITEM_CODE", itemCode)
+    End If
+    
+    ' If not found, try by item name
+    If lookupRow = 0 Then
+        lookupRow = FindRowByValue(invTbl, "ITEM", item)
+    End If
+    
+    ' If found in inventory, get UOM
+    If lookupRow > 0 Then
+        On Error Resume Next
+        GetUOMFromDataTable = CStr(invTbl.DataBodyRange(lookupRow, invTbl.ListColumns("UOM").Index).Value)
+        On Error GoTo 0
+    End If
+    
+    Debug.Print "GetUOMFromDataTable: No UOM found for " & item
 End Function
