@@ -42,41 +42,51 @@ End Sub
 Sub SendOrderData()
     On Error GoTo ErrorHandler
     
-    Dim i As Long, shipmentsSummary As Object
-    Set shipmentsSummary = CreateObject("Scripting.Dictionary")
+    Dim i As Long
+    Dim receivedSummary As Object
+    Set receivedSummary = CreateObject("Scripting.Dictionary")
+    
+    ' Create unique reference number for this batch
+    Dim batchRefNumber As String
+    batchRefNumber = modTS_Log.GenerateOrderNumber()
     
     ' Skip header row (row 0)
     For i = 1 To Me.lstBox.ListCount - 1
         Dim item As String, quantity As Double, uom As String
-        Dim ItemCode As String, rowNum As String
+        Dim itemCode As String, rowNum As String
         
-        item = Me.lstBox.List(i, 0)
-        quantity = CDbl(Me.lstBox.List(i, 1))
-        uom = Me.lstBox.List(i, 2)
-        
-        ' Get the hidden columns with ITEM_CODE and ROW
-        ItemCode = Me.lstBox.List(i, 3)
-        rowNum = Me.lstBox.List(i, 4)
+        item = Me.lstBox.List(i, 0)             ' Item name
+        quantity = CDbl(Me.lstBox.List(i, 1))   ' Quantity
+        uom = Me.lstBox.List(i, 2)              ' UOM
+        itemCode = Me.lstBox.List(i, 3)         ' ItemCode (hidden column)
+        rowNum = Me.lstBox.List(i, 4)           ' ROW (hidden column)
         
         ' Create a unique key with ROW or ITEM_CODE
         Dim uniqueKey As String
         If rowNum <> "" Then
             uniqueKey = "ROW_" & rowNum
-        ElseIf ItemCode <> "" Then
-            uniqueKey = "CODE_" & ItemCode
+        ElseIf itemCode <> "" Then
+            uniqueKey = "CODE_" & itemCode
         Else
             uniqueKey = "NAME_" & item & "|" & uom
         End If
         
-        ' Store in dictionary with all needed information
-        shipmentsSummary(uniqueKey) = Array(item, quantity, uom, ItemCode, rowNum)
+        ' Get additional data from invSysData_Receiving
+        Dim price As Double, vendor As String, location As String
+        GetItemDetailsFromDataTable item, itemCode, rowNum, price, vendor, location
+        
+        ' Store complete information in dictionary
+        receivedSummary(uniqueKey) = Array(batchRefNumber, item, quantity, price, uom, vendor, location, itemCode, rowNum, Now())
     Next i
     
-    ' Log the received items - pass the full dictionary with ROW and ITEM_CODE data
-    modTS_Log.LogReceived shipmentsSummary
+    ' Log the received items to ReceivedLog
+    modTS_Log.LogReceivedDetailed receivedSummary
     
     ' Update quantities in inventory system
-    UpdateInventory shipmentsSummary, "RECEIVED"
+    UpdateInventory receivedSummary, "RECEIVED"
+    
+    ' Notify user
+    MsgBox "Received items have been logged and inventory updated.", vbInformation
     
     ' Close form after processing
     Unload Me
@@ -84,6 +94,107 @@ Sub SendOrderData()
     
 ErrorHandler:
     MsgBox "Error " & Err.Number & ": " & Err.Description, vbCritical
+End Sub
+
+' New function to get additional details from invSysData_Receiving
+Private Sub GetItemDetailsFromDataTable(itemName As String, itemCode As String, rowNum As String, _
+                                      ByRef price As Double, ByRef vendor As String, ByRef location As String)
+    On Error Resume Next
+    
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("ReceivedTally")
+    
+    Dim dataTbl As ListObject
+    Set dataTbl = ws.ListObjects("invSysData_Receiving")
+    
+    If dataTbl Is Nothing Then
+        Debug.Print "Data table invSysData_Receiving not found"
+        Exit Sub
+    End If
+    
+    ' Find matching rows in data table
+    Dim i As Long, matchFound As Boolean
+    matchFound = False
+    
+    ' Check columns exist
+    Dim hasPrice As Boolean, hasVendor As Boolean, hasLocation As Boolean
+    Dim priceCol As Long, vendorCol As Long, locationCol As Long
+    Dim rowCol As Long, itemCodeCol As Long, itemNameCol As Long
+    
+    ' Find column indexes
+    For i = 1 To dataTbl.ListColumns.Count
+        Select Case UCase(dataTbl.ListColumns(i).Name)
+            Case "PRICE"
+                hasPrice = True
+                priceCol = i
+            Case "VENDOR"
+                hasVendor = True
+                vendorCol = i
+            Case "LOCATION"
+                hasLocation = True
+                locationCol = i
+            Case "ROW"
+                rowCol = i
+            Case "ITEM_CODE"
+                itemCodeCol = i
+            Case "ITEMS"
+                itemNameCol = i
+        End Select
+    Next i
+    
+    ' Initialize default values
+    price = 0
+    vendor = ""
+    location = ""
+    
+    ' Look for matching rows in data table
+    For i = 1 To dataTbl.ListRows.Count
+        Dim rowMatch As Boolean
+        rowMatch = False
+        
+        ' Match by ROW first (most precise)
+        If rowNum <> "" And rowCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, rowCol).Value) = rowNum Then
+                rowMatch = True
+            End If
+        ' Then by ITEM_CODE
+        ElseIf itemCode <> "" And itemCodeCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, itemCodeCol).Value) = itemCode Then
+                rowMatch = True
+            End If
+        ' Finally by item name
+        ElseIf itemNameCol > 0 Then
+            If CStr(dataTbl.DataBodyRange(i, itemNameCol).Value) = itemName Then
+                rowMatch = True
+            End If
+        End If
+        
+        ' If we found a match, get the details
+        If rowMatch Then
+            matchFound = True
+            
+            ' Get PRICE
+            If hasPrice Then
+                On Error Resume Next
+                price = price + CDbl(dataTbl.DataBodyRange(i, priceCol).Value)
+                On Error GoTo 0
+            End If
+            
+            ' Get VENDOR (use first one found)
+            If hasVendor And vendor = "" Then
+                vendor = CStr(dataTbl.DataBodyRange(i, vendorCol).Value)
+            End If
+            
+            ' Get LOCATION (use first one found)
+            If hasLocation And location = "" Then
+                location = CStr(dataTbl.DataBodyRange(i, locationCol).Value)
+            End If
+        End If
+    Next i
+    
+    If Not matchFound Then
+        Debug.Print "No matching rows found in data table for " & itemName
+    End If
 End Sub
 
 ' Function to update inventory based on ROW or ITEM_CODE

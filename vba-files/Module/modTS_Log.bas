@@ -32,3 +32,72 @@ Sub LogReceived(receivedSummary As Object)
         newRow.Range(1, 4).value = Now()
     Next key
 End Sub
+
+Sub LogReceivedDetailed(receivedSummary As Object)
+    On Error GoTo ErrorHandler
+    
+    Dim key As Variant
+    Dim newRow As ListRow
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    
+    Set ws = ThisWorkbook.Sheets("ReceivedLog")
+    Set tbl = ws.ListObjects("ReceivedLog")
+    
+    ' Check that the table exists
+    If tbl Is Nothing Then
+        MsgBox "ReceivedLog table not found!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Get column indexes
+    Dim colRefNum As Long, colItems As Long, colQty As Long, colPrice As Long
+    Dim colUOM As Long, colVendor As Long, colLocation As Long
+    Dim colItemCode As Long, colRow As Long, colEntryDate As Long
+    
+    For colRefNum = 1 To tbl.ListColumns.Count
+        Select Case UCase(tbl.ListColumns(colRefNum).Name)
+            Case "REF_NUMBER": colRefNum = colRefNum
+            Case "ITEMS": colItems = colRefNum
+            Case "QUANTITY": colQty = colRefNum
+            Case "PRICE": colPrice = colRefNum
+            Case "UOM": colUOM = colRefNum
+            Case "VENDOR": colVendor = colRefNum
+            Case "LOCATION": colLocation = colRefNum
+            Case "ITEM_CODE": colItemCode = colRefNum
+            Case "ROW": colRow = colRefNum
+            Case "ENTRY_DATE": colEntryDate = colRefNum
+        End Select
+    Next
+    
+    ' Log each item to the ReceivedLog table
+    Application.ScreenUpdating = False
+    For Each key In receivedSummary.Keys
+        Dim itemData As Variant
+        itemData = receivedSummary(key)
+        
+        ' Add new row to the table
+        Set newRow = tbl.ListRows.Add
+        
+        ' Fill in all fields - Make sure array indexes match your data structure
+        On Error Resume Next
+        ' Array: refNum, item, quantity, price, uom, vendor, location, itemCode, rowNum, date
+        If colRefNum > 0 Then newRow.Range(1, colRefNum).Value = itemData(0)    ' ref_NUMBER
+        If colItems > 0 Then newRow.Range(1, colItems).Value = itemData(1)      ' ITEMS
+        If colQty > 0 Then newRow.Range(1, colQty).Value = itemData(2)          ' QUANTITY
+        If colPrice > 0 Then newRow.Range(1, colPrice).Value = itemData(3)      ' PRICE
+        If colUOM > 0 Then newRow.Range(1, colUOM).Value = itemData(4)          ' UOM
+        If colVendor > 0 Then newRow.Range(1, colVendor).Value = itemData(5)    ' VENDOR
+        If colLocation > 0 Then newRow.Range(1, colLocation).Value = itemData(6) ' LOCATION
+        If colItemCode > 0 Then newRow.Range(1, colItemCode).Value = itemData(7) ' ITEM_CODE
+        If colRow > 0 Then newRow.Range(1, colRow).Value = itemData(8)          ' ROW
+        If colEntryDate > 0 Then newRow.Range(1, colEntryDate).Value = itemData(9) ' ENTRY_DATE
+        On Error GoTo ErrorHandler
+    Next key
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErrorHandler:
+    Application.ScreenUpdating = True
+    MsgBox "Error in LogReceivedDetailed: " & Err.Description, vbCritical
+End Sub
