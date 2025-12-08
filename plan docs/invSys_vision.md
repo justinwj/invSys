@@ -32,3 +32,4 @@ invSys - inventory management in Excel
 7. Future releases Streamlit, .NET
 	- Streamlit will likely be used to develop streamer front ends to send data to invSys, hardening the data ingestion process, but this would not be done in the first release.
 	- .NET might be used in future releases
+	- invSys and its supporting systems should work in a LAN or WAN/cloud. Some oonvenience may be lost if WAN is not available.
