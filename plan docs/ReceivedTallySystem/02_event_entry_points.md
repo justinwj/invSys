@@ -1,35 +1,37 @@
-Event Entry Points — Mermaid
-============================
+Event Entry Points — Mermaid (sequence view)
+============================================
+
+Buttons (Confirm / Undo / Redo) are generated in `modTS_Received`. This view shows who triggers what, without layout clutter.
 
 ```mermaid
-flowchart LR
-    classDef proc fill:#dde7ff,stroke:#2f4e9c,color:#000,stroke-width:1.2px;
-    classDef list fill:#e8f9ff,stroke:#2c7a9b,color:#000,stroke-width:1.2px;
-    classDef log fill:#f7eadb,stroke:#8c6239,color:#000,stroke-dasharray:4 3;
-    classDef data fill:#dff7df,stroke:#2f6f2f,color:#000;
+sequenceDiagram
+    participant Search as frmItemSearch (Add_Click)
+    participant RT as ReceivedTally (list)
+    participant AGG as Aggregated list
+    participant CNF as Confirm button macro
+    participant INV as invSys.RECEIVED
+    participant LOG as ReceivedLog
+    participant UNDO as Undo button macro
+    participant REDO as Redo button macro
 
-    E1["frmItemSearch.Add_Click"]:::proc
-    E2["Sheet: ReceivedTally_change (guarded)"]:::proc
-    E3["Sheet: Confirm_Click"]:::proc
-    E4["Sheet: Undo_Click"]:::proc
-    E5["Sheet: Redo_Click"]:::proc
+    Search->>RT: add/merge item (sum qty, concat refs)
+    RT->>AGG: rebuild aggregated view
 
-    MERGE["MergeInsertIntoReceivedTally"]:::proc
-    VALID["ValidateAggregatedList"]:::proc
-    WRITE["WriteToInvSys + WriteLog"]:::proc
-    UNDO["MacroUndo (staging+posted+log)"]:::proc
-    REDO["MacroRedo (staging+posted+log)"]:::proc
+    AGG->>CNF: Confirm (if happy)
+    alt validation OK
+        CNF-->>INV: write rows
+        CNF-->>LOG: write log entry
+    else validation fails
+        CNF-->>CNF: show error (no write)
+    end
 
-    RT["ReceivedTally"]:::list
-    AGG["Aggregated list"]:::list
-    INV["invSys.RECEIVED"]:::data
-    RLOG["ReceivedLog"]:::log
+    UNDO-->>RT: undo inserts/merges
+    UNDO-->>AGG: undo staging
+    UNDO-->>INV: undo posted rows
+    UNDO-->>LOG: undo log entry
 
-    E1 --> MERGE --> RT --> AGG
-    E2 --> AGG
-    E3 --> VALID --> WRITE
-    WRITE --> INV
-    WRITE --> RLOG
-    E4 --> UNDO --> RT
-    E5 --> REDO --> RT
+    REDO-->>RT: redo inserts/merges
+    REDO-->>AGG: redo staging
+    REDO-->>INV: redo posted rows
+    REDO-->>LOG: redo log entry
 ```

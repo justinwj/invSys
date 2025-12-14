@@ -16,11 +16,11 @@ flowchart LR
     BTN["Confirm writes"]:::button
     AGG["Aggregated tally list<br/>(new list object)"]:::list
 
-    NOTE1["On add from Item Search: merge identical items (same ITEM/UOM or ITEM_CODE) by summing QTY into an existing row; otherwise append a new row."]:::note
+    NOTE1["On add from Item Search: merge same items (ITEM/UOM or ITEM_CODE); sum QTY and concatenate REF_NUMBERs. If other fields (e.g., LOCATION) differ, keep separate rows."]:::note
     NOTE2["Aggregated list is the staging view used for confirm; columns: ITEM, QTY, UOM, PRICE, ITEM_CODE, ROW."]:::note
 
     SRC -->|select item<br/>add/merge| RT
-    RT -->|auto-aggregate| AGG
+    RT -->|"auto-aggregate (sum qty, combine refs; split if fields differ)"| AGG
     AGG -->|"Confirm (if happy)"| BTN
 
     RT --- NOTE1

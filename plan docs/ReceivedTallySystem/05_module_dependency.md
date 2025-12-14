@@ -1,31 +1,42 @@
-Module/Procedure Dependency — Mermaid
-=====================================
+Module/Procedure Dependency — Mermaid (C4 style)
+================================================
 
 ```mermaid
-flowchart LR
-    classDef mod fill:#e7e7ff,stroke:#4d4d8c,color:#000,stroke-width:1.2px;
-    classDef proc fill:#dde7ff,stroke:#2f4e9c,color:#000,stroke-width:1.1px;
+C4Component
+title Module / Procedure dependencies
 
-    M1["modItemSearch"]:::mod
-    M2["modReceivedTally"]:::mod
-    M3["modConfirm"]:::mod
-    M4["modUndoRedo"]:::mod
-    M5["modLog"]:::mod
+Boundary(modItemSearch_b, "modItemSearch (frmItemSearch code)") {
+  Component(P1, "AddOrMergeFromSearch()", "procedure\nadds/merges into ReceivedTally")
+}
 
-    P1["MergeInsert"]:::proc
-    P2["AggregateReceived"]:::proc
-    P3["ValidateAggregated"]:::proc
-    P4["WriteInvSys"]:::proc
-    P5["WriteReceivedLog"]:::proc
-    P6["MacroUndo"]:::proc
-    P7["MacroRedo"]:::proc
+Boundary(modReceivedTally_b, "modReceivedTally") {
+  Component(P2, "AggregateReceived()", "procedure\nbuilds aggregated view")
+  Component(P3, "ValidateAndWrite()", "procedure\nvalidate + write rows/log")
+  Component(P4, "WriteInvSys()", "procedure\npersist to invSys.RECEIVED")
+  Component(P5, "WriteReceivedLog()", "procedure\npersist to ReceivedLog")
+}
 
-    M1 --> P1 --> M2
-    M2 --> P2 --> M3
-    M3 --> P3 --> P4
-    M3 --> P5 --> M5
-    M4 --> P6
-    M4 --> P7
+Boundary(modUndoRedo_b, "modUndoRedo") {
+  Component(P6, "MacroUndo()", "procedure")
+  Component(P7, "MacroRedo()", "procedure")
+}
 
-    P4 --> M5
+Boundary(modLog_b, "modLog") {
+  Component(LOG, "Log utilities", "module")
+}
+
+Rel(P1, P2, "triggers aggregate view")
+Rel(P2, P3, "calls")
+Rel(P3, P4, "calls")
+Rel(P3, P5, "calls")
+Rel(P4, LOG, "uses")
+Rel(P5, LOG, "uses")
+
+Rel(P6, P2, "undo staging/posted/log")
+Rel(P7, P2, "redo staging/posted/log")
+
+Boundary(legend, "Legend") {
+  Component(LM, "Module boundary", "boundary")
+  Component(LP, "Procedure", "component")
+}
 ```
