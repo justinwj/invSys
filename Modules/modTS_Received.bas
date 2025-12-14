@@ -488,3 +488,15 @@ End Function
 Private Function NewGuid() As String
     NewGuid = CreateObject("Scriptlet.TypeLib").Guid
 End Function
+
+' Column index helper (case-insensitive) on a ListObject
+Private Function ColumnIndex(lo As ListObject, colName As String) As Long
+    Dim lc As ListColumn
+    For Each lc In lo.ListColumns
+        If StrComp(lc.Name, colName, vbTextCompare) = 0 Then
+            ColumnIndex = lc.Index
+            Exit Function
+        End If
+    Next
+    ColumnIndex = 0
+End Function
