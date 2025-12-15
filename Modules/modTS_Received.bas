@@ -88,6 +88,11 @@ Public Sub RebuildAggregation()
 
         MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
     Next r
+    ' Ensure quantity shows as number, not date
+    On Error Resume Next
+    agg.ListColumns("QUANTITY").DataBodyRange.NumberFormat = "0.00"
+    rt.ListColumns("QUANTITY").DataBodyRange.NumberFormat = "0.00"
+    On Error GoTo 0
 End Sub
 
 Public Sub ConfirmWrites()

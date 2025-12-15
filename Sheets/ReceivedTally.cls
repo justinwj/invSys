@@ -37,6 +37,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Set lo = Me.ListObjects("ReceivedTally")
     On Error GoTo 0
     If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
     Dim intersectRange As Range
     Set intersectRange = Application.Intersect(Target, lo.DataBodyRange)
     If intersectRange Is Nothing Then Exit Sub
@@ -46,4 +47,3 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 ExitHandler:
     Application.EnableEvents = True
 End Sub
-
