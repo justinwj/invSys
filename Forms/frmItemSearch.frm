@@ -29,10 +29,11 @@ Private Sub UserForm_Activate()
     Me.txtBox.SelLength = 0
 End Sub
 Private Sub UserForm_Initialize()
+    On Error GoTo InitErr
     ' Set up the list box columns
-    Me.lstBox.ColumnCount = 4
-    ' ITEM | ITEM_CODE | UOM | LOCATION
-    Me.lstBox.ColumnWidths = "180;90;60;90"
+    Me.lstBox.ColumnCount = 7
+    ' ROW | ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION | VENDORS
+    Me.lstBox.ColumnWidths = "60;90;180;60;90;180;140"
     ' Center the form
     Me.StartUpPosition = 1 'CenterOwner
     ' Load items from invSys via modTS_Received
@@ -45,6 +46,9 @@ Private Sub UserForm_Initialize()
     End If
     ' Apply any search text right away
     txtBox_Change
+    Exit Sub
+InitErr:
+    MsgBox "Item Search init failed: " & Err.Description, vbExclamation
 End Sub
 ' Build an index of where each first character appears in the list for faster searching
 Private Sub BuildFirstCharIndex()
@@ -202,13 +206,13 @@ Public Sub CommitSelectionAndClose()
     Dim tbl As ListObject
     ' Get selection from list box or text box
     If Me.lstBox.ListIndex <> -1 Then
-        ' col0 = ITEM, col1 = ITEM_CODE, col2 = UOM, col3 = LOCATION
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 0)      ' ITEM
+        ' col0 = ROW, col1 = ITEM_CODE, col2 = ITEM, col3 = UOM, col4 = LOCATION, col5 = DESCRIPTION, col6 = VENDORS
+        chosenRowNum = Me.lstBox.List(Me.lstBox.ListIndex, 0)     ' ROW
         chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 1)   ' ITEM_CODE
-        chosenUOM = Me.lstBox.List(Me.lstBox.ListIndex, 2)        ' UOM
-        location = Me.lstBox.List(Me.lstBox.ListIndex, 3)         ' LOCATION
-        chosenRowNum = ""
-        chosenVendor = ""
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)      ' ITEM
+        chosenUOM = Me.lstBox.List(Me.lstBox.ListIndex, 3)        ' UOM
+        location = Me.lstBox.List(Me.lstBox.ListIndex, 4)         ' LOCATION
+        chosenVendor = Me.lstBox.List(Me.lstBox.ListIndex, 6)     ' VENDORS
     ElseIf Trim(Me.txtBox.text) <> "" Then
         chosenValue = Me.txtBox.text
         chosenItemCode = ""
@@ -405,7 +409,7 @@ Private Sub PopulateListBox(itemArray As Variant)
                 LBound(itemArray, 1) & " to " & UBound(itemArray, 1) & ", " & _
                 LBound(itemArray, 2) & " to " & UBound(itemArray, 2)
     Dim i As Long
-    Dim ItemCode As String, itemName As String, uom As String, location As String
+    Dim rowNum As String, ItemCode As String, itemName As String, uom As String, location As String, descr As String, vendors As String
     Me.lstBox.Clear
     If IsEmpty(itemArray) Or Not IsArray(itemArray) Then
         Debug.Print "PopulateListBox: Invalid itemArray received"
@@ -413,16 +417,22 @@ Private Sub PopulateListBox(itemArray As Variant)
     End If
     On Error Resume Next
     For i = LBound(itemArray, 1) To UBound(itemArray, 1)
-        If IsArray(itemArray) And UBound(itemArray, 2) >= 4 Then
+        If IsArray(itemArray) And UBound(itemArray, 2) >= 6 Then
+            rowNum = CStr(itemArray(i, 0))      ' ROW
             ItemCode = CStr(itemArray(i, 1))    ' ITEM_CODE
             itemName = CStr(itemArray(i, 2))    ' ITEM
             uom = CStr(itemArray(i, 3))         ' UOM
             location = CStr(itemArray(i, 4))    ' LOCATION
+            descr = CStr(itemArray(i, 5))       ' DESCRIPTION
+            vendors = CStr(itemArray(i, 6))     ' VENDORS
             Me.lstBox.AddItem ""
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = itemName
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = rowNum
             Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = ItemCode
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = uom
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = location
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemName
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = uom
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 4) = location
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 5) = descr
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 6) = vendors
         End If
     Next i
     On Error GoTo 0

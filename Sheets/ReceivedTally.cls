@@ -21,7 +21,13 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         Set gSelectedCell = Target
         ' Show the form if not already loaded
         If Not modGlobals.IsFormLoaded("frmItemSearch") Then
+            On Error Resume Next
             frmItemSearch.Show vbModeless
+            If Err.Number <> 0 Then
+                MsgBox "Item Search could not open: " & Err.Description, vbExclamation
+                Err.Clear
+            End If
+            On Error GoTo 0
         End If
     End If
 End Sub

@@ -86,8 +86,10 @@ Public Sub RebuildAggregation()
         Dim descr As String, uom As String, location As String, invRow As Long
         itemCode = "": vendors = "": vendorCode = "": descr = "": uom = "": location = "": invRow = 0
         LookupInvSys catalog, itemName, itemCode, vendors, vendorCode, descr, uom, location, invRow
-
-        MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
+        ' If lookup failed, skip this row; do not carry stale values
+        If invRow > 0 Then
+            MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
+        End If
     Next r
     ' Ensure quantity shows as number, not date
     On Error Resume Next
@@ -249,14 +251,8 @@ Private Sub MergeIntoAggregate(agg As ListObject, refNumber As String, itemCode 
     If c Is Nothing Then Exit Sub
 
     Dim matchRow As Range
-    ' Only try to merge when we have a resolved item code; otherwise always add a new row
-    If Not agg.DataBodyRange Is Nothing Then
-        If itemCode <> "" Then
-            Set matchRow = FindAggregateMatch(agg, itemCode, itemName, uom, vendors, location, invRow, vendorCode, descr)
-        Else
-            Set matchRow = Nothing
-        End If
-    End If
+    ' Do not merge for now; always add a new row to avoid unintended rollups
+    Set matchRow = Nothing
 
     Dim lr As ListRow
     If matchRow Is Nothing Then
@@ -287,19 +283,15 @@ Private Function FindAggregateMatch(agg As ListObject, itemCode As String, itemN
     If invRow <= 0 Then Exit Function ' no resolved invSys row => no merge
     Dim r As Range
     For Each r In agg.DataBodyRange.Rows
-        Dim sameKey As Boolean
-        sameKey = False
-        If itemCode <> "" Then
-            sameKey = (NzStr(r.Cells(1, c("ITEM_CODE")).Value) = itemCode And _
-                       NzStr(r.Cells(1, c("ITEM")).Value) = itemName)
-        Else
-            sameKey = (NzStr(r.Cells(1, c("ITEM")).Value) = itemName And NzStr(r.Cells(1, c("UOM")).Value) = uom)
-        End If
-        If sameKey Then
-            ' Require same ROW to merge
-            If NzLng(r.Cells(1, c("ROW")).Value) = invRow And _
-               NzStr(r.Cells(1, c("LOCATION")).Value) = location And _
-               NzStr(r.Cells(1, c("VENDORS")).Value) = vendors Then
+        ' Merge ONLY when the invSys ROW matches and item identity matches
+        If NzLng(r.Cells(1, c("ROW")).Value) = invRow Then
+            Dim sameItem As Boolean
+            If itemCode <> "" Then
+                sameItem = (NzStr(r.Cells(1, c("ITEM_CODE")).Value) = itemCode)
+            Else
+                sameItem = (NzStr(r.Cells(1, c("ITEM")).Value) = itemName And NzStr(r.Cells(1, c("UOM")).Value) = uom)
+            End If
+            If sameItem Then
                 Set FindAggregateMatch = r
                 Exit Function
             End If
@@ -477,6 +469,9 @@ Private Function AppendRef(existingRef As String, newRef As String) As String
 End Function
 
 Private Function LookupInvSys(catalog As ListObject, itemName As String, ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, ByRef descr As String, ByRef uom As String, ByRef location As String, ByRef invRow As Long)
+    ' defaults
+    itemCode = "": vendors = "": vendorCode = "": descr = "": uom = "": location = "": invRow = 0
+
     Dim cItem As Long: cItem = ColumnIndex(catalog, "ITEM")
     Dim cCode As Long: cCode = ColumnIndex(catalog, "ITEM_CODE")
     Dim cVend As Long: cVend = ColumnIndex(catalog, "VENDOR(s)")
@@ -485,21 +480,38 @@ Private Function LookupInvSys(catalog As ListObject, itemName As String, ByRef i
     Dim cUOM As Long: cUOM = ColumnIndex(catalog, "UOM")
     Dim cRow As Long: cRow = ColumnIndex(catalog, "ROW")
     If cItem = 0 Or cCode = 0 Then Exit Function
-    Dim rng As Range: Set rng = catalog.ListColumns(IIf(itemCode <> "", cCode, cItem)).DataBodyRange
-    Dim cel As Range
-    For Each cel In rng.Cells
-        If StrComp(NzStr(cel.Value), IIf(itemCode <> "", itemCode, itemName), vbTextCompare) = 0 Then
-            invRow = NzLng(cel.Offset(0, cRow - cel.Column).Value)
-            itemCode = NzStr(cel.Offset(0, cCode - cel.Column).Value)
-            itemName = NzStr(cel.Offset(0, cItem - cel.Column).Value)
-            vendors = NzStr(cel.Offset(0, cVend - cel.Column).Value)
-            vendorCode = "" ' not in catalog headers; left blank
-            descr = NzStr(cel.Offset(0, cDesc - cel.Column).Value)
-            uom = NzStr(cel.Offset(0, cUOM - cel.Column).Value)
-            location = NzStr(cel.Offset(0, cLoc - cel.Column).Value)
+
+    ' Try exact match by code first
+    If itemCode <> "" Then
+        Dim found As Range
+        Set found = FindInColumn(catalog.ListColumns(cCode).DataBodyRange, itemCode)
+        If Not found Is Nothing Then
+            invRow = NzLng(found.Offset(0, cRow - found.Column).Value)
+            itemCode = NzStr(found.Offset(0, cCode - found.Column).Value)
+            itemName = NzStr(found.Offset(0, cItem - found.Column).Value)
+            vendors = NzStr(found.Offset(0, cVend - found.Column).Value)
+            descr = NzStr(found.Offset(0, cDesc - found.Column).Value)
+            uom = NzStr(found.Offset(0, cUOM - found.Column).Value)
+            location = NzStr(found.Offset(0, cLoc - found.Column).Value)
             Exit Function
         End If
-    Next
+    End If
+
+    ' Then try exact match by name
+    If itemName <> "" Then
+        Dim found2 As Range
+        Set found2 = FindInColumn(catalog.ListColumns(cItem).DataBodyRange, itemName)
+        If Not found2 Is Nothing Then
+            invRow = NzLng(found2.Offset(0, cRow - found2.Column).Value)
+            itemCode = NzStr(found2.Offset(0, cCode - found2.Column).Value)
+            itemName = NzStr(found2.Offset(0, cItem - found2.Column).Value)
+            vendors = NzStr(found2.Offset(0, cVend - found2.Column).Value)
+            descr = NzStr(found2.Offset(0, cDesc - found2.Column).Value)
+            uom = NzStr(found2.Offset(0, cUOM - found2.Column).Value)
+            location = NzStr(found2.Offset(0, cLoc - found2.Column).Value)
+            Exit Function
+        End If
+    End If
 End Function
 
 Private Function NewGuid() As String
@@ -519,39 +531,45 @@ Private Function ColumnIndex(lo As ListObject, colName As String) As Long
 End Function
 
 ' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
-' Returns a 2D array with columns: ITEM_CODE, ITEM, UOM, LOCATION
+' Returns a 2D array with columns: ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS
 Public Function LoadItemList() As Variant
     Dim ws As Worksheet: Set ws = SheetExists("InventoryManagement")
     If ws Is Nothing Then Exit Function
     Dim lo As ListObject: Set lo = ws.ListObjects("invSys")
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
 
-    Dim cCode As Long, cItem As Long, cUOM As Long, cLoc As Long
+    Dim cRow As Long, cCode As Long, cItem As Long, cUOM As Long, cLoc As Long, cDesc As Long, cVend As Long
+    cRow = ColumnIndex(lo, "ROW")
     cCode = ColumnIndex(lo, "ITEM_CODE")
     cItem = ColumnIndex(lo, "ITEM")
     cUOM = ColumnIndex(lo, "UOM")
     cLoc = ColumnIndex(lo, "LOCATION")
-    If cCode * cItem = 0 Then Exit Function
+    cDesc = ColumnIndex(lo, "DESCRIPTION")
+    cVend = ColumnIndex(lo, "VENDOR(s)")
+    If cCode * cItem = 0 Or cRow = 0 Then Exit Function
 
     Dim src As Variant: src = lo.DataBodyRange.Value
     Dim r As Long, n As Long: n = UBound(src, 1)
     Dim outArr() As Variant
-    ReDim outArr(1 To n, 1 To 4)
+    ReDim outArr(1 To n, 1 To 7)
     Dim outRow As Long: outRow = 0
 
     For r = 1 To n
         Dim itm As String: itm = NzStr(src(r, cItem))
         If itm <> "" Then
             outRow = outRow + 1
-            outArr(outRow, 1) = NzStr(src(r, cCode)) ' ITEM_CODE
-            outArr(outRow, 2) = itm                  ' ITEM
-            outArr(outRow, 3) = NzStr(src(r, cUOM))  ' UOM
-            outArr(outRow, 4) = NzStr(src(r, cLoc))  ' LOCATION
+            outArr(outRow, 1) = NzStr(src(r, cRow))   ' ROW
+            outArr(outRow, 2) = NzStr(src(r, cCode))  ' ITEM_CODE
+            outArr(outRow, 3) = itm                   ' ITEM
+            outArr(outRow, 4) = NzStr(src(r, cUOM))   ' UOM
+            outArr(outRow, 5) = NzStr(src(r, cLoc))   ' LOCATION
+            outArr(outRow, 6) = NzStr(src(r, cDesc))  ' DESCRIPTION
+            outArr(outRow, 7) = NzStr(src(r, cVend))  ' VENDORS
         End If
     Next
 
     If outRow = 0 Then Exit Function
     ' Trim to actual count
-    ReDim Preserve outArr(1 To outRow, 1 To 4)
+    ReDim Preserve outArr(1 To outRow, 1 To 7)
     LoadItemList = outArr
 End Function
