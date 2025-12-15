@@ -239,7 +239,6 @@ Private Sub MergeIntoReceivedTally(rt As ListObject, refNumber As String, itemNa
 End Sub
 
 Private Sub MergeIntoAggregate(agg As ListObject, refNumber As String, itemCode As String, vendors As String, vendorCode As String, descr As String, itemName As String, uom As String, qty As Double, location As String, invRow As Long)
-    If qty <= 0 Then Exit Sub
     Dim c As Object: Set c = AggColMap(agg)
     If c Is Nothing Then Exit Sub
 

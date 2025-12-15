@@ -201,7 +201,7 @@ Public Sub CommitSelectionAndClose()
     ' Get selection from list box or text box
     If Me.lstBox.ListIndex <> -1 Then
         chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 0)  ' ITEM_CODE
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 1)     ' Item name
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 1)     ' Item name (display)
         ' UOM and LOCATION are in columns 2 and 3 if needed later
         chosenRowNum = ""
         chosenVendor = ""
@@ -220,13 +220,13 @@ Public Sub CommitSelectionAndClose()
     End If
     ' Apply the selection to the cell
     If Not gSelectedCell Is Nothing Then
-        ' Update the cell with new item name
-        gSelectedCell.value = chosenValue
+        ' Update the cell with the item name (col1)
+        gSelectedCell.Value = chosenValue
 
-        ' If we have a valid item selection on ReceivedTally, rebuild aggregation detail
+        ' If we have a valid item selection on ReceivedTally, refresh aggregation detail
         If Me.lstBox.ListIndex <> -1 Then
             Set ws = gSelectedCell.Worksheet
-            If ws.name = "ReceivedTally" Then
+            If ws.Name = "ReceivedTally" Then
                 On Error Resume Next
                 modTS_Received.RebuildAggregation
                 On Error GoTo 0
@@ -516,4 +516,3 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
         KeyCode = 0 ' Prevent default tab handling
     End If
 End Sub
-
