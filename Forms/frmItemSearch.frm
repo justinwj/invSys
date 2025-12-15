@@ -34,9 +34,9 @@ Private Sub UserForm_Initialize()
     Me.lstBox.ColumnWidths = "40;60;80;150"
     ' Center the form
     Me.StartUpPosition = 1 'CenterOwner
-    ' Load items
+    ' Load items from invSys via modTS_Received
     Dim items As Variant
-    items = modTS_Data.LoadItemList()
+    items = modTS_Received.LoadItemList()
     If Not IsEmpty(items) Then
         PopulateListBox items
         FullItemList = items
@@ -544,7 +544,6 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
         KeyCode = 0 ' Prevent default tab handling
     End If
 End Sub
-
 
 
 

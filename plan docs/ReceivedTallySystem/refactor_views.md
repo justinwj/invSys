@@ -1,8 +1,6 @@
 Refactor views — Received Tally system
 ======================================
 
-This file gives three focused visuals: Before/After module layout (C4 style), the runtime sequence, and a small migration plan.
-
 View 1 — Module consolidation (Before → After)
 ----------------------------------------------
 ```mermaid
@@ -42,7 +40,7 @@ Boundary(Recv_b, "modTS_Received") {
   Component(Aggregate, "AggregateReceived()", "proc")
   Component(ValidateWrite, "ValidateAndWrite()", "proc")
   Component(WriteInvSys, "WriteInvSys()", "proc")
-  Component(WriteLog, "WriteReceivedLog()", "proc")
+  Component(WriteReceivedLog, "WriteReceivedLog()", "proc")
 }
 Boundary(Undo_b, "modUndoRedo (helper)") {
   Component(MUndo, "MacroUndo()", "proc")
@@ -56,7 +54,7 @@ Rel(ConfirmBtn, ValidateWrite, "trigger")
 Rel(AddMerge, Aggregate, "refresh aggregated view")
 Rel(Aggregate, ValidateWrite, "calls")
 Rel(ValidateWrite, WriteInvSys, "calls")
-Rel(ValidateWrite, WriteLog, "calls")
+Rel(ValidateWrite, WriteReceivedLog, "calls")
 Rel(MUndo, Aggregate, "undo staging/posted/log")
 Rel(MRedo, Aggregate, "redo staging/posted/log")
 ```
@@ -67,7 +65,7 @@ View 2 — Runtime sequence (entry → confirm)
 sequenceDiagram
     participant Search as frmItemSearch
     participant RT as ReceivedTally (list)
-    participant AGG as Aggregated list
+    participant AGG as AggregateReceived (list)
     participant CNF as Confirm macro
     participant INV as invSys.RECEIVED
     participant LOG as ReceivedLog
@@ -105,10 +103,11 @@ flowchart TD
     S2["Move receiving entrypoints from modTS_Launchers → modTS_Received"]:::step
     S3["Inline needed helpers from modTS_Data → modTS_Received"]:::step
     S4["Move Received logging from modTS_Log → modTS_Received"]:::step
-    S5["Replace frmReceivedTally with Aggregated list + Confirm button"]:::step
+    S5["Replace frmReceivedTally with AggregateReceived + Confirm button"]:::step
     S6["Update call sites to modTS_Received"]:::step
     S7["Deprecate old modules (Tally/Data/Launchers/Log)"]:::warn
     S8["Remove old modules and form"]:::done
 
     S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
 ```
+``` 

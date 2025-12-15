@@ -500,3 +500,41 @@ Private Function ColumnIndex(lo As ListObject, colName As String) As Long
     Next
     ColumnIndex = 0
 End Function
+
+' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
+' Returns a 2D array with columns: ITEM_CODE, ITEM, UOM, LOCATION
+Public Function LoadItemList() As Variant
+    Dim ws As Worksheet: Set ws = SheetExists("InventoryManagement")
+    If ws Is Nothing Then Exit Function
+    Dim lo As ListObject: Set lo = ws.ListObjects("invSys")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cCode As Long, cItem As Long, cUOM As Long, cLoc As Long
+    cCode = ColumnIndex(lo, "ITEM_CODE")
+    cItem = ColumnIndex(lo, "ITEM")
+    cUOM = ColumnIndex(lo, "UOM")
+    cLoc = ColumnIndex(lo, "LOCATION")
+    If cCode * cItem = 0 Then Exit Function
+
+    Dim src As Variant: src = lo.DataBodyRange.Value
+    Dim r As Long, n As Long: n = UBound(src, 1)
+    Dim outArr() As Variant
+    ReDim outArr(1 To n, 1 To 4)
+    Dim outRow As Long: outRow = 0
+
+    For r = 1 To n
+        Dim itm As String: itm = NzStr(src(r, cItem))
+        If itm <> "" Then
+            outRow = outRow + 1
+            outArr(outRow, 1) = NzStr(src(r, cCode)) ' ITEM_CODE
+            outArr(outRow, 2) = itm                  ' ITEM
+            outArr(outRow, 3) = NzStr(src(r, cUOM))  ' UOM
+            outArr(outRow, 4) = NzStr(src(r, cLoc))  ' LOCATION
+        End If
+    Next
+
+    If outRow = 0 Then Exit Function
+    ' Trim to actual count
+    ReDim Preserve outArr(1 To outRow, 1 To 4)
+    LoadItemList = outArr
+End Function
