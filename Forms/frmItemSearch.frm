@@ -196,6 +196,7 @@ Public Sub CommitSelectionAndClose()
     Dim chosenItemCode As String
     Dim chosenRowNum As String
     Dim chosenVendor As String
+    Dim chosenUOM As String
     Dim location As String
     Dim ws As Worksheet
     Dim tbl As ListObject
