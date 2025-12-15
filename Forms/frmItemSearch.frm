@@ -59,9 +59,9 @@ Private Sub BuildFirstCharIndex()
     Next i
     ' Go through the list and record the first occurrence of each first character
     For i = 0 To Me.lstBox.ListCount - 1
-        ' Use index 3 for ITEM name instead of 2 (which is VENDOR)
-        If Me.lstBox.List(i, 3) <> "" Then
-            char = UCase(Left$(Me.lstBox.List(i, 3), 1))
+        ' Use index 0 for ITEM name
+        If Me.lstBox.List(i, 0) <> "" Then
+            char = UCase(Left$(Me.lstBox.List(i, 0), 1))
             ' Only record the first occurrence
             If Asc(char) <= 255 And SearchFirstCharIndex(Asc(char)) = -1 Then
                 SearchFirstCharIndex(Asc(char)) = i
@@ -109,8 +109,8 @@ Private Sub txtBox_Change()
         On Error Resume Next
         ' First pass: Search from the first character index position
         For i = startIndex To Me.lstBox.ListCount - 1
-            ' Use index 3 for ITEM name instead of 2
-            If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
+            ' Use index 0 for ITEM name
+            If InStr(1, LCase(Me.lstBox.List(i, 0)), searchText) > 0 Then
                 matchIndex = i
                 Exit For
             End If
@@ -119,8 +119,8 @@ Private Sub txtBox_Change()
         ' search from beginning to that index
         If matchIndex = -1 And startIndex > 0 Then
             For i = 0 To startIndex - 1
-                ' Use index 3 for ITEM name instead of 2
-                If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
+                ' Use index 0 for ITEM name
+                If InStr(1, LCase(Me.lstBox.List(i, 0)), searchText) > 0 Then
                     matchIndex = i
                     Exit For
                 End If

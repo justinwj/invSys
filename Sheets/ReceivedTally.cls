@@ -26,5 +26,24 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     End If
 End Sub
 
-
+' Keep AggregateReceived in sync when REF_NUMBER/ITEMS/QUANTITY change
+Private Sub Worksheet_Change(ByVal Target As Range)
+    On Error GoTo ExitHandler
+    If Target Is Nothing Then Exit Sub
+    ' Limit to small ranges
+    If Target.Cells.CountLarge > 200 Then Exit Sub
+    Dim lo As ListObject
+    On Error Resume Next
+    Set lo = Me.ListObjects("ReceivedTally")
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Sub
+    Dim intersectRange As Range
+    Set intersectRange = Application.Intersect(Target, lo.DataBodyRange)
+    If intersectRange Is Nothing Then Exit Sub
+    ' Rebuild aggregation whenever staging edits occur
+    Application.EnableEvents = False
+    modTS_Received.RebuildAggregation
+ExitHandler:
+    Application.EnableEvents = True
+End Sub
 
