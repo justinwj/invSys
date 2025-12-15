@@ -17,11 +17,6 @@ Option Explicit
 ' =============================================================
 
 ' ==== module-level undo/redo state ====
-Private Type InvDelta
-    RowIndex As Long
-    OldReceived As Double
-End Type
-
 Private mUndoInv As Collection
 Private mUndoLogRows As Collection
 Private mUndoRT As Variant
@@ -366,21 +361,20 @@ Private Sub RestoreTable(lo As ListObject, snap As Variant)
 End Sub
 
 Private Sub RecordInvDelta(rowIndex As Long, oldVal As Double)
-    Dim d As InvDelta
-    d.RowIndex = rowIndex
-    d.OldReceived = oldVal
+    ' Store simple variant array to avoid UDT/collection coercion issues
+    Dim arr(1 To 2) As Variant
+    arr(1) = rowIndex
+    arr(2) = oldVal
     If mUndoInv Is Nothing Then Set mUndoInv = New Collection
-    mUndoInv.Add d
+    mUndoInv.Add arr
 End Sub
 
 Private Sub UndoInvDeltas(inv As ListObject)
     If mUndoInv Is Nothing Then Exit Sub
     Dim v As Variant
-    Dim d As InvDelta
     Dim recvCol As Long: recvCol = ColumnIndex(inv, "RECEIVED")
     For Each v In mUndoInv
-        d = v
-        inv.ListRows(d.RowIndex).Range.Cells(1, recvCol).Value = d.OldReceived
+        inv.ListRows(CLng(v(1))).Range.Cells(1, recvCol).Value = CDbl(v(2))
     Next
 End Sub
 
