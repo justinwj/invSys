@@ -159,41 +159,6 @@ Public Sub ClearTableFilters()
     End If
     On Error GoTo 0
 End Sub
-Public Sub AddBigSearchButton()
-    On Error Resume Next
-    ' Add to ShipmentsTally
-    If Not ThisWorkbook.Sheets("ShipmentsTally") Is Nothing Then
-        ThisWorkbook.Sheets("ShipmentsTally").shapes.Delete "BigSearchBtn"
-        Dim shipBtn As Shape
-        Set shipBtn = ThisWorkbook.Sheets("ShipmentsTally").shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 180, 40)
-        With shipBtn
-            .name = "BigSearchBtn"
-            .TextFrame.Characters.text = "SEARCH ITEMS"
-            .Fill.ForeColor.RGB = RGB(0, 112, 192)  ' Blue
-            .Line.ForeColor.RGB = RGB(0, 0, 128)    ' Dark blue
-            .TextFrame.Characters.Font.Color = RGB(255, 255, 255)  ' White
-            .TextFrame.Characters.Font.Bold = True
-            .TextFrame.Characters.Font.Size = 12
-            .OnAction = "modGlobals.OpenItemSearchForCurrentCell"
-        End With
-    End If
-    ' Add to ReceivedTally
-    If Not ThisWorkbook.Sheets("ReceivedTally") Is Nothing Then
-        ThisWorkbook.Sheets("ReceivedTally").shapes.Delete "BigSearchBtn"
-        Dim recvBtn As Shape
-        Set recvBtn = ThisWorkbook.Sheets("ReceivedTally").shapes.AddShape(msoShapeRoundedRectangle, 10, 10, 180, 40)
-        With recvBtn
-            .name = "BigSearchBtn"
-            .TextFrame.Characters.text = "SEARCH ITEMS"
-            .Fill.ForeColor.RGB = RGB(0, 112, 192)  ' Blue
-            .Line.ForeColor.RGB = RGB(0, 0, 128)    ' Dark blue
-            .TextFrame.Characters.Font.Color = RGB(255, 255, 255)  ' White
-            .TextFrame.Characters.Font.Bold = True
-            .TextFrame.Characters.Font.Size = 12
-            .OnAction = "modGlobals.OpenItemSearchForCurrentCell"
-        End With
-    End If
-End Sub
 Public Sub SetupAllHandlers()
     ' Clear table filters if needed
     ClearTableFilters
