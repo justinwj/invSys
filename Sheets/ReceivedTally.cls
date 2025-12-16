@@ -15,6 +15,7 @@ Attribute VB_Exposed = True
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     ' Make sure events are on (they can be left off after runtime errors)
     If Application.EnableEvents = False Then Application.EnableEvents = True
+    Debug.Print "ReceivedTally SelectionChange", Target.Address, Now
     ' Only for single cell selection
     If Target.Cells.count > 1 Then Exit Sub
     Dim lo As ListObject
