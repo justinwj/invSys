@@ -249,7 +249,7 @@ Public Sub CommitSelection()
         lst.List(lst.ListIndex, 4), _
         CLng(NzLng(lst.List(lst.ListIndex, 0)))
 
-    modTS_Received.RebuildAggregation
+    ' Do not rebuild here; the aggregate table already has the correct ROW
     uf.Hide
 End Sub
 

@@ -23,6 +23,7 @@ Private mUndoRT As Variant
 Private mUndoAGG As Variant
 Private mRedoReady As Boolean
 Private mDynSearch As cDynItemSearch
+Private mRowMap As Object ' maps staging row number -> Array(invRow, refNumber)
 
 ' ==== public entry points =====
 Public Sub EnsureGeneratedButtons()
@@ -77,7 +78,8 @@ Public Sub AddOrMergeFromSearch( _
     ByVal descr As String, _
     ByVal uom As String, _
     ByVal location As String, _
-    ByVal invRow As Long)
+    ByVal invRow As Long, _
+    Optional ByVal stagingRow As Long = 0)
 
     Dim ws As Worksheet: Set ws = SheetExists("ReceivedTally")
     If ws Is Nothing Then Exit Sub
@@ -91,6 +93,12 @@ Public Sub AddOrMergeFromSearch( _
 
     ' Insert/merge into AggregateReceived (detailed)
     MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
+
+    ' Track the invRow for this staging row so quantity edits can sync correctly
+    If stagingRow > 0 Then
+        EnsureRowMap
+        mRowMap(CStr(stagingRow)) = Array(invRow, refNumber)
+    End If
 End Sub
 
 Public Sub RebuildAggregation()
@@ -102,6 +110,14 @@ Public Sub RebuildAggregation()
     ClearTable agg
 
     If rt.DataBodyRange Is Nothing Then Exit Sub
+    ' If staging has no ROW column, we cannot rebuild by ROW; skip quietly
+    Dim cRowRT As Long
+    cRowRT = ColumnIndex(rt, "ROW")
+    If cRowRT = 0 Then
+        Debug.Print "RebuildAggregation: staging has no ROW column; skipped."
+        Exit Sub
+    End If
+
     Dim arr, r As Long
     arr = rt.DataBodyRange.Value
     For r = 1 To UBound(arr, 1)
@@ -113,12 +129,15 @@ Public Sub RebuildAggregation()
 
         ' If the staging row has a ROW column, use that exact invSys row; otherwise skip
         Dim invRow As Long
-        invRow = NzLng(arr(r, ColumnIndex(rt, "ROW")))
+        invRow = NzLng(arr(r, cRowRT))
         If invRow > 0 Then
             ' We still need catalog details to display; fetch strictly by ROW
             Dim itemCode As String, vendors As String, vendorCode As String
             Dim descr As String, uom As String, location As String
-            LookupInvSysByROW SheetExists("InventoryManagement").ListObjects("invSys"), invRow, itemCode, vendors, vendorCode, descr, itemName, uom, location
+            Dim catWs As Worksheet: Set catWs = SheetExists("InventoryManagement")
+            Dim catLo As ListObject
+            If Not catWs Is Nothing Then Set catLo = catWs.ListObjects("invSys")
+            LookupInvSysByROW catLo, invRow, itemCode, vendors, vendorCode, descr, itemName, uom, location
             MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
         End If
     Next r
@@ -372,6 +391,11 @@ Private Sub ClearTable(lo As ListObject)
             lo.DataBodyRange.Delete
         End If
     End If
+    ' Clear row map if we clear staging
+    If lo Is Nothing Then Exit Sub
+    If StrComp(lo.Name, "ReceivedTally", vbTextCompare) = 0 Then
+        If Not mRowMap Is Nothing Then mRowMap.RemoveAll
+    End If
 End Sub
 
 ' ===== undo helpers =====
@@ -461,7 +485,7 @@ Private Function FindInColumn(rng As Range, value As String) As Range
     Next
 End Function
 
-Private Function NzStr(v As Variant) As String
+Public Function NzStr(v As Variant) As String
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Then
         NzStr = ""
     Else
@@ -469,7 +493,7 @@ Private Function NzStr(v As Variant) As String
     End If
 End Function
 
-Private Function NzDbl(v As Variant) As Double
+Public Function NzDbl(v As Variant) As Double
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
         NzDbl = 0#
     Else
@@ -477,7 +501,7 @@ Private Function NzDbl(v As Variant) As Double
     End If
 End Function
 
-Private Function NzLng(v As Variant) As Long
+Public Function NzLng(v As Variant) As Long
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
         NzLng = 0
     Else
@@ -588,6 +612,38 @@ Private Function ColumnIndex(lo As ListObject, colName As String) As Long
     Next
     ColumnIndex = 0
 End Function
+
+' Maintain quantity sync from staging (ReceivedTally) to AggregateReceived
+Public Sub SyncQuantityFromStaging(ByVal stagingRow As Long, ByVal newQty As Double)
+    If stagingRow <= 0 Then Exit Sub
+    If newQty <= 0 Then Exit Sub
+    If mRowMap Is Nothing Then Exit Sub
+    If Not mRowMap.Exists(CStr(stagingRow)) Then Exit Sub
+
+    Dim info As Variant
+    info = mRowMap(CStr(stagingRow)) ' Array(invRow, refNumber)
+    Dim invRow As Long: invRow = CLng(info(0))
+    Dim refNum As String: refNum = CStr(info(1))
+
+    Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
+    If wsAgg Is Nothing Then Exit Sub
+    Dim agg As ListObject: Set agg = wsAgg.ListObjects("AggregateReceived")
+    If agg Is Nothing Or agg.DataBodyRange Is Nothing Then Exit Sub
+
+    Dim cQty As Long: cQty = ColumnIndex(agg, "QUANTITY")
+    Dim lr As ListRow
+    For Each lr In agg.ListRows
+        If NzLng(lr.Range.Cells(1, ColumnIndex(agg, "ROW")).Value) = invRow _
+           And StrComp(NzStr(lr.Range.Cells(1, ColumnIndex(agg, "REF_NUMBER")).Value), refNum, vbTextCompare) = 0 Then
+            lr.Range.Cells(1, cQty).Value = newQty
+            Exit For
+        End If
+    Next
+End Sub
+
+Private Sub EnsureRowMap()
+    If mRowMap Is Nothing Then Set mRowMap = CreateObject("Scripting.Dictionary")
+End Sub
 
 ' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
 ' Returns a 2D array with columns: ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS
