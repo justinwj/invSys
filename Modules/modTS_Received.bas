@@ -38,17 +38,32 @@ End Sub
 
 ' ==== dynamic search form (ReceivedTally) =====
 Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
-    If targetCell Is Nothing Then Exit Sub
-    If mDynSearch Is Nothing Then
-        On Error Resume Next
-        Set mDynSearch = New cDynItemSearch
-        On Error GoTo 0
-        If mDynSearch Is Nothing Then Exit Sub
+    Debug.Print "ShowDynamicItemSearch called, target:", targetCell.Address
+    
+    If targetCell Is Nothing Then
+        Debug.Print "  targetCell is Nothing, exiting"
+        Exit Sub
     End If
-    On Error Resume Next
+
+    If mDynSearch Is Nothing Then
+        Debug.Print "  mDynSearch is Nothing, creating new cDynItemSearch"
+        On Error GoTo ErrHandler
+        Set mDynSearch = New cDynItemSearch
+        Debug.Print "  New cDynItemSearch succeeded"
+    Else
+        Debug.Print "  Reusing existing cDynItemSearch instance"
+    End If
+
+    Debug.Print "  Calling mDynSearch.ShowForCell"
     mDynSearch.ShowForCell targetCell
-    If Err.Number <> 0 Then Err.Clear
-    On Error GoTo 0
+    Debug.Print "  Returned from ShowForCell"
+    Exit Sub
+
+ErrHandler:
+    Debug.Print "  ERROR creating cDynItemSearch:", Err.Number, Err.Description
+    Debug.Print "  Falling back to frmItemSearch"
+    On Error Resume Next
+    frmItemSearch.Show vbModeless
 End Sub
 
 ' Called by frmItemSearch after user picks an item

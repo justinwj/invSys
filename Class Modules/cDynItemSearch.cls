@@ -11,14 +11,26 @@ Private itemsArr As Variant
 Private callbackCell As Range
 
 Public Sub ShowForCell(ByVal targetCell As Range)
+    Debug.Print "cDynItemSearch.ShowForCell entered"
     If targetCell Is Nothing Then Exit Sub
     Set callbackCell = targetCell
-    If Not BuildForm() Then Exit Sub
-    If Not LoadItems() Then Exit Sub
+    Debug.Print "  Calling BuildForm"
+    If Not BuildForm() Then
+        Debug.Print "  BuildForm returned False"
+        Exit Sub
+    End If
+    Debug.Print "  Calling LoadItems"
+    If Not LoadItems() Then
+        Debug.Print "  LoadItems returned False"
+        Exit Sub
+    End If
+    Debug.Print "  Showing uf vbModeless"
     uf.Show vbModeless
+    Debug.Print "  uf.Show returned (form should now be visible)"
 End Sub
 
 Private Function BuildForm() As Boolean
+    Debug.Print "  BuildForm entered"
     On Error Resume Next
     Set uf = VBA.UserForms.Add()
     If uf Is Nothing Then Set uf = CreateObject("Forms.UserForm.1")
@@ -30,6 +42,7 @@ Private Function BuildForm() As Boolean
     uf.Width = 420
     uf.Height = 340
 
+    Debug.Print "    BuildForm SUCCESS: uf type", TypeName(uf)
     Set txtSearch = uf.Controls.Add("Forms.TextBox.1", "txtSearch", True)
     txtSearch.Left = 10: txtSearch.Top = 10: txtSearch.Width = uf.Width - 30
 
@@ -46,9 +59,15 @@ Private Function BuildForm() As Boolean
 End Function
 
 Private Function LoadItems() As Boolean
+    Debug.Print "  LoadItems entered"
     itemsArr = modTS_Received.LoadItemList()
     lst.Clear
-    If IsEmpty(itemsArr) Then Exit Function
+    If IsEmpty(itemsArr) Then
+        Debug.Print "    LoadItems FAIL: itemsArr is Empty"
+        LoadItems = False
+        Exit Function
+    End If
+    Debug.Print "    LoadItems: UBound =", UBound(itemsArr, 1)
     Dim i As Long
     For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
         lst.AddItem
@@ -61,6 +80,7 @@ Private Function LoadItems() As Boolean
         lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7) ' VENDORS
     Next i
     LoadItems = True
+    Debug.Print "    LoadItems SUCCESS"
 End Function
 
 ' Manual search filter you can call from external code (since WithEvents removed)
