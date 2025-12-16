@@ -53,10 +53,16 @@ Private Function BuildForm() As Boolean
         Exit Function
     End If
 
-    ' Build controls
+    ' Build controls and layout
     uf.Caption = "Item Search"
-    uf.Width = 420
-    uf.Height = 340
+    uf.Width = 480
+    uf.Height = 420
+
+    ' layout metrics
+    Dim m As Single: m = 10
+    Dim innerW As Single: innerW = uf.InsideWidth - 2 * m
+    Dim innerH As Single: innerH = uf.InsideHeight - 2 * m
+    Dim listH As Single: listH = innerH * 0.7 ' about 70% of the form height
 
     On Error Resume Next
     Set txtSearch = uf.Controls.Add("Forms.TextBox.1", "txtSearch", True)
@@ -72,21 +78,28 @@ Private Function BuildForm() As Boolean
     Err.Clear
     On Error GoTo 0
 
+    ' Position search box and list to use most of the space
+    txtSearch.Left = m: txtSearch.Top = m: txtSearch.Width = innerW
+    lst.Left = m: lst.Top = txtSearch.Top + txtSearch.Height + 6
+    lst.Width = innerW: lst.Height = listH
+
     ' Configure listbox
     lst.ColumnCount = 7
     lst.ColumnHeads = False
-    lst.BoundColumn = 0
-    lst.TextColumn = 3 ' ITEM
-    lst.ColumnWidths = "60;90;180;60;90;180;140" ' ROW | ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION | VENDORS
+    lst.BoundColumn = 3 ' ITEM (display)
+    lst.TextColumn = 3
+    lst.IntegralHeight = False
+    ' ROW(hidden)| ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION(hidden) | VENDORS(hidden)
+    lst.ColumnWidths = "0;90;220;70;110;0;0"
 
-    ' Configure description box
-    txtDesc.Left = 10: txtDesc.Top = lst.Top + lst.Height + 5
-    txtDesc.Width = uf.Width - 30: txtDesc.Height = 50
-    txtDesc.MultiLine = True: txtDesc.Locked = True
-
-    ' Position search box and list
-    txtSearch.Left = 10: txtSearch.Top = 10: txtSearch.Width = uf.Width - 30
-    lst.Left = 10: lst.Top = 35: lst.Width = uf.Width - 30: lst.Height = 230
+    ' Configure description box (remaining space)
+    txtDesc.Left = m
+    txtDesc.Top = lst.Top + lst.Height + 6
+    txtDesc.Width = innerW
+    txtDesc.Height = (uf.InsideHeight - txtDesc.Top - m)
+    txtDesc.MultiLine = True
+    txtDesc.Locked = True
+    txtDesc.ScrollBars = 2 'fmScrollBarsVertical
 
     BuildForm = True
     Debug.Print "    BuildForm SUCCESS"
@@ -113,6 +126,11 @@ Private Function LoadItems() As Boolean
         lst.List(lst.ListCount - 1, 5) = itemsArr(i, 6) ' DESCRIPTION
         lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7) ' VENDORS
     Next i
+    ' Select first item by default to populate description
+    If lst.ListCount > 0 Then
+        lst.ListIndex = 0
+        UpdateDescription
+    End If
     LoadItems = True
     Debug.Print "    LoadItems SUCCESS"
 End Function
@@ -124,7 +142,10 @@ Private Sub txtSearch_Change()
     lst.Clear
     If IsEmpty(itemsArr) Then Exit Sub
     For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
-        If term = "" Or InStr(1, LCase$(itemsArr(i, 3)), term) > 0 Then
+        ' Match on ITEM (3) or ITEM_CODE (2)
+        If term = "" _
+           Or InStr(1, LCase$(itemsArr(i, 3)), term) > 0 _
+           Or InStr(1, LCase$(itemsArr(i, 2)), term) > 0 Then
             lst.AddItem
             lst.List(lst.ListCount - 1, 0) = itemsArr(i, 1)
             lst.List(lst.ListCount - 1, 1) = itemsArr(i, 2)
@@ -135,6 +156,10 @@ Private Sub txtSearch_Change()
             lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7)
         End If
     Next i
+    If lst.ListCount > 0 Then
+        lst.ListIndex = 0
+        UpdateDescription
+    End If
 End Sub
 
 Private Sub lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
