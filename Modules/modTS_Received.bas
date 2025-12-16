@@ -43,21 +43,11 @@ Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
         On Error Resume Next
         Set mDynSearch = New cDynItemSearch
         On Error GoTo 0
-        If mDynSearch Is Nothing Then
-            ' Final fallback: use legacy form if the class cannot be created
-            On Error Resume Next
-            frmItemSearch.Show vbModeless
-            On Error GoTo 0
-            Exit Sub
-        End If
+        If mDynSearch Is Nothing Then Exit Sub
     End If
     On Error Resume Next
     mDynSearch.ShowForCell targetCell
-    If Err.Number <> 0 Then
-        ' fall back to legacy without blocking user
-        frmItemSearch.Show vbModeless
-        Err.Clear
-    End If
+    If Err.Number <> 0 Then Err.Clear
     On Error GoTo 0
 End Sub
 
