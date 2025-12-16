@@ -222,23 +222,45 @@ ErrHandler:
 End Sub
 
 Public Sub MacroUndo()
+    ' Undo last successful ConfirmWrites
     Dim wsRT As Worksheet: Set wsRT = SheetExists("ReceivedTally")
     Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
     Dim wsInv As Worksheet: Set wsInv = SheetExists("InventoryManagement")
     Dim wsLog As Worksheet: Set wsLog = SheetExists("ReceivedLog")
     If wsRT Is Nothing Or wsAgg Is Nothing Or wsInv Is Nothing Or wsLog Is Nothing Then Exit Sub
+    ' Guard: do we have anything to undo?
+    Dim hasUndo As Boolean
+    hasUndo = Not IsEmpty(mUndoRT) Or Not IsEmpty(mUndoAGG)
+    If mUndoInv Is Nothing Then
+        hasUndo = hasUndo Or False
+    Else
+        hasUndo = hasUndo Or (mUndoInv.Count > 0)
+    End If
+    If mUndoLogRows Is Nothing Then
+        hasUndo = hasUndo Or False
+    Else
+        hasUndo = hasUndo Or (mUndoLogRows.Count > 0)
+    End If
+    If Not hasUndo Then
+        MsgBox "Nothing to undo (no confirm snapshot).", vbInformation
+        Exit Sub
+    End If
 
+    Application.EnableEvents = False
     RestoreTable wsRT.ListObjects("ReceivedTally"), mUndoRT
     RestoreTable wsAgg.ListObjects("AggregateReceived"), mUndoAGG
     UndoInvDeltas wsInv.ListObjects("invSys")
     DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
+    Application.EnableEvents = True
     mRedoReady = True
 End Sub
 
 Public Sub MacroRedo()
-    If mRedoReady Then
-        ConfirmWrites
+    If Not mRedoReady Then
+        MsgBox "Nothing to redo. Perform an undo first.", vbInformation
+        Exit Sub
     End If
+    ConfirmWrites
 End Sub
 
 ' ==== helpers ====
@@ -302,7 +324,7 @@ Private Sub MergeIntoAggregate(agg As ListObject, refNumber As String, itemCode 
     If invRow <= 0 Then Exit Sub ' must have resolved invSys row to merge
 
     Dim matchLR As ListRow
-    Set matchLR = FindAggregateMatchByRowRef(agg, invRow, refNumber)
+    Set matchLR = FindAggregateMatchByRow(agg, invRow)
 
     Dim lr As ListRow
     If matchLR Is Nothing Then
@@ -327,18 +349,16 @@ Private Sub MergeIntoAggregate(agg As ListObject, refNumber As String, itemCode 
     End With
 End Sub
 
-Private Function FindAggregateMatchByRowRef(agg As ListObject, invRow As Long, refNumber As String) As ListRow
+Private Function FindAggregateMatchByRow(agg As ListObject, invRow As Long) As ListRow
     If agg Is Nothing Or agg.DataBodyRange Is Nothing Then Exit Function
-    Dim cRow As Long, cRef As Long
+    Dim cRow As Long
     cRow = ColumnIndex(agg, "ROW")
-    cRef = ColumnIndex(agg, "REF_NUMBER")
-    If cRow = 0 Or cRef = 0 Then Exit Function
+    If cRow = 0 Then Exit Function
 
     Dim lr As ListRow
     For Each lr In agg.ListRows
-        If NzLng(lr.Range.Cells(1, cRow).Value) = invRow _
-           And StrComp(NzStr(lr.Range.Cells(1, cRef).Value), refNumber, vbTextCompare) = 0 Then
-            Set FindAggregateMatchByRowRef = lr
+        If NzLng(lr.Range.Cells(1, cRow).Value) = invRow Then
+            Set FindAggregateMatchByRow = lr
             Exit Function
         End If
     Next lr
@@ -614,31 +634,55 @@ Private Function ColumnIndex(lo As ListObject, colName As String) As Long
 End Function
 
 ' Maintain quantity sync from staging (ReceivedTally) to AggregateReceived
-Public Sub SyncQuantityFromStaging(ByVal stagingRow As Long, ByVal newQty As Double)
-    If stagingRow <= 0 Then Exit Sub
-    If newQty <= 0 Then Exit Sub
+Public Sub SyncQuantityFromStaging(ByVal stagingRowIdx As Long, ByVal newQty As Double)
+    If stagingRowIdx <= 0 Then Exit Sub
     If mRowMap Is Nothing Then Exit Sub
-    If Not mRowMap.Exists(CStr(stagingRow)) Then Exit Sub
+    If Not mRowMap.Exists(CStr(stagingRowIdx)) Then Exit Sub
 
+    ' Identify invSys ROW for this staging row
     Dim info As Variant
-    info = mRowMap(CStr(stagingRow)) ' Array(invRow, refNumber)
+    info = mRowMap(CStr(stagingRowIdx)) ' Array(invRow, refNumber)
     Dim invRow As Long: invRow = CLng(info(0))
-    Dim refNum As String: refNum = CStr(info(1))
 
+    ' Sum all staging quantities that map to the same invSys ROW
+    Dim wsRT As Worksheet: Set wsRT = SheetExists("ReceivedTally")
+    If wsRT Is Nothing Then Exit Sub
+    Dim rt As ListObject: Set rt = wsRT.ListObjects("ReceivedTally")
+    If rt Is Nothing Or rt.DataBodyRange Is Nothing Then Exit Sub
+    Dim colQtyRT As Long: colQtyRT = ColumnIndex(rt, "QUANTITY")
+    If colQtyRT = 0 Then Exit Sub
+
+    Dim totalQty As Double: totalQty = 0
+    Dim k As Variant
+    For Each k In mRowMap.Keys
+        Dim arr As Variant
+        arr = mRowMap(k) ' invRow, refNumber
+        If CLng(arr(0)) = invRow Then
+            Dim sr As Long
+            sr = CLng(k)
+            If sr >= 1 And sr <= rt.DataBodyRange.Rows.Count Then
+                totalQty = totalQty + NzDbl(rt.DataBodyRange.Cells(sr, colQtyRT).Value)
+            End If
+        End If
+    Next k
+
+    ' Update the single aggregate row for this invRow
     Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
     If wsAgg Is Nothing Then Exit Sub
     Dim agg As ListObject: Set agg = wsAgg.ListObjects("AggregateReceived")
     If agg Is Nothing Or agg.DataBodyRange Is Nothing Then Exit Sub
 
-    Dim cQty As Long: cQty = ColumnIndex(agg, "QUANTITY")
+    Dim cRowAgg As Long: cRowAgg = ColumnIndex(agg, "ROW")
+    Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(agg, "QUANTITY")
+    If cRowAgg = 0 Or cQtyAgg = 0 Then Exit Sub
+
     Dim lr As ListRow
     For Each lr In agg.ListRows
-        If NzLng(lr.Range.Cells(1, ColumnIndex(agg, "ROW")).Value) = invRow _
-           And StrComp(NzStr(lr.Range.Cells(1, ColumnIndex(agg, "REF_NUMBER")).Value), refNum, vbTextCompare) = 0 Then
-            lr.Range.Cells(1, cQty).Value = newQty
+        If NzLng(lr.Range.Cells(1, cRowAgg).Value) = invRow Then
+            lr.Range.Cells(1, cQtyAgg).Value = totalQty
             Exit For
         End If
-    Next
+    Next lr
 End Sub
 
 Private Sub EnsureRowMap()

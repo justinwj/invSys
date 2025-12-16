@@ -69,7 +69,10 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim cel As Range
     Application.EnableEvents = False
     For Each cel In rngHit.Cells
-        modTS_Received.SyncQuantityFromStaging cel.Row, modTS_Received.NzDbl(cel.Value)
+        ' map sheet row to list row index
+        Dim rowIdx As Long
+        rowIdx = cel.Row - lo.DataBodyRange.Row + 1
+        modTS_Received.SyncQuantityFromStaging rowIdx, modTS_Received.NzDbl(cel.Value)
     Next cel
 ExitHandler:
     Application.EnableEvents = True

@@ -247,7 +247,8 @@ Public Sub CommitSelection()
         lst.List(lst.ListIndex, 5), _
         lst.List(lst.ListIndex, 3), _
         lst.List(lst.ListIndex, 4), _
-        CLng(NzLng(lst.List(lst.ListIndex, 0)))
+        CLng(NzLng(lst.List(lst.ListIndex, 0))), _
+        stagingRow:=rowIdx
 
     ' Do not rebuild here; the aggregate table already has the correct ROW
     uf.Hide
