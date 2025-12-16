@@ -51,12 +51,14 @@ Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
             Exit Sub
         End If
     End If
-    On Error GoTo ShowErr
+    On Error Resume Next
     mDynSearch.ShowForCell targetCell
+    If Err.Number <> 0 Then
+        ' fall back to legacy without blocking user
+        frmItemSearch.Show vbModeless
+        Err.Clear
+    End If
     On Error GoTo 0
-    Exit Sub
-ShowErr:
-    MsgBox "Item Search failed: " & Err.Description, vbExclamation
 End Sub
 
 ' Called by frmItemSearch after user picks an item

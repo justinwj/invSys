@@ -13,16 +13,33 @@ Private callbackCell As Range
 Public Sub ShowForCell(ByVal targetCell As Range)
     If targetCell Is Nothing Then Exit Sub
     Set callbackCell = targetCell
-    If Not BuildForm() Then Exit Sub
-    If Not LoadItems() Then Exit Sub
+    If Not BuildForm() Then
+        On Error Resume Next
+        frmItemSearch.Show vbModeless
+        On Error GoTo 0
+        Exit Sub
+    End If
+    If Not LoadItems() Then
+        On Error Resume Next
+        frmItemSearch.Show vbModeless
+        On Error GoTo 0
+        Exit Sub
+    End If
     uf.Show vbModeless
 End Sub
 
 Private Function BuildForm() As Boolean
     ' Try to create a runtime UserForm in a resilient way
-    Dim errMsg As String
-    On Error GoTo BuildErr
+    On Error Resume Next
     Set uf = VBA.UserForms.Add()
+    If uf Is Nothing Then
+        Set uf = CreateObject("Forms.UserForm.1")
+    End If
+    On Error GoTo 0
+    If uf Is Nothing Then
+        BuildForm = False
+        Exit Function
+    End If
     BuildForm = True
     uf.Caption = "Item Search"
     uf.Width = 420
@@ -42,45 +59,6 @@ Private Function BuildForm() As Boolean
     txtDesc.Left = 10: txtDesc.Top = lst.Top + lst.Height + 5
     txtDesc.Width = uf.Width - 30: txtDesc.Height = 50
     txtDesc.MultiLine = True: txtDesc.Locked = True
-    Exit Function
-
-BuildErr:
-    errMsg = Err.Description
-    On Error GoTo 0
-    ' Secondary attempt: CreateObject
-    On Error Resume Next
-    Set uf = CreateObject("Forms.UserForm.1")
-    On Error GoTo 0
-    If Not uf Is Nothing Then
-        BuildForm = True
-        uf.Caption = "Item Search"
-        uf.Width = 420
-        uf.Height = 340
-
-        Set txtSearch = uf.Controls.Add("Forms.TextBox.1", "txtSearch", True)
-        txtSearch.Left = 10: txtSearch.Top = 10: txtSearch.Width = uf.Width - 30
-
-        Set lst = uf.Controls.Add("Forms.ListBox.1", "lst", True)
-        lst.Left = 10: lst.Top = 35: lst.Width = uf.Width - 30: lst.Height = 230
-        lst.ColumnCount = 7
-        ' ROW | ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION | VENDORS
-        lst.ColumnWidths = "60;90;180;60;90;180;140"
-
-        Dim txtDesc2 As MSForms.TextBox
-        Set txtDesc2 = uf.Controls.Add("Forms.TextBox.1", "txtDesc", True)
-        txtDesc2.Left = 10: txtDesc2.Top = lst.Top + lst.Height + 5
-        txtDesc2.Width = uf.Width - 30: txtDesc2.Height = 50
-        txtDesc2.MultiLine = True: txtDesc2.Locked = True
-        Exit Function
-    End If
-
-    ' Final fallback: legacy form, but report the original error to aid diagnosis
-    MsgBox "Dynamic Item Search could not be created: " & errMsg & vbCrLf & _
-           "Opening legacy frmItemSearch instead.", vbExclamation
-    On Error Resume Next
-    frmItemSearch.Show vbModeless
-    On Error GoTo 0
-    BuildForm = False
 End Function
 
 Private Function LoadItems() As Boolean
