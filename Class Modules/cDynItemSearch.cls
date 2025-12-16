@@ -89,8 +89,8 @@ Private Function BuildForm() As Boolean
     lst.BoundColumn = 3 ' ITEM (display)
     lst.TextColumn = 3
     lst.IntegralHeight = False
-    ' ROW(hidden)| ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION(hidden) | VENDORS(hidden)
-    lst.ColumnWidths = "0;90;220;70;110;0;0"
+    ' ROW | ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION(hidden) | VENDORS(hidden)
+    lst.ColumnWidths = "35;60;220;50;90;0;0" ' show ROW, hide DESCRIPTION/VENDORS
 
     ' Configure description box (remaining space)
     txtDesc.Left = m
@@ -189,7 +189,11 @@ Private Sub UpdateDescription()
     If txtDesc Is Nothing Then Exit Sub
     txtDesc.Text = ""
     If lst.ListIndex >= 0 Then
-        txtDesc.Text = lst.List(lst.ListIndex, 5)
+        txtDesc.Text = lst.List(lst.ListIndex, 5) ' DESCRIPTION
+        ' Optionally append vendors for clarity
+        If lst.List(lst.ListIndex, 6) <> "" Then
+            txtDesc.Text = txtDesc.Text & vbCrLf & "Vendors: " & lst.List(lst.ListIndex, 6)
+        End If
     End If
 End Sub
 

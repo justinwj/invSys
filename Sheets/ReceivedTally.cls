@@ -57,9 +57,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim intersectRange As Range
     Set intersectRange = Application.Intersect(Target, lo.DataBodyRange)
     If intersectRange Is Nothing Then Exit Sub
-    ' Rebuild aggregation whenever staging edits occur
-    Application.EnableEvents = False
-    modTS_Received.RebuildAggregation
+    ' Do not auto-rebuild here; aggregation is maintained by AddOrMergeFromSearch
 ExitHandler:
     Application.EnableEvents = True
 End Sub
