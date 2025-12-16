@@ -98,9 +98,7 @@ Public Sub RebuildAggregation()
     If ws Is Nothing Then Exit Sub
     Dim rt As ListObject: Set rt = ws.ListObjects("ReceivedTally")
     Dim agg As ListObject: Set agg = ws.ListObjects("AggregateReceived")
-    Dim catalog As ListObject: Set catalog = SheetExists("InventoryManagement").ListObjects("invSys")
-
-    If rt Is Nothing Or agg Is Nothing Or catalog Is Nothing Then Exit Sub
+    If rt Is Nothing Or agg Is Nothing Then Exit Sub
     ClearTable agg
 
     If rt.DataBodyRange Is Nothing Then Exit Sub
@@ -113,12 +111,14 @@ Public Sub RebuildAggregation()
         Dim refNumber As String
         refNumber = NzStr(arr(r, ColumnIndex(rt, "REF_NUMBER")))
 
-        Dim itemCode As String, vendors As String, vendorCode As String
-        Dim descr As String, uom As String, location As String, invRow As Long
-        itemCode = "": vendors = "": vendorCode = "": descr = "": uom = "": location = "": invRow = 0
-        LookupInvSys catalog, itemName, itemCode, vendors, vendorCode, descr, uom, location, invRow
-        ' If lookup failed, skip this row; do not carry stale values
+        ' If the staging row has a ROW column, use that exact invSys row; otherwise skip
+        Dim invRow As Long
+        invRow = NzLng(arr(r, ColumnIndex(rt, "ROW")))
         If invRow > 0 Then
+            ' We still need catalog details to display; fetch strictly by ROW
+            Dim itemCode As String, vendors As String, vendorCode As String
+            Dim descr As String, uom As String, location As String
+            LookupInvSysByROW SheetExists("InventoryManagement").ListObjects("invSys"), invRow, itemCode, vendors, vendorCode, descr, itemName, uom, location
             MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
         End If
     Next r
@@ -495,6 +495,7 @@ Private Function AppendRef(existingRef As String, newRef As String) As String
 End Function
 
 Private Function LookupInvSys(catalog As ListObject, itemName As String, ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, ByRef descr As String, ByRef uom As String, ByRef location As String, ByRef invRow As Long)
+    ' NOTE: this lookup is used when we do not already have ROW.
     ' defaults
     itemCode = "": vendors = "": vendorCode = "": descr = "": uom = "": location = "": invRow = 0
 
@@ -539,6 +540,38 @@ Private Function LookupInvSys(catalog As ListObject, itemName As String, ByRef i
         End If
     End If
 End Function
+
+' Strict lookup by ROW when we already know the invSys ROW
+Private Sub LookupInvSysByROW(catalog As ListObject, ByVal invRow As Long, _
+    ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, _
+    ByRef descr As String, ByRef itemName As String, ByRef uom As String, ByRef location As String)
+
+    itemCode = "": vendors = "": vendorCode = "": descr = "": itemName = "": uom = "": location = ""
+    If catalog Is Nothing Or invRow <= 0 Then Exit Sub
+    If catalog.DataBodyRange Is Nothing Then Exit Sub
+
+    Dim cRow As Long: cRow = ColumnIndex(catalog, "ROW")
+    Dim cCode As Long: cCode = ColumnIndex(catalog, "ITEM_CODE")
+    Dim cItem As Long: cItem = ColumnIndex(catalog, "ITEM")
+    Dim cVend As Long: cVend = ColumnIndex(catalog, "VENDOR(s)")
+    Dim cDesc As Long: cDesc = ColumnIndex(catalog, "DESCRIPTION")
+    Dim cUOM As Long: cUOM = ColumnIndex(catalog, "UOM")
+    Dim cLoc As Long: cLoc = ColumnIndex(catalog, "LOCATION")
+    If cRow = 0 Then Exit Sub
+
+    Dim cel As Range
+    For Each cel In catalog.ListColumns(cRow).DataBodyRange.Cells
+        If NzLng(cel.Value) = invRow Then
+            If cCode > 0 Then itemCode = NzStr(cel.Offset(0, cCode - cel.Column).Value)
+            If cItem > 0 Then itemName = NzStr(cel.Offset(0, cItem - cel.Column).Value)
+            If cVend > 0 Then vendors = NzStr(cel.Offset(0, cVend - cel.Column).Value)
+            If cDesc > 0 Then descr = NzStr(cel.Offset(0, cDesc - cel.Column).Value)
+            If cUOM > 0 Then uom = NzStr(cel.Offset(0, cUOM - cel.Column).Value)
+            If cLoc > 0 Then location = NzStr(cel.Offset(0, cLoc - cel.Column).Value)
+            Exit Sub
+        End If
+    Next
+End Sub
 
 Private Function NewGuid() As String
     NewGuid = CreateObject("Scriptlet.TypeLib").Guid
