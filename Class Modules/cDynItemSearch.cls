@@ -19,8 +19,17 @@ Public Sub ShowForCell(ByVal targetCell As Range)
 End Sub
 
 Private Sub BuildForm()
-    ' Create a new in-memory userform without relying on CreateObject registry
-    Set uf = VBA.UserForms.Add()
+    ' Try to create a runtime UserForm in a resilient way
+    On Error Resume Next
+    Set uf = CreateObject("Forms.UserForm.1")
+    If uf Is Nothing Then
+        Set uf = VBA.UserForms.Add() ' fallback
+    End If
+    On Error GoTo 0
+    If uf Is Nothing Then
+        MsgBox "Item Search could not be created (MSForms not available).", vbCritical
+        Exit Sub
+    End If
     uf.Caption = "Item Search"
     uf.Width = 420
     uf.Height = 340

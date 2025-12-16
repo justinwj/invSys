@@ -26,15 +26,15 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         Exit Sub
     End If
     If LCase$(lo.Name) <> "receivedtally" Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then Exit Sub
-    ' must be in data body and in ITEMS column
-    If Application.Intersect(Target, lo.DataBodyRange) Is Nothing Then Exit Sub
+    ' must be in ITEMS column, below the header (even when table is empty)
     Dim itemsCol As ListColumn
     On Error Resume Next
     Set itemsCol = lo.ListColumns("ITEMS")
     On Error GoTo 0
     If itemsCol Is Nothing Then Exit Sub
     If Target.Column <> itemsCol.Range.Column Then Exit Sub
+    ' allow first data row even when DataBodyRange is Nothing
+    If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
 
     ' Set the global selected cell
     Set gSelectedCell = Target
