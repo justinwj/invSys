@@ -20,6 +20,7 @@ flowchart LR
     TALLY["ShippingTally<br/>(REF_NUMBER, ITEMS, QUANTITY)"]:::list
     ASSY["ShippingAssembly<br/>(component explosion + INV_CHECK)"]:::list
     SHIP["Shipments<br/>(package aggregate)"]:::list
+    DEL["Check-on-delete guard"]:::button
 
     BUILDER_HDR --> BTN_CREATE
     BUILDER_BOM --> BTN_CREATE
@@ -28,12 +29,16 @@ flowchart LR
     SHIPPING_PACKAGES -->|picker source| PICKER -->|add/merge package| TALLY
     TALLY -->|"explode BOM"| ASSY
     TALLY -->|"group packages"| SHIP
+    TALLY -->|"row deleted"| DEL --> SHIP
+    DEL --> ASSY
 
     NOTE1["Package Builder enforces invSys-aligned schema (ITEM_CODE/ITEM/UOM/LOCATION + metadata).\nEach package is a managed item with its own ROW."]:::note
     NOTE2["ShippingAssembly calculates component demand = Quantity × BOM; INV_CHECK = TOTAL_INV - demand."]:::note
+    NOTE3["Delete guard listens for row removal and subtracts both package and component requirements so operators can try alternate packing combos without stale totals."]:::note
 
     SHIPPING_PACKAGES --- NOTE1
     ASSY --- NOTE2
+    DEL --- NOTE3
 ```
 
 View B – Confirm / Undo / Redo / Logging

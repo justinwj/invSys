@@ -34,10 +34,13 @@ flowchart TB
     NOTE1["All package definitions are managed items; they exist as rows in invSys so they can be stocked, searched, and shipped."]:::note
     NOTE2["ShippingAssembly compares needed quantity vs invSys.TOTAL_INV to populate INV_CHECK = TOTAL_INV - COMPONENT_QTY. Validation blocks negatives."]:::note
     NOTE3["ShippingLog keeps per-REF detail: both the package and its underlying component movements for traceability."]:::note
+    NOTE4["Check-on-delete guard listens to ShippingTally deletions and subtracts the removed package + BOM requirements from Shipments and ShippingAssembly so the operator can reconfigure without stale counts."]:::note
 
     BOM_HDR --- NOTE1
     SHIP_ASSY --- NOTE2
     SHIPPING_LOG --- NOTE3
+    SHIP_TALLY --- NOTE4
+    SHIP_AGG --- NOTE4
 ```
 
 Block Diagram (relationships & merge rules)
