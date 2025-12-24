@@ -275,6 +275,32 @@ Private Sub DeleteShapeIfExists(ws As Worksheet, shapeName As String)
     On Error GoTo 0
 End Sub
 
+Private Function ResolveRow(lo As ListObject, targetCell As Range) As ListRow
+    If lo Is Nothing Then Exit Function
+    
+    Dim rowIdx As Long: rowIdx = 0
+    
+    If Not targetCell Is Nothing Then
+        If Not lo.DataBodyRange Is Nothing Then
+            If targetCell.Row >= lo.DataBodyRange.Row _
+               And targetCell.Row <= lo.DataBodyRange.Row + lo.DataBodyRange.Rows.Count - 1 Then
+                rowIdx = targetCell.Row - lo.DataBodyRange.Row + 1
+            End If
+        End If
+    End If
+    
+    If rowIdx >= 1 And rowIdx <= lo.ListRows.Count Then
+        Set ResolveRow = lo.ListRows(rowIdx)
+    End If
+End Function
+
+Private Sub WriteValue(lr As ListRow, columnName As String, value As Variant)
+    If lr Is Nothing Then Exit Sub
+    Dim colIdx As Long: colIdx = ColumnIndex(lr.Parent, columnName)
+    If colIdx = 0 Then Exit Sub
+    lr.Range.Cells(1, colIdx).Value = value
+End Sub
+
 ' ===== builder helpers =====
 Private Sub ToggleBuilderTables(ByVal makeVisible As Boolean)
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
@@ -320,35 +346,60 @@ Public Sub ApplyItemSelection(targetCell As Range, lo As ListObject, rowIndex As
     Optional ByVal description As String = "")
 
     If lo Is Nothing Then Exit Sub
-
-    Dim lr As ListRow
-    If lo.ListRows.Count = 0 Then
-        Set lr = lo.ListRows.Add
-    ElseIf rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then
-        Set lr = lo.ListRows.Add
-    Else
-        Set lr = lo.ListRows(rowIndex)
-    End If
-    rowIndex = lr.Index
-
+    
     Dim tableName As String
     tableName = LCase$(lo.Name)
 
     Select Case tableName
         Case "shipmentstally"
-            Dim cItems As Long: cItems = ColumnIndex(lo, "ITEMS")
-            If cItems > 0 Then lr.Range.Cells(1, cItems).Value = itemName
+            targetCell.Value = itemName
+            
         Case LCase$(TABLE_BOX_BOM)
-            Dim cItem As Long: cItem = ColumnIndex(lo, COL_BOXBOM_ITEM)
-            If cItem > 0 Then lr.Range.Cells(1, cItem).Value = itemName
-            Dim cRowCol As Long: cRowCol = ColumnIndex(lo, "ROW")
-            If cRowCol > 0 Then lr.Range.Cells(1, cRowCol).Value = itemRow
-            Dim cUomCol As Long: cUomCol = ColumnIndex(lo, "UOM")
-            If cUomCol > 0 Then lr.Range.Cells(1, cUomCol).Value = uom
-            Dim cLocCol As Long: cLocCol = ColumnIndex(lo, "LOCATION")
-            If cLocCol > 0 Then lr.Range.Cells(1, cLocCol).Value = location
-            Dim cDescCol As Long: cDescCol = ColumnIndex(lo, "DESCRIPTION")
-            If cDescCol > 0 Then lr.Range.Cells(1, cDescCol).Value = description
+            Dim invLo As ListObject
+            Set invLo = GetInvSysTable()
+            If invLo Is Nothing Then
+                targetCell.Value = itemName
+                Exit Sub
+            End If
+            
+            Dim invRowIdx As Long
+            If itemRow > 0 Then invRowIdx = FindInvRowIndexByRow(invLo, itemRow)
+            If invRowIdx = 0 And Len(Trim$(itemName)) > 0 Then
+                invRowIdx = FindInvRowIndexByItem(invLo, itemName)
+            End If
+            If invRowIdx = 0 Then
+                targetCell.Value = itemName
+                Exit Sub
+            End If
+            
+            Dim invRowCol As Long: invRowCol = ColumnIndex(invLo, "ROW")
+            Dim invUomCol As Long: invUomCol = ColumnIndex(invLo, "UOM")
+            Dim invLocCol As Long: invLocCol = ColumnIndex(invLo, "LOCATION")
+            Dim invDescCol As Long: invDescCol = ColumnIndex(invLo, "DESCRIPTION")
+            
+            Dim actualRow As Long
+            Dim actualUom As String, actualLoc As String, actualDesc As String
+            If invRowCol > 0 Then actualRow = NzLng(invLo.DataBodyRange.Cells(invRowIdx, invRowCol).Value)
+            If invUomCol > 0 Then actualUom = NzStr(invLo.DataBodyRange.Cells(invRowIdx, invUomCol).Value)
+            If invLocCol > 0 Then actualLoc = NzStr(invLo.DataBodyRange.Cells(invRowIdx, invLocCol).Value)
+            If invDescCol > 0 Then actualDesc = NzStr(invLo.DataBodyRange.Cells(invRowIdx, invDescCol).Value)
+            
+            If Len(actualUom) = 0 Then actualUom = uom
+            If Len(actualLoc) = 0 Then actualLoc = location
+            If Len(actualDesc) = 0 Then actualDesc = description
+            
+            Dim itemColIdx As Long: itemColIdx = ColumnIndex(lo, COL_BOXBOM_ITEM)
+            Dim rowColIdx As Long: rowColIdx = ColumnIndex(lo, "ROW")
+            Dim uomColIdx As Long: uomColIdx = ColumnIndex(lo, "UOM")
+            Dim locColIdx As Long: locColIdx = ColumnIndex(lo, "LOCATION")
+            Dim descColIdx As Long: descColIdx = ColumnIndex(lo, "DESCRIPTION")
+            
+            targetCell.Value = itemName
+            If rowColIdx > 0 Then targetCell.Offset(0, rowColIdx - itemColIdx).Value = actualRow
+            If uomColIdx > 0 Then targetCell.Offset(0, uomColIdx - itemColIdx).Value = actualUom
+            If locColIdx > 0 Then targetCell.Offset(0, locColIdx - itemColIdx).Value = actualLoc
+            If descColIdx > 0 Then targetCell.Offset(0, descColIdx - itemColIdx).Value = actualDesc
+            
         Case Else
             ' no-op
     End Select
