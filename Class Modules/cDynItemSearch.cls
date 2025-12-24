@@ -266,7 +266,7 @@ Public Sub CommitSelection()
                 itemRow, _
                 stagingRow:=rowIdx
         Case "shipmentstally"
-            modTS_Shipments.ApplyItemSelection callbackCell, lo, rowIdx, itemName, itemCode, itemRow, uom, location, vendor
+            modTS_Shipments.ApplyItemSelection callbackCell, lo, rowIdx, itemName, itemCode, itemRow, uom, location, vendor, lst.List(lst.ListIndex, 5)
         Case Else
             ' no special handling
     End Select

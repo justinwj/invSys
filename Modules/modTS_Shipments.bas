@@ -27,9 +27,9 @@ Private Const TABLE_AGG_PACK As String = "AggregatePackages"
 Private Const TABLE_BOX_BUILDER As String = "BoxBuilder"
 Private Const TABLE_BOX_BOM As String = "BoxBOM"
 Private Const TABLE_CHECK_INV As String = "Check_invSys"
+Private Const COL_BOXBOM_ITEM As String = "ITEM"
 
-Private Const BTN_SHOW_BUILDER As String = "BTN_SHOW_BUILDER"
-Private Const BTN_HIDE_BUILDER As String = "BTN_HIDE_BUILDER"
+Private Const BTN_TOGGLE_BUILDER As String = "BTN_TOGGLE_BUILDER"
 Private Const BTN_SAVE_BOX As String = "BTN_SAVE_BOX"
 Private Const BTN_UNSHIP As String = "BTN_UNSHIP"
 Private Const BTN_SEND_HOLD As String = "BTN_SEND_HOLD"
@@ -49,14 +49,22 @@ Private mDynSearch As cDynItemSearch
 ' ===== public entry points =====
 Public Sub InitializeShipmentsUI()
     EnsureShipmentsButtons
+    EnsureBuilderTablesReady
 End Sub
 
-Public Sub BtnShowBuilder()
-    ToggleBuilderTables True
-End Sub
-
-Public Sub BtnHideBuilder()
-    ToggleBuilderTables False
+Public Sub BtnToggleBuilder()
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+    Dim lo As ListObject: Set lo = GetListObject(ws, TABLE_BOX_BOM)
+    Dim makeVisible As Boolean
+    If lo Is Nothing Then
+        makeVisible = True
+    Else
+        Dim firstCol As Long
+        firstCol = lo.HeaderRowRange.Column
+        makeVisible = ws.Columns(firstCol).EntireColumn.Hidden
+    End If
+    ToggleBuilderTables makeVisible
 End Sub
 
 Public Sub BtnSaveBox()
@@ -200,24 +208,33 @@ Private Sub EnsureShipmentsButtons()
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
-    Dim leftA As Double: leftA = ws.Columns("A").Left + 4
+    DeleteShapeIfExists ws, "BTN_SHOW_BUILDER"
+    DeleteShapeIfExists ws, "BTN_HIDE_BUILDER"
+
+    Dim colA As Range: Set colA = ws.Columns("A")
+    Dim leftA As Double: leftA = colA.Left + 2
+    Dim colAWidth As Double
+    colAWidth = colA.Width - 4
+    If colAWidth < 40 Then colAWidth = 60
+
+    Const BTN_STACK_SPACING As Double = 24
     Dim nextTop As Double: nextTop = ws.Rows(2).Top
 
-    EnsureButtonCustom ws, BTN_SHOW_BUILDER, "Show builder", "modTS_Shipments.BtnShowBuilder", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_HIDE_BUILDER, "Hide builder", "modTS_Shipments.BtnHideBuilder", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_SAVE_BOX, "Save box", "modTS_Shipments.BtnSaveBox", leftA, nextTop
-    nextTop = nextTop + 28
-    EnsureButtonCustom ws, BTN_CONFIRM_INV, "Confirm inventory", "modTS_Shipments.BtnConfirmInventory", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_BOXES_MADE, "Boxes made", "modTS_Shipments.BtnBoxesMade", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_TO_TOTALINV, "To TotalInv", "modTS_Shipments.BtnToTotalInv", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_TO_SHIPMENTS, "To Shipments", "modTS_Shipments.BtnToShipments", leftA, nextTop
-    nextTop = nextTop + 22
-    EnsureButtonCustom ws, BTN_SHIPMENTS_SENT, "Shipments sent", "modTS_Shipments.BtnShipmentsSent", leftA, nextTop
+    EnsureButtonCustom ws, BTN_TOGGLE_BUILDER, "Toggle builder", "modTS_Shipments.BtnToggleBuilder", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_SAVE_BOX, "Save box", "modTS_Shipments.BtnSaveBox", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_CONFIRM_INV, "Confirm inventory", "modTS_Shipments.BtnConfirmInventory", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_BOXES_MADE, "Boxes made", "modTS_Shipments.BtnBoxesMade", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_UNSHIP, "Toggle NotShipped", "modTS_Shipments.BtnUnship", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_TO_TOTALINV, "To TotalInv", "modTS_Shipments.BtnToTotalInv", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_TO_SHIPMENTS, "To Shipments", "modTS_Shipments.BtnToShipments", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_SHIPMENTS_SENT, "Shipments sent", "modTS_Shipments.BtnShipmentsSent", leftA, nextTop, colAWidth
 
     Dim loHold As ListObject: Set loHold = GetListObject(ws, TABLE_NOTSHIPPED)
     If Not loHold Is Nothing Then
@@ -225,32 +242,37 @@ Private Sub EnsureShipmentsButtons()
         topBand = loHold.HeaderRowRange.Top - 24
         Dim leftBand As Double
         leftBand = loHold.HeaderRowRange.Left
-        EnsureButtonCustom ws, BTN_UNSHIP, "Toggle NotShipped", "modTS_Shipments.BtnUnship", leftBand, topBand
         EnsureButtonCustom ws, BTN_SEND_HOLD, "Send to hold", "modTS_Shipments.BtnSendHold", leftBand + 120, topBand
         EnsureButtonCustom ws, BTN_RETURN_HOLD, "Return from hold", "modTS_Shipments.BtnReturnHold", leftBand + 240, topBand
     End If
 End Sub
 
-Private Sub EnsureButtonCustom(ws As Worksheet, shapeName As String, caption As String, onActionMacro As String, leftPos As Double, topPos As Double)
-    Const BTN_WIDTH As Double = 118
+Private Sub EnsureButtonCustom(ws As Worksheet, shapeName As String, caption As String, onActionMacro As String, leftPos As Double, topPos As Double, Optional widthPts As Double = 118)
     Const BTN_HEIGHT As Double = 20
+    If widthPts < 20 Then widthPts = 118
     Dim shp As Shape
     On Error Resume Next
     Set shp = ws.Shapes(shapeName)
     On Error GoTo 0
     If shp Is Nothing Then
-        Set shp = ws.Shapes.AddFormControl(xlButtonControl, leftPos, topPos, BTN_WIDTH, BTN_HEIGHT)
+        Set shp = ws.Shapes.AddFormControl(xlButtonControl, leftPos, topPos, widthPts, BTN_HEIGHT)
         shp.Name = shapeName
         shp.TextFrame.Characters.Text = caption
         shp.OnAction = onActionMacro
     Else
         shp.Left = leftPos
         shp.Top = topPos
-        shp.Width = BTN_WIDTH
+        shp.Width = widthPts
         shp.Height = BTN_HEIGHT
         shp.TextFrame.Characters.Text = caption
         shp.OnAction = onActionMacro
     End If
+End Sub
+
+Private Sub DeleteShapeIfExists(ws As Worksheet, shapeName As String)
+    On Error Resume Next
+    ws.Shapes(shapeName).Delete
+    On Error GoTo 0
 End Sub
 
 ' ===== builder helpers =====
@@ -285,16 +307,51 @@ Private Sub ToggleBuilderTables(ByVal makeVisible As Boolean)
     ws.Range(ws.Columns(firstCol), ws.Columns(lastCol)).EntireColumn.Hidden = Not makeVisible
 End Sub
 
+Private Sub EnsureBuilderTablesReady()
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+    Dim loBom As ListObject: Set loBom = GetListObject(ws, TABLE_BOX_BOM)
+    If Not loBom Is Nothing Then EnsureBoxBomEntryColumns loBom
+End Sub
+
 Public Sub ApplyItemSelection(targetCell As Range, lo As ListObject, rowIndex As Long, _
     ByVal itemName As String, ByVal itemCode As String, ByVal itemRow As Long, _
-    ByVal uom As String, ByVal location As String, ByVal vendor As String)
+    ByVal uom As String, ByVal location As String, ByVal vendor As String, _
+    Optional ByVal description As String = "")
 
     If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add
-    If rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then rowIndex = lo.ListRows.Count
-    Dim cItems As Long: cItems = ColumnIndex(lo, "ITEMS")
-    If cItems > 0 Then lo.DataBodyRange.Cells(rowIndex, cItems).Value = itemName
-    ' Future enhancement: capture ROW/UOM metadata once staging columns are defined.
+
+    Dim lr As ListRow
+    If lo.ListRows.Count = 0 Then
+        Set lr = lo.ListRows.Add
+    ElseIf rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then
+        Set lr = lo.ListRows.Add
+    Else
+        Set lr = lo.ListRows(rowIndex)
+    End If
+    rowIndex = lr.Index
+
+    Dim tableName As String
+    tableName = LCase$(lo.Name)
+
+    Select Case tableName
+        Case "shipmentstally"
+            Dim cItems As Long: cItems = ColumnIndex(lo, "ITEMS")
+            If cItems > 0 Then lr.Range.Cells(1, cItems).Value = itemName
+        Case LCase$(TABLE_BOX_BOM)
+            Dim cItem As Long: cItem = ColumnIndex(lo, COL_BOXBOM_ITEM)
+            If cItem > 0 Then lr.Range.Cells(1, cItem).Value = itemName
+            Dim cRowCol As Long: cRowCol = ColumnIndex(lo, "ROW")
+            If cRowCol > 0 Then lr.Range.Cells(1, cRowCol).Value = itemRow
+            Dim cUomCol As Long: cUomCol = ColumnIndex(lo, "UOM")
+            If cUomCol > 0 Then lr.Range.Cells(1, cUomCol).Value = uom
+            Dim cLocCol As Long: cLocCol = ColumnIndex(lo, "LOCATION")
+            If cLocCol > 0 Then lr.Range.Cells(1, cLocCol).Value = location
+            Dim cDescCol As Long: cDescCol = ColumnIndex(lo, "DESCRIPTION")
+            If cDescCol > 0 Then lr.Range.Cells(1, cDescCol).Value = description
+        Case Else
+            ' no-op
+    End Select
 End Sub
 
 Private Function CollectBomComponents(loBom As ListObject, invLo As ListObject, ByRef syncNotes As String) As Collection
@@ -304,14 +361,14 @@ Private Function CollectBomComponents(loBom As ListObject, invLo As ListObject, 
         Exit Function
     End If
 
-    Dim cName As Long: cName = ColumnIndex(loBom, "BoxBOM")
+    Dim cName As Long: cName = ColumnIndex(loBom, COL_BOXBOM_ITEM)
     Dim cRow As Long: cRow = ColumnIndex(loBom, "ROW")
     Dim cQty As Long: cQty = ColumnIndex(loBom, "QUANTITY")
     Dim cUom As Long: cUom = ColumnIndex(loBom, "UOM")
     Dim cLoc As Long: cLoc = ColumnIndex(loBom, "LOCATION")
     Dim cDesc As Long: cDesc = ColumnIndex(loBom, "DESCRIPTION")
     If cName = 0 Or cRow = 0 Or cQty = 0 Or cUom = 0 Then
-        MsgBox "BoxBOM table must include BoxBOM, ROW, QUANTITY, and UOM columns.", vbExclamation
+        MsgBox "BoxBOM table must include ITEM, ROW, QUANTITY, and UOM columns.", vbExclamation
         Exit Function
     End If
 
@@ -405,8 +462,17 @@ End Function
 
 Private Sub EnsureBoxBomEntryColumns(loBom As ListObject)
     If loBom Is Nothing Then Exit Sub
-    EnsureColumnExists loBom, "BoxBOM"
-    EnsureColumnExists loBom, "QUANTITY", "BoxBOM"
+    Dim idxItem As Long
+    idxItem = ColumnIndex(loBom, COL_BOXBOM_ITEM)
+    If idxItem = 0 Then
+        idxItem = ColumnIndex(loBom, "BoxBOM")
+        If idxItem > 0 Then
+            loBom.ListColumns(idxItem).Name = COL_BOXBOM_ITEM
+        Else
+            EnsureColumnExists loBom, COL_BOXBOM_ITEM
+        End If
+    End If
+    EnsureColumnExists loBom, "QUANTITY", COL_BOXBOM_ITEM
     EnsureColumnExists loBom, "ROW"
     EnsureColumnExists loBom, "UOM"
     EnsureColumnExists loBom, "LOCATION"

@@ -28,18 +28,32 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     Set lo = Target.ListObject
     On Error GoTo 0
     If lo Is Nothing Then Exit Sub
-    If LCase$(lo.Name) <> "shipmentstally" Then Exit Sub
 
-    Dim itemsCol As ListColumn
-    On Error Resume Next
-    Set itemsCol = lo.ListColumns("ITEMS")
-    On Error GoTo 0
-    If itemsCol Is Nothing Then Exit Sub
-    If Target.Column <> itemsCol.Range.Column Then Exit Sub
-    If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
+    Dim loName As String
+    loName = LCase$(lo.Name)
 
-    Set gSelectedCell = Target
-    modTS_Shipments.ShowDynamicItemSearch Target
+    Select Case loName
+        Case "shipmentstally"
+            Dim itemsCol As ListColumn
+            On Error Resume Next
+            Set itemsCol = lo.ListColumns("ITEMS")
+            On Error GoTo 0
+            If itemsCol Is Nothing Then Exit Sub
+            If Target.Column <> itemsCol.Range.Column Then Exit Sub
+            If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
+            Set gSelectedCell = Target
+            modTS_Shipments.ShowDynamicItemSearch Target
+        Case "boxbom"
+            Dim bomItemsCol As ListColumn
+            On Error Resume Next
+            Set bomItemsCol = lo.ListColumns("ITEM")
+            On Error GoTo 0
+            If bomItemsCol Is Nothing Then Exit Sub
+            If Target.Column <> bomItemsCol.Range.Column Then Exit Sub
+            If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
+            Set gSelectedCell = Target
+            modTS_Shipments.ShowDynamicItemSearch Target
+    End Select
 End Sub
 
 
