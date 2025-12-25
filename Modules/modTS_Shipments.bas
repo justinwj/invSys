@@ -179,8 +179,53 @@ Public Sub BtnReturnHold()
 End Sub
 
 Public Sub BtnConfirmInventory()
-    ' Placeholder for full confirm workflow
-    MsgBox "BTN_CONFIRM_INV logic pending implementation.", vbInformation
+    On Error GoTo ErrHandler
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+
+    Dim invLo As ListObject: Set invLo = GetInvSysTable()
+    Dim aggBom As ListObject: Set aggBom = GetListObject(ws, TABLE_AGG_BOM)
+
+    If invLo Is Nothing Then
+        MsgBox "InventoryManagement!invSys table not found.", vbCritical
+        Exit Sub
+    End If
+    If aggBom Is Nothing Or aggBom.DataBodyRange Is Nothing Then
+        MsgBox "AggregateBoxBOM has no rows to confirm. Enter package quantities first.", vbInformation
+        Exit Sub
+    End If
+
+    Dim shortage As String
+    If Not ValidateComponentInventory(invLo, aggBom, shortage) Then
+        MsgBox "Cannot confirm shipments:" & vbCrLf & shortage, vbExclamation
+        Exit Sub
+    End If
+
+    Dim stageLogs As New Collection
+    Dim errNotes As String
+    Dim stagedTotal As Double
+    stagedTotal = StageComponentsToUsed(invLo, aggBom, errNotes, stageLogs)
+    If stagedTotal < 0 Then
+        If errNotes = "" Then errNotes = "Unknown staging failure."
+        MsgBox "BTN_CONFIRM_INV cancelled: " & errNotes, vbCritical
+        Exit Sub
+    End If
+
+    If stageLogs.Count > 0 Then LogShippingChanges "AggregateBoxBOM_Log", stageLogs
+
+    InvalidateAggregates True
+
+    Dim msg As String
+    msg = "Confirmed component demand: " & Format$(stagedTotal, "0.###") & " units staged into invSys.USED."
+    If errNotes <> "" Then
+        msg = msg & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
+        MsgBox msg, vbExclamation
+    Else
+        MsgBox msg, vbInformation
+    End If
+    Exit Sub
+ErrHandler:
+    MsgBox "BTN_CONFIRM_INV failed: " & Err.Description, vbCritical
 End Sub
 
 Public Sub BtnBoxesMade()
@@ -204,21 +249,48 @@ Public Sub BtnBoxesMade()
     Dim errNotes As String, shortage As String
     Dim usedTotal As Double
     Dim madeTotal As Double
+    Dim compLogs As New Collection
+    Dim pkgLogs As New Collection
+    Dim usedDeltas As Collection
+    Dim madeDeltas As Collection
 
     If Not ValidateComponentInventory(invLo, aggBom, shortage) Then
         MsgBox "Cannot make boxes:" & vbCrLf & shortage, vbExclamation
         Exit Sub
     End If
 
-    usedTotal = ApplyComponentUsageToInv(invLo, aggBom, errNotes)
+    Set usedDeltas = BuildUsedDeltaPacket(invLo, aggBom, errNotes)
+    If usedDeltas Is Nothing Then
+        MsgBox "Boxes made cancelled: " & errNotes, vbExclamation
+        Exit Sub
+    End If
+
+    Set madeDeltas = BuildMadeDeltaPacket(invLo, aggPack, errNotes)
+    If madeDeltas Is Nothing Then
+        MsgBox "Boxes made cancelled: " & errNotes, vbExclamation
+        Exit Sub
+    End If
+
+    PrepareComponentLogEntries invLo, usedDeltas, compLogs
+    PreparePackageLogEntries invLo, madeDeltas, pkgLogs
+
+    usedTotal = modInvMan.ApplyUsedDeltas(usedDeltas, errNotes, "BTN_BOXES_MADE - Components Used")
     If usedTotal < 0 Then
         MsgBox "Boxes made cancelled: insufficient inventory to cover all BOM components." & vbCrLf & vbCrLf & errNotes, vbExclamation
         Exit Sub
     End If
 
-    madeTotal = AddPackagesToMade(invLo, aggPack, errNotes)
+    madeTotal = modInvMan.ApplyMadeDeltas(madeDeltas, errNotes, "BTN_BOXES_MADE - Packages Staged")
+    If madeTotal < 0 Then
+        MsgBox "Boxes made cancelled: " & errNotes, vbExclamation
+        Exit Sub
+    End If
 
-    InvalidateAggregates True
+    ResetShippingStaging clearShipments:=False, clearAggBom:=True, clearAggPack:=True
+    InvalidateAggregates True, True
+
+    If compLogs.Count > 0 Then LogShippingChanges "AggregateBoxBOM_Log", compLogs
+    If pkgLogs.Count > 0 Then LogShippingChanges "AggregatePackages_Log", pkgLogs
 
     Dim msg As String
     msg = "Recorded component usage: " & Format$(usedTotal, "0.###") & " units."
@@ -235,11 +307,97 @@ ErrHandler:
 End Sub
 
 Public Sub BtnToTotalInv()
-    MsgBox "BTN_TO_TOTALINV logic pending implementation.", vbInformation
+    On Error GoTo ErrHandler
+    Dim invLo As ListObject: Set invLo = GetInvSysTable()
+    If invLo Is Nothing Then
+        MsgBox "InventoryManagement!invSys table not found.", vbCritical
+        Exit Sub
+    End If
+
+    Dim errNotes As String
+    Dim deltas As Collection
+    Set deltas = BuildTotalInventoryDeltaPacket(invLo, errNotes)
+    If deltas Is Nothing Or deltas.Count = 0 Then
+        If errNotes <> "" Then
+            MsgBox errNotes, vbInformation
+        Else
+            MsgBox "No staged packages found in invSys.MADE. Run Boxes made before sending to TotalInv.", vbInformation
+        End If
+        Exit Sub
+    End If
+
+    Dim shipLogs As New Collection
+    PrepareTotalInventoryLogEntries invLo, deltas, shipLogs
+
+    Dim movedTotal As Double
+    movedTotal = modInvMan.ApplyMadeToInventoryDeltas(deltas, errNotes, "BTN_TO_TOTALINV - Added To Total Inv")
+    If movedTotal < 0 Then
+        If errNotes = "" Then errNotes = "Unable to move packages into TOTAL INV."
+        MsgBox errNotes, vbCritical
+        Exit Sub
+    End If
+
+    ClearShipmentEntryTables
+    ResetShippingStaging clearShipments:=True, clearAggBom:=True, clearAggPack:=True
+    InvalidateAggregates True
+    If shipLogs.Count > 0 Then LogShippingChanges "AggregatePackages_Log", shipLogs
+
+    Dim msg As String
+    msg = "Moved " & Format$(movedTotal, "0.###") & " packages from MADE into TOTAL INV."
+    MsgBox msg, vbInformation
+    Exit Sub
+ErrHandler:
+    MsgBox "BTN_TO_TOTALINV failed: " & Err.Description, vbCritical
 End Sub
 
 Public Sub BtnToShipments()
-    MsgBox "BTN_TO_SHIPMENTS logic pending implementation.", vbInformation
+    On Error GoTo ErrHandler
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+
+    Dim invLo As ListObject: Set invLo = GetInvSysTable()
+    Dim aggPack As ListObject: Set aggPack = GetListObject(ws, TABLE_AGG_PACK)
+    If invLo Is Nothing Then
+        MsgBox "InventoryManagement!invSys table not found.", vbCritical
+        Exit Sub
+    End If
+    If aggPack Is Nothing Or aggPack.DataBodyRange Is Nothing Then
+        MsgBox "AggregatePackages has no rows to stage.", vbInformation
+        Exit Sub
+    End If
+
+    Dim errNotes As String
+    Dim deltas As Collection
+    Set deltas = BuildShipmentDeltaPacket(invLo, aggPack, errNotes)
+    If deltas Is Nothing Or deltas.Count = 0 Then
+        If errNotes <> "" Then
+            MsgBox errNotes, vbInformation
+        Else
+            MsgBox "No additional shipments required; Shipments column already meets demand.", vbInformation
+        End If
+        Exit Sub
+    End If
+
+    Dim shipLogs As New Collection
+    PrepareShipmentStageLogEntries invLo, deltas, shipLogs
+
+    Dim stagedTotal As Double
+    stagedTotal = modInvMan.ApplyShipmentDeltas(deltas, errNotes, "BTN_TO_SHIPMENTS - Inventory Staged")
+    If stagedTotal < 0 Then
+        If errNotes = "" Then errNotes = "Unable to stage shipments due to inventory shortage."
+        MsgBox errNotes, vbCritical
+        Exit Sub
+    End If
+
+    InvalidateAggregates True
+    If shipLogs.Count > 0 Then LogShippingChanges "AggregatePackages_Log", shipLogs
+
+    Dim msg As String
+    msg = "Staged " & Format$(stagedTotal, "0.###") & " packages into invSys.SHIPMENTS."
+    MsgBox msg, vbInformation
+    Exit Sub
+ErrHandler:
+    MsgBox "BTN_TO_SHIPMENTS failed: " & Err.Description, vbCritical
 End Sub
 
 Public Sub BtnShipmentsSent()
@@ -1112,14 +1270,14 @@ Private Sub ClearListObjectData(lo As ListObject)
     On Error GoTo 0
 End Sub
 
-Public Sub InvalidateAggregates(Optional rebuildNow As Boolean = False)
+Public Sub InvalidateAggregates(Optional rebuildNow As Boolean = False, Optional skipAggRebuild As Boolean = False)
     mAggDirty = True
     If rebuildNow Then
-        RebuildShippingAggregates
+        RebuildShippingAggregates skipAggRebuild
     End If
 End Sub
 
-Public Sub RebuildShippingAggregates()
+Public Sub RebuildShippingAggregates(Optional skipAggRebuild As Boolean = False)
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
@@ -1140,7 +1298,9 @@ Public Sub RebuildShippingAggregates()
     Dim bomDict As Object
     Set bomDict = BuildBomSummary(pkgDict, rowCache)
 
-    WriteAggregateBOM loAggBom, bomDict
+    If Not skipAggRebuild Then
+        WriteAggregateBOM loAggBom, bomDict
+    End If
 
     WriteCheckInv loCheck, rowCache, pkgDict, bomDict
     mAggDirty = False
@@ -1395,23 +1555,331 @@ Private Sub WriteCheckInv(lo As ListObject, rowCache As Object, pkgDict As Objec
     WriteArrayToTable lo, arr
 End Sub
 
-Private Function ApplyComponentUsageToInv(invLo As ListObject, aggBom As ListObject, ByRef errNotes As String) As Double
-    If invLo Is Nothing Or aggBom Is Nothing Then Exit Function
-    If aggBom.DataBodyRange Is Nothing Then Exit Function
+Private Function BuildUsedDeltaPacket(invLo As ListObject, aggBom As ListObject, ByRef errNotes As String) As Collection
+    errNotes = ""
+    If invLo Is Nothing Or invLo.DataBodyRange Is Nothing Then Exit Function
+
+    Dim colUsed As Long: colUsed = ColumnIndex(invLo, "USED")
+    Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
+    Dim colItemCode As Long: colItemCode = ColumnIndex(invLo, "ITEM_CODE")
+    Dim colItemName As Long: colItemName = ColumnIndex(invLo, "ITEM")
+    If colUsed = 0 Or colRow = 0 Then
+        errNotes = "invSys table missing USED/ROW columns."
+        Exit Function
+    End If
+
+    Dim result As New Collection
+    Dim arr As Variant: arr = invLo.DataBodyRange.Value
+    Dim r As Long
+    For r = 1 To UBound(arr, 1)
+        Dim usedVal As Double: usedVal = NzDbl(arr(r, colUsed))
+        Dim rowVal As Long: rowVal = NzLng(arr(r, colRow))
+        If rowVal = 0 Or usedVal <= 0 Then GoTo NextRow
+        Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
+        delta("ROW") = rowVal
+        delta("QTY") = usedVal
+        If colItemCode > 0 Then delta("ITEM_CODE") = NzStr(arr(r, colItemCode))
+        If colItemName > 0 Then delta("ITEM_NAME") = NzStr(arr(r, colItemName))
+        result.Add delta
+NextRow:
+    Next r
+
+    If result.Count = 0 Then
+        errNotes = "No staged usage found in invSys.USED."
+        Exit Function
+    End If
+    Set BuildUsedDeltaPacket = result
+End Function
+
+Private Function BuildMadeDeltaPacket(invLo As ListObject, aggPack As ListObject, ByRef errNotes As String) As Collection
+    errNotes = ""
+    If aggPack Is Nothing Or aggPack.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggPack, "QUANTITY")
+    Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggPack, "ROW")
+    If cQtyAgg = 0 Or cRowAgg = 0 Then
+        errNotes = "AggregatePackages missing QUANTITY/ROW columns."
+        Exit Function
+    End If
+
+    Dim colItemCode As Long: colItemCode = ColumnIndex(invLo, "ITEM_CODE")
+    Dim colItemName As Long: colItemName = ColumnIndex(invLo, "ITEM")
+
+    Dim result As New Collection
+    Dim arr As Variant: arr = aggPack.DataBodyRange.Value
+    Dim r As Long
+    For r = 1 To UBound(arr, 1)
+        Dim rowVal As Long: rowVal = NzLng(arr(r, cRowAgg))
+        Dim qtyVal As Double: qtyVal = NzDbl(arr(r, cQtyAgg))
+        If rowVal = 0 Or qtyVal <= 0 Then GoTo NextPkg
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If invRow Is Nothing Then
+            AppendNote errNotes, "Package ROW " & rowVal & " not found in invSys."
+        Else
+            Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
+            delta("ROW") = rowVal
+            delta("QTY") = qtyVal
+            If colItemCode > 0 Then delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, colItemCode).Value)
+            If colItemName > 0 Then delta("ITEM_NAME") = NzStr(invRow.Range.Cells(1, colItemName).Value)
+            result.Add delta
+        End If
+NextPkg:
+    Next r
+
+    If result.Count = 0 Then
+        errNotes = IIf(errNotes = "", "No packages available to make.", errNotes)
+        Exit Function
+    End If
+    Set BuildMadeDeltaPacket = result
+End Function
+
+Private Function BuildTotalInventoryDeltaPacket(invLo As ListObject, ByRef errNotes As String) As Collection
+    errNotes = ""
+    If invLo Is Nothing Then Exit Function
+    If invLo.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cMade As Long: cMade = ColumnIndex(invLo, "MADE")
+    Dim cRow As Long: cRow = ColumnIndex(invLo, "ROW")
+    Dim cItemCode As Long: cItemCode = ColumnIndex(invLo, "ITEM_CODE")
+    Dim cItemName As Long: cItemName = ColumnIndex(invLo, "ITEM")
+    If cMade = 0 Or cRow = 0 Then
+        errNotes = "invSys table missing MADE/ROW columns."
+        Exit Function
+    End If
+
+    Dim result As New Collection
+    Dim arr As Variant: arr = invLo.DataBodyRange.Value
+    Dim r As Long
+    For r = 1 To UBound(arr, 1)
+        Dim rowVal As Long: rowVal = NzLng(arr(r, cRow))
+        Dim madeVal As Double: madeVal = NzDbl(arr(r, cMade))
+        If rowVal = 0 Or madeVal <= 0 Then GoTo NextRow
+        Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
+        delta("ROW") = rowVal
+        delta("QTY") = madeVal
+        If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(arr(r, cItemCode))
+        If cItemName > 0 Then delta("ITEM_NAME") = NzStr(arr(r, cItemName))
+        result.Add delta
+NextRow:
+    Next r
+
+    If result.Count > 0 Then Set BuildTotalInventoryDeltaPacket = result
+End Function
+
+Private Function BuildShipmentDeltaPacket(invLo As ListObject, aggPack As ListObject, ByRef errNotes As String) As Collection
+    errNotes = ""
+    If invLo Is Nothing Then Exit Function
+    If aggPack Is Nothing Or aggPack.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggPack, "QUANTITY")
+    Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggPack, "ROW")
+    If cQtyAgg = 0 Or cRowAgg = 0 Then
+        errNotes = "AggregatePackages missing QUANTITY/ROW columns."
+        Exit Function
+    End If
+
+    Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
+    Dim colShipments As Long: colShipments = ColumnIndex(invLo, "SHIPMENTS")
+    Dim colRowInv As Long: colRowInv = ColumnIndex(invLo, "ROW")
+    Dim colItemCode As Long: colItemCode = ColumnIndex(invLo, "ITEM_CODE")
+    Dim colItemName As Long: colItemName = ColumnIndex(invLo, "ITEM")
+    If colTotalInv = 0 Or colShipments = 0 Or colRowInv = 0 Then
+        errNotes = "invSys table missing TOTAL INV/SHIPMENTS/ROW columns."
+        Exit Function
+    End If
+
+    Dim requirements As Object: Set requirements = CreateObject("Scripting.Dictionary")
+    Dim arrAgg As Variant: arrAgg = aggPack.DataBodyRange.Value
+    Dim r As Long
+    For r = 1 To UBound(arrAgg, 1)
+        Dim rowVal As Long: rowVal = NzLng(arrAgg(r, cRowAgg))
+        Dim qtyVal As Double: qtyVal = NzDbl(arrAgg(r, cQtyAgg))
+        If rowVal = 0 Or qtyVal <= 0 Then GoTo NextAgg
+        Dim reqKeyStr As String: reqKeyStr = CStr(rowVal)
+        If requirements.Exists(reqKeyStr) Then
+            requirements(reqKeyStr) = NzDbl(requirements(reqKeyStr)) + qtyVal
+        Else
+            requirements.Add reqKeyStr, qtyVal
+        End If
+NextAgg:
+    Next r
+
+    If requirements.Count = 0 Then Exit Function
+
+    Dim result As New Collection
+    Dim shipKey As Variant
+    For Each shipKey In requirements.Keys
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, CLng(shipKey))
+        If invRow Is Nothing Then
+            AppendNote errNotes, "Package ROW " & shipKey & " not found in invSys."
+            Exit Function
+        End If
+
+        Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
+        Dim shipmentsCell As Range: Set shipmentsCell = invRow.Range.Cells(1, colShipments)
+        Dim requiredQty As Double: requiredQty = NzDbl(requirements(shipKey))
+        Dim alreadyStaged As Double: alreadyStaged = NzDbl(shipmentsCell.Value)
+        Dim neededQty As Double: neededQty = requiredQty - alreadyStaged
+        If neededQty <= 0 Then GoTo NextReq
+
+        Dim available As Double: available = NzDbl(totalCell.Value)
+        If neededQty > available + 0.0000001 Then
+            AppendNote errNotes, "ROW " & shipKey & " requires " & Format$(neededQty, "0.###") & " but only " & Format$(available, "0.###") & " in TOTAL INV."
+            Exit Function
+        End If
+
+        Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
+        delta("ROW") = CLng(shipKey)
+        delta("QTY") = neededQty
+        If colItemCode > 0 Then delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, colItemCode).Value)
+        If colItemName > 0 Then delta("ITEM_NAME") = NzStr(invRow.Range.Cells(1, colItemName).Value)
+        result.Add delta
+NextReq:
+    Next reqKey
+
+    If result.Count > 0 Then Set BuildShipmentDeltaPacket = result
+End Function
+
+Private Sub PrepareTotalInventoryLogEntries(invLo As ListObject, deltas As Collection, logEntries As Collection)
+    If invLo Is Nothing Then Exit Sub
+    If deltas Is Nothing Then Exit Sub
+    If logEntries Is Nothing Then Exit Sub
+
+    Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
+    If colTotalInv = 0 Then Exit Sub
+
+    Dim delta As Variant
+    For Each delta In deltas
+        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If invRow Is Nothing Then GoTo NextDelta
+        Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
+        Dim newTotal As Double: newTotal = NzDbl(totalCell.Value) + qtyVal
+        logEntries.Add Array("BTN_TO_TOTALINV", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newTotal)
+NextDelta:
+    Next delta
+End Sub
+
+Private Sub PrepareShipmentStageLogEntries(invLo As ListObject, deltas As Collection, logEntries As Collection)
+    If invLo Is Nothing Then Exit Sub
+    If deltas Is Nothing Then Exit Sub
+    If logEntries Is Nothing Then Exit Sub
+
+    Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
+    If colTotalInv = 0 Then Exit Sub
+
+    Dim delta As Variant
+    For Each delta In deltas
+        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If invRow Is Nothing Then GoTo NextShip
+        Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
+        Dim newTotal As Double: newTotal = NzDbl(totalCell.Value) - qtyVal
+        logEntries.Add Array("BTN_TO_SHIPMENTS", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newTotal)
+NextShip:
+    Next delta
+End Sub
+
+Private Sub PrepareComponentLogEntries(invLo As ListObject, deltas As Collection, logEntries As Collection)
+    If invLo Is Nothing Then Exit Sub
+    If deltas Is Nothing Then Exit Sub
+    If logEntries Is Nothing Then Exit Sub
+    Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
+    Dim delta As Variant
+    For Each delta In deltas
+        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If Not invRow Is Nothing Then
+            Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
+            Dim newTotal As Double: newTotal = NzDbl(totalCell.Value) - qtyVal
+            logEntries.Add Array("BTN_BOXES_MADE_COMPONENTS", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newTotal)
+        End If
+    Next delta
+End Sub
+
+Private Sub PreparePackageLogEntries(invLo As ListObject, deltas As Collection, logEntries As Collection)
+    If invLo Is Nothing Then Exit Sub
+    If deltas Is Nothing Then Exit Sub
+    If logEntries Is Nothing Then Exit Sub
+    Dim colMade As Long: colMade = ColumnIndex(invLo, "MADE")
+    Dim delta As Variant
+    For Each delta In deltas
+        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
+        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If Not invRow Is Nothing Then
+            Dim madeCell As Range: Set madeCell = invRow.Range.Cells(1, colMade)
+            Dim newMade As Double: newMade = NzDbl(madeCell.Value) + qtyVal
+            logEntries.Add Array("BTN_BOXES_MADE_PACKAGES", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newMade)
+        End If
+    Next delta
+End Sub
+
+Private Sub ResetShippingStaging(Optional clearShipments As Boolean = False, Optional clearPackages As Boolean = False)
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+    Dim lo As ListObject
+
+    Set lo = GetListObject(ws, TABLE_AGG_BOM)
+    ClearListObjectData lo
+
+    If clearPackages Then
+        Set lo = GetListObject(ws, TABLE_AGG_PACK)
+        ClearListObjectData lo
+    End If
+
+    If clearShipments Then
+        Set lo = GetListObject(ws, TABLE_SHIPMENTS)
+        ClearListObjectData lo
+        Set lo = GetListObject(ws, TABLE_NOTSHIPPED)
+        ClearListObjectData lo
+    End If
+End Sub
+
+Private Sub ClearShipmentEntryTables()
+    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then Exit Sub
+    Dim lo As ListObject
+
+    Set lo = GetListObject(ws, TABLE_SHIPMENTS)
+    ClearListObjectData lo
+
+    Set lo = GetListObject(ws, TABLE_AGG_BOM)
+    ClearListObjectData lo
+
+    Set lo = GetListObject(ws, TABLE_AGG_PACK)
+    ClearListObjectData lo
+End Sub
+
+Private Function StageComponentsToUsed(invLo As ListObject, aggBom As ListObject, ByRef errNotes As String, Optional ByRef logEntries As Collection) As Double
+    StageComponentsToUsed = 0
+    If invLo Is Nothing Then
+        errNotes = "invSys table not found."
+        StageComponentsToUsed = -1
+        Exit Function
+    End If
+    If aggBom Is Nothing Or aggBom.DataBodyRange Is Nothing Then Exit Function
 
     Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggBom, "QUANTITY")
     Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggBom, "ROW")
     If cQtyAgg = 0 Or cRowAgg = 0 Then
-        AppendNote errNotes, "AggregateBoxBOM is missing QUANTITY or ROW columns."
+        errNotes = "AggregateBoxBOM missing QUANTITY/ROW columns."
+        StageComponentsToUsed = -1
         Exit Function
     End If
 
     Dim colUsedInv As Long: colUsedInv = ColumnIndex(invLo, "USED")
-    Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
-    If colUsedInv = 0 Or colTotalInv = 0 Then
-        AppendNote errNotes, "invSys table must contain USED and TOTAL INV columns."
+    Dim colItemCode As Long: colItemCode = ColumnIndex(invLo, "ITEM_CODE")
+    Dim colItemName As Long: colItemName = ColumnIndex(invLo, "ITEM")
+    If colUsedInv = 0 Then
+        errNotes = "invSys table missing USED column."
+        StageComponentsToUsed = -1
         Exit Function
     End If
+    If logEntries Is Nothing Then Set logEntries = New Collection
 
     Dim arr As Variant
     arr = aggBom.DataBodyRange.Value
@@ -1421,82 +1889,35 @@ Private Function ApplyComponentUsageToInv(invLo As ListObject, aggBom As ListObj
         Dim rowVal As Long: rowVal = NzLng(arr(r, cRowAgg))
         Dim qtyNeeded As Double: qtyNeeded = NzDbl(arr(r, cQtyAgg))
         If rowVal = 0 Or qtyNeeded <= 0 Then GoTo NextComponent
-        Dim key As String: key = CStr(rowVal)
-        If requirements.Exists(key) Then
-            requirements(key) = NzDbl(requirements(key)) + qtyNeeded
+        Dim reqKey As String: reqKey = CStr(rowVal)
+        If requirements.Exists(reqKey) Then
+            requirements(reqKey) = NzDbl(requirements(reqKey)) + qtyNeeded
         Else
-            requirements.Add key, qtyNeeded
+            requirements.Add reqKey, qtyNeeded
         End If
 NextComponent:
     Next r
-
     If requirements.Count = 0 Then Exit Function
 
     Dim key As Variant
     For Each key In requirements.Keys
         Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, CLng(key))
         If invRow Is Nothing Then
-            AppendNote errNotes, "invSys ROW " & key & " not found; component usage skipped."
-            ApplyComponentUsageToInv = -1
+            AppendNote errNotes, "invSys ROW " & key & " not found; staging aborted."
+            StageComponentsToUsed = -1
             Exit Function
         End If
-        Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
-        Dim available As Double: available = NzDbl(totalCell.Value)
-        Dim qtyNeeded As Double: qtyNeeded = NzDbl(requirements(key))
-        If available < qtyNeeded Then
-            AppendNote errNotes, "ROW " & key & " requires " & Format$(qtyNeeded, "0.###") & " but only " & Format$(available, "0.###") & " available."
-            ApplyComponentUsageToInv = -1
-            Exit Function
-        End If
-    Next key
-
-    For Each key In requirements.Keys
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, CLng(key))
         Dim usedCell As Range: Set usedCell = invRow.Range.Cells(1, colUsedInv)
-        Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
-        Dim qtyNeeded As Double: qtyNeeded = NzDbl(requirements(key))
-        usedCell.Value = NzDbl(usedCell.Value) + qtyNeeded
-        totalCell.Value = NzDbl(totalCell.Value) - qtyNeeded
-        ApplyComponentUsageToInv = ApplyComponentUsageToInv + qtyNeeded
+        Dim qtyStage As Double: qtyStage = NzDbl(requirements(key))
+        Dim newUsed As Double: newUsed = NzDbl(usedCell.Value) + qtyStage
+        usedCell.Value = newUsed
+        StageComponentsToUsed = StageComponentsToUsed + qtyStage
+
+        Dim itemCode As String, itemName As String
+        If colItemCode > 0 Then itemCode = NzStr(invRow.Range.Cells(1, colItemCode).Value)
+        If colItemName > 0 Then itemName = NzStr(invRow.Range.Cells(1, colItemName).Value)
+        logEntries.Add Array("BTN_CONFIRM_INV_STAGE", CLng(key), itemCode, itemName, qtyStage, newUsed)
     Next key
-End Function
-
-Private Function AddPackagesToMade(invLo As ListObject, aggPack As ListObject, ByRef errNotes As String) As Double
-    If invLo Is Nothing Then Exit Function
-    If aggPack Is Nothing Or aggPack.DataBodyRange Is Nothing Then Exit Function
-
-    Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggPack, "QUANTITY")
-    Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggPack, "ROW")
-    If cQtyAgg = 0 Or cRowAgg = 0 Then
-        AppendNote errNotes, "AggregatePackages is missing QUANTITY or ROW columns."
-        Exit Function
-    End If
-
-    Dim colMadeInv As Long: colMadeInv = ColumnIndex(invLo, "MADE")
-    If colMadeInv = 0 Then
-        AppendNote errNotes, "invSys table must contain a MADE column."
-        Exit Function
-    End If
-
-    Dim arr As Variant
-    arr = aggPack.DataBodyRange.Value
-    Dim r As Long
-    For r = 1 To UBound(arr, 1)
-        Dim rowVal As Long: rowVal = NzLng(arr(r, cRowAgg))
-        Dim qtyMade As Double: qtyMade = NzDbl(arr(r, cQtyAgg))
-        If rowVal = 0 Or qtyMade <= 0 Then GoTo NextPkg
-
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
-        If invRow Is Nothing Then
-            AppendNote errNotes, "Package ROW " & rowVal & " not found in invSys; MADE tally skipped."
-            GoTo NextPkg
-        End If
-
-        Dim madeCell As Range: Set madeCell = invRow.Range.Cells(1, colMadeInv)
-        madeCell.Value = NzDbl(madeCell.Value) + qtyMade
-        AddPackagesToMade = AddPackagesToMade + qtyMade
-NextPkg:
-    Next r
 End Function
 
 Private Sub AppendNote(ByRef target As String, ByVal text As String)
@@ -1576,6 +1997,35 @@ Private Sub WriteArrayToTable(lo As ListObject, arr As Variant)
     End If
     If lo.DataBodyRange Is Nothing Then Exit Sub
     lo.DataBodyRange.Value = arr
+End Sub
+
+Private Sub LogShippingChanges(ByVal logTableName As String, logEntries As Collection)
+    On Error GoTo ErrHandler
+    If logEntries Is Nothing Then Exit Sub
+    If logEntries.Count = 0 Then Exit Sub
+    Dim ws As Worksheet: Set ws = SheetExists(logTableName)
+    If ws Is Nothing Then Exit Sub
+    Dim tbl As ListObject: Set tbl = GetListObject(ws, logTableName)
+    If tbl Is Nothing Then Exit Sub
+    Dim entry As Variant
+    Dim newRow As ListRow
+    For Each entry In logEntries
+        Set newRow = tbl.ListRows.Add
+        With newRow.Range
+            .Cells(1, 1).Value = modUR_Snapshot.GenerateGUID()
+            .Cells(1, 2).Value = Environ$("USERNAME")
+            .Cells(1, 3).Value = entry(0)
+            .Cells(1, 4).Value = entry(1)
+            .Cells(1, 5).Value = entry(2)
+            .Cells(1, 6).Value = entry(3)
+            .Cells(1, 7).Value = entry(4)
+            .Cells(1, 8).Value = entry(5)
+            .Cells(1, 9).Value = Now
+        End With
+    Next entry
+    Exit Sub
+ErrHandler:
+    Debug.Print "LogShippingChanges error (" & logTableName & "): " & Err.Description
 End Sub
 
 Private Function GetBomTableByRow(ByVal rowValue As Long) As ListObject

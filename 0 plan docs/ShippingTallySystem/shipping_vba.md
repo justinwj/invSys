@@ -67,44 +67,73 @@ flowchart LR
         PROC_TALLY --> LogCheck["Check_invSys_Log"]:::log
     end
 
-    subgraph Confirm["Confirm + inventory writes"]
+    subgraph Confirm["Confirm + downstream inventory writes"]
         BTN_CON["BTN_CONFIRM_INV"]:::button
-        PROC_CONFIRM["ConfirmInventory()\n - validate references\n - ensure held qty stays on NotShipped\n - capture snapshots/logs (no inv writes)"]:::proc
+        PROC_CONFIRM["ConfirmInventory()
+ - validate Shipments vs NotShipped
+ - ensure enough TOTAL INV for BOM rows
+ - stage usage: AggregateBoxBOM qty -> invSys.USED
+ - Shipments logs only (no modInvMan)"]:::proc
+        STAGED_USED["invSys.USED (staged components)"]:::table
         BTN_BOXES["BTN_BOXES_MADE"]:::button
-        PROC_BOXES["BuildPackagesFromBOM()\n 1) add needed qty to invSys.USED\n 2) deduct same qty from invSys.TOTAL_INV\n 3) add finished packages to invSys.MADE"]:::proc
+        PROC_DELTAS["BuildBoxesMadePayload()
+ - read staged ROW usage
+ - emit UsedDelta[] + MadeDelta[]"]:::proc
+        DELTA_PAYLOAD["Delta bundle
+ UsedDelta[ROW, QTY, ITEM_CODE, ITEM_NAME]
+ MadeDelta[ROW, QTY, ITEM_CODE, ITEM_NAME]"]:::table
+        APPLY_USED_BTN["modInvMan.ApplyUsedDeltas"]:::proc
+        APPLY_MADE_BTN["modInvMan.ApplyMadeDeltas"]:::proc
         BTN_TOTAL["BTN_TO_TOTALINV"]:::button
-        PROC_TOTAL["PushMadeToTotalInv()\n - reduce invSys.MADE\n - add qty to invSys.TOTAL_INV (finished stock)"]:::proc
+        PROC_TOTAL["PushMadeToTotalInv()
+ - reduce invSys.MADE
+ - add qty to invSys.TOTAL_INV (finished stock)"]:::proc
         BTN_TO_SHIP["BTN_TO_SHIPMENTS"]:::button
-        PROC_TO_SHIP["UseExistingFirstThenShip()\n - consume invSys.TOTAL_INV finished goods first\n - if short, pull from invSys.MADE\n - add ShipmentsTally qty to invSys.SHIPMENTS"]:::proc
+        PROC_TO_SHIP["UseExistingFirstThenShip()
+ - consume invSys.TOTAL_INV finished goods first
+ - if short, pull from invSys.MADE
+ - add ShipmentsTally qty to invSys.SHIPMENTS"]:::proc
         BTN_SHIP["BTN_SHIPMENTS_SENT"]:::button
-        PROC_SHIP["FinalizeShipments()\n - log instructions\n - deduct invSys.SHIPMENTS from TOTAL_INV\n - clear instructions"]:::proc
+        PROC_SHIP["FinalizeShipments()
+ - log instructions
+ - deduct invSys.SHIPMENTS from TOTAL_INV
+ - clear instructions"]:::proc
+        LOG_SHIP_ACTIONS["Shipments _Log tables
+(ShipmentsTally_Log / AggregateBoxBOM_Log /
+AggregatePackages_Log / Check_invSys_Log)"]:::log
 
-        BTN_CON --> PROC_CONFIRM
+        BTN_CON --> PROC_CONFIRM --> STAGED_USED
         CHK_EXIST --> PROC_EXIST -.-> BTN_BOXES
-        BTN_BOXES --> PROC_BOXES
-        PROC_BOXES --> invUsed["invSys.USED"]:::table
-        PROC_BOXES --> invTotal["invSys.TOTAL INV"]:::table
-        PROC_BOXES --> invMade["invSys.MADE"]:::table
-        PROC_BOXES --> InventoryLog:::log
+        BTN_BOXES --> PROC_DELTAS --> DELTA_PAYLOAD
+        DELTA_PAYLOAD --> APPLY_USED_BTN
+        DELTA_PAYLOAD --> APPLY_MADE_BTN
+        APPLY_USED_BTN --> STAGED_USED
+        APPLY_USED_BTN --> invTotal["invSys.TOTAL INV"]:::table
+        APPLY_USED_BTN --> InventoryLog:::log
+        APPLY_MADE_BTN --> invMade["invSys.MADE"]:::table
+        APPLY_MADE_BTN --> InventoryLog
+        PROC_DELTAS --> LOG_SHIP_ACTIONS
+        APPLY_MADE_BTN --> LOG_SHIP_ACTIONS
 
         BTN_TOTAL --> PROC_TOTAL --> invTotal
         PROC_TOTAL --> invMade
         PROC_TOTAL -->|clear tables| Runtime
         PROC_TOTAL --> InventoryLog
+        PROC_TOTAL --> LOG_SHIP_ACTIONS
 
         BTN_TO_SHIP --> PROC_TO_SHIP
         PROC_TO_SHIP --> invTotal
         PROC_TO_SHIP --> invMade
         PROC_TO_SHIP --> invShip["invSys.SHIPMENTS"]:::table
         PROC_TO_SHIP --> InventoryLog
+        PROC_TO_SHIP --> LOG_SHIP_ACTIONS
 
         BTN_SHIP --> PROC_SHIP
         PROC_SHIP --> invShip
         PROC_SHIP --> invTotal
         PROC_SHIP --> InventoryLog
-    end
-
-    ShippingBOM -->|picker source| STALLY
+        PROC_SHIP --> LOG_SHIP_ACTIONS
+    end    ShippingBOM -->|picker source| STALLY
     invSys -->|ROW resolves in picker| STALLY
     invMade --> BTN_SHIP
     NOTSHIP -.->|held qty reduces available packages| BTN_CON:::warn
@@ -120,3 +149,5 @@ flowchart LR
     end
     style Legend fill:#0f172a,stroke:#fef08a,color:#f8fafc
 ```
+
+

@@ -41,14 +41,17 @@ Sheet (Code): InventoryManagement
     Type: Button (0)
     Text: Admin
 ------------------------------------------------------------
+Sheet (Tab):  InventoryLog
+Sheet (Code): InventoryLog
+  Table: InventoryLog
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
 Sheet (Tab):  ReceivedTally
 Sheet (Code): ReceivedTally
   Table: ReceivedTally
     Headers: REF_NUMBER, ITEMS, QUANTITY
   Table: AggregateReceived
     Headers: REF_NUMBER, ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, LOCATION, ROW
-  Table: ReceivingSavedList
-    Headers: SAVED LIST
   Form Control: btnConfirmWrites
     Type: Button (0)
     Text: Confirm writes
@@ -67,25 +70,83 @@ Sheet (Code): ReceivedLog
 Sheet (Tab):  ShipmentsTally
 Sheet (Code): ShipmentsTally
   Table: ShipmentsTally
-    Headers: ORDER_NUMBER, ITEMS, QUANTITY
-  Table: AggregateShipping
-    Headers: REF_NUMBER, ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, LOCATION, ROW
-  Table: ShippingSavedList
-    Headers: SAVED LIST
-  Table: Table19
-    Headers: frmReceivedTally, frmShipmentsTally
-  Form Control: Button 2
+    Headers: REF_NUMBER, ITEMS, QUANTITY
+  Table: AggregatePackages
+    Headers: QUANTITY, UOM, ITEM, ROW
+  Table: BoxBuilder
+    Headers: Box Name, UOM, LOCATION, DESCRIPTION, ROW
+  Table: BoxBOM
+    Headers: ITEM, QUANTITY, UOM, LOCATION, DESCRIPTION, ROW
+  Table: NotShipped
+    Headers: REF_NUMBER, ITEMS, QUANTITY
+  Table: AggregateBoxBOM
+    Headers: QUANTITY, UOM, ITEM, ROW
+  Table: Check_invSys
+    Headers: USED, MADE, SHIPMENTS, TOTAL INV, ROW
+  Form Control: BTN_SAVE_BOX
     Type: Button (0)
-    Text: Undo
-  Form Control: Button 3
+    Text: Save box
+  Form Control: BTN_CONFIRM_INV
     Type: Button (0)
-    Text: Redo
-  Form Control: Button 4
+    Text: Confirm inventory
+  Form Control: BTN_BOXES_MADE
     Type: Button (0)
-    Text: Tally Shipments
-  Form Control: Button 5
+    Text: Boxes made
+  Form Control: BTN_TO_TOTALINV
     Type: Button (0)
-    Text: Button 5
+    Text: To TotalInv
+  Form Control: BTN_TO_SHIPMENTS
+    Type: Button (0)
+    Text: To Shipments
+  Form Control: BTN_SHIPMENTS_SENT
+    Type: Button (0)
+    Text: Shipments sent
+  Form Control: BTN_UNSHIP
+    Type: Button (0)
+    Text: Toggle NotShipped
+  Form Control: BTN_TOGGLE_BUILDER
+    Type: Button (0)
+    Text: Toggle builder
+  Form Control: BTN_SEND_HOLD
+    Type: Button (0)
+    Text: Send to hold
+  Form Control: BTN_RETURN_HOLD
+    Type: Button (0)
+    Text: Return from hold
+------------------------------------------------------------
+Sheet (Tab):  ShipmentsTally_Log
+Sheet (Code): ShipmentsLog
+  Table: ShipmentsTally_Log
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
+Sheet (Tab):  NotShipped_Log
+Sheet (Code): NotShipped_Log
+  Table: NotShipped_Log
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
+Sheet (Tab):  AggregateBoxBOM_Log
+Sheet (Code): AggregateBoxBOM_Log
+  Table: AggregateBoxBOM_Log
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
+Sheet (Tab):  AggregatePackages_Log
+Sheet (Code): AggregatePackages_Log
+  Table: AggregatePackages_Log
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
+Sheet (Tab):  Check_invSys_Log
+Sheet (Code): Check_invSys_Log
+  Table: Table28
+    Headers: LOG_ID, USER, ACTION, ROW, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
+------------------------------------------------------------
+Sheet (Tab):  ShippingBOM
+Sheet (Code): ShippingBOM
+  Table: ROW_65
+    Headers: ROW, QUANTITY, UOM
+  Table: ROW_66
+    Headers: ROW, QUANTITY, UOM
+  Table: ROW_67
+    Headers: ROW, QUANTITY, UOM
 ------------------------------------------------------------
 Sheet (Tab):  Production
 Sheet (Code): Production
@@ -118,18 +179,8 @@ Sheet (Code): Substitutions
 Sheet (Tab):  PredictionLog
 Sheet (Code): PredictionLog
 ------------------------------------------------------------
-Sheet (Tab):  InventoryLog
-Sheet (Code): InventoryLog
-  Table: InventoryLog
-    Headers: LOG_ID, USER, ACTION, ITEM_CODE, ITEM_NAME, QUANTITY_CHANGE, NEW_QUANTITY, TIMESTAMP
-------------------------------------------------------------
 Sheet (Tab):  ProductionLog
 Sheet (Code): ProductionLog
-------------------------------------------------------------
-Sheet (Tab):  ShipmentsLog
-Sheet (Code): ShipmentsLog
-  Table: ShipmentsLog
-    Headers: ORDER_NUMBER, ITEMS, QUANTITY, UOM, VENDOR, LOCATION, ITEM_CODE, ROW, ENTRY_DATE
 ------------------------------------------------------------
 Sheet (Tab):  Codes
 Sheet (Code): Codes
@@ -139,7 +190,7 @@ Sheet (Code): Codes
     Headers: INGREDIENTS, CODES
 ------------------------------------------------------------
 Sheet (Tab):  ReadMe
-Sheet (Code): Sheet1
+Sheet (Code): ReadMe
   Table: tblSunset
     Headers: Subsystem, Old procedure(s), New replacement, Status, Notes
 ------------------------------------------------------------
