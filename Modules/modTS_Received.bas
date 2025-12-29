@@ -855,13 +855,13 @@ End Sub
 
 ' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
 ' Returns a 2D array with columns: ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS
-Public Function LoadItemList() As Variant
+Public Function LoadItemList(Optional ByVal includeCategory As Boolean = False) As Variant
     Dim ws As Worksheet: Set ws = SheetExists("InventoryManagement")
     If ws Is Nothing Then Exit Function
     Dim lo As ListObject: Set lo = ws.ListObjects("invSys")
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
 
-    Dim cRow As Long, cCode As Long, cItem As Long, cUOM As Long, cLoc As Long, cDesc As Long, cVend As Long
+    Dim cRow As Long, cCode As Long, cItem As Long, cUOM As Long, cLoc As Long, cDesc As Long, cVend As Long, cCat As Long
     cRow = ColumnIndex(lo, "ROW")
     cCode = ColumnIndex(lo, "ITEM_CODE")
     cItem = ColumnIndex(lo, "ITEM")
@@ -869,12 +869,14 @@ Public Function LoadItemList() As Variant
     cLoc = ColumnIndex(lo, "LOCATION")
     cDesc = ColumnIndex(lo, "DESCRIPTION")
     cVend = ColumnIndex(lo, "VENDOR(s)")
+    If includeCategory Then cCat = ColumnIndex(lo, "CATEGORY")
     If cCode * cItem = 0 Or cRow = 0 Then Exit Function
 
     Dim src As Variant: src = lo.DataBodyRange.value
     Dim r As Long, n As Long: n = UBound(src, 1)
     Dim outArr() As Variant
-    ReDim outArr(1 To n, 1 To 7)
+    Dim colCount As Long: colCount = IIf(includeCategory, 8, 7)
+    ReDim outArr(1 To n, 1 To colCount)
     Dim outRow As Long: outRow = 0
 
     For r = 1 To n
@@ -888,12 +890,19 @@ Public Function LoadItemList() As Variant
             outArr(outRow, 5) = NzStr(src(r, cLoc))   ' LOCATION
             outArr(outRow, 6) = NzStr(src(r, cDesc))  ' DESCRIPTION
             outArr(outRow, 7) = NzStr(src(r, cVend))  ' VENDORS
+            If includeCategory Then
+                If cCat > 0 Then
+                    outArr(outRow, 8) = NzStr(src(r, cCat))  ' CATEGORY
+                Else
+                    outArr(outRow, 8) = ""
+                End If
+            End If
         End If
     Next
 
     If outRow = 0 Then Exit Function
     ' Trim to actual count
-    ReDim Preserve outArr(1 To outRow, 1 To 7)
+    ReDim Preserve outArr(1 To outRow, 1 To colCount)
     LoadItemList = outArr
 End Function
 

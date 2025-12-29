@@ -6,10 +6,13 @@ Option Explicit
 
 Private WithEvents txtSearch As MSForms.TextBox
 Private WithEvents lst As MSForms.ListBox
+Private WithEvents chkShippable As MSForms.CheckBox
 Private uf As Object
 Private txtDesc As MSForms.TextBox
 Private itemsArr As Variant
 Private callbackCell As Range
+Private mCategoryCol As Long
+Private mHasCategory As Boolean
 
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
@@ -62,11 +65,16 @@ Private Function BuildForm() As Boolean
     Dim m As Single: m = 10
     Dim innerW As Single: innerW = uf.InsideWidth - 2 * m
     Dim innerH As Single: innerH = uf.InsideHeight - 2 * m
-    Dim listH As Single: listH = innerH * 0.7 ' about 70% of the form height
+    Dim listH As Single: listH = innerH * 0.62 ' allow space for shippable filter and description
+    Dim chkH As Single: chkH = 16
 
     On Error Resume Next
     Set txtSearch = uf.Controls.Add("Forms.TextBox.1", "txtSearch", True)
     If Err.Number <> 0 Then Debug.Print "    ERROR adding txtSearch:", Err.Number, Err.Description
+    Err.Clear
+
+    Set chkShippable = uf.Controls.Add("Forms.CheckBox.1", "chkShippable", True)
+    If Err.Number <> 0 Then Debug.Print "    ERROR adding chkShippable:", Err.Number, Err.Description
     Err.Clear
 
     Set lst = uf.Controls.Add("Forms.ListBox.1", "lst", True)
@@ -80,7 +88,14 @@ Private Function BuildForm() As Boolean
 
     ' Position search box and list to use most of the space
     txtSearch.Left = m: txtSearch.Top = m: txtSearch.Width = innerW
-    lst.Left = m: lst.Top = txtSearch.Top + txtSearch.Height + 6
+    chkShippable.Left = m
+    chkShippable.Top = txtSearch.Top + txtSearch.Height + 4
+    chkShippable.Width = innerW
+    chkShippable.Height = chkH
+    chkShippable.Caption = "Shippable only"
+    chkShippable.Value = ShouldDefaultShippable()
+
+    lst.Left = m: lst.Top = chkShippable.Top + chkShippable.Height + 6
     lst.Width = innerW: lst.Height = listH
 
     ' Configure listbox
@@ -107,7 +122,7 @@ End Function
 
 Private Function LoadItems() As Boolean
     Debug.Print "  LoadItems entered"
-    itemsArr = modTS_Received.LoadItemList()
+    itemsArr = modTS_Received.LoadItemList(True)
     lst.Clear
     If IsEmpty(itemsArr) Then
         Debug.Print "    LoadItems FAIL: itemsArr is Empty"
@@ -115,51 +130,19 @@ Private Function LoadItems() As Boolean
         Exit Function
     End If
     Debug.Print "    LoadItems: UBound =", UBound(itemsArr, 1)
-    Dim i As Long
-    For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
-        lst.AddItem
-        lst.List(lst.ListCount - 1, 0) = itemsArr(i, 1) ' ROW
-        lst.List(lst.ListCount - 1, 1) = itemsArr(i, 2) ' ITEM_CODE
-        lst.List(lst.ListCount - 1, 2) = itemsArr(i, 3) ' ITEM
-        lst.List(lst.ListCount - 1, 3) = itemsArr(i, 4) ' UOM
-        lst.List(lst.ListCount - 1, 4) = itemsArr(i, 5) ' LOCATION
-        lst.List(lst.ListCount - 1, 5) = itemsArr(i, 6) ' DESCRIPTION
-        lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7) ' VENDORS
-    Next i
-    ' Select first item by default to populate description
-    If lst.ListCount > 0 Then
-        lst.ListIndex = 0
-        UpdateDescription
-    End If
+    InitCategoryState
+    ApplyFilter
     LoadItems = True
     Debug.Print "    LoadItems SUCCESS"
 End Function
 
 ' ==== events ====
 Private Sub txtSearch_Change()
-    Dim term As String: term = LCase$(Trim$(txtSearch.Text))
-    Dim i As Long
-    lst.Clear
-    If IsEmpty(itemsArr) Then Exit Sub
-    For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
-        ' Match on ITEM (3) or ITEM_CODE (2)
-        If term = "" _
-           Or InStr(1, LCase$(itemsArr(i, 3)), term) > 0 _
-           Or InStr(1, LCase$(itemsArr(i, 2)), term) > 0 Then
-            lst.AddItem
-            lst.List(lst.ListCount - 1, 0) = itemsArr(i, 1)
-            lst.List(lst.ListCount - 1, 1) = itemsArr(i, 2)
-            lst.List(lst.ListCount - 1, 2) = itemsArr(i, 3)
-            lst.List(lst.ListCount - 1, 3) = itemsArr(i, 4)
-            lst.List(lst.ListCount - 1, 4) = itemsArr(i, 5)
-            lst.List(lst.ListCount - 1, 5) = itemsArr(i, 6)
-            lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7)
-        End If
-    Next i
-    If lst.ListCount > 0 Then
-        lst.ListIndex = 0
-        UpdateDescription
-    End If
+    ApplyFilter
+End Sub
+
+Private Sub chkShippable_Click()
+    ApplyFilter
 End Sub
 
 Private Sub lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
@@ -199,12 +182,34 @@ End Sub
 
 ' Manual search filter you can call from external code (since WithEvents removed)
 Public Sub FilterList(ByVal term As String)
+    ApplyFilter term
+End Sub
+
+Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
+    Dim term As String
+    If IsMissing(termOverride) Then
+        term = NzStr(txtSearch.Text)
+    Else
+        term = NzStr(termOverride)
+    End If
+    term = LCase$(Trim$(term))
+
+    Dim shippableOnly As Boolean
+    If Not chkShippable Is Nothing Then
+        On Error Resume Next
+        shippableOnly = (chkShippable.Value = True)
+        On Error GoTo 0
+    End If
+
     Dim i As Long
     lst.Clear
     If IsEmpty(itemsArr) Then Exit Sub
-    term = LCase$(Trim$(term))
     For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
-        If term = "" Or InStr(1, LCase$(itemsArr(i, 3)), term) > 0 Then
+        If shippableOnly And Not IsRowShippable(i) Then GoTo NextItem
+        ' Match on ITEM (3) or ITEM_CODE (2)
+        If term = "" _
+           Or InStr(1, LCase$(NzStr(itemsArr(i, 3))), term) > 0 _
+           Or InStr(1, LCase$(NzStr(itemsArr(i, 2))), term) > 0 Then
             lst.AddItem
             lst.List(lst.ListCount - 1, 0) = itemsArr(i, 1)
             lst.List(lst.ListCount - 1, 1) = itemsArr(i, 2)
@@ -214,8 +219,48 @@ Public Sub FilterList(ByVal term As String)
             lst.List(lst.ListCount - 1, 5) = itemsArr(i, 6)
             lst.List(lst.ListCount - 1, 6) = itemsArr(i, 7)
         End If
+NextItem:
+    Next i
+    If lst.ListCount > 0 Then
+        lst.ListIndex = 0
+        UpdateDescription
+    End If
+End Sub
+
+Private Sub InitCategoryState()
+    mCategoryCol = 0
+    mHasCategory = False
+    If IsEmpty(itemsArr) Then Exit Sub
+    On Error Resume Next
+    If UBound(itemsArr, 2) >= 8 Then mCategoryCol = 8
+    On Error GoTo 0
+    If mCategoryCol = 0 Then Exit Sub
+
+    Dim i As Long
+    For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
+        If Trim$(NzStr(itemsArr(i, mCategoryCol))) <> "" Then
+            mHasCategory = True
+            Exit For
+        End If
     Next i
 End Sub
+
+Private Function IsRowShippable(ByVal rowIndex As Long) As Boolean
+    If Not mHasCategory Or mCategoryCol = 0 Then
+        IsRowShippable = True
+        Exit Function
+    End If
+    IsRowShippable = (LCase$(Trim$(NzStr(itemsArr(rowIndex, mCategoryCol)))) = "shippable")
+End Function
+
+Private Function ShouldDefaultShippable() As Boolean
+    Dim lo As ListObject
+    On Error Resume Next
+    If Not callbackCell Is Nothing Then Set lo = callbackCell.ListObject
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Function
+    ShouldDefaultShippable = (LCase$(lo.Name) = "shipmentstally")
+End Function
 
 Public Sub CommitSelection()
     If lst.ListIndex < 0 Then Exit Sub
