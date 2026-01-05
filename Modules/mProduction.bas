@@ -24,6 +24,7 @@ Private Const BTN_PRINT_CODES As String = "BTN_PRINT_CODES"
 
 Private mRowCountCache As Object
 Private mHiddenSystems As Collection
+Private mRecipePicker As cDynItemSearch
 Private mSystemGroupsInit As Boolean
 Private mSystemGroupNames(1 To 4) As String
 Private mSystemGroupTables(1 To 4) As Variant
@@ -122,6 +123,51 @@ Public Function GetListObject(ws As Worksheet, tableName As String) As ListObjec
     On Error Resume Next
     Set GetListObject = ws.ListObjects(tableName)
     On Error GoTo 0
+End Function
+
+Public Function LoadRecipeList() As Variant
+    Dim wsRec As Worksheet: Set wsRec = SheetExists("Recipes")
+    If wsRec Is Nothing Then Exit Function
+    Dim lo As ListObject: Set lo = GetListObject(wsRec, "Recipes")
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cId As Long: cId = ColumnIndex(lo, "RECIPE_ID")
+    Dim cName As Long: cName = ColumnIndex(lo, "RECIPE")
+    Dim cDesc As Long: cDesc = ColumnIndex(lo, "DESCRIPTION")
+    If cId = 0 Or cName = 0 Then Exit Function
+
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    Dim arr As Variant: arr = lo.DataBodyRange.Value
+    Dim r As Long
+    For r = 1 To UBound(arr, 1)
+        Dim rid As String: rid = NzStr(arr(r, cId))
+        Dim rname As String: rname = NzStr(arr(r, cName))
+        If rid = "" Or rname = "" Then GoTo NextRow
+        If Not dict.Exists(rid) Then
+            Dim info(1 To 3) As Variant
+            info(1) = rid
+            info(2) = rname
+            If cDesc > 0 Then info(3) = NzStr(arr(r, cDesc)) Else info(3) = ""
+            dict.Add rid, info
+        End If
+NextRow:
+    Next r
+
+    If dict.Count = 0 Then Exit Function
+    Dim result() As Variant
+    ReDim result(1 To dict.Count, 1 To 3)
+    Dim i As Long: i = 1
+    Dim key As Variant
+    For Each key In dict.Keys
+        Dim infoArr As Variant
+        infoArr = dict(key)
+        result(i, 1) = infoArr(1)
+        result(i, 2) = infoArr(2)
+        result(i, 3) = infoArr(3)
+        i = i + 1
+    Next key
+    LoadRecipeList = result
 End Function
 
 Private Function FindListObjectByNameOrHeaders(ws As Worksheet, tableName As String, headers As Variant) As ListObject
@@ -500,7 +546,26 @@ End Sub
 
 ' ===== button handlers (stubs for now) =====
 Public Sub BtnLoadRecipe()
-    LoadRecipeFromRecipes
+    Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then Exit Sub
+
+    Dim loHeader As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    If loHeader Is Nothing Then
+        MsgBox "Recipe Builder header table not found on Production sheet.", vbExclamation
+        Exit Sub
+    End If
+    EnsureTableHasRow loHeader
+    Dim cName As Long: cName = ColumnIndex(loHeader, "RECIPE_NAME")
+    If cName = 0 Then
+        MsgBox "Recipe Builder header missing RECIPE_NAME column.", vbCritical
+        Exit Sub
+    End If
+
+    Dim targetCell As Range
+    Set targetCell = loHeader.DataBodyRange.Cells(1, cName)
+    If mRecipePicker Is Nothing Then Set mRecipePicker = New cDynItemSearch
+    mRecipePicker.ShowForRecipeCell targetCell
 End Sub
 
 Public Sub BtnSaveRecipe()
@@ -542,8 +607,10 @@ Private Sub SaveRecipeToRecipes()
         Exit Sub
     End If
 
-    Dim loHeader As ListObject: Set loHeader = GetListObject(wsProd, TABLE_RECIPE_BUILDER_HEADER)
-    Dim loLines As ListObject: Set loLines = GetListObject(wsProd, TABLE_RECIPE_BUILDER_LINES)
+    Dim loHeader As ListObject
+    Dim loLines As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    Set loLines = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_LINES, Array("PROCESS", "INGREDIENT"))
     If loHeader Is Nothing Or loLines Is Nothing Then
         MsgBox "Recipe Builder tables not found on Production sheet.", vbExclamation
         Exit Sub
@@ -701,7 +768,7 @@ ErrHandler:
     MsgBox "Save Recipe failed: " & Err.Description, vbCritical
 End Sub
 
-Private Sub LoadRecipeFromRecipes()
+Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     On Error GoTo ErrHandler
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
@@ -711,8 +778,10 @@ Private Sub LoadRecipeFromRecipes()
         Exit Sub
     End If
 
-    Dim loHeader As ListObject: Set loHeader = GetListObject(wsProd, TABLE_RECIPE_BUILDER_HEADER)
-    Dim loLines As ListObject: Set loLines = GetListObject(wsProd, TABLE_RECIPE_BUILDER_LINES)
+    Dim loHeader As ListObject
+    Dim loLines As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    Set loLines = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_LINES, Array("PROCESS", "INGREDIENT"))
     If loHeader Is Nothing Or loLines Is Nothing Then
         MsgBox "Recipe Builder tables not found on Production sheet.", vbExclamation
         Exit Sub
@@ -720,19 +789,22 @@ Private Sub LoadRecipeFromRecipes()
 
     Dim recipeId As String
     Dim recipeName As String
+    recipeId = forceRecipeId
 
-    Dim loSel As ListObject
-    On Error Resume Next
-    Set loSel = Application.ActiveCell.ListObject
-    On Error GoTo 0
-    If Not loSel Is Nothing Then
-        Dim cSelRecipeId As Long: cSelRecipeId = ColumnIndex(loSel, "RECIPE_ID")
-        Dim cSelRecipe As Long: cSelRecipe = ColumnIndex(loSel, "RECIPE")
-        If cSelRecipeId > 0 Then
-            recipeId = NzStr(loSel.DataBodyRange.Cells(Application.ActiveCell.Row - loSel.DataBodyRange.Row + 1, cSelRecipeId).Value)
-        End If
-        If recipeId = "" And cSelRecipe > 0 Then
-            recipeName = NzStr(loSel.DataBodyRange.Cells(Application.ActiveCell.Row - loSel.DataBodyRange.Row + 1, cSelRecipe).Value)
+    If recipeId = "" Then
+        Dim loSel As ListObject
+        On Error Resume Next
+        Set loSel = Application.ActiveCell.ListObject
+        On Error GoTo 0
+        If Not loSel Is Nothing Then
+            Dim cSelRecipeId As Long: cSelRecipeId = ColumnIndex(loSel, "RECIPE_ID")
+            Dim cSelRecipe As Long: cSelRecipe = ColumnIndex(loSel, "RECIPE")
+            If cSelRecipeId > 0 Then
+                recipeId = NzStr(loSel.DataBodyRange.Cells(Application.ActiveCell.Row - loSel.DataBodyRange.Row + 1, cSelRecipeId).Value)
+            End If
+            If recipeId = "" And cSelRecipe > 0 Then
+                recipeName = NzStr(loSel.DataBodyRange.Cells(Application.ActiveCell.Row - loSel.DataBodyRange.Row + 1, cSelRecipe).Value)
+            End If
         End If
     End If
 

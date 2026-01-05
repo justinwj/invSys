@@ -11,18 +11,21 @@ Private uf As Object
 Private txtDesc As MSForms.TextBox
 Private itemsArr As Variant
 Private callbackCell As Range
+Private mPickerMode As String
 Private mCategoryCol As Long
 Private mHasCategory As Boolean
 
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
     If targetCell Is Nothing Then Exit Sub
+    mPickerMode = "item"
     Set callbackCell = targetCell
     Debug.Print "  Calling BuildForm"
     If Not BuildForm() Then
         Debug.Print "  BuildForm returned False"
         Exit Sub
     End If
+    ConfigureForMode
     Debug.Print "  Calling LoadItems"
     If Not LoadItems() Then
         Debug.Print "  LoadItems returned False"
@@ -31,6 +34,17 @@ Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "  Showing uf vbModeless"
     uf.Show vbModeless
     Debug.Print "  uf.Show returned (form should now be visible)"
+End Sub
+
+Public Sub ShowForRecipeCell(ByVal targetCell As Range)
+    Debug.Print "cDynItemSearch.ShowForRecipeCell entered"
+    If targetCell Is Nothing Then Exit Sub
+    mPickerMode = "recipe"
+    Set callbackCell = targetCell
+    If Not BuildForm() Then Exit Sub
+    ConfigureForMode
+    If Not LoadItems() Then Exit Sub
+    uf.Show vbModeless
 End Sub
 
 Private Function BuildForm() As Boolean
@@ -120,9 +134,32 @@ Private Function BuildForm() As Boolean
     Debug.Print "    BuildForm SUCCESS"
 End Function
 
+Private Sub ConfigureForMode()
+    If uf Is Nothing Then Exit Sub
+    If LCase$(mPickerMode) <> "recipe" Then Exit Sub
+
+    uf.Caption = "Recipe Search"
+
+    If Not chkShippable Is Nothing Then
+        chkShippable.Visible = False
+    End If
+
+    lst.ColumnCount = 3
+    lst.ColumnHeads = False
+    lst.BoundColumn = 2 ' RECIPE
+    lst.TextColumn = 2
+    lst.IntegralHeight = False
+    ' RECIPE_ID | RECIPE | DESCRIPTION
+    lst.ColumnWidths = "120;260;0"
+End Sub
+
 Private Function LoadItems() As Boolean
     Debug.Print "  LoadItems entered"
-    itemsArr = modTS_Received.LoadItemList(True)
+    If LCase$(mPickerMode) = "recipe" Then
+        itemsArr = mProduction.LoadRecipeList()
+    Else
+        itemsArr = modTS_Received.LoadItemList(True)
+    End If
     lst.Clear
     If IsEmpty(itemsArr) Then
         Debug.Print "    LoadItems FAIL: itemsArr is Empty"
@@ -130,7 +167,7 @@ Private Function LoadItems() As Boolean
         Exit Function
     End If
     Debug.Print "    LoadItems: UBound =", UBound(itemsArr, 1)
-    InitCategoryState
+    If LCase$(mPickerMode) <> "recipe" Then InitCategoryState
     ApplyFilter
     LoadItems = True
     Debug.Print "    LoadItems SUCCESS"
@@ -172,10 +209,14 @@ Private Sub UpdateDescription()
     If txtDesc Is Nothing Then Exit Sub
     txtDesc.Text = ""
     If lst.ListIndex >= 0 Then
-        txtDesc.Text = lst.List(lst.ListIndex, 5) ' DESCRIPTION
-        ' Optionally append vendors for clarity
-        If lst.List(lst.ListIndex, 6) <> "" Then
-            txtDesc.Text = txtDesc.Text & vbCrLf & "Vendors: " & lst.List(lst.ListIndex, 6)
+        If LCase$(mPickerMode) = "recipe" Then
+            txtDesc.Text = lst.List(lst.ListIndex, 2) ' DESCRIPTION
+        Else
+            txtDesc.Text = lst.List(lst.ListIndex, 5) ' DESCRIPTION
+            ' Optionally append vendors for clarity
+            If lst.List(lst.ListIndex, 6) <> "" Then
+                txtDesc.Text = txtDesc.Text & vbCrLf & "Vendors: " & lst.List(lst.ListIndex, 6)
+            End If
         End If
     End If
 End Sub
@@ -194,6 +235,31 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
     End If
     term = LCase$(Trim$(term))
 
+    Dim i As Long
+    lst.Clear
+    If IsEmpty(itemsArr) Then Exit Sub
+    If LCase$(mPickerMode) = "recipe" Then
+        For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
+            Dim recId As String
+            Dim recName As String
+            recId = NzStr(itemsArr(i, 1))
+            recName = NzStr(itemsArr(i, 2))
+            If term = "" _
+               Or InStr(1, LCase$(recId), term) > 0 _
+               Or InStr(1, LCase$(recName), term) > 0 Then
+                lst.AddItem
+                lst.List(lst.ListCount - 1, 0) = recId
+                lst.List(lst.ListCount - 1, 1) = recName
+                lst.List(lst.ListCount - 1, 2) = NzStr(itemsArr(i, 3))
+            End If
+        Next i
+        If lst.ListCount > 0 Then
+            lst.ListIndex = 0
+            UpdateDescription
+        End If
+        Exit Sub
+    End If
+
     Dim shippableOnly As Boolean
     If Not chkShippable Is Nothing Then
         On Error Resume Next
@@ -201,9 +267,6 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
         On Error GoTo 0
     End If
 
-    Dim i As Long
-    lst.Clear
-    If IsEmpty(itemsArr) Then Exit Sub
     For i = LBound(itemsArr, 1) To UBound(itemsArr, 1)
         If shippableOnly And Not IsRowShippable(i) Then GoTo NextItem
         ' Match on ITEM (3) or ITEM_CODE (2)
@@ -255,6 +318,7 @@ End Function
 
 Private Function ShouldDefaultShippable() As Boolean
     Dim lo As ListObject
+    If LCase$(mPickerMode) = "recipe" Then Exit Function
     On Error Resume Next
     If Not callbackCell Is Nothing Then Set lo = callbackCell.ListObject
     On Error GoTo 0
@@ -265,6 +329,36 @@ End Function
 Public Sub CommitSelection()
     If lst.ListIndex < 0 Then Exit Sub
     If callbackCell Is Nothing Then Exit Sub
+
+    If LCase$(mPickerMode) = "recipe" Then
+        Dim recId As String
+        Dim recName As String
+        Dim recDesc As String
+        recId = NzStr(lst.List(lst.ListIndex, 0))
+        recName = NzStr(lst.List(lst.ListIndex, 1))
+        recDesc = NzStr(lst.List(lst.ListIndex, 2))
+
+        Dim loRecipe As ListObject
+        On Error Resume Next
+        Set loRecipe = callbackCell.ListObject
+        On Error GoTo 0
+        If Not loRecipe Is Nothing Then
+            Dim cName As Long: cName = ColumnIndex(loRecipe, "RECIPE_NAME")
+            Dim cId As Long: cId = ColumnIndex(loRecipe, "RECIPE_ID")
+            Dim cDesc As Long: cDesc = ColumnIndex(loRecipe, "DESCRIPTION")
+            If cName > 0 Then loRecipe.DataBodyRange.Cells(1, cName).Value = recName
+            If cId > 0 Then loRecipe.DataBodyRange.Cells(1, cId).Value = recId
+            If cDesc > 0 Then loRecipe.DataBodyRange.Cells(1, cDesc).Value = recDesc
+        Else
+            callbackCell.Value = recName
+        End If
+
+        If recId <> "" Then
+            mProduction.LoadRecipeFromRecipes recId
+        End If
+        uf.Hide
+        Exit Sub
+    End If
 
     callbackCell.Value = lst.List(lst.ListIndex, 2) ' ITEM text in active cell
 
