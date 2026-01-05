@@ -13,7 +13,8 @@ Private Const SHEET_TEMPLATES As String = "TemplatesTable"
 Private Const TABLE_TEMPLATES As String = "TemplatesTable"
 
 Public Sub ApplyTemplates(ByVal targetLo As ListObject, ByVal templateScope As String, _
-    Optional ByVal processKey As String = "", Optional ByVal tableNameOverride As String = "")
+    Optional ByVal processKey As String = "", Optional ByVal tableNameOverride As String = "", _
+    Optional ByVal recipeId As String = "", Optional ByVal ingredientId As String = "")
 
     If targetLo Is Nothing Then Exit Sub
     Dim templatesLo As ListObject
@@ -38,6 +39,12 @@ Public Sub ApplyTemplates(ByVal targetLo As ListObject, ByVal templateScope As S
         End If
         If cScope > 0 Then
             If StrComp(NzStr(arr(r, cScope)), templateScope, vbTextCompare) <> 0 Then GoTo NextRow
+        End If
+        If cRecipe > 0 And recipeId <> "" Then
+            If StrComp(NzStr(arr(r, cRecipe)), recipeId, vbTextCompare) <> 0 Then GoTo NextRow
+        End If
+        If cIngredient > 0 And ingredientId <> "" Then
+            If StrComp(NzStr(arr(r, cIngredient)), ingredientId, vbTextCompare) <> 0 Then GoTo NextRow
         End If
         If cProcess > 0 And processKey <> "" Then
             If StrComp(NzStr(arr(r, cProcess)), processKey, vbTextCompare) <> 0 Then GoTo NextRow
@@ -103,4 +110,3 @@ End Function
 Private Function NzStr(v As Variant) As String
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Then NzStr = "" Else NzStr = CStr(v)
 End Function
-

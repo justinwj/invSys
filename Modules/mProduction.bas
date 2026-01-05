@@ -8,19 +8,26 @@ Private Const SHEET_TEMPLATES As String = "TemplatesTable"
 
 Private Const TABLE_RECIPE_CHOOSER As String = "RC_RecipeChoose"
 Private Const TABLE_INV_PALETTE_GENERATED As String = "InventoryPalette_generated"
+' System 1: Recipe List Builder tables.
 Private Const TABLE_RECIPE_BUILDER_HEADER As String = "RB_AddRecipeName"
 Private Const TABLE_RECIPE_BUILDER_LINES As String = "RecipeBuilder"
 
 Private Const BTN_HIDE_SYSTEM As String = "BTN_HIDE_SYSTEM"
 Private Const BTN_SHOW_SYSTEM As String = "BTN_SHOW_SYSTEM"
-Private Const BTN_LOAD_RECIPE As String = "BTN_LOAD_RECIPE"
-Private Const BTN_SAVE_RECIPE As String = "BTN_SAVE_RECIPE"
+Private Const BTN_LOAD_RECIPE As String = "BTN_LOAD_RECIPE"             ' System 1: Recipe List Builder
+Private Const BTN_SAVE_RECIPE As String = "BTN_SAVE_RECIPE"             ' System 1: Recipe List Builder
+Private Const BTN_BUILD_RECIPE_TABLES As String = "BTN_BUILD_RECIPE_TABLES" ' System 1: Recipe List Builder
+Private Const BTN_REMOVE_RECIPE_TABLES As String = "BTN_REMOVE_RECIPE_TABLES" ' System 1: Recipe List Builder
+Private Const BTN_CLEAR_RECIPE_BUILDER As String = "BTN_CLEAR_RECIPE_BUILDER" ' System 1: Recipe List Builder
 Private Const BTN_SAVE_PALETTE As String = "BTN_SAVE_PALETTE"
 Private Const BTN_TO_USED As String = "BTN_TO_USED"
 Private Const BTN_TO_MADE As String = "BTN_TO_MADE"
 Private Const BTN_TO_TOTALINV As String = "BTN_TO_TOTALINV"
 Private Const BTN_NEXT_BATCH As String = "BTN_NEXT_BATCH"
 Private Const BTN_PRINT_CODES As String = "BTN_PRINT_CODES"
+
+Private Const TEMPLATE_SCOPE_RECIPE_PROCESS As String = "RECIPE_PROCESS"
+Private Const RECIPE_PROC_TABLE_SUFFIX As String = "rbuilder"
 
 Private mRowCountCache As Object
 Private mHiddenSystems As Collection
@@ -356,7 +363,7 @@ End Function
 Public Function ColumnIndex(lo As ListObject, colName As String) As Long
     Dim lc As ListColumn
     For Each lc In lo.ListColumns
-        If StrComp(lc.Name, colName, vbTextCompare) = 0 Then
+        If StrComp(Trim$(lc.Name), Trim$(colName), vbTextCompare) = 0 Then
             ColumnIndex = lc.Index
             Exit Function
         End If
@@ -390,6 +397,12 @@ Private Sub EnsureProductionButtons()
     nextTop = nextTop + BTN_STACK_SPACING
     EnsureButtonCustom ws, BTN_SAVE_RECIPE, "Save Recipe", "mProduction.BtnSaveRecipe", leftA, nextTop, colAWidth
     nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_BUILD_RECIPE_TABLES, "Add Recipe Process Table", "mProduction.BtnBuildRecipeProcessTables", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_REMOVE_RECIPE_TABLES, "Remove Recipe Process Table", "mProduction.BtnRemoveRecipeProcessTables", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
+    EnsureButtonCustom ws, BTN_CLEAR_RECIPE_BUILDER, "Clear Recipe List Builder", "mProduction.BtnClearRecipeBuilder", leftA, nextTop, colAWidth
+    nextTop = nextTop + BTN_STACK_SPACING
     EnsureButtonCustom ws, BTN_SAVE_PALETTE, "Save IngredientPalette", "mProduction.BtnSavePalette", leftA, nextTop, colAWidth
     nextTop = nextTop + BTN_STACK_SPACING
     EnsureButtonCustom ws, BTN_TO_USED, "To USED", "mProduction.BtnToUsed", leftA, nextTop, colAWidth
@@ -405,6 +418,7 @@ End Sub
 
 Private Sub EnsureSystemGroups()
     If mSystemGroupsInit Then Exit Sub
+    ' System 1: Recipe List Builder.
     mSystemGroupNames(1) = "RecipeListBuilder"
     mSystemGroupTables(1) = Array("RecipeBuilder", "RB_AddRecipeName")
 
@@ -545,6 +559,7 @@ Private Sub HideGroupShapes(ws As Worksheet, startCol As Long, endCol As Long, t
 End Sub
 
 ' ===== button handlers (stubs for now) =====
+' System 1: Recipe List Builder actions (Load/Save/Add/Remove/Clear).
 Public Sub BtnLoadRecipe()
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
@@ -555,15 +570,12 @@ Public Sub BtnLoadRecipe()
         MsgBox "Recipe Builder header table not found on Production sheet.", vbExclamation
         Exit Sub
     End If
-    EnsureTableHasRow loHeader
-    Dim cName As Long: cName = ColumnIndex(loHeader, "RECIPE_NAME")
-    If cName = 0 Then
+    Dim targetCell As Range
+    Set targetCell = GetHeaderDataCell(loHeader, "RECIPE_NAME")
+    If targetCell Is Nothing Then
         MsgBox "Recipe Builder header missing RECIPE_NAME column.", vbCritical
         Exit Sub
     End If
-
-    Dim targetCell As Range
-    Set targetCell = loHeader.DataBodyRange.Cells(1, cName)
     If mRecipePicker Is Nothing Then Set mRecipePicker = New cDynItemSearch
     mRecipePicker.ShowForRecipeCell targetCell
 End Sub
@@ -571,6 +583,94 @@ End Sub
 Public Sub BtnSaveRecipe()
     SaveRecipeToRecipes
 End Sub
+
+Public Sub BtnBuildRecipeProcessTables()
+    Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then Exit Sub
+    Dim loHeader As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    Dim recipeId As String
+    If Not loHeader Is Nothing Then
+        Dim idCell As Range: Set idCell = GetHeaderDataCell(loHeader, "RECIPE_ID")
+        If Not idCell Is Nothing Then recipeId = NzStr(idCell.Value)
+    End If
+    Dim builtCount As Long
+    builtCount = BuildRecipeProcessTablesFromLines(recipeId, True)
+    If builtCount = 0 Then
+        Dim newLo As ListObject
+        Set newLo = CreateRecipeProcessTable(wsProd, "", 1)
+        If newLo Is Nothing Then
+            MsgBox "No PROCESS rows found to build process tables.", vbInformation
+        Else
+            FocusRecipeProcessTable newLo
+            MsgBox "Created process table '" & newLo.Name & "'.", vbInformation
+        End If
+    End If
+End Sub
+
+Public Sub BtnRemoveRecipeProcessTables()
+    Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then Exit Sub
+
+    Dim sel As Range
+    On Error Resume Next
+    Set sel = Application.Selection
+    On Error GoTo 0
+    If sel Is Nothing Then
+        MsgBox "Select one or more Recipe Process tables to remove.", vbInformation
+        Exit Sub
+    End If
+
+    Dim targets As Object: Set targets = CreateObject("Scripting.Dictionary")
+    Dim lo As ListObject
+    For Each lo In wsProd.ListObjects
+        If IsRecipeProcessTable(lo) Then
+            If Not Intersect(lo.Range, sel) Is Nothing Then
+                targets(lo.Name) = lo.Range.Address
+            End If
+        End If
+    Next lo
+
+    If targets.Count = 0 Then
+        MsgBox "No Recipe Process tables selected.", vbInformation
+        Exit Sub
+    End If
+
+    Dim key As Variant
+    For Each key In targets.Keys
+        On Error Resume Next
+        wsProd.ListObjects(CStr(key)).Delete
+        wsProd.Range(CStr(targets(key))).Clear
+        On Error GoTo 0
+    Next key
+
+    MsgBox "Removed " & targets.Count & " Recipe Process table(s).", vbInformation
+End Sub
+
+' System 1: Recipe List Builder actions (Load/Save/Add/Remove).
+Public Sub BtnClearRecipeBuilder()
+    Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then Exit Sub
+
+    Dim loHeader As ListObject
+    Dim loLines As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    Set loLines = GetRecipeBuilderLinesTable(wsProd, loHeader)
+
+    DeleteRecipeProcessTables wsProd
+
+    If Not loLines Is Nothing Then
+        ClearListObjectData loLines
+    End If
+
+    If Not loHeader Is Nothing Then
+        ClearListObjectData loHeader
+    End If
+
+    MsgBox "Recipe List Builder cleared.", vbInformation
+End Sub
+
+' System 2+: Inventory Palette / Production actions.
 
 Public Sub BtnSavePalette()
     MsgBox "Save IngredientPalette not implemented yet.", vbInformation
@@ -596,7 +696,8 @@ Public Sub BtnPrintRecallCodes()
     MsgBox "Print recall codes not implemented yet.", vbInformation
 End Sub
 
-' ===== Recipe Builder: Load / Save =====
+' ===== System 1: Recipe List Builder - Load / Save =====
+' System 1: Recipe List Builder - save recipe to Recipes sheet.
 Private Sub SaveRecipeToRecipes()
     On Error GoTo ErrHandler
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
@@ -610,47 +711,66 @@ Private Sub SaveRecipeToRecipes()
     Dim loHeader As ListObject
     Dim loLines As ListObject
     Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
-    Set loLines = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_LINES, Array("PROCESS", "INGREDIENT"))
+    Set loLines = GetRecipeBuilderLinesTable(wsProd, loHeader)
     If loHeader Is Nothing Or loLines Is Nothing Then
         MsgBox "Recipe Builder tables not found on Production sheet.", vbExclamation
         Exit Sub
     End If
-    If loHeader.DataBodyRange Is Nothing Then
-        MsgBox "Enter a recipe name before saving.", vbExclamation
+    Dim nameCell As Range: Set nameCell = GetHeaderDataCell(loHeader, "RECIPE_NAME")
+    If nameCell Is Nothing Then
+        MsgBox "Recipe Builder header missing RECIPE_NAME column.", vbCritical
         Exit Sub
     End If
-    If loLines.DataBodyRange Is Nothing Then
-        MsgBox "Add at least one recipe line before saving.", vbExclamation
-        Exit Sub
+    Dim processTables As Collection
+    Set processTables = GetRecipeBuilderProcessTables(wsProd)
+    Dim sourceTables As Collection
+    Set sourceTables = New Collection
+    If Not processTables Is Nothing Then
+        Dim loProc As ListObject
+        For Each loProc In processTables
+            If Not loProc.DataBodyRange Is Nothing Then sourceTables.Add loProc
+        Next loProc
+    End If
+    If sourceTables.Count = 0 Then
+        If loLines.DataBodyRange Is Nothing Then
+            MsgBox "Add at least one recipe line before saving.", vbExclamation
+            Exit Sub
+        End If
+        sourceTables.Add loLines
     End If
 
-    Dim cName As Long: cName = ColumnIndex(loHeader, "RECIPE_NAME")
     Dim cDesc As Long: cDesc = ColumnIndex(loHeader, "DESCRIPTION")
     Dim cGuid As Long: cGuid = ColumnIndex(loHeader, "GUID")
     Dim cRecipeId As Long: cRecipeId = ColumnIndex(loHeader, "RECIPE_ID")
-    If cName = 0 Or cRecipeId = 0 Then
+    If cRecipeId = 0 Then
         MsgBox "Recipe Builder header missing RECIPE_NAME or RECIPE_ID.", vbCritical
         Exit Sub
     End If
 
-    Dim recipeName As String: recipeName = NzStr(loHeader.DataBodyRange.Cells(1, cName).Value)
+    Dim recipeName As String: recipeName = NzStr(nameCell.Value)
     Dim recipeDesc As String
-    If cDesc > 0 Then recipeDesc = NzStr(loHeader.DataBodyRange.Cells(1, cDesc).Value)
+    If cDesc > 0 Then
+        Dim descCell As Range
+        Set descCell = GetHeaderDataCell(loHeader, "DESCRIPTION")
+        If Not descCell Is Nothing Then recipeDesc = NzStr(descCell.Value)
+    End If
     If Trim$(recipeName) = "" Then
-        MsgBox "Enter a RECIPE_NAME before saving.", vbExclamation
+        MsgBox "Fill RB_AddRecipeName (RECIPE_NAME) or load a recipe before saving.", vbExclamation
         Exit Sub
     End If
 
-    Dim recipeId As String: recipeId = NzStr(loHeader.DataBodyRange.Cells(1, cRecipeId).Value)
+    Dim recipeIdCell As Range: Set recipeIdCell = GetHeaderDataCell(loHeader, "RECIPE_ID")
+    Dim recipeId As String: recipeId = NzStr(recipeIdCell.Value)
     If recipeId = "" Then
         recipeId = modUR_Snapshot.GenerateGUID()
-        loHeader.DataBodyRange.Cells(1, cRecipeId).Value = recipeId
+        recipeIdCell.Value = recipeId
     End If
     If cGuid > 0 Then
-        Dim recipeGuid As String: recipeGuid = NzStr(loHeader.DataBodyRange.Cells(1, cGuid).Value)
+        Dim recipeGuidCell As Range: Set recipeGuidCell = GetHeaderDataCell(loHeader, "GUID")
+        Dim recipeGuid As String: recipeGuid = NzStr(recipeGuidCell.Value)
         If recipeGuid = "" Then
             recipeGuid = modUR_Snapshot.GenerateGUID()
-            loHeader.DataBodyRange.Cells(1, cGuid).Value = recipeGuid
+            recipeGuidCell.Value = recipeGuid
         End If
     End If
 
@@ -690,84 +810,35 @@ Private Sub SaveRecipeToRecipes()
     Dim cRecIngId As Long: cRecIngId = ColumnIndex(loRecipes, "INGREDIENT_ID")
     Dim cRecGuid As Long: cRecGuid = ColumnIndex(loRecipes, "GUID")
 
-    ' Column indexes in RecipeBuilder lines.
-    Dim cProc As Long: cProc = ColumnIndex(loLines, "PROCESS")
-    Dim cDiag As Long: cDiag = ColumnIndex(loLines, "DIAGRAM_ID")
-    Dim cIO As Long: cIO = ColumnIndex(loLines, "INPUT/OUTPUT")
-    Dim cIng As Long: cIng = ColumnIndex(loLines, "INGREDIENT")
-    Dim cPct As Long: cPct = ColumnIndex(loLines, "PERCENT")
-    Dim cUomLine As Long: cUomLine = ColumnIndex(loLines, "UOM")
-    Dim cAmt As Long: cAmt = ColumnIndex(loLines, "AMOUNT")
-    Dim cListRow As Long: cListRow = ColumnIndex(loLines, "RECIPE_LIST_ROW")
-    Dim cIngId As Long: cIngId = ColumnIndex(loLines, "INGREDIENT_ID")
-    Dim cGuidLine As Long: cGuidLine = ColumnIndex(loLines, "GUID")
-
-    Dim lineArr As Variant: lineArr = loLines.DataBodyRange.Value
-    Dim rowCount As Long: rowCount = UBound(lineArr, 1)
     Dim savedCount As Long
     Dim seqRow As Long: seqRow = 1
-    Dim i As Long
-    For i = 1 To rowCount
-        Dim hasData As Boolean
-        If cIng > 0 Then
-            hasData = (Trim$(NzStr(lineArr(i, cIng))) <> "")
-        ElseIf cProc > 0 Then
-            hasData = (Trim$(NzStr(lineArr(i, cProc))) <> "")
-        End If
-        If Not hasData Then GoTo NextLine
+    Dim src As Variant
+    For Each src In sourceTables
+        AppendRecipeRowsFromTable src, recipeId, recipeName, recipeDesc, loRecipes, _
+            cRecRecipeId, cRecRecipe, cRecDesc, cRecDept, cRecProcess, cRecDiagram, cRecIO, _
+            cRecIngredient, cRecPercent, cRecUom, cRecAmount, cRecListRow, cRecIngId, cRecGuid, _
+            seqRow, savedCount
+    Next src
 
-        Dim ingId As String
-        If cIngId > 0 Then ingId = NzStr(lineArr(i, cIngId))
-        If ingId = "" Then
-            ingId = modUR_Snapshot.GenerateGUID()
-            loLines.DataBodyRange.Cells(i, cIngId).Value = ingId
-        End If
-
-        Dim recListRow As Variant
-        If cListRow > 0 Then recListRow = lineArr(i, cListRow)
-        If NzStr(recListRow) = "" Then
-            recListRow = seqRow
-            loLines.DataBodyRange.Cells(i, cListRow).Value = recListRow
-        End If
-
-        Dim rowGuid As String
-        If cGuidLine > 0 Then rowGuid = NzStr(lineArr(i, cGuidLine))
-        If rowGuid = "" Then
-            rowGuid = modUR_Snapshot.GenerateGUID()
-            If cGuidLine > 0 Then loLines.DataBodyRange.Cells(i, cGuidLine).Value = rowGuid
-        End If
-
-        Dim lr As ListRow: Set lr = loRecipes.ListRows.Add
-        If cRecRecipeId > 0 Then lr.Range.Cells(1, cRecRecipeId).Value = recipeId
-        If cRecRecipe > 0 Then lr.Range.Cells(1, cRecRecipe).Value = recipeName
-        If cRecDesc > 0 Then lr.Range.Cells(1, cRecDesc).Value = recipeDesc
-        If cRecDept > 0 Then lr.Range.Cells(1, cRecDept).Value = "" ' optional for now
-        If cRecProcess > 0 And cProc > 0 Then lr.Range.Cells(1, cRecProcess).Value = lineArr(i, cProc)
-        If cRecDiagram > 0 And cDiag > 0 Then lr.Range.Cells(1, cRecDiagram).Value = lineArr(i, cDiag)
-        If cRecIO > 0 And cIO > 0 Then lr.Range.Cells(1, cRecIO).Value = lineArr(i, cIO)
-        If cRecIngredient > 0 And cIng > 0 Then lr.Range.Cells(1, cRecIngredient).Value = lineArr(i, cIng)
-        If cRecPercent > 0 And cPct > 0 Then lr.Range.Cells(1, cRecPercent).Value = lineArr(i, cPct)
-        If cRecUom > 0 And cUomLine > 0 Then lr.Range.Cells(1, cRecUom).Value = lineArr(i, cUomLine)
-        If cRecAmount > 0 And cAmt > 0 Then lr.Range.Cells(1, cRecAmount).Value = lineArr(i, cAmt)
-        If cRecListRow > 0 Then lr.Range.Cells(1, cRecListRow).Value = recListRow
-        If cRecIngId > 0 Then lr.Range.Cells(1, cRecIngId).Value = ingId
-        If cRecGuid > 0 Then lr.Range.Cells(1, cRecGuid).Value = rowGuid
-
-        savedCount = savedCount + 1
-        seqRow = seqRow + 1
-NextLine:
-    Next i
+    Dim templateCount As Long
+    If Not processTables Is Nothing Then
+        If processTables.Count > 0 Then templateCount = RegisterRecipeTemplates(recipeId, processTables)
+    End If
 
     If savedCount = 0 Then
         MsgBox "No recipe lines with data were found to save.", vbExclamation
     Else
-        MsgBox "Saved recipe '" & recipeName & "' (" & savedCount & " lines).", vbInformation
+        Dim msg As String
+        msg = "Saved recipe '" & recipeName & "' (" & savedCount & " lines)."
+        If templateCount > 0 Then msg = msg & vbCrLf & "Templates saved: " & templateCount & "."
+        MsgBox msg, vbInformation
     End If
     Exit Sub
 ErrHandler:
     MsgBox "Save Recipe failed: " & Err.Description, vbCritical
 End Sub
 
+' System 1: Recipe List Builder - load recipe into builder tables.
 Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     On Error GoTo ErrHandler
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
@@ -781,7 +852,7 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     Dim loHeader As ListObject
     Dim loLines As ListObject
     Set loHeader = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
-    Set loLines = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_BUILDER_LINES, Array("PROCESS", "INGREDIENT"))
+    Set loLines = GetRecipeBuilderLinesTable(wsProd, loHeader)
     If loHeader Is Nothing Or loLines Is Nothing Then
         MsgBox "Recipe Builder tables not found on Production sheet.", vbExclamation
         Exit Sub
@@ -810,9 +881,10 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
 
     If recipeId = "" Then
         Dim cHeaderRecipeIdTmp As Long: cHeaderRecipeIdTmp = ColumnIndex(loHeader, "RECIPE_ID")
-        If cHeaderRecipeIdTmp > 0 And Not loHeader.DataBodyRange Is Nothing Then
-            recipeId = NzStr(loHeader.DataBodyRange.Cells(1, cHeaderRecipeIdTmp).Value)
-        End If
+    If cHeaderRecipeIdTmp > 0 Then
+        Dim hdrRecipeIdCell As Range: Set hdrRecipeIdCell = GetHeaderDataCell(loHeader, "RECIPE_ID")
+        If Not hdrRecipeIdCell Is Nothing Then recipeId = NzStr(hdrRecipeIdCell.Value)
+    End If
     End If
 
     If recipeId = "" And recipeName = "" Then
@@ -867,14 +939,17 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     Dim cHeaderDesc As Long: cHeaderDesc = ColumnIndex(loHeader, "DESCRIPTION")
     Dim cHeaderGuid As Long: cHeaderGuid = ColumnIndex(loHeader, "GUID")
     Dim cHeaderRecipeId As Long: cHeaderRecipeId = ColumnIndex(loHeader, "RECIPE_ID")
-    EnsureTableHasRow loHeader
-    If cHeaderName > 0 Then loHeader.DataBodyRange.Cells(1, cHeaderName).Value = recipeName
-    If cHeaderRecipeId > 0 Then loHeader.DataBodyRange.Cells(1, cHeaderRecipeId).Value = recipeId
-    If cHeaderDesc > 0 Then
-        loHeader.DataBodyRange.Cells(1, cHeaderDesc).Value = NzStr(loRecipes.DataBodyRange.Cells(matches(1), cRecDesc).Value)
+    Dim hdrNameCell As Range: Set hdrNameCell = GetHeaderDataCell(loHeader, "RECIPE_NAME")
+    Dim hdrIdCell As Range: Set hdrIdCell = GetHeaderDataCell(loHeader, "RECIPE_ID")
+    Dim hdrDescCell As Range: Set hdrDescCell = GetHeaderDataCell(loHeader, "DESCRIPTION")
+    Dim hdrGuidCell As Range: Set hdrGuidCell = GetHeaderDataCell(loHeader, "GUID")
+    If Not hdrNameCell Is Nothing Then hdrNameCell.Value = recipeName
+    If Not hdrIdCell Is Nothing Then hdrIdCell.Value = recipeId
+    If Not hdrDescCell Is Nothing And cRecDesc > 0 Then
+        hdrDescCell.Value = NzStr(loRecipes.DataBodyRange.Cells(matches(1), cRecDesc).Value)
     End If
-    If cHeaderGuid > 0 Then
-        loHeader.DataBodyRange.Cells(1, cHeaderGuid).Value = NzStr(loRecipes.DataBodyRange.Cells(matches(1), cRecGuid).Value)
+    If Not hdrGuidCell Is Nothing And cRecGuid > 0 Then
+        hdrGuidCell.Value = NzStr(loRecipes.DataBodyRange.Cells(matches(1), cRecGuid).Value)
     End If
 
     ' Clear and rebuild RecipeBuilder lines.
@@ -906,16 +981,675 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
         If cGuidLine > 0 Then lr.Range.Cells(1, cGuidLine).Value = loRecipes.DataBodyRange.Cells(rr, cRecGuid).Value
     Next idx
 
-    MsgBox "Loaded recipe '" & recipeName & "' (" & matches.Count & " lines).", vbInformation
+    Dim procCount As Long
+    procCount = BuildRecipeProcessTablesFromLines(recipeId, True)
+
+    Dim loadMsg As String
+    loadMsg = "Loaded recipe '" & recipeName & "' (" & matches.Count & " lines)."
+    If procCount > 0 Then loadMsg = loadMsg & vbCrLf & "Process tables built: " & procCount & "."
+    MsgBox loadMsg, vbInformation
     Exit Sub
 ErrHandler:
     MsgBox "Load Recipe failed: " & Err.Description, vbCritical
 End Sub
 
+' System 1: Recipe List Builder - write recipe rows to Recipes table.
+Private Sub AppendRecipeRowsFromTable(ByVal loSource As ListObject, ByVal recipeId As String, _
+    ByVal recipeName As String, ByVal recipeDesc As String, ByVal loRecipes As ListObject, _
+    ByVal cRecRecipeId As Long, ByVal cRecRecipe As Long, ByVal cRecDesc As Long, ByVal cRecDept As Long, _
+    ByVal cRecProcess As Long, ByVal cRecDiagram As Long, ByVal cRecIO As Long, ByVal cRecIngredient As Long, _
+    ByVal cRecPercent As Long, ByVal cRecUom As Long, ByVal cRecAmount As Long, ByVal cRecListRow As Long, _
+    ByVal cRecIngId As Long, ByVal cRecGuid As Long, ByRef seqRow As Long, ByRef savedCount As Long)
+
+    If loSource Is Nothing Then Exit Sub
+    If loSource.DataBodyRange Is Nothing Then Exit Sub
+
+    Dim cProc As Long: cProc = ColumnIndex(loSource, "PROCESS")
+    Dim cDiag As Long: cDiag = ColumnIndex(loSource, "DIAGRAM_ID")
+    Dim cIO As Long: cIO = ColumnIndex(loSource, "INPUT/OUTPUT")
+    Dim cIng As Long: cIng = ColumnIndex(loSource, "INGREDIENT")
+    Dim cPct As Long: cPct = ColumnIndex(loSource, "PERCENT")
+    Dim cUomLine As Long: cUomLine = ColumnIndex(loSource, "UOM")
+    Dim cAmt As Long: cAmt = ColumnIndex(loSource, "AMOUNT")
+    Dim cListRow As Long: cListRow = ColumnIndex(loSource, "RECIPE_LIST_ROW")
+    Dim cIngId As Long: cIngId = ColumnIndex(loSource, "INGREDIENT_ID")
+    Dim cGuidLine As Long: cGuidLine = ColumnIndex(loSource, "GUID")
+
+    Dim lineArr As Variant: lineArr = loSource.DataBodyRange.Value
+    Dim rowCount As Long: rowCount = UBound(lineArr, 1)
+    Dim processFallback As String: processFallback = ProcessNameFromTable(loSource)
+
+    Dim i As Long
+    For i = 1 To rowCount
+        Dim hasData As Boolean
+        If cIng > 0 Then
+            hasData = (Trim$(NzStr(lineArr(i, cIng))) <> "")
+        ElseIf cProc > 0 Then
+            hasData = (Trim$(NzStr(lineArr(i, cProc))) <> "")
+        End If
+        If Not hasData Then GoTo NextLine
+
+        Dim processVal As String
+        If cProc > 0 Then processVal = NzStr(lineArr(i, cProc))
+        If processVal = "" Then processVal = processFallback
+
+        Dim ingId As String
+        If cIngId > 0 Then ingId = NzStr(lineArr(i, cIngId))
+        If ingId = "" Then
+            ingId = modUR_Snapshot.GenerateGUID()
+            If cIngId > 0 Then loSource.DataBodyRange.Cells(i, cIngId).Value = ingId
+        End If
+
+        Dim recListRow As Variant
+        If cListRow > 0 Then recListRow = lineArr(i, cListRow)
+        If NzStr(recListRow) = "" Then
+            recListRow = seqRow
+            If cListRow > 0 Then loSource.DataBodyRange.Cells(i, cListRow).Value = recListRow
+        End If
+
+        Dim rowGuid As String
+        If cGuidLine > 0 Then rowGuid = NzStr(lineArr(i, cGuidLine))
+        If rowGuid = "" Then
+            rowGuid = modUR_Snapshot.GenerateGUID()
+            If cGuidLine > 0 Then loSource.DataBodyRange.Cells(i, cGuidLine).Value = rowGuid
+        End If
+
+        Dim lr As ListRow: Set lr = loRecipes.ListRows.Add
+        If cRecRecipeId > 0 Then lr.Range.Cells(1, cRecRecipeId).Value = recipeId
+        If cRecRecipe > 0 Then lr.Range.Cells(1, cRecRecipe).Value = recipeName
+        If cRecDesc > 0 Then lr.Range.Cells(1, cRecDesc).Value = recipeDesc
+        If cRecDept > 0 Then lr.Range.Cells(1, cRecDept).Value = "" ' optional for now
+        If cRecProcess > 0 Then lr.Range.Cells(1, cRecProcess).Value = processVal
+        If cRecDiagram > 0 And cDiag > 0 Then lr.Range.Cells(1, cRecDiagram).Value = lineArr(i, cDiag)
+        If cRecIO > 0 And cIO > 0 Then lr.Range.Cells(1, cRecIO).Value = lineArr(i, cIO)
+        If cRecIngredient > 0 And cIng > 0 Then lr.Range.Cells(1, cRecIngredient).Value = lineArr(i, cIng)
+        If cRecPercent > 0 And cPct > 0 Then lr.Range.Cells(1, cRecPercent).Value = lineArr(i, cPct)
+        If cRecUom > 0 And cUomLine > 0 Then lr.Range.Cells(1, cRecUom).Value = lineArr(i, cUomLine)
+        If cRecAmount > 0 And cAmt > 0 Then lr.Range.Cells(1, cRecAmount).Value = lineArr(i, cAmt)
+        If cRecListRow > 0 Then lr.Range.Cells(1, cRecListRow).Value = recListRow
+        If cRecIngId > 0 Then lr.Range.Cells(1, cRecIngId).Value = ingId
+        If cRecGuid > 0 Then lr.Range.Cells(1, cRecGuid).Value = rowGuid
+
+        savedCount = savedCount + 1
+        seqRow = seqRow + 1
+NextLine:
+    Next i
+End Sub
+
+Private Function BuildRecipeProcessTablesFromLines(ByVal recipeId As String, Optional ByVal applyTemplates As Boolean = False) As Long
+    ' System 1: Recipe List Builder - build process tables under RB_AddRecipeName.
+    Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then Exit Function
+
+    Dim loLines As ListObject
+    Set loLines = GetRecipeBuilderLinesTable(wsProd)
+    If loLines Is Nothing Then
+        MsgBox "Recipe Builder lines table not found on Production sheet.", vbExclamation
+        Exit Function
+    End If
+    If loLines.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cProc As Long: cProc = ColumnIndex(loLines, "PROCESS")
+    If cProc = 0 Then
+        MsgBox "Recipe Builder lines missing PROCESS column.", vbCritical
+        Exit Function
+    End If
+
+    Dim startRow As Long
+    Dim startCol As Long
+    If Not GetRecipeBuilderAnchor(wsProd, startRow, startCol) Then
+        MsgBox "Recipe Builder header table (RB_AddRecipeName) not found on Production sheet.", vbExclamation
+        Exit Function
+    End If
+
+    Dim headerNames As Variant
+    headerNames = RecipeProcessHeaderList()
+    Dim colCount As Long: colCount = UBound(headerNames) - LBound(headerNames) + 1
+    Dim srcIdx() As Long
+    ReDim srcIdx(1 To colCount)
+    Dim c As Long
+    For c = 1 To colCount
+        srcIdx(c) = ColumnIndex(loLines, CStr(headerNames(LBound(headerNames) + c - 1)))
+    Next c
+
+    Dim lineArr As Variant: lineArr = loLines.DataBodyRange.Value
+    Dim procMap As Object: Set procMap = CreateObject("Scripting.Dictionary")
+    Dim procOrder As Collection: Set procOrder = New Collection
+
+    Dim r As Long
+    For r = 1 To UBound(lineArr, 1)
+        Dim procName As String: procName = Trim$(NzStr(lineArr(r, cProc)))
+        If procName <> "" Then
+            If Not procMap.Exists(procName) Then
+                procMap.Add procName, New Collection
+                procOrder.Add procName
+            End If
+            procMap(procName).Add r
+        End If
+    Next r
+
+    If procOrder.Count = 0 Then Exit Function
+
+    DeleteRecipeProcessTables wsProd
+
+    Dim created As New Collection
+
+    Dim procKey As Variant
+    Dim nextSeq As Long
+    nextSeq = NextRecipeProcessSequence(wsProd)
+    For Each procKey In procOrder
+        Dim rowsColl As Collection: Set rowsColl = procMap(procKey)
+        Dim dataCount As Long: dataCount = rowsColl.Count
+        If dataCount = 0 Then GoTo NextProc
+
+        Dim tableRange As Range
+        Set tableRange = wsProd.Range(wsProd.Cells(startRow, startCol), wsProd.Cells(startRow + dataCount, startCol + colCount - 1))
+
+        If RangeHasListObjectCollision(wsProd, tableRange, loLines) Then
+            MsgBox "Not enough space below Recipe Builder to create process tables. Clear space and try again.", vbExclamation
+            Exit Function
+        End If
+
+        tableRange.Clear
+        tableRange.Rows(1).Value = HeaderRowArray(headerNames)
+
+        Dim dataArr() As Variant
+        ReDim dataArr(1 To dataCount, 1 To colCount)
+        Dim i As Long
+        For i = 1 To dataCount
+            Dim srcRow As Long: srcRow = rowsColl(i)
+            For c = 1 To colCount
+                Dim hdrName As String
+                hdrName = CStr(headerNames(LBound(headerNames) + c - 1))
+                If StrComp(hdrName, "PROCESS", vbTextCompare) = 0 Then
+                    dataArr(i, c) = procKey
+                ElseIf srcIdx(c) > 0 Then
+                    dataArr(i, c) = lineArr(srcRow, srcIdx(c))
+                End If
+            Next c
+        Next i
+
+        tableRange.Offset(1, 0).Resize(dataCount, colCount).Value = dataArr
+
+        Dim newLo As ListObject
+        Set newLo = wsProd.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+        newLo.Name = UniqueListObjectName(wsProd, BuildRecipeProcessTableName(CStr(nextSeq)))
+        On Error Resume Next
+        newLo.TableStyle = loLines.TableStyle
+        On Error GoTo 0
+        created.Add newLo
+        nextSeq = nextSeq + 1
+
+        startRow = startRow + dataCount + 3 ' keep 2 blank rows between process tables
+NextProc:
+    Next procKey
+
+    BuildRecipeProcessTablesFromLines = created.Count
+
+    If applyTemplates And created.Count > 0 And recipeId <> "" Then
+        Dim tpl As New cTemplateApplier
+        Dim loProc As ListObject
+        For Each loProc In created
+            Dim procNameTpl As String: procNameTpl = ProcessNameFromTable(loProc)
+            tpl.ApplyTemplates loProc, TEMPLATE_SCOPE_RECIPE_PROCESS, procNameTpl, ""
+        Next loProc
+    End If
+End Function
+
+Private Function CreateRecipeProcessTable(ByVal ws As Worksheet, ByVal processName As String, Optional ByVal dataRows As Long = 1) As ListObject
+    ' System 1: Recipe List Builder - add a blank process table under RB_AddRecipeName.
+    If ws Is Nothing Then Exit Function
+    If dataRows < 1 Then dataRows = 1
+
+    Dim loLines As ListObject
+    Set loLines = GetRecipeBuilderLinesTable(ws)
+    If loLines Is Nothing Then Exit Function
+
+    Dim headers As Variant
+    headers = RecipeProcessHeaderList()
+    Dim colCount As Long: colCount = UBound(headers) - LBound(headers) + 1
+    Dim startRow As Long
+    Dim startCol As Long
+    If Not GetRecipeBuilderAnchor(ws, startRow, startCol) Then Exit Function
+
+    Dim tableRange As Range
+    Set tableRange = FindAvailableRecipeProcessRange(ws, startRow, startCol, dataRows + 1, colCount, loLines)
+    If tableRange Is Nothing Then Exit Function
+
+    tableRange.Clear
+    tableRange.Rows(1).Value = HeaderRowArray(headers)
+
+    Dim cProc As Long
+    cProc = HeaderIndex(headers, "PROCESS")
+    If cProc > 0 Then
+        tableRange.Offset(1, cProc - 1).Value = processName
+    End If
+
+    Dim newLo As ListObject
+    Set newLo = ws.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+    Dim seq As Long
+    seq = NextRecipeProcessSequence(ws)
+    newLo.Name = UniqueListObjectName(ws, BuildRecipeProcessTableName(CStr(seq)))
+    On Error Resume Next
+    newLo.TableStyle = loLines.TableStyle
+    On Error GoTo 0
+
+    FocusRecipeProcessTable newLo
+    Set CreateRecipeProcessTable = newLo
+End Function
+
+Private Sub FocusRecipeProcessTable(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+    On Error Resume Next
+    lo.Parent.Activate
+    Application.Goto lo.Range, True
+    On Error GoTo 0
+End Sub
+
+Private Function GetRecipeBuilderAnchor(ByVal ws As Worksheet, ByRef startRow As Long, ByRef startCol As Long) As Boolean
+    ' System 1: Recipe List Builder anchor (under RB_AddRecipeName).
+    GetRecipeBuilderAnchor = False
+    If ws Is Nothing Then Exit Function
+    Dim loHeader As ListObject
+    Set loHeader = FindListObjectByNameOrHeaders(ws, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    If loHeader Is Nothing Then Exit Function
+
+    startRow = loHeader.Range.Row + loHeader.Range.Rows.Count + 3 ' keep 2 blank rows before first process table
+    startCol = loHeader.Range.Column
+    If startRow > 0 And startCol > 0 Then GetRecipeBuilderAnchor = True
+End Function
+
+Private Function GetRecipeBuilderLinesTable(ByVal ws As Worksheet, Optional ByVal loHeader As ListObject) As ListObject
+    ' System 1: Recipe List Builder - locate RecipeBuilder lines table under RB_AddRecipeName.
+    If ws Is Nothing Then Exit Function
+
+    Dim lo As ListObject
+    Set lo = GetListObject(ws, TABLE_RECIPE_BUILDER_LINES)
+    If Not lo Is Nothing Then
+        Set GetRecipeBuilderLinesTable = lo
+        Exit Function
+    End If
+
+    Dim headerStartCol As Long
+    Dim headerBottom As Long
+    If loHeader Is Nothing Then
+        Set loHeader = FindListObjectByNameOrHeaders(ws, TABLE_RECIPE_BUILDER_HEADER, Array("RECIPE_NAME", "RECIPE_ID"))
+    End If
+    If Not loHeader Is Nothing Then
+        headerStartCol = loHeader.Range.Column
+        headerBottom = loHeader.Range.Row + loHeader.Range.Rows.Count - 1
+    End If
+
+    Dim candidate As ListObject
+    Dim bestRow As Long
+    For Each lo In ws.ListObjects
+        If ListObjectHasHeaders(lo, Array("PROCESS", "INGREDIENT")) Then
+            If IsRecipeProcessTable(lo) Then GoTo NextLo
+            If headerStartCol > 0 Then
+                If lo.Range.Column <> headerStartCol Then GoTo NextLo
+                If lo.Range.Row < headerBottom Then GoTo NextLo
+            End If
+            If bestRow = 0 Or lo.Range.Row < bestRow Then
+                Set candidate = lo
+                bestRow = lo.Range.Row
+            End If
+        End If
+NextLo:
+    Next lo
+
+    If Not candidate Is Nothing Then
+        Set GetRecipeBuilderLinesTable = candidate
+        Exit Function
+    End If
+
+    If headerStartCol = 0 Then
+        Set GetRecipeBuilderLinesTable = FindListObjectByNameOrHeaders(ws, TABLE_RECIPE_BUILDER_LINES, Array("PROCESS", "INGREDIENT"))
+    End If
+End Function
+
+Private Function HeaderIndex(ByVal headers As Variant, ByVal headerName As String) As Long
+    Dim i As Long
+    For i = LBound(headers) To UBound(headers)
+        If StrComp(CStr(headers(i)), headerName, vbTextCompare) = 0 Then
+            HeaderIndex = i - LBound(headers) + 1
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function FindAvailableRecipeProcessRange(ByVal ws As Worksheet, ByVal startRow As Long, ByVal startCol As Long, _
+    ByVal totalRows As Long, ByVal totalCols As Long, ByVal loLines As ListObject) As Range
+
+    If ws Is Nothing Then Exit Function
+    If totalRows < 1 Or totalCols < 1 Then Exit Function
+    If startRow < 1 Then startRow = 1
+    If startCol < 1 Then startCol = 1
+
+    Dim maxRow As Long
+    maxRow = ws.Rows.Count
+    Dim tryRow As Long: tryRow = startRow
+    Dim candidate As Range
+
+    Do While tryRow + totalRows - 1 <= maxRow
+        Set candidate = ws.Range(ws.Cells(tryRow, startCol), ws.Cells(tryRow + totalRows - 1, startCol + totalCols - 1))
+        If Not RangeHasListObjectCollisionStrict(ws, candidate, loLines) Then
+            Set FindAvailableRecipeProcessRange = candidate
+            Exit Function
+        End If
+        tryRow = tryRow + totalRows + 2 ' keep 2 blank rows between tables
+    Loop
+End Function
+
+Private Sub DeleteRecipeProcessTables(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    Dim i As Long
+    For i = ws.ListObjects.Count To 1 Step -1
+        Dim lo As ListObject
+        Set lo = ws.ListObjects(i)
+        If IsRecipeProcessTable(lo) Then
+            Dim addr As String
+            addr = lo.Range.Address
+            On Error Resume Next
+            lo.Delete
+            ws.Range(addr).Clear
+            On Error GoTo 0
+        End If
+    Next i
+End Sub
+
+Private Function GetRecipeBuilderProcessTables(ByVal ws As Worksheet) As Collection
+    Dim result As New Collection
+    If ws Is Nothing Then
+        Set GetRecipeBuilderProcessTables = result
+        Exit Function
+    End If
+    Dim lo As ListObject
+    For Each lo In ws.ListObjects
+        If IsRecipeProcessTable(lo) Then result.Add lo
+    Next lo
+    Set GetRecipeBuilderProcessTables = result
+End Function
+
+Private Function IsRecipeProcessTable(ByVal lo As ListObject) As Boolean
+    ' System 1: Recipe List Builder - identify process tables.
+    If lo Is Nothing Then Exit Function
+    Dim nm As String: nm = LCase$(lo.Name)
+    If Left$(nm, 5) <> "proc_" Then Exit Function
+    If Right$(nm, Len(RECIPE_PROC_TABLE_SUFFIX) + 1) = "_" & LCase$(RECIPE_PROC_TABLE_SUFFIX) Then
+        IsRecipeProcessTable = True
+    End If
+End Function
+
+' System 1: Recipe List Builder - register process formulas as templates.
+Private Function RegisterRecipeTemplates(ByVal recipeId As String, ByVal processTables As Collection) As Long
+    If processTables Is Nothing Then Exit Function
+    If processTables.Count = 0 Then Exit Function
+
+    Dim wsTpl As Worksheet: Set wsTpl = SheetExists(SHEET_TEMPLATES)
+    If wsTpl Is Nothing Then Exit Function
+    Dim loTpl As ListObject: Set loTpl = GetListObject(wsTpl, "TemplatesTable")
+    If loTpl Is Nothing Then Exit Function
+
+    Dim cGuid As Long: cGuid = ColumnIndex(loTpl, "GUID")
+    Dim cScope As Long: cScope = ColumnIndex(loTpl, "TEMPLATE_SCOPE")
+    Dim cRecipe As Long: cRecipe = ColumnIndex(loTpl, "RECIPE_ID")
+    Dim cIngredient As Long: cIngredient = ColumnIndex(loTpl, "INGREDIENT_ID")
+    Dim cProcess As Long: cProcess = ColumnIndex(loTpl, "PROCESS")
+    Dim cTargetTable As Long: cTargetTable = ColumnIndex(loTpl, "TARGET_TABLE")
+    Dim cTargetCol As Long: cTargetCol = ColumnIndex(loTpl, "TARGET_COLUMN")
+    Dim cFormula As Long: cFormula = ColumnIndex(loTpl, "FORMULA")
+    Dim cNotes As Long: cNotes = ColumnIndex(loTpl, "NOTES")
+    Dim cActive As Long: cActive = ColumnIndex(loTpl, "ACTIVE")
+    Dim cCreated As Long: cCreated = ColumnIndex(loTpl, "CREATED_AT")
+    Dim cUpdated As Long: cUpdated = ColumnIndex(loTpl, "UPDATED_AT")
+
+    If Not loTpl.DataBodyRange Is Nothing And cScope > 0 And cRecipe > 0 Then
+        Dim r As Long
+        For r = loTpl.DataBodyRange.Rows.Count To 1 Step -1
+            If StrComp(NzStr(loTpl.DataBodyRange.Cells(r, cScope).Value), TEMPLATE_SCOPE_RECIPE_PROCESS, vbTextCompare) = 0 Then
+                If recipeId = "" Or StrComp(NzStr(loTpl.DataBodyRange.Cells(r, cRecipe).Value), recipeId, vbTextCompare) = 0 Then
+                    loTpl.ListRows(r).Delete
+                End If
+            End If
+        Next r
+    End If
+
+    Dim nowVal As Date: nowVal = Now
+    Dim added As Long
+
+    Dim loProc As ListObject
+    For Each loProc In processTables
+        If loProc.DataBodyRange Is Nothing Then GoTo NextProc
+        Dim procName As String: procName = ProcessNameFromTable(loProc)
+        Dim lc As ListColumn
+        For Each lc In loProc.ListColumns
+            Dim formulaText As String
+            formulaText = GetColumnFormulaText(lc)
+            If formulaText = "" Then GoTo NextCol
+
+            Dim lr As ListRow: Set lr = loTpl.ListRows.Add
+            If cGuid > 0 Then lr.Range.Cells(1, cGuid).Value = modUR_Snapshot.GenerateGUID()
+            If cScope > 0 Then lr.Range.Cells(1, cScope).Value = TEMPLATE_SCOPE_RECIPE_PROCESS
+            If cRecipe > 0 Then lr.Range.Cells(1, cRecipe).Value = recipeId
+            If cIngredient > 0 Then lr.Range.Cells(1, cIngredient).Value = ""
+            If cProcess > 0 Then lr.Range.Cells(1, cProcess).Value = procName
+            If cTargetTable > 0 Then lr.Range.Cells(1, cTargetTable).Value = loProc.Name
+            If cTargetCol > 0 Then lr.Range.Cells(1, cTargetCol).Value = lc.Name
+            If cFormula > 0 Then lr.Range.Cells(1, cFormula).Value = formulaText
+            If cNotes > 0 Then lr.Range.Cells(1, cNotes).Value = "Recipe builder"
+            If cActive > 0 Then lr.Range.Cells(1, cActive).Value = True
+            If cCreated > 0 Then lr.Range.Cells(1, cCreated).Value = nowVal
+            If cUpdated > 0 Then lr.Range.Cells(1, cUpdated).Value = nowVal
+            added = added + 1
+NextCol:
+        Next lc
+NextProc:
+    Next loProc
+
+    RegisterRecipeTemplates = added
+End Function
+
+Private Function ProcessNameFromTable(ByVal lo As ListObject) As String
+    If lo Is Nothing Then Exit Function
+    Dim cProc As Long: cProc = ColumnIndex(lo, "PROCESS")
+    If cProc > 0 And Not lo.DataBodyRange Is Nothing Then
+        ProcessNameFromTable = NzStr(lo.DataBodyRange.Cells(1, cProc).Value)
+    End If
+    If ProcessNameFromTable = "" Then ProcessNameFromTable = ExtractProcessKeyFromTableName(lo.Name)
+End Function
+
+Private Function GetColumnFormulaText(ByVal lc As ListColumn) As String
+    If lc Is Nothing Then Exit Function
+    If lc.DataBodyRange Is Nothing Then Exit Function
+    Dim cell As Range
+    Set cell = lc.DataBodyRange.Cells(1, 1)
+    On Error Resume Next
+    If cell.HasFormula Then GetColumnFormulaText = CStr(cell.Formula)
+    On Error GoTo 0
+    If Left$(GetColumnFormulaText, 1) <> "=" Then GetColumnFormulaText = ""
+End Function
+
+Private Function SafeProcessKey(ByVal rawKey As String) As String
+    Dim cleaned As String
+    cleaned = Trim$(rawKey)
+    If cleaned = "" Then cleaned = "process"
+
+    Dim i As Long, ch As String, key As String
+    For i = 1 To Len(cleaned)
+        ch = Mid$(cleaned, i, 1)
+        If ch Like "[A-Za-z0-9_]" Then
+            key = key & LCase$(ch)
+        Else
+            key = key & "_"
+        End If
+    Next i
+
+    Do While InStr(key, "__") > 0
+        key = Replace(key, "__", "_")
+    Loop
+    key = Trim$(key)
+    If key = "" Then key = "process"
+    If Not key Like "[A-Za-z_]*" Then key = "p_" & key
+    SafeProcessKey = key
+End Function
+
+Private Function BuildRecipeProcessTableName(ByVal processKey As String) As String
+    ' System 1: Recipe List Builder - process table naming.
+    Dim key As String: key = Trim$(processKey)
+    If key <> "" And IsNumeric(key) Then
+        BuildRecipeProcessTableName = "proc_" & CLng(key) & "_" & RECIPE_PROC_TABLE_SUFFIX
+    Else
+        key = SafeProcessKey(processKey)
+        BuildRecipeProcessTableName = "proc_" & key & "_" & RECIPE_PROC_TABLE_SUFFIX
+    End If
+End Function
+
+Private Function NextRecipeProcessSequence(ByVal ws As Worksheet) As Long
+    ' System 1: Recipe List Builder - next numeric process table sequence.
+    Dim maxSeq As Long
+    If ws Is Nothing Then
+        NextRecipeProcessSequence = 1
+        Exit Function
+    End If
+    Dim lo As ListObject
+    For Each lo In ws.ListObjects
+        If IsRecipeProcessTable(lo) Then
+            Dim seq As Long
+            seq = RecipeProcessSequenceFromName(lo.Name)
+            If seq > maxSeq Then maxSeq = seq
+        End If
+    Next lo
+    NextRecipeProcessSequence = maxSeq + 1
+End Function
+
+Private Function RecipeProcessSequenceFromName(ByVal tableName As String) As Long
+    ' System 1: Recipe List Builder - parse numeric process table sequence.
+    Dim nm As String: nm = LCase$(tableName)
+    If Left$(nm, 5) <> "proc_" Then Exit Function
+    If Right$(nm, Len(RECIPE_PROC_TABLE_SUFFIX) + 1) <> "_" & LCase$(RECIPE_PROC_TABLE_SUFFIX) Then Exit Function
+    Dim core As String
+    core = Mid$(nm, 6, Len(nm) - 5 - (Len(RECIPE_PROC_TABLE_SUFFIX) + 1))
+    If core = "" Then Exit Function
+    If Left$(core, 2) = "p_" Then core = Mid$(core, 3)
+    RecipeProcessSequenceFromName = CLng(Val(core))
+End Function
+
+Private Function RecipeProcessHeaderList() As Variant
+    ' System 1: Recipe List Builder - process table headers.
+    RecipeProcessHeaderList = Array( _
+        "PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", _
+        "OOO", "INSTRUCTION", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID")
+End Function
+
+Private Function HeaderRowArray(ByVal headers As Variant) As Variant
+    Dim cols As Long: cols = UBound(headers) - LBound(headers) + 1
+    Dim arr() As Variant
+    ReDim arr(1 To 1, 1 To cols)
+    Dim i As Long
+    For i = 1 To cols
+        arr(1, i) = headers(LBound(headers) + i - 1)
+    Next i
+    HeaderRowArray = arr
+End Function
+
+Private Function UniqueListObjectName(ByVal ws As Worksheet, ByVal baseName As String) As String
+    Dim nameTry As String: nameTry = baseName
+    Dim idx As Long: idx = 1
+    Do While Not GetListObject(ws, nameTry) Is Nothing
+        nameTry = baseName & "_" & CStr(idx)
+        idx = idx + 1
+    Loop
+    UniqueListObjectName = nameTry
+End Function
+
+Private Function ExtractProcessKeyFromTableName(ByVal tableName As String) As String
+    Dim nm As String: nm = LCase$(tableName)
+    If Left$(nm, 5) <> "proc_" Then Exit Function
+    Dim parts As Variant: parts = Split(nm, "_")
+    If UBound(parts) < 2 Then Exit Function
+    Dim i As Long
+    For i = 1 To UBound(parts) - 1
+        If ExtractProcessKeyFromTableName <> "" Then ExtractProcessKeyFromTableName = ExtractProcessKeyFromTableName & "_"
+        ExtractProcessKeyFromTableName = ExtractProcessKeyFromTableName & parts(i)
+    Next i
+End Function
+
+Private Function RangeHasListObjectCollision(ByVal ws As Worksheet, ByVal targetRange As Range, ParamArray allowedTables() As Variant) As Boolean
+    If ws Is Nothing Then Exit Function
+    If targetRange Is Nothing Then Exit Function
+    Dim lo As ListObject
+    For Each lo In ws.ListObjects
+        If lo Is Nothing Then GoTo NextLo
+        If IsListObjectAllowed(lo, allowedTables) Then GoTo NextLo
+        If Not Intersect(lo.Range, targetRange) Is Nothing Then
+            RangeHasListObjectCollision = True
+            Exit Function
+        End If
+NextLo:
+    Next lo
+End Function
+
+Private Function IsListObjectAllowed(ByVal lo As ListObject, ByVal allowedTables As Variant) As Boolean
+    Dim v As Variant
+    For Each v In allowedTables
+        If TypeName(v) = "ListObject" Then
+            If lo Is v Then
+                IsListObjectAllowed = True
+                Exit Function
+            End If
+        End If
+    Next v
+    If IsRecipeProcessTable(lo) Then IsListObjectAllowed = True
+End Function
+
+Private Function RangeHasListObjectCollisionStrict(ByVal ws As Worksheet, ByVal targetRange As Range, ParamArray allowedTables() As Variant) As Boolean
+    If ws Is Nothing Then Exit Function
+    If targetRange Is Nothing Then Exit Function
+    Dim lo As ListObject
+    For Each lo In ws.ListObjects
+        If lo Is Nothing Then GoTo NextLo
+        If IsListObjectAllowedStrict(lo, False, allowedTables) Then GoTo NextLo
+        If Not Intersect(lo.Range, targetRange) Is Nothing Then
+            RangeHasListObjectCollisionStrict = True
+            Exit Function
+        End If
+NextLo:
+    Next lo
+End Function
+
+Private Function IsListObjectAllowedStrict(ByVal lo As ListObject, ByVal allowRecipeTables As Boolean, ByVal allowedTables As Variant) As Boolean
+    Dim v As Variant
+    For Each v In allowedTables
+        If TypeName(v) = "ListObject" Then
+            If lo Is v Then
+                IsListObjectAllowedStrict = True
+                Exit Function
+            End If
+        End If
+    Next v
+    If allowRecipeTables Then
+        If IsRecipeProcessTable(lo) Then IsListObjectAllowedStrict = True
+    End If
+End Function
+
 Private Sub EnsureTableHasRow(lo As ListObject)
     If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add
+    If Not lo.DataBodyRange Is Nothing Then Exit Sub
+    On Error Resume Next
+    lo.ListRows.Add
+    On Error GoTo 0
 End Sub
+
+Private Function GetHeaderDataCell(lo As ListObject, colName As String) As Range
+    If lo Is Nothing Then Exit Function
+    Dim idx As Long: idx = ColumnIndex(lo, colName)
+    If idx = 0 Then Exit Function
+    If lo.DataBodyRange Is Nothing Then
+        Set GetHeaderDataCell = lo.HeaderRowRange.Offset(1, 0).Cells(1, idx)
+    Else
+        Set GetHeaderDataCell = lo.DataBodyRange.Cells(1, idx)
+    End If
+End Function
 
 Private Sub ClearListObjectData(lo As ListObject)
     If lo Is Nothing Then Exit Sub
