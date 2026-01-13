@@ -151,38 +151,67 @@ Sheet (Code): ShippingBOM
     Headers: ROW, QUANTITY, UOM
   Table: ROW_67
     Headers: ROW, QUANTITY, UOM
+  Table: ROW_69
+    Headers: ROW, QUANTITY, UOM
 ------------------------------------------------------------
 Sheet (Tab):  Production
 Sheet (Code): Production
   Table: RC_RecipeChoose
     Headers: RECIPE, RECIPE_ID, DEPARTMENT, DESCRIPTION, PREDICTED OUTPUT, PROCESS
-  Table: ProductionOutput
-    Headers: PROCESS, OUTPUT, UOM, REAL OUTPUT, BATCH, RECALL CODE
   Table: RB_AddRecipeName
     Headers: RECIPE_NAME, DESCRIPTION, GUID, RECIPE_ID
   Table: IP_ChooseRecipe
     Headers: RECIPE_NAME, DESCRIPTION, GUID, RECIPE_ID
   Table: IP_ChooseIngredient
     Headers: INGREDIENT, UOM, QUANTITY, DESCRIPTION, GUID, RECIPE_ID, INGREDIENT_ID, PROCESS
-  Table: RecipeChooser_generated
-    Headers: PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT NEEDED, INGREDIENT_ID, RECIPE_LIST_ROW
   Table: IP_ChooseItem
     Headers: ITEMS, UOM, DESCRIPTION, ROW, RECIPE_ID, INGREDIENT_ID
   Table: Prod_invSys_Check
     Headers: USED, MADE, TOTAL INV, ROW
+  Table: ProductionOutput
+    Headers: ROW, PROCESS, OUTPUT, UOM, REAL OUTPUT, BATCH, RECALL CODE
+  Table: RecipeChooser_generated
+    Headers: PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT NEEDED, INGREDIENT_ID, RECIPE_LIST_ROW
+  Table: proc_1_rchooser
+    Headers: PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT NEEDED, INGREDIENT_ID, RECIPE_LIST_ROW
+  Table: proc_2_rchooser
+    Headers: PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT NEEDED, INGREDIENT_ID, RECIPE_LIST_ROW
   Table: InventoryPalette_generated
     Headers: ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, PROCESS, LOCATION, ROW, INPUT/OUTPUT
-  Table: RB_BuildRecipe
-    Headers: PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT, RECIPE_LIST_ROW, INGREDIENT_ID, GUID
+  Table: proc_1_palette
+    Headers: ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, PROCESS, LOCATION, ROW, INPUT/OUTPUT
+  Table: proc_2_palette
+    Headers: ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, PROCESS, LOCATION, ROW, INPUT/OUTPUT
   Form Control: BTN_LOAD_RECIPE
     Type: Button (0)
     Text: Load Recipe
   Form Control: BTN_SAVE_RECIPE
     Type: Button (0)
     Text: Save Recipe
+  Form Control: BTN_HIDE_SYSTEM
+    Type: Button (0)
+    Text: Hide system
+  Form Control: BTN_SHOW_SYSTEM
+    Type: Button (0)
+    Text: Show system
+  Form Control: BTN_BUILD_RECIPE_TABLES
+    Type: Button (0)
+    Text: Add Recipe Process Table
+  Form Control: BTN_REMOVE_RECIPE_TABLES
+    Type: Button (0)
+    Text: Remove Recipe Process Table
+  Form Control: BTN_CLEAR_RECIPE_BUILDER
+    Type: Button (0)
+    Text: Clear Recipe List Builder
   Form Control: BTN_SAVE_PALETTE
     Type: Button (0)
     Text: Save IngredientPalette
+  Form Control: BTN_CLEAR_PALETTE_BUILDER
+    Type: Button (0)
+    Text: Clear Inventory Palette Builder
+  Form Control: BTN_CLEAR_RECIPE_CHOOSER
+    Type: Button (0)
+    Text: Clear Chosen Recipe
   Form Control: BTN_TO_USED
     Type: Button (0)
     Text: To USED
@@ -198,26 +227,44 @@ Sheet (Code): Production
   Form Control: BTN_PRINT_CODES
     Type: Button (0)
     Text: Print recall codes
-  Form Control: BTN_HIDE_SYSTEM
-    Type: Button (0)
-    Text: Hide system
-  Form Control: BTN_SHOW_SYSTEM
-    Type: Button (0)
-    Text: Show system
+  Form Control: CHK_PROC_p_1_brewing
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 1-BREWING
+  Form Control: CHK_PROC_p_2_spice_blend
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 2-SPICE BLEND
+  Form Control: CHK_PROC_p_3_cook_chai
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 3-COOK CHAI
+  Form Control: CHK_BATCH_p_1_brewing
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 
+  Form Control: CHK_RECALL_1
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 
+  Form Control: CHK_RECALL_2
+    Type: Checkbox (1)
+    LinkedCell: 
+    Text: 
 ------------------------------------------------------------
 Sheet (Tab):  Recipes
 Sheet (Code): Recipes
   Table: Recipes
-    Headers: RECIPE_ID, INGREDIENT_ID, RECIPE, DEPARTMENT, DESCRIPTION, PROCESS, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT, RECIPE_LIST_ROW, GUID
+    Headers: RECIPE_ID, INGREDIENT_ID, RECIPE, DEPARTMENT, DESCRIPTION, PROCESS, OOO, INSTRUCTION, DIAGRAM_ID, INPUT/OUTPUT, INGREDIENT, PERCENT, UOM, AMOUNT, RECIPE_LIST_ROW, GUID
 ------------------------------------------------------------
 Sheet (Tab):  IngredientPalette
 Sheet (Code): IngredientsPalette
-  Table: Table40
+  Table: IngredientPalette
     Headers: RECIPE_ID, INGREDIENT_ID, INPUT/OUTPUT, ITEM, PERCENT, UOM, AMOUNT, ROW, GUID
 ------------------------------------------------------------
 Sheet (Tab):  ProductionLog
 Sheet (Code): ProductionLog
-  Table: Table46
+  Table: ProductionLog
     Headers: RECIPE, RECIPE_ID, DEPARTMENT, DESCRIPTION, PREDICTED OUTPUT, PROCESS, REAL OUTPUT, BATCH, BATCH_ID, ITEM_CODE, VENDORS, VENDOR_CODE, ITEM, UOM, QUANTITY, LOCATION, ROW, INPUT/OUTPUT, TIMESTAMP, INGREDIENT_ID, GUID
 ------------------------------------------------------------
 Sheet (Tab):  TemplatesTable
@@ -227,7 +274,7 @@ Sheet (Code): TemplatesTable
 ------------------------------------------------------------
 Sheet (Tab):  BatchCodesLog
 Sheet (Code): BatchCodeLogs
-  Table: Table48
+  Table: BatchCodesLog
     Headers: RECIPE, RECIPE_ID, PROCESS, OUTPUT, UOM, REAL OUTPUT, BATCH, RECALL CODE, TIMESTAMP, LOCATION, USER, GUID
 ------------------------------------------------------------
 Sheet (Tab):  DiagramCreator
