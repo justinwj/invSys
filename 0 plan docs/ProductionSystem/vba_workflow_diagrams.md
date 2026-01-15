@@ -159,3 +159,46 @@ flowchart TD
         L4["Note"]:::note
     end
 ```
+
+## 5) Formula Management (VBA view)
+
+```mermaid
+flowchart TD
+    classDef evt fill:#5b6b9a,stroke:#2f3b5a,color:#ffffff;
+    classDef op fill:#2c7a9b,stroke:#195a73,color:#ffffff;
+    classDef data fill:#8c6239,stroke:#4f341f,color:#ffffff;
+    classDef note fill:#fff2cc,stroke:#b99a33,color:#000000;
+
+    SaveRecipe["BtnSaveRecipe\n(save builder formulas)"]:::evt
+    SavePalette["BtnSavePalette\n(save palette builder formulas)"]:::evt
+    SaveProd["BtnSaveProductionFormulas\n(save production formulas)"]:::evt
+
+    ResolveRecipe["Resolve RECIPE_ID\n(from RB_AddRecipeName / IP_ChooseRecipe / RC_RecipeChoose)"]:::op
+    CollectBuilder["Collect formula columns\n(proc_*_rbuilder)"]:::op
+    CollectPalette["Collect formula columns\n(IP_ChooseIngredient / IP_ChooseItem)"]:::op
+    CollectProd["Collect formula columns\n(proc_*_palette / ProductionOutput)"]:::op
+    UpsertTpl["Upsert TemplatesTable rows\n(RECIPE_ID + TEMPLATE_SCOPE + PROCESS + TARGET_TABLE + TARGET_COLUMN)"]:::op
+    Templates["TemplatesTable"]:::data
+
+    RecipeSelected["Recipe selected\n(RB / IP / RC)"]:::evt
+    EnsureTables["Ensure target tables exist\n(build proc tables / palettes / outputs)"]:::op
+    ApplyTpl["Apply templates by scope + process\n(cTemplateApplier)"]:::op
+    ClearUnchecked["If process unchecked or tables cleared:\nremove formulas in target columns"]:::op
+
+    SaveRecipe --> ResolveRecipe --> CollectBuilder --> UpsertTpl --> Templates
+    SavePalette --> ResolveRecipe --> CollectPalette --> UpsertTpl
+    SaveProd --> ResolveRecipe --> CollectProd --> UpsertTpl
+
+    RecipeSelected --> ResolveRecipe --> EnsureTables --> ApplyTpl --> ClearUnchecked
+    Templates -.-> ApplyTpl
+
+    Note1["Draft scopes:\nRECIPE_PROCESS = builder + chooser process tables\nPALETTE_BUILDER = IP_Choose* tables\nPROD_RUN = proc_*_palette + ProductionOutput"]:::note
+    Note1 -.-> UpsertTpl
+
+    subgraph Legend
+        L1["Event / Button"]:::evt
+        L2["Operation"]:::op
+        L3["Data table"]:::data
+        L4["Note"]:::note
+    end
+```

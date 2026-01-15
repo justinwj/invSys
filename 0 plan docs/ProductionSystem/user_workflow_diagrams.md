@@ -1,6 +1,6 @@
 # Production System - User Workflow Diagrams (Draft)
 
-## 1) Recipe Builder + Ingredient Palette (user-facing)
+## 1) Recipe Builder + Inventory Palette Builder (user-facing)
 
 ```mermaid
 flowchart TD
@@ -11,39 +11,42 @@ flowchart TD
     classDef legend fill:#f5f5f5,stroke:#333333,color:#000000;
 
     Toggle["Toggle Recipe Builder"]:::btn
-    TogglePalette["Toggle Ingredient Palette Builder"]:::btn
+    TogglePalette["Toggle Inventory Palette Builder"]:::btn
     LoadRecipe["Load Recipe (edit)"]:::btn
     SaveRecipe["Save Recipe"]:::btn
     SavePalette["Save IngredientPalette"]:::btn
 
-    RecipeHeader["Recipe list builder (header)\nRECIPE_NAME | DESCRIPTION | GUID | RECIPE_ID"]:::list
-    RecipeLines["Recipe list builder (lines)\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT | RECIPE_LIST_ROW | INGREDIENT_ID"]:::list
+    RecipeHeader["RB_AddRecipeName\nRECIPE_NAME | DESCRIPTION | GUID | RECIPE_ID"]:::list
+    RecipeLines["RecipeBuilder (lines)\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT | OOO | INSTRUCTION | RECIPE_LIST_ROW | INGREDIENT_ID | GUID"]:::list
+    AddProc["Add Recipe Process Table"]:::btn
+    ProcTables["proc_*_rbuilder\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT | OOO | INSTRUCTION | RECIPE_LIST_ROW | INGREDIENT_ID | GUID"]:::list
 
-    TemplatesTable["TemplatesTable\n(TEMPLATE_ID | TARGET_SCOPE | PROCESS | COLUMN_NAME | FORMULA | TYPE | VERSION)"]:::list
+    TemplatesTable["TemplatesTable\n(GUID | TEMPLATE_SCOPE | RECIPE_ID | INGREDIENT_ID | PROCESS | TARGET_TABLE | TARGET_COLUMN | FORMULA | NOTES | ACTIVE | CREATED_AT | UPDATED_AT)"]:::list
     RegisterTemplates["Register Templates\n(scan builder formulas)"]:::btn
 
-    PalettePicker["Recipe picker (IngredientPalette)\nopens Recipes table list"]:::picker
+    PalettePicker["Recipe picker (IP_ChooseRecipe)\nopens Recipes table list"]:::picker
     IngredientPicker["Ingredient picker\nshows INGREDIENTs for RECIPE_ID"]:::picker
-    PaletteHeader["IngredientPalette (header)\nRECIPE_NAME | DESCRIPTION | GUID | RECIPE_ID"]:::list
-    PaletteLines["IngredientPalette (lines)\nINGREDIENT | UOM | QUANTITY | DESCRIPTION | GUID | RECIPE_ID | INGREDIENT_ID | PROCESS"]:::list
-    PaletteItems["IngredientPalette (items)\nITEMS | UOM | DESCRIPTION | ROW | RECIPE_ID | INGREDIENT_ID"]:::list
+    PaletteHeader["IP_ChooseRecipe\nRECIPE_NAME | DESCRIPTION | GUID | RECIPE_ID"]:::list
+    PaletteLines["IP_ChooseIngredient\nINGREDIENT | UOM | QUANTITY | DESCRIPTION | GUID | RECIPE_ID | INGREDIENT_ID | PROCESS"]:::list
+    PaletteItems["IP_ChooseItem\nITEMS | UOM | DESCRIPTION | ROW | RECIPE_ID | INGREDIENT_ID"]:::list
+    IngredientPalette["IngredientPalette (sheet table)\nRECIPE_ID | INGREDIENT_ID | INPUT/OUTPUT | ITEM | PERCENT | UOM | AMOUNT | ROW | GUID"]:::list
 
     ItemPicker["Item search picker\nshows invSys items\n(+ add CATEGORY filters)"]:::picker
 
     Toggle --> RecipeHeader
     TogglePalette --> PaletteHeader
     LoadRecipe --> RecipeHeader
-    RecipeHeader --> RecipeLines
-    RecipeLines --> SaveRecipe
-    RecipeLines --> RegisterTemplates --> TemplatesTable
+    RecipeHeader --> RecipeLines --> AddProc --> ProcTables
+    ProcTables --> SaveRecipe
+    ProcTables --> RegisterTemplates --> TemplatesTable
 
     PalettePicker --> PaletteHeader
     PaletteHeader --> IngredientPicker --> PaletteLines
     PaletteLines --> ItemPicker --> PaletteItems
-    PaletteItems --> SavePalette
+    PaletteItems --> SavePalette --> IngredientPalette
 
-    Note1["Ingredient picker pulls from Recipes sheet.\nItem picker starts unfiltered, user adds CATEGORY filters (+)."]:::note
-    Note2["TemplatesTable stores formulas by scope.\nRegister Templates scans builder tables and saves formula columns."]:::note
+    Note1["Ingredient picker pulls from Recipes sheet.\nItem picker starts unfiltered; user can add CATEGORY filters (+)."]:::note
+    Note2["TemplatesTable stores formulas per recipe + scope.\nRegister Templates scans proc_*_rbuilder columns."]:::note
     ItemPicker -.-> Note1
     TemplatesTable -.-> Note2
 
@@ -69,7 +72,7 @@ flowchart TD
 
     RCHeader["RC_RecipeChoose (header)\nRECIPE | RECIPE_ID | DEPARTMENT | DESCRIPTION | PREDICTED OUTPUT | PROCESS"]:::list
     RecipePicker["Recipe picker\nopens Recipes table list"]:::picker
-    BuildProcTables["Build process tables per PROCESS\n(RecipeChooser_generated)\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT | INGREDIENT_ID | RECIPE_LIST_ROW"]:::list
+    BuildProcTables["Build process tables per PROCESS\n(RecipeChooser_generated)\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT NEEDED | INGREDIENT_ID | RECIPE_LIST_ROW"]:::list
     ProcessCheckboxes["Process selector checkboxes\n(checked = build palette tables)"]:::chk
 
     UsedIngredientScan["Scan process tables\n(INPUT/OUTPUT = USED only)"]:::note
@@ -118,10 +121,9 @@ flowchart TD
     ItemPicker2["Item search picker\ninvSys items filtered by\nIngredientPalette (RECIPE_ID+INGREDIENT_ID)\n+ optional CATEGORY filters"]:::picker
     InventoryInputs["Inventory item chooser (inputs)\n(per process, generated next to process table)\nITEM_CODE | VENDORS | VENDOR_CODE | DESCRIPTION | ITEM | UOM | QUANTITY | PROCESS | LOCATION | ROW | INPUT/OUTPUT"]:::list
     KeepInventory["Keep inventory selection\n(per PROCESS)\n(checked = keep on Next Batch)"]:::chk
-    ProductionOutputs["Production outputs\nPROCESS | OUTPUT | UOM | REAL OUTPUT | BATCH | RECALL CODE\n(recall checkbox per row)"]:::list
+    ProductionOutputs["ProductionOutput\nROW | PROCESS | OUTPUT | UOM | REAL OUTPUT | BATCH | RECALL CODE\n(recall checkbox per row)"]:::list
 
-    BatchCodes["Batch tracking / recall codes\nBATCH | PROCESS | RECALL_CODE"]:::list
-    BatchCodesLog["BatchCodesLog\nBATCH | PROCESS | RECALL_CODE | TIMESTAMP | RECIPE_ID"]:::log
+    BatchCodesLog["BatchCodesLog\nRECIPE | RECIPE_ID | PROCESS | OUTPUT | UOM | REAL OUTPUT | BATCH | RECALL CODE | TIMESTAMP | LOCATION | USER | GUID"]:::log
     PrintCodes["Print recall codes\n(format batch code sheet)"]:::btn
     CheckInv["Prod_invSys_Check\nUSED | MADE | TOTAL INV | ROW"]:::list
     ToUsed["To USED"]:::btn
@@ -140,7 +142,7 @@ flowchart TD
     InventoryInputs -.-> InvChooserCF
     InventoryInputs -.-> KeepInventory
     InventoryInputs --> ProductionOutputs
-    ProductionOutputs --> BatchCodesToggle --> BatchCodes --> PrintCodes
+    ProductionOutputs --> BatchCodesToggle --> PrintCodes
     ProductionOutputs --> CheckInv
 
     InventoryInputs --> ToUsed --> CheckInv
@@ -161,7 +163,7 @@ flowchart TD
     Note6["TOTAL INV in Prod_invSys_Check highlights red when insufficient."]:::note
     CheckInv -.-> Note6
     Note7["Batch = user-defined run.\nRecall code generated per PROCESS/BATCH when sent to MADE."]:::note
-    BatchCodes -.-> Note7
+    BatchCodesLog -.-> Note7
     Note5["Process selector checkboxes control which\nInventory Palette tables are generated.\nIf none checked, no palette tables are created."]:::note
     ProcessSelector -.-> Note5
     BuildProcessTable -.-> Note2
@@ -177,4 +179,41 @@ flowchart TD
         L5["Note"]:::note
         L6["Legend"]:::legend
     end
+```
+
+## 4) Formula Management (VBA-level draft)
+
+```mermaid
+flowchart TD
+    classDef btn fill:#2f4e9c,stroke:#1f2f5c,color:#ffffff;
+    classDef op fill:#2c7a9b,stroke:#195a73,color:#ffffff;
+    classDef data fill:#8c6239,stroke:#4f341f,color:#ffffff;
+    classDef event fill:#6a1b9a,stroke:#3f0f5c,color:#ffffff;
+    classDef note fill:#fff2cc,stroke:#b99a33,color:#000000;
+
+    SaveRecipe["Save Recipe\n(formulas in proc_*_rbuilder)"]:::btn
+    SavePalette["Save IngredientPalette\n(formulas in IP_Choose*)"]:::btn
+    SaveProd["Save Production Formulas\n(formulas in proc_*_palette + ProductionOutput)"]:::btn
+
+    ScanRecipe["Scan recipe process tables\n(proc_*_rbuilder)"]:::op
+    ScanPalette["Scan palette builder tables\n(IP_ChooseIngredient / IP_ChooseItem)"]:::op
+    ScanProd["Scan production tables\n(proc_*_palette / ProductionOutput)"]:::op
+
+    UpsertTemplates["Upsert TemplatesTable rows\n(RECIPE_ID + TEMPLATE_SCOPE + PROCESS + TARGET_TABLE + TARGET_COLUMN)"]:::op
+    TemplatesTable["TemplatesTable"]:::data
+
+    RecipeChosen["Recipe selected\n(RB_AddRecipeName / IP_ChooseRecipe / RC_RecipeChoose)"]:::event
+    EnsureTables["Ensure tables exist\n(build proc tables, palettes, outputs)"]:::op
+    ApplyTemplates["Apply templates by scope + process\n(cTemplateApplier)"]:::op
+    ClearUnchecked["If process unchecked or table cleared:\nremove formulas in target columns"]:::op
+
+    SaveRecipe --> ScanRecipe --> UpsertTemplates --> TemplatesTable
+    SavePalette --> ScanPalette --> UpsertTemplates
+    SaveProd --> ScanProd --> UpsertTemplates
+
+    RecipeChosen --> EnsureTables --> ApplyTemplates --> ClearUnchecked
+    TemplatesTable -.-> ApplyTemplates
+
+    Note1["Template scopes (draft):\nRECIPE_PROCESS = builder + chooser tables\nPALETTE_BUILDER = IP_Choose* tables\nPROD_RUN = proc_*_palette + ProductionOutput"]:::note
+    Note1 -.-> UpsertTemplates
 ```
