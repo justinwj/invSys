@@ -169,9 +169,7 @@ flowchart TD
     classDef data fill:#8c6239,stroke:#4f341f,color:#ffffff;
     classDef note fill:#fff2cc,stroke:#b99a33,color:#000000;
 
-    SaveRecipe["BtnSaveRecipe\n(save builder formulas)"]:::evt
-    SavePalette["BtnSavePalette\n(save palette builder formulas)"]:::evt
-    SaveProd["BtnSaveProductionFormulas\n(save production formulas)"]:::evt
+    SaveAll["Save Formulas\n(save all formulas for recipe)"]:::evt
 
     ResolveRecipe["Resolve RECIPE_ID\n(from RB_AddRecipeName / IP_ChooseRecipe / RC_RecipeChoose)"]:::op
     CollectBuilder["Collect formula columns\n(proc_*_rbuilder)"]:::op
@@ -185,9 +183,9 @@ flowchart TD
     ApplyTpl["Apply templates by scope + process\n(cTemplateApplier)"]:::op
     ClearUnchecked["If process unchecked or tables cleared:\nremove formulas in target columns"]:::op
 
-    SaveRecipe --> ResolveRecipe --> CollectBuilder --> UpsertTpl --> Templates
-    SavePalette --> ResolveRecipe --> CollectPalette --> UpsertTpl
-    SaveProd --> ResolveRecipe --> CollectProd --> UpsertTpl
+    SaveAll --> ResolveRecipe --> CollectBuilder --> UpsertTpl --> Templates
+    ResolveRecipe --> CollectPalette --> UpsertTpl
+    ResolveRecipe --> CollectProd --> UpsertTpl
 
     RecipeSelected --> ResolveRecipe --> EnsureTables --> ApplyTpl --> ClearUnchecked
     Templates -.-> ApplyTpl
@@ -195,10 +193,53 @@ flowchart TD
     Note1["Draft scopes:\nRECIPE_PROCESS = builder + chooser process tables\nPALETTE_BUILDER = IP_Choose* tables\nPROD_RUN = proc_*_palette + ProductionOutput"]:::note
     Note1 -.-> UpsertTpl
 
+    Note2["Store formulas as FormulaR1C1\nin TemplatesTable.FORMULA"]:::note
+    Note2 -.-> Templates
+
     subgraph Legend
         L1["Event / Button"]:::evt
         L2["Operation"]:::op
         L3["Data table"]:::data
         L4["Note"]:::note
     end
+```
+
+## 6) File-Level Implementation Plan (Formula Management)
+
+```mermaid
+flowchart TD
+    classDef file fill:#2c7a9b,stroke:#195a73,color:#ffffff;
+    classDef plan fill:#8c6239,stroke:#4f341f,color:#ffffff;
+    classDef note fill:#fff2cc,stroke:#b99a33,color:#000000;
+
+    MProd["Modules/mProduction.bas"]:::file
+    CTpl["Class Modules/cTemplateApplier.cls"]:::file
+    CRouter["Class Modules/cPickerRouter.cls"]:::file
+    ProdSheet["Sheets/Production.cls"]:::file
+    Templates["TemplatesTable (sheet table)"]:::file
+    ProdTables["Production sheet base tables\nRC_RecipeChoose | RB_AddRecipeName | IP_ChooseRecipe | IP_ChooseIngredient | IP_ChooseItem | Prod_invSys_Check | ProductionOutput | proc_*_rbuilder | proc_*_rchooser | proc_*_palette"]:::file
+
+    P1["Add Save Formulas button + handler\nBtnSaveFormulas (single entry point)"]:::plan
+    P2["Resolve RECIPE_ID across RB/IP/RC\n(central helper)"]:::plan
+    P3["Collect formulas by scope\nproc_*_rbuilder / IP_Choose* / proc_*_palette + ProductionOutput"]:::plan
+    P4["Upsert TemplatesTable rows\n(use FormulaR1C1)"]:::plan
+    P5["Apply templates on recipe selection\n(scope + process + table + column)"]:::plan
+    P6["Clear formulas when process unchecked\nor tables cleared"]:::plan
+    P7["cTemplateApplier supports FormulaR1C1\nand optional ValueMode later"]:::plan
+
+    MProd --> P1
+    MProd --> P2
+    MProd --> P3
+    MProd --> P4
+    MProd --> P5
+    MProd --> P6
+    CTpl --> P7
+    ProdSheet --> P5
+    CRouter --> P5
+    P4 --> Templates
+    P5 --> Templates
+    MProd --> ProdTables
+
+    Note1["Primary work lives in mProduction.bas;\nother files only need targeted helpers."]:::note
+    Note1 -.-> MProd
 ```

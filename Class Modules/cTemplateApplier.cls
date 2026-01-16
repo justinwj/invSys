@@ -50,13 +50,17 @@ Public Sub ApplyTemplates(ByVal targetLo As ListObject, ByVal templateScope As S
             If StrComp(NzStr(arr(r, cProcess)), processKey, vbTextCompare) <> 0 Then GoTo NextRow
         End If
         If cTargetTable > 0 Then
-            Dim targetName As String
-            If tableNameOverride <> "" Then
-                targetName = tableNameOverride
-            Else
-                targetName = targetLo.Name
+            Dim templateTable As String
+            templateTable = NzStr(arr(r, cTargetTable))
+            If templateTable <> "" Then
+                Dim targetName As String
+                If tableNameOverride <> "" Then
+                    targetName = tableNameOverride
+                Else
+                    targetName = targetLo.Name
+                End If
+                If StrComp(templateTable, targetName, vbTextCompare) <> 0 Then GoTo NextRow
             End If
-            If StrComp(NzStr(arr(r, cTargetTable)), targetName, vbTextCompare) <> 0 Then GoTo NextRow
         End If
 
         Dim colName As String
@@ -65,7 +69,14 @@ Public Sub ApplyTemplates(ByVal targetLo As ListObject, ByVal templateScope As S
 
         Dim formulaText As String
         formulaText = NzStr(arr(r, cFormula))
-        If formulaText = "" Then GoTo NextRow
+        If formulaText = "" Or Left$(formulaText, 1) <> "=" Then
+            Dim cell As Range
+            Set cell = templatesLo.DataBodyRange.Cells(r, cFormula)
+            If Not cell Is Nothing Then
+                If cell.HasFormula Then formulaText = CStr(cell.FormulaR1C1)
+            End If
+        End If
+        If formulaText = "" Or Left$(formulaText, 1) <> "=" Then GoTo NextRow
 
         ApplyFormulaToColumn targetLo, colName, formulaText
 NextRow:
@@ -81,7 +92,12 @@ Private Sub ApplyFormulaToColumn(ByVal targetLo As ListObject, ByVal colName As 
     Dim rng As Range
     Set rng = targetLo.ListColumns(colIdx).DataBodyRange
     On Error Resume Next
-    rng.Formula = formulaText
+    Err.Clear
+    rng.FormulaR1C1 = formulaText
+    If Err.Number <> 0 Then
+        Err.Clear
+        rng.Formula = formulaText
+    End If
     On Error GoTo 0
 End Sub
 

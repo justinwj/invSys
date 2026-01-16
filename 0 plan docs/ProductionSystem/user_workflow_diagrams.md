@@ -22,7 +22,7 @@ flowchart TD
     ProcTables["proc_*_rbuilder\nPROCESS | DIAGRAM_ID | INPUT/OUTPUT | INGREDIENT | PERCENT | UOM | AMOUNT | OOO | INSTRUCTION | RECIPE_LIST_ROW | INGREDIENT_ID | GUID"]:::list
 
     TemplatesTable["TemplatesTable\n(GUID | TEMPLATE_SCOPE | RECIPE_ID | INGREDIENT_ID | PROCESS | TARGET_TABLE | TARGET_COLUMN | FORMULA | NOTES | ACTIVE | CREATED_AT | UPDATED_AT)"]:::list
-    RegisterTemplates["Register Templates\n(scan builder formulas)"]:::btn
+    SaveFormulas["Save Formulas\n(per recipe)"]:::btn
 
     PalettePicker["Recipe picker (IP_ChooseRecipe)\nopens Recipes table list"]:::picker
     IngredientPicker["Ingredient picker\nshows INGREDIENTs for RECIPE_ID"]:::picker
@@ -38,15 +38,16 @@ flowchart TD
     LoadRecipe --> RecipeHeader
     RecipeHeader --> RecipeLines --> AddProc --> ProcTables
     ProcTables --> SaveRecipe
-    ProcTables --> RegisterTemplates --> TemplatesTable
+    ProcTables --> SaveFormulas --> TemplatesTable
 
     PalettePicker --> PaletteHeader
     PaletteHeader --> IngredientPicker --> PaletteLines
     PaletteLines --> ItemPicker --> PaletteItems
     PaletteItems --> SavePalette --> IngredientPalette
+    PaletteItems --> SaveFormulas
 
     Note1["Ingredient picker pulls from Recipes sheet.\nItem picker starts unfiltered; user can add CATEGORY filters (+)."]:::note
-    Note2["TemplatesTable stores formulas per recipe + scope.\nRegister Templates scans proc_*_rbuilder columns."]:::note
+    Note2["TemplatesTable stores FormulaR1C1 per recipe + scope.\nSave Formulas scans proc_*_rbuilder + IP_Choose* columns."]:::note
     ItemPicker -.-> Note1
     TemplatesTable -.-> Note2
 
@@ -191,9 +192,7 @@ flowchart TD
     classDef event fill:#6a1b9a,stroke:#3f0f5c,color:#ffffff;
     classDef note fill:#fff2cc,stroke:#b99a33,color:#000000;
 
-    SaveRecipe["Save Recipe\n(formulas in proc_*_rbuilder)"]:::btn
-    SavePalette["Save IngredientPalette\n(formulas in IP_Choose*)"]:::btn
-    SaveProd["Save Production Formulas\n(formulas in proc_*_palette + ProductionOutput)"]:::btn
+    SaveAll["Save Formulas\n(all systems per recipe)"]:::btn
 
     ScanRecipe["Scan recipe process tables\n(proc_*_rbuilder)"]:::op
     ScanPalette["Scan palette builder tables\n(IP_ChooseIngredient / IP_ChooseItem)"]:::op
@@ -207,13 +206,16 @@ flowchart TD
     ApplyTemplates["Apply templates by scope + process\n(cTemplateApplier)"]:::op
     ClearUnchecked["If process unchecked or table cleared:\nremove formulas in target columns"]:::op
 
-    SaveRecipe --> ScanRecipe --> UpsertTemplates --> TemplatesTable
-    SavePalette --> ScanPalette --> UpsertTemplates
-    SaveProd --> ScanProd --> UpsertTemplates
+    SaveAll --> ResolveRecipe --> ScanRecipe --> UpsertTemplates --> TemplatesTable
+    ResolveRecipe --> ScanPalette --> UpsertTemplates
+    ResolveRecipe --> ScanProd --> UpsertTemplates
 
     RecipeChosen --> EnsureTables --> ApplyTemplates --> ClearUnchecked
     TemplatesTable -.-> ApplyTemplates
 
     Note1["Template scopes (draft):\nRECIPE_PROCESS = builder + chooser tables\nPALETTE_BUILDER = IP_Choose* tables\nPROD_RUN = proc_*_palette + ProductionOutput"]:::note
     Note1 -.-> UpsertTemplates
+
+    Note2["TemplatesTable.FORMULA stores FormulaR1C1"]:::note
+    Note2 -.-> TemplatesTable
 ```
