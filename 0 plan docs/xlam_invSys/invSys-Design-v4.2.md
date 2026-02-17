@@ -451,7 +451,7 @@ sequenceDiagram
 **Goal:** Core infrastructure + basic domain schemas
 
 **Tasks:**
-- [ ] Set up repository structure
+- [x] Set up repository structure
 - [ ] Build Core.Config module
 - [ ] Build Core.Auth module (workbook-based, PIN deferred to Phase 2)
 - [ ] Build InventoryDomain.Schema with self-repair
