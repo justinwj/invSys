@@ -1,7 +1,7 @@
-﻿# invSys Architecture v4.2 - Release 1 Plan
+﻿# invSys Architecture v4.3 - Release 1 Plan
 **Project:** invSys Multi-Warehouse Inventory System  
-**Version:** 4.2 (VBA Release 1)  
-**Date:** February 17, 2026  
+**Version:** 4.3 (VBA Release 1)  
+**Date:** March 4, 2026  
 **Author:** Justin  
 **Purpose:** Complete architectural specification for Release 1 (VBA/Excel only).
 
@@ -25,7 +25,7 @@
 **No external dependencies:** R1 requires only Excel + SharePoint (no Python, .NET, or other runtimes).
 
 ---
-## Progress Tracking (v4.2)
+## Progress Tracking (v4.3)
 **Legend:** `[ ]` not started, `[x]` complete
 
 ### Release 1 Milestones
@@ -169,6 +169,57 @@ RULE: Each role XLAM contains:
 | `ufDynAdminTemplate` | No | No | No | Admin only |
 
 ---
+### D5 -- Core.Config Contract (R1 Locked)
+**Decision:** `WHx.invSys.Config.xlsb` is the single authoritative config source in R1 (no workbook-local overrides).
+
+**Rules:**
+- Precedence is fixed: `tblStationConfig` -> `tblWarehouseConfig` -> hardcoded defaults.
+- Config is strongly typed and schema-validated at load; required missing keys fail validation.
+- `Core.Config` is read-only in R1 with explicit `Load`/`Reload` support.
+- Missing optional keys use defaults and log warnings.
+- Missing required keys or missing workbook fails closed for write operations.
+
+**Public API Contract:**
+- `Load(Optional whId, Optional stId) As Boolean`
+- `Get(key) As Variant`
+- `GetRequired(key) As Variant`
+- `TryGet(key, ByRef outVal) As Boolean`
+- `Reload() As Boolean`
+- `Validate() As String`
+- `GetWarehouseId() As String`, `GetStationId() As String`
+
+---
+### D6 -- Locking Runtime Rules (R1 Locked)
+**Decision:** Processor lock behavior is standardized across warehouses.
+
+**Rules:**
+- Lock order is always `INVENTORY` then `DESIGNS` (only when required).
+- Heartbeat updates every 30 seconds while lock is held.
+- `ExpiresAtUTC` is `Now + 3 minutes`, extended on heartbeat.
+- If batch lock hold exceeds 2 minutes, log warning and tune batch size.
+- Break-lock requires `ADMIN_MAINT` and an audit reason.
+
+---
+### D7 -- Poison Handling and Reissue (R1 Locked)
+**Decision:** Poison rows are immutable audit history.
+
+**Rules:**
+- Failed rows are marked `POISON` with `ErrorCode`, `ErrorMessage`, `RetryCount`, `FailedAtUTC`.
+- Admin reissue creates a new event row with a new `EventID`.
+- Reissue links with `ParentEventId = <original EventID>`.
+- Original poison row is never edited back to `NEW`.
+
+---
+### D8 -- Capability Enforcement and Audit (R1 Locked)
+**Decision:** Core is the sole authorization authority for posting and processor actions.
+
+**Rules:**
+- Role UI gating is advisory; Core gate is authoritative.
+- Gate decisions log: request/event id, user, capability, warehouse, station, result, timestamp, source.
+- Capability cache uses TTL; if cache expires and cannot refresh, write operations fail closed.
+- If TTL expires mid-processor-run, finish current run with current cache and refresh before next run.
+
+---
 ## System Topology (Release 1: VBA-Only)
 ```mermaid
 flowchart TB
@@ -177,7 +228,6 @@ flowchart TB
     W1Inbox["Station inbox workbooks\ninvSys.Inbox.*.xlsb"]
     W1Proc["Processor (VBA)\nCore.Processor"]
     W1Auth[WH1.invSys.Auth.xlsb]
-    W1Caps[WH1.invSys.Capabilities.xlsb]
     W1Inv[WH1.invSys.Data.Inventory.xlsb]
     W1Des[WH1.invSys.Data.Designs.xlsb]
     W1Out[WH1.Outbox.Events.xlsb]
@@ -186,7 +236,6 @@ flowchart TB
     W1Stations --> W1Inbox
     W1Inbox --> W1Proc
     W1Proc --> W1Auth
-    W1Proc --> W1Caps
     W1Proc --> W1Inv
     W1Proc --> W1Des
     W1Proc --> W1Out
@@ -239,7 +288,7 @@ End Sub
 ---
 ## Backup and Restore (Release 1)
 **Goal:** Simple, reliable copies of critical workbooks using VBA and SharePoint storage.
-**Backed up workbooks:** `WHx.invSys.Auth.xlsb`, `WHx.invSys.Config.xlsb`, `WHx.invSys.Data.Inventory.xlsb`, `WHx.invSys.Data.Designs.xlsb` (if enabled), `WHx.invSys.Capabilities.xlsb`, `WHx.invSys.Snapshot.*.xlsb`.
+**Backed up workbooks:** `WHx.invSys.Auth.xlsb`, `WHx.invSys.Config.xlsb`, `WHx.invSys.Data.Inventory.xlsb`, `WHx.invSys.Data.Designs.xlsb` (if enabled), `WHx.invSys.Snapshot.*.xlsb`.
 **Method:** `Workbook.SaveCopyAs` to a timestamped folder in the SharePoint team document library (e.g., `/Backups/WH1/2026-02-03/`).
 **Cadence:** Daily (or per shift) via Admin XLAM or Task Scheduler.
 
@@ -287,7 +336,6 @@ flowchart TB
   ROOT --> GLOBAL[Global]
   ROOT --> CONFIG[Config]
   ROOT --> AUTH[Auth]
-  ROOT --> CAPS[Capabilities]
   ROOT --> BACKUPS[Backups]
   ROOT --> DOCS[Docs]
 
@@ -309,7 +357,6 @@ flowchart TB
   GLOBAL --> GDES[Global.DesignsSnapshot.xlsb]
   CONFIG --> CWH1[WH1.invSys.Config.xlsb]
   AUTH --> AWH1[WH1.invSys.Auth.xlsb]
-  CAPS --> CAPWH1[WH1.invSys.Capabilities.xlsb]
   BACKUPS --> BWH1[WH1/2026-02-03/...]
 ```
 **Note:** Inbox workbooks live on local station PCs and are not stored in SharePoint.
@@ -452,13 +499,18 @@ sequenceDiagram
 
 **Tasks:**
 - [x] Set up repository structure
-- [ ] Build Core.Config module
-- [ ] Build Core.Auth module (workbook-based, PIN deferred to Phase 2)
-- [ ] Build InventoryDomain.Schema with self-repair
-- [ ] Create sample Auth.xlsb and Config.xlsb workbooks
-- [ ] Unit test: Config loading, capability checking
+- [x] Build Core.Config module
+- [x] Build Core.Auth module (workbook-based, PIN deferred to Phase 2)
+- [x] Build InventoryDomain.Schema with self-repair
+- [x] Create sample Auth.xlsb and Config.xlsb workbooks
 
-**Deliverable:** [ ] Core and InventoryDomain XLAMs that load config and validate schemas
+**Tests:**
+- [ ] Test: Core.Config precedence resolves `Station -> Warehouse -> Default` and required keys fail closed
+- [ ] Test: Core.Auth capability check returns ALLOW/DENY for scoped warehouse/station cases
+- [ ] Test: Inventory schema self-heal recreates missing required table/column definitions
+
+**Deliverables:**
+- [ ] Core and InventoryDomain XLAMs load config and validate schemas
 
 ---
 ### Phase 2: Event Processing
@@ -470,9 +522,14 @@ sequenceDiagram
 - [ ] Build InventoryDomain.Apply (Receive events only)
 - [ ] Create sample Inbox.Receiving.S1.xlsb workbook
 - [ ] Create sample Inventory.xlsb workbook
-- [ ] Integration test: Manual inbox row -> Run processor -> Verify inventory log
 
-**Deliverable:** [ ] Working end-to-end event processing (Receive only)
+**Tests:**
+- [ ] Test: AcquireLock/ReleaseLock + heartbeat lifecycle (`30s heartbeat`, `3 min expiry`)
+- [ ] Test: Manual inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
+- [ ] Test: Duplicate EventID is marked `SKIP_DUP` and does not create duplicate inventory rows
+
+**Deliverables:**
+- [ ] Working end-to-end event processing (Receive only)
 
 ---
 ### Phase 3: Role UI
@@ -484,9 +541,14 @@ sequenceDiagram
 - [ ] Build Shipping.UI + EventCreator
 - [ ] Build Production.UI + EventCreator
 - [ ] Build role-specific item search forms for each role XLAM
-- [ ] Integration test: UI -> Create events -> Process -> Verify logs
 
-**Deliverable:** [ ] All role XLAMs functional with Ribbon controls
+**Tests:**
+- [ ] Test: Role buttons are disabled/hidden when required capability is missing
+- [ ] Test: Each role UI writes valid inbox events with required fields and normalized values
+- [ ] Test: UI -> Create events -> Process -> Verify domain logs for receiving/shipping/production
+
+**Deliverables:**
+- [ ] All role XLAMs functional with Ribbon controls
 
 ---
 ### Phase 4: Admin Tooling
@@ -498,9 +560,14 @@ sequenceDiagram
 - [ ] Build poison queue viewer
 - [ ] Build manual reissue workflow
 - [ ] Build snapshot generation button
-- [ ] Integration test: Admin operations end-to-end
 
-**Deliverable:** [ ] Admin XLAM with full management capabilities
+**Tests:**
+- [ ] Test: Break-lock requires `ADMIN_MAINT` and writes audit reason/timestamp
+- [ ] Test: Reissue from poison creates new `EventID` with `ParentEventId` link to original row
+- [ ] Test: Admin run + reissue + rerun completes without duplicate apply side effects
+
+**Deliverables:**
+- [ ] Admin XLAM with full management capabilities
 
 ---
 ### Phase 5: Multi-Warehouse Sync
@@ -508,22 +575,34 @@ sequenceDiagram
 
 **Tasks:**
 - [ ] Build Outbox event writing in Processor (VBA)
-- [ ] **Build VBA HQ aggregation macro** (invSys.HQ.Aggregator.xlsm)
+- [ ] Build VBA HQ aggregation macro (`invSys.HQ.Aggregator.xlsm`)
 - [ ] Build global snapshot generation logic (VBA)
-- [ ] Test SharePoint sync workflow (manual file copy simulation)
 - [ ] Configure Windows Task Scheduler for HQ aggregation
-- [ ] Integration test: WH1 + WH2 -> HQ aggregates -> Global snapshot
 
-**Deliverable:** [ ] Multi-warehouse sync with VBA-powered HQ Aggregator
+**Tests:**
+- [ ] Test: Outbox writes include applied metadata (`EventID`, `AppliedAtUTC`, `RunId`, source warehouse/station)
+- [ ] Test: SharePoint sync workflow (manual file copy simulation) publishes warehouse snapshots/events correctly
+- [ ] Test: WH1 + WH2 -> HQ aggregation -> Global snapshot preserves per-warehouse quantities
+
+**Deliverables:**
+- [ ] Multi-warehouse sync with VBA-powered HQ Aggregator
 
 ---
-### Phase 6: Polish and Release (Weeks
-**Goals:**
-- [ ] Error handling, logging, documentation (VBA)
-- [ ] Full regression test suite
-- [ ] Production pilot with 1 warehouse
+### Phase 6: Polish and Release
+**Goal:** Reliability hardening and production readiness
 
-**Deliverable:** [ ] Release 1.0 ready for production
+**Tasks:**
+- [ ] Finalize error handling, logging, and operator documentation
+- [ ] Build and run full regression test suite
+- [ ] Execute production pilot with 1 warehouse
+
+**Tests:**
+- [ ] Test: Regression suite passes happy-path, duplicate-event, poison-reissue, and lock-contention scenarios
+- [ ] Test: Backup/restore drill validates recovery playbook and schema self-heal on reopen
+- [ ] Test: Pilot run meets baseline throughput and stability targets for one full shift
+
+**Deliverables:**
+- [ ] Release 1.0 ready for production
 
 ## Testing Strategy (Release 1: VBA)
 ### Unit Tests (VBA)
@@ -746,5 +825,127 @@ ValidFrom     (date, optional)
 ValidTo       (date, optional)
 ```
 
+### Config Tables (Release 1)
+**Workbook:** `WHx.invSys.Config.xlsb`
+
+**tblWarehouseConfig:**
+```text
+WarehouseId              (text, PK)
+WarehouseName            (text)
+Timezone                 (text)
+DefaultLocation          (text)
+BatchSize                (number)
+LockTimeoutMinutes       (number)
+HeartbeatIntervalSeconds (number)
+MaxLockHoldMinutes       (number)
+SnapshotCadence          (text)
+BackupCadence            (text)
+PathDataRoot             (text)
+PathBackupRoot           (text)
+PathSharePointRoot       (text)
+DesignsEnabled           (boolean)
+PoisonRetryMax           (number)
+AuthCacheTTLSeconds      (number)
+```
+
+**tblStationConfig:**
+```text
+StationId     (text, PK)
+WarehouseId   (text)
+StationName   (text)
+RoleDefault   (text)   RECEIVE | SHIP | PROD | ADMIN
+```
+
 ---
+
+## Appendix: Carried Forward from Archived v2 Docs
+### Config MVP Keys (R1 baseline)
+- Warehouse scope: `WarehouseId`, `WarehouseName`, `Timezone`, `DefaultLocation`, `BatchSize`, `LockTimeoutMinutes`, `HeartbeatIntervalSeconds`, `MaxLockHoldMinutes`, `SnapshotCadence`, `BackupCadence`, `PathDataRoot`, `PathBackupRoot`, `PathSharePointRoot`, `DesignsEnabled`, `PoisonRetryMax`, `AuthCacheTTLSeconds`
+- Station scope: `StationId`, `StationName`, `RoleDefault`
+- Feature flags: `FF_DesignsEnabled`, `FF_OutlookAlerts`, `FF_AutoSnapshot`
+
+### Outbox Table (Release 1)
+**Workbook:** `WHx.Outbox.Events.xlsb`
+
+**tblOutboxEvents:**
+```text
+EventID        (text, PK)
+UndoOfEventId  (text, optional)
+EventType      (text)   RECEIVE | SHIP | PROD | UNDO
+WarehouseId    (text)
+StationId      (text)
+OccurredAtUTC  (datetime)
+AppliedAtUTC   (datetime)
+AppliedBy      (text)
+RunId          (text)
+DeltaJson      (text)   minimal delta payload (no before/after)
+```
+
+### Additional Inbox Tables (Release 1)
+**Workbook:** `invSys.Inbox.Shipping.S1.xlsb`
+
+**tblInboxShip:**
+```text
+EventID        (text, PK)
+ParentEventId  (text, optional)
+UndoOfEventId  (text, optional)
+CreatedAtUTC   (datetime)
+WarehouseId    (text)
+StationId      (text)
+UserId         (text)
+SKU            (text)
+Qty            (number)
+Location       (text)
+Destination    (text, optional)
+Note           (text, optional)
+Status         (text)   NEW | PROCESSED | SKIP_DUP | POISON
+RetryCount     (number)
+ErrorCode      (text, optional)
+ErrorMessage   (text, optional)
+FailedAtUTC    (datetime, optional)
+```
+
+**Workbook:** `invSys.Inbox.Production.S1.xlsb`
+
+**tblInboxProd:**
+```text
+EventID        (text, PK)
+ParentEventId  (text, optional)
+UndoOfEventId  (text, optional)
+CreatedAtUTC   (datetime)
+WarehouseId    (text)
+StationId      (text)
+UserId         (text)
+DesignId       (text)
+DesignVersion  (text)
+QtyPlanned     (number)
+Location       (text, optional)
+Note           (text, optional)
+Status         (text)   NEW | PROCESSED | SKIP_DUP | POISON
+RetryCount     (number)
+ErrorCode      (text, optional)
+ErrorMessage   (text, optional)
+FailedAtUTC    (datetime, optional)
+```
+
+### Lock Table (Release 1)
+**Workbook:** `WHx.invSys.Data.Inventory.xlsb` and `WHx.invSys.Data.Designs.xlsb`
+
+**tblLocks:**
+```text
+LockName       (text, PK)   INVENTORY | DESIGNS
+OwnerStationId (text)
+OwnerUserId    (text)
+RunId          (text)
+AcquiredAtUTC  (datetime)
+ExpiresAtUTC   (datetime)
+HeartbeatAtUTC (datetime)
+Status         (text)       HELD | EXPIRED | BROKEN
+```
+
+---
+
+
+
+
 
