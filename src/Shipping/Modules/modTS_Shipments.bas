@@ -432,51 +432,15 @@ Public Sub BtnShipmentsSent()
         Exit Sub
     End If
 
+    Dim queuedEventId As String
     Dim errNotes As String
     Dim deltas As Collection
-    Set deltas = BuildShipmentsSentDeltaPacket(invLo, errNotes)
-    If deltas Is Nothing Or deltas.Count = 0 Then
-        If errNotes <> "" Then
-            MsgBox errNotes, vbInformation
-        Else
-            MsgBox "No staged shipments found in invSys.SHIPMENTS.", vbInformation
-        End If
+    If Not BuildQueueableShipmentsSentDeltas(invLo, ws, deltas, errNotes) Then
+        If errNotes = "" Then errNotes = "Unable to build shipment event."
+        MsgBox errNotes, vbInformation
         Exit Sub
     End If
 
-    Dim aggPack As ListObject: Set aggPack = GetListObject(ws, TABLE_AGG_PACK)
-    Dim rowFilter As Object
-    If Not aggPack Is Nothing Then
-        If Not aggPack.DataBodyRange Is Nothing Then
-            Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggPack, "ROW")
-            If cRowAgg > 0 Then
-                Set rowFilter = CreateObject("Scripting.Dictionary")
-                Dim arrAgg As Variant: arrAgg = aggPack.DataBodyRange.Value
-                Dim r As Long
-                For r = 1 To UBound(arrAgg, 1)
-                    Dim rowVal As Long: rowVal = NzLng(arrAgg(r, cRowAgg))
-                    If rowVal > 0 Then rowFilter(CStr(rowVal)) = True
-                Next r
-            End If
-        End If
-    End If
-
-    If Not rowFilter Is Nothing Then
-        If rowFilter.Count > 0 Then
-            Dim filtered As New Collection
-            Dim delta As Variant
-            For Each delta In deltas
-                If rowFilter.Exists(CStr(delta("ROW"))) Then filtered.Add delta
-            Next delta
-            Set deltas = filtered
-            If deltas.Count = 0 Then
-                MsgBox "No staged shipments match the current AggregatePackages rows.", vbInformation
-                Exit Sub
-            End If
-        End If
-    End If
-
-    Dim queuedEventId As String
     If Not QueueShipmentsSentEvent(deltas, errNotes, queuedEventId) Then
         If errNotes = "" Then errNotes = "Unable to queue shipment event."
         MsgBox errNotes, vbCritical
@@ -517,6 +481,29 @@ ErrHandler:
     MsgBox errMsg, vbCritical
 End Sub
 
+Public Function QueueShipmentsSentEventFromCurrentWorkbook(ByRef eventIdOut As String, ByRef errNotes As String) As Boolean
+    Dim ws As Worksheet
+    Dim invLo As ListObject
+    Dim deltas As Collection
+
+    If Not modRoleUiAccess.CanCurrentUserPerformCapability("SHIP_POST", "", "", "", errNotes) Then Exit Function
+
+    Set ws = SheetExists(SHEET_SHIPMENTS)
+    If ws Is Nothing Then
+        errNotes = "ShipmentsTally sheet not found."
+        Exit Function
+    End If
+
+    Set invLo = GetInvSysTable()
+    If invLo Is Nothing Then
+        errNotes = "InventoryManagement!invSys table not found."
+        Exit Function
+    End If
+
+    If Not BuildQueueableShipmentsSentDeltas(invLo, ws, deltas, errNotes) Then Exit Function
+    QueueShipmentsSentEventFromCurrentWorkbook = QueueShipmentsSentEvent(deltas, errNotes, eventIdOut)
+End Function
+
 Private Function QueueShipmentsSentEvent(ByVal deltas As Collection, ByRef errNotes As String, ByRef eventIdOut As String) As Boolean
     Dim payloadJson As String
 
@@ -533,6 +520,52 @@ Private Function QueueShipmentsSentEvent(ByVal deltas As Collection, ByRef errNo
         "BTN_SHIPMENTS_SENT", _
         eventIdOut, _
         errNotes)
+End Function
+
+Private Function BuildQueueableShipmentsSentDeltas(ByVal invLo As ListObject, ByVal ws As Worksheet, ByRef deltasOut As Collection, ByRef errNotes As String) As Boolean
+    Dim aggPack As ListObject
+    Dim rowFilter As Object
+    Dim arrAgg As Variant
+    Dim cRowAgg As Long
+    Dim r As Long
+    Dim filtered As Collection
+    Dim delta As Variant
+
+    Set deltasOut = BuildShipmentsSentDeltaPacket(invLo, errNotes)
+    If deltasOut Is Nothing Or deltasOut.Count = 0 Then
+        If errNotes = "" Then errNotes = "No staged shipments found in invSys.SHIPMENTS."
+        Exit Function
+    End If
+
+    Set aggPack = GetListObject(ws, TABLE_AGG_PACK)
+    If Not aggPack Is Nothing Then
+        If Not aggPack.DataBodyRange Is Nothing Then
+            cRowAgg = ColumnIndex(aggPack, "ROW")
+            If cRowAgg > 0 Then
+                Set rowFilter = CreateObject("Scripting.Dictionary")
+                arrAgg = aggPack.DataBodyRange.Value
+                For r = 1 To UBound(arrAgg, 1)
+                    If NzLng(arrAgg(r, cRowAgg)) > 0 Then rowFilter(CStr(NzLng(arrAgg(r, cRowAgg)))) = True
+                Next r
+            End If
+        End If
+    End If
+
+    If Not rowFilter Is Nothing Then
+        If rowFilter.Count > 0 Then
+            Set filtered = New Collection
+            For Each delta In deltasOut
+                If rowFilter.Exists(CStr(delta("ROW"))) Then filtered.Add delta
+            Next delta
+            Set deltasOut = filtered
+            If deltasOut.Count = 0 Then
+                errNotes = "No staged shipments match the current AggregatePackages rows."
+                Exit Function
+            End If
+        End If
+    End If
+
+    BuildQueueableShipmentsSentDeltas = True
 End Function
 
 Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)

@@ -1162,6 +1162,43 @@ ErrHandler:
     MsgBox "BTN_TO_TOTALINV failed: " & Err.description, vbCritical
 End Sub
 
+Public Function QueueProductionCompleteEventFromCurrentWorkbook(ByRef eventIdOut As String, ByRef errNotes As String) As Boolean
+    Dim wsProd As Worksheet
+    Dim invLo As ListObject
+    Dim loOut As ListObject
+    Dim madeNotes As String
+    Dim madeDeltas As Collection
+
+    If Not modRoleUiAccess.CanCurrentUserPerformCapability("PROD_POST", "", "", "", errNotes) Then Exit Function
+
+    Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then
+        errNotes = "Production sheet not found."
+        Exit Function
+    End If
+
+    Set invLo = GetInvSysTable()
+    If invLo Is Nothing Then
+        errNotes = "InventoryManagement!invSys table not found."
+        Exit Function
+    End If
+
+    Set loOut = FindListObjectByNameOrHeaders(wsProd, "ProductionOutput", Array("PROCESS", "OUTPUT"))
+    If loOut Is Nothing Then
+        errNotes = "ProductionOutput table not found on Production sheet."
+        Exit Function
+    End If
+
+    Set madeDeltas = BuildMadeDeltasFromProductionOutput(loOut, invLo, madeNotes)
+    If madeDeltas Is Nothing Or madeDeltas.Count = 0 Then
+        If madeNotes = "" Then madeNotes = "No made quantities found in ProductionOutput."
+        errNotes = madeNotes
+        Exit Function
+    End If
+
+    QueueProductionCompleteEventFromCurrentWorkbook = QueueProductionCompleteEvent(madeDeltas, errNotes, eventIdOut)
+End Function
+
 Public Sub BtnNextBatch()
     On Error GoTo ErrHandler
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_PRODUCTION)

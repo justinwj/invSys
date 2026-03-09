@@ -38,6 +38,16 @@ Public Function BuildPhase2ConfigWorkbook(ByVal whId As String, ByVal stId As St
     Set BuildPhase2ConfigWorkbook = wb
 End Function
 
+Public Sub SetWarehouseConfigValue(ByVal wb As Workbook, ByVal keyName As String, ByVal valueIn As Variant)
+    Dim lo As ListObject
+    Dim idx As Long
+
+    If wb Is Nothing Then Exit Sub
+    Set lo = wb.Worksheets("WarehouseConfig").ListObjects("tblWarehouseConfig")
+    idx = lo.ListColumns(keyName).Index
+    lo.DataBodyRange.Cells(1, idx).Value = valueIn
+End Sub
+
 Public Function BuildPhase2AuthWorkbook(ByVal whId As String, _
                                         Optional ByVal processorServiceUserId As String = "svc_processor") As Workbook
     Dim wb As Workbook
@@ -66,7 +76,9 @@ Public Function BuildPhase2AuthWorkbook(ByVal whId As String, _
     Set BuildPhase2AuthWorkbook = wb
 End Function
 
-Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, Optional ByVal skuList As Variant) As Workbook
+Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, _
+                                             Optional ByVal skuList As Variant, _
+                                             Optional ByVal persistWorkbook As Boolean = True) As Workbook
     Dim wb As Workbook
     Dim wsSku As Worksheet
     Dim loSku As ListObject
@@ -100,16 +112,29 @@ Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, Optional ByVa
         loSku.Name = "tblSkuCatalog"
     End If
 
-    p = BuildUniqueTestWorkbookPath(whId & ".invSys.Data.Inventory")
-    SaveWorkbookAsTestFile wb, p, 51
+    If persistWorkbook Then
+        p = BuildUniqueTestWorkbookPath(whId & ".invSys.Data.Inventory")
+        SaveWorkbookAsTestFile wb, p, 51
+    End If
     Set BuildPhase2InventoryWorkbook = wb
+End Function
+
+Public Function BuildCanonicalInventoryWorkbook(ByVal whId As String, ByVal rootPath As String, Optional ByVal skuList As Variant) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildPhase2InventoryWorkbook(whId, skuList, False)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Data.Inventory.xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalInventoryWorkbook = wb
 End Function
 
 Public Function BuildPhase2InboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
     Set BuildPhase2InboxWorkbook = BuildReceiveInboxWorkbook(stationId)
 End Function
 
-Public Function BuildReceiveInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+Public Function BuildReceiveInboxWorkbook(Optional ByVal stationId As String = "S1", _
+                                          Optional ByVal persistWorkbook As Boolean = True) As Workbook
     Dim wb As Workbook
     Dim report As String
     Dim p As String
@@ -119,12 +144,25 @@ Public Function BuildReceiveInboxWorkbook(Optional ByVal stationId As String = "
     Call modProcessor.EnsureReceiveInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxReceive").ListObjects("tblInboxReceive"), False
 
-    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Receiving." & stationId)
-    SaveWorkbookAsTestFile wb, p, 51
+    If persistWorkbook Then
+        p = BuildUniqueTestWorkbookPath("invSys.Inbox.Receiving." & stationId)
+        SaveWorkbookAsTestFile wb, p, 51
+    End If
     Set BuildReceiveInboxWorkbook = wb
 End Function
 
-Public Function BuildShipInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+Public Function BuildCanonicalReceiveInboxWorkbook(ByVal stationId As String, ByVal rootPath As String) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildReceiveInboxWorkbook(stationId, False)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\invSys.Inbox.Receiving." & stationId & ".xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalReceiveInboxWorkbook = wb
+End Function
+
+Public Function BuildShipInboxWorkbook(Optional ByVal stationId As String = "S1", _
+                                       Optional ByVal persistWorkbook As Boolean = True) As Workbook
     Dim wb As Workbook
     Dim report As String
     Dim p As String
@@ -134,12 +172,25 @@ Public Function BuildShipInboxWorkbook(Optional ByVal stationId As String = "S1"
     Call modProcessor.EnsureShipInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxShip").ListObjects("tblInboxShip"), False
 
-    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Shipping." & stationId)
-    SaveWorkbookAsTestFile wb, p, 51
+    If persistWorkbook Then
+        p = BuildUniqueTestWorkbookPath("invSys.Inbox.Shipping." & stationId)
+        SaveWorkbookAsTestFile wb, p, 51
+    End If
     Set BuildShipInboxWorkbook = wb
 End Function
 
-Public Function BuildProductionInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+Public Function BuildCanonicalShipInboxWorkbook(ByVal stationId As String, ByVal rootPath As String) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildShipInboxWorkbook(stationId, False)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\invSys.Inbox.Shipping." & stationId & ".xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalShipInboxWorkbook = wb
+End Function
+
+Public Function BuildProductionInboxWorkbook(Optional ByVal stationId As String = "S1", _
+                                             Optional ByVal persistWorkbook As Boolean = True) As Workbook
     Dim wb As Workbook
     Dim report As String
     Dim p As String
@@ -149,9 +200,21 @@ Public Function BuildProductionInboxWorkbook(Optional ByVal stationId As String 
     Call modProcessor.EnsureProductionInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxProd").ListObjects("tblInboxProd"), False
 
-    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Production." & stationId)
-    SaveWorkbookAsTestFile wb, p, 51
+    If persistWorkbook Then
+        p = BuildUniqueTestWorkbookPath("invSys.Inbox.Production." & stationId)
+        SaveWorkbookAsTestFile wb, p, 51
+    End If
     Set BuildProductionInboxWorkbook = wb
+End Function
+
+Public Function BuildCanonicalProductionInboxWorkbook(ByVal stationId As String, ByVal rootPath As String) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildProductionInboxWorkbook(stationId, False)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\invSys.Inbox.Production." & stationId & ".xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalProductionInboxWorkbook = wb
 End Function
 
 Public Sub AddCapability(ByVal wb As Workbook, _
@@ -165,6 +228,7 @@ Public Sub AddCapability(ByVal wb As Workbook, _
     Dim lo As ListObject
     Dim r As ListRow
 
+    EnsureUserExists wb, userId
     Set lo = wb.Worksheets("Capabilities").ListObjects("tblCapabilities")
     EnsureTableSheetEditable lo, "tblCapabilities"
     Set r = lo.ListRows.Add
@@ -335,6 +399,19 @@ Public Sub CloseNoSave(ByVal wb As Workbook)
     On Error GoTo 0
 End Sub
 
+Public Sub CloseAndDeleteWorkbook(ByVal wb As Workbook)
+    Dim p As String
+
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    p = wb.FullName
+    wb.Close SaveChanges:=False
+    If Len(p) > 0 Then
+        If Len(Dir$(p)) > 0 Then Kill p
+    End If
+    On Error GoTo 0
+End Sub
+
 Private Function CreateBaseEvent(ByVal eventId As String, _
                                  ByVal eventType As String, _
                                  ByVal whId As String, _
@@ -422,13 +499,35 @@ Private Sub SaveWorkbookAsTestFile(ByVal wb As Workbook, ByVal pathOut As String
     wb.SaveAs Filename:=pathOut, FileFormat:=fileFormat
 End Sub
 
-Private Function BuildUniqueTestWorkbookPath(ByVal baseName As String) As String
-    Dim suffix As String
+Private Sub SaveWorkbookAsCanonicalFile(ByVal wb As Workbook, ByVal pathOut As String, ByVal fileFormat As Long)
+    CloseWorkbookByFullName pathOut
+    On Error Resume Next
+    Kill pathOut
+    On Error GoTo 0
+    wb.SaveAs Filename:=pathOut, FileFormat:=fileFormat
+End Sub
 
-    suffix = Format$(Now, "yyyymmdd_hhnnss") & "_" & Right$(Replace$(CreateObject("Scriptlet.TypeLib").GUID, "}", ""), 8)
-    suffix = Replace$(suffix, "{", "")
-    suffix = Replace$(suffix, "-", "")
-    BuildUniqueTestWorkbookPath = Environ$("TEMP") & "\" & baseName & "." & suffix & ".test.xlsx"
+Private Function BuildUniqueTestWorkbookPath(ByVal baseName As String) As String
+    BuildUniqueTestWorkbookPath = Environ$("TEMP") & "\" & baseName & "." & BuildSafeTestSuffix() & ".test.xlsx"
+End Function
+
+Public Function BuildUniqueTestFolder(ByVal baseName As String) As String
+    Dim tempRoot As String
+
+    tempRoot = Environ$("TEMP")
+    If Right$(tempRoot, 1) = "\" Then
+        BuildUniqueTestFolder = tempRoot & baseName & "_" & BuildSafeTestSuffix()
+    Else
+        BuildUniqueTestFolder = tempRoot & "\" & baseName & "_" & BuildSafeTestSuffix()
+    End If
+    If Len(Dir$(BuildUniqueTestFolder, vbDirectory)) = 0 Then MkDir BuildUniqueTestFolder
+End Function
+
+Private Function EnsureCanonicalFolder(ByVal folderPath As String) As String
+    EnsureCanonicalFolder = folderPath
+    If Trim$(folderPath) = "" Then Exit Function
+    If Len(Dir$(folderPath, vbDirectory)) > 0 Then Exit Function
+    CreateFolderRecursive folderPath
 End Function
 
 Private Sub CloseWorkbookByFullName(ByVal fullNameIn As String)
@@ -475,4 +574,74 @@ Private Sub EnsureTableSheetEditable(ByVal lo As ListObject, ByVal tableName As 
         Err.Raise vbObjectError + 2601, "TestPhase2Helpers.EnsureTableSheetEditable", _
                   "Worksheet '" & lo.Parent.Name & "' is protected and could not be unprotected before writing to " & tableName & "."
     End If
+End Sub
+
+Private Sub EnsureUserExists(ByVal wb As Workbook, ByVal userId As String)
+    Dim lo As ListObject
+    Dim r As ListRow
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+    userId = Trim$(userId)
+    If userId = "" Then Exit Sub
+
+    Set lo = wb.Worksheets("Users").ListObjects("tblUsers")
+    If Not lo.DataBodyRange Is Nothing Then
+        For i = 1 To lo.ListRows.Count
+            If StrComp(CStr(lo.DataBodyRange.Cells(i, lo.ListColumns("UserId").Index).Value), userId, vbTextCompare) = 0 Then Exit Sub
+        Next i
+    End If
+
+    EnsureTableSheetEditable lo, "tblUsers"
+    Set r = lo.ListRows.Add
+    r.Range.Cells(1, lo.ListColumns("UserId").Index).Value = userId
+    r.Range.Cells(1, lo.ListColumns("DisplayName").Index).Value = userId
+    r.Range.Cells(1, lo.ListColumns("PinHash").Index).Value = ""
+    r.Range.Cells(1, lo.ListColumns("Status").Index).Value = "Active"
+    r.Range.Cells(1, lo.ListColumns("ValidFrom").Index).Value = ""
+    r.Range.Cells(1, lo.ListColumns("ValidTo").Index).Value = ""
+End Sub
+
+Private Function BuildSafeTestSuffix() As String
+    Dim token As String
+
+    token = Format$(Now, "yyyymmdd_hhnnss") & "_" & Right$(SanitizePathToken(CreateGuidToken()), 8)
+    BuildSafeTestSuffix = SanitizePathToken(token)
+End Function
+
+Private Function CreateGuidToken() As String
+    On Error Resume Next
+    CreateGuidToken = CreateObject("Scriptlet.TypeLib").GUID
+    On Error GoTo 0
+    If CreateGuidToken = "" Then CreateGuidToken = Format$(Timer * 1000, "00000000")
+End Function
+
+Private Function SanitizePathToken(ByVal valueIn As String) As String
+    Dim i As Long
+    Dim ch As String
+
+    valueIn = Replace$(valueIn, Chr$(0), "")
+    For i = 1 To Len(valueIn)
+        ch = Mid$(valueIn, i, 1)
+        If ch Like "[A-Za-z0-9_]" Then SanitizePathToken = SanitizePathToken & ch
+    Next i
+End Function
+
+Private Sub CreateFolderRecursive(ByVal folderPath As String)
+    Dim parentPath As String
+    Dim sepPos As Long
+
+    folderPath = Trim$(folderPath)
+    If folderPath = "" Then Exit Sub
+    If Len(Dir$(folderPath, vbDirectory)) > 0 Then Exit Sub
+    If Right$(folderPath, 1) = "\" Then folderPath = Left$(folderPath, Len(folderPath) - 1)
+
+    sepPos = InStrRev(folderPath, "\")
+    If sepPos > 0 Then
+        parentPath = Left$(folderPath, sepPos - 1)
+        If Right$(parentPath, 1) = ":" Then parentPath = parentPath & "\"
+        If parentPath <> "" And Len(Dir$(parentPath, vbDirectory)) = 0 Then CreateFolderRecursive parentPath
+    End If
+
+    If Len(Dir$(folderPath, vbDirectory)) = 0 Then MkDir folderPath
 End Sub

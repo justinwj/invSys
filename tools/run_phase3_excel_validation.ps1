@@ -52,11 +52,19 @@ function Add-TestWrappers {
     )
 
     $cm = $BootstrapComponent.CodeModule
-    foreach ($fn in $TargetFunctions) {
-        $wrapper = "Run_" + ($fn -replace "[^A-Za-z0-9_]", "_")
-        $line = "Public Function $wrapper() As Long: $wrapper = $fn(): End Function"
+    $wrappers = @()
+    for ($i = 0; $i -lt $TargetFunctions.Count; $i++) {
+        $fn = $TargetFunctions[$i]
+        $wrapper = "RunT" + ($i + 1)
+        $line = @"
+Public Function $wrapper() As Long
+$wrapper = Application.Run("$fn")
+End Function
+"@
         $cm.AddFromString($line)
+        $wrappers += $wrapper
     }
+    return ,$wrappers
 }
 
 $repo = (Resolve-Path $RepoRoot).Path
@@ -83,10 +91,14 @@ try {
         (Join-Path $repo "src/Core/Modules/modRoleUiAccess.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modReceivingEventCreator.bas"),
+        (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
+        (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
         (Join-Path $repo "tests/unit/TestCoreItemSearch.bas"),
         (Join-Path $repo "tests/unit/TestCoreRoleEventWriter.bas"),
-        (Join-Path $repo "tests/unit/TestCoreRoleUiAccess.bas")
+        (Join-Path $repo "tests/unit/TestCoreRoleUiAccess.bas"),
+        (Join-Path $repo "tests/unit/TestPhase3RoleFlows.bas")
     )
 
     $allTests = @(
@@ -101,7 +113,10 @@ try {
         "TestCoreItemSearch.TestAnyTextMatchesSearch_MatchesAcrossFields",
         "TestCoreItemSearch.TestIdentifiersMatch_UsesTokenOverlap",
         "TestCoreItemSearch.TestResolveSearchCaption_ReturnsRoleSpecificText",
-        "TestCoreItemSearch.TestShouldDefaultShippableForRole_UsesRoleDefaults"
+        "TestCoreItemSearch.TestShouldDefaultShippableForRole_UsesRoleDefaults",
+        "TestPhase3RoleFlows.TestReceivingRoleFlow_QueuesAndProcessesEvent",
+        "TestPhase3RoleFlows.TestShippingRoleFlow_QueuesAndProcessesEvent",
+        "TestPhase3RoleFlows.TestProductionRoleFlow_QueuesAndProcessesEvent"
     )
 
     if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }
@@ -115,13 +130,14 @@ try {
         [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
     }
 
-    Add-TestWrappers -BootstrapComponent $bootstrap -TargetFunctions $allTests
+    $wrapperNames = Add-TestWrappers -BootstrapComponent $bootstrap -TargetFunctions $allTests
     [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
     $harness.SaveAs($harnessPath, 52)
 
     $testRows = @()
-    foreach ($name in $allTests) {
-        $wrapperName = "Run_" + ($name -replace "[^A-Za-z0-9_]", "_")
+    for ($i = 0; $i -lt $allTests.Count; $i++) {
+        $name = $allTests[$i]
+        $wrapperName = $wrapperNames[$i]
         $passed = Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName $wrapperName
         $testRows += [pscustomobject]@{
             TestName = $name

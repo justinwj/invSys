@@ -294,6 +294,29 @@ ErrHandler:
     DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
 End Sub
 
+Public Function QueueReceiveEventsFromCurrentWorkbook(ByRef errorMessage As String) As Boolean
+    Dim wsAgg As Worksheet
+    Dim agg As ListObject
+
+    If Not modRoleUiAccess.CanCurrentUserPerformCapability("RECEIVE_POST", "", "", "", errorMessage) Then Exit Function
+
+    Set wsAgg = SheetExists("ReceivedTally")
+    If wsAgg Is Nothing Then
+        errorMessage = "ReceivedTally sheet not found."
+        Exit Function
+    End If
+
+    On Error Resume Next
+    Set agg = wsAgg.ListObjects("AggregateReceived")
+    On Error GoTo 0
+    If agg Is Nothing Then
+        errorMessage = "AggregateReceived table not found."
+        Exit Function
+    End If
+
+    QueueReceiveEventsFromCurrentWorkbook = QueueReceiveEventsFromAggregate(agg, errorMessage)
+End Function
+
 Private Sub RefreshReceivingUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
     modRoleUiAccess.ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"

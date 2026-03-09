@@ -1,7 +1,7 @@
 # Phase 3 VBA Test Results
 
-- Date: 2026-03-09 01:13:51
-- Passed: 12
+- Date: 2026-03-09 02:04:51
+- Passed: 15
 - Failed: 0
 
 | Test | Result |
@@ -18,3 +18,6 @@
 | TestCoreItemSearch.TestIdentifiersMatch_UsesTokenOverlap | PASS |
 | TestCoreItemSearch.TestResolveSearchCaption_ReturnsRoleSpecificText | PASS |
 | TestCoreItemSearch.TestShouldDefaultShippableForRole_UsesRoleDefaults | PASS |
+| TestPhase3RoleFlows.TestReceivingRoleFlow_QueuesAndProcessesEvent | PASS |
+| TestPhase3RoleFlows.TestShippingRoleFlow_QueuesAndProcessesEvent | PASS |
+| TestPhase3RoleFlows.TestProductionRoleFlow_QueuesAndProcessesEvent | PASS |

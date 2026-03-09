@@ -37,8 +37,8 @@
 - [ ] Phase 6 complete: Polish and Release
 
 ### Key Architecture Deliverables
-- [ ] Core.ItemSearch module implemented (shared normalization/query/filter logic)
-- [ ] Role-specific item search forms implemented (`ufReceivingItemSearch`, `ufShippingItemSearch`, `ufProductionItemSearch`, `ufAdminItemSearch`)
+- [x] Core.ItemSearch module implemented (shared normalization/query/filter logic)
+- [x] Role-specific item search forms implemented (`ufReceivingItemSearch`, `ufShippingItemSearch`, `ufProductionItemSearch`, `ufAdminItemSearch`)
 - [x] Processor idempotency verified with duplicate-event test
 - [x] Schema self-heal validation verified across required workbooks
 
@@ -548,24 +548,24 @@ sequenceDiagram
 ### Phase 3: Role UI
 **Goal:** Receiving, Shipping, Production UIs
 
-**Status note:** Phase 3 is in progress. Current implementation uses worksheet-driven role UI/buttons plus inbox event creation, capability gating, and shared search logic. RibbonX packaging and role-specific search form split remain pending.
+**Status note:** Phase 3 is in progress. Current implementation uses worksheet-driven role UI/buttons plus inbox event creation, capability gating, shared search logic, role-specific search form shells/wiring, and isolated end-to-end role-flow coverage. RibbonX packaging remains pending.
 
 **Tasks:**
 - [ ] Build RibbonX XML for all role XLAMs
 - [x] Build Receiving.UI + EventCreator
 - [x] Build Shipping.UI + EventCreator
 - [x] Build Production.UI + EventCreator
-- [ ] Build role-specific item search forms for each role XLAM
+- [x] Build role-specific item search forms for each role XLAM
 - [x] Build shared `Core.ItemSearch` normalization/query/match logic
 - [x] Build worksheet-button capability gating for role posting actions
 
 **Tests:**
 - [x] Test: Role buttons are disabled/hidden when required capability is missing
 - [x] Test: Each role UI writes valid inbox events with required fields and normalized values
-- [ ] Test: UI -> Create events -> Process -> Verify domain logs for receiving/shipping/production
+- [x] Test: UI -> Create events -> Process -> Verify domain logs for receiving/shipping/production
 
 **Execution evidence:**
-- [x] Phase 3 isolated Excel validation passed on March 9, 2026: `10 passed, 0 failed` in `tests/unit/phase3_test_results.md`
+- [x] Phase 3 isolated Excel validation passed on March 9, 2026: `15 passed, 0 failed` in `tests/unit/phase3_test_results.md`
 
 **Deliverables:**
 - [ ] All role XLAMs functional with Ribbon controls
