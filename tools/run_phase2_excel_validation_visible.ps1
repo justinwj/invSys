@@ -60,7 +60,9 @@ try {
     $tests = @(
         "Run_TestCoreLockManager_TestAcquireReleaseLock_Lifecycle",
         "Run_TestInventoryApply_TestApplyReceive_ValidEvent",
-        "Run_TestCoreProcessor_TestRunBatch_ProcessesInboxRow"
+        "Run_TestCoreProcessor_TestRunBatch_ProcessesInboxRow",
+        "Run_TestCoreProcessor_TestRunBatch_ProcessesShipRow",
+        "Run_TestCoreProcessor_TestRunBatch_ProcessesProdCompleteRow"
     )
 
     foreach ($testName in $tests) {

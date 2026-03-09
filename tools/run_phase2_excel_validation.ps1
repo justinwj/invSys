@@ -229,8 +229,15 @@ try {
         "TestInventoryApply.TestApplyReceive_ValidEvent",
         "TestInventoryApply.TestApplyReceive_InvalidSKU",
         "TestInventoryApply.TestApplyReceive_Duplicate",
+        "TestInventoryApply.TestApplyReceive_ProtectedSheetReturnsClearError",
+        "TestInventoryApply.TestApplyShip_MultiLineEvent",
+        "TestInventoryApply.TestApplyProdConsume_MultiLineEvent",
+        "TestInventoryApply.TestApplyProdComplete_MultiLineEvent",
         "TestCoreProcessor.TestRunBatch_ProcessesInboxRow",
-        "TestCoreProcessor.TestRunBatch_DuplicateMarkedSkipDup"
+        "TestCoreProcessor.TestRunBatch_DuplicateMarkedSkipDup",
+        "TestCoreProcessor.TestRunBatch_ProcessesShipRow",
+        "TestCoreProcessor.TestRunBatch_ProcessesProdConsumeRow",
+        "TestCoreProcessor.TestRunBatch_ProcessesProdCompleteRow"
     )
 
     if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }

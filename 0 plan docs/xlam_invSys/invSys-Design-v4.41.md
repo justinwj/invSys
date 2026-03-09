@@ -519,30 +519,30 @@ sequenceDiagram
 ### Phase 2: Event Processing
 **Goal:** Processor + domain event application for Receiving, Shipping, and Production
 
-**Spec correction(3/8/26):** Phase 2 scope includes processor/domain handling for `RECEIVE`, `SHIP`, and `PROD`. The execution evidence currently recorded below reflects the implemented receive-path validation from the completed phase 2 workstream; shipping/production parity remains a follow-up implementation gap against the corrected scope definition.
+**Spec correction (3/8/26):** Phase 2 scope includes processor/domain handling for `RECEIVE`, `SHIP`, and `PROD`. This corrected scope is now implemented and validated in the phase 2.1 follow-through pass.
 
 **Tasks:**
 - [x] Build Core.LockManager module
 - [x] Build Core.Processor batch loop
 - [x] Build InventoryDomain.Apply (Receive events)
-- [ ] Build InventoryDomain.Apply (Shipping events)
-- [ ] Build InventoryDomain.Apply (Production events)
+- [x] Build InventoryDomain.Apply (Shipping events)
+- [x] Build InventoryDomain.Apply (Production events)
 - [x] Create sample `invSys.Inbox.Receiving.S1.xlsb` workbook
-- [ ] Create sample `invSys.Inbox.Shipping.S1.xlsb` workbook
-- [ ] Create sample `invSys.Inbox.Production.S1.xlsb` workbook
+- [x] Create sample `invSys.Inbox.Shipping.S1.xlsb` workbook
+- [x] Create sample `invSys.Inbox.Production.S1.xlsb` workbook
 - [x] Create sample `WH1.invSys.Data.Inventory.xlsb` workbook
 
 **Tests:**
 - [x] Test: AcquireLock/ReleaseLock + heartbeat lifecycle (`30s heartbeat`, `3 min expiry`)
 - [x] Test: Receiving inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
 - [x] Test: Duplicate EventID is marked `SKIP_DUP` and does not create duplicate inventory rows
-- [ ] Test: Shipping inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
-- [ ] Test: Production inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
+- [x] Test: Shipping inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
+- [x] Test: Production inbox row -> Run processor -> row appears in `tblInventoryLog` and `tblAppliedEvents`
 
 **Deliverables:**
-- [ ] Working end-to-end event processing for Receiving, Shipping, and Production
+- [x] Working end-to-end event processing for Receiving, Shipping, and Production
 
-**Execution Evidence:** `tests/unit/phase2_test_results.md` (21 passed, 0 failed on 2026-03-09)
+**Execution Evidence:** `tests/unit/phase2_test_results.md` (28 passed, 0 failed at 2026-03-08 23:39:31 local time)
 
 ---
 ### Phase 3: Role UI

@@ -6,14 +6,22 @@ Public Const INBOX_STATUS_PROCESSED As String = "PROCESSED"
 Public Const INBOX_STATUS_SKIP_DUP As String = "SKIP_DUP"
 Public Const INBOX_STATUS_POISON As String = "POISON"
 
+Private Const SHEET_INBOX_RECEIVE As String = "InboxReceive"
+Private Const SHEET_INBOX_SHIP As String = "InboxShip"
+Private Const SHEET_INBOX_PROD As String = "InboxProd"
+
+Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
+Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
+Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
+
 Public Function RunBatch(Optional ByVal warehouseId As String = "", _
                          Optional ByVal batchSize As Long = 0, _
                          Optional ByRef report As String = "") As Long
     On Error GoTo FailRun
 
     Dim inventoryWb As Workbook
-    Dim inboxWorkbooks As Collection
-    Dim inboxWb As Variant
+    Dim inboxTargets As Collection
+    Dim target As Variant
     Dim loInbox As ListObject
     Dim rowIndex As Long
     Dim runId As String
@@ -28,6 +36,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim errorMessage As String
     Dim evt As Object
     Dim lockHeld As Boolean
+    Dim capability As String
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -64,11 +73,11 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     lockHeld = True
     lastHeartbeat = Now
 
-    Set inboxWorkbooks = ResolveReceiveInboxWorkbooks()
-    For Each inboxWb In inboxWorkbooks
-        If Not EnsureReceiveInboxSchema(inboxWb) Then GoTo ContinueInbox
+    Set inboxTargets = ResolveInboxTargets()
+    For Each target In inboxTargets
+        If Not EnsureInboxTargetSchema(target("Workbook"), CStr(target("TableName")), report) Then GoTo ContinueInbox
 
-        Set loInbox = FindListObjectByNameProcessor(inboxWb, "tblInboxReceive")
+        Set loInbox = FindListObjectByNameProcessor(target("Workbook"), CStr(target("TableName")))
         If loInbox Is Nothing Then GoTo ContinueInbox
         If loInbox.DataBodyRange Is Nothing Then GoTo ContinueInbox
 
@@ -76,15 +85,22 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             If RunBatch >= batchSize Then Exit For
             If Not IsProcessableInboxRow(loInbox, rowIndex, warehouseId) Then GoTo ContinueRow
 
-            Set evt = BuildInboxEvent(loInbox, rowIndex, inboxWb.Name)
+            Set evt = BuildInboxEvent(loInbox, rowIndex, target("Workbook").Name, CStr(target("TableName")), CStr(target("DefaultEventType")))
             If evt Is Nothing Then
                 UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT", "Unable to read inbox row."
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
 
-            If Not modAuth.CanPerform("RECEIVE_POST", GetDictionaryString(evt, "UserId"), GetDictionaryString(evt, "WarehouseId"), GetDictionaryString(evt, "StationId"), "PROCESSOR_VALIDATE", GetDictionaryString(evt, "EventID")) Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks RECEIVE_POST capability."
+            capability = CapabilityForEventType(GetDictionaryString(evt, "EventType"))
+            If capability = "" Then
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType."
+                poisonCount = poisonCount + 1
+                GoTo MaybeHeartbeat
+            End If
+
+            If Not modAuth.CanPerform(capability, GetDictionaryString(evt, "UserId"), GetDictionaryString(evt, "WarehouseId"), GetDictionaryString(evt, "StationId"), "PROCESSOR_VALIDATE", GetDictionaryString(evt, "EventID")) Then
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks " & capability & " capability."
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
@@ -93,7 +109,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             errorCode = vbNullString
             errorMessage = vbNullString
 
-            If modInventoryApply.ApplyReceiveEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
+            If modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
                 Select Case UCase$(statusOut)
                     Case APPLY_STATUS_APPLIED
                         UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED
@@ -121,7 +137,7 @@ ContinueRow:
 
         If RunBatch >= batchSize Then Exit For
 ContinueInbox:
-    Next inboxWb
+    Next target
 
     report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
 
@@ -136,6 +152,37 @@ End Function
 
 Public Function EnsureReceiveInboxSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                          Optional ByRef report As String = "") As Boolean
+    EnsureReceiveInboxSchema = EnsureInboxSchemaCore(targetWb, report, SHEET_INBOX_RECEIVE, TABLE_INBOX_RECEIVE, EVENT_TYPE_RECEIVE)
+End Function
+
+Public Function EnsureShipInboxSchema(Optional ByVal targetWb As Workbook = Nothing, _
+                                      Optional ByRef report As String = "") As Boolean
+    EnsureShipInboxSchema = EnsureInboxSchemaCore(targetWb, report, SHEET_INBOX_SHIP, TABLE_INBOX_SHIP, EVENT_TYPE_SHIP)
+End Function
+
+Public Function EnsureProductionInboxSchema(Optional ByVal targetWb As Workbook = Nothing, _
+                                            Optional ByRef report As String = "") As Boolean
+    EnsureProductionInboxSchema = EnsureInboxSchemaCore(targetWb, report, SHEET_INBOX_PROD, TABLE_INBOX_PROD, EVENT_TYPE_PROD_CONSUME)
+End Function
+
+Private Function EnsureInboxTargetSchema(ByVal targetWb As Workbook, ByVal tableName As String, ByRef report As String) As Boolean
+    Select Case UCase$(tableName)
+        Case UCase$(TABLE_INBOX_RECEIVE)
+            EnsureInboxTargetSchema = EnsureReceiveInboxSchema(targetWb, report)
+        Case UCase$(TABLE_INBOX_SHIP)
+            EnsureInboxTargetSchema = EnsureShipInboxSchema(targetWb, report)
+        Case UCase$(TABLE_INBOX_PROD)
+            EnsureInboxTargetSchema = EnsureProductionInboxSchema(targetWb, report)
+        Case Else
+            report = "Unknown inbox table: " & tableName
+    End Select
+End Function
+
+Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
+                                       ByRef report As String, _
+                                       ByVal sheetName As String, _
+                                       ByVal tableName As String, _
+                                       ByVal defaultEventType As String) As Boolean
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
@@ -147,7 +194,7 @@ Public Function EnsureReceiveInboxSchema(Optional ByVal targetWb As Workbook = N
     Dim i As Long
 
     If targetWb Is Nothing Then
-        Set wb = ResolveSingleReceiveInboxWorkbook()
+        Set wb = ResolveSingleInboxWorkbook(tableName)
     Else
         Set wb = targetWb
     End If
@@ -156,14 +203,14 @@ Public Function EnsureReceiveInboxSchema(Optional ByVal targetWb As Workbook = N
         Exit Function
     End If
 
-    headers = Array("EventID", "ParentEventId", "UndoOfEventId", "CreatedAtUTC", "WarehouseId", "StationId", _
-                    "UserId", "SKU", "Qty", "Location", "Note", "Status", "RetryCount", "ErrorCode", _
+    headers = Array("EventID", "ParentEventId", "UndoOfEventId", "EventType", "CreatedAtUTC", "WarehouseId", "StationId", _
+                    "UserId", "SKU", "Qty", "Location", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
                     "ErrorMessage", "FailedAtUTC")
 
-    Set ws = EnsureWorksheetProcessor(wb, "InboxReceive")
+    Set ws = EnsureWorksheetProcessor(wb, sheetName)
     SetSheetProtectionProcessor ws, False
     On Error Resume Next
-    Set lo = ws.ListObjects("tblInboxReceive")
+    Set lo = ws.ListObjects(tableName)
     On Error GoTo 0
 
     If lo Is Nothing Then
@@ -174,7 +221,7 @@ Public Function EnsureReceiveInboxSchema(Optional ByVal targetWb As Workbook = N
 
         Set dataRange = ws.Range(startCell, startCell.Offset(1, UBound(headers) - LBound(headers)))
         Set lo = ws.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
-        lo.Name = "tblInboxReceive"
+        lo.Name = tableName
     End If
 
     For i = LBound(headers) To UBound(headers)
@@ -182,8 +229,9 @@ Public Function EnsureReceiveInboxSchema(Optional ByVal targetWb As Workbook = N
     Next i
 
     EnsureTableHasRowProcessor lo
+    EnsureInboxDefaultEventType lo, defaultEventType
     report = "OK"
-    EnsureReceiveInboxSchema = True
+    EnsureInboxSchemaCore = True
     SetSheetProtectionProcessor ws, True
     Exit Function
 
@@ -191,8 +239,20 @@ FailEnsure:
     On Error Resume Next
     If Not ws Is Nothing Then SetSheetProtectionProcessor ws, True
     On Error GoTo 0
-    report = "EnsureReceiveInboxSchema failed: " & Err.Description
+    report = "EnsureInboxSchema failed: " & Err.Description
 End Function
+
+Private Sub EnsureInboxDefaultEventType(ByVal lo As ListObject, ByVal defaultEventType As String)
+    Dim i As Long
+    Dim currentValue As String
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    For i = 1 To lo.ListRows.Count
+        currentValue = SafeTrimProcessor(GetCellByColumnProcessor(lo, i, "EventType"))
+        If currentValue = "" Then SetCellByColumnProcessor lo, i, "EventType", defaultEventType
+    Next i
+End Sub
 
 Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report As String) As Boolean
     If Not modConfig.LoadConfig(warehouseId, "") Then
@@ -208,32 +268,66 @@ Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report A
     EnsurePhase2Context = True
 End Function
 
-Private Function ResolveReceiveInboxWorkbooks() As Collection
+Private Function ResolveInboxTargets() As Collection
     Dim wb As Workbook
-    Set ResolveReceiveInboxWorkbooks = New Collection
+    Dim seen As Object
+
+    Set ResolveInboxTargets = New Collection
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbTextCompare
 
     For Each wb In Application.Workbooks
-        If IsReceiveInboxWorkbookName(wb.Name) Then
-            ResolveReceiveInboxWorkbooks.Add wb
-        End If
-    Next wb
-
-    If ResolveReceiveInboxWorkbooks.Count > 0 Then Exit Function
-
-    For Each wb In Application.Workbooks
-        If WorkbookHasListObjectProcessor(wb, "tblInboxReceive") Then
-            ResolveReceiveInboxWorkbooks.Add wb
-        End If
+        AddInboxTarget ResolveInboxTargets, seen, wb, TABLE_INBOX_RECEIVE, SHEET_INBOX_RECEIVE, EVENT_TYPE_RECEIVE, _
+                       IsReceiveInboxWorkbookName(wb.Name) Or WorkbookHasListObjectProcessor(wb, TABLE_INBOX_RECEIVE)
+        AddInboxTarget ResolveInboxTargets, seen, wb, TABLE_INBOX_SHIP, SHEET_INBOX_SHIP, EVENT_TYPE_SHIP, _
+                       IsShipInboxWorkbookName(wb.Name) Or WorkbookHasListObjectProcessor(wb, TABLE_INBOX_SHIP)
+        AddInboxTarget ResolveInboxTargets, seen, wb, TABLE_INBOX_PROD, SHEET_INBOX_PROD, EVENT_TYPE_PROD_CONSUME, _
+                       IsProductionInboxWorkbookName(wb.Name) Or WorkbookHasListObjectProcessor(wb, TABLE_INBOX_PROD)
     Next wb
 End Function
 
-Private Function ResolveSingleReceiveInboxWorkbook() As Workbook
-    Dim workbooks As Collection
-    Set workbooks = ResolveReceiveInboxWorkbooks()
-    If workbooks.Count > 0 Then Set ResolveSingleReceiveInboxWorkbook = workbooks(1)
+Private Sub AddInboxTarget(ByVal targets As Collection, _
+                           ByVal seen As Object, _
+                           ByVal wb As Workbook, _
+                           ByVal tableName As String, _
+                           ByVal sheetName As String, _
+                           ByVal defaultEventType As String, _
+                           ByVal shouldAdd As Boolean)
+    Dim target As Object
+    Dim key As String
+
+    If Not shouldAdd Then Exit Sub
+    key = wb.Name & "|" & tableName
+    If seen.Exists(key) Then Exit Sub
+
+    Set target = CreateObject("Scripting.Dictionary")
+    target.CompareMode = vbTextCompare
+    target.Add "Workbook", wb
+    target.Add "TableName", tableName
+    target.Add "SheetName", sheetName
+    target.Add "DefaultEventType", defaultEventType
+    targets.Add target
+    seen.Add key, True
+End Sub
+
+Private Function ResolveSingleInboxWorkbook(ByVal tableName As String) As Workbook
+    Dim targets As Collection
+    Dim target As Variant
+
+    Set targets = ResolveInboxTargets()
+    For Each target In targets
+        If StrComp(CStr(target("TableName")), tableName, vbTextCompare) = 0 Then
+            Set ResolveSingleInboxWorkbook = target("Workbook")
+            Exit Function
+        End If
+    Next target
 End Function
 
-Private Function BuildInboxEvent(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal workbookName As String) As Object
+Private Function BuildInboxEvent(ByVal lo As ListObject, _
+                                 ByVal rowIndex As Long, _
+                                 ByVal workbookName As String, _
+                                 ByVal tableName As String, _
+                                 ByVal defaultEventType As String) As Object
     Dim evt As Object
     If lo Is Nothing Then Exit Function
     If lo.DataBodyRange Is Nothing Then Exit Function
@@ -243,6 +337,7 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, ByVal rowIndex As Long,
     evt("EventID") = GetCellByColumnProcessor(lo, rowIndex, "EventID")
     evt("ParentEventId") = GetCellByColumnProcessor(lo, rowIndex, "ParentEventId")
     evt("UndoOfEventId") = GetCellByColumnProcessor(lo, rowIndex, "UndoOfEventId")
+    evt("EventType") = GetInboxEventType(lo, rowIndex, defaultEventType)
     evt("CreatedAtUTC") = GetCellByColumnProcessor(lo, rowIndex, "CreatedAtUTC")
     evt("WarehouseId") = GetCellByColumnProcessor(lo, rowIndex, "WarehouseId")
     evt("StationId") = GetCellByColumnProcessor(lo, rowIndex, "StationId")
@@ -251,8 +346,14 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, ByVal rowIndex As Long,
     evt("Qty") = GetCellByColumnProcessor(lo, rowIndex, "Qty")
     evt("Location") = GetCellByColumnProcessor(lo, rowIndex, "Location")
     evt("Note") = GetCellByColumnProcessor(lo, rowIndex, "Note")
-    evt("SourceInbox") = workbookName & ":tblInboxReceive"
+    evt("PayloadJson") = GetCellByColumnProcessor(lo, rowIndex, "PayloadJson")
+    evt("SourceInbox") = workbookName & ":" & tableName
     Set BuildInboxEvent = evt
+End Function
+
+Private Function GetInboxEventType(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal defaultEventType As String) As String
+    GetInboxEventType = SafeTrimProcessor(GetCellByColumnProcessor(lo, rowIndex, "EventType"))
+    If GetInboxEventType = "" Then GetInboxEventType = defaultEventType
 End Function
 
 Private Function IsProcessableInboxRow(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal warehouseId As String) As Boolean
@@ -272,6 +373,17 @@ Private Function IsProcessableInboxRow(ByVal lo As ListObject, ByVal rowIndex As
     End If
 
     IsProcessableInboxRow = True
+End Function
+
+Private Function CapabilityForEventType(ByVal eventType As String) As String
+    Select Case UCase$(SafeTrimProcessor(eventType))
+        Case EVENT_TYPE_RECEIVE
+            CapabilityForEventType = "RECEIVE_POST"
+        Case EVENT_TYPE_SHIP
+            CapabilityForEventType = "SHIP_POST"
+        Case EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE
+            CapabilityForEventType = "PROD_POST"
+    End Select
 End Function
 
 Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal newStatus As String, _
@@ -314,6 +426,22 @@ Private Function IsReceiveInboxWorkbookName(ByVal wbName As String) As Boolean
     IsReceiveInboxWorkbookName = (n Like "invsys.inbox.receiving.*.xlsb") Or _
                                  (n Like "invsys.inbox.receiving.*.xlsx") Or _
                                  (n Like "invsys.inbox.receiving.*.xlsm")
+End Function
+
+Private Function IsShipInboxWorkbookName(ByVal wbName As String) As Boolean
+    Dim n As String
+    n = LCase$(wbName)
+    IsShipInboxWorkbookName = (n Like "invsys.inbox.shipping.*.xlsb") Or _
+                              (n Like "invsys.inbox.shipping.*.xlsx") Or _
+                              (n Like "invsys.inbox.shipping.*.xlsm")
+End Function
+
+Private Function IsProductionInboxWorkbookName(ByVal wbName As String) As Boolean
+    Dim n As String
+    n = LCase$(wbName)
+    IsProductionInboxWorkbookName = (n Like "invsys.inbox.production.*.xlsb") Or _
+                                    (n Like "invsys.inbox.production.*.xlsx") Or _
+                                    (n Like "invsys.inbox.production.*.xlsm")
 End Function
 
 Private Sub EnsureListColumnProcessor(ByVal lo As ListObject, ByVal columnName As String)

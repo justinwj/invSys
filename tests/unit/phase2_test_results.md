@@ -1,7 +1,7 @@
 # Phase 2 VBA Test Results
 
-- Date: 2026-03-08 22:20:08
-- Passed: 21
+- Date: 2026-03-08 23:39:31
+- Passed: 28
 - Failed: 0
 
 | Test | Result |
@@ -25,5 +25,12 @@
 | TestInventoryApply.TestApplyReceive_ValidEvent | PASS |
 | TestInventoryApply.TestApplyReceive_InvalidSKU | PASS |
 | TestInventoryApply.TestApplyReceive_Duplicate | PASS |
+| TestInventoryApply.TestApplyReceive_ProtectedSheetReturnsClearError | PASS |
+| TestInventoryApply.TestApplyShip_MultiLineEvent | PASS |
+| TestInventoryApply.TestApplyProdConsume_MultiLineEvent | PASS |
+| TestInventoryApply.TestApplyProdComplete_MultiLineEvent | PASS |
 | TestCoreProcessor.TestRunBatch_ProcessesInboxRow | PASS |
 | TestCoreProcessor.TestRunBatch_DuplicateMarkedSkipDup | PASS |
+| TestCoreProcessor.TestRunBatch_ProcessesShipRow | PASS |
+| TestCoreProcessor.TestRunBatch_ProcessesProdConsumeRow | PASS |
+| TestCoreProcessor.TestRunBatch_ProcessesProdCompleteRow | PASS |

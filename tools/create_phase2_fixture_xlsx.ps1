@@ -51,9 +51,11 @@ try {
     $excel.EnableEvents = $false
 
     $inventoryPath = Join-Path (Resolve-Path $OutputDir) "WH1.invSys.Data.Inventory.xlsb"
-    $inboxPath = Join-Path (Resolve-Path $OutputDir) "invSys.Inbox.Receiving.S1.xlsb"
+    $receivePath = Join-Path (Resolve-Path $OutputDir) "invSys.Inbox.Receiving.S1.xlsb"
+    $shipPath = Join-Path (Resolve-Path $OutputDir) "invSys.Inbox.Shipping.S1.xlsb"
+    $prodPath = Join-Path (Resolve-Path $OutputDir) "invSys.Inbox.Production.S1.xlsb"
 
-    foreach ($path in @($inventoryPath, $inboxPath)) {
+    foreach ($path in @($inventoryPath, $receivePath, $shipPath, $prodPath)) {
         if (Test-Path $path) { Remove-Item $path -Force }
     }
 
@@ -84,7 +86,9 @@ try {
         $wsSku.Name = "SkuCatalog"
         Add-Table -Worksheet $wsSku -TableName "tblSkuCatalog" -Headers @("SKU") -Rows @(
             @("SKU-001"),
-            @("SKU-002")
+            @("SKU-002"),
+            @("SKU-COMP"),
+            @("SKU-FG")
         )
 
         $wbInventory.SaveAs($inventoryPath, 50)
@@ -94,26 +98,58 @@ try {
         Release-ComObject $wbInventory
     }
 
+    $inboxHeaders = @(
+        "EventID", "ParentEventId", "UndoOfEventId", "EventType", "CreatedAtUTC", "WarehouseId", "StationId",
+        "UserId", "SKU", "Qty", "Location", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", "ErrorMessage", "FailedAtUTC"
+    )
+
     $wbInbox = $excel.Workbooks.Add()
     try {
         $wsInbox = $wbInbox.Worksheets(1)
         $wsInbox.Name = "InboxReceive"
-        Add-Table -Worksheet $wsInbox -TableName "tblInboxReceive" -Headers @(
-            "EventID", "ParentEventId", "UndoOfEventId", "CreatedAtUTC", "WarehouseId", "StationId",
-            "UserId", "SKU", "Qty", "Location", "Note", "Status", "RetryCount", "ErrorCode", "ErrorMessage", "FailedAtUTC"
-        ) -Rows @(
-            @("EVT-FIXTURE-001", "", "", (Get-Date).ToUniversalTime(), "WH1", "S1", "user1", "SKU-001", 5, "A1", "fixture row", "NEW", 0, "", "", "")
+        Add-Table -Worksheet $wsInbox -TableName "tblInboxReceive" -Headers $inboxHeaders -Rows @(
+            @("EVT-FIXTURE-001", "", "", "RECEIVE", (Get-Date).ToUniversalTime(), "WH1", "S1", "user1", "SKU-001", 5, "A1", "fixture row", "", "NEW", 0, "", "", "")
         )
-        $wbInbox.SaveAs($inboxPath, 50)
+        $wbInbox.SaveAs($receivePath, 50)
     }
     finally {
         $wbInbox.Close($true)
         Release-ComObject $wbInbox
     }
 
+    $wbShip = $excel.Workbooks.Add()
+    try {
+        $wsShip = $wbShip.Worksheets(1)
+        $wsShip.Name = "InboxShip"
+        Add-Table -Worksheet $wsShip -TableName "tblInboxShip" -Headers $inboxHeaders -Rows @(
+            @("EVT-SHIP-FIXTURE-001", "", "", "SHIP", (Get-Date).ToUniversalTime(), "WH1", "S1", "user1", "", "", "", "fixture ship row", '[{"Row":101,"SKU":"SKU-001","Qty":2,"Location":"DOCK","Note":"fixture ship"}]', "NEW", 0, "", "", "")
+        )
+        $wbShip.SaveAs($shipPath, 50)
+    }
+    finally {
+        $wbShip.Close($true)
+        Release-ComObject $wbShip
+    }
+
+    $wbProd = $excel.Workbooks.Add()
+    try {
+        $wsProd = $wbProd.Worksheets(1)
+        $wsProd.Name = "InboxProd"
+        Add-Table -Worksheet $wsProd -TableName "tblInboxProd" -Headers $inboxHeaders -Rows @(
+            @("EVT-PROD-FIXTURE-001", "", "", "PROD_COMPLETE", (Get-Date).ToUniversalTime(), "WH1", "S1", "user1", "", "", "", "fixture prod row", '[{"Row":201,"SKU":"SKU-FG","Qty":1,"Location":"FG","Note":"fixture prod","IoType":"COMPLETE"}]', "NEW", 0, "", "", "")
+        )
+        $wbProd.SaveAs($prodPath, 50)
+    }
+    finally {
+        $wbProd.Close($true)
+        Release-ComObject $wbProd
+    }
+
     Write-Output "PHASE2_FIXTURES_OK"
     Write-Output "INVENTORY_XLSB=$inventoryPath"
-    Write-Output "INBOX_XLSB=$inboxPath"
+    Write-Output "RECEIVE_XLSB=$receivePath"
+    Write-Output "SHIP_XLSB=$shipPath"
+    Write-Output "PROD_XLSB=$prodPath"
 }
 finally {
     if ($null -ne $excel) {

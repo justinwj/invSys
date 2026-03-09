@@ -106,6 +106,10 @@ Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, Optional ByVa
 End Function
 
 Public Function BuildPhase2InboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+    Set BuildPhase2InboxWorkbook = BuildReceiveInboxWorkbook(stationId)
+End Function
+
+Public Function BuildReceiveInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
     Dim wb As Workbook
     Dim report As String
     Dim p As String
@@ -117,7 +121,37 @@ Public Function BuildPhase2InboxWorkbook(Optional ByVal stationId As String = "S
 
     p = Environ$("TEMP") & "\invSys.Inbox.Receiving." & stationId & ".test.xlsx"
     SaveWorkbookAsTestFile wb, p, 51
-    Set BuildPhase2InboxWorkbook = wb
+    Set BuildReceiveInboxWorkbook = wb
+End Function
+
+Public Function BuildShipInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+    Dim wb As Workbook
+    Dim report As String
+    Dim p As String
+
+    Set wb = Application.Workbooks.Add
+    wb.Worksheets(1).Name = "InboxShip"
+    Call modProcessor.EnsureShipInboxSchema(wb, report)
+    DeleteAllTableRows wb.Worksheets("InboxShip").ListObjects("tblInboxShip"), False
+
+    p = Environ$("TEMP") & "\invSys.Inbox.Shipping." & stationId & ".test.xlsx"
+    SaveWorkbookAsTestFile wb, p, 51
+    Set BuildShipInboxWorkbook = wb
+End Function
+
+Public Function BuildProductionInboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
+    Dim wb As Workbook
+    Dim report As String
+    Dim p As String
+
+    Set wb = Application.Workbooks.Add
+    wb.Worksheets(1).Name = "InboxProd"
+    Call modProcessor.EnsureProductionInboxSchema(wb, report)
+    DeleteAllTableRows wb.Worksheets("InboxProd").ListObjects("tblInboxProd"), False
+
+    p = Environ$("TEMP") & "\invSys.Inbox.Production." & stationId & ".test.xlsx"
+    SaveWorkbookAsTestFile wb, p, 51
+    Set BuildProductionInboxWorkbook = wb
 End Function
 
 Public Sub AddCapability(ByVal wb As Workbook, _
@@ -159,17 +193,47 @@ Public Sub AddInboxReceiveRow(ByVal wb As Workbook, _
     Set lo = wb.Worksheets("InboxReceive").ListObjects("tblInboxReceive")
     EnsureTableSheetEditable lo, "tblInboxReceive"
     Set r = lo.ListRows.Add
-    SetTableRowValue lo, r.Index, "EventID", eventId
-    SetTableRowValue lo, r.Index, "CreatedAtUTC", createdAtUtc
-    SetTableRowValue lo, r.Index, "WarehouseId", whId
-    SetTableRowValue lo, r.Index, "StationId", stId
-    SetTableRowValue lo, r.Index, "UserId", userId
+    SetInboxRowCommon lo, r.Index, eventId, EVENT_TYPE_RECEIVE, createdAtUtc, whId, stId, userId, noteVal
     SetTableRowValue lo, r.Index, "SKU", sku
     SetTableRowValue lo, r.Index, "Qty", qty
     SetTableRowValue lo, r.Index, "Location", locationVal
-    SetTableRowValue lo, r.Index, "Note", noteVal
-    SetTableRowValue lo, r.Index, "Status", "NEW"
-    SetTableRowValue lo, r.Index, "RetryCount", 0
+End Sub
+
+Public Sub AddInboxShipRow(ByVal wb As Workbook, _
+                           ByVal eventId As String, _
+                           ByVal createdAtUtc As Variant, _
+                           ByVal whId As String, _
+                           ByVal stId As String, _
+                           ByVal userId As String, _
+                           ByVal payloadJson As String, _
+                           Optional ByVal noteVal As String = "")
+    Dim lo As ListObject
+    Dim r As ListRow
+
+    Set lo = wb.Worksheets("InboxShip").ListObjects("tblInboxShip")
+    EnsureTableSheetEditable lo, "tblInboxShip"
+    Set r = lo.ListRows.Add
+    SetInboxRowCommon lo, r.Index, eventId, EVENT_TYPE_SHIP, createdAtUtc, whId, stId, userId, noteVal
+    SetTableRowValue lo, r.Index, "PayloadJson", payloadJson
+End Sub
+
+Public Sub AddInboxProductionRow(ByVal wb As Workbook, _
+                                 ByVal eventId As String, _
+                                 ByVal eventType As String, _
+                                 ByVal createdAtUtc As Variant, _
+                                 ByVal whId As String, _
+                                 ByVal stId As String, _
+                                 ByVal userId As String, _
+                                 ByVal payloadJson As String, _
+                                 Optional ByVal noteVal As String = "")
+    Dim lo As ListObject
+    Dim r As ListRow
+
+    Set lo = wb.Worksheets("InboxProd").ListObjects("tblInboxProd")
+    EnsureTableSheetEditable lo, "tblInboxProd"
+    Set r = lo.ListRows.Add
+    SetInboxRowCommon lo, r.Index, eventId, eventType, createdAtUtc, whId, stId, userId, noteVal
+    SetTableRowValue lo, r.Index, "PayloadJson", payloadJson
 End Sub
 
 Public Function CreateReceiveEvent(ByVal eventId As String, _
@@ -184,19 +248,61 @@ Public Function CreateReceiveEvent(ByVal eventId As String, _
                                    Optional ByVal sourceInbox As String = "test-inbox") As Object
     Dim evt As Object
 
-    Set evt = CreateObject("Scripting.Dictionary")
-    evt.CompareMode = vbTextCompare
-    evt("EventID") = eventId
-    evt("CreatedAtUTC") = IIf(IsEmpty(createdAtUtc), Now, createdAtUtc)
-    evt("WarehouseId") = whId
-    evt("StationId") = stId
-    evt("UserId") = userId
+    Set evt = CreateBaseEvent(eventId, EVENT_TYPE_RECEIVE, whId, stId, userId, createdAtUtc, sourceInbox)
     evt("SKU") = sku
     evt("Qty") = qty
     evt("Location") = locationVal
     evt("Note") = noteVal
-    evt("SourceInbox") = sourceInbox
     Set CreateReceiveEvent = evt
+End Function
+
+Public Function CreatePayloadEvent(ByVal eventId As String, _
+                                   ByVal eventType As String, _
+                                   ByVal whId As String, _
+                                   ByVal stId As String, _
+                                   ByVal userId As String, _
+                                   ByVal payloadJson As String, _
+                                   Optional ByVal noteVal As String = "", _
+                                   Optional ByVal createdAtUtc As Variant = Empty, _
+                                   Optional ByVal sourceInbox As String = "test-inbox") As Object
+    Dim evt As Object
+
+    Set evt = CreateBaseEvent(eventId, eventType, whId, stId, userId, createdAtUtc, sourceInbox)
+    evt("PayloadJson") = payloadJson
+    evt("Note") = noteVal
+    Set CreatePayloadEvent = evt
+End Function
+
+Public Function CreatePayloadItem(ByVal rowVal As Long, _
+                                  ByVal sku As String, _
+                                  ByVal qty As Double, _
+                                  Optional ByVal locationVal As String = "", _
+                                  Optional ByVal noteVal As String = "", _
+                                  Optional ByVal ioType As String = "") As Object
+    Dim item As Object
+
+    Set item = CreateObject("Scripting.Dictionary")
+    item.CompareMode = vbTextCompare
+    item("Row") = rowVal
+    item("SKU") = sku
+    item("Qty") = qty
+    If locationVal <> "" Then item("Location") = locationVal
+    If noteVal <> "" Then item("Note") = noteVal
+    If ioType <> "" Then item("IoType") = ioType
+    Set CreatePayloadItem = item
+End Function
+
+Public Function BuildPayloadJson(ParamArray items() As Variant) As String
+    Dim i As Long
+    Dim item As Object
+
+    BuildPayloadJson = "["
+    For i = LBound(items) To UBound(items)
+        Set item = items(i)
+        If i > LBound(items) Then BuildPayloadJson = BuildPayloadJson & ","
+        BuildPayloadJson = BuildPayloadJson & DictionaryToJson(item)
+    Next i
+    BuildPayloadJson = BuildPayloadJson & "]"
 End Function
 
 Public Function TableExists(ByVal wb As Workbook, ByVal tableName As String) As Boolean
@@ -228,6 +334,85 @@ Public Sub CloseNoSave(ByVal wb As Workbook)
     End If
     On Error GoTo 0
 End Sub
+
+Private Function CreateBaseEvent(ByVal eventId As String, _
+                                 ByVal eventType As String, _
+                                 ByVal whId As String, _
+                                 ByVal stId As String, _
+                                 ByVal userId As String, _
+                                 ByVal createdAtUtc As Variant, _
+                                 ByVal sourceInbox As String) As Object
+    Dim evt As Object
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = eventType
+    evt("CreatedAtUTC") = IIf(IsEmpty(createdAtUtc), Now, createdAtUtc)
+    evt("WarehouseId") = whId
+    evt("StationId") = stId
+    evt("UserId") = userId
+    evt("SourceInbox") = sourceInbox
+    Set CreateBaseEvent = evt
+End Function
+
+Private Sub SetInboxRowCommon(ByVal lo As ListObject, _
+                              ByVal rowIndex As Long, _
+                              ByVal eventId As String, _
+                              ByVal eventType As String, _
+                              ByVal createdAtUtc As Variant, _
+                              ByVal whId As String, _
+                              ByVal stId As String, _
+                              ByVal userId As String, _
+                              ByVal noteVal As String)
+    SetTableRowValue lo, rowIndex, "EventID", eventId
+    SetTableRowValue lo, rowIndex, "EventType", eventType
+    SetTableRowValue lo, rowIndex, "CreatedAtUTC", createdAtUtc
+    SetTableRowValue lo, rowIndex, "WarehouseId", whId
+    SetTableRowValue lo, rowIndex, "StationId", stId
+    SetTableRowValue lo, rowIndex, "UserId", userId
+    SetTableRowValue lo, rowIndex, "Note", noteVal
+    SetTableRowValue lo, rowIndex, "Status", "NEW"
+    SetTableRowValue lo, rowIndex, "RetryCount", 0
+End Sub
+
+Private Function DictionaryToJson(ByVal d As Object) As String
+    Dim key As Variant
+    Dim parts As Collection
+    Dim part As Variant
+
+    Set parts = New Collection
+    For Each key In d.Keys
+        parts.Add """" & EscapeJson(CStr(key)) & """:" & JsonValue(d(key))
+    Next key
+
+    DictionaryToJson = "{"
+    For Each part In parts
+        If Right$(DictionaryToJson, 1) <> "{" Then DictionaryToJson = DictionaryToJson & ","
+        DictionaryToJson = DictionaryToJson & CStr(part)
+    Next part
+    DictionaryToJson = DictionaryToJson & "}"
+End Function
+
+Private Function JsonValue(ByVal valueIn As Variant) As String
+    Select Case VarType(valueIn)
+        Case vbBoolean
+            JsonValue = LCase$(CStr(valueIn))
+        Case vbByte, vbInteger, vbLong, vbSingle, vbDouble, vbCurrency, vbDecimal
+            JsonValue = Replace$(CStr(valueIn), ",", "")
+        Case Else
+            JsonValue = """" & EscapeJson(CStr(valueIn)) & """"
+    End Select
+End Function
+
+Private Function EscapeJson(ByVal textIn As String) As String
+    textIn = Replace$(textIn, "\", "\\")
+    textIn = Replace$(textIn, Chr$(34), "\" & Chr$(34))
+    textIn = Replace$(textIn, vbCrLf, "\n")
+    textIn = Replace$(textIn, vbCr, "\n")
+    textIn = Replace$(textIn, vbLf, "\n")
+    EscapeJson = textIn
+End Function
 
 Private Sub SaveWorkbookAsTestFile(ByVal wb As Workbook, ByVal pathOut As String, ByVal fileFormat As Long)
     On Error Resume Next
