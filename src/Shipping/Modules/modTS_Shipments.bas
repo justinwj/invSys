@@ -539,6 +539,7 @@ Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
     On Error GoTo ErrHandler
     If targetCell Is Nothing Then Exit Sub
     If mDynSearch Is Nothing Then Set mDynSearch = New cDynItemSearch
+    mDynSearch.UseTemplateForm "ufShippingItemSearch"
     mDynSearch.ShowForCell targetCell
     Exit Sub
 ErrHandler:

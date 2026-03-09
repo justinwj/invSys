@@ -114,6 +114,7 @@ End Function
 
 Private Sub EnsureSearch()
     If mSearch Is Nothing Then Set mSearch = New cDynItemSearch
+    mSearch.UseTemplateForm "ufProductionItemSearch"
 End Sub
 
 Private Function ColumnNameFromCell(lo As ListObject, targetCell As Range) As String

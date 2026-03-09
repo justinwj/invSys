@@ -761,6 +761,7 @@ Public Sub BtnLoadRecipe()
         Exit Sub
     End If
     If mRecipePicker Is Nothing Then Set mRecipePicker = New cDynItemSearch
+    mRecipePicker.UseTemplateForm "ufProductionItemSearch"
     mRecipePicker.ShowForRecipeCell targetCell
 End Sub
 

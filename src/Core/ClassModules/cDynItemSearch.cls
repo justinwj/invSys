@@ -16,6 +16,11 @@ Private mCategoryCol As Long
 Private mHasCategory As Boolean
 Private mIngredientRecipeId As String
 Private mAllowedRows As Object
+Private mTemplateFormName As String
+
+Public Sub UseTemplateForm(ByVal formName As String)
+    mTemplateFormName = Trim$(formName)
+End Sub
 
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
@@ -103,13 +108,14 @@ Private Function BuildForm() As Boolean
     Err.Clear
 
     ' Use compiled template form to avoid FM20/COM issues
-    Set uf = VBA.UserForms.Add("ufDynItemSearchTemplate")
+    If mTemplateFormName = "" Then mTemplateFormName = "ufDynItemSearchTemplate"
+    Set uf = VBA.UserForms.Add(mTemplateFormName)
     If Err.Number <> 0 Then
-        Debug.Print "    Add('ufDynItemSearchTemplate') ERROR:", Err.Number, Err.Description
+        Debug.Print "    Add('" & mTemplateFormName & "') ERROR:", Err.Number, Err.Description
     ElseIf uf Is Nothing Then
-        Debug.Print "    Add('ufDynItemSearchTemplate') returned Nothing"
+        Debug.Print "    Add('" & mTemplateFormName & "') returned Nothing"
     Else
-        Debug.Print "    Add('ufDynItemSearchTemplate') SUCCESS, type:", TypeName(uf)
+        Debug.Print "    Add('" & mTemplateFormName & "') SUCCESS, type:", TypeName(uf)
     End If
     On Error GoTo 0
 

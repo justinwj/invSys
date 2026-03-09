@@ -55,6 +55,7 @@ Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
         Debug.Print "  Reusing existing cDynItemSearch instance"
     End If
 
+    mDynSearch.UseTemplateForm "ufReceivingItemSearch"
     Debug.Print "  Calling mDynSearch.ShowForCell"
     mDynSearch.ShowForCell targetCell
     Debug.Print "  Returned from ShowForCell"
