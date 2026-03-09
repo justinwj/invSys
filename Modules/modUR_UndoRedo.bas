@@ -33,7 +33,7 @@ Public Sub UndoLastAction()
     Select Case Action.ActionType
         Case "BulkTransaction"
             ' Remove the last LogCount rows from InventoryLog and store them
-            Set Action.logData = modInvLogs.RemoveLastBulkLogEntries(Action.LogCount)
+            Set Action.logData = modInvMan.RemoveLastBulkLogEntries(Action.LogCount)
             Call modUR_Snapshot.RestoreSnapshot(Action.SnapshotID)
         Case Else
             Debug.Print "Unknown Undo Action Type:", Action.ActionType
@@ -52,7 +52,7 @@ Public Sub RedoLastAction()
     Select Case Action.ActionType
         Case "BulkTransaction"
             Call modUR_Snapshot.RestoreSnapshot(Action.RedoSnapshotID)
-            modInvLogs.ReAddBulkLogEntries Action.logData
+            modInvMan.ReAddBulkLogEntries Action.logData
         Case Else
             Debug.Print "Unknown Redo Action Type:", Action.ActionType
     End Select
@@ -75,6 +75,7 @@ End Sub
 Public Function GetUndoStack() As Collection
     Set GetUndoStack = UndoStack
 End Function
+
 
 
 

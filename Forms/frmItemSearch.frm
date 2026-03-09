@@ -14,6 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
+' NOTE: This userform is being deprecated in favor of the dynamic search form (cDynItemSearch) in modTS_Received.
 Private FullItemList As Variant
 Private LastSearchText As String
 Private LastSearchTime As Double
@@ -29,14 +30,16 @@ Private Sub UserForm_Activate()
     Me.txtBox.SelLength = 0
 End Sub
 Private Sub UserForm_Initialize()
+    On Error GoTo InitErr
     ' Set up the list box columns
-    Me.lstBox.ColumnCount = 4
-    Me.lstBox.ColumnWidths = "40;60;80;150"
+    Me.lstBox.ColumnCount = 7
+    ' ROW | ITEM_CODE | ITEM | UOM | LOCATION | DESCRIPTION | VENDORS
+    Me.lstBox.ColumnWidths = "20;30;180;20;45;90;60"
     ' Center the form
     Me.StartUpPosition = 1 'CenterOwner
-    ' Load items
+    ' Load items from invSys via modTS_Received
     Dim items As Variant
-    items = modTS_Data.LoadItemList()
+    items = modTS_Received.LoadItemList()
     If Not IsEmpty(items) Then
         PopulateListBox items
         FullItemList = items
@@ -44,6 +47,9 @@ Private Sub UserForm_Initialize()
     End If
     ' Apply any search text right away
     txtBox_Change
+    Exit Sub
+InitErr:
+    MsgBox "Item Search init failed: " & Err.Description, vbExclamation
 End Sub
 ' Build an index of where each first character appears in the list for faster searching
 Private Sub BuildFirstCharIndex()
@@ -56,11 +62,10 @@ Private Sub BuildFirstCharIndex()
     For i = 0 To 255
         SearchFirstCharIndex(i) = -1
     Next i
-    ' Go through the list and record the first occurrence of each first character
+    ' Go through the list and record the first occurrence of each first character (use ITEM at col 2)
     For i = 0 To Me.lstBox.ListCount - 1
-        ' Use index 3 for ITEM name instead of 2 (which is VENDOR)
-        If Me.lstBox.List(i, 3) <> "" Then
-            char = UCase(Left$(Me.lstBox.List(i, 3), 1))
+        If Me.lstBox.List(i, 2) <> "" Then
+            char = UCase(Left$(Me.lstBox.List(i, 2), 1))
             ' Only record the first occurrence
             If Asc(char) <= 255 And SearchFirstCharIndex(Asc(char)) = -1 Then
                 SearchFirstCharIndex(Asc(char)) = i
@@ -108,8 +113,8 @@ Private Sub txtBox_Change()
         On Error Resume Next
         ' First pass: Search from the first character index position
         For i = startIndex To Me.lstBox.ListCount - 1
-            ' Use index 3 for ITEM name instead of 2
-            If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
+            ' Use index 2 for ITEM name (col2 = ITEM)
+            If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
                 matchIndex = i
                 Exit For
             End If
@@ -118,8 +123,8 @@ Private Sub txtBox_Change()
         ' search from beginning to that index
         If matchIndex = -1 And startIndex > 0 Then
             For i = 0 To startIndex - 1
-                ' Use index 3 for ITEM name instead of 2
-                If InStr(1, LCase(Me.lstBox.List(i, 3)), searchText) > 0 Then
+                ' Use index 2 for ITEM name
+                If InStr(1, LCase(Me.lstBox.List(i, 2)), searchText) > 0 Then
                     matchIndex = i
                     Exit For
                 End If
@@ -195,17 +200,19 @@ Public Sub CommitSelectionAndClose()
     Dim chosenItemCode As String
     Dim chosenRowNum As String
     Dim chosenVendor As String
+    Dim chosenUOM As String
     Dim location As String
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Dim dataTbl As ListObject
     ' Get selection from list box or text box
     If Me.lstBox.ListIndex <> -1 Then
-        chosenRowNum = Me.lstBox.List(Me.lstBox.ListIndex, 0)    ' ROW
-        chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 1)  ' ITEM_CODE
-        chosenVendor = Me.lstBox.List(Me.lstBox.ListIndex, 2)    ' VENDOR
-        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 3)     ' Item name
-        location = GetLocationByItem(chosenItemCode, chosenValue)
+        ' col0 = ROW, col1 = ITEM_CODE, col2 = ITEM, col3 = UOM, col4 = LOCATION, col5 = DESCRIPTION, col6 = VENDORS
+        chosenRowNum = Me.lstBox.List(Me.lstBox.ListIndex, 0)     ' ROW
+        chosenItemCode = Me.lstBox.List(Me.lstBox.ListIndex, 1)   ' ITEM_CODE
+        chosenValue = Me.lstBox.List(Me.lstBox.ListIndex, 2)      ' ITEM
+        chosenUOM = Me.lstBox.List(Me.lstBox.ListIndex, 3)        ' UOM
+        location = Me.lstBox.List(Me.lstBox.ListIndex, 4)         ' LOCATION
+        chosenVendor = Me.lstBox.List(Me.lstBox.ListIndex, 6)     ' VENDORS
     ElseIf Trim(Me.txtBox.text) <> "" Then
         chosenValue = Me.txtBox.text
         chosenItemCode = ""
@@ -220,46 +227,18 @@ Public Sub CommitSelectionAndClose()
     End If
     ' Apply the selection to the cell
     If Not gSelectedCell Is Nothing Then
-        ' Store the original value before making changes
-        Dim originalValue As String
-        originalValue = gSelectedCell.value
-        ' Update the cell with new item name
-        gSelectedCell.value = chosenValue
-        ' If we have a valid item selection, update the data table
+        ' Update the cell with the item name (col1)
+        gSelectedCell.Value = chosenValue
+
+        ' If we have a valid item selection on ReceivedTally, refresh aggregation detail
         If Me.lstBox.ListIndex <> -1 Then
             Set ws = gSelectedCell.Worksheet
-            ' Determine which tables to work with based on which sheet we're on
-            If ws.name = "ShipmentsTally" Then
-                Set tbl = ws.ListObjects("ShipmentsTally")
-                Set dataTbl = ws.ListObjects("invSysData_Shipping")
-            ElseIf ws.name = "ReceivedTally" Then
-                Set tbl = ws.ListObjects("ReceivedTally")
-                Set dataTbl = ws.ListObjects("invSysData_Receiving")
-            Else
-                ' Not on a valid tally sheet
-                isRunning = False
-                Unload Me
-                Exit Sub
-            End If
-            ' Get UOM for this item
-            Dim itemUOM As String
-            itemUOM = modGlobals.GetItemUOMByRowNum(chosenRowNum, chosenItemCode, chosenValue)
-            ' Get the cell identifier (row number in the tally sheet)
-            Dim tallyRowNum As Long
-            tallyRowNum = gSelectedCell.row - tbl.HeaderRowRange.row
-            ' ***** NEW CODE: Delete any existing data for this cell *****
-            DeleteExistingDataForCell dataTbl, tallyRowNum
-            ' Add a row to the corresponding data table
-            If Not dataTbl Is Nothing Then
-                Dim dataRow As ListRow
-                Set dataRow = dataTbl.ListRows.Add
-                ' Fill the data table row with all the item information
-                FillDataTableRow dataRow, itemUOM, chosenVendor, location, chosenItemCode, chosenRowNum
-                ' ***** NEW CODE: Add reference to the tally row number *****
-                SetTallyRowNumber dataRow, tallyRowNum
+            If ws.Name = "ReceivedTally" Then
+                On Error Resume Next
+                modTS_Received.RebuildAggregation
+                On Error GoTo 0
             End If
         End If
-        On Error GoTo 0
     End If
     isRunning = False
     Unload Me
@@ -424,41 +403,36 @@ Private Sub SetTallyRowNumber(dataRow As ListRow, tallyRowNum As Long)
     End If
     On Error GoTo 0
 End Sub
-' Populate the list box with items from invSys table - FIXED
+' Populate the list box with items from invSys table
 Private Sub PopulateListBox(itemArray As Variant)
-    ' Debug what we're getting
     Debug.Print "PopulateListBox: Received itemArray with dimensions: " & _
                 LBound(itemArray, 1) & " to " & UBound(itemArray, 1) & ", " & _
                 LBound(itemArray, 2) & " to " & UBound(itemArray, 2)
     Dim i As Long
-    Dim rowNum As String, ItemCode As String, itemName As String, vendor As String
+    Dim rowNum As String, ItemCode As String, itemName As String, uom As String, location As String, descr As String, vendors As String
     Me.lstBox.Clear
-    ' Check if itemArray is properly initialized
     If IsEmpty(itemArray) Or Not IsArray(itemArray) Then
         Debug.Print "PopulateListBox: Invalid itemArray received"
         Exit Sub
     End If
     On Error Resume Next
     For i = LBound(itemArray, 1) To UBound(itemArray, 1)
-        ' Make sure we have valid data before adding the item
-        If IsArray(itemArray) And UBound(itemArray, 2) >= 2 Then
-            ' Extract values with appropriate error handling
-            rowNum = CStr(itemArray(i, 0))  ' ROW - FIXED: Now correctly using index 0
-            ItemCode = CStr(itemArray(i, 1))  ' ITEM_CODE - FIXED: Now correctly using index 1
-            ' Get the item name - column index 2 in the array
-            If UBound(itemArray, 2) >= 2 Then
-                itemName = CStr(itemArray(i, 2))  ' ITEM name
-            Else
-                itemName = "Unknown"
-            End If
-            ' Get vendor data from the invSys table
-            vendor = GetVendorByItem(ItemCode, itemName)
-            ' Add the item to the list box - FIXED order
+        If IsArray(itemArray) And UBound(itemArray, 2) >= 6 Then
+            rowNum = CStr(itemArray(i, 0))      ' ROW
+            ItemCode = CStr(itemArray(i, 1))    ' ITEM_CODE
+            itemName = CStr(itemArray(i, 2))    ' ITEM
+            uom = CStr(itemArray(i, 3))         ' UOM
+            location = CStr(itemArray(i, 4))    ' LOCATION
+            descr = CStr(itemArray(i, 5))       ' DESCRIPTION
+            vendors = CStr(itemArray(i, 6))     ' VENDORS
             Me.lstBox.AddItem ""
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = rowNum      ' ROW
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = ItemCode    ' ITEM_CODE
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = vendor      ' VENDOR
-            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = itemName    ' ITEM name
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 0) = rowNum
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 1) = ItemCode
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 2) = itemName
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 3) = uom
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 4) = location
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 5) = descr
+            Me.lstBox.List(Me.lstBox.ListCount - 1, 6) = vendors
         End If
     Next i
     On Error GoTo 0
@@ -525,8 +499,8 @@ Private Sub UpdateDescription()
         ' Get the description for this item from the FullItemList
         ' Add 1 because ListBox is 0-based but array is 1-based
         If selectedIndex + 1 <= UBound(FullItemList, 1) Then
-            ' Set the description text
-            Me.txtBox2.text = FullItemList(selectedIndex + 1, 4)  ' Changed from .text to .Text
+            ' Description is column 6 in FullItemList (ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS)
+            Me.txtBox2.text = FullItemList(selectedIndex + 1, 6)
         End If
     End If
 End Sub
@@ -544,8 +518,3 @@ Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
         KeyCode = 0 ' Prevent default tab handling
     End If
 End Sub
-
-
-
-
-
