@@ -99,7 +99,9 @@ try {
         "TestCoreRoleUiAccess.TestApplyShapeCapability_TogglesVisibility",
         "TestCoreItemSearch.TestNormalizeSearchText_CollapsesWhitespace",
         "TestCoreItemSearch.TestAnyTextMatchesSearch_MatchesAcrossFields",
-        "TestCoreItemSearch.TestIdentifiersMatch_UsesTokenOverlap"
+        "TestCoreItemSearch.TestIdentifiersMatch_UsesTokenOverlap",
+        "TestCoreItemSearch.TestResolveSearchCaption_ReturnsRoleSpecificText",
+        "TestCoreItemSearch.TestShouldDefaultShippableForRole_UsesRoleDefaults"
     )
 
     if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }

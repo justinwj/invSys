@@ -87,3 +87,84 @@ Public Function IdentifiersMatch(ByVal leftValue As String, ByVal rightValue As 
         Next j
     Next i
 End Function
+
+Public Function ResolveSearchRole(ByVal templateFormName As String) As String
+    Select Case LCase$(Trim$(templateFormName))
+        Case "ufreceivingitemsearch"
+            ResolveSearchRole = "receiving"
+        Case "ufshippingitemsearch"
+            ResolveSearchRole = "shipping"
+        Case "ufproductionitemsearch"
+            ResolveSearchRole = "production"
+        Case "ufadminitemsearch"
+            ResolveSearchRole = "admin"
+    End Select
+End Function
+
+Public Function ResolveSearchCaption(ByVal roleKey As String, ByVal pickerMode As String) As String
+    Dim resolvedRole As String
+    Dim resolvedMode As String
+
+    resolvedRole = LCase$(Trim$(roleKey))
+    resolvedMode = LCase$(Trim$(pickerMode))
+
+    Select Case resolvedMode
+        Case "ingredient"
+            Select Case resolvedRole
+                Case "production"
+                    ResolveSearchCaption = "Production Ingredient Search"
+                Case Else
+                    ResolveSearchCaption = "Ingredient Search"
+            End Select
+        Case "palette_item"
+            Select Case resolvedRole
+                Case "production"
+                    ResolveSearchCaption = "Production Palette Item Search"
+                Case Else
+                    ResolveSearchCaption = "Palette Item Search"
+            End Select
+        Case "recipe", "palette_recipe", "recipe_chooser"
+            Select Case resolvedRole
+                Case "production"
+                    ResolveSearchCaption = "Production Recipe Search"
+                Case Else
+                    ResolveSearchCaption = "Recipe Search"
+            End Select
+        Case Else
+            Select Case resolvedRole
+                Case "receiving"
+                    ResolveSearchCaption = "Receiving Item Search"
+                Case "shipping"
+                    ResolveSearchCaption = "Shipping Item Search"
+                Case "production"
+                    ResolveSearchCaption = "Production Item Search"
+                Case "admin"
+                    ResolveSearchCaption = "Admin Item Search"
+                Case Else
+                    ResolveSearchCaption = "Item Search"
+            End Select
+    End Select
+End Function
+
+Public Function ShouldDefaultShippableForRole(ByVal roleKey As String, _
+                                              ByVal pickerMode As String, _
+                                              Optional ByVal sourceTableName As String = "") As Boolean
+    Dim resolvedRole As String
+    Dim resolvedMode As String
+
+    resolvedRole = LCase$(Trim$(roleKey))
+    resolvedMode = LCase$(Trim$(pickerMode))
+
+    If resolvedMode = "recipe" Or resolvedMode = "palette_recipe" _
+        Or resolvedMode = "recipe_chooser" Or resolvedMode = "ingredient" _
+        Or resolvedMode = "palette_item" Then Exit Function
+
+    If resolvedRole = "shipping" Then
+        ShouldDefaultShippableForRole = True
+        Exit Function
+    End If
+
+    If LCase$(Trim$(sourceTableName)) = "shipmentstally" Then
+        ShouldDefaultShippableForRole = True
+    End If
+End Function

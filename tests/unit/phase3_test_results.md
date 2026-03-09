@@ -1,7 +1,7 @@
 # Phase 3 VBA Test Results
 
-- Date: 2026-03-09 01:06:22
-- Passed: 10
+- Date: 2026-03-09 01:13:51
+- Passed: 12
 - Failed: 0
 
 | Test | Result |
@@ -16,3 +16,5 @@
 | TestCoreItemSearch.TestNormalizeSearchText_CollapsesWhitespace | PASS |
 | TestCoreItemSearch.TestAnyTextMatchesSearch_MatchesAcrossFields | PASS |
 | TestCoreItemSearch.TestIdentifiersMatch_UsesTokenOverlap | PASS |
+| TestCoreItemSearch.TestResolveSearchCaption_ReturnsRoleSpecificText | PASS |
+| TestCoreItemSearch.TestShouldDefaultShippableForRole_UsesRoleDefaults | PASS |

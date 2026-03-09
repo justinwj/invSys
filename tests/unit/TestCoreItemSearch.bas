@@ -8,6 +8,8 @@ Public Sub RunCoreItemSearchTests()
     Tally TestNormalizeSearchText_CollapsesWhitespace(), passed, failed
     Tally TestAnyTextMatchesSearch_MatchesAcrossFields(), passed, failed
     Tally TestIdentifiersMatch_UsesTokenOverlap(), passed, failed
+    Tally TestResolveSearchCaption_ReturnsRoleSpecificText(), passed, failed
+    Tally TestShouldDefaultShippableForRole_UsesRoleDefaults(), passed, failed
 
     Debug.Print "Core.ItemSearch tests - Passed: " & passed & " Failed: " & failed
 End Sub
@@ -33,6 +35,23 @@ Public Function TestIdentifiersMatch_UsesTokenOverlap() As Long
     If modItemSearch.IdentifiersMatch("recipe-123", "batch-7") Then Exit Function
 
     TestIdentifiersMatch_UsesTokenOverlap = 1
+End Function
+
+Public Function TestResolveSearchCaption_ReturnsRoleSpecificText() As Long
+    If modItemSearch.ResolveSearchCaption("receiving", "item") <> "Receiving Item Search" Then Exit Function
+    If modItemSearch.ResolveSearchCaption("shipping", "item") <> "Shipping Item Search" Then Exit Function
+    If modItemSearch.ResolveSearchCaption("production", "recipe") <> "Production Recipe Search" Then Exit Function
+
+    TestResolveSearchCaption_ReturnsRoleSpecificText = 1
+End Function
+
+Public Function TestShouldDefaultShippableForRole_UsesRoleDefaults() As Long
+    If Not modItemSearch.ShouldDefaultShippableForRole("shipping", "item") Then Exit Function
+    If modItemSearch.ShouldDefaultShippableForRole("receiving", "recipe") Then Exit Function
+    If modItemSearch.ShouldDefaultShippableForRole("receiving", "item") Then Exit Function
+    If Not modItemSearch.ShouldDefaultShippableForRole("receiving", "item", "ShipmentsTally") Then Exit Function
+
+    TestShouldDefaultShippableForRole_UsesRoleDefaults = 1
 End Function
 
 Private Sub Tally(ByVal resultIn As Long, ByRef passed As Long, ByRef failed As Long)

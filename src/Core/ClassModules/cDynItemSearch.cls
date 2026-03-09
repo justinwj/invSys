@@ -126,7 +126,7 @@ Private Function BuildForm() As Boolean
     End If
 
     ' Build controls and layout
-    uf.Caption = "Item Search"
+    uf.Caption = modItemSearch.ResolveSearchCaption(CurrentRoleKey(), mPickerMode)
     uf.Width = 480
     uf.Height = 420
 
@@ -192,7 +192,7 @@ End Function
 Private Sub ConfigureForMode()
     If uf Is Nothing Then Exit Sub
     If LCase$(mPickerMode) = "ingredient" Then
-        uf.Caption = "Ingredient Search"
+        uf.Caption = modItemSearch.ResolveSearchCaption(CurrentRoleKey(), mPickerMode)
         If Not chkShippable Is Nothing Then chkShippable.Visible = False
 
         lst.ColumnCount = 7
@@ -206,14 +206,14 @@ Private Sub ConfigureForMode()
     End If
 
     If LCase$(mPickerMode) = "palette_item" Then
-        uf.Caption = "Palette Item Search"
+        uf.Caption = modItemSearch.ResolveSearchCaption(CurrentRoleKey(), mPickerMode)
         If Not chkShippable Is Nothing Then chkShippable.Visible = False
         Exit Sub
     End If
 
     If LCase$(mPickerMode) <> "recipe" And LCase$(mPickerMode) <> "palette_recipe" And LCase$(mPickerMode) <> "recipe_chooser" Then Exit Sub
 
-    uf.Caption = "Recipe Search"
+    uf.Caption = modItemSearch.ResolveSearchCaption(CurrentRoleKey(), mPickerMode)
 
     If Not chkShippable Is Nothing Then
         chkShippable.Visible = False
@@ -450,14 +450,18 @@ End Function
 
 Private Function ShouldDefaultShippable() As Boolean
     Dim lo As ListObject
-    If LCase$(mPickerMode) = "recipe" Or LCase$(mPickerMode) = "palette_recipe" _
-        Or LCase$(mPickerMode) = "recipe_chooser" Or LCase$(mPickerMode) = "ingredient" _
-        Or LCase$(mPickerMode) = "palette_item" Then Exit Function
     On Error Resume Next
     If Not callbackCell Is Nothing Then Set lo = callbackCell.ListObject
     On Error GoTo 0
-    If lo Is Nothing Then Exit Function
-    ShouldDefaultShippable = (LCase$(lo.Name) = "shipmentstally")
+    If lo Is Nothing Then
+        ShouldDefaultShippable = modItemSearch.ShouldDefaultShippableForRole(CurrentRoleKey(), mPickerMode)
+    Else
+        ShouldDefaultShippable = modItemSearch.ShouldDefaultShippableForRole(CurrentRoleKey(), mPickerMode, lo.Name)
+    End If
+End Function
+
+Private Function CurrentRoleKey() As String
+    CurrentRoleKey = modItemSearch.ResolveSearchRole(mTemplateFormName)
 End Function
 
 Public Sub CommitSelection()
