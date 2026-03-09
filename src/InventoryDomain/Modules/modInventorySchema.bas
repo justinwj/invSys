@@ -47,6 +47,7 @@ Private Sub EnsureTableWithHeaders(ByVal wb As Workbook, _
     Dim tableRange As Range
 
     Set ws = EnsureWorksheet(wb, sheetName)
+    EnsureWorksheetEditableSchema ws
     Set lo = FindListObjectByName(wb, tableName)
 
     If lo Is Nothing Then
@@ -67,6 +68,21 @@ Private Sub EnsureTableWithHeaders(ByVal wb As Workbook, _
 
     EnsureTableHasRow lo
     StyleProtectedHeaders lo, headers
+End Sub
+
+Private Sub EnsureWorksheetEditableSchema(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    If Not ws.ProtectContents Then Exit Sub
+
+    On Error Resume Next
+    ws.Unprotect
+    On Error GoTo 0
+
+    If ws.ProtectContents Then
+        Err.Raise vbObjectError + 2501, "modInventorySchema.EnsureWorksheetEditableSchema", _
+                  "Worksheet '" & ws.Name & "' is protected and could not be unprotected. " & _
+                  "Excel automation cannot create or extend tables while the sheet remains protected."
+    End If
 End Sub
 
 Private Function EnsureWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet

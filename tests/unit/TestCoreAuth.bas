@@ -250,6 +250,11 @@ Private Sub AddCapability(ByVal wb As Workbook, _
     Dim r As ListRow
 
     Set lo = wb.Worksheets("Capabilities").ListObjects("tblCapabilities")
+    If lo.Parent.ProtectContents Then lo.Parent.Unprotect
+    If lo.Parent.ProtectContents Then
+        Err.Raise vbObjectError + 2602, "TestCoreAuth.AddCapability", _
+                  "Worksheet '" & lo.Parent.Name & "' is protected and could not be unprotected before writing to tblCapabilities."
+    End If
     Set r = lo.ListRows.Add
     r.Range.Cells(1, lo.ListColumns("UserId").Index).Value = userId
     r.Range.Cells(1, lo.ListColumns("Capability").Index).Value = capability

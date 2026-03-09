@@ -19,7 +19,7 @@ End Type
 
 Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
     Dim idx As Long
-    ReDim defs(1 To 22)
+    ReDim defs(1 To 23)
     idx = 0
 
     AddConfigKey defs, idx, "WarehouseId", CONFIG_TYPE_STRING, "", True, CONFIG_SCOPE_WAREHOUSE
@@ -38,6 +38,7 @@ Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
     AddConfigKey defs, idx, "DesignsEnabled", CONFIG_TYPE_BOOLEAN, "FALSE", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "PoisonRetryMax", CONFIG_TYPE_LONG, "3", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "AuthCacheTTLSeconds", CONFIG_TYPE_LONG, "300", False, CONFIG_SCOPE_WAREHOUSE
+    AddConfigKey defs, idx, "ProcessorServiceUserId", CONFIG_TYPE_STRING, "svc_processor", False, CONFIG_SCOPE_WAREHOUSE
 
     AddConfigKey defs, idx, "StationId", CONFIG_TYPE_STRING, "", True, CONFIG_SCOPE_STATION
     AddConfigKey defs, idx, "StationName", CONFIG_TYPE_STRING, "", False, CONFIG_SCOPE_STATION

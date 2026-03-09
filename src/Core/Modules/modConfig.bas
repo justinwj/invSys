@@ -471,7 +471,7 @@ Private Function EnsureConfigTables(ByVal wb As Workbook) As Boolean
         "WarehouseId", "WarehouseName", "Timezone", "DefaultLocation", _
         "BatchSize", "LockTimeoutMinutes", "HeartbeatIntervalSeconds", "MaxLockHoldMinutes", _
         "SnapshotCadence", "BackupCadence", "PathDataRoot", "PathBackupRoot", "PathSharePointRoot", _
-        "DesignsEnabled", "PoisonRetryMax", "AuthCacheTTLSeconds", _
+        "DesignsEnabled", "PoisonRetryMax", "AuthCacheTTLSeconds", "ProcessorServiceUserId", _
         "FF_DesignsEnabled", "FF_OutlookAlerts", "FF_AutoSnapshot")
     stHeaders = Array("StationId", "WarehouseId", "StationName", "RoleDefault")
 
