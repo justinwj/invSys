@@ -548,17 +548,24 @@ sequenceDiagram
 ### Phase 3: Role UI
 **Goal:** Receiving, Shipping, Production UIs
 
+**Status note:** Phase 3 is in progress. Current implementation uses worksheet-driven role UI/buttons plus inbox event creation, capability gating, and shared search logic. RibbonX packaging and role-specific search form split remain pending.
+
 **Tasks:**
 - [ ] Build RibbonX XML for all role XLAMs
-- [ ] Build Receiving.UI + EventCreator
-- [ ] Build Shipping.UI + EventCreator
-- [ ] Build Production.UI + EventCreator
+- [x] Build Receiving.UI + EventCreator
+- [x] Build Shipping.UI + EventCreator
+- [x] Build Production.UI + EventCreator
 - [ ] Build role-specific item search forms for each role XLAM
+- [x] Build shared `Core.ItemSearch` normalization/query/match logic
+- [x] Build worksheet-button capability gating for role posting actions
 
 **Tests:**
-- [ ] Test: Role buttons are disabled/hidden when required capability is missing
-- [ ] Test: Each role UI writes valid inbox events with required fields and normalized values
+- [x] Test: Role buttons are disabled/hidden when required capability is missing
+- [x] Test: Each role UI writes valid inbox events with required fields and normalized values
 - [ ] Test: UI -> Create events -> Process -> Verify domain logs for receiving/shipping/production
+
+**Execution evidence:**
+- [x] Phase 3 isolated Excel validation passed on March 9, 2026: `10 passed, 0 failed` in `tests/unit/phase3_test_results.md`
 
 **Deliverables:**
 - [ ] All role XLAMs functional with Ribbon controls

@@ -34,6 +34,7 @@ Public Sub EnsureGeneratedButtons()
     EnsureButton ws, "btnConfirmWrites", "Confirm writes", "modTS_Received.ConfirmWrites"
     EnsureButton ws, "btnUndoMacro", "Undo macro", "modTS_Received.MacroUndo"
     EnsureButton ws, "btnRedoMacro", "Redo macro", "modTS_Received.MacroRedo"
+    RefreshReceivingUiAccess ws
 End Sub
 
 ' ==== dynamic search form (ReceivedTally) =====
@@ -158,6 +159,7 @@ End Sub
 
 Public Sub ConfirmWrites()
     On Error GoTo ErrHandler
+    If Not modRoleUiAccess.RequireCurrentUserCapability("RECEIVE_POST") Then Exit Sub
     mRedoReady = False
     Dim wsRT As Worksheet: Set wsRT = SheetExists("ReceivedTally")
     Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
@@ -187,6 +189,11 @@ Public Sub ConfirmWrites()
     Next
     If errs <> "" Then
         MsgBox "Cannot confirm:" & vbCrLf & errs, vbExclamation
+        Exit Sub
+    End If
+
+    If Not QueueReceiveEventsFromAggregate(agg, errs) Then
+        MsgBox "Cannot confirm:" & vbCrLf & errs, vbCritical
         Exit Sub
     End If
 
@@ -285,6 +292,66 @@ ErrHandler:
     UndoInvDeltas wsInv.ListObjects("invSys")
     DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
 End Sub
+
+Private Sub RefreshReceivingUiAccess(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    modRoleUiAccess.ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"
+End Sub
+
+Private Function QueueReceiveEventsFromAggregate(ByVal agg As ListObject, ByRef errorMessage As String) As Boolean
+    Dim cols As Object
+    Dim arr As Variant
+    Dim r As Long
+    Dim userId As String
+    Dim rowError As String
+    Dim queuedEventId As String
+
+    If agg Is Nothing Or agg.DataBodyRange Is Nothing Then
+        errorMessage = "AggregateReceived has no rows to confirm."
+        Exit Function
+    End If
+
+    Set cols = AggColMap(agg)
+    If cols Is Nothing Then
+        errorMessage = "AggregateReceived is missing required columns."
+        Exit Function
+    End If
+
+    userId = modRoleEventWriter.ResolveCurrentUserId()
+    If userId = "" Then
+        errorMessage = "Unable to resolve current user identity."
+        Exit Function
+    End If
+
+    arr = agg.DataBodyRange.Value
+    For r = 1 To UBound(arr, 1)
+        queuedEventId = ""
+        rowError = ""
+        If Not modRoleEventWriter.QueueReceiveEventCurrent( _
+            userId, _
+            NzStr(arr(r, cols("ITEM_CODE"))), _
+            NzDbl(arr(r, cols("QUANTITY"))), _
+            NzStr(arr(r, cols("LOCATION"))), _
+            BuildReceiveEventNote(arr, cols, r), _
+            queuedEventId, _
+            rowError) Then
+            errorMessage = "Inbox queue failed for row " & r & ": " & rowError
+            Exit Function
+        End If
+    Next r
+
+    QueueReceiveEventsFromAggregate = True
+End Function
+
+Private Function BuildReceiveEventNote(ByVal arr As Variant, ByVal cols As Object, ByVal rowIndex As Long) As String
+    BuildReceiveEventNote = "REF_NUMBER=" & NzStr(arr(rowIndex, cols("REF_NUMBER")))
+    If NzStr(arr(rowIndex, cols("ITEM"))) <> "" Then
+        BuildReceiveEventNote = BuildReceiveEventNote & "; ITEM=" & NzStr(arr(rowIndex, cols("ITEM")))
+    End If
+    If NzStr(arr(rowIndex, cols("VENDORS"))) <> "" Then
+        BuildReceiveEventNote = BuildReceiveEventNote & "; VENDORS=" & NzStr(arr(rowIndex, cols("VENDORS")))
+    End If
+End Function
 
 Public Sub MacroUndo()
     ' Undo last successful ConfirmWrites

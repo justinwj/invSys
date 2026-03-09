@@ -309,7 +309,7 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
     Else
         term = NzStr(termOverride)
     End If
-    term = LCase$(Trim$(term))
+    term = modItemSearch.NormalizeSearchText(term)
 
     Dim i As Long
     lst.Clear
@@ -320,9 +320,7 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
             Dim recName As String
             recId = NzStr(itemsArr(i, 1))
             recName = NzStr(itemsArr(i, 2))
-            If term = "" _
-               Or InStr(1, LCase$(recId), term) > 0 _
-               Or InStr(1, LCase$(recName), term) > 0 Then
+            If modItemSearch.AnyTextMatchesSearch(term, recId, recName) Then
                 lst.AddItem
                 lst.List(lst.ListCount - 1, 0) = recId
                 lst.List(lst.ListCount - 1, 1) = recName
@@ -342,9 +340,7 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
             Dim pRecName As String
             pRecId = NzStr(itemsArr(i, 1))
             pRecName = NzStr(itemsArr(i, 2))
-            If term = "" _
-               Or InStr(1, LCase$(pRecId), term) > 0 _
-               Or InStr(1, LCase$(pRecName), term) > 0 Then
+            If modItemSearch.AnyTextMatchesSearch(term, pRecId, pRecName) Then
                 lst.AddItem
                 lst.List(lst.ListCount - 1, 0) = pRecId
                 lst.List(lst.ListCount - 1, 1) = pRecName
@@ -364,9 +360,7 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
             Dim ingName As String
             ingId = NzStr(itemsArr(i, 1))
             ingName = NzStr(itemsArr(i, 2))
-            If term = "" _
-               Or InStr(1, LCase$(ingId), term) > 0 _
-               Or InStr(1, LCase$(ingName), term) > 0 Then
+            If modItemSearch.AnyTextMatchesSearch(term, ingId, ingName) Then
                 lst.AddItem
                 lst.List(lst.ListCount - 1, 0) = ingId
                 lst.List(lst.ListCount - 1, 1) = ingName
@@ -404,9 +398,7 @@ Private Sub ApplyFilter(Optional ByVal termOverride As Variant)
         End If
         If shippableOnly And Not IsRowShippable(i) Then GoTo NextItem
         ' Match on ITEM (3) or ITEM_CODE (2)
-        If term = "" _
-           Or InStr(1, LCase$(NzStr(itemsArr(i, 3))), term) > 0 _
-           Or InStr(1, LCase$(NzStr(itemsArr(i, 2))), term) > 0 Then
+        If modItemSearch.AnyTextMatchesSearch(term, NzStr(itemsArr(i, 3)), NzStr(itemsArr(i, 2))) Then
             lst.AddItem
             lst.List(lst.ListCount - 1, 0) = itemsArr(i, 1)
             lst.List(lst.ListCount - 1, 1) = itemsArr(i, 2)
@@ -1083,42 +1075,9 @@ Private Function ListObjectHasHeaders(lo As ListObject, headers As Variant) As B
 End Function
 
 Private Function IdMatches(ByVal a As String, ByVal b As String) As Boolean
-    Dim ta As Variant, tb As Variant
-    ta = IdTokens(a)
-    tb = IdTokens(b)
-    If IsEmpty(ta) Or IsEmpty(tb) Then Exit Function
-    Dim i As Long, j As Long
-    For i = LBound(ta) To UBound(ta)
-        For j = LBound(tb) To UBound(tb)
-            If StrComp(ta(i), tb(j), vbTextCompare) = 0 Then
-                IdMatches = True
-                Exit Function
-            End If
-        Next j
-    Next i
+    IdMatches = modItemSearch.IdentifiersMatch(a, b)
 End Function
 
 Private Function IdTokens(ByVal v As String) As Variant
-    Dim s As String
-    s = Trim$(v)
-    If s = "" Then Exit Function
-    s = Replace(s, vbCr, " ")
-    s = Replace(s, vbLf, " ")
-    s = Replace(s, vbTab, " ")
-    Do While InStr(s, "  ") > 0
-        s = Replace(s, "  ", " ")
-    Loop
-    Dim parts As Variant
-    parts = Split(s, " ")
-    Dim cleaned() As String
-    Dim i As Long, n As Long
-    For i = LBound(parts) To UBound(parts)
-        If Trim$(parts(i)) <> "" Then
-            n = n + 1
-            ReDim Preserve cleaned(0 To n - 1)
-            cleaned(n - 1) = Trim$(parts(i))
-        End If
-    Next i
-    If n = 0 Then Exit Function
-    IdTokens = cleaned
+    IdTokens = modItemSearch.IdentifierTokens(v)
 End Function

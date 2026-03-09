@@ -591,6 +591,13 @@ Private Sub EnsureProductionButtons()
     EnsureButtonCustom ws, BTN_NEXT_BATCH, "Next Batch", "mProduction.BtnNextBatch", leftA, nextTop, colAWidth
     nextTop = nextTop + BTN_STACK_SPACING
     EnsureButtonCustom ws, BTN_PRINT_CODES, "Print recall codes", "mProduction.BtnPrintRecallCodes", leftA, nextTop, colAWidth
+    RefreshProductionUiAccess ws
+End Sub
+
+Private Sub RefreshProductionUiAccess(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
+    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
 End Sub
 
 Private Sub EnsureSystemGroups()
@@ -969,6 +976,7 @@ End Sub
 
 Public Sub BtnToMade()
     On Error GoTo ErrHandler
+    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1020,6 +1028,13 @@ Public Sub BtnToMade()
 
     Dim usedTotal As Double
     Dim madeTotal As Double
+    Dim queuedEventId As String
+
+    If Not QueueProductionConsumeEvent(usedDeltas, madeDeltas, errNotes, queuedEventId) Then
+        If errNotes = "" Then errNotes = "Unable to queue production consume event."
+        MsgBox "Send to MADE cancelled: " & errNotes, vbExclamation
+        Exit Sub
+    End If
 
     If Not usedDeltas Is Nothing Then
         usedTotal = modInvMan.ApplyUsedDeltas(usedDeltas, errNotes, "BTN_TO_MADE - Components Used")
@@ -1059,6 +1074,7 @@ Public Sub BtnToMade()
     Dim msg As String
     msg = "Recorded component usage: " & Format$(usedTotal, "0.###") & " units."
     msg = msg & vbCrLf & "Recorded finished goods (MADE): " & Format$(madeTotal, "0.###")
+    If queuedEventId <> "" Then msg = msg & vbCrLf & "Inbox EventID: " & queuedEventId
     If errNotes <> "" Then
         msg = msg & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
         MsgBox msg, vbExclamation
@@ -1072,6 +1088,7 @@ End Sub
 
 Public Sub BtnToTotalInv()
     On Error GoTo ErrHandler
+    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1091,6 +1108,7 @@ Public Sub BtnToTotalInv()
     Dim errNotes As String
     Dim madeNotes As String
     Dim madeDeltas As Collection
+    Dim queuedEventId As String
     Set madeDeltas = BuildMadeDeltasFromProductionOutput(loOut, invLo, madeNotes)
     If madeDeltas Is Nothing Then
         If madeNotes = "" Then madeNotes = "No made quantities found in ProductionOutput."
@@ -1099,6 +1117,12 @@ Public Sub BtnToTotalInv()
     ElseIf madeDeltas.count = 0 Then
         If madeNotes = "" Then madeNotes = "No made quantities found in ProductionOutput."
         MsgBox "Send to TOTAL INV cancelled: " & madeNotes, vbExclamation
+        Exit Sub
+    End If
+
+    If Not QueueProductionCompleteEvent(madeDeltas, errNotes, queuedEventId) Then
+        If errNotes = "" Then errNotes = "Unable to queue production completion event."
+        MsgBox "Send to TOTAL INV cancelled: " & errNotes, vbExclamation
         Exit Sub
     End If
 
@@ -1125,6 +1149,7 @@ Public Sub BtnToTotalInv()
 
     Dim msg As String
     msg = "Moved MADE to TOTAL INV: " & Format$(totalMoved, "0.###") & " units."
+    If queuedEventId <> "" Then msg = msg & vbCrLf & "Inbox EventID: " & queuedEventId
     If errNotes <> "" Then
         msg = msg & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
         MsgBox msg, vbExclamation
@@ -3166,6 +3191,64 @@ NextRow:
     Next k
     Set BuildMadeDeltasFromProductionOutput = result
 End Function
+
+Private Function QueueProductionConsumeEvent(ByVal usedDeltas As Collection, ByVal madeDeltas As Collection, ByRef errNotes As String, ByRef eventIdOut As String) As Boolean
+    Dim payloadItems As Collection
+
+    Set payloadItems = New Collection
+    AddPayloadItemsFromDeltas payloadItems, usedDeltas, "USED"
+    AddPayloadItemsFromDeltas payloadItems, madeDeltas, "MADE"
+    If payloadItems.Count = 0 Then
+        If errNotes = "" Then errNotes = "No production consume payload rows were generated."
+        Exit Function
+    End If
+
+    QueueProductionConsumeEvent = modRoleEventWriter.QueuePayloadEventCurrent( _
+        EVENT_TYPE_PROD_CONSUME, _
+        modRoleEventWriter.ResolveCurrentUserId(), _
+        modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems), _
+        "BTN_TO_MADE", _
+        eventIdOut, _
+        errNotes)
+End Function
+
+Private Function QueueProductionCompleteEvent(ByVal madeDeltas As Collection, ByRef errNotes As String, ByRef eventIdOut As String) As Boolean
+    Dim payloadItems As Collection
+
+    Set payloadItems = New Collection
+    AddPayloadItemsFromDeltas payloadItems, madeDeltas, "MADE"
+    If payloadItems.Count = 0 Then
+        If errNotes = "" Then errNotes = "No production completion payload rows were generated."
+        Exit Function
+    End If
+
+    QueueProductionCompleteEvent = modRoleEventWriter.QueuePayloadEventCurrent( _
+        EVENT_TYPE_PROD_COMPLETE, _
+        modRoleEventWriter.ResolveCurrentUserId(), _
+        modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems), _
+        "BTN_TO_TOTALINV", _
+        eventIdOut, _
+        errNotes)
+End Function
+
+Private Sub AddPayloadItemsFromDeltas(ByVal payloadItems As Collection, ByVal deltas As Collection, ByVal ioType As String)
+    Dim delta As Variant
+    Dim payloadItem As Object
+
+    If payloadItems Is Nothing Then Exit Sub
+    If deltas Is Nothing Then Exit Sub
+
+    For Each delta In deltas
+        Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+            NzLng(delta("ROW")), _
+            NzStr(delta("ITEM_CODE")), _
+            NzDbl(delta("QTY")), _
+            "", _
+            NzStr(delta("ITEM_NAME")), _
+            ioType)
+        payloadItems.Add payloadItem
+    Next delta
+End Sub
 
 Private Function BuildRowKeySetFromDeltas(ByVal usedDeltas As Collection, ByVal madeDeltas As Collection) As Object
     Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")

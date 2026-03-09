@@ -422,6 +422,7 @@ End Sub
 
 Public Sub BtnShipmentsSent()
     On Error GoTo ErrHandler
+    If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
@@ -475,6 +476,13 @@ Public Sub BtnShipmentsSent()
         End If
     End If
 
+    Dim queuedEventId As String
+    If Not QueueShipmentsSentEvent(deltas, errNotes, queuedEventId) Then
+        If errNotes = "" Then errNotes = "Unable to queue shipment event."
+        MsgBox errNotes, vbCritical
+        Exit Sub
+    End If
+
     Dim shipLogs As New Collection
     PrepareShipmentsSentLogEntries invLo, deltas, shipLogs, SHIPMENTS_SENT_DEDUCTS_TOTALINV
 
@@ -499,11 +507,33 @@ Public Sub BtnShipmentsSent()
     Else
         msg = msg & vbCrLf & "SHIPMENTS cleared."
     End If
+    If queuedEventId <> "" Then msg = msg & vbCrLf & "Inbox EventID: " & queuedEventId
     MsgBox msg, vbInformation
     Exit Sub
 ErrHandler:
-    MsgBox "BTN_SHIPMENTS_SENT failed: " & Err.Description, vbCritical
+    Dim errMsg As String
+    errMsg = "BTN_SHIPMENTS_SENT failed: " & Err.Description
+    If queuedEventId <> "" Then errMsg = errMsg & vbCrLf & vbCrLf & "Inbox EventID already queued: " & queuedEventId
+    MsgBox errMsg, vbCritical
 End Sub
+
+Private Function QueueShipmentsSentEvent(ByVal deltas As Collection, ByRef errNotes As String, ByRef eventIdOut As String) As Boolean
+    Dim payloadJson As String
+
+    payloadJson = BuildPayloadJsonFromDeltas(deltas, "")
+    If payloadJson = "" Then
+        If errNotes = "" Then errNotes = "No shipment payload rows were generated."
+        Exit Function
+    End If
+
+    QueueShipmentsSentEvent = modRoleEventWriter.QueuePayloadEventCurrent( _
+        EVENT_TYPE_SHIP, _
+        modRoleEventWriter.ResolveCurrentUserId(), _
+        payloadJson, _
+        "BTN_SHIPMENTS_SENT", _
+        eventIdOut, _
+        errNotes)
+End Function
 
 Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
     On Error GoTo ErrHandler
@@ -556,6 +586,12 @@ Private Sub EnsureShipmentsButtons()
     EnsureButtonCustom ws, BTN_TO_SHIPMENTS, "To Shipments", "modTS_Shipments.BtnToShipments", leftA, nextTop, colAWidth
     nextTop = nextTop + BTN_STACK_SPACING
     EnsureButtonCustom ws, BTN_SHIPMENTS_SENT, "Shipments sent", "modTS_Shipments.BtnShipmentsSent", leftA, nextTop, colAWidth
+    RefreshShipmentsUiAccess ws
+End Sub
+
+Private Sub RefreshShipmentsUiAccess(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    modRoleUiAccess.ApplyShapeCapability ws, BTN_SHIPMENTS_SENT, "SHIP_POST"
 End Sub
 
 Public Sub ToggleUseExistingInventory()
@@ -2070,6 +2106,28 @@ NextReq:
     Next shipKey
 
     If result.Count > 0 Then Set BuildShipmentDeltaPacket = result
+End Function
+
+Private Function BuildPayloadJsonFromDeltas(ByVal deltas As Collection, Optional ByVal ioType As String = "") As String
+    Dim payloadItems As New Collection
+    Dim delta As Variant
+    Dim payloadItem As Object
+
+    If deltas Is Nothing Then Exit Function
+    If deltas.Count = 0 Then Exit Function
+
+    For Each delta In deltas
+        Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+            NzLng(delta("ROW")), _
+            NzStr(delta("ITEM_CODE")), _
+            NzDbl(delta("QTY")), _
+            "", _
+            NzStr(delta("ITEM_NAME")), _
+            ioType)
+        payloadItems.Add payloadItem
+    Next delta
+
+    BuildPayloadJsonFromDeltas = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
 End Function
 
 Private Sub PrepareTotalInventoryLogEntries(invLo As ListObject, deltas As Collection, logEntries As Collection)

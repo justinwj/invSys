@@ -33,7 +33,7 @@ Public Function BuildPhase2ConfigWorkbook(ByVal whId As String, ByVal stId As St
     wsSt.Range("A2").Resize(1, 4).Value = Array(stId, whId, Environ$("COMPUTERNAME"), roleDefault)
     wsSt.ListObjects.Add(xlSrcRange, wsSt.Range("A1:D2"), , xlYes).Name = "tblStationConfig"
 
-    p = Environ$("TEMP") & "\" & whId & ".invSys.Config.test.xlsx"
+    p = BuildUniqueTestWorkbookPath(whId & ".invSys.Config")
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildPhase2ConfigWorkbook = wb
 End Function
@@ -61,7 +61,7 @@ Public Function BuildPhase2AuthWorkbook(ByVal whId As String, _
     wsCaps.Range("A2").Resize(1, 7).Value = Array("", "", "", "", "", "", "")
     wsCaps.ListObjects.Add(xlSrcRange, wsCaps.Range("A1:G2"), , xlYes).Name = "tblCapabilities"
 
-    p = Environ$("TEMP") & "\" & whId & ".invSys.Auth.test.xlsx"
+    p = BuildUniqueTestWorkbookPath(whId & ".invSys.Auth")
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildPhase2AuthWorkbook = wb
 End Function
@@ -100,7 +100,7 @@ Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, Optional ByVa
         loSku.Name = "tblSkuCatalog"
     End If
 
-    p = Environ$("TEMP") & "\" & whId & ".invSys.Data.Inventory.test.xlsx"
+    p = BuildUniqueTestWorkbookPath(whId & ".invSys.Data.Inventory")
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildPhase2InventoryWorkbook = wb
 End Function
@@ -119,7 +119,7 @@ Public Function BuildReceiveInboxWorkbook(Optional ByVal stationId As String = "
     Call modProcessor.EnsureReceiveInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxReceive").ListObjects("tblInboxReceive"), False
 
-    p = Environ$("TEMP") & "\invSys.Inbox.Receiving." & stationId & ".test.xlsx"
+    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Receiving." & stationId)
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildReceiveInboxWorkbook = wb
 End Function
@@ -134,7 +134,7 @@ Public Function BuildShipInboxWorkbook(Optional ByVal stationId As String = "S1"
     Call modProcessor.EnsureShipInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxShip").ListObjects("tblInboxShip"), False
 
-    p = Environ$("TEMP") & "\invSys.Inbox.Shipping." & stationId & ".test.xlsx"
+    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Shipping." & stationId)
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildShipInboxWorkbook = wb
 End Function
@@ -149,7 +149,7 @@ Public Function BuildProductionInboxWorkbook(Optional ByVal stationId As String 
     Call modProcessor.EnsureProductionInboxSchema(wb, report)
     DeleteAllTableRows wb.Worksheets("InboxProd").ListObjects("tblInboxProd"), False
 
-    p = Environ$("TEMP") & "\invSys.Inbox.Production." & stationId & ".test.xlsx"
+    p = BuildUniqueTestWorkbookPath("invSys.Inbox.Production." & stationId)
     SaveWorkbookAsTestFile wb, p, 51
     Set BuildProductionInboxWorkbook = wb
 End Function
@@ -415,10 +415,34 @@ Private Function EscapeJson(ByVal textIn As String) As String
 End Function
 
 Private Sub SaveWorkbookAsTestFile(ByVal wb As Workbook, ByVal pathOut As String, ByVal fileFormat As Long)
+    CloseWorkbookByFullName pathOut
     On Error Resume Next
     Kill pathOut
     On Error GoTo 0
     wb.SaveAs Filename:=pathOut, FileFormat:=fileFormat
+End Sub
+
+Private Function BuildUniqueTestWorkbookPath(ByVal baseName As String) As String
+    Dim suffix As String
+
+    suffix = Format$(Now, "yyyymmdd_hhnnss") & "_" & Right$(Replace$(CreateObject("Scriptlet.TypeLib").GUID, "}", ""), 8)
+    suffix = Replace$(suffix, "{", "")
+    suffix = Replace$(suffix, "-", "")
+    BuildUniqueTestWorkbookPath = Environ$("TEMP") & "\" & baseName & "." & suffix & ".test.xlsx"
+End Function
+
+Private Sub CloseWorkbookByFullName(ByVal fullNameIn As String)
+    Dim wb As Workbook
+
+    If Trim$(fullNameIn) = "" Then Exit Sub
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, fullNameIn, vbTextCompare) = 0 Then
+            On Error Resume Next
+            wb.Close SaveChanges:=False
+            On Error GoTo 0
+            Exit For
+        End If
+    Next wb
 End Sub
 
 Private Sub SetTableRowValue(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueOut As Variant)
