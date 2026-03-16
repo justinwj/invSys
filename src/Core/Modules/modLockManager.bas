@@ -182,6 +182,74 @@ FailRelease:
     ReleaseLock = False
 End Function
 
+Public Function BreakLock(ByVal lockName As String, _
+                          Optional ByVal warehouseId As String = "", _
+                          Optional ByVal breakerUserId As String = "", _
+                          Optional ByVal reason As String = "", _
+                          Optional ByVal inventoryWb As Workbook = Nothing, _
+                          Optional ByRef message As String = "") As Boolean
+    On Error GoTo FailBreak
+
+    Dim wb As Workbook
+    Dim lo As ListObject
+    Dim rowIndex As Long
+    Dim nowTs As Date
+
+    lockName = UCase$(SafeTrimLock(lockName))
+    If lockName = "" Then
+        message = "Lock name is required."
+        Exit Function
+    End If
+
+    Set wb = ResolveInventoryWorkbookLock(warehouseId, inventoryWb)
+    If wb Is Nothing Then
+        message = "Inventory workbook not found."
+        Exit Function
+    End If
+    If Not modInventorySchema.EnsureInventorySchema(wb) Then
+        message = "Unable to validate inventory schema."
+        Exit Function
+    End If
+
+    Set lo = FindListObjectByNameLock(wb, "tblLocks")
+    If lo Is Nothing Then
+        message = "tblLocks not found."
+        Exit Function
+    End If
+
+    SetSheetProtectionLock lo.Parent, False
+    rowIndex = FindLockRow(lo, lockName)
+    If rowIndex = 0 Then
+        message = "Lock not found."
+        GoTo CleanExit
+    End If
+
+    nowTs = Now
+    SetCellByColumnLock lo, rowIndex, "HeartbeatAtUTC", nowTs
+    SetCellByColumnLock lo, rowIndex, "ExpiresAtUTC", nowTs
+    SetCellByColumnLock lo, rowIndex, "Status", LOCK_STATUS_BROKEN
+    If breakerUserId <> "" Then SetCellByColumnLock lo, rowIndex, "OwnerUserId", breakerUserId
+
+    BreakLock = True
+    If reason <> "" Then
+        message = "Lock broken: " & reason
+    Else
+        message = "Lock broken."
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If Not lo Is Nothing Then SetSheetProtectionLock lo.Parent, True
+    On Error GoTo 0
+    Exit Function
+
+FailBreak:
+    On Error Resume Next
+    If Not lo Is Nothing Then SetSheetProtectionLock lo.Parent, True
+    On Error GoTo 0
+    message = "BreakLock failed: " & Err.Description
+End Function
+
 Private Function ResolveInventoryWorkbookLock(ByVal warehouseId As String, ByVal inventoryWb As Workbook) As Workbook
     If Not inventoryWb Is Nothing Then
         Set ResolveInventoryWorkbookLock = inventoryWb

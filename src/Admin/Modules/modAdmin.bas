@@ -1,10 +1,14 @@
 Attribute VB_Name = "modAdmin"
+Option Explicit
 
 Sub Admin_Click()
-    frmAdminControls.Show
+    Dim report As String
+    Call modAdminConsole.OpenAdminConsole(, report)
 End Sub
+
 Sub Open_CreateDeleteUser()
-    frmCreateDeleteUser.Show
+    Dim report As String
+    Call modAdminConsole.OpenUserManagement(, report)
 End Sub
 
 ''''''''''''''''''''''''''''''''''''
