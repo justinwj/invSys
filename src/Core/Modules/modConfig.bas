@@ -277,6 +277,17 @@ Private Function ResolveConfigWorkbook(ByVal whId As String) As Workbook
         End If
     Next wb
 
+    If whId <> "" Then
+        For Each wb In Application.Workbooks
+            If WorkbookHasListObject(wb, "tblWarehouseConfig") And WorkbookHasListObject(wb, "tblStationConfig") Then
+                If WorkbookHasWarehouseConfigRow(wb, whId) Then
+                    Set ResolveConfigWorkbook = wb
+                    Exit Function
+                End If
+            End If
+        Next wb
+    End If
+
     For Each wb In Application.Workbooks
         If WorkbookHasListObject(wb, "tblWarehouseConfig") And WorkbookHasListObject(wb, "tblStationConfig") Then
             Set ResolveConfigWorkbook = wb
@@ -295,6 +306,13 @@ End Function
 
 Private Function WorkbookHasListObject(ByVal wb As Workbook, ByVal tableName As String) As Boolean
     WorkbookHasListObject = Not (FindListObjectByName(wb, tableName) Is Nothing)
+End Function
+
+Private Function WorkbookHasWarehouseConfigRow(ByVal wb As Workbook, ByVal whId As String) As Boolean
+    Dim lo As ListObject
+    Set lo = FindListObjectByName(wb, "tblWarehouseConfig")
+    If lo Is Nothing Then Exit Function
+    WorkbookHasWarehouseConfigRow = (FindRowByValue(lo, "WarehouseId", whId) > 0)
 End Function
 
 Private Function ResolveWarehouseRow(ByVal loWh As ListObject, ByVal whId As String, ByVal wbName As String) As Long

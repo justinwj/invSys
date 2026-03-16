@@ -37,6 +37,8 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim evt As Object
     Dim lockHeld As Boolean
     Dim capability As String
+    Dim artifactWarnings As Long
+    Dim artifactReport As String
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -112,9 +114,13 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             If modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
                 Select Case UCase$(statusOut)
                     Case APPLY_STATUS_APPLIED
+                        artifactReport = vbNullString
+                        If Not modWarehouseSync.AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
                         UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED
                         RunBatch = RunBatch + 1
                     Case APPLY_STATUS_SKIP_DUP
+                        artifactReport = vbNullString
+                        If Not modWarehouseSync.AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
                         UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_SKIP_DUP
                         skipDupCount = skipDupCount + 1
                     Case Else
@@ -140,6 +146,13 @@ ContinueInbox:
     Next target
 
     report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
+    If artifactWarnings > 0 Then report = report & "; ArtifactWarnings=" & CStr(artifactWarnings)
+
+    artifactReport = vbNullString
+    If Not modWarehouseSync.GenerateWarehouseSnapshot(warehouseId, inventoryWb, "", Nothing, artifactReport) Then
+        If report <> "" Then report = report & "; "
+        report = report & "SnapshotError=" & artifactReport
+    End If
 
 CleanExit:
     If lockHeld Then Call modLockManager.ReleaseLock("INVENTORY", runId, inventoryWb)

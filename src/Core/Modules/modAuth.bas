@@ -327,6 +327,17 @@ Private Function ResolveAuthWorkbook(ByVal whId As String) As Workbook
         End If
     Next wb
 
+    If whId <> "" Then
+        For Each wb In Application.Workbooks
+            If WorkbookHasListObject(wb, "tblUsers") And WorkbookHasListObject(wb, "tblCapabilities") Then
+                If WorkbookHasAuthScope(wb, whId) Then
+                    Set ResolveAuthWorkbook = wb
+                    Exit Function
+                End If
+            End If
+        Next wb
+    End If
+
     For Each wb In Application.Workbooks
         If WorkbookHasListObject(wb, "tblUsers") And WorkbookHasListObject(wb, "tblCapabilities") Then
             Set ResolveAuthWorkbook = wb
@@ -435,6 +446,23 @@ End Function
 
 Private Function WorkbookHasListObject(ByVal wb As Workbook, ByVal tableName As String) As Boolean
     WorkbookHasListObject = Not (FindListObjectByName(wb, tableName) Is Nothing)
+End Function
+
+Private Function WorkbookHasAuthScope(ByVal wb As Workbook, ByVal whId As String) As Boolean
+    Dim lo As ListObject
+    Dim i As Long
+    Dim scopeVal As String
+
+    Set lo = FindListObjectByName(wb, "tblCapabilities")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+
+    For i = 1 To lo.ListRows.Count
+        scopeVal = SafeTrim(GetCellByColumn(lo, i, "WarehouseId"))
+        If StrComp(scopeVal, whId, vbTextCompare) = 0 Or scopeVal = "*" Then
+            WorkbookHasAuthScope = True
+            Exit Function
+        End If
+    Next i
 End Function
 
 Private Function FindListObjectByName(ByVal wb As Workbook, ByVal tableName As String) As ListObject

@@ -600,19 +600,24 @@ sequenceDiagram
 ### Phase 5: Multi-Warehouse Sync
 **Goal:** Outbox, VBA HQ aggregation, global snapshots
 
+**Status note:** The workbook-driven multi-warehouse sync path is implemented and validated for manual publish/copy simulation. Windows Task Scheduler wiring is still pending, so the phase milestone remains open until scheduled execution is finished.
+
 **Tasks:**
-- [ ] Build Outbox event writing in Processor (VBA)
-- [ ] Build VBA HQ aggregation macro (`invSys.HQ.Aggregator.xlsm`)
-- [ ] Build global snapshot generation logic (VBA)
+- [x] Build Outbox event writing in Processor (VBA)
+- [x] Build VBA HQ aggregation macro (`invSys.HQ.Aggregator.xlsm`)
+- [x] Build global snapshot generation logic (VBA)
 - [ ] Configure Windows Task Scheduler for HQ aggregation
 
 **Tests:**
-- [ ] Test: Outbox writes include applied metadata (`EventID`, `AppliedAtUTC`, `RunId`, source warehouse/station)
-- [ ] Test: SharePoint sync workflow (manual file copy simulation) publishes warehouse snapshots/events correctly
-- [ ] Test: WH1 + WH2 -> HQ aggregation -> Global snapshot preserves per-warehouse quantities
+- [x] Test: Outbox writes include applied metadata (`EventID`, `AppliedAtUTC`, `RunId`, source warehouse/station)
+- [x] Test: SharePoint sync workflow (manual file copy simulation) publishes warehouse snapshots/events correctly
+- [x] Test: WH1 + WH2 -> HQ aggregation -> Global snapshot preserves per-warehouse quantities
+
+**Execution evidence:**
+- [x] Phase 5 isolated Excel validation passed on March 16, 2026: `3 passed, 0 failed` in `tests/unit/phase5_test_results.md`
 
 **Deliverables:**
-- [ ] Multi-warehouse sync with VBA-powered HQ Aggregator
+- [x] Multi-warehouse sync with VBA-powered HQ Aggregator
 
 ---
 ### Phase 6: User Systems and XLAM Hardening
