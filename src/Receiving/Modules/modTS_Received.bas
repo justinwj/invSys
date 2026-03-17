@@ -22,7 +22,7 @@ Private mUndoLogRows As Collection
 Private mUndoRT As Variant
 Private mUndoAGG As Variant
 Private mRedoReady As Boolean
-Private mDynSearch As cDynItemSearch
+Private mDynSearch As Object
 Private mRowMap As Object ' maps staging row number -> Array(invRow, refNumber)
 
 ' ==== public entry points =====
@@ -51,7 +51,7 @@ Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
     If mDynSearch Is Nothing Then
         Debug.Print "  mDynSearch is Nothing, creating new cDynItemSearch"
         On Error GoTo ErrHandler
-        Set mDynSearch = New cDynItemSearch
+        Set mDynSearch = CreateDynItemSearch()
         Debug.Print "  New cDynItemSearch succeeded"
     Else
         Debug.Print "  Reusing existing cDynItemSearch instance"

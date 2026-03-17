@@ -46,7 +46,7 @@ Private Const SHIPPING_BOM_DATA_ROWS As Long = 50
 Private Const SHIPPING_BOM_COLS As Long = 3 ' ROW, QUANTITY, UOM
 Private Const SHIPMENTS_SENT_DEDUCTS_TOTALINV As Boolean = False
 
-Private mDynSearch As cDynItemSearch
+Private mDynSearch As Object
 Private mNextInvSysRow As Long
 Private mAggDirty As Boolean
 
@@ -573,7 +573,7 @@ End Function
 Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
     On Error GoTo ErrHandler
     If targetCell Is Nothing Then Exit Sub
-    If mDynSearch Is Nothing Then Set mDynSearch = New cDynItemSearch
+    If mDynSearch Is Nothing Then Set mDynSearch = CreateDynItemSearch()
     mDynSearch.UseTemplateForm "ufShippingItemSearch"
     mDynSearch.ShowForCell targetCell
     Exit Sub

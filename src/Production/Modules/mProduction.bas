@@ -47,8 +47,8 @@ Private Const PALETTE_LINES_STAGING_ROW As Long = 500000 ' System 4: staging for
 Private mRowCountCache As Object
 Private mPaletteTableMeta As Object
 Private mHiddenSystems As Collection
-Private mRecipePicker As cDynItemSearch
-Private mPickerRouter As cPickerRouter
+Private mRecipePicker As Object
+Private mPickerRouter As Object
 Private mSystemGroupsInit As Boolean
 Private mSystemGroupNames(1 To 4) As String
 Private mSystemGroupTables(1 To 4) As Variant
@@ -76,7 +76,7 @@ Public Sub HandleProductionBeforeDoubleClick(ByVal target As Range, ByRef Cancel
 End Sub
 
 Private Sub EnsurePickerRouter()
-    If mPickerRouter Is Nothing Then Set mPickerRouter = New cPickerRouter
+    If mPickerRouter Is Nothing Then Set mPickerRouter = CreatePickerRouter()
 End Sub
 
 Public Sub HandleProductionChange(ByVal target As Range)
@@ -762,7 +762,7 @@ Public Sub BtnLoadRecipe()
         MsgBox "Recipe Builder header missing RECIPE_NAME column.", vbCritical
         Exit Sub
     End If
-    If mRecipePicker Is Nothing Then Set mRecipePicker = New cDynItemSearch
+    If mRecipePicker Is Nothing Then Set mRecipePicker = CreateDynItemSearch()
     mRecipePicker.UseTemplateForm "ufProductionItemSearch"
     mRecipePicker.ShowForRecipeCell targetCell
 End Sub

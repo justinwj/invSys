@@ -117,6 +117,13 @@ function Import-Components {
 
     foreach ($file in $Files) {
         if ($file.Extension -eq ".cls") {
+            $firstLine = Get-Content -LiteralPath $file.FullName -TotalCount 1
+            if ($firstLine -match '^VERSION 1\.0 CLASS') {
+                Write-Host ("  Importing " + $file.FullName)
+                [void]$VBProject.VBComponents.Import($file.FullName)
+                continue
+            }
+
             $componentName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
             Write-Host ("  Creating class module " + $componentName)
             $rawLines = Get-Content -LiteralPath $file.FullName
