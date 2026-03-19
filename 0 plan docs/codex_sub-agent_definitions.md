@@ -38,6 +38,16 @@ Use these heuristics:
 
 Do not use explorer-style delegation for broad repo work unless the question is narrowly scoped and read-only.
 
+## Reasoning Level Note
+
+`Preferred reasoning level` in this document is a human guidance label, not a hard Codex product setting.
+
+- `high`
+  Use the strongest available reasoning mode or model for complex, coupled, or high-risk work.
+
+- `medium`
+  Use the normal/default worker setting for bounded implementation tasks.
+
 ## First-Pass Agent Set
 
 ### 1. `coordinator-reviewer`
@@ -124,6 +134,11 @@ Write scope:
   - closely related runtime-neutral helpers approved by the Coordinator
 - [src/InventoryDomain](/c:/Users/Justin/repos/invSys_fork/src/InventoryDomain)
 
+Boundary note:
+
+- `runtime-neutral helpers` does not include `modConfig.bas`, `modGlobals.bas`, `modAuth.bas`, or `modDiagramCore.bas`
+- those files require explicit reassignment, not a helper-scope exception
+
 Use when:
 
 - the task is about event flow, idempotency, locks, apply logic, or shared inventory semantics
@@ -160,6 +175,7 @@ Do not use when:
 
 - the task needs packaging/runtime/build work
 - the task primarily changes shared event semantics
+- the task touches `modDiagramCore.bas`
 
 Launch pattern:
 
@@ -187,6 +203,7 @@ Do not use when:
 
 - the task needs packaging/runtime/build work
 - the task primarily changes shared event semantics
+- the task touches `modDiagramCore.bas`
 
 Launch pattern:
 
@@ -216,6 +233,7 @@ Do not use when:
 
 - the task needs packaging/runtime/build work
 - the task primarily changes shared event semantics
+- the task touches `modDiagramCore.bas`
 
 Launch pattern:
 
@@ -258,7 +276,7 @@ Launch pattern:
 
 ```text
 Use prompt block: test-harness
-Excel/COM: not allowed unless explicitly re-scoped through runtime-packaging
+Excel/COM: not allowed. If test validation requires Excel execution, delegate that execution step to runtime-packaging, not test-harness.
 Expected output: test/fixture/harness changes only
 ```
 

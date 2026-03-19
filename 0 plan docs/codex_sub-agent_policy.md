@@ -175,7 +175,15 @@ Common deny-list for role agents:
 Allow-list:
 
 - [tests](/c:/Users/Justin/repos/invSys_fork/tests)
-- validation harness scripts under [tools](/c:/Users/Justin/repos/invSys_fork/tools) except packaging/build scripts
+- [create_phase1_fixture_xlsx.ps1](/c:/Users/Justin/repos/invSys_fork/tools/create_phase1_fixture_xlsx.ps1)
+- [create_phase2_fixture_xlsx.ps1](/c:/Users/Justin/repos/invSys_fork/tools/create_phase2_fixture_xlsx.ps1)
+- [run_phase1_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase1_excel_validation.ps1)
+- [run_phase2_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase2_excel_validation.ps1)
+- [run_phase2_excel_validation_visible.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase2_excel_validation_visible.ps1)
+- [run_phase3_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase3_excel_validation.ps1)
+- [run_phase4_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase4_excel_validation.ps1)
+- [run_phase5_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase5_excel_validation.ps1)
+- [run_phase6_excel_validation.ps1](/c:/Users/Justin/repos/invSys_fork/tools/run_phase6_excel_validation.ps1)
 
 Deny-list:
 
