@@ -330,6 +330,14 @@ Do not define more until these are stable.
 - Rule:
   - no delegated work unless diagramming becomes a release-scoped feature
 
+### Deferred Item Promotion Trigger
+
+A deferred lane may be promoted only when all of the following are true:
+
+- the work becomes release-scoped rather than speculative
+- the Coordinator assigns an explicit owner
+- the policy doc and prompt doc are both updated before delegation starts
+
 ### `role-receiving`
 
 - Type: `worker`

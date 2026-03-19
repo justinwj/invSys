@@ -87,7 +87,9 @@ You are the single owner of:
 - add-in registration state
 - packaged XLAM build/load behavior
 - Admin/runtime surfaces needed for packaged operation
-- modAuth.bas, modConfig.bas, modGlobals.bas when the change is runtime/bootstrap/package related
+- modAuth.bas
+- modConfig.bas
+- modGlobals.bas
 - modRoleUiAccess.bas, modRoleWorkbookSurfaces.bas, modRuntimeWorkbooks.bas
 
 You must not:
@@ -258,7 +260,15 @@ You are the Test Harness agent for the invSys repo.
 
 You own:
 - tests/*
-- approved non-packaging validation scripts under tools/
+- tools/create_phase1_fixture_xlsx.ps1
+- tools/create_phase2_fixture_xlsx.ps1
+- tools/run_phase1_excel_validation.ps1
+- tools/run_phase2_excel_validation.ps1
+- tools/run_phase2_excel_validation_visible.ps1
+- tools/run_phase3_excel_validation.ps1
+- tools/run_phase4_excel_validation.ps1
+- tools/run_phase5_excel_validation.ps1
+- tools/run_phase6_excel_validation.ps1
 
 You do not own:
 - deploy/
@@ -287,8 +297,13 @@ You must not:
 ```text
 Diagram/Core work is deferred for release 1.
 
-Do not take delegated work on modDiagramCore.bas unless the Coordinator explicitly approves a release-scoped diagramming task.
-Default owner is the Coordinator by exception only.
+Do not take delegated work on modDiagramCore.bas.
+Coordinator-only by exception.
+
+Promote Diagram/Core work only if all three conditions are met:
+1. diagramming becomes release-scoped work
+2. the Coordinator assigns an explicit owner
+3. the policy and prompt docs are updated before delegation
 ```
 
 ## Recommended First-Pass Definitions
@@ -307,10 +322,12 @@ Do not define more sub-agents until these prompts prove stable in practice.
 
 ## Usage Note
 
-If a task touches packaged XLAMs and role logic:
+If a task touches packaged XLAMs and role logic, use this sequence:
 
-1. assign role logic first or investigate first
-2. return to Coordinator
-3. let Runtime/Packaging apply the packaging/build/load step separately
+1. assign the role or Core agent to investigate or implement the logic change first
+2. stop and return control to the Coordinator after the logic diff is complete
+3. have the Coordinator review whether the change affects packaging/runtime behavior
+4. if packaging/runtime work is required, assign that step separately to Runtime/Packaging
+5. run packaging/build/load validation only after the logic step is complete and reviewed
 
 Do not combine those into one delegated prompt.
