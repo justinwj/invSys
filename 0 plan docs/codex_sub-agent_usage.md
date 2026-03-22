@@ -149,7 +149,13 @@ Allowed paths:
 - src/Core/Modules/modRoleUiAccess.bas
 - src/Core/Modules/modRoleWorkbookSurfaces.bas
 - src/Core/Modules/modRuntimeWorkbooks.bas
-- Excel-opening or add-in-mutating scripts under tools/
+- tools/run_phase1_excel_validation.ps1
+- tools/run_phase2_excel_validation.ps1
+- tools/run_phase2_excel_validation_visible.ps1
+- tools/run_phase3_excel_validation.ps1
+- tools/run_phase4_excel_validation.ps1
+- tools/run_phase5_excel_validation.ps1
+- tools/run_phase6_excel_validation.ps1
 
 Forbidden paths:
 - role business logic
