@@ -7,6 +7,10 @@ It is intentionally narrow.
 The goal is not to maximize agent count.
 The goal is to reduce collisions, protect packaged Excel/runtime work, and keep changes reviewable.
 
+For practical launch and handoff use, also see:
+
+- [codex_sub-agent_usage.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_usage.md)
+
 This policy is organized into four implementation layers:
 
 1. Coordinator rules
@@ -64,6 +68,8 @@ The Coordinator must reject or re-scope a sub-agent diff if it:
 - mixes feature work and packaging work in one change
 - changes tests in a way that hides runtime failures instead of exposing them
 
+If Runtime/Packaging begins to drift outside its intended lane in practice, the Coordinator must tighten that lane from mixed path scope to named-files-only scope before delegating further Runtime/Packaging work.
+
 ### Delegation Rules
 
 Delegate only when:
@@ -113,6 +119,7 @@ Special rule:
 
 - single owner for Excel/COM, packaged XLAM rebuilds, add-in registration, and deployment validation
 - release 1 owner for Admin surfaces, auth/config bootstrap, and shared runtime state
+- if repeated scope drift appears in this lane, reduce Runtime/Packaging scope to named files only until the drift is resolved
 
 ### B. Core Event/Inventory Agent
 

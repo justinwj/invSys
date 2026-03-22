@@ -9,6 +9,7 @@ They are intended to be pasted into Codex sub-agent definitions or used as launc
 Use these prompts together with:
 
 - [codex_sub-agent_policy.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_policy.md)
+- [codex_sub-agent_usage.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_usage.md)
 
 Do not use these prompts without the policy.
 
@@ -60,6 +61,7 @@ Hard rules:
 - only one agent may run Excel/COM or operate in an active Excel session at a time
 - if write scopes overlap, do not delegate in parallel
 - if packaged add-ins are loaded, treat runtime state as unsafe until isolated
+- if Runtime/Packaging starts drifting outside its intended lane, tighten it to named-files-only scope before delegating more Runtime/Packaging work
 
 Reject or re-scope work if:
 - an agent edits outside its allow-list

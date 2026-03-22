@@ -1,4 +1,4 @@
-# Codex Sub-Agent Definitions for invSys
+﻿# Codex Sub-Agent Definitions for invSys
 
 ## Purpose
 
@@ -14,6 +14,7 @@ Use this document together with:
 
 - [codex_sub-agent_policy.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_policy.md)
 - [codex_sub-agent_prompts.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_prompts.md)
+- [codex_sub-agent_usage.md](/c:/Users/Justin/repos/invSys_fork/0%20plan%20docs/codex_sub-agent_usage.md)
 
 Do not define agents beyond this set until the first-pass definitions are stable in practice.
 
@@ -107,6 +108,10 @@ Use when:
 Do not use when:
 
 - the task is pure business logic in Receiving, Shipping, Production, or InventoryDomain
+
+Scope guard:
+
+- if this lane begins to drift outside its intended ownership in practice, the Coordinator should re-scope it to named files only before the next delegation
 
 Launch pattern:
 
@@ -337,7 +342,7 @@ Unsafe parallel pattern:
 ## Practical Bottom Line
 
 This definition set is intentionally conservative.
-It is designed for this repo’s actual failure modes:
+It is designed for this repo's actual failure modes:
 
 - shared `Core` gravity
 - packaged XLAM/runtime fragility
@@ -346,3 +351,4 @@ It is designed for this repo’s actual failure modes:
 
 If those become stable, this set can expand later.
 Until then, fewer agents with harder boundaries is the correct model.
+
