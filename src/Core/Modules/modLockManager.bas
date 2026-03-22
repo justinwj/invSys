@@ -33,7 +33,7 @@ Public Function AcquireLock(ByVal lockName As String, _
         Exit Function
     End If
 
-    If Not modInventorySchema.EnsureInventorySchema(wb) Then
+    If Not EnsureInventorySchemaBridge(wb) Then
         message = "Unable to validate inventory schema."
         Exit Function
     End If
@@ -106,7 +106,7 @@ Public Function UpdateHeartbeat(ByVal lockName As String, _
 
     Set wb = ResolveInventoryWorkbookLock(modConfig.GetString("WarehouseId", ""), inventoryWb)
     If wb Is Nothing Then Exit Function
-    If Not modInventorySchema.EnsureInventorySchema(wb) Then Exit Function
+    If Not EnsureInventorySchemaBridge(wb) Then Exit Function
 
     Set lo = FindListObjectByNameLock(wb, "tblLocks")
     If lo Is Nothing Then Exit Function
@@ -152,7 +152,7 @@ Public Function ReleaseLock(ByVal lockName As String, _
 
     Set wb = ResolveInventoryWorkbookLock(modConfig.GetString("WarehouseId", ""), inventoryWb)
     If wb Is Nothing Then Exit Function
-    If Not modInventorySchema.EnsureInventorySchema(wb) Then Exit Function
+    If Not EnsureInventorySchemaBridge(wb) Then Exit Function
 
     Set lo = FindListObjectByNameLock(wb, "tblLocks")
     If lo Is Nothing Then Exit Function
@@ -206,7 +206,7 @@ Public Function BreakLock(ByVal lockName As String, _
         message = "Inventory workbook not found."
         Exit Function
     End If
-    If Not modInventorySchema.EnsureInventorySchema(wb) Then
+    If Not EnsureInventorySchemaBridge(wb) Then
         message = "Unable to validate inventory schema."
         Exit Function
     End If
@@ -254,7 +254,7 @@ Private Function ResolveInventoryWorkbookLock(ByVal warehouseId As String, ByVal
     If Not inventoryWb Is Nothing Then
         Set ResolveInventoryWorkbookLock = inventoryWb
     Else
-        Set ResolveInventoryWorkbookLock = modInventoryApply.ResolveInventoryWorkbook(warehouseId)
+        Set ResolveInventoryWorkbookLock = ResolveInventoryWorkbookBridge(warehouseId)
     End If
 End Function
 

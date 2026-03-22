@@ -11,7 +11,7 @@ Public Sub AddGoodsReceived_Click()
     Dim insertedCount As Long
     On Error GoTo ErrorHandler
     Call modUR_Transaction.BeginTransaction
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
@@ -84,7 +84,7 @@ Public Sub DeductUsed_Click()
     Dim insertedCount As Long
     On Error GoTo ErrorHandler
     Call modUR_Transaction.BeginTransaction
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
@@ -155,7 +155,7 @@ Public Sub DeductShipments_Click()
     Dim insertedCount As Long
     On Error GoTo ErrorHandler
     Call modUR_Transaction.BeginTransaction
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
@@ -226,7 +226,7 @@ Public Sub Adjustments_Click()
     Dim insertedCount As Long
     On Error GoTo ErrorHandler
     Call modUR_Transaction.BeginTransaction
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
@@ -297,7 +297,7 @@ Public Sub AddMadeItems_Click()
     Dim insertedCount As Long
     On Error GoTo ErrorHandler
     Call modUR_Transaction.BeginTransaction
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Or tbl.ListRows.count = 0 Then
         MsgBox "No data in invSys table.", vbExclamation, "Error"
@@ -364,7 +364,7 @@ Public Function ApplyUsedDeltas(deltas As Collection, ByRef errNotes As String, 
     If deltas Is Nothing Or deltas.Count = 0 Then Exit Function
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then
         errNotes = "invSys table not found."
@@ -444,7 +444,7 @@ Public Function ApplyMadeDeltas(deltas As Collection, ByRef errNotes As String, 
     If deltas Is Nothing Or deltas.Count = 0 Then Exit Function
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then
         errNotes = "invSys table not found."
@@ -514,7 +514,7 @@ Public Function ApplyMadeToInventoryDeltas(deltas As Collection, ByRef errNotes 
 
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then
         errNotes = "invSys table not found."
@@ -604,7 +604,7 @@ Public Function ApplyShipmentDeltas(deltas As Collection, ByRef errNotes As Stri
 
     Dim ws As Worksheet
     Dim tbl As ListObject
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then
         errNotes = "invSys table not found."
@@ -702,7 +702,8 @@ Public Function LogMultipleInventoryChanges(LogEntries As Collection) As Long
     Dim newQtyVal As Variant
 
     Set ws = ThisWorkbook.Sheets("InventoryLog")
-    Set tbl = ws.ListObjects("InventoryLog")
+    Set tbl = GetInventoryLogTableInvMan(ws)
+    If tbl Is Nothing Then Exit Function
 
     For i = 1 To LogEntries.Count
         logData = LogEntries(i)
@@ -748,7 +749,11 @@ Public Function RemoveLastBulkLogEntries(ByVal CountToRemove As Long) As Collect
     Dim lastRow As Long
     Dim rowValues As Variant
 
-    Set tbl = ThisWorkbook.Sheets("InventoryLog").ListObjects("InventoryLog")
+    Set tbl = GetInventoryLogTableInvMan(ThisWorkbook.Sheets("InventoryLog"))
+    If tbl Is Nothing Then
+        Set RemoveLastBulkLogEntries = capturedEntries
+        Exit Function
+    End If
     lastRow = tbl.ListRows.Count
 
     If lastRow = 0 Or CountToRemove <= 0 Then
@@ -772,8 +777,8 @@ Public Sub ReAddBulkLogEntries(ByVal LogDataCollection As Collection)
     Dim logRowData As Variant
     Dim newRow As ListRow
 
-    Set tbl = ThisWorkbook.Sheets("InventoryLog").ListObjects("InventoryLog")
-    If LogDataCollection Is Nothing Then Exit Sub
+    Set tbl = GetInventoryLogTableInvMan(ThisWorkbook.Sheets("InventoryLog"))
+    If tbl Is Nothing Or LogDataCollection Is Nothing Then Exit Sub
 
     For i = 1 To LogDataCollection.Count
         logRowData = LogDataCollection(i)
@@ -797,7 +802,11 @@ Public Sub DisplayMessage(msg As String)
     Dim ws As Worksheet
     Dim shp As Shape
     ' Set reference to the sheet
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetInvMan()
+    If ws Is Nothing Then
+        MsgBox "Error: Inventory worksheet not found!", vbCritical, "DisplayMessage Error"
+        Exit Sub
+    End If
     ' Check if the shape exists before updating
     On Error Resume Next
     Set shp = ws.shapes("lblMessage")
@@ -809,6 +818,22 @@ Public Sub DisplayMessage(msg As String)
         MsgBox "Error: lblMessage text box not found!", vbCritical, "DisplayMessage Error"
     End If
 End Sub
+
+Private Function ResolveInventoryWorksheetInvMan() As Worksheet
+    On Error Resume Next
+    Set ResolveInventoryWorksheetInvMan = ThisWorkbook.Worksheets("InventoryManagement")
+    If ResolveInventoryWorksheetInvMan Is Nothing Then Set ResolveInventoryWorksheetInvMan = ThisWorkbook.Worksheets("Inventory Management")
+    If ResolveInventoryWorksheetInvMan Is Nothing Then Set ResolveInventoryWorksheetInvMan = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    On Error GoTo 0
+End Function
+
+Private Function GetInventoryLogTableInvMan(ByVal ws As Worksheet) As ListObject
+    If ws Is Nothing Then Exit Function
+    On Error Resume Next
+    Set GetInventoryLogTableInvMan = ws.ListObjects("tblInventoryLog")
+    If GetInventoryLogTableInvMan Is Nothing Then Set GetInventoryLogTableInvMan = ws.ListObjects("InventoryLog")
+    On Error GoTo 0
+End Function
 
 Private Function FindInvRowByRowValue(tbl As ListObject, ByVal rowValue As Long, ByVal rowColIndex As Long) As ListRow
     If tbl Is Nothing Or rowValue <= 0 Then Exit Function

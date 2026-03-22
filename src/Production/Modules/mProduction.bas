@@ -550,56 +550,35 @@ Private Sub EnsureProductionButtons()
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_PRODUCTION)
     If ws Is Nothing Then Exit Sub
 
-    Dim colA As Range: Set colA = ws.Columns("A")
-    Dim leftA As Double: leftA = colA.Left + 2
-    Dim colAWidth As Double
-    colAWidth = colA.Width - 4
-    If colAWidth < 40 Then colAWidth = 90
-
-    Const BTN_STACK_SPACING As Double = 24
-    Dim nextTop As Double: nextTop = ws.rows(2).Top
-
-    EnsureButtonCustom ws, BTN_HIDE_SYSTEM, "Hide system", "mProduction.BtnHideSystem", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SHOW_SYSTEM, "Show system", "mProduction.BtnShowSystem", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-
-    DeleteShapeIfExists ws, "BTN_TOGGLE_RECIPE_BUILDER"
-    DeleteShapeIfExists ws, "BTN_TOGGLE_PALETTE_BUILDER"
-    DeleteShapeIfExists ws, "BTN_TOGGLE_PRODUCTION"
-    EnsureButtonCustom ws, BTN_LOAD_RECIPE, "Load Recipe", "mProduction.BtnLoadRecipe", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SAVE_RECIPE, "Save Recipe", "mProduction.BtnSaveRecipe", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SAVE_FORMULAS, "Save Formulas", "mProduction.BtnSaveFormulas", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_BUILD_RECIPE_TABLES, "Add Recipe Process Table", "mProduction.BtnBuildRecipeProcessTables", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_REMOVE_RECIPE_TABLES, "Remove Recipe Process Table", "mProduction.BtnRemoveRecipeProcessTables", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_CLEAR_RECIPE_BUILDER, "Clear Recipe List Builder", "mProduction.BtnClearRecipeBuilder", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SAVE_PALETTE, "Save IngredientPalette", "mProduction.BtnSavePalette", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_CLEAR_PALETTE_BUILDER, "Clear Inventory Palette Builder", "mProduction.BtnClearPaletteBuilder", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_CLEAR_RECIPE_CHOOSER, "Clear Chosen Recipe", "mProduction.BtnClearRecipeChooser", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_TO_USED, "To USED", "mProduction.BtnToUsed", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_TO_MADE, "Send to MADE", "mProduction.BtnToMade", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_TO_TOTALINV, "Send to TOTAL INV", "mProduction.BtnToTotalInv", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_NEXT_BATCH, "Next Batch", "mProduction.BtnNextBatch", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_PRINT_CODES, "Print recall codes", "mProduction.BtnPrintRecallCodes", leftA, nextTop, colAWidth
+    DeleteLegacyProductionButtons ws
 End Sub
 
 Private Sub RefreshProductionUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
     modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
     modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
+End Sub
+
+Private Sub DeleteLegacyProductionButtons(ByVal ws As Worksheet)
+    DeleteShapeIfExists ws, BTN_HIDE_SYSTEM
+    DeleteShapeIfExists ws, BTN_SHOW_SYSTEM
+    DeleteShapeIfExists ws, "BTN_TOGGLE_RECIPE_BUILDER"
+    DeleteShapeIfExists ws, "BTN_TOGGLE_PALETTE_BUILDER"
+    DeleteShapeIfExists ws, "BTN_TOGGLE_PRODUCTION"
+    DeleteShapeIfExists ws, BTN_LOAD_RECIPE
+    DeleteShapeIfExists ws, BTN_SAVE_RECIPE
+    DeleteShapeIfExists ws, BTN_SAVE_FORMULAS
+    DeleteShapeIfExists ws, BTN_BUILD_RECIPE_TABLES
+    DeleteShapeIfExists ws, BTN_REMOVE_RECIPE_TABLES
+    DeleteShapeIfExists ws, BTN_CLEAR_RECIPE_BUILDER
+    DeleteShapeIfExists ws, BTN_CLEAR_RECIPE_CHOOSER
+    DeleteShapeIfExists ws, BTN_CLEAR_PALETTE_BUILDER
+    DeleteShapeIfExists ws, BTN_SAVE_PALETTE
+    DeleteShapeIfExists ws, BTN_TO_USED
+    DeleteShapeIfExists ws, BTN_TO_MADE
+    DeleteShapeIfExists ws, BTN_TO_TOTALINV
+    DeleteShapeIfExists ws, BTN_NEXT_BATCH
+    DeleteShapeIfExists ws, BTN_PRINT_CODES
 End Sub
 
 Private Sub EnsureSystemGroups()
@@ -1199,6 +1178,17 @@ Public Function QueueProductionCompleteEventFromCurrentWorkbook(ByRef eventIdOut
     End If
 
     QueueProductionCompleteEventFromCurrentWorkbook = QueueProductionCompleteEvent(madeDeltas, errNotes, eventIdOut)
+End Function
+
+Public Function ValidateQueueProductionCompleteEventFromCurrentWorkbook() As String
+    Dim eventIdOut As String
+    Dim errNotes As String
+
+    If QueueProductionCompleteEventFromCurrentWorkbook(eventIdOut, errNotes) Then
+        ValidateQueueProductionCompleteEventFromCurrentWorkbook = "OK"
+    Else
+        ValidateQueueProductionCompleteEventFromCurrentWorkbook = errNotes
+    End If
 End Function
 
 Public Sub BtnNextBatch()

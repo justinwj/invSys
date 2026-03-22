@@ -10,6 +10,7 @@ Public Function EnsureReceivingWorkbookSurface(Optional ByVal targetWb As Workbo
 
     EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "ROW"), True
     EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW"), False
+    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False
     EnsureInventoryManagementSurface wb
     EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW"), False
     FormatWorkbookSurface wb
@@ -35,6 +36,7 @@ Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workboo
     EnsureTableSurface wb, "ShipmentsTally", "BoxBuilder", Array("Box Name", "UOM", "LOCATION", "DESCRIPTION", "ROW"), True
     EnsureTableSurface wb, "ShipmentsTally", "BoxBOM", Array("ITEM", "ROW", "QUANTITY", "UOM", "LOCATION", "DESCRIPTION"), True
     EnsureTableSurface wb, "ShipmentsTally", "Check_invSys", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "USED", "MADE", "SHIPMENTS", "TOTAL INV"), False
+    EnsureTableSurface wb, "ShipmentsTally", "invSysData_Shipping", InventoryManagementHeadersSurface(), False
     EnsureTableSurface wb, "AggregateBoxBOM_Log", "AggregateBoxBOM_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
     EnsureTableSurface wb, "AggregatePackages_Log", "AggregatePackages_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
     EnsureInventoryManagementSurface wb
@@ -57,12 +59,16 @@ Public Function EnsureProductionWorkbookSurface(Optional ByVal targetWb As Workb
 
     EnsureTableSurface wb, "Production", "RB_AddRecipeName", Array("RECIPE_NAME", "RECIPE_ID", "DESCRIPTION", "GUID"), True
     EnsureTableSurface wb, "Production", "RecipeBuilder", Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "OOO", "INSTRUCTION", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID"), True
+    EnsureTableSurface wb, "Production", "IP_ChooseRecipe", Array("RECIPE_NAME", "DESCRIPTION", "GUID", "RECIPE_ID"), True
+    EnsureTableSurface wb, "Production", "IP_ChooseIngredient", Array("INGREDIENT", "UOM", "QUANTITY", "DESCRIPTION", "GUID", "RECIPE_ID", "INGREDIENT_ID", "PROCESS"), True
+    EnsureTableSurface wb, "Production", "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "ROW", "RECIPE_ID", "INGREDIENT_ID"), True
     EnsureTableSurface wb, "Production", "RC_RecipeChoose", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "DEPARTMENT", "PROCESS"), True
     EnsureTableSurface wb, "Production", "RecipeChooser_generated", Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT NEEDED", "INGREDIENT_ID", "RECIPE_LIST_ROW"), False
     EnsureTableSurface wb, "Production", "InventoryPalette_generated", Array("ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "PROCESS", "LOCATION", "ROW", "INPUT/OUTPUT"), False
     EnsureTableSurface wb, "Production", "ProductionOutput", Array("PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "ROW"), False
     EnsureTableSurface wb, "Production", "Prod_invSys_Check", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "USED", "TOTAL INV"), False
     EnsureTableSurface wb, "Recipes", "Recipes", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "DEPARTMENT", "PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID"), False
+    EnsureTableSurface wb, "IngredientPalette", "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID"), False
     EnsureTableSurface wb, "TemplatesTable", "TemplatesTable", Array("TEMPLATE_SCOPE", "RECIPE_ID", "INGREDIENT_ID", "PROCESS", "TARGET_TABLE", "TARGET_COLUMN", "FORMULA", "GUID", "NOTES", "ACTIVE", "CREATED_AT", "UPDATED_AT"), False
     EnsureTableSurface wb, "ProductionLog", "ProductionLog", Array("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID"), False
     EnsureTableSurface wb, "BatchCodesLog", "BatchCodesLog", Array("RECIPE", "RECIPE_ID", "PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "TIMESTAMP", "LOCATION", "USER", "GUID"), False
@@ -101,15 +107,19 @@ Public Function EnsureInventoryManagementSurface(Optional ByVal targetWb As Work
     Dim wb As Workbook
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
-    EnsureTableSurface wb, "InventoryManagement", "invSys", _
-        Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
-              "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "LAST EDITED", "TOTAL INV LAST EDIT", "TIMESTAMP"), False
+    EnsureTableSurface wb, "InventoryManagement", "invSys", InventoryManagementHeadersSurface(), False
 
     EnsureInventoryManagementSurface = True
     Exit Function
 
 FailEnsure:
     report = "EnsureInventoryManagementSurface failed: " & Err.Description
+End Function
+
+Private Function InventoryManagementHeadersSurface() As Variant
+    InventoryManagementHeadersSurface = Array( _
+        "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
+        "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "LAST EDITED", "TOTAL INV LAST EDIT", "TIMESTAMP")
 End Function
 
 Private Function ResolveTargetWorkbookSurface(ByVal targetWb As Workbook) As Workbook

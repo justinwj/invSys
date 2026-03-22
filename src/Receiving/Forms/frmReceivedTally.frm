@@ -36,7 +36,8 @@ Private Sub UpdateInventory(itemsDict As Object, ColumnName As String)
     Dim key As Variant
     Dim foundRow As Long
     Dim currentQty As Double, newQty As Double
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetReceived()
+    If ws Is Nothing Then GoTo ErrorHandler
     Set tbl = ws.ListObjects("invSys")
     ' Get column index for the target column (e.g., "RECEIVED", "SHIPMENTS")
     Dim targetColIndex As Integer
@@ -143,6 +144,14 @@ End Sub
     Next i
 
     GetUOMFromDataTable = uom
+End Function
+
+Private Function ResolveInventoryWorksheetReceived() As Worksheet
+    On Error Resume Next
+    Set ResolveInventoryWorksheetReceived = ThisWorkbook.Worksheets("InventoryManagement")
+    If ResolveInventoryWorksheetReceived Is Nothing Then Set ResolveInventoryWorksheetReceived = ThisWorkbook.Worksheets("Inventory Management")
+    If ResolveInventoryWorksheetReceived Is Nothing Then Set ResolveInventoryWorksheetReceived = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    On Error GoTo 0
 End Function
 
 

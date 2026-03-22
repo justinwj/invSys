@@ -72,8 +72,10 @@ Public Sub RestoreSnapshot(ByVal SnapshotID As String)
     MsgBox "Snapshot restored successfully.", vbInformation, "Restore Snapshot"
 End Sub
 Private Function GetInventoryTable() As ListObject
+    Dim ws As Worksheet
     On Error Resume Next
-    Set GetInventoryTable = ThisWorkbook.Sheets("INVENTORY MANAGEMENT").ListObjects("invSys")
+    Set ws = ResolveInventoryWorksheetSnapshot()
+    If Not ws Is Nothing Then Set GetInventoryTable = ws.ListObjects("invSys")
     If Err.Number <> 0 Then
         MsgBox "Critical Error: invSys table not found", vbCritical
         Err.Clear
@@ -97,10 +99,14 @@ Private Function GetSchemaHash() As String
     Dim HashValue As String
     Dim i As Integer
     Dim HashTotal As Double
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetSnapshot()
+    If ws Is Nothing Then
+        MsgBox "Error: Inventory worksheet not found.", vbCritical, "Schema Hash Error"
+        Exit Function
+    End If
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then
-        MsgBox "Error: Table 'invSys' not found in 'INVENTORY MANAGEMENT'.", vbCritical, "Schema Hash Error"
+        MsgBox "Error: Table 'invSys' not found on inventory worksheet.", vbCritical, "Schema Hash Error"
         Exit Function
     End If
     HashValue = ""
@@ -112,6 +118,14 @@ Private Function GetSchemaHash() As String
         HashTotal = HashTotal + Asc(Mid(HashValue, i, 1)) * i
     Next i
     GetSchemaHash = CStr(HashTotal)
+End Function
+
+Private Function ResolveInventoryWorksheetSnapshot() As Worksheet
+    On Error Resume Next
+    Set ResolveInventoryWorksheetSnapshot = ThisWorkbook.Worksheets("InventoryManagement")
+    If ResolveInventoryWorksheetSnapshot Is Nothing Then Set ResolveInventoryWorksheetSnapshot = ThisWorkbook.Worksheets("Inventory Management")
+    If ResolveInventoryWorksheetSnapshot Is Nothing Then Set ResolveInventoryWorksheetSnapshot = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    On Error GoTo 0
 End Function
 
 

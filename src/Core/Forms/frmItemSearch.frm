@@ -321,7 +321,8 @@ Private Function GetLocationByItem(ItemCode As String, itemName As String) As St
     Dim foundRow As Long
     Dim locationCol As Long
     GetLocationByItem = ""  ' Default value
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetItemSearch()
+    If ws Is Nothing Then Exit Function
     Set tbl = ws.ListObjects("invSys")
     ' Get the location column index
     On Error Resume Next
@@ -445,7 +446,8 @@ Private Function GetVendorByItem(ItemCode As String, itemName As String) As Stri
     Dim foundRow As Long
     Dim vendorCol As Long
     GetVendorByItem = ""  ' Default value
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetItemSearch()
+    If ws Is Nothing Then Exit Function
     Set tbl = ws.ListObjects("invSys")
     ' Get the vendor column index
     On Error Resume Next
@@ -469,6 +471,14 @@ ErrorHandler:
     Debug.Print "Error in GetVendorByItem: " & Err.Description
     ' Return empty string on error
     GetVendorByItem = ""
+End Function
+
+Private Function ResolveInventoryWorksheetItemSearch() As Worksheet
+    On Error Resume Next
+    Set ResolveInventoryWorksheetItemSearch = ThisWorkbook.Worksheets("InventoryManagement")
+    If ResolveInventoryWorksheetItemSearch Is Nothing Then Set ResolveInventoryWorksheetItemSearch = ThisWorkbook.Worksheets("Inventory Management")
+    If ResolveInventoryWorksheetItemSearch Is Nothing Then Set ResolveInventoryWorksheetItemSearch = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    On Error GoTo 0
 End Function
 ' Helper function to find a row by column value (if not already defined)
 Private Function FindRowByValue(tbl As ListObject, colName As String, value As Variant) As Long

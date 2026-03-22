@@ -468,11 +468,24 @@ $projectMap = @(
             CallbackName = "RibbonOnActionShipping"
             Groups = @(
                 @{
+                    Id      = "grpShippingSetup"
+                    Label   = "Setup"
+                    Buttons = @(
+                        @{ Id = "btnShippingSetup"; Label = "Setup UI"; Macro = "modTS_Shipments.InitializeShipmentsUI" },
+                        @{ Id = "btnShippingToggleBuilder"; Label = "Toggle Builder"; Macro = "modTS_Shipments.BtnToggleBuilder" },
+                        @{ Id = "btnShippingSaveBox"; Label = "Save Box"; Macro = "modTS_Shipments.BtnSaveBox" },
+                        @{ Id = "btnShippingUnship"; Label = "Toggle NotShipped"; Macro = "modTS_Shipments.BtnUnship" },
+                        @{ Id = "btnShippingHold"; Label = "Send To Hold"; Macro = "modTS_Shipments.BtnSendHold" },
+                        @{ Id = "btnShippingReturnHold"; Label = "Return From Hold"; Macro = "modTS_Shipments.BtnReturnHold" }
+                    )
+                }
+                @{
                     Id      = "grpShippingActions"
                     Label   = "Actions"
                     Buttons = @(
-                        @{ Id = "btnShippingSetup"; Label = "Setup UI"; Macro = "modTS_Shipments.InitializeShipmentsUI" },
                         @{ Id = "btnShippingConfirm"; Label = "Confirm Inventory"; Macro = "modTS_Shipments.BtnConfirmInventory" },
+                        @{ Id = "btnShippingBoxesMade"; Label = "Boxes Made"; Macro = "modTS_Shipments.BtnBoxesMade" },
+                        @{ Id = "btnShippingTotal"; Label = "To Total Inv"; Macro = "modTS_Shipments.BtnToTotalInv" },
                         @{ Id = "btnShippingStage"; Label = "To Shipments"; Macro = "modTS_Shipments.BtnToShipments" },
                         @{ Id = "btnShippingSend"; Label = "Shipments Sent"; Macro = "modTS_Shipments.BtnShipmentsSent" }
                     )
@@ -495,14 +508,38 @@ $projectMap = @(
             CallbackName = "RibbonOnActionProduction"
             Groups = @(
                 @{
+                    Id      = "grpProductionSetup"
+                    Label   = "Setup"
+                    Buttons = @(
+                        @{ Id = "btnProductionSetup"; Label = "Setup UI"; Macro = "mProduction.InitializeProductionUI" },
+                        @{ Id = "btnProductionHide"; Label = "Hide System"; Macro = "mProduction.BtnHideSystem" },
+                        @{ Id = "btnProductionShow"; Label = "Show System"; Macro = "mProduction.BtnShowSystem" }
+                    )
+                }
+                @{
+                    Id      = "grpProductionRecipe"
+                    Label   = "Recipe"
+                    Buttons = @(
+                        @{ Id = "btnProductionLoad"; Label = "Load Recipe"; Macro = "mProduction.BtnLoadRecipe" },
+                        @{ Id = "btnProductionSaveRecipe"; Label = "Save Recipe"; Macro = "mProduction.BtnSaveRecipe" },
+                        @{ Id = "btnProductionSaveFormulas"; Label = "Save Formulas"; Macro = "mProduction.BtnSaveFormulas" },
+                        @{ Id = "btnProductionAddTables"; Label = "Add Process Table"; Macro = "mProduction.BtnBuildRecipeProcessTables" },
+                        @{ Id = "btnProductionRemoveTables"; Label = "Remove Process Table"; Macro = "mProduction.BtnRemoveRecipeProcessTables" },
+                        @{ Id = "btnProductionClearBuilder"; Label = "Clear Recipe Builder"; Macro = "mProduction.BtnClearRecipeBuilder" }
+                    )
+                }
+                @{
                     Id      = "grpProductionActions"
                     Label   = "Actions"
                     Buttons = @(
-                        @{ Id = "btnProductionSetup"; Label = "Setup UI"; Macro = "mProduction.InitializeProductionUI" },
-                        @{ Id = "btnProductionLoad"; Label = "Load Recipe"; Macro = "mProduction.BtnLoadRecipe" },
+                        @{ Id = "btnProductionSavePalette"; Label = "Save Palette"; Macro = "mProduction.BtnSavePalette" },
+                        @{ Id = "btnProductionClearPalette"; Label = "Clear Palette Builder"; Macro = "mProduction.BtnClearPaletteBuilder" },
+                        @{ Id = "btnProductionClearChooser"; Label = "Clear Chosen Recipe"; Macro = "mProduction.BtnClearRecipeChooser" },
                         @{ Id = "btnProductionUsed"; Label = "To Used"; Macro = "mProduction.BtnToUsed" },
                         @{ Id = "btnProductionMade"; Label = "To Made"; Macro = "mProduction.BtnToMade" },
-                        @{ Id = "btnProductionTotal"; Label = "To Total Inv"; Macro = "mProduction.BtnToTotalInv" }
+                        @{ Id = "btnProductionTotal"; Label = "To Total Inv"; Macro = "mProduction.BtnToTotalInv" },
+                        @{ Id = "btnProductionNextBatch"; Label = "Next Batch"; Macro = "mProduction.BtnNextBatch" },
+                        @{ Id = "btnProductionPrintCodes"; Label = "Print Recall Codes"; Macro = "mProduction.BtnPrintRecallCodes" }
                     )
                 }
             )

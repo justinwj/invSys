@@ -27,16 +27,12 @@ Private mRowMap As Object ' maps staging row number -> Array(invRow, refNumber)
 
 ' ==== public entry points =====
 Public Sub EnsureGeneratedButtons()
-    On Error Resume Next
     Dim surfaceReport As String
     Call modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(ThisWorkbook, surfaceReport)
     Dim ws As Worksheet
     Set ws = SheetExists("ReceivedTally")
     If ws Is Nothing Then Exit Sub
-    ' Simple guard: check for shapes by name; if missing, create.
-    EnsureButton ws, "btnConfirmWrites", "Confirm writes", "modTS_Received.ConfirmWrites"
-    EnsureButton ws, "btnUndoMacro", "Undo macro", "modTS_Received.MacroUndo"
-    EnsureButton ws, "btnRedoMacro", "Redo macro", "modTS_Received.MacroRedo"
+    RemoveLegacyReceivingButtons ws
 End Sub
 
 ' ==== dynamic search form (ReceivedTally) =====
@@ -319,6 +315,16 @@ Public Function QueueReceiveEventsFromCurrentWorkbook(ByRef errorMessage As Stri
     QueueReceiveEventsFromCurrentWorkbook = QueueReceiveEventsFromAggregate(agg, errorMessage)
 End Function
 
+Public Function ValidateQueueReceiveEventsFromCurrentWorkbook() As String
+    Dim errorMessage As String
+
+    If QueueReceiveEventsFromCurrentWorkbook(errorMessage) Then
+        ValidateQueueReceiveEventsFromCurrentWorkbook = "OK"
+    Else
+        ValidateQueueReceiveEventsFromCurrentWorkbook = errorMessage
+    End If
+End Function
+
 Private Sub RefreshReceivingUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
     modRoleUiAccess.ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"
@@ -433,18 +439,17 @@ Private Function SheetExists(nameOrCode As String) As Worksheet
     Next
 End Function
 
-Private Sub EnsureButton(ws As Worksheet, shapeName As String, caption As String, onActionMacro As String)
-    Dim shp As Shape
+Private Sub RemoveLegacyReceivingButtons(ByVal ws As Worksheet)
+    DeleteShapeIfExistsReceiving ws, "btnConfirmWrites"
+    DeleteShapeIfExistsReceiving ws, "btnUndoMacro"
+    DeleteShapeIfExistsReceiving ws, "btnRedoMacro"
+End Sub
+
+Private Sub DeleteShapeIfExistsReceiving(ByVal ws As Worksheet, ByVal shapeName As String)
+    If ws Is Nothing Then Exit Sub
     On Error Resume Next
-    Set shp = ws.shapes(shapeName)
+    ws.Shapes(shapeName).Delete
     On Error GoTo 0
-    If shp Is Nothing Then
-        Dim topPos As Double: topPos = 10 + ws.shapes.count * 20
-        Set shp = ws.shapes.AddFormControl(xlButtonControl, 10, topPos, 100, 18)
-        shp.name = shapeName
-        shp.TextFrame.Characters.text = caption
-        If onActionMacro <> "" Then shp.OnAction = onActionMacro
-    End If
 End Sub
 
 Private Sub MergeIntoReceivedTally(rt As ListObject, refNumber As String, itemName As String, qty As Double)

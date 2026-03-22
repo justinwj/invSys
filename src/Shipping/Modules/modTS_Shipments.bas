@@ -506,6 +506,17 @@ Public Function QueueShipmentsSentEventFromCurrentWorkbook(ByRef eventIdOut As S
     QueueShipmentsSentEventFromCurrentWorkbook = QueueShipmentsSentEvent(deltas, errNotes, eventIdOut)
 End Function
 
+Public Function ValidateQueueShipmentsSentEventFromCurrentWorkbook() As String
+    Dim eventIdOut As String
+    Dim errNotes As String
+
+    If QueueShipmentsSentEventFromCurrentWorkbook(eventIdOut, errNotes) Then
+        ValidateQueueShipmentsSentEventFromCurrentWorkbook = "OK"
+    Else
+        ValidateQueueShipmentsSentEventFromCurrentWorkbook = errNotes
+    End If
+End Function
+
 Private Function QueueShipmentsSentEvent(ByVal deltas As Collection, ByRef errNotes As String, ByRef eventIdOut As String) As Boolean
     Dim payloadJson As String
 
@@ -587,8 +598,7 @@ Private Sub EnsureShipmentsButtons()
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
-    DeleteShapeIfExists ws, "BTN_SHOW_BUILDER"
-    DeleteShapeIfExists ws, "BTN_HIDE_BUILDER"
+    DeleteLegacyShippingButtons ws
     DeleteLegacyCheckBoxes ws
 
     Dim colA As Range: Set colA = ws.Columns("A")
@@ -601,32 +611,26 @@ Private Sub EnsureShipmentsButtons()
     Const CHK_STACK_SPACING As Double = 28
     Dim chkTop As Double: chkTop = ws.Rows(1).Top + 2
     EnsureCheckbox ws, CHK_USE_EXISTING, "Use existing shippable inventory", "modTS_Shipments.ToggleUseExistingInventory", leftA, chkTop, colAWidth
-    Dim nextTop As Double: nextTop = chkTop + CHK_STACK_SPACING
-
-    EnsureButtonCustom ws, BTN_TOGGLE_BUILDER, "Toggle builder", "modTS_Shipments.BtnToggleBuilder", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SAVE_BOX, "Save box", "modTS_Shipments.BtnSaveBox", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_CONFIRM_INV, "Confirm inventory", "modTS_Shipments.BtnConfirmInventory", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_BOXES_MADE, "Boxes made", "modTS_Shipments.BtnBoxesMade", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_UNSHIP, "Toggle NotShipped", "modTS_Shipments.BtnUnship", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SEND_HOLD, "Send to hold", "modTS_Shipments.BtnSendHold", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_RETURN_HOLD, "Return from hold", "modTS_Shipments.BtnReturnHold", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_TO_TOTALINV, "To TotalInv", "modTS_Shipments.BtnToTotalInv", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_TO_SHIPMENTS, "To Shipments", "modTS_Shipments.BtnToShipments", leftA, nextTop, colAWidth
-    nextTop = nextTop + BTN_STACK_SPACING
-    EnsureButtonCustom ws, BTN_SHIPMENTS_SENT, "Shipments sent", "modTS_Shipments.BtnShipmentsSent", leftA, nextTop, colAWidth
 End Sub
 
 Private Sub RefreshShipmentsUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
     modRoleUiAccess.ApplyShapeCapability ws, BTN_SHIPMENTS_SENT, "SHIP_POST"
+End Sub
+
+Private Sub DeleteLegacyShippingButtons(ByVal ws As Worksheet)
+    DeleteShapeIfExists ws, "BTN_SHOW_BUILDER"
+    DeleteShapeIfExists ws, "BTN_HIDE_BUILDER"
+    DeleteShapeIfExists ws, BTN_TOGGLE_BUILDER
+    DeleteShapeIfExists ws, BTN_SAVE_BOX
+    DeleteShapeIfExists ws, BTN_UNSHIP
+    DeleteShapeIfExists ws, BTN_SEND_HOLD
+    DeleteShapeIfExists ws, BTN_RETURN_HOLD
+    DeleteShapeIfExists ws, BTN_CONFIRM_INV
+    DeleteShapeIfExists ws, BTN_BOXES_MADE
+    DeleteShapeIfExists ws, BTN_TO_TOTALINV
+    DeleteShapeIfExists ws, BTN_TO_SHIPMENTS
+    DeleteShapeIfExists ws, BTN_SHIPMENTS_SENT
 End Sub
 
 Public Sub ToggleUseExistingInventory()
@@ -1429,11 +1433,17 @@ Private Function GetListObject(ws As Worksheet, tableName As String) As ListObje
 End Function
 
 Private Function GetInvSysTable() As ListObject
-    Dim wsInv As Worksheet: Set wsInv = SheetExists(SHEET_INV)
+    Dim wsInv As Worksheet: Set wsInv = GetInventoryWorksheetShipping()
     If wsInv Is Nothing Then Exit Function
     On Error Resume Next
     Set GetInvSysTable = wsInv.ListObjects("invSys")
     On Error GoTo 0
+End Function
+
+Private Function GetInventoryWorksheetShipping() As Worksheet
+    Set GetInventoryWorksheetShipping = SheetExists(SHEET_INV)
+    If GetInventoryWorksheetShipping Is Nothing Then Set GetInventoryWorksheetShipping = SheetExists("Inventory Management")
+    If GetInventoryWorksheetShipping Is Nothing Then Set GetInventoryWorksheetShipping = SheetExists("INVENTORY MANAGEMENT")
 End Function
 
 Private Function ColumnIndex(lo As ListObject, colName As String) As Long
@@ -2633,7 +2643,8 @@ Public Sub GenerateRowNumbers()
     Dim maxRowNum As Long
     Dim newCol As ListColumn
 
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = GetInventoryWorksheetShipping()
+    If ws Is Nothing Then GoTo ErrorHandler
     Set tbl = ws.ListObjects("invSys")
 
     On Error Resume Next
@@ -2715,7 +2726,8 @@ Public Function LoadItemList() As Variant
     Dim result As Variant
     Dim i As Long
 
-    Set ws = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    Set ws = GetInventoryWorksheetShipping()
+    If ws Is Nothing Then GoTo ErrorHandler
     Set tbl = ws.ListObjects("invSys")
     If tbl Is Nothing Then GoTo ErrorHandler
 

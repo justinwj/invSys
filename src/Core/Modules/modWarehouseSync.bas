@@ -140,7 +140,7 @@ Public Function GenerateWarehouseSnapshot(Optional ByVal warehouseId As String =
     Dim savePath As String
 
     If warehouseId = "" Then warehouseId = modConfig.GetWarehouseId()
-    Set wbInv = modInventoryApply.ResolveInventoryWorkbook(warehouseId, inventoryWb)
+    Set wbInv = ResolveInventoryWorkbookBridge(warehouseId, inventoryWb)
     If wbInv Is Nothing Then
         report = "Inventory workbook not found."
         Exit Function
@@ -301,7 +301,7 @@ Private Function ResolveAppliedMeta(ByVal eventId As String, ByVal inventoryWb A
     Dim rowIndex As Long
     Dim meta As Object
 
-    Set wb = modInventoryApply.ResolveInventoryWorkbook("", inventoryWb)
+    Set wb = ResolveInventoryWorkbookBridge("", inventoryWb)
     If wb Is Nothing Then Exit Function
 
     Set lo = FindListObjectByNameSync(wb, "tblAppliedEvents")

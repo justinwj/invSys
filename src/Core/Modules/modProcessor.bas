@@ -62,7 +62,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
         Exit Function
     End If
 
-    Set inventoryWb = modInventoryApply.ResolveInventoryWorkbook(warehouseId)
+    Set inventoryWb = ResolveInventoryWorkbookBridge(warehouseId)
     If inventoryWb Is Nothing Then
         report = "Inventory workbook not found."
         Exit Function
@@ -111,7 +111,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             errorCode = vbNullString
             errorMessage = vbNullString
 
-            If modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
+            If ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
                 Select Case UCase$(statusOut)
                     Case APPLY_STATUS_APPLIED
                         artifactReport = vbNullString

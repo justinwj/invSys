@@ -43,7 +43,8 @@ End Sub
     Dim key As Variant
     Dim foundRow As Long
     Dim currentQty As Double, newQty As Double
-    Set ws = ThisWorkbook.Sheets("INVENTORY MANAGEMENT")
+    Set ws = ResolveInventoryWorksheetShipForm()
+    If ws Is Nothing Then GoTo ErrorHandler
     Set tbl = ws.ListObjects("invSys")
     ' Get column index for the target column (e.g., "RECEIVED", "SHIPMENTS")
     Dim targetColIndex As Integer
@@ -150,6 +151,14 @@ End Sub
     Next i
 
     GetUOMFromDataTable = uom
+End Function
+
+Private Function ResolveInventoryWorksheetShipForm() As Worksheet
+    On Error Resume Next
+    Set ResolveInventoryWorksheetShipForm = ThisWorkbook.Worksheets("InventoryManagement")
+    If ResolveInventoryWorksheetShipForm Is Nothing Then Set ResolveInventoryWorksheetShipForm = ThisWorkbook.Worksheets("Inventory Management")
+    If ResolveInventoryWorksheetShipForm Is Nothing Then Set ResolveInventoryWorksheetShipForm = ThisWorkbook.Worksheets("INVENTORY MANAGEMENT")
+    On Error GoTo 0
 End Function
 
 
