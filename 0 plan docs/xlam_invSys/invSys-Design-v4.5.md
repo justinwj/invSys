@@ -629,17 +629,18 @@ sequenceDiagram
 - [x] Bootstrap canonical Core/Auth/Config runtime workbook surfaces under the deployed runtime path
 - [ ] Replace placeholder role/admin sheets with full workbook/table-backed operating surfaces
 - [ ] Replace remaining stubbed forms with complete workbook-integrated user forms
-- [ ] Validate XLAM startup/load order, references, and deployment-path behavior in clean Excel sessions
+- [x] Validate XLAM startup/load order, references, and deployment-path behavior in clean Excel sessions
 - [ ] Complete end-to-end ribbon-button testing against real role workbooks and tables
 
 **Tests:**
 - [x] Test: Config/Auth auto-bootstrap creates and opens canonical `WHx.invSys.Config.xlsb` / `WHx.invSys.Auth.xlsb` runtime workbooks with seeded tables/default rows
-- [ ] Test: Each role/Admin XLAM opens from deployment path with no VBA compile errors and expected workbook surfaces
+- [x] Test: Each role/Admin XLAM opens from deployment path with no VBA compile errors and expected workbook surfaces
 - [ ] Test: Ribbon controls execute against live workbook/table systems without missing-object/runtime failures
 - [ ] Test: Full packaged XLAM set loads and remains stable across Excel restart/reopen scenarios
 
 **Execution evidence:**
-- [x] Phase 6 isolated Excel validation passed on March 16, 2026: `3 passed, 0 failed` in `tests/unit/phase6_test_results.md`
+- [x] Phase 6 isolated Excel validation passed on March 22, 2026: `7 passed, 0 failed` in `tests/unit/phase6_test_results.md`
+- [x] Phase 6 packaged XLAM smoke validation passed on March 22, 2026: `25 passed, 0 failed` in `tests/unit/phase6_packaged_xlam_results.md`
 
 **Deliverables:**
 - [ ] User systems operational across role/Admin XLAMs
