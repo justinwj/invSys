@@ -60,9 +60,21 @@ Public Function ApplyEventBridgeEncoded(ByVal evt As Object, _
 End Function
 
 Public Function RemoveLastBulkLogEntriesBridgeResult(ByVal countToRemove As Long) As Collection
-    Set RemoveLastBulkLogEntriesBridgeResult = modInvMan.RemoveLastBulkLogEntries(countToRemove)
+    Dim result As Variant
+
+    On Error Resume Next
+    result = Application.Run("'" & ThisWorkbook.Name & "'!modInvMan.RemoveLastBulkLogEntries", countToRemove)
+    On Error GoTo 0
+
+    If IsObject(result) Then
+        Set RemoveLastBulkLogEntriesBridgeResult = result
+    Else
+        Set RemoveLastBulkLogEntriesBridgeResult = New Collection
+    End If
 End Function
 
 Public Sub ReAddBulkLogEntriesBridgeResult(ByVal logDataCollection As Collection)
-    modInvMan.ReAddBulkLogEntries logDataCollection
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modInvMan.ReAddBulkLogEntries", logDataCollection
+    On Error GoTo 0
 End Sub

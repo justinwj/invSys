@@ -178,8 +178,6 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
 
     For rowIndex = 1 To loInv.ListRows.Count
         sku = ResolveInvSysSku(loInv, rowIndex)
-        If sku <> "" Then SetReadModelValue loInv, rowIndex, "SKU", sku
-
         SyncDisplayAliases loInv, rowIndex
 
         If sku <> "" And Not snapshotRows Is Nothing And snapshotRows.Exists(sku) Then
@@ -192,10 +190,10 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
         ElseIf sku <> "" Then
             ApplyReadModelValues loInv, rowIndex, 0, 0, vbNullString, Empty, refreshUtc, snapshotId, sourceType, False
         Else
-            ApplyReadModelValues loInv, rowIndex, NzDblReadModel(GetReadModelValue(loInv, rowIndex, "QtyOnHand")), _
+            ApplyReadModelValues loInv, rowIndex, NzDblReadModel(GetReadModelValue(loInv, rowIndex, "TOTAL INV")), _
                                 NzDblReadModel(GetReadModelValue(loInv, rowIndex, "QtyAvailable")), _
                                 CStr(GetReadModelValue(loInv, rowIndex, "LocationSummary")), _
-                                GetReadModelValue(loInv, rowIndex, "LastAppliedUTC"), refreshUtc, snapshotId, sourceType, False
+                                GetReadModelValue(loInv, rowIndex, "LAST EDITED"), refreshUtc, snapshotId, sourceType, False
         End If
     Next rowIndex
 End Sub
@@ -210,19 +208,17 @@ Private Sub ApplyReadModelValues(ByVal loInv As ListObject, _
                                  ByVal snapshotId As String, _
                                  ByVal sourceType As String, _
                                  ByVal isStale As Boolean)
+    locationSummary = NormalizeLocationSummaryReadModel(locationSummary)
     SetReadModelValue loInv, rowIndex, "TOTAL INV", qtyOnHand
-    SetReadModelValue loInv, rowIndex, "QtyOnHand", qtyOnHand
     SetReadModelValue loInv, rowIndex, "QtyAvailable", qtyAvailable
     SetReadModelValue loInv, rowIndex, "LocationSummary", locationSummary
     If locationSummary <> "" Then
         SetReadModelValue loInv, rowIndex, "LOCATION", ResolvePrimaryLocationReadModel(locationSummary, GetReadModelValue(loInv, rowIndex, "LOCATION"))
     End If
     If Not IsEmpty(lastApplied) And Not IsNull(lastApplied) And CStr(lastApplied) <> "" Then
-        SetReadModelValue loInv, rowIndex, "LastAppliedUTC", lastApplied
         SetReadModelValue loInv, rowIndex, "LAST EDITED", lastApplied
         SetReadModelValue loInv, rowIndex, "TOTAL INV LAST EDIT", lastApplied
     Else
-        SetReadModelValue loInv, rowIndex, "LastAppliedUTC", vbNullString
         SetReadModelValue loInv, rowIndex, "LAST EDITED", vbNullString
         SetReadModelValue loInv, rowIndex, "TOTAL INV LAST EDIT", vbNullString
     End If
@@ -230,7 +226,6 @@ Private Sub ApplyReadModelValues(ByVal loInv As ListObject, _
     SetReadModelValue loInv, rowIndex, "SnapshotId", snapshotId
     SetReadModelValue loInv, rowIndex, "SourceType", sourceType
     SetReadModelValue loInv, rowIndex, "IsStale", isStale
-    SetReadModelValue loInv, rowIndex, "TIMESTAMP", refreshUtc
 End Sub
 
 Private Sub MarkReadModelState(ByVal loInv As ListObject, _
@@ -260,10 +255,9 @@ Private Sub SyncDisplayAliases(ByVal loInv As ListObject, ByVal rowIndex As Long
     itemName = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "ITEM")))
     If itemName = "" Then itemName = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "ItemName")))
 
-    If sku <> "" Then SetReadModelValue loInv, rowIndex, "SKU", sku
+    If sku <> "" Then SetReadModelValue loInv, rowIndex, "ITEM_CODE", sku
     If itemName <> "" Then
         SetReadModelValue loInv, rowIndex, "ITEM", itemName
-        SetReadModelValue loInv, rowIndex, "ItemName", itemName
     End If
 End Sub
 
@@ -359,12 +353,102 @@ Private Function ResolvePrimaryLocationReadModel(ByVal locationSummary As String
     firstFragment = Trim$(firstFragment)
     eqPos = InStr(1, firstFragment, "=", vbTextCompare)
     If eqPos > 1 Then
-        rawLocation = Trim$(Left$(firstFragment, eqPos - 1))
+        rawLocation = NormalizeDisplayLocationReadModel(Trim$(Left$(firstFragment, eqPos - 1)))
         If rawLocation <> "" Then
             ResolvePrimaryLocationReadModel = rawLocation
             Exit Function
         End If
     End If
 
-    ResolvePrimaryLocationReadModel = Trim$(CStr(existingLocation))
+    ResolvePrimaryLocationReadModel = NormalizeDisplayLocationReadModel(Trim$(CStr(existingLocation)))
+End Function
+
+Private Function NormalizeDisplayLocationReadModel(ByVal locationText As String) As String
+    Dim eqPos As Long
+    Dim suffixText As String
+
+    locationText = Trim$(locationText)
+    If locationText = "" Then Exit Function
+
+    eqPos = InStrRev(locationText, "=")
+    If eqPos > 1 Then
+        suffixText = Trim$(Mid$(locationText, eqPos + 1))
+        suffixText = Replace$(suffixText, ",", "")
+        If suffixText <> "" Then
+            If IsNumeric(suffixText) Then locationText = Trim$(Left$(locationText, eqPos - 1))
+        End If
+    End If
+
+    NormalizeDisplayLocationReadModel = locationText
+End Function
+
+Private Function NormalizeLocationSummaryReadModel(ByVal locationSummary As String) As String
+    Dim summaryText As String
+    Dim fragments As Variant
+    Dim fragment As Variant
+    Dim fragmentText As String
+    Dim eqPos As Long
+    Dim label As String
+    Dim qtyText As String
+    Dim totals As Object
+
+    summaryText = Trim$(locationSummary)
+    If summaryText = "" Then Exit Function
+
+    fragments = Split(summaryText, ";")
+    Set totals = CreateObject("Scripting.Dictionary")
+    totals.CompareMode = vbTextCompare
+
+    For Each fragment In fragments
+        fragmentText = Trim$(CStr(fragment))
+        If fragmentText <> "" Then
+            eqPos = InStrRev(fragmentText, "=")
+            If eqPos <= 1 Then
+                NormalizeLocationSummaryReadModel = summaryText
+                Exit Function
+            End If
+
+            label = NormalizeDisplayLocationReadModel(Trim$(Left$(fragmentText, eqPos - 1)))
+            If label = "" Then label = "(blank)"
+
+            qtyText = Trim$(Mid$(fragmentText, eqPos + 1))
+            qtyText = Replace$(qtyText, ",", "")
+            If qtyText = "" Or Not IsNumeric(qtyText) Then
+                NormalizeLocationSummaryReadModel = summaryText
+                Exit Function
+            End If
+
+            If totals.Exists(label) Then
+                totals(label) = CDbl(totals(label)) + CDbl(qtyText)
+            Else
+                totals.Add label, CDbl(qtyText)
+            End If
+        End If
+    Next fragment
+
+    NormalizeLocationSummaryReadModel = BuildNormalizedLocationSummaryReadModel(totals)
+End Function
+
+Private Function BuildNormalizedLocationSummaryReadModel(ByVal totals As Object) As String
+    Dim key As Variant
+    Dim fragment As String
+
+    If totals Is Nothing Then Exit Function
+
+    For Each key In totals.Keys
+        fragment = CStr(key) & "=" & FormatQuantityReadModel(CDbl(totals(key)))
+        If BuildNormalizedLocationSummaryReadModel = "" Then
+            BuildNormalizedLocationSummaryReadModel = fragment
+        Else
+            BuildNormalizedLocationSummaryReadModel = BuildNormalizedLocationSummaryReadModel & "; " & fragment
+        End If
+    Next key
+End Function
+
+Private Function FormatQuantityReadModel(ByVal qtyIn As Double) As String
+    If Abs(qtyIn - CLng(qtyIn)) < 0.0000001 Then
+        FormatQuantityReadModel = CStr(CLng(qtyIn))
+    Else
+        FormatQuantityReadModel = Replace$(Format$(qtyIn, "0.########"), ",", "")
+    End If
 End Function

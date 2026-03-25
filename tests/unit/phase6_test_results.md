@@ -1,7 +1,7 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-03-25 11:27:44
-- Passed: 19
+- Date: 2026-03-25 16:28:59
+- Passed: 26
 - Failed: 0
 
 | Test | Result |
@@ -16,8 +16,15 @@
 | TestPhase6CoreSurfaces.TestEnsureInventoryManagementSurface_RemovesDomainArtifacts | PASS |
 | TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_PrunesUnexpectedSheets | PASS |
 | TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_UpdatesReadModelAndMetadata | PASS |
+| TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary | PASS |
 | TestPhase6CoreSurfaces.TestRefreshInventoryReadModel_MissingSnapshotMarksStaleWithoutMutatingReceivingTally | PASS |
-| TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_HidesDuplicateHelperColumns | PASS |
+| TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables | PASS |
+| TestPhase6CoreSurfaces.TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination | PASS |
+| TestPhase6CoreSurfaces.TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks | PASS |
+| TestPhase6CoreSurfaces.TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs | PASS |
+| TestPhase6CoreSurfaces.TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs | PASS |
+| TestPhase6CoreSurfaces.TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook | PASS |
+| TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns | PASS |
 | TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables | PASS |
 | TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts | PASS |
 | TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables | PASS |

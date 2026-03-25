@@ -131,6 +131,32 @@ Public Function BuildCanonicalInventoryWorkbook(ByVal whId As String, ByVal root
     Set BuildCanonicalInventoryWorkbook = wb
 End Function
 
+Public Function BuildCanonicalConfigWorkbook(ByVal whId As String, _
+                                             ByVal stId As String, _
+                                             ByVal rootPath As String, _
+                                             Optional ByVal roleDefault As String = "RECEIVE", _
+                                             Optional ByVal processorServiceUserId As String = "svc_processor") As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildPhase2ConfigWorkbook(whId, stId, roleDefault, processorServiceUserId)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Config.xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalConfigWorkbook = wb
+End Function
+
+Public Function BuildCanonicalAuthWorkbook(ByVal whId As String, _
+                                           ByVal rootPath As String, _
+                                           Optional ByVal processorServiceUserId As String = "svc_processor") As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildPhase2AuthWorkbook(whId, processorServiceUserId)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Auth.xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalAuthWorkbook = wb
+End Function
+
 Public Function BuildPhase2InboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook
     Set BuildPhase2InboxWorkbook = BuildReceiveInboxWorkbook(stationId)
 End Function

@@ -228,6 +228,7 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
         EnsureListColumnSync lo, CStr(headers(i))
     Next i
     RemoveBlankSeedRowSync lo
+    ApplySnapshotColumnFormatsSync lo
 
     report = "OK"
     EnsureSnapshotSchema = True
@@ -411,6 +412,7 @@ Private Function EnsureSnapshotEntrySync(ByVal rows As Object, _
                                          ByVal sku As String, _
                                          ByVal warehouseId As String) As Object
     Dim entry As Object
+    Dim locationTotals As Object
 
     If rows.Exists(sku) Then
         Set EnsureSnapshotEntrySync = rows(sku)
@@ -424,26 +426,85 @@ Private Function EnsureSnapshotEntrySync(ByVal rows As Object, _
     entry("QtyOnHand") = 0#
     entry("QtyAvailable") = 0#
     entry("LocationSummary") = vbNullString
+    Set locationTotals = CreateObject("Scripting.Dictionary")
+    locationTotals.CompareMode = vbTextCompare
+    entry.Add "LocationTotals", locationTotals
     rows.Add sku, entry
     Set EnsureSnapshotEntrySync = entry
 End Function
 
 Private Sub AppendLocationFragmentSync(ByVal entry As Object, ByVal locationVal As String, ByVal qtyOnHand As Double)
-    Dim fragment As String
+    Dim totals As Object
     Dim label As String
 
     If entry Is Nothing Then Exit Sub
 
-    label = Trim$(locationVal)
-    If label = "" Then label = "(blank)"
-    fragment = label & "=" & FormatQuantitySync(qtyOnHand)
-
-    If ResolveStringSync(entry, "LocationSummary", "") = "" Then
-        entry("LocationSummary") = fragment
+    label = NormalizeLocationLabelForSummarySync(locationVal)
+    Set totals = EnsureLocationTotalsSync(entry)
+    If totals.Exists(label) Then
+        totals(label) = CDbl(totals(label)) + qtyOnHand
     Else
-        entry("LocationSummary") = ResolveStringSync(entry, "LocationSummary", "") & "; " & fragment
+        totals.Add label, qtyOnHand
     End If
+
+    entry("LocationSummary") = BuildLocationSummarySync(totals)
 End Sub
+
+Private Function EnsureLocationTotalsSync(ByVal entry As Object) As Object
+    If entry Is Nothing Then Exit Function
+
+    On Error Resume Next
+    If entry.Exists("LocationTotals") Then
+        If IsObject(entry("LocationTotals")) Then
+            Set EnsureLocationTotalsSync = entry("LocationTotals")
+            Exit Function
+        End If
+    End If
+    On Error GoTo 0
+
+    Set EnsureLocationTotalsSync = CreateObject("Scripting.Dictionary")
+    EnsureLocationTotalsSync.CompareMode = vbTextCompare
+    entry.Add "LocationTotals", EnsureLocationTotalsSync
+End Function
+
+Private Function BuildLocationSummarySync(ByVal totals As Object) As String
+    Dim key As Variant
+    Dim fragment As String
+
+    If totals Is Nothing Then Exit Function
+    For Each key In totals.Keys
+        fragment = CStr(key) & "=" & FormatQuantitySync(CDbl(totals(key)))
+        If BuildLocationSummarySync = "" Then
+            BuildLocationSummarySync = fragment
+        Else
+            BuildLocationSummarySync = BuildLocationSummarySync & "; " & fragment
+        End If
+    Next key
+End Function
+
+Private Function NormalizeLocationLabelForSummarySync(ByVal locationVal As String) As String
+    Dim label As String
+    Dim eqPos As Long
+    Dim suffixText As String
+
+    label = Trim$(locationVal)
+    If label = "" Then
+        NormalizeLocationLabelForSummarySync = "(blank)"
+        Exit Function
+    End If
+
+    eqPos = InStrRev(label, "=")
+    If eqPos > 1 Then
+        suffixText = Trim$(Mid$(label, eqPos + 1))
+        suffixText = Replace$(suffixText, ",", "")
+        If suffixText <> "" Then
+            If IsNumeric(suffixText) Then label = Trim$(Left$(label, eqPos - 1))
+        End If
+    End If
+
+    If label = "" Then label = "(blank)"
+    NormalizeLocationLabelForSummarySync = label
+End Function
 
 Private Function FormatQuantitySync(ByVal qtyIn As Double) As String
     If Abs(qtyIn - CLng(qtyIn)) < 0.0000001 Then
@@ -736,6 +797,27 @@ Private Function GetColumnIndexSync(ByVal lo As ListObject, ByVal columnName As 
         End If
     Next i
 End Function
+
+Private Sub ApplySnapshotColumnFormatsSync(ByVal lo As ListObject)
+    Dim qtyCols As Variant
+    Dim dateCols As Variant
+    Dim key As Variant
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+
+    qtyCols = Array("QtyOnHand", "QtyAvailable")
+    For Each key In qtyCols
+        idx = GetColumnIndexSync(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "0.########"
+    Next key
+
+    dateCols = Array("LastAppliedAtUTC")
+    For Each key In dateCols
+        idx = GetColumnIndexSync(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "yyyy-mm-dd hh:mm:ss"
+    Next key
+End Sub
 
 Private Function GetEventStringSync(ByVal evt As Object, ByVal key As String) As String
     Dim v As Variant

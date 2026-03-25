@@ -82,7 +82,7 @@ End Function
 $repo = (Resolve-Path $RepoRoot).Path
 $fixtures = Join-Path $repo "tests/fixtures"
 $harnessStamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
-$harnessPath = Join-Path $fixtures "Phase6_TestHarness_$harnessStamp.xlsm"
+$harnessPath = Join-Path $fixtures "Phase6_Inventory.Domain_Harness_$harnessStamp.xlsm"
 $resultPath = Join-Path $repo "tests/unit/phase6_test_results.md"
 
 $excel = $null
@@ -97,11 +97,17 @@ try {
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
         (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleWorkbookSurfaces.bas"),
+        (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
         (Join-Path $repo "src/Core/Modules/modOperatorReadModel.bas"),
         (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
+        (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
+        (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
         (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas")
@@ -118,8 +124,15 @@ try {
         "TestPhase6CoreSurfaces.TestEnsureInventoryManagementSurface_RemovesDomainArtifacts",
         "TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_PrunesUnexpectedSheets",
         "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_UpdatesReadModelAndMetadata",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary",
         "TestPhase6CoreSurfaces.TestRefreshInventoryReadModel_MissingSnapshotMarksStaleWithoutMutatingReceivingTally",
-        "TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_HidesDuplicateHelperColumns",
+        "TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables",
+        "TestPhase6CoreSurfaces.TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination",
+        "TestPhase6CoreSurfaces.TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks",
+        "TestPhase6CoreSurfaces.TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook",
+        "TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables",

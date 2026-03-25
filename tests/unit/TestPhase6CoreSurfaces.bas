@@ -311,18 +311,69 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_UpdatesReadModelAndMet
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68", "LOCAL", report) Then GoTo CleanExit
 
     If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 7 _
-       And CDbl(GetTableValue(loInv, 1, "QtyOnHand")) = 7 _
        And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 7 _
        And StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) = 0 _
-       And StrComp(CStr(GetTableValue(loInv, 1, "SKU")), "SKU-RM-001", vbTextCompare) = 0 _
-       And StrComp(CStr(GetTableValue(loInv, 1, "ItemName")), "Read Model Item", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-RM-001", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM")), "Read Model Item", vbTextCompare) = 0 _
        And InStr(1, CStr(GetTableValue(loInv, 1, "LocationSummary")), "A1", vbTextCompare) > 0 _
        And CBool(GetTableValue(loInv, 1, "IsStale")) = False _
        And StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) = 0 _
        And Trim$(CStr(GetTableValue(loInv, 1, "SnapshotId"))) <> "" _
        And IsDate(GetTableValue(loInv, 1, "LastRefreshUTC")) _
-       And IsDate(GetTableValue(loInv, 1, "LastAppliedUTC")) Then
+       And IsDate(GetTableValue(loInv, 1, "LAST EDITED")) _
+       And IsDate(GetTableValue(loInv, 1, "TOTAL INV LAST EDIT")) Then
         TestRefreshInventoryReadModelFromSnapshot_UpdatesReadModelAndMetadata = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary() As Long
+    Dim rootPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_read_model_legacy_summary")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH68B", "S8") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH68B.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wbOps, report) Then GoTo CleanExit
+    Set loInv = wbOps.Worksheets("InventoryManagement").ListObjects("invSys")
+    AddInvSysSeedRow loInv, 903, "SKU-RM-LEGACY", "Legacy Summary Item", "EA", "CLEARVIEW=50", 0
+
+    Set wbSnap = CreateSnapshotWorkbook( _
+        rootPath, _
+        "WH68B", _
+        "SKU-RM-LEGACY", _
+        200, _
+        CDate("2026-03-24 22:50:10"), _
+        200, _
+        "CLEARVIEW=50; CLEARVIEW=50=50; (blank)=100")
+    If wbSnap Is Nothing Then GoTo CleanExit
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68B", "LOCAL", report) Then GoTo CleanExit
+
+    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 200 _
+       And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 200 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "CLEARVIEW", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "LocationSummary")), "CLEARVIEW=100; (blank)=100", vbTextCompare) = 0 _
+       And CBool(GetTableValue(loInv, 1, "IsStale")) = False _
+       And StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) = 0 Then
+        TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary = 1
     End If
 
 CleanExit:
@@ -377,9 +428,883 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim failureReason As String
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_saved_operator_reopen")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH71", "S11") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH71.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    operatorPath = rootPath & "\WH71_S11_Receiving_Operator.xlsb"
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then
+        failureReason = "Initial saved operator workbook surface did not resolve expected tables."
+        GoTo CleanExit
+    End If
+
+    AddInvSysSeedRow loInv, 904, "SKU-RM-REOPEN", "Saved Workbook Item", "EA", "B2", 1
+    AddReceivedTallyRow loRecv, "REF-REOPEN-001", "Saved Workbook Item", 3, 904
+    AddReceivedLogRow loLog, "SNAP-OLD-001", "REF-REOPEN-001", "Saved Workbook Item", 3, "EA", "Vendor A", "B2", "SKU-RM-REOPEN", 904
+
+    wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
+    wbOps.Close SaveChanges:=False
+    Set wbOps = Nothing
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH71", "SKU-RM-REOPEN", 12, CDate("2026-03-25 09:45:00"))
+    If wbSnap Is Nothing Then GoTo CleanExit
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH71", "LOCAL", report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Then
+        failureReason = "invSys table was missing after reopen/refresh."
+        GoTo CleanExit
+    End If
+    If loRecv Is Nothing Then
+        failureReason = "ReceivedTally table was missing after reopen/refresh."
+        GoTo CleanExit
+    End If
+    If loLog Is Nothing Then
+        failureReason = "ReceivedLog table was missing after reopen/refresh."
+        GoTo CleanExit
+    End If
+
+    If StrComp(wbOps.FullName, operatorPath, vbTextCompare) <> 0 Then
+        failureReason = "Operator workbook reopened at unexpected path."
+        GoTo CleanExit
+    End If
+    If StrComp(wbOps.Name, "WH71_S11_Receiving_Operator.xlsb", vbTextCompare) <> 0 Then
+        failureReason = "Operator workbook reopened with unexpected name."
+        GoTo CleanExit
+    End If
+    If StrComp(wbOps.Name, "WH71.invSys.Config.xlsb", vbTextCompare) = 0 Then
+        failureReason = "Operator workbook identity drifted to runtime config workbook."
+        GoTo CleanExit
+    End If
+
+    If loRecv.ListRows.Count <> 1 Then
+        failureReason = "ReceivedTally row count changed across reopen/refresh."
+        GoTo CleanExit
+    End If
+    If loLog.ListRows.Count <> 1 Then
+        failureReason = "ReceivedLog row count changed across reopen/refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loRecv, 1, "REF_NUMBER")), "REF-REOPEN-001", vbTextCompare) <> 0 Then
+        failureReason = "ReceivedTally REF_NUMBER was not preserved."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loRecv, 1, "QUANTITY")) <> 3 Then
+        failureReason = "ReceivedTally QUANTITY was not preserved."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loLog, 1, "SNAPSHOT_ID")), "SNAP-OLD-001", vbTextCompare) <> 0 Then
+        failureReason = "ReceivedLog SNAPSHOT_ID was not preserved."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loLog, 1, "REF_NUMBER")), "REF-REOPEN-001", vbTextCompare) <> 0 Then
+        failureReason = "ReceivedLog REF_NUMBER was not preserved."
+        GoTo CleanExit
+    End If
+
+    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) <> 12 Then
+        failureReason = "invSys TOTAL INV did not refresh from snapshot."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, 1, "QtyAvailable")) <> 12 Then
+        failureReason = "invSys QtyAvailable did not refresh from snapshot."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) <> 0 Then
+        failureReason = "invSys LOCATION did not refresh to primary snapshot location."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-RM-REOPEN", vbTextCompare) <> 0 Then
+        failureReason = "invSys ITEM_CODE drifted across reopen/refresh."
+        GoTo CleanExit
+    End If
+    If InStr(1, CStr(GetTableValue(loInv, 1, "SnapshotId")), "WH71.invSys.Snapshot.Inventory.xlsb|", vbTextCompare) <> 1 Then
+        failureReason = "invSys SnapshotId was not refreshed."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, 1, "IsStale")) <> False Then
+        failureReason = "invSys was marked stale after successful refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then
+        failureReason = "invSys SourceType was not LOCAL after refresh."
+        GoTo CleanExit
+    End If
+    If Not IsDate(GetTableValue(loInv, 1, "LastRefreshUTC")) Then
+        failureReason = "invSys LastRefreshUTC was not populated."
+        GoTo CleanExit
+    End If
+    If Not IsDate(GetTableValue(loInv, 1, "LAST EDITED")) Then
+        failureReason = "invSys LAST EDITED was not populated."
+        GoTo CleanExit
+    End If
+
+    TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7101, "TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination() As Long
+    Dim rootPath As String
+    Dim operatorPathA As String
+    Dim operatorPathB As String
+    Dim wbOpsA As Workbook
+    Dim wbOpsB As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_lan_shared_snapshot")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH72", "S11") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH72.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    operatorPathA = rootPath & "\WH72_S11_Receiving_Operator.xlsb"
+    operatorPathB = rootPath & "\WH72_S12_Receiving_Operator.xlsb"
+
+    Set wbOpsA = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsA, report) Then GoTo CleanExit
+    Set loInv = FindTableByName(wbOpsA, "invSys")
+    Set loRecv = FindTableByName(wbOpsA, "ReceivedTally")
+    Set loLog = FindTableByName(wbOpsA, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then GoTo CleanExit
+    AddInvSysSeedRow loInv, 905, "SKU-LAN-001", "LAN Shared Item", "EA", "B2", 2
+    AddReceivedTallyRow loRecv, "REF-LAN-A", "LAN Shared Item", 4, 905
+    AddReceivedLogRow loLog, "SNAP-LAN-A", "REF-LAN-A", "LAN Shared Item", 4, "EA", "Vendor A", "B2", "SKU-LAN-001", 905
+    wbOpsA.SaveAs Filename:=operatorPathA, FileFormat:=50
+    wbOpsA.Close SaveChanges:=False
+    Set wbOpsA = Nothing
+
+    Set wbOpsB = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsB, report) Then GoTo CleanExit
+    Set loInv = FindTableByName(wbOpsB, "invSys")
+    Set loRecv = FindTableByName(wbOpsB, "ReceivedTally")
+    Set loLog = FindTableByName(wbOpsB, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then GoTo CleanExit
+    AddInvSysSeedRow loInv, 906, "SKU-LAN-001", "LAN Shared Item", "EA", "C3", 3
+    AddReceivedTallyRow loRecv, "REF-LAN-B", "LAN Shared Item", 5, 906
+    AddReceivedLogRow loLog, "SNAP-LAN-B", "REF-LAN-B", "LAN Shared Item", 5, "EA", "Vendor B", "C3", "SKU-LAN-001", 906
+    wbOpsB.SaveAs Filename:=operatorPathB, FileFormat:=50
+    wbOpsB.Close SaveChanges:=False
+    Set wbOpsB = Nothing
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH72", "SKU-LAN-001", 25, CDate("2026-03-25 10:15:00"))
+    If wbSnap Is Nothing Then GoTo CleanExit
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+
+    Set wbOpsA = Application.Workbooks.Open(operatorPathA)
+    If wbOpsA Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsA, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsA, "WH72", "LOCAL", report) Then GoTo CleanExit
+
+    Set wbOpsB = Application.Workbooks.Open(operatorPathB)
+    If wbOpsB Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsB, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsB, "WH72", "LOCAL", report) Then GoTo CleanExit
+
+    If Not AssertLanWorkbookState(wbOpsA, operatorPathA, "REF-LAN-A", "SNAP-LAN-A", 25, "SKU-LAN-001", "WH72.invSys.Snapshot.Inventory.xlsb|") Then GoTo CleanExit
+    If Not AssertLanWorkbookState(wbOpsB, operatorPathB, "REF-LAN-B", "SNAP-LAN-B", 25, "SKU-LAN-001", "WH72.invSys.Snapshot.Inventory.xlsb|") Then GoTo CleanExit
+
+    TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOpsA
+    CloseWorkbookIfOpen wbOpsB
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks() As Long
+    Dim rootPath As String
+    Dim currentUser As String
+    Dim report As String
+    Dim failureReason As String
+    Dim wbInv As Workbook
+    Dim wbInboxA As Workbook
+    Dim wbInboxB As Workbook
+    Dim wbOpsA As Workbook
+    Dim wbOpsB As Workbook
+    Dim loLocks As ListObject
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim runIdA As String
+    Dim runIdB As String
+    Dim message As String
+    Dim processedCount As Long
+    Dim operatorPathA As String
+    Dim operatorPathB As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_lan_processor")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH75", "S11") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH75.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+    If Not modAuth.LoadAuth("WH75") Then GoTo CleanExit
+
+    currentUser = ResolveCurrentTestUserId()
+    EnsureAuthCapabilityForTest "WH75", currentUser, "RECEIVE_POST", "WH75", "*"
+    EnsureAuthCapabilityForTest "WH75", "svc_processor", "INBOX_PROCESS", "WH75", "*"
+
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH75", Array("SKU-LAN-LOCK"))
+    If wbInv Is Nothing Then
+        failureReason = "Canonical inventory workbook could not be created."
+        GoTo CleanExit
+    End If
+
+    Set wbInboxA = CreateCanonicalReceiveInboxWorkbookForTest(rootPath, "S11")
+    Set wbInboxB = CreateCanonicalReceiveInboxWorkbookForTest(rootPath, "S12")
+    If wbInboxA Is Nothing Or wbInboxB Is Nothing Then
+        failureReason = "LAN inbox workbooks could not be created."
+        GoTo CleanExit
+    End If
+
+    AddInboxReceiveEventRowForTest FindTableByName(wbInboxA, "tblInboxReceive"), "EVT-LAN-001", "WH75", "S11", currentUser, "SKU-LAN-LOCK", 4, "A1", "lan-station-a"
+    AddInboxReceiveEventRowForTest FindTableByName(wbInboxB, "tblInboxReceive"), "EVT-LAN-002", "WH75", "S12", currentUser, "SKU-LAN-LOCK", 6, "B1", "lan-station-b"
+    wbInboxA.Save
+    wbInboxB.Save
+
+    operatorPathA = rootPath & "\WH75_S11_Receiving_Operator.xlsb"
+    operatorPathB = rootPath & "\WH75_S12_Receiving_Operator.xlsb"
+    BuildSavedReceivingOperatorWorkbookForTest operatorPathA, "SKU-LAN-LOCK", "REF-LAN-OP-A", "SNAP-OLD-LAN-A", 0, "Z1"
+    BuildSavedReceivingOperatorWorkbookForTest operatorPathB, "SKU-LAN-LOCK", "REF-LAN-OP-B", "SNAP-OLD-LAN-B", 0, "Z2"
+
+    If Not modLockManager.AcquireLock("INVENTORY", "WH75", "svc_processor", "S11", wbInv, runIdA, message) Then
+        failureReason = "Station S11 could not acquire inventory lock."
+        GoTo CleanExit
+    End If
+    If modLockManager.AcquireLock("INVENTORY", "WH75", "svc_processor", "S12", wbInv, runIdB, message) Then
+        failureReason = "Station S12 acquired inventory lock while S11 still held it."
+        GoTo CleanExit
+    End If
+
+    Set loLocks = FindTableByName(wbInv, "tblLocks")
+    If loLocks Is Nothing Then
+        failureReason = "tblLocks not found in canonical inventory workbook."
+        GoTo CleanExit
+    End If
+    If UCase$(CStr(GetTableValue(loLocks, 1, "Status"))) <> "HELD" Then
+        failureReason = "Lock row was not HELD during contention."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loLocks, 1, "OwnerStationId")), "S11", vbTextCompare) <> 0 Then
+        failureReason = "Lock row owner station drifted during contention."
+        GoTo CleanExit
+    End If
+
+    If Not modLockManager.ReleaseLock("INVENTORY", runIdA, wbInv) Then
+        failureReason = "Station S11 could not release inventory lock."
+        GoTo CleanExit
+    End If
+
+    processedCount = modProcessor.RunBatch("WH75", 500, report)
+    If processedCount <> 2 Then
+        failureReason = "RunBatch did not process both LAN inbox rows. " & report & _
+                        "; S11=" & DescribeInboxRowStateForTest(wbInboxA, "EVT-LAN-001") & _
+                        "; S12=" & DescribeInboxRowStateForTest(wbInboxB, "EVT-LAN-002")
+        GoTo CleanExit
+    End If
+
+    If Not AssertInboxRowStatusForTest(wbInboxA, "EVT-LAN-001", "PROCESSED") Then
+        failureReason = "Station S11 inbox row was not marked PROCESSED."
+        GoTo CleanExit
+    End If
+    If Not AssertInboxRowStatusForTest(wbInboxB, "EVT-LAN-002", "PROCESSED") Then
+        failureReason = "Station S12 inbox row was not marked PROCESSED."
+        GoTo CleanExit
+    End If
+
+    Set loSku = wbInv.Worksheets("SkuBalance").ListObjects("tblSkuBalance")
+    Set loLoc = wbInv.Worksheets("LocationBalance").ListObjects("tblLocationBalance")
+    If loSku Is Nothing Or loLoc Is Nothing Then
+        failureReason = "Projection tables missing after LAN processor run."
+        GoTo CleanExit
+    End If
+    If FindRowByColumnValueInTable(loSku, "SKU", "SKU-LAN-LOCK") = 0 Then
+        failureReason = "Projected SKU balance row missing after LAN processor run."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loSku, FindRowByColumnValueInTable(loSku, "SKU", "SKU-LAN-LOCK"), "QtyOnHand")) <> 10 Then
+        failureReason = "Projected SKU balance did not equal combined LAN quantity."
+        GoTo CleanExit
+    End If
+    If loLoc.ListRows.Count <> 2 Then
+        failureReason = "Location projection did not retain both LAN station locations."
+        GoTo CleanExit
+    End If
+
+    Set wbOpsA = Application.Workbooks.Open(operatorPathA)
+    Set wbOpsB = Application.Workbooks.Open(operatorPathB)
+    If wbOpsA Is Nothing Or wbOpsB Is Nothing Then
+        failureReason = "Saved LAN operator workbook(s) could not be reopened."
+        GoTo CleanExit
+    End If
+
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsA, report) Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOpsB, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsA, "WH75", "LOCAL", report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsB, "WH75", "LOCAL", report) Then GoTo CleanExit
+
+    If Not AssertLanWorkbookState(wbOpsA, operatorPathA, "REF-LAN-OP-A", "SNAP-OLD-LAN-A", 10, "SKU-LAN-LOCK", "WH75.invSys.Snapshot.Inventory.xlsb|") Then
+        failureReason = "Station S11 operator workbook was contaminated by LAN refresh."
+        GoTo CleanExit
+    End If
+    If Not AssertLanWorkbookState(wbOpsB, operatorPathB, "REF-LAN-OP-B", "SNAP-OLD-LAN-B", 10, "SKU-LAN-LOCK", "WH75.invSys.Snapshot.Inventory.xlsb|") Then
+        failureReason = "Station S12 operator workbook was contaminated by LAN refresh."
+        GoTo CleanExit
+    End If
+
+    TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbOpsA
+    CloseWorkbookIfOpen wbOpsB
+    CloseWorkbookIfOpen wbInboxA
+    CloseWorkbookIfOpen wbInboxB
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7102, "TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loShip As ListObject
+    Dim loShipLog As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_saved_shipping_refresh")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH73", "S13") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH73.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    operatorPath = rootPath & "\WH73_S13_Shipping_Operator.xlsb"
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loShip = FindTableByName(wbOps, "ShipmentsTally")
+    Set loShipLog = FindTableByName(wbOps, "AggregatePackages_Log")
+    If loInv Is Nothing Or loShip Is Nothing Or loShipLog Is Nothing Then GoTo CleanExit
+
+    AddInvSysSeedRow loInv, 907, "SKU-SHIP-001", "Shipping Refresh Item", "EA", "D4", 5
+    AddShippingTallyRow loShip, "REF-SHIP-001", "Shipping Refresh Item", 6, 907, "EA", "D4", "ship note"
+    AddAggregatePackagesLogRow loShipLog, "GUID-SHIP-001", "user1", "ADD", 907, "SKU-SHIP-001", "Shipping Refresh Item", 6, "6"
+
+    wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
+    wbOps.Close SaveChanges:=False
+    Set wbOps = Nothing
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH73", "SKU-SHIP-001", 18, CDate("2026-03-25 11:00:00"))
+    If wbSnap Is Nothing Then GoTo CleanExit
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH73", "LOCAL", report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loShip = FindTableByName(wbOps, "ShipmentsTally")
+    Set loShipLog = FindTableByName(wbOps, "AggregatePackages_Log")
+    If loInv Is Nothing Or loShip Is Nothing Or loShipLog Is Nothing Then GoTo CleanExit
+
+    If loShip.ListRows.Count <> 1 Then GoTo CleanExit
+    If loShipLog.ListRows.Count <> 1 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loShip, 1, "REF_NUMBER")), "REF-SHIP-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CDbl(GetTableValue(loShip, 1, "QUANTITY")) <> 6 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loShipLog, 1, "GUID")), "GUID-SHIP-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loShipLog, 1, "USER")), "user1", vbTextCompare) <> 0 Then GoTo CleanExit
+
+    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) <> 18 Then GoTo CleanExit
+    If CDbl(GetTableValue(loInv, 1, "QtyAvailable")) <> 18 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-SHIP-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CBool(GetTableValue(loInv, 1, "IsStale")) <> False Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then GoTo CleanExit
+
+    TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loProd As ListObject
+    Dim loProdLog As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_saved_production_refresh")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH74", "S14") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH74.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    operatorPath = rootPath & "\WH74_S14_Production_Operator.xlsb"
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loProd = FindTableByName(wbOps, "ProductionOutput")
+    Set loProdLog = FindTableByName(wbOps, "ProductionLog")
+    If loInv Is Nothing Or loProd Is Nothing Or loProdLog Is Nothing Then GoTo CleanExit
+
+    AddInvSysSeedRow loInv, 908, "SKU-PROD-001", "Production Refresh Item", "EA", "E5", 8
+    AddProductionOutputRow loProd, "Blend", "Production Refresh Item", "EA", 7, "BATCH-001", "RECALL-001", 908
+    AddProductionLogRow loProdLog, "Blend", "REC-001", "Production Refresh Item", "EA", 7, "E5", 908, "SKU-PROD-001", "GUID-PROD-001"
+
+    wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
+    wbOps.Close SaveChanges:=False
+    Set wbOps = Nothing
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH74", "SKU-PROD-001", 33, CDate("2026-03-25 11:30:00"))
+    If wbSnap Is Nothing Then GoTo CleanExit
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH74", "LOCAL", report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loProd = FindTableByName(wbOps, "ProductionOutput")
+    Set loProdLog = FindTableByName(wbOps, "ProductionLog")
+    If loInv Is Nothing Or loProd Is Nothing Or loProdLog Is Nothing Then GoTo CleanExit
+
+    If loProd.ListRows.Count <> 1 Then GoTo CleanExit
+    If loProdLog.ListRows.Count <> 1 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loProd, 1, "PROCESS")), "Blend", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CDbl(GetTableValue(loProd, 1, "REAL OUTPUT")) <> 7 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loProdLog, 1, "GUID")), "GUID-PROD-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loProdLog, 1, "ITEM_CODE")), "SKU-PROD-001", vbTextCompare) <> 0 Then GoTo CleanExit
+
+    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) <> 33 Then GoTo CleanExit
+    If CDbl(GetTableValue(loInv, 1, "QtyAvailable")) <> 33 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-PROD-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CBool(GetTableValue(loInv, 1, "IsStale")) <> False Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then GoTo CleanExit
+
+    TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook() As Long
+    Dim rootPath As String
+    Dim wbInv As Workbook
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim loStatus As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_projection_rebuild")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH70", "S10") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH70.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH70", Array("SKU-PR-001"))
+    If wbInv Is Nothing Then GoTo CleanExit
+
+    Set evt = CreateReceiveEventForTest("EVT-PR-001", "WH70", "S10", "user1", "SKU-PR-001", 5, "A1", "seed projection")
+    If Not modInventoryApply.ApplyReceiveEvent(evt, wbInv, "RUN-PR-001", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    DeleteTableSurfaceForTest wbInv.Worksheets("SkuBalance"), "tblSkuBalance"
+    DeleteTableSurfaceForTest wbInv.Worksheets("LocationBalance"), "tblLocationBalance"
+    wbInv.Save
+
+    Set evt = CreateReceiveEventForTest("EVT-PR-002", "WH70", "S10", "user1", "SKU-PR-001", 2, "A1", "rebuild after delete")
+    If Not modInventoryApply.ApplyReceiveEvent(evt, wbInv, "RUN-PR-002", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    Set loSku = wbInv.Worksheets("SkuBalance").ListObjects("tblSkuBalance")
+    Set loLoc = wbInv.Worksheets("LocationBalance").ListObjects("tblLocationBalance")
+    Set loStatus = wbInv.Worksheets("LedgerStatus").ListObjects("tblInventoryLedgerStatus")
+
+    If loSku.ListRows.Count <> 1 Then GoTo CleanExit
+    If loLoc.ListRows.Count <> 1 Then GoTo CleanExit
+    If loStatus.ListRows.Count <> 1 Then GoTo CleanExit
+
+    If StrComp(CStr(GetTableValue(loSku, 1, "SKU")), "SKU-PR-001", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CDbl(GetTableValue(loSku, 1, "QtyOnHand")) <> 7 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loLoc, 1, "Location")), "A1", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CDbl(GetTableValue(loLoc, 1, "QtyOnHand")) <> 7 Then GoTo CleanExit
+    If CLng(GetTableValue(loStatus, 1, "TotalEventRows")) <> 2 Then GoTo CleanExit
+    If CLng(GetTableValue(loStatus, 1, "TotalAppliedEvents")) <> 2 Then GoTo CleanExit
+    If StrComp(CStr(GetTableValue(loStatus, 1, "LastEventId")), "EVT-PR-002", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CLng(GetTableValue(loStatus, 1, "DistinctSkuCount")) <> 1 Then GoTo CleanExit
+    If CLng(GetTableValue(loStatus, 1, "DistinctLocationCount")) <> 1 Then GoTo CleanExit
+    If Not IsDate(GetTableValue(loStatus, 1, "ProjectionRebuiltAtUTC")) Then GoTo CleanExit
+
+    TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Private Function GetTableValue(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
     GetTableValue = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value
 End Function
+
+Private Function AssertLanWorkbookState(ByVal wbOps As Workbook, _
+                                        ByVal expectedPath As String, _
+                                        ByVal expectedRef As String, _
+                                        ByVal expectedSnapshotLogId As String, _
+                                        ByVal expectedTotalInv As Double, _
+                                        ByVal expectedSku As String, _
+                                        ByVal expectedSnapshotPrefix As String) As Boolean
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+
+    If wbOps Is Nothing Then Exit Function
+    If StrComp(wbOps.FullName, expectedPath, vbTextCompare) <> 0 Then Exit Function
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then Exit Function
+
+    If loRecv.ListRows.Count <> 1 Then Exit Function
+    If loLog.ListRows.Count <> 1 Then Exit Function
+    If StrComp(CStr(GetTableValue(loRecv, 1, "REF_NUMBER")), expectedRef, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(CStr(GetTableValue(loLog, 1, "REF_NUMBER")), expectedRef, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(CStr(GetTableValue(loLog, 1, "SNAPSHOT_ID")), expectedSnapshotLogId, vbTextCompare) <> 0 Then Exit Function
+
+    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) <> expectedTotalInv Then Exit Function
+    If CDbl(GetTableValue(loInv, 1, "QtyAvailable")) <> expectedTotalInv Then Exit Function
+    If StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), expectedSku, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) <> 0 Then Exit Function
+    If InStr(1, CStr(GetTableValue(loInv, 1, "SnapshotId")), expectedSnapshotPrefix, vbTextCompare) <> 1 Then Exit Function
+    If CBool(GetTableValue(loInv, 1, "IsStale")) <> False Then Exit Function
+    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then Exit Function
+    If Not IsDate(GetTableValue(loInv, 1, "LastRefreshUTC")) Then Exit Function
+    If Not IsDate(GetTableValue(loInv, 1, "LAST EDITED")) Then Exit Function
+
+    AssertLanWorkbookState = True
+End Function
+
+Private Function ResolveCurrentTestUserId() As String
+    ResolveCurrentTestUserId = Trim$(Environ$("USERNAME"))
+    If ResolveCurrentTestUserId = "" Then ResolveCurrentTestUserId = Trim$(Application.UserName)
+    If ResolveCurrentTestUserId = "" Then ResolveCurrentTestUserId = "user1"
+End Function
+
+Private Sub EnsureAuthCapabilityForTest(ByVal warehouseId As String, _
+                                        ByVal userId As String, _
+                                        ByVal capability As String, _
+                                        ByVal capabilityWarehouseId As String, _
+                                        ByVal stationId As String)
+    Dim wbAuth As Workbook
+    Dim loUsers As ListObject
+    Dim loCaps As ListObject
+    Dim rowIndex As Long
+    Dim lr As ListRow
+    Dim usersWasProtected As Boolean
+    Dim capsWasProtected As Boolean
+
+    Set wbAuth = FindWorkbookByName(warehouseId & ".invSys.Auth.xlsb")
+    If wbAuth Is Nothing Then Exit Sub
+
+    Set loUsers = wbAuth.Worksheets("Users").ListObjects("tblUsers")
+    Set loCaps = wbAuth.Worksheets("Capabilities").ListObjects("tblCapabilities")
+    If loUsers Is Nothing Or loCaps Is Nothing Then Exit Sub
+
+    usersWasProtected = BeginEditableSheetForTest(loUsers.Parent)
+    capsWasProtected = BeginEditableSheetForTest(loCaps.Parent)
+
+    On Error GoTo CleanFail
+    rowIndex = FindRowByColumnValueInTable(loUsers, "UserId", userId)
+    If rowIndex = 0 Then
+        Set lr = loUsers.ListRows.Add
+        SetTableCell loUsers, lr.Index, "UserId", userId
+        SetTableCell loUsers, lr.Index, "DisplayName", userId
+        SetTableCell loUsers, lr.Index, "Status", "Active"
+    Else
+        SetTableCell loUsers, rowIndex, "Status", "Active"
+    End If
+
+    rowIndex = FindCapabilityRowForTest(loCaps, userId, capability, capabilityWarehouseId, stationId)
+    If rowIndex = 0 Then
+        Set lr = loCaps.ListRows.Add
+        rowIndex = lr.Index
+    End If
+    SetTableCell loCaps, rowIndex, "UserId", userId
+    SetTableCell loCaps, rowIndex, "Capability", capability
+    SetTableCell loCaps, rowIndex, "WarehouseId", capabilityWarehouseId
+    SetTableCell loCaps, rowIndex, "StationId", stationId
+    SetTableCell loCaps, rowIndex, "Status", "ACTIVE"
+    wbAuth.Save
+CleanExit:
+    RestoreSheetProtectionForTest loCaps.Parent, capsWasProtected
+    RestoreSheetProtectionForTest loUsers.Parent, usersWasProtected
+    Exit Sub
+CleanFail:
+    RestoreSheetProtectionForTest loCaps.Parent, capsWasProtected
+    RestoreSheetProtectionForTest loUsers.Parent, usersWasProtected
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Sub
+
+Private Function FindCapabilityRowForTest(ByVal lo As ListObject, _
+                                          ByVal userId As String, _
+                                          ByVal capability As String, _
+                                          ByVal warehouseId As String, _
+                                          ByVal stationId As String) As Long
+    Dim i As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    For i = 1 To lo.ListRows.Count
+        If StrComp(CStr(GetTableValue(lo, i, "UserId")), userId, vbTextCompare) = 0 _
+           And StrComp(CStr(GetTableValue(lo, i, "Capability")), capability, vbTextCompare) = 0 _
+           And StrComp(CStr(GetTableValue(lo, i, "WarehouseId")), warehouseId, vbTextCompare) = 0 _
+           And StrComp(CStr(GetTableValue(lo, i, "StationId")), stationId, vbTextCompare) = 0 Then
+            FindCapabilityRowForTest = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function CreateCanonicalReceiveInboxWorkbookForTest(ByVal rootPath As String, ByVal stationId As String) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+    Dim report As String
+
+    targetPath = rootPath & "\invSys.Inbox.Receiving." & stationId & ".xlsb"
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    wb.Worksheets(1).Name = "InboxReceive"
+    wb.SaveAs Filename:=targetPath, FileFormat:=50
+    If Not modProcessor.EnsureReceiveInboxSchema(wb, report) Then
+        CloseWorkbookIfOpen wb
+        Exit Function
+    End If
+    wb.Save
+    Set CreateCanonicalReceiveInboxWorkbookForTest = wb
+End Function
+
+Private Sub AddInboxReceiveEventRowForTest(ByVal lo As ListObject, _
+                                           ByVal eventId As String, _
+                                           ByVal warehouseId As String, _
+                                           ByVal stationId As String, _
+                                           ByVal userId As String, _
+                                           ByVal sku As String, _
+                                           ByVal qty As Double, _
+                                           ByVal locationVal As String, _
+                                           ByVal noteVal As String)
+    Dim lr As ListRow
+    Dim sheetWasProtected As Boolean
+
+    If lo Is Nothing Then Exit Sub
+    sheetWasProtected = BeginEditableSheetForTest(lo.Parent)
+
+    On Error GoTo CleanFail
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "EventID"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "SKU"))) = "" Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "EventID", eventId
+    SetTableCell lo, lr.Index, "EventType", "RECEIVE"
+    SetTableCell lo, lr.Index, "CreatedAtUTC", Now
+    SetTableCell lo, lr.Index, "WarehouseId", warehouseId
+    SetTableCell lo, lr.Index, "StationId", stationId
+    SetTableCell lo, lr.Index, "UserId", userId
+    SetTableCell lo, lr.Index, "SKU", sku
+    SetTableCell lo, lr.Index, "Qty", qty
+    SetTableCell lo, lr.Index, "Location", locationVal
+    SetTableCell lo, lr.Index, "Note", noteVal
+    SetTableCell lo, lr.Index, "Status", "NEW"
+CleanExit:
+    RestoreSheetProtectionForTest lo.Parent, sheetWasProtected
+    Exit Sub
+CleanFail:
+    RestoreSheetProtectionForTest lo.Parent, sheetWasProtected
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Sub
+
+Private Function AssertInboxRowStatusForTest(ByVal wb As Workbook, ByVal eventId As String, ByVal expectedStatus As String) As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+
+    Set lo = FindTableByName(wb, "tblInboxReceive")
+    If lo Is Nothing Then Exit Function
+    rowIndex = FindRowByColumnValueInTable(lo, "EventID", eventId)
+    If rowIndex = 0 Then Exit Function
+    If StrComp(CStr(GetTableValue(lo, rowIndex, "Status")), expectedStatus, vbTextCompare) <> 0 Then Exit Function
+    AssertInboxRowStatusForTest = True
+End Function
+
+Private Function DescribeInboxRowStateForTest(ByVal wb As Workbook, ByVal eventId As String) As String
+    Dim lo As ListObject
+    Dim rowIndex As Long
+
+    Set lo = FindTableByName(wb, "tblInboxReceive")
+    If lo Is Nothing Then
+        DescribeInboxRowStateForTest = "missing-table"
+        Exit Function
+    End If
+
+    rowIndex = FindRowByColumnValueInTable(lo, "EventID", eventId)
+    If rowIndex = 0 Then
+        DescribeInboxRowStateForTest = "missing-row"
+        Exit Function
+    End If
+
+    DescribeInboxRowStateForTest = _
+        "Status=" & CStr(GetTableValue(lo, rowIndex, "Status")) & _
+        ", ErrorCode=" & CStr(GetTableValue(lo, rowIndex, "ErrorCode")) & _
+        ", ErrorMessage=" & CStr(GetTableValue(lo, rowIndex, "ErrorMessage"))
+End Function
+
+Private Function FindRowByColumnValueInTable(ByVal lo As ListObject, ByVal columnName As String, ByVal expectedValue As String) As Long
+    Dim i As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    For i = 1 To lo.ListRows.Count
+        If StrComp(CStr(GetTableValue(lo, i, columnName)), expectedValue, vbTextCompare) = 0 Then
+            FindRowByColumnValueInTable = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Sub BuildSavedReceivingOperatorWorkbookForTest(ByVal targetPath As String, _
+                                                       ByVal sku As String, _
+                                                       ByVal refNumber As String, _
+                                                       ByVal snapshotLogId As String, _
+                                                       ByVal totalInv As Double, _
+                                                       ByVal locationVal As String)
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then
+        CloseWorkbookIfOpen wb
+        Exit Sub
+    End If
+
+    Set loInv = FindTableByName(wb, "invSys")
+    Set loRecv = FindTableByName(wb, "ReceivedTally")
+    Set loLog = FindTableByName(wb, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then
+        CloseWorkbookIfOpen wb
+        Exit Sub
+    End If
+
+    AddInvSysSeedRow loInv, 999, sku, "LAN Processor Item", "EA", locationVal, totalInv
+    AddReceivedTallyRow loRecv, refNumber, "LAN Processor Item", 1, 999
+    AddReceivedLogRow loLog, snapshotLogId, refNumber, "LAN Processor Item", 1, "EA", "Vendor", locationVal, sku, 999
+
+    wb.SaveAs Filename:=targetPath, FileFormat:=50
+    wb.Close SaveChanges:=False
+End Sub
 
 Private Function FindUserRow(ByVal lo As ListObject, ByVal userId As String) As Long
     Dim i As Long
@@ -487,6 +1412,160 @@ Private Sub AddReceivedTallyRow(ByVal lo As ListObject, ByVal refNumber As Strin
     SetTableCell lo, lr.Index, "ROW", rowValue
 End Sub
 
+Private Sub AddReceivedLogRow(ByVal lo As ListObject, _
+                              ByVal snapshotId As String, _
+                              ByVal refNumber As String, _
+                              ByVal itemName As String, _
+                              ByVal qty As Double, _
+                              ByVal uom As String, _
+                              ByVal vendorName As String, _
+                              ByVal locationVal As String, _
+                              ByVal sku As String, _
+                              ByVal rowValue As Long)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "SNAPSHOT_ID"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "REF_NUMBER"))) = "" _
+        And NzDblForTest(GetTableValue(lo, 1, "QUANTITY")) = 0 Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "SNAPSHOT_ID", snapshotId
+    SetTableCell lo, lr.Index, "ENTRY_DATE", CDate("2026-03-25 08:00:00")
+    SetTableCell lo, lr.Index, "REF_NUMBER", refNumber
+    SetTableCell lo, lr.Index, "ITEMS", itemName
+    SetTableCell lo, lr.Index, "QUANTITY", qty
+    SetTableCell lo, lr.Index, "UOM", uom
+    SetTableCell lo, lr.Index, "VENDOR", vendorName
+    SetTableCell lo, lr.Index, "LOCATION", locationVal
+    SetTableCell lo, lr.Index, "ITEM_CODE", sku
+    SetTableCell lo, lr.Index, "ROW", rowValue
+End Sub
+
+Private Sub AddShippingTallyRow(ByVal lo As ListObject, _
+                                ByVal refNumber As String, _
+                                ByVal itemName As String, _
+                                ByVal qty As Double, _
+                                ByVal rowValue As Long, _
+                                ByVal uom As String, _
+                                ByVal locationVal As String, _
+                                ByVal descriptionVal As String)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    Set lr = lo.ListRows(1)
+    SetTableCell lo, lr.Index, "REF_NUMBER", refNumber
+    SetTableCell lo, lr.Index, "ITEMS", itemName
+    SetTableCell lo, lr.Index, "QUANTITY", qty
+    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "UOM", uom
+    SetTableCell lo, lr.Index, "LOCATION", locationVal
+    SetTableCell lo, lr.Index, "DESCRIPTION", descriptionVal
+End Sub
+
+Private Sub AddAggregatePackagesLogRow(ByVal lo As ListObject, _
+                                       ByVal guidVal As String, _
+                                       ByVal userId As String, _
+                                       ByVal actionVal As String, _
+                                       ByVal rowValue As Long, _
+                                       ByVal sku As String, _
+                                       ByVal itemName As String, _
+                                       ByVal qtyDelta As Double, _
+                                       ByVal newValue As String)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "GUID"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "USER"))) = "" Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "GUID", guidVal
+    SetTableCell lo, lr.Index, "USER", userId
+    SetTableCell lo, lr.Index, "ACTION", actionVal
+    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "ITEM_CODE", sku
+    SetTableCell lo, lr.Index, "ITEM", itemName
+    SetTableCell lo, lr.Index, "QTY_DELTA", qtyDelta
+    SetTableCell lo, lr.Index, "NEW_VALUE", newValue
+    SetTableCell lo, lr.Index, "TIMESTAMP", CDate("2026-03-25 10:45:00")
+End Sub
+
+Private Sub AddProductionOutputRow(ByVal lo As ListObject, _
+                                   ByVal processName As String, _
+                                   ByVal outputName As String, _
+                                   ByVal uom As String, _
+                                   ByVal realOutput As Double, _
+                                   ByVal batchVal As String, _
+                                   ByVal recallCode As String, _
+                                   ByVal rowValue As Long)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "PROCESS"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "OUTPUT"))) = "" Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "PROCESS", processName
+    SetTableCell lo, lr.Index, "OUTPUT", outputName
+    SetTableCell lo, lr.Index, "UOM", uom
+    SetTableCell lo, lr.Index, "REAL OUTPUT", realOutput
+    SetTableCell lo, lr.Index, "BATCH", batchVal
+    SetTableCell lo, lr.Index, "RECALL CODE", recallCode
+    SetTableCell lo, lr.Index, "ROW", rowValue
+End Sub
+
+Private Sub AddProductionLogRow(ByVal lo As ListObject, _
+                                ByVal recipeName As String, _
+                                ByVal recipeId As String, _
+                                ByVal itemName As String, _
+                                ByVal uom As String, _
+                                ByVal qty As Double, _
+                                ByVal locationVal As String, _
+                                ByVal rowValue As Long, _
+                                ByVal sku As String, _
+                                ByVal guidVal As String)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "RECIPE"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "ITEM_CODE"))) = "" Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "TIMESTAMP", CDate("2026-03-25 11:10:00")
+    SetTableCell lo, lr.Index, "RECIPE", recipeName
+    SetTableCell lo, lr.Index, "RECIPE_ID", recipeId
+    SetTableCell lo, lr.Index, "PROCESS", recipeName
+    SetTableCell lo, lr.Index, "OUTPUT", itemName
+    SetTableCell lo, lr.Index, "REAL OUTPUT", qty
+    SetTableCell lo, lr.Index, "ITEM_CODE", sku
+    SetTableCell lo, lr.Index, "ITEM", itemName
+    SetTableCell lo, lr.Index, "UOM", uom
+    SetTableCell lo, lr.Index, "QUANTITY", qty
+    SetTableCell lo, lr.Index, "LOCATION", locationVal
+    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "GUID", guidVal
+End Sub
+
 Private Sub SetTableCell(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueIn As Variant)
     If lo Is Nothing Then Exit Sub
     lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value = valueIn
@@ -504,16 +1583,139 @@ Private Sub SetConfigWarehouseValue(ByVal workbookName As String, ByVal columnNa
     wb.Save
 End Sub
 
+Private Function CreateCanonicalInventoryWorkbookForTest(ByVal rootPath As String, ByVal warehouseId As String, ByVal skuList As Variant) As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+    Dim report As String
+
+    targetPath = rootPath & "\" & warehouseId & ".invSys.Data.Inventory.xlsb"
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    wb.SaveAs Filename:=targetPath, FileFormat:=50
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then
+        CloseWorkbookIfOpen wb
+        Exit Function
+    End If
+    EnsureSkuCatalogForTest wb, skuList
+    wb.Save
+    Set CreateCanonicalInventoryWorkbookForTest = wb
+End Function
+
+Private Sub EnsureSkuCatalogForTest(ByVal wb As Workbook, ByVal skuList As Variant)
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim rowCount As Long
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set ws = wb.Worksheets("SkuCatalog")
+    On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "SkuCatalog"
+    Else
+        ws.Cells.Clear
+    End If
+
+    ws.Range("A1").Value = "SKU"
+    rowCount = 1
+    For i = LBound(skuList) To UBound(skuList)
+        rowCount = rowCount + 1
+        ws.Cells(rowCount, 1).Value = CStr(skuList(i))
+    Next i
+    If rowCount = 1 Then rowCount = 2
+
+    Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:A" & CStr(rowCount)), , xlYes)
+    lo.Name = "tblSkuCatalog"
+End Sub
+
+Private Function CreateReceiveEventForTest(ByVal eventId As String, _
+                                           ByVal warehouseId As String, _
+                                           ByVal stationId As String, _
+                                           ByVal userId As String, _
+                                           ByVal sku As String, _
+                                           ByVal qty As Double, _
+                                           ByVal locationVal As String, _
+                                           ByVal noteVal As String) As Object
+    Dim evt As Object
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = "RECEIVE"
+    evt("CreatedAtUTC") = Now
+    evt("WarehouseId") = warehouseId
+    evt("StationId") = stationId
+    evt("UserId") = userId
+    evt("SourceInbox") = "phase6-test-inbox"
+    evt("SKU") = sku
+    evt("Qty") = qty
+    evt("Location") = locationVal
+    evt("Note") = noteVal
+    Set CreateReceiveEventForTest = evt
+End Function
+
+Private Sub DeleteTableSurfaceForTest(ByVal ws As Worksheet, ByVal tableName As String)
+    Dim lo As ListObject
+
+    If ws Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set lo = ws.ListObjects(tableName)
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Sub
+
+    ws.Unprotect
+    lo.Delete
+    ws.Cells.Clear
+End Sub
+
 Private Function NzDblForTest(ByVal valueIn As Variant) As Double
     If IsError(valueIn) Or IsNull(valueIn) Or IsEmpty(valueIn) Or valueIn = "" Then Exit Function
     NzDblForTest = CDbl(valueIn)
 End Function
 
-Private Function CreateSnapshotWorkbook(ByVal rootPath As String, ByVal warehouseId As String, ByVal sku As String, ByVal qtyOnHand As Double, ByVal lastAppliedUtc As Date) As Workbook
+Private Function BeginEditableSheetForTest(ByVal ws As Worksheet) As Boolean
+    If ws Is Nothing Then Exit Function
+    BeginEditableSheetForTest = ws.ProtectContents
+    If Not BeginEditableSheetForTest Then Exit Function
+
+    On Error Resume Next
+    ws.Unprotect
+    On Error GoTo 0
+
+    If ws.ProtectContents Then
+        Err.Raise vbObjectError + 7103, "TestPhase6CoreSurfaces.BeginEditableSheetForTest", _
+                  "Worksheet '" & ws.Name & "' is protected and could not be unprotected for test data setup."
+    End If
+End Function
+
+Private Sub RestoreSheetProtectionForTest(ByVal ws As Worksheet, ByVal wasProtected As Boolean)
+    If ws Is Nothing Then Exit Sub
+    If Not wasProtected Then Exit Sub
+
+    On Error Resume Next
+    ws.Protect UserInterfaceOnly:=True
+    On Error GoTo 0
+
+    If Not ws.ProtectContents Then
+        Err.Raise vbObjectError + 7104, "TestPhase6CoreSurfaces.RestoreSheetProtectionForTest", _
+                  "Worksheet '" & ws.Name & "' could not be reprotected after test data setup."
+    End If
+End Sub
+
+Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
+                                        ByVal warehouseId As String, _
+                                        ByVal sku As String, _
+                                        ByVal qtyOnHand As Double, _
+                                        ByVal lastAppliedUtc As Date, _
+                                        Optional ByVal qtyAvailable As Variant, _
+                                        Optional ByVal locationSummary As String = vbNullString) As Workbook
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim lo As ListObject
     Dim targetPath As String
+    Dim resolvedQtyAvailable As Double
 
     targetPath = rootPath & "\" & warehouseId & ".invSys.Snapshot.Inventory.xlsb"
     Set wb = Application.Workbooks.Add(xlWBATWorksheet)
@@ -528,8 +1730,14 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, ByVal warehous
     ws.Range("A2").Value = warehouseId
     ws.Range("B2").Value = sku
     ws.Range("C2").Value = qtyOnHand
-    ws.Range("D2").Value = qtyOnHand
-    ws.Range("E2").Value = "A1=" & CStr(CLng(qtyOnHand))
+    If IsMissing(qtyAvailable) Or IsEmpty(qtyAvailable) Then
+        resolvedQtyAvailable = qtyOnHand
+    Else
+        resolvedQtyAvailable = CDbl(qtyAvailable)
+    End If
+    ws.Range("D2").Value = resolvedQtyAvailable
+    If Trim$(locationSummary) = "" Then locationSummary = "A1=" & CStr(CLng(qtyOnHand))
+    ws.Range("E2").Value = locationSummary
     ws.Range("F2").Value = lastAppliedUtc
     Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:F2"), , xlYes)
     lo.Name = "tblInventorySnapshot"
