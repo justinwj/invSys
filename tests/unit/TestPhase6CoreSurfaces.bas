@@ -428,6 +428,174 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRefresh() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim currentUser As String
+    Dim wbOps As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim report As String
+    Dim failureReason As String
+    Dim eventIdOut As String
+    Dim processedCount As Long
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loInventoryLog As ListObject
+    Dim invRow As Long
+    Dim logRow As Long
+
+    rootPath = BuildRuntimeTestRoot("phase6_missing_snapshot_queue")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH70", "S10") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH70.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+    If Not modAuth.LoadAuth("WH70") Then GoTo CleanExit
+
+    currentUser = ResolveCurrentTestUserId()
+    EnsureAuthCapabilityForTest "WH70", currentUser, "RECEIVE_POST", "WH70", "*"
+    EnsureAuthCapabilityForTest "WH70", "svc_processor", "INBOX_PROCESS", "WH70", "*"
+
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH70", Array("SKU-RM-QUEUE"))
+    Set wbInbox = CreateCanonicalReceiveInboxWorkbookForTest(rootPath, "S10")
+    If wbInv Is Nothing Or wbInbox Is Nothing Then
+        failureReason = "Canonical runtime workbooks for stale-queue test were not created."
+        GoTo CleanExit
+    End If
+
+    operatorPath = rootPath & "\WH70_S10_Receiving_Operator.xlsb"
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    If loInv Is Nothing Or loRecv Is Nothing Then
+        failureReason = "Saved receiving workbook surface was incomplete."
+        GoTo CleanExit
+    End If
+
+    AddInvSysSeedRow loInv, 910, "SKU-RM-QUEUE", "Stale Queue Item", "EA", "B1", 12
+    AddReceivedTallyRow loRecv, "REF-ST-QUEUE-001", "Stale Queue Item", 3, 910
+    wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
+    wbOps.Close SaveChanges:=False
+    Set wbOps = Nothing
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH70", "LOCAL", report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    If loInv Is Nothing Or loRecv Is Nothing Then
+        failureReason = "Saved workbook tables were missing after stale refresh."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, 1, "IsStale")) <> True Then
+        failureReason = "invSys was not marked stale when the snapshot was missing."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "CACHED", vbTextCompare) <> 0 Then
+        failureReason = "invSys SourceType was not CACHED for the missing snapshot case."
+        GoTo CleanExit
+    End If
+    If loRecv.ListRows.Count <> 1 Then
+        failureReason = "ReceivedTally changed during stale refresh."
+        GoTo CleanExit
+    End If
+
+    If Not modRoleEventWriter.QueueReceiveEvent("WH70", "S10", currentUser, "SKU-RM-QUEUE", 4, "A1", "stale-queue", "", "", Now, wbInbox, eventIdOut, report) Then
+        failureReason = "QueueReceiveEvent failed while invSys was stale: " & report
+        GoTo CleanExit
+    End If
+    If Trim$(eventIdOut) = "" Then
+        failureReason = "QueueReceiveEvent did not return an EventID."
+        GoTo CleanExit
+    End If
+    If Not AssertInboxRowStatusForTest(wbInbox, eventIdOut, "NEW") Then
+        failureReason = "Queued inbox row was not NEW after stale workbook posting."
+        GoTo CleanExit
+    End If
+
+    processedCount = modProcessor.RunBatch("WH70", 500, report)
+    If processedCount <> 1 Then
+        failureReason = "RunBatch did not process the stale-workbook receive event. " & report & _
+                        "; Inbox=" & DescribeInboxRowStateForTest(wbInbox, eventIdOut)
+        GoTo CleanExit
+    End If
+    If Not AssertInboxRowStatusForTest(wbInbox, eventIdOut, "PROCESSED") Then
+        failureReason = "Processed inbox row was not marked PROCESSED."
+        GoTo CleanExit
+    End If
+
+    Set loInventoryLog = FindTableByName(wbInv, "tblInventoryLog")
+    If loInventoryLog Is Nothing Then
+        failureReason = "Canonical inventory log was missing after RunBatch."
+        GoTo CleanExit
+    End If
+    logRow = FindRowByColumnValueInTable(loInventoryLog, "EventID", eventIdOut)
+    If logRow = 0 Then
+        failureReason = "Canonical inventory log did not record the stale-workbook event."
+        GoTo CleanExit
+    End If
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH70", "LOCAL", report) Then
+        failureReason = "RefreshInventoryReadModelForWorkbook failed after processor catch-up: " & report
+        GoTo CleanExit
+    End If
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    If loInv Is Nothing Or loRecv Is Nothing Then
+        failureReason = "Saved workbook tables were missing after processor catch-up refresh."
+        GoTo CleanExit
+    End If
+    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-QUEUE")
+    If invRow = 0 Then
+        failureReason = "invSys did not refresh the queued SKU after processor catch-up."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 4 Then
+        failureReason = "invSys TOTAL INV did not reflect the processed stale-workbook receive event."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, invRow, "IsStale")) <> False Then
+        failureReason = "invSys remained stale after processor catch-up refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, invRow, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then
+        failureReason = "invSys SourceType was not LOCAL after processor catch-up refresh."
+        GoTo CleanExit
+    End If
+    If loRecv.ListRows.Count <> 1 Then
+        failureReason = "ReceivedTally changed after stale-workbook queue/process/refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loRecv, 1, "REF_NUMBER")), "REF-ST-QUEUE-001", vbTextCompare) <> 0 Then
+        failureReason = "ReceivedTally REF_NUMBER was not preserved across stale-workbook processing."
+        GoTo CleanExit
+    End If
+
+    TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRefresh = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbOps
+    CloseWorkbookIfOpen wbInbox
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7106, "TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRefresh", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables() As Long
     Dim rootPath As String
     Dim operatorPath As String
