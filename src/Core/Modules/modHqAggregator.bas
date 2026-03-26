@@ -32,17 +32,12 @@ End Function
 Public Function GenerateGlobalSnapshotFromFolder(ByVal snapshotsFolder As String, _
                                                  ByVal outputPath As String, _
                                                  Optional ByRef report As String = "") As Boolean
-    On Error GoTo FailAggregate
-
     Dim fileName As String
     Dim tempFolder As String
-    Dim tempFile As String
-    Dim wbSnap As Workbook
     Dim globalRows As Object
-    Dim key As String
-    Dim lo As ListObject
-    Dim i As Long
     Dim snapshotFileCount As Long
+    Dim skippedSnapshotFileCount As Long
+    Dim skipDetails As String
 
     If Trim$(snapshotsFolder) = "" Then
         report = "Snapshots folder is required."
@@ -56,39 +51,18 @@ Public Function GenerateGlobalSnapshotFromFolder(ByVal snapshotsFolder As String
 
     fileName = Dir$(NormalizeFolderPathHq(snapshotsFolder) & "*.invSys.Snapshot.Inventory.xls*")
     Do While fileName <> ""
-        tempFile = NormalizeFolderPathHq(tempFolder) & fileName
-        On Error Resume Next
-        Kill tempFile
-        On Error GoTo FailAggregate
-        FileCopy NormalizeFolderPathHq(snapshotsFolder) & fileName, tempFile
-
-        Set wbSnap = Application.Workbooks.Open(tempFile, ReadOnly:=True)
         snapshotFileCount = snapshotFileCount + 1
-        Set lo = FindListObjectByNameHq(wbSnap, TABLE_WAREHOUSE_SNAPSHOT)
-        If Not lo Is Nothing Then
-            For i = 1 To lo.ListRows.Count
-                If SafeTrimHq(GetCellByColumnHq(lo, i, "SKU")) <> "" Then
-                    key = SafeTrimHq(GetCellByColumnHq(lo, i, "WarehouseId")) & "|" & SafeTrimHq(GetCellByColumnHq(lo, i, "SKU"))
-                    MergeSnapshotRow globalRows, key, lo, i, fileName
-                End If
-            Next i
+        If Not TryMergeSnapshotFileHq(NormalizeFolderPathHq(snapshotsFolder), tempFolder, fileName, globalRows, skipDetails) Then
+            skippedSnapshotFileCount = skippedSnapshotFileCount + 1
         End If
-        wbSnap.Close SaveChanges:=False
-        Set wbSnap = Nothing
 
         fileName = Dir$
     Loop
 
-    WriteGlobalSnapshotWorkbook outputPath, globalRows, snapshotsFolder, snapshotFileCount
-    report = "Rows=" & CStr(globalRows.Count) & "; SnapshotFiles=" & CStr(snapshotFileCount)
+    WriteGlobalSnapshotWorkbook outputPath, globalRows, snapshotsFolder, snapshotFileCount, skippedSnapshotFileCount
+    report = "Rows=" & CStr(globalRows.Count) & "; SnapshotFiles=" & CStr(snapshotFileCount) & "; SkippedSnapshotFiles=" & CStr(skippedSnapshotFileCount)
+    If skipDetails <> "" Then report = report & "; Skips=" & skipDetails
     GenerateGlobalSnapshotFromFolder = True
-    Exit Function
-
-FailAggregate:
-    On Error Resume Next
-    If Not wbSnap Is Nothing Then wbSnap.Close SaveChanges:=False
-    On Error GoTo 0
-    report = "GenerateGlobalSnapshotFromFolder failed: " & Err.Description
 End Function
 
 Private Sub MergeSnapshotRow(ByVal globalRows As Object, _
@@ -123,7 +97,8 @@ End Sub
 Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
                                         ByVal globalRows As Object, _
                                         ByVal snapshotsFolder As String, _
-                                        ByVal snapshotFileCount As Long)
+                                        ByVal snapshotFileCount As Long, _
+                                        ByVal skippedSnapshotFileCount As Long)
     Dim wb As Workbook
     Dim wsSnap As Worksheet
     Dim wsStatus As Worksheet
@@ -147,7 +122,7 @@ Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
     generatedAt = Now
     snapHeaders = Array("WarehouseId", "SKU", "QtyOnHand", "LastAppliedAtUTC", "SourceSnapshot")
     statusHeaders = Array("Scope", "AuthorityLevel", "AuthoritativeStore", "VisibilityRule", "GeneratedAtUTC", _
-                          "SnapshotsFolder", "SnapshotFileCount", "WarehouseCount")
+                          "SnapshotsFolder", "SnapshotFileCount", "SkippedSnapshotFileCount", "WarehouseCount")
 
     Set wsSnap = wb.Worksheets(1)
     wsSnap.Name = SHEET_GLOBAL_SNAPSHOT
@@ -190,6 +165,7 @@ Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
     SetTableRowValueHq loStatus, 1, "GeneratedAtUTC", generatedAt
     SetTableRowValueHq loStatus, 1, "SnapshotsFolder", NormalizeFolderPathHq(snapshotsFolder)
     SetTableRowValueHq loStatus, 1, "SnapshotFileCount", snapshotFileCount
+    SetTableRowValueHq loStatus, 1, "SkippedSnapshotFileCount", skippedSnapshotFileCount
     SetTableRowValueHq loStatus, 1, "WarehouseCount", CountWarehouseIdsHq(globalRows)
 
     wsSnap.Cells.EntireColumn.AutoFit
@@ -197,6 +173,56 @@ Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
 
     wb.SaveAs Filename:=outputPath, FileFormat:=50
     wb.Close SaveChanges:=True
+End Sub
+
+Private Function TryMergeSnapshotFileHq(ByVal snapshotsFolder As String, _
+                                        ByVal tempFolder As String, _
+                                        ByVal fileName As String, _
+                                        ByVal globalRows As Object, _
+                                        ByRef skipDetails As String) As Boolean
+    Dim tempFile As String
+    Dim wbSnap As Workbook
+    Dim lo As ListObject
+    Dim i As Long
+    Dim key As String
+    Dim failureReason As String
+
+    On Error GoTo FailOpen
+
+    tempFile = NormalizeFolderPathHq(tempFolder) & fileName
+    On Error Resume Next
+    Kill tempFile
+    On Error GoTo FailOpen
+    FileCopy snapshotsFolder & fileName, tempFile
+
+    Set wbSnap = Application.Workbooks.Open(tempFile, ReadOnly:=True)
+    Set lo = FindListObjectByNameHq(wbSnap, TABLE_WAREHOUSE_SNAPSHOT)
+    If Not lo Is Nothing Then
+        For i = 1 To lo.ListRows.Count
+            If SafeTrimHq(GetCellByColumnHq(lo, i, "SKU")) <> "" Then
+                key = SafeTrimHq(GetCellByColumnHq(lo, i, "WarehouseId")) & "|" & SafeTrimHq(GetCellByColumnHq(lo, i, "SKU"))
+                MergeSnapshotRow globalRows, key, lo, i, fileName
+            End If
+        Next i
+    End If
+
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+    TryMergeSnapshotFileHq = True
+    Exit Function
+
+FailOpen:
+    failureReason = fileName & "=" & Replace$(Err.Description, ";", ",")
+    AppendSkipDetailHq skipDetails, failureReason
+    On Error Resume Next
+    If Not wbSnap Is Nothing Then wbSnap.Close SaveChanges:=False
+    On Error GoTo 0
+End Function
+
+Private Sub AppendSkipDetailHq(ByRef skipDetails As String, ByVal detail As String)
+    If Trim$(detail) = "" Then Exit Sub
+    If skipDetails <> "" Then skipDetails = skipDetails & " | "
+    skipDetails = skipDetails & detail
 End Sub
 
 Private Function CountWarehouseIdsHq(ByVal globalRows As Object) As Long

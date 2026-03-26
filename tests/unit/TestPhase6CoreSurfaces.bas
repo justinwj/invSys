@@ -978,6 +978,224 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit() As Long
+    Dim rootPath As String
+    Dim adminPath As String
+    Dim currentUser As String
+    Dim wbAdmin As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim loAudit As ListObject
+    Dim loPoison As ListObject
+    Dim loInbox As ListObject
+    Dim loLog As ListObject
+    Dim corrections As Object
+    Dim report As String
+    Dim newEventId As String
+    Dim poisonCount As Long
+    Dim failureReason As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_saved_admin_reissue")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH76", "ADM1") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH76.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+    If Not modAuth.LoadAuth("WH76") Then GoTo CleanExit
+
+    currentUser = ResolveCurrentTestUserId()
+    EnsureAuthCapabilityForTest "WH76", currentUser, "ADMIN_MAINT", "WH76", "*"
+    EnsureAuthCapabilityForTest "WH76", currentUser, "RECEIVE_POST", "WH76", "*"
+    EnsureAuthCapabilityForTest "WH76", "svc_processor", "INBOX_PROCESS", "WH76", "*"
+
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH76", Array("SKU-001"))
+    If wbInv Is Nothing Then
+        failureReason = "Canonical inventory workbook could not be created."
+        GoTo CleanExit
+    End If
+    Set wbInbox = CreateCanonicalReceiveInboxWorkbookForTest(rootPath, "ADM1")
+    If wbInbox Is Nothing Then
+        failureReason = "Canonical admin inbox workbook could not be created."
+        GoTo CleanExit
+    End If
+
+    AddInboxReceiveEventRowForTest FindTableByName(wbInbox, "tblInboxReceive"), "EVT-ADMIN-POISON-001", "WH76", "ADM1", currentUser, "BAD-SKU", 6, "A1", "bad sku"
+    If modProcessor.RunBatch("WH76", 500, report) <> 0 Then
+        failureReason = "Initial processor run did not return poison-only result. " & report
+        GoTo CleanExit
+    End If
+    If Not AssertInboxRowStatusForTest(wbInbox, "EVT-ADMIN-POISON-001", "POISON") Then
+        failureReason = "Poison seed event was not left in POISON status."
+        GoTo CleanExit
+    End If
+
+    adminPath = rootPath & "\WH76_ADM1_Admin_Operator.xlsb"
+    Set wbAdmin = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(wbAdmin, report) Then
+        failureReason = "Initial admin legacy surface failed: " & report
+        GoTo CleanExit
+    End If
+    If Not modAdminConsole.EnsureAdminSchema(wbAdmin, report) Then
+        failureReason = "Initial admin schema failed: " & report
+        GoTo CleanExit
+    End If
+
+    Set loAudit = FindTableByName(wbAdmin, "tblAdminAudit")
+    If loAudit Is Nothing Then
+        failureReason = "Initial admin audit table was missing."
+        GoTo CleanExit
+    End If
+    AddAdminAuditRow loAudit, "SEED_ADMIN", currentUser, "WH76", "ADM1", "WORKBOOK", "WH76_ADM1_Admin_Operator", "seed", "seed row", "OK"
+    wbAdmin.SaveAs Filename:=adminPath, FileFormat:=50
+    wbAdmin.Close SaveChanges:=False
+    Set wbAdmin = Nothing
+
+    Set wbAdmin = Application.Workbooks.Open(adminPath)
+    If wbAdmin Is Nothing Then
+        failureReason = "Saved admin workbook could not be reopened."
+        GoTo CleanExit
+    End If
+    If Not modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(wbAdmin, report) Then
+        failureReason = "Reopened admin legacy surface failed: " & report
+        GoTo CleanExit
+    End If
+    If Not modAdminConsole.EnsureAdminSchema(wbAdmin, report) Then
+        failureReason = "Reopened admin schema failed: " & report
+        GoTo CleanExit
+    End If
+
+    If Not modAdminConsole.RefreshAdminConsole(wbAdmin, report) Then
+        failureReason = "RefreshAdminConsole failed after reopen: " & report
+        GoTo CleanExit
+    End If
+
+    Set loAudit = FindTableByName(wbAdmin, "tblAdminAudit")
+    Set loPoison = FindTableByName(wbAdmin, "tblAdminPoisonQueue")
+    If loAudit Is Nothing Or loPoison Is Nothing Then
+        failureReason = "Admin audit or poison queue table was missing after reopen."
+        GoTo CleanExit
+    End If
+    If StrComp(wbAdmin.FullName, adminPath, vbTextCompare) <> 0 Then
+        failureReason = "Saved admin workbook identity drifted after reopen."
+        GoTo CleanExit
+    End If
+    If loAudit.ListRows.Count <> 1 Then
+        failureReason = "Admin audit row count changed across reopen/refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loAudit, 1, "Action")), "SEED_ADMIN", vbTextCompare) <> 0 Then
+        failureReason = "Seed admin audit row did not survive reopen/refresh."
+        GoTo CleanExit
+    End If
+    poisonCount = loPoison.ListRows.Count
+    If poisonCount <> 1 Then
+        failureReason = "Admin poison queue count was not rebuilt correctly after reopen."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loPoison, 1, "EventID")), "EVT-ADMIN-POISON-001", vbTextCompare) <> 0 Then
+        failureReason = "Admin poison queue did not point at the poisoned event."
+        GoTo CleanExit
+    End If
+    If CLng(wbAdmin.Worksheets("AdminConsole").Range("B7").Value) <> 1 Then
+        failureReason = "Admin console poison count was not refreshed after reopen."
+        GoTo CleanExit
+    End If
+
+    Set corrections = CreateObject("Scripting.Dictionary")
+    corrections.CompareMode = vbTextCompare
+    corrections.Add "SKU", "SKU-001"
+    corrections.Add "Note", "fixed sku"
+
+    If Not modAdminConsole.ReissuePoisonEvent(wbInbox.Name, "tblInboxReceive", "EVT-ADMIN-POISON-001", currentUser, corrections, "fix sku", wbAdmin, newEventId, report) Then
+        failureReason = "ReissuePoisonEvent failed from saved admin workbook: " & report
+        GoTo CleanExit
+    End If
+    If newEventId = "" Then
+        failureReason = "ReissuePoisonEvent did not return a new child EventID."
+        GoTo CleanExit
+    End If
+    If modAdminConsole.RunProcessorFromConsole(currentUser, "WH76", wbAdmin, report) <> 1 Then
+        failureReason = "RunProcessorFromConsole did not process the reissued event. " & report
+        GoTo CleanExit
+    End If
+
+    Set loInbox = FindTableByName(wbInbox, "tblInboxReceive")
+    Set loLog = FindTableByName(wbInv, "tblInventoryLog")
+    Set loAudit = FindTableByName(wbAdmin, "tblAdminAudit")
+    Set loPoison = FindTableByName(wbAdmin, "tblAdminPoisonQueue")
+    If loInbox Is Nothing Or loLog Is Nothing Or loAudit Is Nothing Or loPoison Is Nothing Then
+        failureReason = "Admin workflow tables were missing after reissue/processor run."
+        GoTo CleanExit
+    End If
+
+    If FindRowByColumnValueInTable(loInbox, "EventID", newEventId) = 0 Then
+        failureReason = "Reissued child event row was not found in the inbox."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInbox, 1, "Status")), "POISON", vbTextCompare) <> 0 Then
+        failureReason = "Original poisoned row lost POISON status after reissue."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInbox, FindRowByColumnValueInTable(loInbox, "EventID", newEventId), "Status")), "PROCESSED", vbTextCompare) <> 0 Then
+        failureReason = "Reissued child row was not processed."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInbox, FindRowByColumnValueInTable(loInbox, "EventID", newEventId), "ParentEventId")), "EVT-ADMIN-POISON-001", vbTextCompare) <> 0 Then
+        failureReason = "Reissued child row did not preserve ParentEventId."
+        GoTo CleanExit
+    End If
+    If FindRowByColumnValueInTable(loLog, "EventID", newEventId) = 0 Then
+        failureReason = "Canonical inventory log did not record the reissued event."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loLog, FindRowByColumnValueInTable(loLog, "EventID", newEventId), "SKU")), "SKU-001", vbTextCompare) <> 0 Then
+        failureReason = "Canonical inventory log recorded the wrong SKU for the reissued event."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loLog, FindRowByColumnValueInTable(loLog, "EventID", newEventId), "QtyDelta")) <> 6 Then
+        failureReason = "Canonical inventory log recorded the wrong quantity for the reissued event."
+        GoTo CleanExit
+    End If
+    If FindRowByColumnValueInTable(loAudit, "Action", "REISSUE_POISON") = 0 Then
+        failureReason = "Admin audit did not record REISSUE_POISON."
+        GoTo CleanExit
+    End If
+    If FindRowByColumnValueInTable(loAudit, "Action", "RUN_PROCESSOR") = 0 Then
+        failureReason = "Admin audit did not record RUN_PROCESSOR."
+        GoTo CleanExit
+    End If
+    If loAudit.ListRows.Count <> 3 Then
+        failureReason = "Admin audit row count drifted after reissue/processor run."
+        GoTo CleanExit
+    End If
+    If loPoison.ListRows.Count <> 1 Then
+        failureReason = "Admin poison queue count drifted after reissue/processor run."
+        GoTo CleanExit
+    End If
+    If CLng(wbAdmin.Worksheets("AdminConsole").Range("B8").Value) <> 1 Then
+        failureReason = "Admin console processed count was not refreshed after processor run."
+        GoTo CleanExit
+    End If
+
+    TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbAdmin
+    CloseWorkbookIfOpen wbInbox
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7105, "TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook() As Long
     Dim rootPath As String
     Dim wbInv As Workbook
@@ -1564,6 +1782,40 @@ Private Sub AddProductionLogRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "LOCATION", locationVal
     SetTableCell lo, lr.Index, "ROW", rowValue
     SetTableCell lo, lr.Index, "GUID", guidVal
+End Sub
+
+Private Sub AddAdminAuditRow(ByVal lo As ListObject, _
+                             ByVal actionName As String, _
+                             ByVal userId As String, _
+                             ByVal warehouseId As String, _
+                             ByVal stationId As String, _
+                             ByVal targetType As String, _
+                             ByVal targetId As String, _
+                             ByVal reasonVal As String, _
+                             ByVal detailVal As String, _
+                             ByVal resultCode As String)
+    Dim lr As ListRow
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then
+        Set lr = lo.ListRows.Add
+    ElseIf lo.ListRows.Count = 1 _
+        And Trim$(CStr(GetTableValue(lo, 1, "Action"))) = "" _
+        And Trim$(CStr(GetTableValue(lo, 1, "UserId"))) = "" Then
+        Set lr = lo.ListRows(1)
+    Else
+        Set lr = lo.ListRows.Add
+    End If
+    SetTableCell lo, lr.Index, "LoggedAtUTC", CDate("2026-03-25 12:00:00")
+    SetTableCell lo, lr.Index, "Action", actionName
+    SetTableCell lo, lr.Index, "UserId", userId
+    SetTableCell lo, lr.Index, "WarehouseId", warehouseId
+    SetTableCell lo, lr.Index, "StationId", stationId
+    SetTableCell lo, lr.Index, "TargetType", targetType
+    SetTableCell lo, lr.Index, "TargetId", targetId
+    SetTableCell lo, lr.Index, "Reason", reasonVal
+    SetTableCell lo, lr.Index, "Detail", detailVal
+    SetTableCell lo, lr.Index, "Result", resultCode
 End Sub
 
 Private Sub SetTableCell(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueIn As Variant)

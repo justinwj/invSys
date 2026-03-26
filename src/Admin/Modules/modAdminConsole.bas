@@ -273,9 +273,8 @@ Public Function ReissuePoisonEvent(ByVal sourceWorkbookName As String, _
     Dim colIdx As Long
     Dim key As Variant
     Dim refreshReport As String
-
-    If Not EnsureAdminContext(adminUserId, "", resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
-    If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+    Dim sourceWh As String
+    Dim sourceSt As String
 
     Set sourceWb = ResolveOpenWorkbookByNameAdmin(sourceWorkbookName)
     If sourceWb Is Nothing Then
@@ -298,6 +297,12 @@ Public Function ReissuePoisonEvent(ByVal sourceWorkbookName As String, _
         report = "Source event is not in POISON status."
         Exit Function
     End If
+
+    sourceWh = SafeTrimAdmin(GetCellByColumnAdmin(loInbox, sourceRow, "WarehouseId"))
+    sourceSt = SafeTrimAdmin(GetCellByColumnAdmin(loInbox, sourceRow, "StationId"))
+    If Not EnsureAdminContext(adminUserId, sourceWh, resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+    If sourceSt <> "" Then resolvedSt = sourceSt
+    If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
 
     EnsureTableSheetEditableAdmin loInbox, loInbox.Name
     Set targetRow = loInbox.ListRows.Add

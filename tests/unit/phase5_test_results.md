@@ -1,7 +1,7 @@
 # Phase 5 VBA Test Results
 
-- Date: 2026-03-25 16:50:42
-- Passed: 7
+- Date: 2026-03-25 17:15:57
+- Passed: 8
 - Failed: 0
 
 | Test | Result |
@@ -13,3 +13,4 @@
 | TestPhase5Sync.TestHqAggregation_RebuildsGlobalSnapshotAfterStaggeredWarehouseUpdates | PASS |
 | TestPhase5Sync.TestHqAggregation_GlobalSnapshotStatusIsAdvisoryOnly | PASS |
 | TestPhase5Sync.TestDelayedPublicationRecovery_PreservesLocalOutboxAndGlobalCatchup | PASS |
+| TestPhase5Sync.TestHqAggregation_SkipsUnreadablePublishedSnapshotAndRetainsLastGoodData | PASS |
