@@ -78,6 +78,7 @@ Public Function AcquireLock(ByVal lockName As String, _
     SetCellByColumnLock lo, rowIndex, "HeartbeatAtUTC", nowTs
     SetCellByColumnLock lo, rowIndex, "Status", LOCK_STATUS_HELD
 
+    SaveLockWorkbookIfWritable wb
     AcquireLock = True
     message = "Lock acquired."
     SetSheetProtectionLock lo.Parent, True
@@ -125,6 +126,7 @@ Public Function UpdateHeartbeat(ByVal lockName As String, _
     SetCellByColumnLock lo, rowIndex, "HeartbeatAtUTC", nowTs
     SetCellByColumnLock lo, rowIndex, "ExpiresAtUTC", DateAdd("n", GetLockTimeoutMinutes(), nowTs)
     SetCellByColumnLock lo, rowIndex, "Status", LOCK_STATUS_HELD
+    SaveLockWorkbookIfWritable wb
     UpdateHeartbeat = True
     SetSheetProtectionLock lo.Parent, True
     Exit Function
@@ -171,6 +173,7 @@ Public Function ReleaseLock(ByVal lockName As String, _
     SetCellByColumnLock lo, rowIndex, "ExpiresAtUTC", nowTs
     SetCellByColumnLock lo, rowIndex, "HeartbeatAtUTC", nowTs
     SetCellByColumnLock lo, rowIndex, "Status", LOCK_STATUS_EXPIRED
+    SaveLockWorkbookIfWritable wb
     ReleaseLock = True
     SetSheetProtectionLock lo.Parent, True
     Exit Function
@@ -230,6 +233,7 @@ Public Function BreakLock(ByVal lockName As String, _
     SetCellByColumnLock lo, rowIndex, "Status", LOCK_STATUS_BROKEN
     If breakerUserId <> "" Then SetCellByColumnLock lo, rowIndex, "OwnerUserId", breakerUserId
 
+    SaveLockWorkbookIfWritable wb
     BreakLock = True
     If reason <> "" Then
         message = "Lock broken: " & reason
@@ -379,4 +383,11 @@ Private Sub SetSheetProtectionLock(ByVal ws As Worksheet, ByVal protectAfter As 
                       "Excel automation cannot update tblLocks while the sheet remains protected."
         End If
     End If
+End Sub
+
+Private Sub SaveLockWorkbookIfWritable(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    If wb.ReadOnly Then Exit Sub
+    If Trim$(wb.Path) = "" Then Exit Sub
+    wb.Save
 End Sub

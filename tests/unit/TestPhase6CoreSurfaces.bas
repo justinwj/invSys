@@ -596,6 +596,252 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonicalWorkbooks() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim currentUser As String
+    Dim report As String
+    Dim failureReason As String
+    Dim processedCount As Long
+    Dim eventIdOut As String
+    Dim wbOps As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+    Dim loInventoryLog As ListObject
+    Dim invRow As Long
+    Dim logRow As Long
+
+    rootPath = BuildRuntimeTestRoot("phase6_full_reopen_runtime")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH78", "S18") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH78.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+    If Not modAuth.LoadAuth("WH78") Then GoTo CleanExit
+
+    currentUser = ResolveCurrentTestUserId()
+    EnsureAuthCapabilityForTest "WH78", currentUser, "RECEIVE_POST", "WH78", "*"
+    EnsureAuthCapabilityForTest "WH78", "svc_processor", "INBOX_PROCESS", "WH78", "*"
+
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH78", Array("SKU-RM-RESTART"))
+    Set wbInbox = CreateCanonicalReceiveInboxWorkbookForTest(rootPath, "S18")
+    If wbInv Is Nothing Or wbInbox Is Nothing Then
+        failureReason = "Canonical inventory/inbox workbooks could not be created for full reopen test."
+        GoTo CleanExit
+    End If
+
+    AddInboxReceiveEventRowForTest FindTableByName(wbInbox, "tblInboxReceive"), "EVT-RESTART-001", "WH78", "S18", currentUser, "SKU-RM-RESTART", 9, "A1", "restart-seed"
+    wbInbox.Save
+    processedCount = modProcessor.RunBatch("WH78", 500, report)
+    If processedCount <> 1 Then
+        failureReason = "Initial RunBatch did not seed the canonical runtime state. " & report & _
+                        "; Inbox=" & DescribeInboxRowStateForTest(wbInbox, "EVT-RESTART-001")
+        GoTo CleanExit
+    End If
+
+    operatorPath = rootPath & "\WH78_S18_Receiving_Operator.xlsb"
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then
+        failureReason = "Saved receiving workbook surface was incomplete before restart simulation."
+        GoTo CleanExit
+    End If
+
+    AddInvSysSeedRow loInv, 911, "SKU-RM-RESTART", "Restart Item", "EA", "Z9", 1
+    AddReceivedTallyRow loRecv, "REF-RESTART-001", "Restart Item", 2, 911
+    AddReceivedLogRow loLog, "SNAP-RESTART-OLD", "REF-RESTART-001", "Restart Item", 2, "EA", "Vendor R", "Z9", "SKU-RM-RESTART", 911
+    wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
+    wbOps.Close SaveChanges:=False
+    Set wbOps = Nothing
+
+    CloseWorkbookByNameIfOpen "WH78.invSys.Config.xlsb"
+    CloseWorkbookByNameIfOpen "WH78.invSys.Auth.xlsb"
+    CloseWorkbookByNameIfOpen "WH78.invSys.Data.Inventory.xlsb"
+    CloseWorkbookByNameIfOpen "WH78.invSys.Snapshot.Inventory.xlsb"
+    CloseWorkbookByNameIfOpen "WH78.Outbox.Events.xlsb"
+    CloseWorkbookByNameIfOpen "invSys.Inbox.Receiving.S18.xlsb"
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH78", "S18") Then
+        failureReason = "LoadConfig failed after full runtime close/reopen boundary."
+        GoTo CleanExit
+    End If
+    If Not modAuth.LoadAuth("WH78") Then
+        failureReason = "LoadAuth failed after full runtime close/reopen boundary."
+        GoTo CleanExit
+    End If
+
+    Set wbCfg = FindWorkbookByName("WH78.invSys.Config.xlsb")
+    Set wbAuth = FindWorkbookByName("WH78.invSys.Auth.xlsb")
+    If wbCfg Is Nothing Or wbAuth Is Nothing Then
+        failureReason = "Canonical config/auth workbooks were not reopened after runtime reload."
+        GoTo CleanExit
+    End If
+    If StrComp(wbCfg.FullName, rootPath & "\WH78.invSys.Config.xlsb", vbTextCompare) <> 0 Then
+        failureReason = "Config workbook reopened at an unexpected path."
+        GoTo CleanExit
+    End If
+    If StrComp(wbAuth.FullName, rootPath & "\WH78.invSys.Auth.xlsb", vbTextCompare) <> 0 Then
+        failureReason = "Auth workbook reopened at an unexpected path."
+        GoTo CleanExit
+    End If
+    If StrComp(modConfig.GetString("PathDataRoot", ""), rootPath, vbTextCompare) <> 0 _
+       And StrComp(modConfig.GetString("PathDataRoot", ""), rootPath & "\", vbTextCompare) <> 0 Then
+        failureReason = "PathDataRoot did not reload to the canonical runtime root."
+        GoTo CleanExit
+    End If
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then
+        failureReason = "Saved receiving workbook could not be reopened after runtime reload."
+        GoTo CleanExit
+    End If
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH78", "LOCAL", report) Then
+        failureReason = "RefreshInventoryReadModelForWorkbook failed after runtime reload: " & report
+        GoTo CleanExit
+    End If
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then
+        failureReason = "Saved receiving workbook surfaces were missing after runtime reload."
+        GoTo CleanExit
+    End If
+    If StrComp(wbOps.FullName, operatorPath, vbTextCompare) <> 0 Then
+        failureReason = "Saved receiving workbook reopened at an unexpected path after runtime reload."
+        GoTo CleanExit
+    End If
+    If loRecv.ListRows.Count <> 1 Or loLog.ListRows.Count <> 1 Then
+        failureReason = "Workbook-local receiving tables changed across full runtime close/reopen."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loRecv, 1, "REF_NUMBER")), "REF-RESTART-001", vbTextCompare) <> 0 Then
+        failureReason = "ReceivedTally REF_NUMBER was not preserved across full runtime close/reopen."
+        GoTo CleanExit
+    End If
+    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-RESTART")
+    If invRow = 0 Then
+        failureReason = "invSys did not refresh the canonical SKU after runtime reload."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 9 Then
+        failureReason = "invSys TOTAL INV did not reload from the canonical snapshot after runtime reload."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, invRow, "IsStale")) <> False Then
+        failureReason = "invSys was stale after runtime reload despite a canonical snapshot."
+        GoTo CleanExit
+    End If
+    If InStr(1, CStr(GetTableValue(loInv, invRow, "SnapshotId")), "WH78.invSys.Snapshot.Inventory.xlsb|", vbTextCompare) <> 1 Then
+        failureReason = "invSys SnapshotId was not refreshed after runtime reload."
+        GoTo CleanExit
+    End If
+
+    Set wbInbox = Application.Workbooks.Open(rootPath & "\invSys.Inbox.Receiving.S18.xlsb")
+    If wbInbox Is Nothing Then
+        failureReason = "Receive inbox workbook could not be explicitly reopened after runtime reload."
+        GoTo CleanExit
+    End If
+    If StrComp(wbInbox.FullName, rootPath & "\invSys.Inbox.Receiving.S18.xlsb", vbTextCompare) <> 0 Then
+        failureReason = "Receive inbox workbook reopened at an unexpected path after runtime reload."
+        GoTo CleanExit
+    End If
+
+    If Not modRoleEventWriter.QueueReceiveEvent("WH78", "S18", currentUser, "SKU-RM-RESTART", 4, "A1", "restart-post", "", "", Now, wbInbox, eventIdOut, report) Then
+        failureReason = "QueueReceiveEvent failed after runtime reload: " & report
+        GoTo CleanExit
+    End If
+    If Trim$(eventIdOut) = "" Then
+        failureReason = "QueueReceiveEvent did not return an EventID after runtime reload."
+        GoTo CleanExit
+    End If
+
+    processedCount = modProcessor.RunBatch("WH78", 500, report)
+    If processedCount <> 1 Then
+        failureReason = "RunBatch did not process the post-restart receive event. " & report & _
+                        "; Inbox=" & DescribeInboxRowStateForTest(wbInbox, eventIdOut)
+        GoTo CleanExit
+    End If
+    If Not AssertInboxRowStatusForTest(wbInbox, eventIdOut, "PROCESSED") Then
+        failureReason = "Post-restart receive inbox row was not marked PROCESSED."
+        GoTo CleanExit
+    End If
+
+    Set wbInv = FindWorkbookByName("WH78.invSys.Data.Inventory.xlsb")
+    If wbInv Is Nothing Then
+        failureReason = "Canonical inventory workbook was not reopened by RunBatch after runtime reload."
+        GoTo CleanExit
+    End If
+    Set loInventoryLog = FindTableByName(wbInv, "tblInventoryLog")
+    If loInventoryLog Is Nothing Then
+        failureReason = "Canonical inventory log was missing after post-restart RunBatch."
+        GoTo CleanExit
+    End If
+    logRow = FindRowByColumnValueInTable(loInventoryLog, "EventID", eventIdOut)
+    If logRow = 0 Then
+        failureReason = "Canonical inventory log did not record the post-restart receive event."
+        GoTo CleanExit
+    End If
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH78", "LOCAL", report) Then
+        failureReason = "RefreshInventoryReadModelForWorkbook failed after post-restart RunBatch: " & report
+        GoTo CleanExit
+    End If
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    If loInv Is Nothing Or loRecv Is Nothing Then
+        failureReason = "Saved receiving workbook surfaces were missing after post-restart refresh."
+        GoTo CleanExit
+    End If
+    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-RESTART")
+    If invRow = 0 Then
+        failureReason = "invSys lost the canonical SKU after post-restart refresh."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 13 Then
+        failureReason = "invSys TOTAL INV did not include the post-restart receive event."
+        GoTo CleanExit
+    End If
+    If loRecv.ListRows.Count <> 1 Then
+        failureReason = "ReceivedTally changed after post-restart refresh."
+        GoTo CleanExit
+    End If
+
+    TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonicalWorkbooks = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbOps
+    CloseWorkbookIfOpen wbInbox
+    CloseWorkbookIfOpen wbInv
+    CloseWorkbookIfOpen wbAuth
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookByNameIfOpen "WH78.invSys.Snapshot.Inventory.xlsb"
+    CloseWorkbookByNameIfOpen "WH78.Outbox.Events.xlsb"
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7107, "TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonicalWorkbooks", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables() As Long
     Dim rootPath As String
     Dim operatorPath As String
@@ -1716,6 +1962,14 @@ Private Function FindWorkbookByName(ByVal workbookName As String) As Workbook
         End If
     Next wb
 End Function
+
+Private Sub CloseWorkbookByNameIfOpen(ByVal workbookName As String)
+    Dim wb As Workbook
+
+    Set wb = FindWorkbookByName(workbookName)
+    If wb Is Nothing Then Exit Sub
+    CloseWorkbookIfOpen wb
+End Sub
 
 Private Function FindWorksheetByPrefix(ByVal wb As Workbook, ByVal prefixText As String) As Long
     Dim ws As Worksheet
