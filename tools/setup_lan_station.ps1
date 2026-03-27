@@ -32,6 +32,8 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$OperatorWorkbookPath = "",
 
+    [switch]$SkipSharedBootstrap,
+
     [switch]$VisibleExcel
 )
 
@@ -250,26 +252,29 @@ try {
     $workbookMap = @{}
     $workbookMap[$coreWb.Name] = $coreWb
 
-    $sharedPacked = Join-PackedArgs @(
-        $WarehouseId,
-        $StationId,
-        $StationName,
-        ($resolvedInboxRoot + "\"),
-        $RoleDefault,
-        $sharedConfigPath,
-        $resolvedSharedRoot
-    )
-    $sharedResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreWb.Name -MacroName "modConfig.EnsureStationConfigEntryPackedForAutomation" -Arguments @(
-        $sharedPacked
-    ))
-    if (-not $sharedResult.StartsWith("OK", [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Shared config bootstrap failed. Result=$sharedResult"
+    if (-not $SkipSharedBootstrap) {
+        $sharedPacked = Join-PackedArgs @(
+            $WarehouseId,
+            $StationId,
+            $StationName,
+            ($resolvedInboxRoot + "\"),
+            $RoleDefault,
+            $sharedConfigPath,
+            $resolvedSharedRoot
+        )
+        $sharedResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreWb.Name -MacroName "modConfig.EnsureStationConfigEntryPackedForAutomation" -Arguments @(
+            $sharedPacked
+        ))
+        if (-not $sharedResult.StartsWith("OK", [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Shared config bootstrap failed. Result=$sharedResult"
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $sharedConfigPath)) {
+        throw "Shared config workbook not found after bootstrap step: $sharedConfigPath"
     }
 
     Ensure-Directory -Path $resolvedLocalConfigRoot
-    if (-not (Test-Path -LiteralPath $sharedConfigPath)) {
-        throw "Shared config bootstrap did not create $sharedConfigPath"
-    }
     Copy-Item -LiteralPath $sharedConfigPath -Destination $localConfigPath -Force
 
     $inboxPacked = Join-PackedArgs @(
