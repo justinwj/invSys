@@ -459,6 +459,51 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestRefreshInventoryReadModelFromSnapshot_AddsRowsWhenInvSysStartsEmpty() As Long
+    Dim rootPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_read_model_empty")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH68C", "S8") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH68C.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wbOps, report) Then GoTo CleanExit
+    Set loInv = wbOps.Worksheets("InventoryManagement").ListObjects("invSys")
+    If Not loInv.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH68C", "SKU-RM-EMPTY", 11, CDate("2026-03-24 18:15:00"))
+    If wbSnap Is Nothing Then GoTo CleanExit
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68C", "LOCAL", report) Then GoTo CleanExit
+
+    If loInv.ListRows.Count = 1 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-RM-EMPTY", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM")), "SKU-RM-EMPTY", vbTextCompare) = 0 _
+       And CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 11 _
+       And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 11 _
+       And CBool(GetTableValue(loInv, 1, "IsStale")) = False _
+       And StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) = 0 Then
+        TestRefreshInventoryReadModelFromSnapshot_AddsRowsWhenInvSysStartsEmpty = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary() As Long
     Dim rootPath As String
     Dim wbOps As Workbook

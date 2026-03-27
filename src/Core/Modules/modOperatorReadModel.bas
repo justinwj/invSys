@@ -199,6 +199,8 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
     Dim lastApplied As Variant
 
     If loInv Is Nothing Then Exit Sub
+
+    EnsureInvSysRowsForSnapshot loInv, snapshotRows
     If loInv.DataBodyRange Is Nothing Then Exit Sub
 
     For rowIndex = 1 To loInv.ListRows.Count
@@ -221,6 +223,52 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
                                 GetReadModelValue(loInv, rowIndex, "LAST EDITED"), refreshUtc, snapshotId, sourceType, False
         End If
     Next rowIndex
+End Sub
+
+Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapshotRows As Object)
+    Dim key As Variant
+    Dim rowIndex As Long
+
+    If loInv Is Nothing Then Exit Sub
+    If snapshotRows Is Nothing Then Exit Sub
+
+    For Each key In snapshotRows.Keys
+        If Trim$(CStr(key)) <> "" Then
+            rowIndex = FindInvSysRowBySku(loInv, CStr(key))
+            If rowIndex = 0 Then
+                rowIndex = AppendInvSysRow(loInv)
+                If rowIndex > 0 Then SeedInvSysRow loInv, rowIndex, CStr(key)
+            End If
+        End If
+    Next key
+End Sub
+
+Private Function FindInvSysRowBySku(ByVal loInv As ListObject, ByVal sku As String) As Long
+    Dim rowIndex As Long
+
+    If loInv Is Nothing Then Exit Function
+    If loInv.DataBodyRange Is Nothing Then Exit Function
+
+    For rowIndex = 1 To loInv.ListRows.Count
+        If StrComp(ResolveInvSysSku(loInv, rowIndex), sku, vbTextCompare) = 0 Then
+            FindInvSysRowBySku = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function AppendInvSysRow(ByVal loInv As ListObject) As Long
+    If loInv Is Nothing Then Exit Function
+    loInv.ListRows.Add
+    AppendInvSysRow = loInv.ListRows.Count
+End Function
+
+Private Sub SeedInvSysRow(ByVal loInv As ListObject, ByVal rowIndex As Long, ByVal sku As String)
+    If loInv Is Nothing Then Exit Sub
+    If rowIndex <= 0 Then Exit Sub
+
+    SetReadModelValue loInv, rowIndex, "ITEM_CODE", sku
+    SetReadModelValue loInv, rowIndex, "ITEM", sku
 End Sub
 
 Private Sub ApplyReadModelValues(ByVal loInv As ListObject, _
