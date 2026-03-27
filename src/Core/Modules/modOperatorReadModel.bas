@@ -22,6 +22,8 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
     Dim normalizedSource As String
     Dim resolvedWarehouseId As String
     Dim configValidation As String
+    Dim snapshotPath As String
+    Dim snapshotAlreadyOpen As Boolean
 
     Set wb = ResolveOperatorWorkbook(targetWb)
     If wb Is Nothing Then
@@ -43,13 +45,15 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
         configValidation = modConfig.Validate()
     End If
 
+    snapshotPath = ResolveSnapshotPathReadModel(resolvedWarehouseId)
+    snapshotAlreadyOpen = WorkbookIsOpenByPathReadModel(snapshotPath)
     Set wbSnap = ResolveSnapshotWorkbook(resolvedWarehouseId, "", Nothing, False)
     If wbSnap Is Nothing Then
         MarkReadModelState loInv, refreshUtc, vbNullString, "CACHED", True
         report = "Snapshot workbook not found; operator read model marked stale."
         If configValidation <> "" Then report = report & " " & configValidation
         RefreshInventoryReadModelForWorkbook = True
-        Exit Function
+        GoTo CleanExit
     End If
 
     Set loSnap = FindListObjectReadModel(wbSnap, TABLE_SNAPSHOT)
@@ -58,7 +62,7 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
         report = "Snapshot table not found; operator read model marked stale."
         If configValidation <> "" Then report = report & " " & configValidation
         RefreshInventoryReadModelForWorkbook = True
-        Exit Function
+        GoTo CleanExit
     End If
 
     Set snapshotRows = BuildSnapshotDictionary(loSnap)
@@ -66,10 +70,14 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
     ApplySnapshotToInvSys loInv, snapshotRows, refreshUtc, snapshotId, normalizedSource
     report = "OK"
     RefreshInventoryReadModelForWorkbook = True
+    
+CleanExit:
+    If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
     Exit Function
 
 FailRefresh:
     report = "RefreshInventoryReadModelForWorkbook failed: " & Err.Description
+    If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
 End Function
 
 Public Sub RefreshCurrentWorkbookInventoryReadModel()
@@ -97,6 +105,92 @@ Public Sub RefreshCurrentWorkbookInventoryReadModel()
     End If
 End Sub
 
+Public Function DiagnoseInventoryReadModelRefresh(Optional ByVal targetWb As Workbook = Nothing, _
+                                                  Optional ByVal warehouseId As String = "", _
+                                                  Optional ByVal sourceType As String = "LOCAL") As String
+    On Error GoTo FailDiagnose
+
+    Dim wb As Workbook
+    Dim loInv As ListObject
+    Dim wbSnap As Workbook
+    Dim loSnap As ListObject
+    Dim snapshotRows As Object
+    Dim refreshReport As String
+    Dim resolvedWarehouseId As String
+    Dim snapshotPath As String
+    Dim normalizedSource As String
+    Dim configLoadedBefore As Boolean
+    Dim configLoadResult As Boolean
+    Dim beforeRows As Long
+    Dim afterRows As Long
+    Dim snapshotTableRows As Long
+    Dim snapshotDictRows As Long
+    Dim refreshResult As Boolean
+    Dim snapshotAlreadyOpen As Boolean
+
+    Set wb = ResolveOperatorWorkbook(targetWb)
+    If wb Is Nothing Then
+        DiagnoseInventoryReadModelRefresh = "TargetWorkbook=<none>" & vbCrLf & _
+                                            "Result=FAIL" & vbCrLf & _
+                                            "Report=Operator workbook not resolved."
+        Exit Function
+    End If
+
+    Set loInv = FindListObjectReadModel(wb, TABLE_INVSYS)
+    beforeRows = GetListRowCountReadModel(loInv)
+    normalizedSource = NormalizeSourceType(sourceType)
+    resolvedWarehouseId = ResolveWarehouseIdReadModel(warehouseId)
+
+    configLoadedBefore = modConfig.IsLoaded()
+    If configLoadedBefore Then
+        configLoadResult = True
+    Else
+        configLoadResult = modConfig.LoadConfig(resolvedWarehouseId, "")
+    End If
+
+    snapshotPath = ResolveSnapshotPathReadModel(resolvedWarehouseId)
+    snapshotAlreadyOpen = WorkbookIsOpenByPathReadModel(snapshotPath)
+    Set wbSnap = ResolveSnapshotWorkbook(resolvedWarehouseId, "", Nothing, False)
+    If Not wbSnap Is Nothing Then
+        Set loSnap = FindListObjectReadModel(wbSnap, TABLE_SNAPSHOT)
+        snapshotTableRows = GetListRowCountReadModel(loSnap)
+        Set snapshotRows = BuildSnapshotDictionary(loSnap)
+        If Not snapshotRows Is Nothing Then snapshotDictRows = snapshotRows.Count
+    End If
+
+    refreshResult = RefreshInventoryReadModelForWorkbook(wb, resolvedWarehouseId, normalizedSource, refreshReport)
+    afterRows = GetListRowCountReadModel(loInv)
+
+    DiagnoseInventoryReadModelRefresh = Join(Array( _
+        "TargetWorkbook=" & wb.FullName, _
+        "WarehouseId=" & resolvedWarehouseId, _
+        "SourceType=" & normalizedSource, _
+        "ConfigLoadedBefore=" & CStr(configLoadedBefore), _
+        "ConfigLoadResult=" & CStr(configLoadResult), _
+        "ConfigWorkbook=" & modConfig.GetResolvedWorkbookName(), _
+        "PathDataRoot=" & modConfig.GetString("PathDataRoot", "<missing>"), _
+        "PathInboxRoot=" & modConfig.GetString("PathInboxRoot", "<missing>"), _
+        "SnapshotPath=" & snapshotPath, _
+        "SnapshotFileExists=" & CStr(FileExistsReadModel(snapshotPath)), _
+        "SnapshotWorkbookResolved=" & CStr(Not wbSnap Is Nothing), _
+        "SnapshotWorkbook=" & ResolveWorkbookNameReadModel(wbSnap), _
+        "SnapshotTableResolved=" & CStr(Not loSnap Is Nothing), _
+        "SnapshotTableRows=" & CStr(snapshotTableRows), _
+        "SnapshotDictionaryRows=" & CStr(snapshotDictRows), _
+        "InvSysRowsBefore=" & CStr(beforeRows), _
+        "RefreshResult=" & CStr(refreshResult), _
+        "RefreshReport=" & refreshReport, _
+        "InvSysRowsAfter=" & CStr(afterRows), _
+        "ConfigValidation=" & modConfig.Validate()), vbCrLf)
+    If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
+    Exit Function
+
+FailDiagnose:
+    If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
+    DiagnoseInventoryReadModelRefresh = "Result=FAIL" & vbCrLf & _
+                                        "Error=" & Err.Description
+End Function
+
 Private Function ResolveOperatorWorkbook(ByVal targetWb As Workbook) As Workbook
     If Not targetWb Is Nothing Then
         Set ResolveOperatorWorkbook = targetWb
@@ -114,6 +208,28 @@ Private Function ResolveWarehouseIdReadModel(ByVal warehouseId As String) As Str
     ResolveWarehouseIdReadModel = Trim$(warehouseId)
     If ResolveWarehouseIdReadModel = "" Then ResolveWarehouseIdReadModel = Trim$(modConfig.GetWarehouseId())
     If ResolveWarehouseIdReadModel = "" Then ResolveWarehouseIdReadModel = "WH1"
+End Function
+
+Private Function ResolveSnapshotPathReadModel(ByVal warehouseId As String) As String
+    Dim rootPath As String
+
+    rootPath = Trim$(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If rootPath = "" Then rootPath = Trim$(modConfig.GetString("PathDataRoot", Environ$("TEMP")))
+    ResolveSnapshotPathReadModel = NormalizeFolderPathReadModel(rootPath) & warehouseId & ".invSys.Snapshot.Inventory.xlsb"
+End Function
+
+Private Function WorkbookIsOpenByPathReadModel(ByVal targetPath As String) As Boolean
+    Dim wb As Workbook
+
+    targetPath = Trim$(targetPath)
+    If targetPath = "" Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+            WorkbookIsOpenByPathReadModel = True
+            Exit Function
+        End If
+    Next wb
 End Function
 
 Private Function NormalizeSourceType(ByVal sourceType As String) As String
@@ -409,6 +525,53 @@ Private Function ResolveSnapshotLastApplied(ByVal loSnap As ListObject, _
     If appliedIdx = 0 Then Exit Function
     ResolveSnapshotLastApplied = loSnap.DataBodyRange.Cells(rowIndex, appliedIdx).Value
 End Function
+
+Private Function NormalizeFolderPathReadModel(ByVal folderPath As String) As String
+    folderPath = Trim$(folderPath)
+    If folderPath = "" Then
+        NormalizeFolderPathReadModel = Environ$("TEMP") & "\"
+        Exit Function
+    End If
+    If Right$(folderPath, 1) <> "\" Then folderPath = folderPath & "\"
+    NormalizeFolderPathReadModel = folderPath
+End Function
+
+Private Function FileExistsReadModel(ByVal fullPath As String) As Boolean
+    Dim fso As Object
+
+    fullPath = Trim$(Replace$(fullPath, "/", "\"))
+    If fullPath = "" Then Exit Function
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FileExistsReadModel = fso.FileExists(fullPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FileExistsReadModel = (Len(Dir$(fullPath, vbNormal)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function ResolveWorkbookNameReadModel(ByVal wb As Workbook) As String
+    If wb Is Nothing Then
+        ResolveWorkbookNameReadModel = "<none>"
+    Else
+        ResolveWorkbookNameReadModel = wb.FullName
+    End If
+End Function
+
+Private Function GetListRowCountReadModel(ByVal lo As ListObject) As Long
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    GetListRowCountReadModel = lo.ListRows.Count
+End Function
+
+Private Sub CloseWorkbookQuietlyReadModel(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
 
 Private Function ResolvePrimaryLocationReadModel(ByVal locationSummary As String, ByVal existingLocation As Variant) As String
     Dim summaryText As String

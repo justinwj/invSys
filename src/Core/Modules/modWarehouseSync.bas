@@ -179,7 +179,7 @@ Public Function ResolveOutboxWorkbook(Optional ByVal warehouseId As String = "",
     End If
 
     targetPath = ResolveOutboxPath(warehouseId)
-    Set ResolveOutboxWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing)
+    Set ResolveOutboxWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing, False)
 End Function
 
 Public Function ResolveSnapshotWorkbook(Optional ByVal warehouseId As String = "", _
@@ -194,7 +194,7 @@ Public Function ResolveSnapshotWorkbook(Optional ByVal warehouseId As String = "
     End If
 
     targetPath = ResolveSnapshotPath(warehouseId, outputPath)
-    Set ResolveSnapshotWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing)
+    Set ResolveSnapshotWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing, Not createIfMissing)
 End Function
 
 Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As String) As Boolean
@@ -590,7 +590,9 @@ Private Function ResolveSnapshotPath(ByVal warehouseId As String, ByVal outputPa
     ResolveSnapshotPath = NormalizeFolderPathSync(rootPath) & warehouseId & ".invSys.Snapshot.Inventory.xlsb"
 End Function
 
-Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal createIfMissing As Boolean) As Workbook
+Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, _
+                                           ByVal createIfMissing As Boolean, _
+                                           Optional ByVal openReadOnly As Boolean = False) As Workbook
     On Error GoTo FailOpen
 
     Dim wb As Workbook
@@ -604,6 +606,7 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal cre
 
     For Each wb In Application.Workbooks
         If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+            If (Not openReadOnly) And wb.ReadOnly Then Exit Function
             Set ResolveWorkbookByPathSync = wb
             Exit Function
         End If
@@ -617,7 +620,7 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal cre
         Set ResolveWorkbookByPathSync = Application.Workbooks.Open( _
             Filename:=targetPath, _
             UpdateLinks:=0, _
-            ReadOnly:=True, _
+            ReadOnly:=openReadOnly, _
             IgnoreReadOnlyRecommended:=True, _
             Notify:=False, _
             AddToMru:=False)
