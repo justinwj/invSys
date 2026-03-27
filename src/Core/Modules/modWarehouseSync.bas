@@ -597,6 +597,8 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal cre
     Dim fileExists As Boolean
     Dim prevEvents As Boolean
     Dim eventsSuppressed As Boolean
+    Dim prevAlerts As Boolean
+    Dim alertsSuppressed As Boolean
 
     If Trim$(targetPath) = "" Then Exit Function
 
@@ -609,7 +611,18 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal cre
 
     fileExists = FileExistsSync(targetPath)
     If fileExists Then
-        Set ResolveWorkbookByPathSync = Application.Workbooks.Open(targetPath)
+        prevAlerts = Application.DisplayAlerts
+        Application.DisplayAlerts = False
+        alertsSuppressed = True
+        Set ResolveWorkbookByPathSync = Application.Workbooks.Open( _
+            Filename:=targetPath, _
+            UpdateLinks:=0, _
+            ReadOnly:=True, _
+            IgnoreReadOnlyRecommended:=True, _
+            Notify:=False, _
+            AddToMru:=False)
+        Application.DisplayAlerts = prevAlerts
+        alertsSuppressed = False
         Exit Function
     End If
 
@@ -629,6 +642,7 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal cre
 FailOpen:
     On Error Resume Next
     If eventsSuppressed Then Application.EnableEvents = prevEvents
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
     On Error GoTo 0
 End Function
 
