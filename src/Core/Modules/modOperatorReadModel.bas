@@ -20,6 +20,8 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
     Dim snapshotId As String
     Dim refreshUtc As Date
     Dim normalizedSource As String
+    Dim resolvedWarehouseId As String
+    Dim configValidation As String
 
     Set wb = ResolveOperatorWorkbook(targetWb)
     If wb Is Nothing Then
@@ -35,10 +37,17 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
 
     refreshUtc = Now
     normalizedSource = NormalizeSourceType(sourceType)
-    Set wbSnap = ResolveSnapshotWorkbook(ResolveWarehouseIdReadModel(warehouseId), "", Nothing, False)
+    resolvedWarehouseId = ResolveWarehouseIdReadModel(warehouseId)
+    If Not modConfig.IsLoaded() Then
+        Call modConfig.LoadConfig(resolvedWarehouseId, "")
+        configValidation = modConfig.Validate()
+    End If
+
+    Set wbSnap = ResolveSnapshotWorkbook(resolvedWarehouseId, "", Nothing, False)
     If wbSnap Is Nothing Then
         MarkReadModelState loInv, refreshUtc, vbNullString, "CACHED", True
         report = "Snapshot workbook not found; operator read model marked stale."
+        If configValidation <> "" Then report = report & " " & configValidation
         RefreshInventoryReadModelForWorkbook = True
         Exit Function
     End If
@@ -47,6 +56,7 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
     If loSnap Is Nothing Then
         MarkReadModelState loInv, refreshUtc, vbNullString, "CACHED", True
         report = "Snapshot table not found; operator read model marked stale."
+        If configValidation <> "" Then report = report & " " & configValidation
         RefreshInventoryReadModelForWorkbook = True
         Exit Function
     End If
