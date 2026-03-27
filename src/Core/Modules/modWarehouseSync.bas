@@ -613,10 +613,11 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, _
     Next wb
 
     fileExists = FileExistsSync(targetPath)
-    If fileExists Then
+    If fileExists Or (IsUncPathSync(targetPath) And Not createIfMissing) Then
         prevAlerts = Application.DisplayAlerts
         Application.DisplayAlerts = False
         alertsSuppressed = True
+        On Error Resume Next
         Set ResolveWorkbookByPathSync = Application.Workbooks.Open( _
             Filename:=targetPath, _
             UpdateLinks:=0, _
@@ -624,6 +625,11 @@ Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, _
             IgnoreReadOnlyRecommended:=True, _
             Notify:=False, _
             AddToMru:=False)
+        If Err.Number <> 0 Then
+            Err.Clear
+            Set ResolveWorkbookByPathSync = Nothing
+        End If
+        On Error GoTo FailOpen
         Application.DisplayAlerts = prevAlerts
         alertsSuppressed = False
         Exit Function
