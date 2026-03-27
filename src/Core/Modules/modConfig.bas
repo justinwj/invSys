@@ -576,7 +576,7 @@ Private Function ResolveConfigWorkbookForSetup(ByVal configWorkbookPath As Strin
     Set wb = FindOpenWorkbookByFullNameConfig(targetPath)
     If wb Is Nothing Then
         EnsureFolderRecursiveConfig GetParentFolderConfig(targetPath)
-        If Len(Dir$(targetPath, vbNormal)) > 0 Then
+        If FileExistsConfig(targetPath) Then
             Set wb = Application.Workbooks.Open(Filename:=targetPath, UpdateLinks:=0, ReadOnly:=False, IgnoreReadOnlyRecommended:=True, Notify:=False, AddToMru:=False)
             openedForSetup = Not wb Is Nothing
         Else
@@ -1244,7 +1244,7 @@ Private Function OpenOrCreateWorkbookByPathConfig(ByVal fullPath As String, _
     If Not OpenOrCreateWorkbookByPathConfig Is Nothing Then Exit Function
 
     EnsureFolderRecursiveConfig GetParentFolderConfig(fullPath)
-    If Len(Dir$(fullPath, vbNormal)) > 0 Then
+    If FileExistsConfig(fullPath) Then
         Set OpenOrCreateWorkbookByPathConfig = Application.Workbooks.Open(Filename:=fullPath, UpdateLinks:=0, ReadOnly:=False, IgnoreReadOnlyRecommended:=True, Notify:=False, AddToMru:=False)
         openedForSetup = Not OpenOrCreateWorkbookByPathConfig Is Nothing
     Else
@@ -1287,19 +1287,28 @@ End Function
 Private Sub EnsureFolderRecursiveConfig(ByVal folderPath As String)
     Dim parentPath As String
     Dim sepPos As Long
+    Dim fso As Object
 
     folderPath = NormalizeFolderPathConfig(folderPath, False)
     If folderPath = "" Then Exit Sub
-    If Len(Dir$(folderPath, vbDirectory)) > 0 Then Exit Sub
+    If FolderExistsConfig(folderPath) Then Exit Sub
+    If IsUncShareRootConfig(folderPath) Then Exit Sub
 
     sepPos = InStrRev(folderPath, "\")
     If sepPos > 1 Then
         parentPath = Left$(folderPath, sepPos - 1)
         If Right$(parentPath, 1) = ":" Then parentPath = parentPath & "\"
-        If parentPath <> "" And Len(Dir$(parentPath, vbDirectory)) = 0 Then EnsureFolderRecursiveConfig parentPath
+        If parentPath <> "" And Not FolderExistsConfig(parentPath) Then EnsureFolderRecursiveConfig parentPath
     End If
 
-    If Len(Dir$(folderPath, vbDirectory)) = 0 Then MkDir folderPath
+    If FolderExistsConfig(folderPath) Then Exit Sub
+
+    If IsUncPathConfig(folderPath) Then
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fso.CreateFolder folderPath
+    Else
+        MkDir folderPath
+    End If
 End Sub
 
 Private Function NormalizeFolderPathConfig(ByVal folderPath As String, ByVal withTrailingSlash As Boolean) As String
@@ -1324,6 +1333,57 @@ Private Function CombinePathConfig(ByVal basePath As String, ByVal childName As 
     Else
         CombinePathConfig = basePath & "\" & childName
     End If
+End Function
+
+Private Function FileExistsConfig(ByVal fullPath As String) As Boolean
+    Dim fso As Object
+
+    fullPath = Trim$(Replace$(fullPath, "/", "\"))
+    If fullPath = "" Then Exit Function
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FileExistsConfig = fso.FileExists(fullPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FileExistsConfig = (Len(Dir$(fullPath, vbNormal)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function FolderExistsConfig(ByVal folderPath As String) As Boolean
+    Dim fso As Object
+
+    folderPath = NormalizeFolderPathConfig(folderPath, False)
+    If folderPath = "" Then Exit Function
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FolderExistsConfig = fso.FolderExists(folderPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FolderExistsConfig = (Len(Dir$(folderPath, vbDirectory)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function IsUncPathConfig(ByVal folderPath As String) As Boolean
+    folderPath = Trim$(Replace$(folderPath, "/", "\"))
+    IsUncPathConfig = (Left$(folderPath, 2) = "\\")
+End Function
+
+Private Function IsUncShareRootConfig(ByVal folderPath As String) As Boolean
+    Dim trimmedPath As String
+    Dim parts() As String
+
+    trimmedPath = NormalizeFolderPathConfig(folderPath, False)
+    If Left$(trimmedPath, 2) <> "\\" Then Exit Function
+
+    trimmedPath = Mid$(trimmedPath, 3)
+    If trimmedPath = "" Then Exit Function
+
+    parts = Split(trimmedPath, "\")
+    IsUncShareRootConfig = (UBound(parts) = 1)
 End Function
 
 Private Sub SaveConfigWorkbookIfWritable(ByVal wb As Workbook)
