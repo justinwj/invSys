@@ -54,12 +54,15 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
 
     Dim wb As Workbook
     Dim publishWb As Workbook
+    Dim runtimeWb As Workbook
     Dim resolvedWarehouseId As String
     Dim snapshotPath As String
     Dim publishKey As String
     Dim runtimeWasOpen As Boolean
     Dim runtimePath As String
     Dim preferredOutputPath As String
+    Dim snapshotWasOpen As Boolean
+    Dim configWasOpen As Boolean
 
     Set wb = targetWb
     If wb Is Nothing Then Set wb = ResolveCandidateInventoryWorkbookPublisher()
@@ -75,18 +78,19 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
         report = "Inventory source warehouse could not be resolved."
         Exit Function
     End If
+    configWasOpen = Not FindOpenConfigWorkbookByWarehousePublisher(resolvedWarehouseId) Is Nothing
     If Not EnsureWarehouseConfigLoadedPublisher(resolvedWarehouseId, report) Then Exit Function
 
     Set publishWb = wb
     If RequiresRuntimeCatalogSyncPublisher(wb) Then
         runtimePath = ResolveRuntimeInventoryPathPublisher(resolvedWarehouseId)
         runtimeWasOpen = WorkbookIsOpenByPathPublisher(runtimePath)
-        Set publishWb = modInventoryApply.ResolveInventoryWorkbook(resolvedWarehouseId)
-        If publishWb Is Nothing Then
+        Set runtimeWb = modInventoryApply.ResolveInventoryWorkbook(resolvedWarehouseId)
+        If runtimeWb Is Nothing Then
             report = "Canonical runtime inventory workbook could not be resolved."
             Exit Function
         End If
-        If Not SyncManagedCatalogFromWorkbookPublisher(wb, publishWb, report) Then GoTo CleanExit
+        If Not SyncManagedCatalogFromWorkbookPublisher(wb, runtimeWb, report) Then GoTo CleanExit
         Set publishWb = wb
     End If
 
@@ -99,30 +103,30 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
 
     snapshotPath = vbNullString
     preferredOutputPath = ResolvePreferredSnapshotOutputPathPublisher(wb, resolvedWarehouseId)
+    snapshotWasOpen = WorkbookIsOpenByPathPublisher(ResolveExpectedSnapshotPathPublisher(resolvedWarehouseId, preferredOutputPath))
     If Not modWarehouseSync.GenerateWarehouseSnapshot(resolvedWarehouseId, publishWb, preferredOutputPath, Nothing, snapshotPath) Then
         report = snapshotPath
         GoTo CleanExit
     End If
 
     RecordRecentPublishPublisher publishKey
+    If Not snapshotWasOpen Then CloseWorkbookByPathPublisher snapshotPath
     report = snapshotPath
     EnsureSnapshotPublicationForWorkbook = True
     
 CleanExit:
-    If Not publishWb Is Nothing Then
-        If RequiresRuntimeCatalogSyncPublisher(wb) Then
-            If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher publishWb
-        End If
+    If RequiresRuntimeCatalogSyncPublisher(wb) Then
+        If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher runtimeWb
     End If
+    If Not configWasOpen Then CloseTransientConfigWorkbookPublisher resolvedWarehouseId
     Exit Function
 
 FailPublish:
     report = "EnsureSnapshotPublicationForWorkbook failed: " & Err.Description
-    If Not publishWb Is Nothing Then
-        If RequiresRuntimeCatalogSyncPublisher(wb) Then
-            If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher publishWb
-        End If
+    If RequiresRuntimeCatalogSyncPublisher(wb) Then
+        If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher runtimeWb
     End If
+    If Not configWasOpen Then CloseTransientConfigWorkbookPublisher resolvedWarehouseId
 End Function
 
 Public Sub HandlePotentialInventoryWorkbook(Optional ByVal targetWb As Workbook = Nothing)
@@ -431,6 +435,19 @@ Private Function EnsureWarehouseConfigLoadedPublisher(ByVal warehouseId As Strin
     If Not EnsureWarehouseConfigLoadedPublisher Then report = "Config load failed for " & warehouseId & "."
 End Function
 
+Private Function ResolveExpectedSnapshotPathPublisher(ByVal warehouseId As String, ByVal preferredOutputPath As String) As String
+    Dim rootPath As String
+
+    If Trim$(preferredOutputPath) <> "" Then
+        ResolveExpectedSnapshotPathPublisher = Trim$(preferredOutputPath)
+        Exit Function
+    End If
+
+    rootPath = Trim$(modConfig.GetString("PathDataRoot", ""))
+    If rootPath = "" Then Exit Function
+    ResolveExpectedSnapshotPathPublisher = NormalizeFolderPathPublisher(rootPath) & Trim$(warehouseId) & ".invSys.Snapshot.Inventory.xlsb"
+End Function
+
 Private Function BuildPublishKeyPublisher(ByVal wb As Workbook, ByVal warehouseId As String) As String
     If wb Is Nothing Then Exit Function
     BuildPublishKeyPublisher = LCase$(wb.FullName & "|" & warehouseId)
@@ -732,6 +749,56 @@ Private Function FindOpenConfigWorkbookPublisher() As Workbook
             Exit Function
         End If
     Next wb
+End Function
+
+Private Function FindOpenConfigWorkbookByWarehousePublisher(ByVal warehouseId As String) As Workbook
+    Dim wb As Workbook
+    Dim wantedPrefix As String
+
+    wantedPrefix = LCase$(Trim$(warehouseId))
+    If wantedPrefix = "" Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If LCase$(wb.Name) Like "*.invsys.config.xlsb" Then
+            If LCase$(Left$(wb.Name, Len(wantedPrefix) + 1)) = wantedPrefix & "." Then
+                Set FindOpenConfigWorkbookByWarehousePublisher = wb
+                Exit Function
+            End If
+        End If
+    Next wb
+End Function
+
+Private Sub CloseTransientConfigWorkbookPublisher(ByVal warehouseId As String)
+    Dim wbCfg As Workbook
+
+    If Trim$(warehouseId) = "" Then Exit Sub
+    Set wbCfg = FindOpenConfigWorkbookByWarehousePublisher(warehouseId)
+    If wbCfg Is Nothing Then Exit Sub
+    If wbCfg.ReadOnly Then
+        CloseWorkbookQuietlyPublisher wbCfg
+        Exit Sub
+    End If
+    If WorkbookHasUnsavedChangesPublisher(wbCfg) Then Exit Sub
+    CloseWorkbookQuietlyPublisher wbCfg
+End Sub
+
+Private Sub CloseWorkbookByPathPublisher(ByVal fullPath As String)
+    Dim wb As Workbook
+
+    If Trim$(fullPath) = "" Then Exit Sub
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, fullPath, vbTextCompare) = 0 Then
+            If Not WorkbookHasUnsavedChangesPublisher(wb) Then CloseWorkbookQuietlyPublisher wb
+            Exit Sub
+        End If
+    Next wb
+End Sub
+
+Private Function WorkbookHasUnsavedChangesPublisher(ByVal wb As Workbook) As Boolean
+    If wb Is Nothing Then Exit Function
+    On Error Resume Next
+    WorkbookHasUnsavedChangesPublisher = (wb.Saved = False)
+    On Error GoTo 0
 End Function
 
 Private Sub CloseWorkbookQuietlyPublisher(ByVal wb As Workbook)
