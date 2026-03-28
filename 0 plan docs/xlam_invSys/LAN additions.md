@@ -144,7 +144,7 @@ RoleDefault   = RECEIVE
 
 `PathDataRoot` and `PathInboxRoot` serve different purposes:
 - `PathDataRoot` points to shared warehouse runtime artifacts
-- `PathInboxRoot` points to the station’s own inbox location
+- `PathInboxRoot` points to the station's own inbox location
 
 They must not be conflated.
 
@@ -208,7 +208,7 @@ Auth provisioning is therefore part of dependable LAN setup, not an optional aft
 
 ### Definition
 
-The “managed inventory list” available to a role station is the local operator workbook’s `InventoryManagement!invSys` table after snapshot refresh.
+The "managed inventory list" available to a role station is the local operator workbook's `InventoryManagement!invSys` table after snapshot refresh.
 
 It is not a separate replicated catalog workbook.
 
@@ -237,6 +237,44 @@ True
 ```
 
 Row count must be greater than zero for an inventory-populated warehouse.
+
+***
+
+## Auto-Refresh Contract
+
+LAN role dependability requires the operator read model to refresh automatically enough that the user is not relying on memory or manual discipline to know whether the screen is current.
+
+### Required `FF_AutoSnapshot = true` behavior
+
+When `FF_AutoSnapshot = true`, the following behavior is required for dependable LAN role use:
+
+1. On operator workbook open:
+   - Core triggers `RefreshInventoryReadModelForWorkbook` automatically.
+   - Missing or stale snapshot marks `IsStale = True` but does not block workbook open.
+   - Local staging tables and workbook-local logs must not be cleared or mutated.
+
+2. After successful role post / `Confirm Writes` / queue-to-inbox action:
+   - Core triggers a post-write read-model refresh automatically.
+   - This refresh must reflect the post -> processor -> snapshot -> refresh chain when the processor completes successfully.
+
+3. Periodic refresh:
+   - Config key: `AutoRefreshIntervalSeconds`
+   - Recommended R1 default for LAN stations: `120`
+   - A background timer path may trigger a periodic non-destructive refresh.
+
+4. Visible staleness:
+   - `IsStale = True` must be visible to the operator.
+   - The operator must never silently work against a stale `invSys` view without some visible signal.
+
+### Required non-destructive rule
+
+Every auto-refresh path must preserve local non-authoritative work surfaces:
+- Receiving staging
+- Shipping staging
+- Production staging
+- workbook-local logs
+
+Auto-refresh is a read-model update only. It must not mutate workflow state.
 
 ***
 
@@ -371,6 +409,43 @@ Preferred deterministic call:
 
 ***
 
+## Role Verb to Event to `invSys` Impact
+
+The end-user-facing warehouse effect must be explicit. `invSys` does not change when the operator edits a local staging table. It changes only after:
+
+```text
+post -> processor run -> canonical apply -> snapshot rebuild -> operator refresh
+```
+
+| Role | Operator verb | Inbox/event path | Required capability | Expected `invSys` effect after successful refresh |
+|---|---|---|---|---|
+| Receiving | Add | `tblInboxReceive` / `RECEIVE` | `RECEIVE_POST` | quantity increases |
+| Shipping | Deduct | `tblInboxShip` / `SHIP` | `SHIP_POST` | quantity decreases |
+| Production | Use | `tblInboxProd` / `PROD_CONSUME` | `PROD_POST` | component quantity decreases |
+| Production | Make | `tblInboxProd` / `PROD_COMPLETE` | `PROD_POST` | output quantity increases |
+| Admin or approved role | Adjust | warehouse event path / adjustment event | `ADJ_POST` | quantity increases or decreases with reason |
+
+### Operator interpretation rule
+
+Role staging tables are not `invSys`.
+
+Role staging is:
+- local
+- editable
+- not authoritative
+
+`invSys` is:
+- snapshot-fed
+- non-authoritative
+- the operator-facing read model of current warehouse state
+
+So the operator must understand:
+- editing staging does not change `invSys`
+- posting alone does not change `invSys`
+- `invSys` changes only after processor + snapshot + refresh
+
+***
+
 ## Operator Workflow Dependability Requirements
 
 ### Receiving
@@ -489,19 +564,21 @@ Likely cause:
 
 The following are now mandatory for dependable end-user LAN usage:
 
-1. `setup_lan_station.ps1` should optionally provision shared auth rows for the station user.
+1. `setup_lan_station.ps1` must provision shared auth rows for the station user or fail clearly if it cannot.
 2. Station bootstrap should include a post-bootstrap validation report that explicitly proves:
    - shell access
    - Excel/VBA file access
    - snapshot open
    - `invSys` row count
+   - current user capability checks for the configured role
 3. Role refresh entry points should prefer workbook-targeted refresh or explicitly activate the operator workbook before using active-workbook wrappers.
 4. LAN setup docs should state that authenticated SMB access must be proven at both shell and Excel/VBA levels.
-5. “Managed inventory available” should be an explicit readiness gate, not an assumed byproduct of sheet creation.
+5. "Managed inventory available" should be an explicit readiness gate, not an assumed byproduct of sheet creation.
+6. The auto-refresh contract above should be treated as required work for LAN dependability, not optional polish.
 
 ***
 
-## Acceptance Standard for “LAN Role Usage Dependable”
+## Acceptance Standard for "LAN Role Usage Dependable"
 
 LAN role usage is dependable only when all of the following are true:
 

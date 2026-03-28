@@ -702,11 +702,23 @@ sequenceDiagram
 
 **Status note:** Phase 6 is in progress. The dependency-root bootstrap for canonical Core/Auth/Config runtime workbooks is implemented and validated, and packaged workflow automation is partially green, but the system is not yet operationally proven. Current evidence is still weighted toward controlled Excel automation. Single-account saved-workbook use is the minimum operator baseline; LAN, LAN + WAN, and central aggregation proving remain separate hardening gates. Phase 6 is also where D9 and D10 become operationally binding: operator `invSys` tables must prove themselves as snapshot-fed read models, and inventory projections must prove themselves as rebuildable non-authoritative views.
 
+**Phase 6 LAN addendum:** `0 plan docs/xlam_invSys/LAN additions.md` is the authoritative operational addendum for Phase 6 LAN user-system proving. It defines the end-user LAN bootstrap, authenticated SMB expectations, Excel/VBA read-path validation, station auth provisioning, managed-inventory availability rule, auto-refresh contract, and role-ready acceptance criteria that make LAN use dependable rather than merely technically possible.
+
 **Operational proving ladder (authoritative):**
 1. **One-account use:** One Windows/Excel account with all invSys XLAMs loaded into that account session; operator works from saved `.xlsm` / `.xlsb` files.
 2. **LAN use:** Multiple PCs within one warehouse share the same warehouse runtime path and processor model over the local network.
 3. **LAN + WAN use:** Multiple warehouses and/or remote PCs operate with intermittent connectivity, SharePoint publication, and delayed synchronization.
 4. **Central aggregation:** HQ aggregation and global snapshot production operate correctly against published warehouse artifacts.
+
+**Phase 6 LAN operationalization requirements (binding):**
+- LAN station bootstrap is not complete until config, inbox, and shared-auth provisioning for the station user are complete.
+- The operator-managed inventory list on each station is the local operator workbook's snapshot-fed `InventoryManagement!invSys` table, not a separate local catalog.
+- When `FF_AutoSnapshot = true`, role workbooks must refresh on open, after successful post/write, and on the configured cadence without mutating local staging tables or workbook-local logs.
+- `IsStale = True` must be surfaced visibly; operators must never be silently left on a stale read model.
+- Role-visible inventory changes only appear through `post -> processor run -> canonical apply -> snapshot rebuild -> operator refresh`.
+- LAN validation must prove both shell-level access and Excel/VBA workbook-open access to the snapshot path.
+- `setup_lan_station.ps1` or its replacement bootstrap path must provision shared auth rows for the station user or fail clearly.
+- Active-workbook refresh wrappers are not sufficient proof by themselves; deterministic validation must use workbook-targeted refresh paths.
 
 **Tasks:**
 - [x] Bootstrap canonical Core/Auth/Config runtime workbook surfaces under the deployed runtime path
@@ -717,6 +729,7 @@ sequenceDiagram
 - [ ] Prove role/Admin workflows from saved operator workbooks (`.xlsm` / `.xlsb`) under one-account use
 - [ ] Prove operator `invSys` tables refresh from snapshot copy/import without mutating local workflow/staging tables
 - [ ] Expose and validate read-model freshness metadata (`LastRefreshUTC`, `SnapshotId`, `SourceType`, `IsStale`) in operator workbooks
+- [ ] Operationalize `FF_AutoSnapshot` for dependable LAN role use: on-open refresh, post-write refresh, optional cadence refresh, and visible stale-state signaling
 - [ ] Prove inventory projection tables (`tblSkuBalance`, `tblLocationBalance`) are rebuildable from log state and never treated as authoritative writes
 - [ ] Prove Excel restart / reopen / resume behavior from saved operator workbooks with account-scoped XLAM loading
 - [ ] Prove one-warehouse multi-PC LAN behavior with shared runtime artifacts and processor locking
@@ -733,9 +746,12 @@ sequenceDiagram
 - [ ] Test: Manual snapshot refresh updates the operator `invSys` read model without clearing `ReceivedTally`, shipping staging, production staging, or workbook-local logs
 - [ ] Test: Missing/stale snapshot marks the operator workbook stale but does not block `Confirm Writes` / inbox posting
 - [ ] Test: Operator `invSys` read model exposes `LastRefreshUTC`, `SnapshotId`, `SourceType`, and `IsStale`
+- [ ] Test: `FF_AutoSnapshot = true` refreshes `invSys` on open and after successful post/write without mutating local staging or workbook-local logs
+- [ ] Test: Auto-refresh visibly marks stale state when the snapshot is missing or unreadable
 - [ ] Test: Deleting `tblSkuBalance` / `tblLocationBalance` and rerunning processor rebuilds them from `tblInventoryLog` + `tblAppliedEvents` without data loss
 - [ ] Test: Saved operator workbook reopened on the same account resumes without runtime workbook pollution, stale-XLAM confusion, or workbook identity drift
 - [ ] Test: Two or more LAN stations can append/process without lock corruption, inbox misrouting, or runtime workbook cross-contamination
+- [ ] Test: `setup_lan_station.ps1` provisions shared auth rows for the station user and emits a role-ready validation report
 - [ ] Test: LAN + WAN publication path tolerates delayed sync, stale local copies, and SharePoint / network interruptions without data loss
 - [ ] Test: Central aggregator rebuilds the global snapshot correctly from published warehouse artifacts after staggered warehouse updates
 - [ ] Test: Global snapshot remains clearly advisory in UI/output and never overrides warehouse-local authoritative balances
@@ -762,6 +778,8 @@ sequenceDiagram
 - [ ] User systems operational across role/Admin XLAMs, for LAN use
 - [ ] Full XLAM operational hardening complete, for LAN use
 - [ ] Snapshot-fed operator read models operational, with freshness metadata and non-destructive refresh, for LAN use
+- [ ] Auto-refresh contract operational for LAN role workbooks, including visible stale-state signaling and post-write refresh
+- [ ] Station bootstrap operational for LAN use, including shared auth provisioning and role-ready validation
 - [ ] LAN Central aggregator fully working
 - [ ] User systems operational across role/Admin XLAMs, for LAN + WAN use
 - [ ] Full XLAM operational hardening complete, for LAN + WAN use
