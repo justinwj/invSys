@@ -206,7 +206,8 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     Dim startCell As Range
     Dim i As Long
 
-    headers = Array("WarehouseId", "SKU", "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedAtUTC")
+    headers = Array("WarehouseId", "SKU", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
+                    "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedAtUTC")
     NormalizeWorkbookSheetsSync wb, Array(SHEET_SNAPSHOT)
     Set ws = EnsureWorksheetSync(wb, SHEET_SNAPSHOT)
     EnsureWorksheetEditableSync ws
@@ -254,6 +255,13 @@ Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
         lo.ListRows.Add
         SetTableRowValueSync lo, 1, "WarehouseId", warehouseId
         SetTableRowValueSync lo, 1, "SKU", ""
+        SetTableRowValueSync lo, 1, "ITEM", ""
+        SetTableRowValueSync lo, 1, "UOM", ""
+        SetTableRowValueSync lo, 1, "LOCATION", ""
+        SetTableRowValueSync lo, 1, "DESCRIPTION", ""
+        SetTableRowValueSync lo, 1, "VENDOR(s)", ""
+        SetTableRowValueSync lo, 1, "VENDOR_CODE", ""
+        SetTableRowValueSync lo, 1, "CATEGORY", ""
         SetTableRowValueSync lo, 1, "QtyOnHand", 0
         SetTableRowValueSync lo, 1, "QtyAvailable", 0
         SetTableRowValueSync lo, 1, "LocationSummary", vbNullString
@@ -268,6 +276,13 @@ Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
         Set entry = snapshotRows(key)
         SetTableRowValueSync lo, rowIndex, "WarehouseId", ResolveStringSync(entry, "WarehouseId", warehouseId)
         SetTableRowValueSync lo, rowIndex, "SKU", ResolveStringSync(entry, "SKU", CStr(key))
+        SetTableRowValueSync lo, rowIndex, "ITEM", ResolveStringSync(entry, "ITEM", ResolveStringSync(entry, "ItemName", ResolveStringSync(entry, "SKU", CStr(key))))
+        SetTableRowValueSync lo, rowIndex, "UOM", ResolveStringSync(entry, "UOM", "")
+        SetTableRowValueSync lo, rowIndex, "LOCATION", ResolveStringSync(entry, "LOCATION", "")
+        SetTableRowValueSync lo, rowIndex, "DESCRIPTION", ResolveStringSync(entry, "DESCRIPTION", "")
+        SetTableRowValueSync lo, rowIndex, "VENDOR(s)", ResolveStringSync(entry, "VENDOR(s)", ResolveStringSync(entry, "VENDORS", ""))
+        SetTableRowValueSync lo, rowIndex, "VENDOR_CODE", ResolveStringSync(entry, "VENDOR_CODE", "")
+        SetTableRowValueSync lo, rowIndex, "CATEGORY", ResolveStringSync(entry, "CATEGORY", "")
         SetTableRowValueSync lo, rowIndex, "QtyOnHand", ResolveNumberSync(entry, "QtyOnHand")
         SetTableRowValueSync lo, rowIndex, "QtyAvailable", ResolveNumberSync(entry, "QtyAvailable")
         SetTableRowValueSync lo, rowIndex, "LocationSummary", ResolveStringSync(entry, "LocationSummary", "")
@@ -282,6 +297,7 @@ Private Function BuildSnapshotRowsSync(ByVal wbInv As Workbook, _
 
     Set snapshotRows = BuildSnapshotRowsFromProjectionsSync(wbInv, warehouseId)
     If Not snapshotRows Is Nothing Then
+        AppendCatalogRowsSync snapshotRows, wbInv, warehouseId
         report = SNAPSHOT_SOURCE_PROJECTION
         Set BuildSnapshotRowsSync = snapshotRows
         Exit Function
@@ -289,6 +305,7 @@ Private Function BuildSnapshotRowsSync(ByVal wbInv As Workbook, _
 
     Set snapshotRows = BuildSnapshotRowsFromLogSync(wbInv, warehouseId)
     If Not snapshotRows Is Nothing Then
+        AppendCatalogRowsSync snapshotRows, wbInv, warehouseId
         report = SNAPSHOT_SOURCE_LOG
         Set BuildSnapshotRowsSync = snapshotRows
         Exit Function
@@ -431,6 +448,102 @@ Private Function EnsureSnapshotEntrySync(ByVal rows As Object, _
     entry.Add "LocationTotals", locationTotals
     rows.Add sku, entry
     Set EnsureSnapshotEntrySync = entry
+End Function
+
+Private Sub AppendCatalogRowsSync(ByVal snapshotRows As Object, ByVal wbInv As Workbook, ByVal warehouseId As String)
+    Dim loCatalog As ListObject
+
+    If snapshotRows Is Nothing Then Exit Sub
+    If wbInv Is Nothing Then Exit Sub
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "invSys")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "tblItemSearchIndex")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "tblSkuCatalog")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+End Sub
+
+Private Sub ApplyCatalogTableToSnapshotRowsSync(ByVal snapshotRows As Object, _
+                                                ByVal loCatalog As ListObject, _
+                                                ByVal warehouseId As String)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim entry As Object
+    Dim itemValue As String
+    Dim uomValue As String
+    Dim locationValue As String
+    Dim descriptionValue As String
+    Dim vendorValue As String
+    Dim vendorCodeValue As String
+    Dim categoryValue As String
+
+    If snapshotRows Is Nothing Then Exit Sub
+    If loCatalog Is Nothing Then Exit Sub
+    If loCatalog.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To loCatalog.ListRows.Count
+        sku = ResolveCatalogCellTextSync(loCatalog, rowIndex, "SKU")
+        If sku = "" Then sku = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
+        If sku = "" Then GoTo ContinueLoop
+
+        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
+        itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ItemName")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "NAME")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "SKU")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
+
+        uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UOM")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNITOFMEASURE")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNITOFMEASUREMENT")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNIT")
+
+        locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "LOCATION")
+        If locationValue = "" Then locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DEFAULTLOCATION")
+        If locationValue = "" Then locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "PRIMARYLOCATION")
+
+        descriptionValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DESCRIPTION")
+        If descriptionValue = "" Then descriptionValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DESC")
+
+        vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR(s)")
+        If vendorValue = "" Then vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDORS")
+        If vendorValue = "" Then vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR")
+
+        vendorCodeValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR_CODE")
+        If vendorCodeValue = "" Then vendorCodeValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDORCODE")
+
+        categoryValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "CATEGORY")
+
+        ApplyCatalogValueIfPresentSync entry, "ITEM", itemValue
+        ApplyCatalogValueIfPresentSync entry, "UOM", uomValue
+        ApplyCatalogValueIfPresentSync entry, "LOCATION", locationValue
+        ApplyCatalogValueIfPresentSync entry, "DESCRIPTION", descriptionValue
+        ApplyCatalogValueIfPresentSync entry, "VENDOR(s)", vendorValue
+        ApplyCatalogValueIfPresentSync entry, "VENDOR_CODE", vendorCodeValue
+        ApplyCatalogValueIfPresentSync entry, "CATEGORY", categoryValue
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub ApplyCatalogValueIfPresentSync(ByVal entry As Object, ByVal key As String, ByVal valueIn As String)
+    If entry Is Nothing Then Exit Sub
+    valueIn = SafeTrimSync(valueIn)
+    If valueIn = "" Then Exit Sub
+    entry(key) = valueIn
+End Sub
+
+Private Function ResolveCatalogCellTextSync(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As String
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    idx = GetColumnIndexSync(lo, columnName)
+    If idx = 0 Then Exit Function
+    ResolveCatalogCellTextSync = SafeTrimSync(lo.DataBodyRange.Cells(rowIndex, idx).Value)
 End Function
 
 Private Sub AppendLocationFragmentSync(ByVal entry As Object, ByVal locationVal As String, ByVal qtyOnHand As Double)

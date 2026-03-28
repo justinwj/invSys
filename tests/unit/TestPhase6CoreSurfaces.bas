@@ -504,6 +504,56 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadataForZeroQtyRows() As Long
+    Dim rootPath As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+
+    rootPath = BuildRuntimeTestRoot("phase6_read_model_catalog")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH68D", "S8") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH68D.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wbOps, report) Then GoTo CleanExit
+    Set loInv = wbOps.Worksheets("InventoryManagement").ListObjects("invSys")
+    If Not loInv.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH68D", "SKU-RM-CAT", 0, CDate("2026-03-24 18:45:00"), _
+                                        0, "", "Catalog Item", "CS", "R9", "Catalog Desc", "Vendor C", "VC-9", "raw")
+    If wbSnap Is Nothing Then GoTo CleanExit
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68D", "LOCAL", report) Then GoTo CleanExit
+
+    If loInv.ListRows.Count = 1 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-RM-CAT", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "ITEM")), "Catalog Item", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "UOM")), "CS", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "R9", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "DESCRIPTION")), "Catalog Desc", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "VENDOR(s)")), "Vendor C", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "VENDOR_CODE")), "VC-9", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "CATEGORY")), "raw", vbTextCompare) = 0 _
+       And CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 0 _
+       And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 0 Then
+        TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadataForZeroQtyRows = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary() As Long
     Dim rootPath As String
     Dim wbOps As Workbook
@@ -3091,12 +3141,20 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
                                         ByVal qtyOnHand As Double, _
                                         ByVal lastAppliedUtc As Date, _
                                         Optional ByVal qtyAvailable As Variant, _
-                                        Optional ByVal locationSummary As String = vbNullString) As Workbook
+                                        Optional ByVal locationSummary As Variant, _
+                                        Optional ByVal itemName As String = vbNullString, _
+                                        Optional ByVal uom As String = vbNullString, _
+                                        Optional ByVal locationVal As String = vbNullString, _
+                                        Optional ByVal description As String = vbNullString, _
+                                        Optional ByVal vendorName As String = vbNullString, _
+                                        Optional ByVal vendorCode As String = vbNullString, _
+                                        Optional ByVal category As String = vbNullString) As Workbook
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim lo As ListObject
     Dim targetPath As String
     Dim resolvedQtyAvailable As Double
+    Dim resolvedLocationSummary As String
 
     targetPath = rootPath & "\" & warehouseId & ".invSys.Snapshot.Inventory.xlsb"
     Set wb = Application.Workbooks.Add(xlWBATWorksheet)
@@ -3104,23 +3162,42 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
     ws.Name = "InventorySnapshot"
     ws.Range("A1").Value = "WarehouseId"
     ws.Range("B1").Value = "SKU"
-    ws.Range("C1").Value = "QtyOnHand"
-    ws.Range("D1").Value = "QtyAvailable"
-    ws.Range("E1").Value = "LocationSummary"
-    ws.Range("F1").Value = "LastAppliedAtUTC"
+    ws.Range("C1").Value = "ITEM"
+    ws.Range("D1").Value = "UOM"
+    ws.Range("E1").Value = "LOCATION"
+    ws.Range("F1").Value = "DESCRIPTION"
+    ws.Range("G1").Value = "VENDOR(s)"
+    ws.Range("H1").Value = "VENDOR_CODE"
+    ws.Range("I1").Value = "CATEGORY"
+    ws.Range("J1").Value = "QtyOnHand"
+    ws.Range("K1").Value = "QtyAvailable"
+    ws.Range("L1").Value = "LocationSummary"
+    ws.Range("M1").Value = "LastAppliedAtUTC"
     ws.Range("A2").Value = warehouseId
     ws.Range("B2").Value = sku
-    ws.Range("C2").Value = qtyOnHand
+    If Trim$(itemName) = "" Then itemName = sku
+    ws.Range("C2").Value = itemName
+    ws.Range("D2").Value = uom
+    ws.Range("E2").Value = locationVal
+    ws.Range("F2").Value = description
+    ws.Range("G2").Value = vendorName
+    ws.Range("H2").Value = vendorCode
+    ws.Range("I2").Value = category
+    ws.Range("J2").Value = qtyOnHand
     If IsMissing(qtyAvailable) Or IsEmpty(qtyAvailable) Then
         resolvedQtyAvailable = qtyOnHand
     Else
         resolvedQtyAvailable = CDbl(qtyAvailable)
     End If
-    ws.Range("D2").Value = resolvedQtyAvailable
-    If Trim$(locationSummary) = "" Then locationSummary = "A1=" & CStr(CLng(qtyOnHand))
-    ws.Range("E2").Value = locationSummary
-    ws.Range("F2").Value = lastAppliedUtc
-    Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:F2"), , xlYes)
+    ws.Range("K2").Value = resolvedQtyAvailable
+    If IsMissing(locationSummary) Or IsEmpty(locationSummary) Then
+        resolvedLocationSummary = "A1=" & CStr(CLng(qtyOnHand))
+    Else
+        resolvedLocationSummary = CStr(locationSummary)
+    End If
+    ws.Range("L2").Value = resolvedLocationSummary
+    ws.Range("M2").Value = lastAppliedUtc
+    Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:M2"), , xlYes)
     lo.Name = "tblInventorySnapshot"
     wb.SaveAs Filename:=targetPath, FileFormat:=50
     Set CreateSnapshotWorkbook = wb

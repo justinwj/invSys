@@ -112,6 +112,7 @@ try {
 
     $allTests = @(
         "TestPhase5Sync.TestRunBatch_WritesOutboxAndSnapshot",
+        "TestPhase5Sync.TestRunBatch_SnapshotIncludesCatalogRowsWithZeroQty",
         "TestPhase5Sync.TestRunBatch_SnapshotNormalizesLocationSummaryAndFormatsColumns",
         "TestPhase5Sync.TestManualCopy_PublishesWarehouseArtifacts",
         "TestPhase5Sync.TestHqAggregation_TwoWarehousesPreservesPerWarehouseQty",

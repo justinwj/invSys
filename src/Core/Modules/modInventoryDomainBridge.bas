@@ -90,19 +90,19 @@ Public Sub ReAddBulkLogEntriesBridge(ByVal logDataCollection As Collection)
 End Sub
 
 Private Function RunInventoryDomainMacro0(ByVal macroName As String) As Variant
-    RunInventoryDomainMacro0 = Application.Run(ResolveInventoryDomainMacroName(macroName))
+    RunInventoryDomainMacro0 = RunInventoryDomainMacroFallback0(macroName)
 End Function
 
 Private Function RunInventoryDomainMacro1(ByVal macroName As String, ByVal arg0 As Variant) As Variant
-    RunInventoryDomainMacro1 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0)
+    RunInventoryDomainMacro1 = RunInventoryDomainMacroFallback1(macroName, arg0)
 End Function
 
 Private Function RunInventoryDomainMacro2(ByVal macroName As String, ByVal arg0 As Variant, ByVal arg1 As Variant) As Variant
-    RunInventoryDomainMacro2 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0, arg1)
+    RunInventoryDomainMacro2 = RunInventoryDomainMacroFallback2(macroName, arg0, arg1)
 End Function
 
 Private Function RunInventoryDomainMacro3(ByVal macroName As String, ByVal arg0 As Variant, ByVal arg1 As Variant, ByVal arg2 As Variant) As Variant
-    RunInventoryDomainMacro3 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0, arg1, arg2)
+    RunInventoryDomainMacro3 = RunInventoryDomainMacroFallback3(macroName, arg0, arg1, arg2)
 End Function
 
 Private Function ResolveInventoryDomainMacroName(ByVal macroName As String) As String
@@ -168,6 +168,46 @@ Private Function FindInventoryDomainMacroHostName() As String
 NextAddIn:
     Next addin
     On Error GoTo 0
+End Function
+
+Private Function RunInventoryDomainMacroFallback0(ByVal macroName As String) As Variant
+    On Error GoTo TryLocal
+    RunInventoryDomainMacroFallback0 = Application.Run(ResolveInventoryDomainMacroName(macroName))
+    Exit Function
+
+TryLocal:
+    Err.Clear
+    RunInventoryDomainMacroFallback0 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName)
+End Function
+
+Private Function RunInventoryDomainMacroFallback1(ByVal macroName As String, ByVal arg0 As Variant) As Variant
+    On Error GoTo TryLocal
+    RunInventoryDomainMacroFallback1 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0)
+    Exit Function
+
+TryLocal:
+    Err.Clear
+    RunInventoryDomainMacroFallback1 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName, arg0)
+End Function
+
+Private Function RunInventoryDomainMacroFallback2(ByVal macroName As String, ByVal arg0 As Variant, ByVal arg1 As Variant) As Variant
+    On Error GoTo TryLocal
+    RunInventoryDomainMacroFallback2 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0, arg1)
+    Exit Function
+
+TryLocal:
+    Err.Clear
+    RunInventoryDomainMacroFallback2 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName, arg0, arg1)
+End Function
+
+Private Function RunInventoryDomainMacroFallback3(ByVal macroName As String, ByVal arg0 As Variant, ByVal arg1 As Variant, ByVal arg2 As Variant) As Variant
+    On Error GoTo TryLocal
+    RunInventoryDomainMacroFallback3 = Application.Run(ResolveInventoryDomainMacroName(macroName), arg0, arg1, arg2)
+    Exit Function
+
+TryLocal:
+    Err.Clear
+    RunInventoryDomainMacroFallback3 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName, arg0, arg1, arg2)
 End Function
 
 Private Function FindInventoryWorkbookLocal(ByVal warehouseId As String) As Workbook

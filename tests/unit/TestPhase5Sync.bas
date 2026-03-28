@@ -6,6 +6,7 @@ Public Sub RunPhase5SyncTests()
     Dim failed As Long
 
     Tally TestRunBatch_WritesOutboxAndSnapshot(), passed, failed
+    Tally TestRunBatch_SnapshotIncludesCatalogRowsWithZeroQty(), passed, failed
     Tally TestRunBatch_SnapshotNormalizesLocationSummaryAndFormatsColumns(), passed, failed
     Tally TestManualCopy_PublishesWarehouseArtifacts(), passed, failed
     Tally TestHqAggregation_TwoWarehousesPreservesPerWarehouseQty(), passed, failed
@@ -17,6 +18,53 @@ Public Sub RunPhase5SyncTests()
 
     Debug.Print "Phase 5 sync tests - Passed: " & passed & " Failed: " & failed
 End Sub
+
+Public Function TestRunBatch_SnapshotIncludesCatalogRowsWithZeroQty() As Long
+    Dim tempRoot As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim wbSnap As Workbook
+    Dim loSnap As ListObject
+    Dim snapRow As Long
+    Dim report As String
+
+    On Error GoTo CleanFail
+    tempRoot = TestPhase2Helpers.BuildUniqueTestFolder("Phase5CatalogRows")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHS5C", "S1", tempRoot, "RECEIVE")
+    TestPhase2Helpers.SetWarehouseConfigValue wbCfg, "PathDataRoot", tempRoot
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHS5C", tempRoot)
+    TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WHS5C", "S1", "ACTIVE"
+    TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WHS5C", "*", "ACTIVE"
+    Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHS5C", tempRoot, Array("SKU-001", "SKU-002"))
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("S1", tempRoot)
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-P5C-001", Now, "WHS5C", "S1", "user1", "SKU-001", 4, "A1", "phase5-catalog"
+
+    If RunBatchForRoot("WHS5C", tempRoot, 500, report) <> 1 Then GoTo CleanExit
+
+    Set wbSnap = OpenWorkbookIfNeeded(tempRoot & "\WHS5C.invSys.Snapshot.Inventory.xlsb")
+    If wbSnap Is Nothing Then GoTo CleanExit
+
+    Set loSnap = wbSnap.Worksheets("InventorySnapshot").ListObjects("tblInventorySnapshot")
+    snapRow = FindRowByColumnValue(loSnap, "SKU", "SKU-002")
+    If snapRow = 0 Then GoTo CleanExit
+    If CDbl(TestPhase2Helpers.GetRowValue(loSnap, snapRow, "QtyOnHand")) <> 0 Then GoTo CleanExit
+    If CDbl(TestPhase2Helpers.GetRowValue(loSnap, snapRow, "QtyAvailable")) <> 0 Then GoTo CleanExit
+
+    TestRunBatch_SnapshotIncludesCatalogRowsWithZeroQty = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseAndDeleteWorkbook wbSnap
+    TestPhase2Helpers.CloseAndDeleteWorkbook wbInbox
+    TestPhase2Helpers.CloseAndDeleteWorkbook wbInv
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
 
 Public Function TestRunBatch_WritesOutboxAndSnapshot() As Long
     Dim tempRoot As String
