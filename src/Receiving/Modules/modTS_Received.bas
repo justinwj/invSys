@@ -35,7 +35,9 @@ Private Const RECV_LAYOUT_INV_ADDR As String = "V3"
 
 ' ==== public entry points =====
 Public Sub EnsureGeneratedButtons()
-    InitializeReceivingUiForWorkbook Application.ActiveWorkbook
+    Dim report As String
+
+    Call RefreshReceivingUiForWorkbook(Application.ActiveWorkbook, report)
 End Sub
 
 Public Sub InitializeReceivingUiForWorkbook(Optional ByVal targetWb As Workbook = Nothing)
@@ -56,6 +58,24 @@ Public Sub InitializeReceivingUiForWorkbook(Optional ByVal targetWb As Workbook 
     RefreshReceivingUiAccess ws
     modOperatorReadModel.InitializeAutoSnapshotForWorkbook wb
 End Sub
+
+Public Function RefreshReceivingUiForWorkbook(Optional ByVal targetWb As Workbook = Nothing, _
+                                              Optional ByRef report As String = "") As Boolean
+    Dim wb As Workbook
+
+    Set wb = ResolveReceivingWorkbook(targetWb, SHEET_RECEIVING)
+    If wb Is Nothing Then
+        report = "Receiving workbook not resolved."
+        Exit Function
+    End If
+    If wb.IsAddin Then
+        report = "Activate the receiving operator workbook before refreshing invSys."
+        Exit Function
+    End If
+
+    InitializeReceivingUiForWorkbook wb
+    RefreshReceivingUiForWorkbook = modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wb, "", "LOCAL", report)
+End Function
 
 Private Function ResolveReceivingWorkbook(Optional ByVal preferredWb As Workbook = Nothing, Optional ByVal requiredSheet As String = "") As Workbook
     If Not preferredWb Is Nothing Then

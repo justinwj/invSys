@@ -124,6 +124,11 @@ FailRefreshCurrent:
     MsgBox "RefreshCurrentWorkbookInventoryReadModel failed: " & Err.Description, vbExclamation
 End Sub
 
+Public Function DiagnoseCurrentWorkbookInventoryReadModelRefresh(Optional ByVal warehouseId As String = "", _
+                                                                Optional ByVal sourceType As String = "LOCAL") As String
+    DiagnoseCurrentWorkbookInventoryReadModelRefresh = DiagnoseInventoryReadModelRefresh(ResolveOperatorWorkbook(Nothing), warehouseId, sourceType)
+End Function
+
 Public Function DiagnoseInventoryReadModelRefresh(Optional ByVal targetWb As Workbook = Nothing, _
                                                   Optional ByVal warehouseId As String = "", _
                                                   Optional ByVal sourceType As String = "LOCAL") As String

@@ -1218,6 +1218,123 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook() As Long
+    Dim rootPath As String
+    Dim operatorPath As String
+    Dim report As String
+    Dim failureReason As String
+    Dim wbOps As Workbook
+    Dim wbSnap As Workbook
+    Dim loInv As ListObject
+    Dim loRecv As ListObject
+    Dim loLog As ListObject
+    Dim invRow As Long
+
+    rootPath = BuildRuntimeTestRoot("phase6_receiving_setup_refresh")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    If Not modConfig.LoadConfig("WH82", "S23") Then GoTo CleanExit
+    SetConfigWarehouseValue "WH82.invSys.Config.xlsb", "PathDataRoot", rootPath & "\"
+    If Not modConfig.Reload() Then GoTo CleanExit
+
+    operatorPath = rootPath & "\WH82_S23_Receiving_Operator.xlsb"
+    BuildSavedReceivingOperatorWorkbookForTest operatorPath, "SKU-SETUP-001", "REF-SETUP-001", "SNAP-SETUP-OLD", 0, "Z9"
+
+    Set wbOps = Application.Workbooks.Open(operatorPath)
+    If wbOps Is Nothing Then GoTo CleanExit
+    wbOps.Activate
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+
+    If Not InitializeReceivingUiForTest(wbOps, report) Then
+        failureReason = "InitializeReceivingUiForTest failed: " & report
+        GoTo CleanExit
+    End If
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    If loInv Is Nothing Then
+        failureReason = "invSys table missing after receiving setup initialization."
+        GoTo CleanExit
+    End If
+    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-SETUP-001")
+    If invRow = 0 Then
+        failureReason = "Seed invSys row missing before forced setup refresh."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, invRow, "IsStale")) <> True Then
+        failureReason = "Receiving setup initialization did not mark the missing snapshot as stale."
+        GoTo CleanExit
+    End If
+
+    Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH82", "SKU-SETUP-001", 14, CDate("2026-03-28 11:45:00"), _
+                                        14, "B7=14", "Setup Refresh Item", "EA", "B7", "Setup refresh desc", "Vendor Setup", "VS-1", "receiving")
+    If wbSnap Is Nothing Then
+        failureReason = "Snapshot workbook could not be created for setup refresh test."
+        GoTo CleanExit
+    End If
+    wbSnap.Close SaveChanges:=False
+    Set wbSnap = Nothing
+
+    If Not RefreshReceivingUiForTest(wbOps, report) Then
+        failureReason = "RefreshReceivingUiForTest failed: " & report
+        GoTo CleanExit
+    End If
+
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loRecv = FindTableByName(wbOps, "ReceivedTally")
+    Set loLog = FindTableByName(wbOps, "ReceivedLog")
+    If loInv Is Nothing Or loRecv Is Nothing Or loLog Is Nothing Then
+        failureReason = "Receiving tables were missing after forced setup refresh."
+        GoTo CleanExit
+    End If
+
+    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-SETUP-001")
+    If invRow = 0 Then
+        failureReason = "Forced setup refresh did not retain the target SKU."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 14 Then
+        failureReason = "Forced setup refresh did not update TOTAL INV from the shared snapshot."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, invRow, "LOCATION")), "B7", vbTextCompare) <> 0 Then
+        failureReason = "Forced setup refresh did not update LOCATION from the shared snapshot."
+        GoTo CleanExit
+    End If
+    If CBool(GetTableValue(loInv, invRow, "IsStale")) <> False Then
+        failureReason = "Forced setup refresh left invSys marked stale."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loInv, invRow, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then
+        failureReason = "Forced setup refresh did not preserve LOCAL source type."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loRecv, 1, "REF_NUMBER")), "REF-SETUP-001", vbTextCompare) <> 0 Then
+        failureReason = "Receiving staging row was not preserved across forced setup refresh."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loLog, 1, "SNAPSHOT_ID")), "SNAP-SETUP-OLD", vbTextCompare) <> 0 Then
+        failureReason = "Receiving log row was not preserved across forced setup refresh."
+        GoTo CleanExit
+    End If
+
+    TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbSnap
+    CloseWorkbookIfOpen wbOps
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7111, "TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination() As Long
     Dim rootPath As String
     Dim operatorPathA As String
@@ -2667,6 +2784,27 @@ Private Function FindUserRow(ByVal lo As ListObject, ByVal userId As String) As 
             Exit Function
         End If
     Next i
+End Function
+
+Private Function InitializeReceivingUiForTest(ByVal wb As Workbook, ByRef report As String) As Boolean
+    On Error GoTo FailInit
+
+    Application.Run "modTS_Received.InitializeReceivingUiForWorkbook", wb
+    InitializeReceivingUiForTest = True
+    Exit Function
+
+FailInit:
+    report = Err.Description
+End Function
+
+Private Function RefreshReceivingUiForTest(ByVal wb As Workbook, ByRef report As String) As Boolean
+    On Error GoTo FailRefresh
+
+    RefreshReceivingUiForTest = CBool(Application.Run("modTS_Received.RefreshReceivingUiForWorkbook", wb, report))
+    Exit Function
+
+FailRefresh:
+    report = Err.Description
 End Function
 
 Private Function FindWorkbookByName(ByVal workbookName As String) As Workbook
