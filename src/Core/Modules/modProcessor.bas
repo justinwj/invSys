@@ -94,7 +94,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     lastHeartbeat = Now
 
     Set inboxTargets = ResolveInboxTargets(warehouseId)
-    modPerfLog.LogDiagnostic "PROCESSOR", "RunBatchStart|WarehouseId=" & warehouseId & "|InboxTargets=" & CStr(IIf(inboxTargets Is Nothing, 0, inboxTargets.Count)) & "|RunId=" & runId
+    modPerfLog.LogDiagnostic "PROCESSOR", "RunBatchStart|WarehouseId=" & warehouseId & "|InboxTargets=" & CStr(GetCollectionCountProcessor(inboxTargets)) & "|RunId=" & runId
     modPerfLog.PerfMark runId, "Dequeue", CLng((Timer - phaseStart) * 1000)
     phaseStart = Timer
     For Each target In inboxTargets
@@ -196,6 +196,7 @@ CleanExit:
 
 FailRun:
     report = "RunBatch failed: " & Err.Description
+    modPerfLog.LogDiagnostic "PROCESSOR", "RunBatchError|WarehouseId=" & warehouseId & "|RunId=" & runId & "|Error=" & Err.Description
     Resume CleanExit
 End Function
 
@@ -469,7 +470,7 @@ Private Sub AddInboxTargetByPath(ByVal targets As Collection, _
 
     fullPath = Trim$(fullPath)
     If fullPath = "" Then Exit Sub
-    If Len(Dir$(fullPath, vbNormal)) = 0 Then Exit Sub
+    If Not FileExistsProcessor(fullPath) Then Exit Sub
 
     key = fullPath & "|" & tableName
     If seen.Exists(key) Then Exit Sub
@@ -491,6 +492,23 @@ Private Sub AddInboxTargetByPath(ByVal targets As Collection, _
     targets.Add target
     seen.Add key, True
 End Sub
+
+Private Function FileExistsProcessor(ByVal fullPath As String) As Boolean
+    On Error GoTo InvalidPath
+    FileExistsProcessor = (Len(Dir$(fullPath, vbNormal)) > 0)
+    Exit Function
+
+InvalidPath:
+    modPerfLog.LogDiagnostic "PROCESSOR", "SkipInboxTargetInvalidPath|Path=" & fullPath & "|Error=" & Err.Description
+    On Error GoTo 0
+End Function
+
+Private Function GetCollectionCountProcessor(ByVal items As Collection) As Long
+    On Error Resume Next
+    If items Is Nothing Then Exit Function
+    GetCollectionCountProcessor = items.Count
+    On Error GoTo 0
+End Function
 
 Private Function BuildConfiguredInboxPathProcessor(ByVal wbCfg As Workbook, _
                                                    ByVal loSt As ListObject, _
