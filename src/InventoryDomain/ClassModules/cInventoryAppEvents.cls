@@ -18,7 +18,3 @@ End Sub
 Private Sub App_WorkbookOpen(ByVal Wb As Workbook)
     modInventoryPublisher.HandlePotentialInventoryWorkbook Wb
 End Sub
-
-Private Sub App_WorkbookActivate(ByVal Wb As Workbook)
-    modInventoryPublisher.HandlePotentialInventoryWorkbook Wb
-End Sub

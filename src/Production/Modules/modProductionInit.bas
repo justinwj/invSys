@@ -5,15 +5,19 @@ Private gAppEvents As cAppEvents
 
 Public Sub InitProductionAddin()
     Dim prevEvents As Boolean
+    Dim prevScreenUpdating As Boolean
 
     prevEvents = Application.EnableEvents
+    prevScreenUpdating = Application.ScreenUpdating
     Application.EnableEvents = False
+    Application.ScreenUpdating = False
     If gAppEvents Is Nothing Then
         Set gAppEvents = New cAppEvents
         gAppEvents.Init
     End If
     mProduction.InitializeProductionUiForWorkbook ThisWorkbook
     EnsureProductionSurfaceForWorkbook Application.ActiveWorkbook
+    Application.ScreenUpdating = prevScreenUpdating
     Application.EnableEvents = prevEvents
 End Sub
 
