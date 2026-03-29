@@ -40,7 +40,7 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Dim prevEvents As Boolean
     Dim prevScreenUpdating As Boolean
     Dim prevAlerts As Boolean
-    Dim prevCalculation As XlCalculation
+    Dim prevCalculation As Variant
     Dim wb As Workbook
 
     prevEvents = Application.EnableEvents
@@ -63,7 +63,9 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Next wb
 
 CleanExit:
-    Application.Calculation = prevCalculation
+    If IsNumeric(prevCalculation) Then
+        Application.Calculation = CLng(prevCalculation)
+    End If
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreenUpdating
     Application.DisplayAlerts = prevAlerts

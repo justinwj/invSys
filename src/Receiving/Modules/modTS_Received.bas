@@ -409,7 +409,7 @@ Public Sub ConfirmWrites()
     Dim prevEvents As Boolean
     Dim prevScreenUpdating As Boolean
     Dim prevAlerts As Boolean
-    Dim prevCalculation As XlCalculation
+    Dim prevCalculation As Variant
     Dim uiSuppressed As Boolean
 
     Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
@@ -555,7 +555,9 @@ ErrHandler:
 
 CleanExit:
     If uiSuppressed Then
-        Application.Calculation = prevCalculation
+        If IsNumeric(prevCalculation) Then
+            Application.Calculation = CLng(prevCalculation)
+        End If
         Application.EnableEvents = prevEvents
         Application.ScreenUpdating = prevScreenUpdating
         Application.DisplayAlerts = prevAlerts
