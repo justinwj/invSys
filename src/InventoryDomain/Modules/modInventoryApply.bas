@@ -234,6 +234,8 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Dim sourceRows As Long
     Dim matchedCount As Long
     Dim changedCount As Long
+    Dim configLoadResult As Boolean
+    Dim resolvedRootPath As String
 
     If sourceWb Is Nothing Then
         report = "Source workbook not resolved."
@@ -248,9 +250,17 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
         Exit Function
     End If
 
+    If (Not modConfig.IsLoaded()) _
+       Or StrComp(SafeTrimApply(modConfig.GetWarehouseId()), warehouseId, vbTextCompare) <> 0 Then
+        configLoadResult = modConfig.LoadConfig(warehouseId, "")
+    Else
+        configLoadResult = True
+    End If
+    resolvedRootPath = SafeTrimApply(modConfig.GetString("PathDataRoot", ""))
+
     Set loSource = FindListObjectByNameApply(sourceWb, "invSys")
     If loSource Is Nothing Then
-        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|Result=Source invSys table not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|Result=Source invSys table not found."
         modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
@@ -259,7 +269,7 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     runtimeWasOpen = WorkbookIsAlreadyOpenApply(runtimePath)
     Set runtimeWb = ResolveInventoryWorkbook(warehouseId)
     If runtimeWb Is Nothing Then
-        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime inventory workbook not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime inventory workbook not found."
         modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
@@ -269,7 +279,7 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Set loLoc = FindListObjectByNameApply(runtimeWb, "tblLocationBalance")
     Set loLog = FindListObjectByNameApply(runtimeWb, "tblInventoryLog")
     If loSku Is Nothing Then
-        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime projection table tblSkuBalance not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime projection table tblSkuBalance not found."
         modInventoryInit.AppendSyncLogEntry "TRACE", report
         GoTo CleanExit
     End If
@@ -308,7 +318,7 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
         Next rowIndex
     End If
 
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     RefreshInvSysFromCanonicalRuntime = True
 
@@ -320,7 +330,7 @@ CleanExit:
     Exit Function
 
 FailRefresh:
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     On Error Resume Next
     If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
