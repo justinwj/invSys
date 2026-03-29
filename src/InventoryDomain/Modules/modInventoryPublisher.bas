@@ -63,6 +63,8 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
     Dim preferredOutputPath As String
     Dim snapshotWasOpen As Boolean
     Dim configWasOpen As Boolean
+    Dim prevEvents As Boolean
+    Dim eventsSuppressed As Boolean
 
     Set wb = targetWb
     If wb Is Nothing Then Set wb = ResolveCandidateInventoryWorkbookPublisher()
@@ -78,6 +80,11 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
         report = "Inventory source warehouse could not be resolved."
         Exit Function
     End If
+
+    prevEvents = Application.EnableEvents
+    Application.EnableEvents = False
+    eventsSuppressed = True
+
     configWasOpen = Not FindOpenConfigWorkbookByWarehousePublisher(resolvedWarehouseId) Is Nothing
     If Not EnsureWarehouseConfigLoadedPublisher(resolvedWarehouseId, report) Then Exit Function
 
@@ -115,18 +122,24 @@ Public Function EnsureSnapshotPublicationForWorkbook(Optional ByVal targetWb As 
     EnsureSnapshotPublicationForWorkbook = True
     
 CleanExit:
+    On Error Resume Next
     If RequiresRuntimeCatalogSyncPublisher(wb) Then
         If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher runtimeWb
     End If
     If Not configWasOpen Then CloseTransientConfigWorkbookPublisher resolvedWarehouseId
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    On Error GoTo 0
     Exit Function
 
 FailPublish:
     report = "EnsureSnapshotPublicationForWorkbook failed: " & Err.Description
+    On Error Resume Next
     If RequiresRuntimeCatalogSyncPublisher(wb) Then
         If Not runtimeWasOpen Then CloseWorkbookQuietlyPublisher runtimeWb
     End If
     If Not configWasOpen Then CloseTransientConfigWorkbookPublisher resolvedWarehouseId
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    On Error GoTo 0
 End Function
 
 Public Sub HandlePotentialInventoryWorkbook(Optional ByVal targetWb As Workbook = Nothing)
