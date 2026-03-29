@@ -94,6 +94,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     lastHeartbeat = Now
 
     Set inboxTargets = ResolveInboxTargets(warehouseId)
+    modPerfLog.LogDiagnostic "PROCESSOR", "RunBatchStart|WarehouseId=" & warehouseId & "|InboxTargets=" & CStr(IIf(inboxTargets Is Nothing, 0, inboxTargets.Count)) & "|RunId=" & runId
     modPerfLog.PerfMark runId, "Dequeue", CLng((Timer - phaseStart) * 1000)
     phaseStart = Timer
     For Each target In inboxTargets
@@ -181,6 +182,7 @@ ContinueInbox:
     End If
     If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "SnapshotPublish"
     If RunBatch > 0 Then modInventoryDomainBridge.ScheduleSourceWorkbookSyncBridge
+    modPerfLog.LogDiagnostic "PROCESSOR", "RunBatchReport|WarehouseId=" & warehouseId & "|" & report
 
 CleanExit:
     If Not inboxTargets Is Nothing Then
@@ -659,10 +661,12 @@ End Function
 Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal newStatus As String, _
                                  Optional ByVal errorCode As String = "", Optional ByVal errorMessage As String = "")
     Dim retryCount As Long
+    Dim eventId As String
     If lo Is Nothing Then Exit Sub
 
     SetSheetProtectionProcessor lo.Parent, False
 
+    eventId = SafeTrimProcessor(GetCellByColumnProcessor(lo, rowIndex, "EventID"))
     SetCellByColumnProcessor lo, rowIndex, "Status", newStatus
 
     Select Case UCase$(newStatus)
@@ -683,6 +687,7 @@ Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long,
 
     SetSheetProtectionProcessor lo.Parent, True
     SaveWorkbookProcessor lo.Parent.Parent
+    modPerfLog.LogDiagnostic "INBOX-STATUS", "Workbook=" & lo.Parent.Parent.Name & "|Table=" & lo.Name & "|EventID=" & eventId & "|Status=" & newStatus & "|ErrorCode=" & errorCode & "|ErrorMessage=" & errorMessage
 End Sub
 
 Private Function GetDictionaryString(ByVal d As Object, ByVal key As String) As String

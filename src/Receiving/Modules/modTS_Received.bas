@@ -646,12 +646,14 @@ Private Sub ProcessQueuedReceiveEventsRuntime(Optional ByVal operatorWb As Workb
     If wb Is Nothing Then Set wb = ThisWorkbook
 
     If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wb, warehouseId, "LOCAL", runtimeReport) Then
+        modPerfLog.LogDiagnostic "RECEIVE-RUNTIME", "Result=FAIL|Workbook=" & wb.Name & "|WarehouseId=" & warehouseId & "|Report=" & runtimeReport
         If Not modUiQuiet.QuietUiIsActive() Then
             MsgBox "Local receive writes succeeded, but runtime processing or read-model refresh did not complete cleanly:" & vbCrLf & runtimeReport, vbExclamation
         Else
             Debug.Print "Receive runtime warning: " & runtimeReport
         End If
     ElseIf runtimeReport <> "" Then
+        modPerfLog.LogDiagnostic "RECEIVE-RUNTIME", "Result=OK|Workbook=" & wb.Name & "|WarehouseId=" & warehouseId & "|Report=" & runtimeReport
         If Not modUiQuiet.QuietUiIsActive() Then
             MsgBox runtimeReport, vbInformation
         Else

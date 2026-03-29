@@ -84,6 +84,13 @@ Public Sub PerfEnd(ByVal runId As String, ByVal totalMs As Long, ByVal extra As 
     AppendPerfLine lineText
 End Sub
 
+Public Sub LogDiagnostic(ByVal category As String, ByVal messageText As String)
+    Dim lineText As String
+
+    lineText = Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | " & Trim$(category) & " | " & Trim$(messageText)
+    AppendPerfLine lineText
+End Sub
+
 Private Function GetTickMsPerf() As Double
     GetTickMsPerf = CDbl(timeGetTime())
 End Function

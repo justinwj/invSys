@@ -404,6 +404,7 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     End If
 
     report = "Processed=" & CStr(processedCount) & "; BatchReport=" & batchReport & "; RefreshReport=" & refreshReport
+    modPerfLog.LogDiagnostic "RUNTIME", "RunBatchAndRefresh|Workbook=" & wb.Name & "|WarehouseId=" & resolvedWarehouseId & "|Processed=" & CStr(processedCount) & "|BatchReport=" & batchReport & "|RefreshReport=" & refreshReport
     RunBatchAndRefreshOperatorWorkbook = True
 CleanExit:
     If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
@@ -414,6 +415,7 @@ FailRefresh:
     If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
     On Error GoTo 0
     report = "RunBatchAndRefreshOperatorWorkbook failed: " & Err.Description
+    modPerfLog.LogDiagnostic "RUNTIME", "RunBatchAndRefreshError|Workbook=" & ResolveWorkbookNameReadModel(wb) & "|WarehouseId=" & resolvedWarehouseId & "|Error=" & Err.Description
 End Function
 
 Private Function ResolveOperatorWorkbook(ByVal targetWb As Workbook) As Workbook
