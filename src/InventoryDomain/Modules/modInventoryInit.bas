@@ -5,6 +5,7 @@ Private gAppEvents As cInventoryAppEvents
 Private gNextSourceSync As Date
 Private gSourceSyncScheduled As Boolean
 Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 5
+Private Const SOURCE_SYNC_IDLE_INTERVAL_SECONDS As Long = 5
 Private Const SOURCE_SYNC_LOG_FILENAME As String = "invSys.Inventory.Sync.log"
 
 Public Sub InitInventoryDomainAddin()
@@ -88,7 +89,11 @@ CleanExit:
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreenUpdating
     Application.DisplayAlerts = prevAlerts
-    If hasSyncTargets Then ScheduleSourceWorkbookSync SOURCE_SYNC_INTERVAL_SECONDS
+    If hasSyncTargets Then
+        ScheduleSourceWorkbookSync SOURCE_SYNC_INTERVAL_SECONDS
+    Else
+        ScheduleSourceWorkbookSync SOURCE_SYNC_IDLE_INTERVAL_SECONDS
+    End If
 End Sub
 
 Public Function GetSyncLogPath() As String
