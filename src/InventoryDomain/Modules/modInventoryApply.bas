@@ -236,6 +236,7 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Dim changedCount As Long
     Dim configLoadResult As Boolean
     Dim resolvedRootPath As String
+    Dim runtimeOpenedReadOnly As Boolean
 
     If sourceWb Is Nothing Then
         report = "Source workbook not resolved."
@@ -268,6 +269,10 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     runtimePath = BuildCanonicalInventoryPath(warehouseId)
     runtimeWasOpen = WorkbookIsAlreadyOpenApply(runtimePath)
     Set runtimeWb = ResolveInventoryWorkbook(warehouseId)
+    If runtimeWb Is Nothing And FileExistsApply(runtimePath) Then
+        Set runtimeWb = OpenWorkbookReadOnlyApply(runtimePath)
+        If Not runtimeWb Is Nothing Then runtimeOpenedReadOnly = True
+    End If
     If runtimeWb Is Nothing Then
         report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime inventory workbook not found."
         modInventoryInit.AppendSyncLogEntry "TRACE", report
@@ -318,7 +323,7 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
         Next rowIndex
     End If
 
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     RefreshInvSysFromCanonicalRuntime = True
 
@@ -330,7 +335,7 @@ CleanExit:
     Exit Function
 
 FailRefresh:
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     On Error Resume Next
     If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
@@ -1346,6 +1351,25 @@ Private Function WorkbookIsAlreadyOpenApply(ByVal fullPath As String) As Boolean
             Exit Function
         End If
     Next wb
+End Function
+
+Private Function FileExistsApply(ByVal fullPath As String) As Boolean
+    On Error Resume Next
+    FileExistsApply = (Len(Dir$(fullPath)) > 0)
+    On Error GoTo 0
+End Function
+
+Private Function OpenWorkbookReadOnlyApply(ByVal fullPath As String) As Workbook
+    On Error GoTo FailOpen
+
+    If Trim$(fullPath) = "" Then Exit Function
+    If Not FileExistsApply(fullPath) Then Exit Function
+
+    Set OpenWorkbookReadOnlyApply = Application.Workbooks.Open(Filename:=fullPath, ReadOnly:=True, Notify:=False)
+    Exit Function
+
+FailOpen:
+    Set OpenWorkbookReadOnlyApply = Nothing
 End Function
 
 Private Sub HideWorkbookWindowsApply(ByVal wb As Workbook)
