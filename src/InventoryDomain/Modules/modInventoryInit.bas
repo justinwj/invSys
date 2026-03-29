@@ -40,13 +40,11 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Dim prevEvents As Boolean
     Dim prevScreenUpdating As Boolean
     Dim prevAlerts As Boolean
-    Dim prevCalculation As Variant
     Dim wb As Workbook
 
     prevEvents = Application.EnableEvents
     prevScreenUpdating = Application.ScreenUpdating
     prevAlerts = Application.DisplayAlerts
-    prevCalculation = Application.Calculation
     gSourceSyncScheduled = False
 
     On Error GoTo CleanExit
@@ -54,7 +52,6 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
 
     For Each wb In Application.Workbooks
         If ShouldSyncSourceWorkbookInit(wb) Then
@@ -63,9 +60,6 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Next wb
 
 CleanExit:
-    If IsNumeric(prevCalculation) Then
-        Application.Calculation = CLng(prevCalculation)
-    End If
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreenUpdating
     Application.DisplayAlerts = prevAlerts
