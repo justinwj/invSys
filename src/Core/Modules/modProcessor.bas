@@ -160,6 +160,7 @@ ContinueInbox:
         CloseInboxTargetIfNeeded target
     Next target
 
+    If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "ProcessorApplyLoop"
     report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
     If artifactWarnings > 0 Then report = report & "; ArtifactWarnings=" & CStr(artifactWarnings)
 
@@ -168,6 +169,7 @@ ContinueInbox:
         If report <> "" Then report = report & "; "
         report = report & "SnapshotError=" & artifactReport
     End If
+    If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "SnapshotPublish"
     If RunBatch > 0 Then modInventoryDomainBridge.ScheduleSourceWorkbookSyncBridge
 
 CleanExit:

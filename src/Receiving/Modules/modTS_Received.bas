@@ -429,6 +429,7 @@ Public Sub ConfirmWrites()
     Dim logTbl As ListObject: Set logTbl = wsLog.ListObjects("ReceivedLog")
     If agg Is Nothing Or inv Is Nothing Or logTbl Is Nothing Then Exit Sub
     If agg.DataBodyRange Is Nothing Then Exit Sub
+    modPerfLog.BeginTransaction "ConfirmWrites"
 
     ' Validate and collect rows
     Dim arr, r As Long, errs As String
@@ -445,9 +446,11 @@ Public Sub ConfirmWrites()
         If NzStr(arr(r, cols("ITEM_CODE"))) = "" Then errs = errs & "Row " & r & ": ITEM_CODE missing" & vbCrLf
     Next
     If errs <> "" Then
+        modPerfLog.EndTransaction "ValidationFailed"
         MsgBox "Cannot confirm:" & vbCrLf & errs, vbExclamation
         GoTo CleanExit
     End If
+    modPerfLog.MarkSegment "Validation"
 
     prevEvents = Application.EnableEvents
     prevScreenUpdating = Application.ScreenUpdating
@@ -474,9 +477,11 @@ Public Sub ConfirmWrites()
             modUiQuiet.EndQuietUi
             uiSuppressed = False
         End If
+        modPerfLog.EndTransaction "QueueWriteFailed"
         MsgBox "Cannot confirm:" & vbCrLf & errs, vbCritical
         GoTo CleanExit
     End If
+    modPerfLog.MarkSegment "QueueWrite"
 
     ' Capture undo snapshot
     CaptureUndoState agg, inv, logTbl
@@ -545,11 +550,14 @@ Public Sub ConfirmWrites()
 NextRt:
         Next rrt
     End If
+    modPerfLog.MarkSegment "LocalLogUpdate"
 
     ' Clear staging on success
     ClearTable wsRT.ListObjects("ReceivedTally")
     ClearTable agg
+    modPerfLog.MarkSegment "ClearStaging"
     ProcessQueuedReceiveEventsRuntime wb
+    modPerfLog.MarkSegment "RuntimeProcess"
     mRedoReady = True
     GoTo CleanExit
 
@@ -565,6 +573,7 @@ ErrHandler:
         uiSuppressed = False
     End If
     On Error GoTo 0
+    modPerfLog.EndTransaction "Error=" & Err.Description
     MsgBox "Error in ConfirmWrites: " & Err.Description, vbCritical
     UndoInvDeltas wsInv.ListObjects("invSys")
     DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
@@ -581,6 +590,7 @@ CleanExit:
         Application.DisplayStatusBar = prevDisplayStatusBar
         modUiQuiet.EndQuietUi
     End If
+    If modPerfLog.IsTransactionActive() Then modPerfLog.EndTransaction "OK"
 End Sub
 
 Public Function QueueReceiveEventsFromCurrentWorkbook(ByRef errorMessage As String) As Boolean

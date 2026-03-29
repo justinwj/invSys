@@ -389,11 +389,14 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     Application.ScreenUpdating = False
     screenSuppressed = True
     processedCount = modProcessor.RunBatch(resolvedWarehouseId, 0, batchReport)
+    If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "ProcessorRunBatch"
     Call modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, surfaceReport)
+    If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "SurfaceEnsure"
     If Not RefreshInventoryReadModelForWorkbook(wb, resolvedWarehouseId, sourceType, refreshReport) Then
         report = refreshReport
         GoTo CleanExit
     End If
+    If modPerfLog.IsTransactionActive() Then modPerfLog.MarkSegment "LocalReadModelRefresh"
 
     If Left$(batchReport, 15) = "RunBatch failed" Then
         report = "RunBatch failed after local post/write. " & batchReport & " RefreshReport=" & refreshReport
