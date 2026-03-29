@@ -169,6 +169,69 @@ Public Sub HandlePotentialInventoryWorkbook(Optional ByVal targetWb As Workbook 
     Call EnsureSnapshotPublicationForWorkbook(targetWb, report)
 End Sub
 
+Public Sub HandlePotentialInventoryWorkbookRefresh(Optional ByVal targetWb As Workbook = Nothing)
+    Dim report As String
+
+    Call EnsureManagedInventoryWorkbookCurrent(targetWb, report)
+End Sub
+
+Public Function EnsureManagedInventoryWorkbookCurrent(Optional ByVal targetWb As Workbook = Nothing, _
+                                                     Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailRefresh
+
+    Dim wb As Workbook
+    Dim resolvedWarehouseId As String
+    Dim refreshKey As String
+    Dim refreshReport As String
+    Dim prevScreenUpdating As Boolean
+    Dim prevAlerts As Boolean
+    Dim screenSuppressed As Boolean
+    Dim alertsSuppressed As Boolean
+
+    Set wb = targetWb
+    If wb Is Nothing Then Set wb = ResolveCandidateInventoryWorkbookPublisher()
+    If wb Is Nothing Then Exit Function
+    If Not IsManagedCatalogSourceWorkbookPublisher(wb) Then Exit Function
+    If Not TryResolveInventorySourceWarehouseIdPublisher(wb, resolvedWarehouseId) Then Exit Function
+
+    refreshKey = BuildRefreshKeyPublisher(wb, resolvedWarehouseId)
+    If ShouldSkipRecentPublishPublisher(refreshKey) Then
+        report = "SKIPPED_RECENT"
+        EnsureManagedInventoryWorkbookCurrent = True
+        Exit Function
+    End If
+
+    prevScreenUpdating = Application.ScreenUpdating
+    prevAlerts = Application.DisplayAlerts
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    screenSuppressed = True
+    alertsSuppressed = True
+
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wb, resolvedWarehouseId, "LOCAL", refreshReport) Then
+        report = refreshReport
+        GoTo CleanExit
+    End If
+
+    RecordRecentPublishPublisher refreshKey
+    report = refreshReport
+    EnsureManagedInventoryWorkbookCurrent = True
+
+CleanExit:
+    On Error Resume Next
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
+    Exit Function
+
+FailRefresh:
+    report = "EnsureManagedInventoryWorkbookCurrent failed: " & Err.Description
+    On Error Resume Next
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
+End Function
+
 Private Function ResolveCandidateInventoryWorkbookPublisher() As Workbook
     If Not Application.ActiveWorkbook Is Nothing Then
         If Not Application.ActiveWorkbook.IsAddin Then
@@ -485,6 +548,11 @@ End Function
 Private Function BuildPublishKeyPublisher(ByVal wb As Workbook, ByVal warehouseId As String) As String
     If wb Is Nothing Then Exit Function
     BuildPublishKeyPublisher = LCase$(wb.FullName & "|" & warehouseId)
+End Function
+
+Private Function BuildRefreshKeyPublisher(ByVal wb As Workbook, ByVal warehouseId As String) As String
+    If wb Is Nothing Then Exit Function
+    BuildRefreshKeyPublisher = LCase$(wb.FullName & "|" & warehouseId & "|refresh")
 End Function
 
 Private Function ResolveRuntimeInventoryPathPublisher(ByVal warehouseId As String) As String

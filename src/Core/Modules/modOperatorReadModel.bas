@@ -33,6 +33,8 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
     Dim snapshotAlreadyOpen As Boolean
     Dim invSheet As Worksheet
     Dim invSheetWasProtected As Boolean
+    Dim prevScreenUpdating As Boolean
+    Dim screenSuppressed As Boolean
 
     Set wb = ResolveOperatorWorkbook(targetWb)
     If wb Is Nothing Then
@@ -58,6 +60,9 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
         configValidation = modConfig.Validate()
     End If
 
+    prevScreenUpdating = Application.ScreenUpdating
+    Application.ScreenUpdating = False
+    screenSuppressed = True
     snapshotPath = ResolveSnapshotPathReadModel(resolvedWarehouseId)
     snapshotAlreadyOpen = WorkbookIsOpenByPathReadModel(snapshotPath)
     Set wbSnap = ResolveSnapshotWorkbook(resolvedWarehouseId, "", Nothing, False)
@@ -70,6 +75,7 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
         RefreshInventoryReadModelForWorkbook = True
         GoTo CleanExit
     End If
+    If Not snapshotAlreadyOpen Then HideWorkbookWindowsReadModel wbSnap
 
     Set loSnap = FindListObjectReadModel(wbSnap, TABLE_SNAPSHOT)
     If loSnap Is Nothing Then
@@ -93,6 +99,7 @@ Public Function RefreshInventoryReadModelForWorkbook(Optional ByVal targetWb As 
 CleanExit:
     If invSheetWasProtected Then RestoreWorksheetProtectionReadModel invSheet
     If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
     Exit Function
 
 FailRefresh:
@@ -101,6 +108,7 @@ FailRefresh:
     On Error Resume Next
     If invSheetWasProtected Then RestoreWorksheetProtectionReadModel invSheet
     If Not snapshotAlreadyOpen Then CloseWorkbookQuietlyReadModel wbSnap
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
 End Function
 
 Public Sub RefreshCurrentWorkbookInventoryReadModel()
@@ -362,6 +370,8 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     Dim refreshReport As String
     Dim processedCount As Long
     Dim surfaceReport As String
+    Dim prevScreenUpdating As Boolean
+    Dim screenSuppressed As Boolean
 
     Set wb = ResolveOperatorWorkbook(targetWb)
     If wb Is Nothing Then
@@ -370,23 +380,31 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     End If
 
     resolvedWarehouseId = ResolveWarehouseIdReadModel(warehouseId)
+    prevScreenUpdating = Application.ScreenUpdating
+    Application.ScreenUpdating = False
+    screenSuppressed = True
     processedCount = modProcessor.RunBatch(resolvedWarehouseId, 0, batchReport)
     Call modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, surfaceReport)
     If Not RefreshInventoryReadModelForWorkbook(wb, resolvedWarehouseId, sourceType, refreshReport) Then
         report = refreshReport
-        Exit Function
+        GoTo CleanExit
     End If
 
     If Left$(batchReport, 15) = "RunBatch failed" Then
         report = "RunBatch failed after local post/write. " & batchReport & " RefreshReport=" & refreshReport
-        Exit Function
+        GoTo CleanExit
     End If
 
     report = "Processed=" & CStr(processedCount) & "; BatchReport=" & batchReport & "; RefreshReport=" & refreshReport
     RunBatchAndRefreshOperatorWorkbook = True
+CleanExit:
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
     Exit Function
 
 FailRefresh:
+    On Error Resume Next
+    If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
+    On Error GoTo 0
     report = "RunBatchAndRefreshOperatorWorkbook failed: " & Err.Description
 End Function
 
@@ -1011,7 +1029,19 @@ End Function
 Private Sub CloseWorkbookQuietlyReadModel(ByVal wb As Workbook)
     If wb Is Nothing Then Exit Sub
     On Error Resume Next
+    HideWorkbookWindowsReadModel wb
     wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+Private Sub HideWorkbookWindowsReadModel(ByVal wb As Workbook)
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To wb.Windows.Count
+        wb.Windows(i).Visible = False
+    Next i
     On Error GoTo 0
 End Sub
 
