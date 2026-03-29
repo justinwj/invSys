@@ -227,21 +227,28 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Dim sku As String
     Dim sourceSheetWasProtected As Boolean
     Dim sourceSheet As Worksheet
+    Dim runtimeRows As Long
+    Dim sourceRows As Long
+    Dim matchedCount As Long
+    Dim changedCount As Long
 
     If sourceWb Is Nothing Then
         report = "Source workbook not resolved."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
 
     If Trim$(warehouseId) = "" Then warehouseId = ResolveWarehouseIdFromSourceWorkbookApply(sourceWb)
     If Trim$(warehouseId) = "" Then
-        report = "WarehouseId not resolved for source workbook."
+        report = "SrcWb=" & sourceWb.Name & "|WH=<blank>|Result=WarehouseId not resolved for source workbook."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
 
     Set loSource = FindListObjectByNameApply(sourceWb, "invSys")
     If loSource Is Nothing Then
-        report = "Source invSys table not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|Result=Source invSys table not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
 
@@ -249,7 +256,8 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     runtimeWasOpen = WorkbookIsAlreadyOpenApply(runtimePath)
     Set runtimeWb = ResolveInventoryWorkbook(warehouseId)
     If runtimeWb Is Nothing Then
-        report = "Canonical runtime inventory workbook not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime inventory workbook not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
         Exit Function
     End If
     If Not runtimeWasOpen Then HideWorkbookWindowsApply runtimeWb
@@ -257,9 +265,12 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Set loSku = FindListObjectByNameApply(runtimeWb, "tblSkuBalance")
     Set loLoc = FindListObjectByNameApply(runtimeWb, "tblLocationBalance")
     If loSku Is Nothing Then
-        report = "Canonical runtime projection table tblSkuBalance not found."
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime projection table tblSkuBalance not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
         GoTo CleanExit
     End If
+    runtimeRows = loSku.ListRows.Count
+    sourceRows = loSource.ListRows.Count
 
     Set skuQty = CreateObject("Scripting.Dictionary")
     skuQty.CompareMode = vbTextCompare
@@ -279,12 +290,17 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
         For rowIndex = 1 To loSource.ListRows.Count
             sku = ResolveInvSysSkuApply(loSource, rowIndex)
             If sku <> "" Then
+                If skuQty.Exists(sku) Or locSummary.Exists(sku) Then
+                    matchedCount = matchedCount + 1
+                    If CanonicalRuntimeRowWouldChangeApply(loSource, rowIndex, skuQty, locSummary, sku) Then changedCount = changedCount + 1
+                End If
                 ApplyCanonicalRuntimeRowApply loSource, rowIndex, skuQty, skuLast, locSummary, sku
             End If
         Next rowIndex
     End If
 
-    report = "OK"
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
+    modInventoryInit.AppendSyncLogEntry "TRACE", report
     RefreshInvSysFromCanonicalRuntime = True
 
 CleanExit:
@@ -295,7 +311,8 @@ CleanExit:
     Exit Function
 
 FailRefresh:
-    report = "RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    modInventoryInit.AppendSyncLogEntry "TRACE", report
     On Error Resume Next
     If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
     If Not runtimeWasOpen Then CloseWorkbookQuietlyApply runtimeWb
@@ -1115,6 +1132,38 @@ Private Sub ApplyCanonicalRuntimeRowApply(ByVal loSource As ListObject, _
     SetInvSysValueApply loSource, rowIndex, "IsStale", False
 End Sub
 
+Private Function CanonicalRuntimeRowWouldChangeApply(ByVal loSource As ListObject, _
+                                                     ByVal rowIndex As Long, _
+                                                     ByVal skuQty As Object, _
+                                                     ByVal locSummary As Object, _
+                                                     ByVal sku As String) As Boolean
+    Dim qtyOnHand As Double
+    Dim summaryText As String
+    Dim primaryLocation As String
+
+    If skuQty.Exists(sku) Then qtyOnHand = CDbl(skuQty(sku))
+    If locSummary.Exists(sku) Then summaryText = CStr(locSummary(sku))
+    If summaryText <> "" Then primaryLocation = ResolvePrimaryLocationFromSummaryApply(summaryText)
+
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "TOTAL INV"), qtyOnHand) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "QtyAvailable"), qtyOnHand) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferTextApply(GetCellByColumnApply(loSource, rowIndex, "LocationSummary"), summaryText) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If primaryLocation <> "" Then
+        If ValuesDifferTextApply(GetCellByColumnApply(loSource, rowIndex, "LOCATION"), primaryLocation) Then
+            CanonicalRuntimeRowWouldChangeApply = True
+        End If
+    End If
+End Function
+
 Private Function ResolveInvSysSkuApply(ByVal lo As ListObject, ByVal rowIndex As Long) As String
     ResolveInvSysSkuApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "ITEM_CODE"))
     If ResolveInvSysSkuApply = "" Then ResolveInvSysSkuApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "SKU"))
@@ -1129,6 +1178,14 @@ Private Sub SetInvSysValueApply(ByVal lo As ListObject, ByVal rowIndex As Long, 
     If lo.DataBodyRange Is Nothing Then Exit Sub
     lo.DataBodyRange.Cells(rowIndex, idx).Value = valueOut
 End Sub
+
+Private Function ValuesDifferNumericApply(ByVal currentValue As Variant, ByVal expectedValue As Double) As Boolean
+    ValuesDifferNumericApply = (Abs(NzDblApply(currentValue) - expectedValue) > 0.0001#)
+End Function
+
+Private Function ValuesDifferTextApply(ByVal currentValue As Variant, ByVal expectedValue As String) As Boolean
+    ValuesDifferTextApply = (StrComp(SafeTrimApply(currentValue), SafeTrimApply(expectedValue), vbTextCompare) <> 0)
+End Function
 
 Private Function ResolvePrimaryLocationFromSummaryApply(ByVal summaryText As String) As String
     Dim firstFragment As String

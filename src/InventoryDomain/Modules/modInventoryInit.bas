@@ -5,6 +5,7 @@ Private gAppEvents As cInventoryAppEvents
 Private gNextSourceSync As Date
 Private gSourceSyncScheduled As Boolean
 Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 5
+Private Const SOURCE_SYNC_LOG_FILENAME As String = "invSys.Inventory.Sync.log"
 
 Public Sub InitInventoryDomainAddin()
     Dim report As String
@@ -35,6 +36,7 @@ Public Sub ScheduleSourceWorkbookSync(Optional ByVal delaySeconds As Long = 3)
     Application.OnTime EarliestTime:=gNextSourceSync, _
                        Procedure:="'" & ThisWorkbook.Name & "'!modInventoryInit.SyncSourceWorkbookFromCanonicalRuntime"
     gSourceSyncScheduled = True
+    AppendSyncLogEntry "SCHEDULE", "NextRun=" & Format$(gNextSourceSync, "yyyy-mm-dd hh:nn:ss") & "|DelaySeconds=" & CStr(delaySeconds)
 End Sub
 
 Public Sub SyncSourceWorkbookFromCanonicalRuntime()
@@ -43,11 +45,15 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Dim prevAlerts As Boolean
     Dim wb As Workbook
     Dim hasSyncTargets As Boolean
+    Dim detectionLog As String
+    Dim syncReport As String
+    Dim pullReport As String
 
     prevEvents = Application.EnableEvents
     prevScreenUpdating = Application.ScreenUpdating
     prevAlerts = Application.DisplayAlerts
     gSourceSyncScheduled = False
+    AppendSyncLogEntry "CANARY", "SchedulerFired=" & Format$(Now, "yyyy-mm-dd hh:nn:ss")
 
     On Error GoTo CleanExit
 
@@ -55,18 +61,60 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
 
+    detectionLog = "OpenWbs=" & CStr(Application.Workbooks.Count) & "|"
+    For Each wb In Application.Workbooks
+        detectionLog = detectionLog & wb.Name & "=" & CStr(ShouldSyncSourceWorkbookInit(wb)) & ";"
+    Next wb
+    AppendSyncLogEntry "DETECTION", detectionLog
+
     For Each wb In Application.Workbooks
         If ShouldSyncSourceWorkbookInit(wb) Then
             hasSyncTargets = True
-            Call modInventoryApply.RefreshInvSysFromCanonicalRuntime(wb)
+            pullReport = vbNullString
+            Call modInventoryApply.RefreshInvSysFromCanonicalRuntime(wb, "", pullReport)
+            If syncReport <> "" Then syncReport = syncReport & " || "
+            syncReport = syncReport & pullReport
         End If
     Next wb
 
 CleanExit:
+    If Err.Number <> 0 Then
+        AppendSyncLogEntry "ERROR", "SyncSourceWorkbookFromCanonicalRuntime failed: " & Err.Description
+    ElseIf hasSyncTargets Then
+        AppendSyncLogEntry "SYNC", syncReport
+    Else
+        AppendSyncLogEntry "SYNC", "No source workbooks matched sync predicate."
+    End If
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreenUpdating
     Application.DisplayAlerts = prevAlerts
     If hasSyncTargets Then ScheduleSourceWorkbookSync SOURCE_SYNC_INTERVAL_SECONDS
+End Sub
+
+Public Function GetSyncLogPath() As String
+    GetSyncLogPath = ResolveSyncLogPathInit()
+End Function
+
+Public Sub ResetSyncLog()
+    Dim logPath As String
+
+    On Error Resume Next
+    logPath = ResolveSyncLogPathInit()
+    If Len(Dir$(logPath)) > 0 Then Kill logPath
+    On Error GoTo 0
+End Sub
+
+Public Sub AppendSyncLogEntry(ByVal tag As String, ByVal valueText As String)
+    Dim fileNum As Integer
+    Dim logPath As String
+
+    On Error Resume Next
+    logPath = ResolveSyncLogPathInit()
+    fileNum = FreeFile
+    Open logPath For Append As #fileNum
+    Print #fileNum, Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | " & tag & " | " & valueText
+    Close #fileNum
+    On Error GoTo 0
 End Sub
 
 Private Function ShouldSyncSourceWorkbookInit(ByVal wb As Workbook) As Boolean
@@ -112,4 +160,15 @@ Private Function WorkbookHasSyncTableInit(ByVal wb As Workbook, ByVal tableName 
         Set lo = Nothing
     Next ws
     On Error GoTo 0
+End Function
+
+Private Function ResolveSyncLogPathInit() As String
+    Dim rootPath As String
+
+    rootPath = Trim$(Environ$("TEMP"))
+    If rootPath = "" Then rootPath = ThisWorkbook.Path
+    If rootPath = "" Then rootPath = CurDir$
+    If Right$(rootPath, 1) <> "\" Then rootPath = rootPath & "\"
+
+    ResolveSyncLogPathInit = rootPath & SOURCE_SYNC_LOG_FILENAME
 End Function
