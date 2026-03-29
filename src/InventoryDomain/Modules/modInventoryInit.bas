@@ -4,6 +4,7 @@ Option Explicit
 Private gAppEvents As cInventoryAppEvents
 Private gNextSourceSync As Date
 Private gSourceSyncScheduled As Boolean
+Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 5
 
 Public Sub InitInventoryDomainAddin()
     Dim report As String
@@ -41,6 +42,7 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
     Dim prevScreenUpdating As Boolean
     Dim prevAlerts As Boolean
     Dim wb As Workbook
+    Dim hasSyncTargets As Boolean
 
     prevEvents = Application.EnableEvents
     prevScreenUpdating = Application.ScreenUpdating
@@ -55,6 +57,7 @@ Public Sub SyncSourceWorkbookFromCanonicalRuntime()
 
     For Each wb In Application.Workbooks
         If ShouldSyncSourceWorkbookInit(wb) Then
+            hasSyncTargets = True
             Call modInventoryApply.RefreshInvSysFromCanonicalRuntime(wb)
         End If
     Next wb
@@ -63,6 +66,7 @@ CleanExit:
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreenUpdating
     Application.DisplayAlerts = prevAlerts
+    If hasSyncTargets Then ScheduleSourceWorkbookSync SOURCE_SYNC_INTERVAL_SECONDS
 End Sub
 
 Private Function ShouldSyncSourceWorkbookInit(ByVal wb As Workbook) As Boolean
