@@ -16,11 +16,5 @@ Public Sub Init()
 End Sub
 
 Private Sub App_WorkbookOpen(ByVal Wb As Workbook)
-    modInventoryPublisher.HandlePotentialInventoryWorkbookRefresh Wb
     modInventoryPublisher.HandlePotentialInventoryWorkbook Wb
-End Sub
-
-Private Sub App_WorkbookActivate(ByVal Wb As Workbook)
-    If Wb Is Nothing Then Exit Sub
-    modInventoryPublisher.HandlePotentialInventoryWorkbookRefresh Wb
 End Sub
