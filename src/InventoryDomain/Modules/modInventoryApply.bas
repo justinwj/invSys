@@ -9,6 +9,8 @@ Public Const EVENT_TYPE_SHIP As String = "SHIP"
 Public Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Public Const EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 
+Private mSourceSyncStampCache As Object
+
 Public Function ApplyEvent(ByVal evt As Object, _
                            Optional ByVal inventoryWb As Workbook = Nothing, _
                            Optional ByVal runId As String = "", _
@@ -237,6 +239,8 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
     Dim configLoadResult As Boolean
     Dim resolvedRootPath As String
     Dim runtimeOpenedReadOnly As Boolean
+    Dim runtimeFileStamp As String
+    Dim cachedRuntimeFileStamp As String
 
     If sourceWb Is Nothing Then
         report = "Source workbook not resolved."
@@ -268,6 +272,16 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
 
     runtimePath = BuildCanonicalInventoryPath(warehouseId)
     runtimeWasOpen = WorkbookIsAlreadyOpenApply(runtimePath)
+    runtimeFileStamp = ResolveFileStampApply(runtimePath)
+    cachedRuntimeFileStamp = GetSourceSyncStampApply(sourceWb)
+    If runtimeFileStamp <> "" Then
+        If StrComp(runtimeFileStamp, cachedRuntimeFileStamp, vbTextCompare) = 0 Then
+            report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|Result=UNCHANGED"
+            modInventoryInit.AppendSyncLogEntry "TRACE", report
+            RefreshInvSysFromCanonicalRuntime = True
+            Exit Function
+        End If
+    End If
     Set runtimeWb = ResolveInventoryWorkbook(warehouseId)
     If runtimeWb Is Nothing And FileExistsApply(runtimePath) Then
         Set runtimeWb = OpenWorkbookReadOnlyApply(runtimePath)
@@ -323,7 +337,8 @@ Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
         Next rowIndex
     End If
 
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
+    If runtimeFileStamp <> "" Then SetSourceSyncStampApply sourceWb, runtimeFileStamp
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     RefreshInvSysFromCanonicalRuntime = True
 
@@ -335,13 +350,48 @@ CleanExit:
     Exit Function
 
 FailRefresh:
-    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
     modInventoryInit.AppendSyncLogEntry "TRACE", report
     On Error Resume Next
     If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
     If Not runtimeWasOpen Then CloseWorkbookQuietlyApply runtimeWb
     On Error GoTo 0
 End Function
+
+Private Sub EnsureSourceSyncStampCacheApply()
+    If mSourceSyncStampCache Is Nothing Then
+        Set mSourceSyncStampCache = CreateObject("Scripting.Dictionary")
+        mSourceSyncStampCache.CompareMode = vbTextCompare
+    End If
+End Sub
+
+Private Function BuildSourceSyncCacheKeyApply(ByVal wb As Workbook) As String
+    If wb Is Nothing Then Exit Function
+    If Trim$(wb.FullName) <> "" Then
+        BuildSourceSyncCacheKeyApply = LCase$(Trim$(wb.FullName))
+    Else
+        BuildSourceSyncCacheKeyApply = LCase$(Trim$(wb.Name))
+    End If
+End Function
+
+Private Function GetSourceSyncStampApply(ByVal wb As Workbook) As String
+    Dim cacheKey As String
+
+    EnsureSourceSyncStampCacheApply
+    cacheKey = BuildSourceSyncCacheKeyApply(wb)
+    If cacheKey = "" Then Exit Function
+    If mSourceSyncStampCache.Exists(cacheKey) Then GetSourceSyncStampApply = CStr(mSourceSyncStampCache(cacheKey))
+End Function
+
+Private Sub SetSourceSyncStampApply(ByVal wb As Workbook, ByVal fileStamp As String)
+    Dim cacheKey As String
+
+    EnsureSourceSyncStampCacheApply
+    cacheKey = BuildSourceSyncCacheKeyApply(wb)
+    If cacheKey = "" Then Exit Sub
+    If mSourceSyncStampCache.Exists(cacheKey) Then mSourceSyncStampCache.Remove cacheKey
+    mSourceSyncStampCache.Add cacheKey, fileStamp
+End Sub
 
 Private Function BuildApplyLines(ByVal evt As Object, _
                                  ByVal wb As Workbook, _
@@ -1357,6 +1407,18 @@ Private Function FileExistsApply(ByVal fullPath As String) As Boolean
     On Error Resume Next
     FileExistsApply = (Len(Dir$(fullPath)) > 0)
     On Error GoTo 0
+End Function
+
+Private Function ResolveFileStampApply(ByVal fullPath As String) As String
+    On Error GoTo FailStamp
+
+    If Trim$(fullPath) = "" Then Exit Function
+    If Not FileExistsApply(fullPath) Then Exit Function
+    ResolveFileStampApply = Format$(FileDateTime(fullPath), "yyyymmddhhnnss")
+    Exit Function
+
+FailStamp:
+    ResolveFileStampApply = vbNullString
 End Function
 
 Private Function OpenWorkbookReadOnlyApply(ByVal fullPath As String) As Workbook

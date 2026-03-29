@@ -346,8 +346,13 @@ Public Sub RunScheduledOperatorAutoRefresh()
         If intervalSeconds > 0 Then
             If IsRefreshDueReadModel(meta, intervalSeconds) Then
                 refreshUtc = Now
-                Call RefreshInventoryReadModelForWorkbook(wb, ResolveMetaValueReadModel(meta, "WarehouseId"), ResolveMetaValueReadModel(meta, "SourceType"), refreshReport)
-                meta("LastRefresh") = refreshUtc
+                If ScheduledRefreshCanShortCircuitReadModel(meta, ResolveMetaValueReadModel(meta, "WarehouseId")) Then
+                    meta("LastRefresh") = refreshUtc
+                Else
+                    Call RefreshInventoryReadModelForWorkbook(wb, ResolveMetaValueReadModel(meta, "WarehouseId"), ResolveMetaValueReadModel(meta, "SourceType"), refreshReport)
+                    meta("LastRefresh") = refreshUtc
+                    meta("LastSnapshotStamp") = ResolveSnapshotFileStampReadModel(ResolveMetaValueReadModel(meta, "WarehouseId"))
+                End If
             End If
         End If
 ContinueLoop:
@@ -986,6 +991,21 @@ Private Function FileExistsReadModel(ByVal fullPath As String) As Boolean
     On Error GoTo 0
 End Function
 
+Private Function ResolveSnapshotFileStampReadModel(ByVal warehouseId As String) As String
+    Dim snapshotPath As String
+
+    On Error GoTo FailStamp
+
+    If Trim$(warehouseId) = "" Then Exit Function
+    snapshotPath = ResolveSnapshotPathReadModel(warehouseId)
+    If Not FileExistsReadModel(snapshotPath) Then Exit Function
+    ResolveSnapshotFileStampReadModel = Format$(FileDateTime(snapshotPath), "yyyymmddhhnnss")
+    Exit Function
+
+FailStamp:
+    ResolveSnapshotFileStampReadModel = vbNullString
+End Function
+
 Private Function ResolveWorkbookNameReadModel(ByVal wb As Workbook) As String
     If wb Is Nothing Then
         ResolveWorkbookNameReadModel = "<none>"
@@ -1224,6 +1244,7 @@ Private Sub RegisterAutoRefreshWorkbookReadModel(ByVal wb As Workbook, _
     meta("SourceType") = NormalizeSourceType(sourceType)
     meta("IntervalSeconds") = CLng(intervalSeconds)
     meta("LastRefresh") = lastRefresh
+    meta("LastSnapshotStamp") = ResolveSnapshotFileStampReadModel(warehouseId)
     If mAutoRefreshRegistry.Exists(key) Then mAutoRefreshRegistry.Remove key
     mAutoRefreshRegistry.Add key, meta
 End Sub
@@ -1241,6 +1262,7 @@ Private Sub UpdateAutoRefreshEntryReadModel(ByVal wb As Workbook, _
 
     UpdateAutoRefreshConfigReadModel key, warehouseId, sourceType, ResolveAutoRefreshIntervalSecondsReadModel()
     mAutoRefreshRegistry(key)("LastRefresh") = refreshUtc
+    mAutoRefreshRegistry(key)("LastSnapshotStamp") = ResolveSnapshotFileStampReadModel(warehouseId)
     ScheduleNextAutoRefreshReadModel
 End Sub
 
@@ -1299,6 +1321,21 @@ End Function
 Private Function ResolveAutoRefreshIntervalSecondsReadModel() As Long
     ResolveAutoRefreshIntervalSecondsReadModel = modConfig.GetLong("AutoRefreshIntervalSeconds", 0)
     If ResolveAutoRefreshIntervalSecondsReadModel < 0 Then ResolveAutoRefreshIntervalSecondsReadModel = 0
+End Function
+
+Private Function ScheduledRefreshCanShortCircuitReadModel(ByVal meta As Object, ByVal warehouseId As String) As Boolean
+    Dim currentStamp As String
+    Dim previousStamp As String
+
+    If meta Is Nothing Then Exit Function
+    If Trim$(warehouseId) = "" Then Exit Function
+
+    currentStamp = ResolveSnapshotFileStampReadModel(warehouseId)
+    If currentStamp = "" Then Exit Function
+    If meta.Exists("LastSnapshotStamp") Then previousStamp = Trim$(CStr(meta("LastSnapshotStamp")))
+    If previousStamp = "" Then Exit Function
+
+    ScheduledRefreshCanShortCircuitReadModel = (StrComp(currentStamp, previousStamp, vbTextCompare) = 0)
 End Function
 
 Private Sub ScheduleNextAutoRefreshReadModel()

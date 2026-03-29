@@ -409,6 +409,8 @@ Public Sub ConfirmWrites()
     Dim prevEvents As Boolean
     Dim prevScreenUpdating As Boolean
     Dim prevAlerts As Boolean
+    Dim prevVisible As Boolean
+    Dim prevDisplayStatusBar As Boolean
     Dim prevCalculation As Variant
     Dim uiSuppressed As Boolean
 
@@ -429,16 +431,6 @@ Public Sub ConfirmWrites()
     If agg Is Nothing Or inv Is Nothing Or logTbl Is Nothing Then Exit Sub
     If agg.DataBodyRange Is Nothing Then Exit Sub
 
-    prevEvents = Application.EnableEvents
-    prevScreenUpdating = Application.ScreenUpdating
-    prevAlerts = Application.DisplayAlerts
-    prevCalculation = Application.Calculation
-    Application.EnableEvents = False
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    uiSuppressed = True
-
     ' Validate and collect rows
     Dim arr, r As Long, errs As String
     arr = agg.DataBodyRange.value
@@ -458,7 +450,32 @@ Public Sub ConfirmWrites()
         GoTo CleanExit
     End If
 
+    prevEvents = Application.EnableEvents
+    prevScreenUpdating = Application.ScreenUpdating
+    prevAlerts = Application.DisplayAlerts
+    prevDisplayStatusBar = Application.DisplayStatusBar
+    prevVisible = Application.Visible
+    prevCalculation = Application.Calculation
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.DisplayStatusBar = False
+    Application.Visible = False
+    Application.Calculation = xlCalculationManual
+    uiSuppressed = True
+
     If Not QueueReceiveEventsFromAggregate(agg, errs) Then
+        If uiSuppressed Then
+            If IsNumeric(prevCalculation) Then
+                Application.Calculation = CLng(prevCalculation)
+            End If
+            Application.EnableEvents = prevEvents
+            Application.ScreenUpdating = prevScreenUpdating
+            Application.DisplayAlerts = prevAlerts
+            Application.DisplayStatusBar = prevDisplayStatusBar
+            Application.Visible = prevVisible
+            uiSuppressed = False
+        End If
         MsgBox "Cannot confirm:" & vbCrLf & errs, vbCritical
         GoTo CleanExit
     End If
@@ -545,6 +562,8 @@ ErrHandler:
         Application.EnableEvents = prevEvents
         Application.ScreenUpdating = prevScreenUpdating
         Application.DisplayAlerts = prevAlerts
+        Application.DisplayStatusBar = prevDisplayStatusBar
+        Application.Visible = prevVisible
         uiSuppressed = False
     End If
     On Error GoTo 0
@@ -561,6 +580,8 @@ CleanExit:
         Application.EnableEvents = prevEvents
         Application.ScreenUpdating = prevScreenUpdating
         Application.DisplayAlerts = prevAlerts
+        Application.DisplayStatusBar = prevDisplayStatusBar
+        Application.Visible = prevVisible
     End If
 End Sub
 
@@ -617,9 +638,17 @@ Private Sub ProcessQueuedReceiveEventsRuntime(Optional ByVal operatorWb As Workb
     If wb Is Nothing Then Set wb = ThisWorkbook
 
     If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wb, warehouseId, "LOCAL", runtimeReport) Then
-        MsgBox "Local receive writes succeeded, but runtime processing or read-model refresh did not complete cleanly:" & vbCrLf & runtimeReport, vbExclamation
+        If Application.Visible Then
+            MsgBox "Local receive writes succeeded, but runtime processing or read-model refresh did not complete cleanly:" & vbCrLf & runtimeReport, vbExclamation
+        Else
+            Debug.Print "Receive runtime warning: " & runtimeReport
+        End If
     ElseIf runtimeReport <> "" Then
-        MsgBox runtimeReport, vbInformation
+        If Application.Visible Then
+            MsgBox runtimeReport, vbInformation
+        Else
+            Debug.Print "Receive runtime report: " & runtimeReport
+        End If
     End If
 End Sub
 

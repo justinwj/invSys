@@ -4,8 +4,8 @@ Option Explicit
 Private gAppEvents As cInventoryAppEvents
 Private gNextSourceSync As Date
 Private gSourceSyncScheduled As Boolean
-Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 5
-Private Const SOURCE_SYNC_IDLE_INTERVAL_SECONDS As Long = 5
+Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 2
+Private Const SOURCE_SYNC_IDLE_INTERVAL_SECONDS As Long = 2
 Private Const SOURCE_SYNC_LOG_FILENAME As String = "invSys.Inventory.Sync.log"
 
 Public Sub InitInventoryDomainAddin()

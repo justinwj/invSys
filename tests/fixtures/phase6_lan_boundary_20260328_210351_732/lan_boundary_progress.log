@@ -1,0 +1,17 @@
+[2026-03-28 21:03:51] Creating setup harness.
+[2026-03-28 21:03:56] Running seed macro.
+[2026-03-28 21:03:58] Seed result: ERR|That name is already taken. Try a different one.
+[2026-03-28 21:04:00] Creating session A/B harnesses.
+[2026-03-28 21:04:10] Attaching session A.
+[2026-03-28 21:04:11] Attach A result: OK|Warehouse=WH89|Station=S1
+[2026-03-28 21:04:11] Attaching session B.
+[2026-03-28 21:04:12] Attach B result: OK|Warehouse=WH89|Station=S2
+[2026-03-28 21:04:12] Holding canonical inventory in session A.
+[2026-03-28 21:04:13] Hold result: OK|Path=C:\Users\Justin\repos\invSys_fork\tests\fixtures\phase6_lan_boundary_20260328_210351_732\runtime\WH89.invSys.Data.Inventory.xlsb|ReadOnly=False
+[2026-03-28 21:04:13] Running lock-denied receive in session B.
+[2026-03-28 21:04:15] Lock-denied result: OK|EventID=B0BA13F7-3F64-40E7-9E1C-00AE48896A30l|Processed=0|Report=Inventory workbook is read-only or locked by another Excel session.|Status=NEW|ErrorCode=|ErrorMessage=
+[2026-03-28 21:04:15] Closing canonical inventory in session A.
+[2026-03-28 21:04:15] Close hold result: OK|Closed
+[2026-03-28 21:04:15] Queueing receive in session A.
+[2026-03-28 21:04:16] Queue A result: OK|EventID=67AB6490-98EE-4A22-BDA9-2C7D84CAFB77l
+[2026-03-28 21:04:16] Running batch for queued session A event.
