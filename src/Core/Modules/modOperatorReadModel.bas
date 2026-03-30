@@ -402,6 +402,11 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
         report = "RunBatch failed after local post/write. " & batchReport & " RefreshReport=" & refreshReport
         GoTo CleanExit
     End If
+    If Not BatchReportHandledQueuedRowsReadModel(processedCount, batchReport) Then
+        report = "RunBatch did not handle the queued event after local post/write. " & _
+                 "BatchReport=" & batchReport & " RefreshReport=" & refreshReport
+        GoTo CleanExit
+    End If
 
     report = "Processed=" & CStr(processedCount) & "; BatchReport=" & batchReport & "; RefreshReport=" & refreshReport
     LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefresh|Workbook=" & wb.Name & "|WarehouseId=" & resolvedWarehouseId & "|Processed=" & CStr(processedCount) & "|BatchReport=" & batchReport & "|RefreshReport=" & refreshReport
@@ -416,6 +421,42 @@ FailRefresh:
     On Error GoTo 0
     report = "RunBatchAndRefreshOperatorWorkbook failed: " & Err.Description
     LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefreshError|Workbook=" & ResolveWorkbookNameReadModel(wb) & "|WarehouseId=" & resolvedWarehouseId & "|Error=" & Err.Description
+End Function
+
+Private Function BatchReportHandledQueuedRowsReadModel(ByVal processedCount As Long, ByVal batchReport As String) As Boolean
+    If processedCount > 0 Then
+        BatchReportHandledQueuedRowsReadModel = True
+        Exit Function
+    End If
+
+    If ExtractBatchMetricReadModel(batchReport, "Applied") > 0 Then
+        BatchReportHandledQueuedRowsReadModel = True
+        Exit Function
+    End If
+
+    If ExtractBatchMetricReadModel(batchReport, "SkipDup") > 0 Then
+        BatchReportHandledQueuedRowsReadModel = True
+    End If
+End Function
+
+Private Function ExtractBatchMetricReadModel(ByVal batchReport As String, ByVal metricName As String) As Long
+    Dim parts() As String
+    Dim i As Long
+    Dim prefix As String
+    Dim valueText As String
+
+    prefix = metricName & "="
+    parts = Split(batchReport, ";")
+    For i = LBound(parts) To UBound(parts)
+        valueText = Trim$(parts(i))
+        If StrComp(Left$(valueText, Len(prefix)), prefix, vbTextCompare) = 0 Then
+            valueText = Trim$(Mid$(valueText, Len(prefix) + 1))
+            If IsNumeric(valueText) Then
+                ExtractBatchMetricReadModel = CLng(valueText)
+                Exit Function
+            End If
+        End If
+    Next i
 End Function
 
 Private Function ResolveOperatorWorkbook(ByVal targetWb As Workbook) As Workbook
