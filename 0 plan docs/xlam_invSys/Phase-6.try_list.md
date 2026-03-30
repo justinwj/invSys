@@ -1,5 +1,10 @@
 # Phase 6 Robust LAN Try List
 
+## Current state note - 2026-03-29
+
+- [ ] Treat the current red lane correctly. Pass: the next live debugging focus is `S1` warehouse-host canonical inventory workbook locking and false-success snapshot refresh, while `S2` LAN inbox/share reachability is treated as partially cleared but not yet robustly proven. Evidence: latest Phase 6 notes entry and next test bundle target the S1 host lock lane first.
+- [ ] Keep this try list aligned with the real blocker of the day. Pass: when code or live tests shift the primary blocker from pathing to locks, runtime lifecycle, or stale build state, this checklist is updated the same day. Evidence: dated note in this file matching the latest notes handoff.
+
 ## 1. Objective and pass/fail bar
 
 - [ ] Lock the immediate tactical goal. Pass: the next proving target is specifically S1 and S2 `Confirm Writes` working in real LAN use so that users on any participating computer with `invSys.Inventory.Domain.xlam` loaded get an accurate snapshot-fed `invSys` table overview. Evidence: paired S1/S2 `Confirm Writes` runs plus refreshed `invSys` table state on both machines.
@@ -9,7 +14,7 @@
 - [ ] Lock the throughput success bar. Pass: normal LAN use moves 10,000 entries across workbooks without correctness loss, silent skips, or unrecoverable lock state. Evidence: batch report, row counts before/after, elapsed time, and spot-check reconciliation.
 - [ ] Lock the investigation bar for Excel scale. Pass: 1,000,000-entry behavior is explicitly stress-tested and recorded as either credible in Excel or the point where database investigation becomes mandatory. Evidence: stress result sheet with failure mode, timings, memory symptoms, and operator impact.
 - [ ] Keep warehouse-scale implications in scope. Pass: every LAN try is evaluated for whether it still holds when scaling toward 15 warehouses, even if current proving uses one warehouse and two stations. Evidence: per-section “15-warehouse note” or explicit “no additional warehouse risk” mark.
-- [ ] Keep this step documentation-only. Pass: this file changes without modifying VBA, PowerShell, or deploy artifacts. Evidence: git diff limited to this markdown file.
+- [ ] Keep the try list synchronized with live implementation work. Pass: checklist assumptions stay accurate even when VBA or PowerShell changes are already underway. Evidence: no stale assumption in this file contradicts the active code/debug state.
 - [ ] Lock the in-scope contracts for all future LAN fixes. Pass: all tries explicitly reference existing interfaces only: `tblStationConfig.PathInboxRoot`, `tblWarehouseConfig.PathDataRoot`, `setup_lan_station.ps1`, `modProcessor.RunBatchReportForAutomation`, `SkipInboxTargetInvalidPath`, `FF_AutoSnapshot`, `LastRefreshUTC`, `SnapshotId`, `SourceType`, `IsStale`. Evidence: each contract appears somewhere in this checklist or the execution record.
 
 ## 2. Non-negotiable invariants
@@ -64,6 +69,7 @@
 
 - [ ] Enumerate all open workbooks in the active Excel session on S1 and S2. Pass: transient runtime artifacts are visible in diagnostics even when hidden. Evidence: workbook name/full path dump.
 - [ ] Enumerate hidden workbook windows. Pass: hidden transient workbooks can be identified by name/path and correlated with lock symptoms. Evidence: Immediate Window dump including `Visible=` status.
+- [ ] Check for a live host-side canonical inventory lock file after each failed host run. Pass: `~$WH1.invSys.Data.Inventory.xlsb` either disappears after clean close or is explained by a still-open owning session. Evidence: file listing plus Excel process inventory at failure time.
 - [ ] Force-close known transient artifacts after a failed run. Pass: next run changes behavior only if the prior failure was caused by ghost-open state. Evidence: forced-close log plus retest result.
 - [ ] Repeat the same command without restarting Excel. Pass: the second run does not accumulate extra hidden workbooks or change outcome unexpectedly. Evidence: before/after workbook inventory.
 - [ ] Repeat after full Excel restart. Pass: restart either clears the symptom or proves the issue is not session residue. Evidence: restart note, workbook inventory, and retest result.
@@ -93,6 +99,7 @@
 
 - [ ] Prove whether inbox workbooks are reused when already open in-session. Pass: same workbook is reused cleanly instead of reopened into lock trouble. Evidence: workbook inventory before/after command.
 - [ ] Prove whether canonical runtime workbooks are reused when already open. Pass: open reuse does not flip later opens into read-only or hidden lock failure. Evidence: workbook inventory and run result.
+- [ ] Prove whether `RunBatch` leaves the canonical inventory workbook open when it had to open it transiently. Pass: a processor-opened canonical inventory workbook is either intentionally session-owned and reused safely, or it is closed on exit every time. Evidence: workbook inventory before/after `RunBatch` plus lock-file presence/absence.
 - [ ] Try opening transient workbooks in one session, then running from another. Pass: read-only state is either blocked clearly or retried safely; no silent no-op. Evidence: read-only/open result and processor log.
 - [ ] Check for silent `DisplayAlerts=False` masking. Pass: any open failure that would have shown a lock/read-only dialog surfaces somewhere deterministic in logs or reports. Evidence: failure capture path.
 - [ ] Verify close-after-use behavior for processor-opened workbooks. Pass: workbooks opened by the processor do not remain orphaned after the run. Evidence: workbook inventory after run.
@@ -103,6 +110,7 @@
 
 - [ ] Hold the canonical inventory workbook open in one Excel session and post/process from another. Pass: contention is denied or deferred clearly, with no corruption and no false processed count. Evidence: lock-denied run result.
 - [ ] Release the hold and retry immediately. Pass: retry-after-release succeeds cleanly without manual cleanup beyond releasing the lock. Evidence: second run result.
+- [ ] Reproduce the host-side lock with repeated S1 `Confirm Writes` in the same Excel session. Pass: either the second host run remains clean, or the exact step that creates `Inventory workbook is read-only or locked by another Excel session.` is isolated. Evidence: step-by-step host run log with workbook inventory and lock-file checks.
 - [ ] Post from S1 and S2 at nearly the same time. Pass: both posts persist to their own inboxes without cross-contamination or overwrite. Evidence: inbox row counts and event IDs.
 - [ ] Process while one station is actively posting again. Pass: serialization remains correct and no station loses rows. Evidence: row reconciliation and processor log.
 - [ ] Repeat simultaneous posting across Receiving, Shipping, and Production inboxes. Pass: mixed-role use does not create different lock behavior than receiving-only tests. Evidence: three-role run matrix.
@@ -113,10 +121,12 @@
 
 - [ ] Verify `FF_AutoSnapshot=True` open refresh on a saved operator workbook. Pass: `invSys` refreshes on open without mutating `ReceivedTally`, shipping staging, production staging, or local logs. Evidence: before/after workbook table snapshot and metadata.
 - [ ] Verify post-write refresh after a successful command. Pass: operator inventory changes only after post, processor apply, snapshot rebuild, and refresh. Evidence: ordered timestamps and operator workbook state.
+- [ ] Verify no false-success refresh is possible after local post/write. Pass: `Processed=0` plus `RefreshReport=OK` is surfaced as a failure/pending state, not a successful `Confirm Writes` outcome. Evidence: runtime report and user-visible message on a forced lock test.
 - [ ] Verify the core tactical view outcome after `Confirm Writes`. Pass: after S1 or S2 `Confirm Writes`, any participating machine with `invSys.Inventory.Domain.xlam` loaded and refreshed against the shared snapshot path sees the accurate `invSys` overview expected by the model. Evidence: post-refresh `invSys` table snapshot from more than one machine.
 - [ ] Verify cadence refresh. Pass: configured interval refreshes the read model without damaging local staging tables. Evidence: elapsed time log and before/after table comparison.
 - [ ] Verify visible stale-state signaling. Pass: missing or stale snapshot sets `IsStale=True` visibly and does not silently present stale inventory as current. Evidence: operator workbook metadata and UI capture.
 - [ ] Verify metadata correctness. Pass: `LastRefreshUTC`, `SnapshotId`, `SourceType`, and `IsStale` all update coherently for local, share, and cached cases. Evidence: metadata table dump.
+- [ ] Verify snapshot freshness claims against actual publish time. Pass: a refreshed operator workbook never claims current success from an older snapshot ID when the just-queued event was not applied. Evidence: `LastRefreshUTC`, `SnapshotId`, and `RunBatch` report captured together.
 - [ ] Verify missing snapshot does not block posting. Pass: operator can still queue inbox events while stale state is shown honestly. Evidence: stale operator state plus successful inbox post.
 - [ ] Verify stale snapshot does not mutate local workflow surfaces on refresh failure. Pass: failed refresh leaves staging intact and only affects freshness metadata/state. Evidence: before/after local staging comparison.
 

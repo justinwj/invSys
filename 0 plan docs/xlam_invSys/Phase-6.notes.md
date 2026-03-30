@@ -1,3 +1,9 @@
+Latest update:
+
+- See `Expert Handoff - 2026-03-29 LAN Investigation` near the end of this file for the current state.
+- The older `2026-03-28` notes below remain useful history, but they no longer describe the primary blocker.
+- Current main blocker: S1 host-side lock/read-only contention on `WH1.invSys.Data.Inventory.xlsb`, not the original S2 UNC path issue.
+
 This is a clean, well-structured baton. Here is a consolidated handoff document suitable for picking up tomorrow with full context.
 
 ***
@@ -258,6 +264,385 @@ If you see any of these in the output with `Visible=False`, those are your locks
 ```vb
 Dim names(2) As String
 names(0) = "WH1.invSys.Snapshot.Inventory.xlsb"
+
+***
+
+## Expert Handoff - 2026-03-29 LAN Investigation
+
+### Executive Summary
+
+As of **March 29, 2026**, the Phase 6 LAN work is no longer blocked on the original S2 UNC path problem. That part was real and was fixed enough to prove cross-machine pickup. The current blocker is narrower and more serious:
+
+- **S2 station inbox reachability over LAN was broken, then fixed**
+- **Queued stale S2 receive rows were later processed successfully by S1 once share access was fixed**
+- **Current main failure is on S1, the warehouse host**
+- **S1 `Confirm Writes` and later S2 `Confirm Writes` runs are intermittently failing because the canonical inventory workbook is locked/read-only during runtime apply**
+- **The operator workbook can still refresh from an older snapshot, which makes the UI look partially successful even when no new inventory apply happened**
+
+This means the system is now in a mixed state:
+
+- **S2 appears to be functionally closer to working**
+- **S1 host-side runtime apply / canonical inventory lifecycle is not yet robust**
+- **The remaining problem is not just "clogged inbox rows"; it is also host-side workbook lifetime / lock management**
+
+### What Was Confirmed
+
+#### 1. Original S2 LAN path failure was real
+
+Shared config on S1 had S2 `PathInboxRoot` set to:
+
+```text
+\\192.168.1.3\invSysStationS2\
+```
+
+At first:
+
+- `Test-Connection 192.168.1.3` succeeded from S1
+- `Test-Path "\\192.168.1.3\invSysStationS2"` failed in normal S1 user context
+- the processor logged:
+
+```text
+SkipInboxTargetInvalidPath|Path=\\192.168.1.3\invSysStationS2\invSys.Inbox.Receiving.S2.xlsb|Error=Bad file name or number
+```
+
+That was preventing S2 inbox rows from being picked up at all.
+
+#### 2. S2 share/bootstrap issue was then fixed
+
+On S2:
+
+- local inbox folder existed at `C:\invSysStationS2`
+- SMB share `invSysStationS2` was created
+- after credential/access correction, from normal S1 user context:
+
+```powershell
+Test-Path "\\192.168.1.3\invSysStationS2"  -> True
+Test-Path "\\192.168.1.3\invSysStationS2\invSys.Inbox.Receiving.S2.xlsb" -> True
+```
+
+That removed the original LAN reachability blocker.
+
+#### 3. Old S2 backlog did eventually process
+
+Once S1 could see the S2 share, previously queued S2 receive rows were processed by the S1 processor. This caused the unexpected quantity jump on `DEMO-RAW-BROWN-COLOR`.
+
+Observed jump:
+
+- expected: `+11`
+- observed: `88 -> 143`
+
+Confirmed reason:
+
+- one current S1 event `+11`
+- four older queued S2 receive events `+44`
+
+That accounted exactly for the `+55`.
+
+This proved that:
+
+- S2 queue writes were reaching the S2 inbox workbook
+- S1 processor could process S2 inbox rows once the share became accessible
+- the canonical apply path itself can process S2-originated events
+
+#### 4. A remaining inbox/backlog safety issue existed
+
+`Receiving.ConfirmWrites` was clearing local staging before proving that the rows it just queued had actually left `NEW` state. That allowed silent backlog accumulation when runtime processing did not complete.
+
+To reduce re-clogging, new guards were added so `ConfirmWrites` now:
+
+- blocks if the receiving inbox already has pending `NEW` rows before posting more
+- re-inspects the specific event IDs it just queued after runtime processing
+- warns if those rows are still pending
+
+This was intended to stop the system from compounding backlog while the host-side lock issue is being investigated.
+
+### Current Primary Failure
+
+The new main blocker is **host-side canonical inventory workbook locking**.
+
+The critical evidence came from the S1 sync/runtime log at these exact times:
+
+#### March 29, 2026 17:23:12
+
+```text
+RUNTIME | RunBatchAndRefresh|Workbook=FRODECO.inventory_management.xlsb|WarehouseId=WH1|Processed=0|BatchReport=Inventory workbook is read-only or locked by another Excel session.|RefreshReport=OK
+RECEIVE-RUNTIME | Result=OK|Workbook=FRODECO.inventory_management.xlsb|WarehouseId=WH1|Report=Processed=0; BatchReport=Inventory workbook is read-only or locked by another Excel session.; RefreshReport=OK
+```
+
+#### March 29, 2026 17:36:20
+
+```text
+RUNTIME | RunBatchAndRefresh|Workbook=FRODECO.inventory_management.xlsb|WarehouseId=WH1|Processed=0|BatchReport=Inventory workbook is read-only or locked by another Excel session.|RefreshReport=OK
+RECEIVE-RUNTIME | Result=OK|Workbook=FRODECO.inventory_management.xlsb|WarehouseId=WH1|Report=Processed=0; BatchReport=Inventory workbook is read-only or locked by another Excel session.; RefreshReport=OK
+```
+
+The user-visible symptom matched this exactly:
+
+- `ReceivedLog` updated locally
+- `InventoryManagement` showed a snapshot banner such as:
+
+```text
+INVENTORY SNAPSHOT CURRENT | Source=LOCAL | Refreshed=2026-03-29 17:23:11 | SnapshotId=WH1.invSys.Snapshot.Inventory.xlsb|20260329172043
+```
+
+- but `TOTAL INV` did not change
+
+Interpretation:
+
+- local role logging succeeded
+- read-model refresh succeeded
+- **no new canonical inventory apply occurred**
+- the workbook refreshed from an **older snapshot**
+
+### Why the UI Can Look "Partially Successful"
+
+The current operator flow can show a refreshed snapshot surface even when `RunBatch` handled zero rows.
+
+That created a misleading success condition:
+
+- queue write succeeded
+- local role log succeeded
+- read-model refresh succeeded
+- canonical inventory apply did **not** succeed
+
+So the user sees:
+
+- refreshed timestamp text
+- intact UI
+- maybe local log entries
+
+but canonical quantity does not change.
+
+This was patched in code so the runtime wrapper no longer treats `Processed=0` plus a lock message as success. However, at least one later observed run still showed the old `Result=OK` behavior in the log, which strongly suggests the currently loaded XLAM set was not yet fully aligned to the latest patched build during that test.
+
+### Live Lock Evidence on S1
+
+After the later failures, S1 still had an active Excel process and a live lock file:
+
+- process: one `EXCEL.EXE`
+- lock file:
+
+```text
+C:\invSys\WH1\~$WH1.invSys.Data.Inventory.xlsb
+```
+
+Direct lock test from PowerShell on S1:
+
+```text
+LOCKTEST=FAILED
+The process cannot access the file 'C:\invSys\WH1\WH1.invSys.Data.Inventory.xlsb' because it is being used by another process.
+```
+
+So the canonical inventory workbook was genuinely locked at the file level at that moment.
+
+### Working Theory for the Remaining Failure
+
+The strongest current hypothesis is:
+
+1. `RunBatch` or a closely related host-side path opens the canonical inventory workbook
+2. the workbook remains open longer than intended inside the Excel host session
+3. a later `Confirm Writes` run tries to reacquire/write the same canonical workbook
+4. `ResolveInventoryWorkbookBridge` or lock acquisition sees it as read-only/locked
+5. `RunBatch` returns `Processed=0`
+6. the operator workbook refreshes from the most recent published snapshot instead of showing a hard failure
+
+The key point is that the system is no longer failing first at S2 LAN inbox discovery. It is now failing at **warehouse-host inventory workbook lifecycle / contention**.
+
+### Code Changes Already Made During Investigation
+
+These changes were applied during the LAN/debugging pass.
+
+#### Shared/Core compile-hardening
+
+Direct compile-time dependencies on `modUiQuiet` and `modPerfLog` were removed from shared Core paths using safe `Application.Run` wrappers, so missing harness modules no longer break compile in shared code.
+
+Files changed:
+
+- `src/Core/Modules/modRoleEventWriter.bas`
+- `src/Core/Modules/modProcessor.bas`
+- `src/Core/Modules/modWarehouseSync.bas`
+- `src/Core/Modules/modOperatorReadModel.bas`
+
+#### Path normalization / LAN path handling
+
+Path normalization was tightened to preserve UNC roots and reduce bad path serialization behavior.
+
+Files changed:
+
+- `src/Core/Modules/modConfig.bas`
+- `src/Core/Modules/modRoleEventWriter.bas`
+- `src/Core/Modules/modProcessor.bas`
+
+#### Station inbox write/open behavior
+
+Role-side queueing now fails cleanly on read-only inbox open instead of silently writing into the wrong state.
+
+Additional folder/open handling was added for UNC paths.
+
+#### Clipboard/save noise reduction
+
+`Application.CutCopyMode = False` was added around save/close points to reduce Excel clipboard modal interruptions on transient inbox workbook handling.
+
+#### Backlog / unclogging diagnostics
+
+Processor-side backlog logging was added so inbox `NEW` row counts and age are visible in diagnostics.
+
+Receive-side queueing now:
+
+- blocks if pending receive rows already exist
+- reports when just-queued rows remain pending after runtime processing
+
+Files changed:
+
+- `src/Core/Modules/modProcessor.bas`
+- `src/Core/Modules/modRoleEventWriter.bas`
+- `src/Receiving/Modules/modTS_Received.bas`
+
+#### Runtime result hardening
+
+`RunBatchAndRefreshOperatorWorkbook` was tightened so "no rows handled" no longer counts as success unless the batch report shows actual handling:
+
+- `Applied > 0`, or
+- `SkipDup > 0`
+
+File changed:
+
+- `src/Core/Modules/modOperatorReadModel.bas`
+
+#### Attempted canonical workbook lifecycle fix
+
+`RunBatch` was patched to track whether it opened the canonical inventory workbook transiently and close it on exit if it did.
+
+File changed:
+
+- `src/Core/Modules/modProcessor.bas`
+
+This change has **not yet been conclusively validated in a clean rebuilt/reloaded Excel session**.
+
+### Current State by Machine
+
+#### S2
+
+Status:
+
+- no longer obviously blocked on share resolution
+- can queue receive rows to its own inbox workbook
+- has shown evidence of being processed by S1 once share access was fixed
+- still not "proven robust"
+
+Assessment:
+
+- S2 is no longer the primary blocker
+- S2 appears "closer to working" than S1 right now
+
+#### S1 (warehouse host)
+
+Status:
+
+- still failing intermittently at runtime apply
+- canonical inventory workbook lock/read-only condition is the active blocker
+- can refresh from older snapshot even when apply fails
+
+Assessment:
+
+- **S1 warehouse-host runtime handling is the current main problem**
+
+### Open Questions for Expert Review
+
+1. **Is the canonical inventory workbook being intentionally kept open somewhere in the host session?**
+
+   Candidate areas:
+   - `modProcessor.RunBatch`
+   - `modInventoryDomainBridge.ResolveInventoryWorkbookBridge`
+   - inventory-domain open/create paths
+   - snapshot publication path if it touches runtime workbook and leaves it open
+
+2. **Is a hidden workbook / ghost workbook state present within the same Excel process?**
+
+   There is strong reason to suspect hidden workbook retention or a workbook-open lifecycle mismatch.
+
+3. **Is the lock being caused by this same Excel process, or by a second process / automation path?**
+
+   The file-level lock is real, but the exact owner process / call path has not been definitively attributed yet.
+
+4. **Should canonical runtime inventory be opened once per host session and managed centrally, rather than transiently per `RunBatch`?**
+
+   Current behavior may be half-transient, half-session-scoped, which is a dangerous middle ground.
+
+5. **Should `Confirm Writes` treat any `Processed=0` host-side result as a hard failure when queueing a new event?**
+
+   Current patches move in that direction, but the loaded build at test time may not have been fully updated.
+
+### What the Expert Should Probably Inspect First
+
+#### 1. Canonical inventory workbook open/close ownership
+
+Start with these files:
+
+- `src/Core/Modules/modProcessor.bas`
+- `src/Core/Modules/modInventoryDomainBridge.bas`
+- `src/InventoryDomain/Modules/modInventoryApply.bas`
+- `src/InventoryDomain/Modules/modInventoryPublisher.bas`
+- `src/Core/Modules/modLockManager.bas`
+
+The central question:
+
+- when `RunBatch` resolves `WH1.invSys.Data.Inventory.xlsb`, who owns that workbook object, and who closes it?
+
+#### 2. Same-session hidden/open workbook enumeration
+
+At failure time on S1, enumerate `Application.Workbooks` and inspect:
+
+- visible and hidden workbooks
+- full paths
+- `ReadOnly`
+- whether `WH1.invSys.Data.Inventory.xlsb` is already open in-session
+
+The current evidence strongly suggests that the workbook may remain open in the same Excel instance between runs.
+
+#### 3. Rebuild/reload discipline
+
+At least one later runtime log still showed the old false-success behavior after the code-side hardening. That means the live test environment may have been running a stale loaded XLAM set.
+
+So before concluding any code patch failed, confirm:
+
+- latest built `invSys.Core.xlam` is actually loaded
+- latest built role/domain XLAMs are actually loaded
+- stale `deploy/current/~$*.xlam` lock files are not confusing the load state
+
+### Practical Reproduction State
+
+Best current minimal reproduction:
+
+1. Start with clean Excel close on S1
+2. Open the host/operator workbook with the current XLAM set
+3. Run one `Confirm Writes`
+4. Run another `Confirm Writes`
+5. Check whether:
+   - `C:\invSys\WH1\~$WH1.invSys.Data.Inventory.xlsb` appears
+   - canonical inventory workbook remains locked
+   - second run reports `Processed=0`
+   - operator read model refreshes from the previous snapshot anyway
+
+That seems to be the most likely route to reproducing the current failure chain.
+
+### Net Assessment
+
+This has evolved from a station-LAN configuration problem into a **host-side runtime workbook lifecycle problem**.
+
+The important progress is:
+
+- S2 LAN inbox access was not imaginary; it was broken and was fixed
+- S2 backlog processing later proved the cross-machine receive path can work
+- the remaining blocker is now concentrated on S1 host-side canonical inventory access
+
+So the current expert task is not "why can't S2 talk over LAN?" anymore.
+
+It is:
+
+**Why does the S1 host session intermittently retain or collide on `WH1.invSys.Data.Inventory.xlsb`, causing `RunBatch` to return `Processed=0` while the UI still refreshes from an older snapshot?**
+
+That appears to be the highest-signal next debugging target.
 names(1) = "invSys.Inbox.Receiving.S2.xlsb"
 names(2) = "WH1.Outbox.Events.xlsb"
 

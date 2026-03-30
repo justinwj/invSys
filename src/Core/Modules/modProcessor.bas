@@ -49,6 +49,8 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim artifactWarnings As Long
     Dim artifactReport As String
     Dim perfOwned As Boolean
+    Dim openWorkbookPaths As Object
+    Dim inventoryOpenedTransient As Boolean
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -72,6 +74,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
         Exit Function
     End If
 
+    Set openWorkbookPaths = CaptureOpenWorkbookPathsProcessor()
     Set inventoryWb = ResolveInventoryWorkbookBridge(warehouseId)
     If inventoryWb Is Nothing Then
         If InventoryWorkbookLockedForProcessor(warehouseId) Then
@@ -81,6 +84,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
         End If
         Exit Function
     End If
+    inventoryOpenedTransient = Not WorkbookWasAlreadyOpenProcessor(openWorkbookPaths, inventoryWb)
 
     If Not modLockManager.AcquireLock("INVENTORY", warehouseId, serviceUserId, modConfig.GetString("StationId", ""), inventoryWb, runId, message) Then
         report = message
@@ -192,6 +196,7 @@ CleanExit:
         Next target
     End If
     If lockHeld Then Call modLockManager.ReleaseLock("INVENTORY", runId, inventoryWb)
+    If inventoryOpenedTransient Then CloseTransientProcessorWorkbook inventoryWb
     If perfOwned Then PerfEndSafeProcessor runId, CLng((Timer - totalStart) * 1000), report
     Exit Function
 
@@ -816,6 +821,27 @@ Private Function ResolveWorkbookNameProcessor(ByVal wb As Workbook) As String
     End If
 End Function
 
+Private Function CaptureOpenWorkbookPathsProcessor() As Object
+    Dim wb As Workbook
+    Dim paths As Object
+
+    Set paths = CreateObject("Scripting.Dictionary")
+    paths.CompareMode = vbTextCompare
+
+    For Each wb In Application.Workbooks
+        If Trim$(wb.FullName) <> "" Then paths(Trim$(wb.FullName)) = True
+    Next wb
+
+    Set CaptureOpenWorkbookPathsProcessor = paths
+End Function
+
+Private Function WorkbookWasAlreadyOpenProcessor(ByVal openPaths As Object, ByVal wb As Workbook) As Boolean
+    If openPaths Is Nothing Then Exit Function
+    If wb Is Nothing Then Exit Function
+    If Trim$(wb.FullName) = "" Then Exit Function
+    WorkbookWasAlreadyOpenProcessor = openPaths.Exists(Trim$(wb.FullName))
+End Function
+
 Private Function IsReceiveInboxWorkbookName(ByVal wbName As String) As Boolean
     Dim n As String
     n = LCase$(wbName)
@@ -1026,4 +1052,15 @@ Private Sub SaveWorkbookProcessor(ByVal wb As Workbook)
     If wb.ReadOnly Then Exit Sub
     If Trim$(wb.Path) = "" Then Exit Sub
     wb.Save
+End Sub
+
+Private Sub CloseTransientProcessorWorkbook(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    If Not wb.ReadOnly Then
+        If wb.Saved = False Then wb.Save
+    End If
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
 End Sub
