@@ -18,6 +18,10 @@ Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
 Private Const SNAPSHOT_SHEET As String = "InventorySnapshot"
 Private Const SNAPSHOT_TABLE As String = "tblInventorySnapshot"
 
+Private Const AUTOMATION_OK As String = "OK"
+Private Const AUTOMATION_FAIL As String = "FAIL"
+Private Const AUTOMATION_SKIP As String = "SKIP"
+
 Public Function OpenAdminConsole(Optional ByVal adminWb As Workbook = Nothing, _
                                  Optional ByRef report As String = "") As Boolean
     Dim wb As Workbook
@@ -273,9 +277,8 @@ Public Function ReissuePoisonEvent(ByVal sourceWorkbookName As String, _
     Dim colIdx As Long
     Dim key As Variant
     Dim refreshReport As String
-
-    If Not EnsureAdminContext(adminUserId, "", resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
-    If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+    Dim sourceWh As String
+    Dim sourceSt As String
 
     Set sourceWb = ResolveOpenWorkbookByNameAdmin(sourceWorkbookName)
     If sourceWb Is Nothing Then
@@ -298,6 +301,12 @@ Public Function ReissuePoisonEvent(ByVal sourceWorkbookName As String, _
         report = "Source event is not in POISON status."
         Exit Function
     End If
+
+    sourceWh = SafeTrimAdmin(GetCellByColumnAdmin(loInbox, sourceRow, "WarehouseId"))
+    sourceSt = SafeTrimAdmin(GetCellByColumnAdmin(loInbox, sourceRow, "StationId"))
+    If Not EnsureAdminContext(adminUserId, sourceWh, resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+    If sourceSt <> "" Then resolvedSt = sourceSt
+    If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
 
     EnsureTableSheetEditableAdmin loInbox, loInbox.Name
     Set targetRow = loInbox.ListRows.Add
@@ -347,20 +356,7 @@ Public Function GenerateInventorySnapshot(Optional ByVal adminUserId As String =
     Dim resolvedSt As String
     Dim resolvedUser As String
     Dim sourceInvWb As Workbook
-    Dim loLog As ListObject
-    Dim summary As Object
-    Dim lastApplied As Object
-    Dim i As Long
-    Dim sku As String
-    Dim qty As Double
-    Dim rowDate As Variant
-    Dim snapWb As Workbook
-    Dim ws As Worksheet
-    Dim loSnap As ListObject
     Dim snapPath As String
-    Dim dataRows As Long
-    Dim key As Variant
-    Dim r As Long
 
     If Not EnsureAdminContext(adminUserId, warehouseId, resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
     If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
@@ -371,66 +367,11 @@ Public Function GenerateInventorySnapshot(Optional ByVal adminUserId As String =
         Exit Function
     End If
 
-    Set loLog = FindListObjectByNameAdmin(sourceInvWb, TABLE_LOG)
-    If loLog Is Nothing Then
-        report = "Inventory log table not found."
+    snapPath = vbNullString
+    If Not modWarehouseSync.GenerateWarehouseSnapshot(resolvedWh, sourceInvWb, outputPath, Nothing, snapPath) Then
+        report = snapPath
         Exit Function
     End If
-
-    Set summary = CreateObject("Scripting.Dictionary")
-    summary.CompareMode = vbTextCompare
-    Set lastApplied = CreateObject("Scripting.Dictionary")
-    lastApplied.CompareMode = vbTextCompare
-
-    If Not loLog.DataBodyRange Is Nothing Then
-        For i = 1 To loLog.ListRows.Count
-            sku = SafeTrimAdmin(GetCellByColumnAdmin(loLog, i, "SKU"))
-            If sku <> "" Then
-                qty = 0
-                If IsNumeric(GetCellByColumnAdmin(loLog, i, "QtyDelta")) Then qty = CDbl(GetCellByColumnAdmin(loLog, i, "QtyDelta"))
-                If summary.Exists(sku) Then
-                    summary(sku) = CDbl(summary(sku)) + qty
-                Else
-                    summary.Add sku, qty
-                End If
-
-                rowDate = GetCellByColumnAdmin(loLog, i, "AppliedAtUTC")
-                If IsDate(rowDate) Then
-                    If (Not lastApplied.Exists(sku)) Or CDate(rowDate) > CDate(lastApplied(sku)) Then lastApplied(sku) = CDate(rowDate)
-                End If
-            End If
-        Next i
-    End If
-
-    Set snapWb = Application.Workbooks.Add
-    Set ws = snapWb.Worksheets(1)
-    ws.Name = SNAPSHOT_SHEET
-    ws.Range("A1:D1").Value = Array("WarehouseId", "SKU", "QtyOnHand", "LastAppliedAtUTC")
-
-    dataRows = IIf(summary.Count = 0, 1, summary.Count)
-    If dataRows = 1 And summary.Count = 0 Then
-        ws.Range("A2").Resize(1, 4).Value = Array(resolvedWh, "", 0, "")
-    Else
-        r = 2
-        For Each key In summary.Keys
-            ws.Cells(r, 1).Value = resolvedWh
-            ws.Cells(r, 2).Value = CStr(key)
-            ws.Cells(r, 3).Value = CDbl(summary(key))
-            If lastApplied.Exists(key) Then ws.Cells(r, 4).Value = lastApplied(key)
-            r = r + 1
-        Next key
-    End If
-    Set loSnap = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:D" & CStr(dataRows + 1)), , xlYes)
-    loSnap.Name = SNAPSHOT_TABLE
-
-    snapPath = ResolveSnapshotPathAdmin(resolvedWh, outputPath)
-    EnsureFolderForFileAdmin snapPath
-    CloseWorkbookByFullNameAdmin snapPath
-    On Error Resume Next
-    Kill snapPath
-    On Error GoTo FailSnapshot
-    snapWb.SaveAs Filename:=snapPath, FileFormat:=50
-    snapWb.Close SaveChanges:=True
 
     AppendAuditEntry ResolveAdminWorkbook(adminWb), "GENERATE_SNAPSHOT", resolvedUser, resolvedWh, resolvedSt, _
                      "SNAPSHOT", snapPath, "", snapPath, "OK"
@@ -439,10 +380,182 @@ Public Function GenerateInventorySnapshot(Optional ByVal adminUserId As String =
     Exit Function
 
 FailSnapshot:
-    On Error Resume Next
-    If Not snapWb Is Nothing Then snapWb.Close SaveChanges:=False
-    On Error GoTo 0
     report = "GenerateInventorySnapshot failed: " & Err.Description
+End Function
+
+Public Function PublishWarehouseArtifacts(Optional ByVal adminUserId As String = "", _
+                                          Optional ByVal warehouseId As String = "", _
+                                          Optional ByVal inventoryWb As Workbook = Nothing, _
+                                          Optional ByVal adminWb As Workbook = Nothing, _
+                                          Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailPublish
+
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+    Dim resolvedUser As String
+    Dim sourceInvWb As Workbook
+    Dim snapshotPath As String
+    Dim publishReport As String
+    Dim detailText As String
+    Dim sharePointRoot As String
+    Dim refreshReport As String
+    Dim resultCode As String
+
+    If Not EnsureAdminContext(adminUserId, warehouseId, resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+    If Not RequireAdminMaintenance(resolvedUser, resolvedWh, resolvedSt, report) Then Exit Function
+
+    sharePointRoot = Trim$(modConfig.GetString("PathSharePointRoot", ""))
+    If sharePointRoot = "" Then
+        report = "PathSharePointRoot not configured."
+        AppendAuditEntry ResolveAdminWorkbook(adminWb), "PUBLISH_WAN", resolvedUser, resolvedWh, resolvedSt, _
+                         "SHAREPOINT", "", "", report, "FAIL"
+        Exit Function
+    End If
+
+    Set sourceInvWb = modInventoryApply.ResolveInventoryWorkbook(resolvedWh, inventoryWb)
+    If sourceInvWb Is Nothing Then
+        report = "Inventory workbook not found."
+        AppendAuditEntry ResolveAdminWorkbook(adminWb), "PUBLISH_WAN", resolvedUser, resolvedWh, resolvedSt, _
+                         "SHAREPOINT", sharePointRoot, "", report, "FAIL"
+        Exit Function
+    End If
+
+    snapshotPath = vbNullString
+    If Not modWarehouseSync.GenerateWarehouseSnapshot(resolvedWh, sourceInvWb, "", Nothing, snapshotPath) Then
+        report = snapshotPath
+        AppendAuditEntry ResolveAdminWorkbook(adminWb), "PUBLISH_WAN", resolvedUser, resolvedWh, resolvedSt, _
+                         "SHAREPOINT", sharePointRoot, "", report, "FAIL"
+        Exit Function
+    End If
+
+    publishReport = vbNullString
+    PublishWarehouseArtifacts = modWarehouseSync.PublishWarehouseArtifactsToSharePoint(resolvedWh, sharePointRoot, "", snapshotPath, publishReport)
+    detailText = "Snapshot=" & snapshotPath & "|Publish=" & publishReport
+    resultCode = IIf(PublishWarehouseArtifacts, "OK", "FAIL")
+    AppendAuditEntry ResolveAdminWorkbook(adminWb), "PUBLISH_WAN", resolvedUser, resolvedWh, resolvedSt, _
+                     "SHAREPOINT", sharePointRoot, "", detailText, resultCode
+    Call RefreshAdminConsole(adminWb, refreshReport)
+
+    report = detailText
+    Exit Function
+
+FailPublish:
+    report = "PublishWarehouseArtifacts failed: " & Err.Description
+End Function
+
+Public Function RunScheduledWarehouseBatchForAutomation(Optional ByVal warehouseId As String = "", _
+                                                        Optional ByVal batchSize As Long = 0) As String
+    Dim resolvedWh As String
+    Dim report As String
+    Dim processedCount As Long
+
+    On Error GoTo FailBatch
+
+    If Not EnsureSchedulerWarehouseContext(warehouseId, resolvedWh, report) Then
+        RunScheduledWarehouseBatchForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, "WarehouseId=" & SanitizeAutomationTextAdmin(resolvedWh) & "|Report=" & SanitizeAutomationTextAdmin(report))
+        Exit Function
+    End If
+
+    processedCount = modProcessor.RunBatch(resolvedWh, batchSize, report)
+    RunScheduledWarehouseBatchForAutomation = FormatAutomationResultAdmin(AUTOMATION_OK, _
+        "WarehouseId=" & resolvedWh & "|Processed=" & CStr(processedCount) & "|Report=" & SanitizeAutomationTextAdmin(report))
+    Exit Function
+
+FailBatch:
+    RunScheduledWarehouseBatchForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+        "WarehouseId=" & SafeTrimAdmin(warehouseId) & "|Report=" & SanitizeAutomationTextAdmin("RunScheduledWarehouseBatchForAutomation failed: " & Err.Description))
+End Function
+
+Public Function RunScheduledWarehousePublishForAutomation(Optional ByVal warehouseId As String = "", _
+                                                          Optional ByVal sharePointRoot As String = "") As String
+    Dim resolvedWh As String
+    Dim report As String
+    Dim sourceInvWb As Workbook
+    Dim snapshotPath As String
+    Dim publishReport As String
+    Dim resolvedSharePointRoot As String
+
+    On Error GoTo FailPublishAutomation
+
+    If Not EnsureSchedulerWarehouseContext(warehouseId, resolvedWh, report) Then
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, "WarehouseId=" & SanitizeAutomationTextAdmin(resolvedWh) & "|Report=" & SanitizeAutomationTextAdmin(report))
+        Exit Function
+    End If
+
+    resolvedSharePointRoot = SafeTrimAdmin(sharePointRoot)
+    If resolvedSharePointRoot = "" Then resolvedSharePointRoot = SafeTrimAdmin(modConfig.GetString("PathSharePointRoot", ""))
+    If resolvedSharePointRoot = "" Then
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_SKIP, "WarehouseId=" & resolvedWh & "|Report=PathSharePointRoot not configured.")
+        Exit Function
+    End If
+
+    Set sourceInvWb = modInventoryApply.ResolveInventoryWorkbook(resolvedWh)
+    If sourceInvWb Is Nothing Then
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, "WarehouseId=" & resolvedWh & "|Report=Inventory workbook not found.")
+        Exit Function
+    End If
+
+    snapshotPath = vbNullString
+    If Not modWarehouseSync.GenerateWarehouseSnapshot(resolvedWh, sourceInvWb, "", Nothing, snapshotPath) Then
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+            "WarehouseId=" & resolvedWh & "|Report=" & SanitizeAutomationTextAdmin(snapshotPath))
+        Exit Function
+    End If
+
+    publishReport = vbNullString
+    If modWarehouseSync.PublishWarehouseArtifactsToSharePoint(resolvedWh, resolvedSharePointRoot, "", snapshotPath, publishReport) Then
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_OK, _
+            "WarehouseId=" & resolvedWh & "|SnapshotPath=" & SanitizeAutomationTextAdmin(snapshotPath) & "|Publish=" & SanitizeAutomationTextAdmin(publishReport))
+    Else
+        RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+            "WarehouseId=" & resolvedWh & "|SnapshotPath=" & SanitizeAutomationTextAdmin(snapshotPath) & "|Publish=" & SanitizeAutomationTextAdmin(publishReport))
+    End If
+    Exit Function
+
+FailPublishAutomation:
+    RunScheduledWarehousePublishForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+        "WarehouseId=" & SafeTrimAdmin(warehouseId) & "|Report=" & SanitizeAutomationTextAdmin("RunScheduledWarehousePublishForAutomation failed: " & Err.Description))
+End Function
+
+Public Function RunScheduledHQAggregationForAutomation(Optional ByVal sharePointRoot As String = "", _
+                                                       Optional ByVal outputPath As String = "") As String
+    Dim report As String
+    Dim resolvedSharePointRoot As String
+    Dim resolvedOutputPath As String
+
+    On Error GoTo FailAggregateAutomation
+
+    resolvedSharePointRoot = SafeTrimAdmin(sharePointRoot)
+    If resolvedSharePointRoot = "" Then
+        If Not modConfig.LoadConfig("", "") Then
+            RunScheduledHQAggregationForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+                "Report=" & SanitizeAutomationTextAdmin("Config load failed: " & modConfig.Validate()))
+            Exit Function
+        End If
+        resolvedSharePointRoot = SafeTrimAdmin(modConfig.GetString("PathSharePointRoot", ""))
+    End If
+
+    If resolvedSharePointRoot = "" Then
+        RunScheduledHQAggregationForAutomation = FormatAutomationResultAdmin(AUTOMATION_SKIP, "Report=PathSharePointRoot not configured.")
+        Exit Function
+    End If
+
+    resolvedOutputPath = SafeTrimAdmin(outputPath)
+    If resolvedOutputPath = "" Then resolvedOutputPath = resolvedSharePointRoot & "\Global\invSys.Global.InventorySnapshot.xlsb"
+
+    If modHqAggregator.RunHQAggregation(resolvedSharePointRoot, resolvedOutputPath, report) Then
+        RunScheduledHQAggregationForAutomation = FormatAutomationResultAdmin(AUTOMATION_OK, _
+            "SharePointRoot=" & SanitizeAutomationTextAdmin(resolvedSharePointRoot) & "|OutputPath=" & SanitizeAutomationTextAdmin(resolvedOutputPath) & "|Report=" & SanitizeAutomationTextAdmin(report))
+    Else
+        RunScheduledHQAggregationForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+            "SharePointRoot=" & SanitizeAutomationTextAdmin(resolvedSharePointRoot) & "|OutputPath=" & SanitizeAutomationTextAdmin(resolvedOutputPath) & "|Report=" & SanitizeAutomationTextAdmin(report))
+    End If
+    Exit Function
+
+FailAggregateAutomation:
+    RunScheduledHQAggregationForAutomation = FormatAutomationResultAdmin(AUTOMATION_FAIL, _
+        "SharePointRoot=" & SanitizeAutomationTextAdmin(sharePointRoot) & "|OutputPath=" & SanitizeAutomationTextAdmin(outputPath) & _
+        "|Report=" & SanitizeAutomationTextAdmin("RunScheduledHQAggregationForAutomation failed: " & Err.Description))
 End Function
 
 Private Function ResolveAdminWorkbook(ByVal adminWb As Workbook) As Workbook
@@ -451,6 +564,38 @@ Private Function ResolveAdminWorkbook(ByVal adminWb As Workbook) As Workbook
     Else
         Set ResolveAdminWorkbook = ThisWorkbook
     End If
+End Function
+
+Private Function EnsureSchedulerWarehouseContext(ByVal warehouseId As String, _
+                                                 ByRef resolvedWarehouseId As String, _
+                                                 ByRef report As String) As Boolean
+    resolvedWarehouseId = SafeTrimAdmin(warehouseId)
+    If Not modConfig.LoadConfig(resolvedWarehouseId, "") Then
+        report = "Config load failed: " & modConfig.Validate()
+        Exit Function
+    End If
+
+    resolvedWarehouseId = SafeTrimAdmin(modConfig.GetWarehouseId())
+    If resolvedWarehouseId = "" Then resolvedWarehouseId = SafeTrimAdmin(modConfig.GetString("WarehouseId", warehouseId))
+    If resolvedWarehouseId = "" Then
+        report = "WarehouseId not resolved."
+        Exit Function
+    End If
+
+    If Not modAuth.LoadAuth(resolvedWarehouseId) Then
+        report = "Auth load failed: " & modAuth.ValidateAuth()
+        Exit Function
+    End If
+
+    EnsureSchedulerWarehouseContext = True
+End Function
+
+Private Function FormatAutomationResultAdmin(ByVal resultCode As String, ByVal detailText As String) As String
+    FormatAutomationResultAdmin = UCase$(SafeTrimAdmin(resultCode)) & "|" & SafeTrimAdmin(detailText)
+End Function
+
+Private Function SanitizeAutomationTextAdmin(ByVal textIn As String) As String
+    SanitizeAutomationTextAdmin = Replace$(Replace$(Replace$(SafeTrimAdmin(textIn), vbCrLf, " "), vbCr, " "), "|", "/")
 End Function
 
 Private Function EnsureWorksheetAdmin(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet

@@ -9,6 +9,8 @@ Public Const EVENT_TYPE_SHIP As String = "SHIP"
 Public Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Public Const EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 
+Private mSourceSyncStampCache As Object
+
 Public Function ApplyEvent(ByVal evt As Object, _
                            Optional ByVal inventoryWb As Workbook = Nothing, _
                            Optional ByVal runId As String = "", _
@@ -136,6 +138,9 @@ Public Function ApplyEvent(ByVal evt As Object, _
     SetTableRowValue loApplied, r.Index, "SourceInbox", sourceInbox
     SetTableRowValue loApplied, r.Index, "Status", APPLY_STATUS_APPLIED
 
+    RebuildInventoryProjections wb
+    RefreshLedgerStatus wb, warehouseId, appliedSeq, eventId, appliedAt
+    SaveInventoryWorkbookIfWritable wb
     statusOut = APPLY_STATUS_APPLIED
     ApplyEvent = True
 
@@ -147,13 +152,25 @@ CleanExit:
     Exit Function
 
 FailApply:
+    Dim failNumber As Long
+    Dim failDescription As String
+
+    failNumber = Err.Number
+    failDescription = Err.Description
     On Error Resume Next
     If Not loLog Is Nothing Then SetSheetProtectionApply loLog.Parent, True
     If Not loApplied Is Nothing Then SetSheetProtectionApply loApplied.Parent, True
     On Error GoTo 0
     If errorCode = "" Then errorCode = "APPLY_EXCEPTION"
-    If errorMessage = "" Then errorMessage = Err.Description
+    If errorMessage = "" Then errorMessage = CStr(failNumber) & ": " & failDescription
 End Function
+
+Private Sub SaveInventoryWorkbookIfWritable(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    If wb.ReadOnly Then Exit Sub
+    If Trim$(wb.Path) = "" Then Exit Sub
+    wb.Save
+End Sub
 
 Public Function ApplyReceiveEvent(ByVal evt As Object, _
                                   Optional ByVal inventoryWb As Workbook = Nothing, _
@@ -167,13 +184,22 @@ End Function
 Public Function ResolveInventoryWorkbook(Optional ByVal warehouseId As String = "", _
                                          Optional ByVal inventoryWb As Workbook = Nothing) As Workbook
     Dim wb As Workbook
+    Dim targetPath As String
 
     If Not inventoryWb Is Nothing Then
         Set ResolveInventoryWorkbook = inventoryWb
         Exit Function
     End If
 
+    targetPath = BuildCanonicalInventoryPath(warehouseId)
     For Each wb In Application.Workbooks
+        If targetPath <> "" Then
+            If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+                Set ResolveInventoryWorkbook = wb
+                Exit Function
+            End If
+        End If
+
         If IsInventoryWorkbookName(wb.Name) Then
             If warehouseId = "" Or InStr(1, wb.Name, warehouseId, vbTextCompare) > 0 Then
                 Set ResolveInventoryWorkbook = wb
@@ -182,15 +208,190 @@ Public Function ResolveInventoryWorkbook(Optional ByVal warehouseId As String = 
         End If
     Next wb
 
-    For Each wb In Application.Workbooks
-        If WorkbookHasListObjectApply(wb, "tblInventoryLog") And _
-           WorkbookHasListObjectApply(wb, "tblAppliedEvents") And _
-           WorkbookHasListObjectApply(wb, "tblLocks") Then
-            Set ResolveInventoryWorkbook = wb
+    Set ResolveInventoryWorkbook = OpenOrCreateCanonicalInventoryWorkbook(warehouseId)
+End Function
+
+Public Function RefreshInvSysFromCanonicalRuntime(ByVal sourceWb As Workbook, _
+                                                  Optional ByVal warehouseId As String = "", _
+                                                  Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailRefresh
+
+    Dim runtimeWb As Workbook
+    Dim runtimePath As String
+    Dim runtimeWasOpen As Boolean
+    Dim loSource As ListObject
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim loLog As ListObject
+    Dim skuQty As Object
+    Dim skuLast As Object
+    Dim locSummary As Object
+    Dim latestEventType As Object
+    Dim latestEventQty As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim sourceSheetWasProtected As Boolean
+    Dim sourceSheet As Worksheet
+    Dim runtimeRows As Long
+    Dim sourceRows As Long
+    Dim matchedCount As Long
+    Dim changedCount As Long
+    Dim configLoadResult As Boolean
+    Dim resolvedRootPath As String
+    Dim runtimeOpenedReadOnly As Boolean
+    Dim runtimeFileStamp As String
+    Dim cachedRuntimeFileStamp As String
+
+    If sourceWb Is Nothing Then
+        report = "Source workbook not resolved."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
+        Exit Function
+    End If
+
+    If Trim$(warehouseId) = "" Then warehouseId = ResolveWarehouseIdFromSourceWorkbookApply(sourceWb)
+    If Trim$(warehouseId) = "" Then
+        report = "SrcWb=" & sourceWb.Name & "|WH=<blank>|Result=WarehouseId not resolved for source workbook."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
+        Exit Function
+    End If
+
+    If (Not modConfig.IsLoaded()) _
+       Or StrComp(SafeTrimApply(modConfig.GetWarehouseId()), warehouseId, vbTextCompare) <> 0 Then
+        configLoadResult = modConfig.LoadConfig(warehouseId, "")
+    Else
+        configLoadResult = True
+    End If
+    resolvedRootPath = SafeTrimApply(modConfig.GetString("PathDataRoot", ""))
+
+    Set loSource = FindListObjectByNameApply(sourceWb, "invSys")
+    If loSource Is Nothing Then
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|Result=Source invSys table not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
+        Exit Function
+    End If
+
+    runtimePath = BuildCanonicalInventoryPath(warehouseId)
+    runtimeWasOpen = WorkbookIsAlreadyOpenApply(runtimePath)
+    runtimeFileStamp = ResolveFileStampApply(runtimePath)
+    cachedRuntimeFileStamp = GetSourceSyncStampApply(sourceWb)
+    If runtimeFileStamp <> "" Then
+        If StrComp(runtimeFileStamp, cachedRuntimeFileStamp, vbTextCompare) = 0 Then
+            report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|Result=UNCHANGED"
+            modInventoryInit.AppendSyncLogEntry "TRACE", report
+            RefreshInvSysFromCanonicalRuntime = True
             Exit Function
         End If
-    Next wb
+    End If
+    Set runtimeWb = ResolveInventoryWorkbook(warehouseId)
+    If runtimeWb Is Nothing And FileExistsApply(runtimePath) Then
+        Set runtimeWb = OpenWorkbookReadOnlyApply(runtimePath)
+        If Not runtimeWb Is Nothing Then runtimeOpenedReadOnly = True
+    End If
+    If runtimeWb Is Nothing Then
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime inventory workbook not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
+        Exit Function
+    End If
+    If Not runtimeWasOpen Then HideWorkbookWindowsApply runtimeWb
+
+    Set loSku = FindListObjectByNameApply(runtimeWb, "tblSkuBalance")
+    Set loLoc = FindListObjectByNameApply(runtimeWb, "tblLocationBalance")
+    Set loLog = FindListObjectByNameApply(runtimeWb, "tblInventoryLog")
+    If loSku Is Nothing Then
+        report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|Result=Canonical runtime projection table tblSkuBalance not found."
+        modInventoryInit.AppendSyncLogEntry "TRACE", report
+        GoTo CleanExit
+    End If
+    runtimeRows = loSku.ListRows.Count
+    sourceRows = loSource.ListRows.Count
+
+    Set skuQty = CreateObject("Scripting.Dictionary")
+    skuQty.CompareMode = vbTextCompare
+    Set skuLast = CreateObject("Scripting.Dictionary")
+    skuLast.CompareMode = vbTextCompare
+    Set locSummary = CreateObject("Scripting.Dictionary")
+    locSummary.CompareMode = vbTextCompare
+    Set latestEventType = CreateObject("Scripting.Dictionary")
+    latestEventType.CompareMode = vbTextCompare
+    Set latestEventQty = CreateObject("Scripting.Dictionary")
+    latestEventQty.CompareMode = vbTextCompare
+
+    BuildSkuProjectionDictionariesApply loSku, skuQty, skuLast
+    BuildLocationSummaryDictionaryApply loLoc, locSummary
+    BuildLatestMovementDictionariesApply loLog, latestEventType, latestEventQty
+
+    Set sourceSheet = loSource.Parent
+    sourceSheetWasProtected = sourceSheet.ProtectContents
+    SetSheetProtectionApply sourceSheet, False
+
+    If Not loSource.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To loSource.ListRows.Count
+            sku = ResolveInvSysSkuApply(loSource, rowIndex)
+            If sku <> "" Then
+                If skuQty.Exists(sku) Or locSummary.Exists(sku) Then
+                    matchedCount = matchedCount + 1
+                    If CanonicalRuntimeRowWouldChangeApply(loSource, rowIndex, skuQty, locSummary, latestEventType, latestEventQty, sku) Then changedCount = changedCount + 1
+                End If
+                ApplyCanonicalRuntimeRowApply loSource, rowIndex, skuQty, skuLast, locSummary, latestEventType, latestEventQty, sku
+            End If
+        Next rowIndex
+    End If
+
+    If runtimeFileStamp <> "" Then SetSourceSyncStampApply sourceWb, runtimeFileStamp
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=OK"
+    modInventoryInit.AppendSyncLogEntry "TRACE", report
+    RefreshInvSysFromCanonicalRuntime = True
+
+CleanExit:
+    On Error Resume Next
+    If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
+    If Not runtimeWasOpen Then CloseWorkbookQuietlyApply runtimeWb
+    On Error GoTo 0
+    Exit Function
+
+FailRefresh:
+    report = "SrcWb=" & sourceWb.Name & "|WH=" & warehouseId & "|ConfigLoad=" & CStr(configLoadResult) & "|PathDataRoot=" & resolvedRootPath & "|RuntimePath=" & runtimePath & "|RuntimeStamp=" & runtimeFileStamp & "|RuntimeWasOpen=" & CStr(runtimeWasOpen) & "|RuntimeReadOnly=" & CStr(runtimeOpenedReadOnly) & "|RuntimeRows=" & CStr(runtimeRows) & "|SrcInvSysRows=" & CStr(sourceRows) & "|MatchedSKUs=" & CStr(matchedCount) & "|ChangedRows=" & CStr(changedCount) & "|Result=RefreshInvSysFromCanonicalRuntime failed: " & Err.Description
+    modInventoryInit.AppendSyncLogEntry "TRACE", report
+    On Error Resume Next
+    If sourceSheetWasProtected Then SetSheetProtectionApply sourceSheet, True
+    If Not runtimeWasOpen Then CloseWorkbookQuietlyApply runtimeWb
+    On Error GoTo 0
 End Function
+
+Private Sub EnsureSourceSyncStampCacheApply()
+    If mSourceSyncStampCache Is Nothing Then
+        Set mSourceSyncStampCache = CreateObject("Scripting.Dictionary")
+        mSourceSyncStampCache.CompareMode = vbTextCompare
+    End If
+End Sub
+
+Private Function BuildSourceSyncCacheKeyApply(ByVal wb As Workbook) As String
+    If wb Is Nothing Then Exit Function
+    If Trim$(wb.FullName) <> "" Then
+        BuildSourceSyncCacheKeyApply = LCase$(Trim$(wb.FullName))
+    Else
+        BuildSourceSyncCacheKeyApply = LCase$(Trim$(wb.Name))
+    End If
+End Function
+
+Private Function GetSourceSyncStampApply(ByVal wb As Workbook) As String
+    Dim cacheKey As String
+
+    EnsureSourceSyncStampCacheApply
+    cacheKey = BuildSourceSyncCacheKeyApply(wb)
+    If cacheKey = "" Then Exit Function
+    If mSourceSyncStampCache.Exists(cacheKey) Then GetSourceSyncStampApply = CStr(mSourceSyncStampCache(cacheKey))
+End Function
+
+Private Sub SetSourceSyncStampApply(ByVal wb As Workbook, ByVal fileStamp As String)
+    Dim cacheKey As String
+
+    EnsureSourceSyncStampCacheApply
+    cacheKey = BuildSourceSyncCacheKeyApply(wb)
+    If cacheKey = "" Then Exit Sub
+    If mSourceSyncStampCache.Exists(cacheKey) Then mSourceSyncStampCache.Remove cacheKey
+    mSourceSyncStampCache.Add cacheKey, fileStamp
+End Sub
 
 Private Function BuildApplyLines(ByVal evt As Object, _
                                  ByVal wb As Workbook, _
@@ -796,6 +997,502 @@ Private Function IsInventoryWorkbookName(ByVal wbName As String) As Boolean
                               (n Like "wh*.invsys.data.inventory.xlsm")
 End Function
 
+Private Function OpenOrCreateCanonicalInventoryWorkbook(ByVal warehouseId As String) As Workbook
+    On Error GoTo FailOpen
+
+    Dim targetPath As String
+    Dim wb As Workbook
+    Dim prevEvents As Boolean
+    Dim eventsSuppressed As Boolean
+
+    targetPath = BuildCanonicalInventoryPath(warehouseId)
+    If targetPath = "" Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+            Set OpenOrCreateCanonicalInventoryWorkbook = wb
+            Exit Function
+        End If
+    Next wb
+
+    EnsureFolderRecursiveApply GetParentFolderApply(targetPath)
+    If Len(Dir$(targetPath)) > 0 Then
+        If IsWorkbookFileLockedApply(targetPath) Then Exit Function
+        Set wb = Application.Workbooks.Open(targetPath)
+    Else
+        prevEvents = Application.EnableEvents
+        Application.EnableEvents = False
+        eventsSuppressed = True
+        Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+        wb.SaveAs Filename:=targetPath, FileFormat:=50
+        Application.EnableEvents = prevEvents
+        eventsSuppressed = False
+    End If
+
+    If modInventorySchema.EnsureInventorySchema(wb) Then
+        Set OpenOrCreateCanonicalInventoryWorkbook = wb
+    End If
+    Exit Function
+
+FailOpen:
+    On Error Resume Next
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    On Error GoTo 0
+End Function
+
+Private Function IsWorkbookFileLockedApply(ByVal targetPath As String) As Boolean
+    Dim fileNum As Integer
+
+    If Len(Dir$(targetPath)) = 0 Then Exit Function
+
+    On Error GoTo Locked
+    fileNum = FreeFile
+    Open targetPath For Binary Access Read Write Lock Read Write As #fileNum
+    Close #fileNum
+    Exit Function
+
+Locked:
+    On Error Resume Next
+    If fileNum <> 0 Then Close #fileNum
+    On Error GoTo 0
+    IsWorkbookFileLockedApply = True
+End Function
+
+Private Function BuildCanonicalInventoryPath(ByVal warehouseId As String) As String
+    Dim resolvedWh As String
+    Dim rootPath As String
+
+    resolvedWh = Trim$(warehouseId)
+    If resolvedWh = "" Then resolvedWh = SafeTrimApply(modConfig.GetString("WarehouseId", "WH1"))
+    If resolvedWh = "" Then resolvedWh = "WH1"
+
+    rootPath = SafeTrimApply(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If rootPath = "" Then rootPath = SafeTrimApply(modConfig.GetString("PathDataRoot", ""))
+    If rootPath = "" Then rootPath = "C:\invSys\" & resolvedWh & "\"
+
+    BuildCanonicalInventoryPath = NormalizeFolderPathApply(rootPath) & resolvedWh & ".invSys.Data.Inventory.xlsb"
+End Function
+
+Private Function ResolveWarehouseIdFromSourceWorkbookApply(ByVal wb As Workbook) As String
+    Dim lo As ListObject
+    Dim idx As Long
+    Dim rowIndex As Long
+    Dim snapshotId As String
+
+    If wb Is Nothing Then Exit Function
+
+    Set lo = FindListObjectByNameApply(wb, "invSys")
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    idx = GetColumnIndexApply(lo, "SnapshotId")
+    If idx > 0 Then
+        For rowIndex = 1 To lo.ListRows.Count
+            snapshotId = SafeTrimApply(lo.DataBodyRange.Cells(rowIndex, idx).Value)
+            ResolveWarehouseIdFromSourceWorkbookApply = ResolveWarehouseIdFromSnapshotIdApply(snapshotId)
+            If ResolveWarehouseIdFromSourceWorkbookApply <> "" Then Exit Function
+        Next rowIndex
+    End If
+
+    ResolveWarehouseIdFromSourceWorkbookApply = InferWarehouseIdFromWorkbookNameApply(wb.Name)
+    If ResolveWarehouseIdFromSourceWorkbookApply = "" Then
+        ResolveWarehouseIdFromSourceWorkbookApply = SafeTrimApply(modConfig.GetWarehouseId())
+    End If
+End Function
+
+Private Function ResolveWarehouseIdFromSnapshotIdApply(ByVal snapshotId As String) As String
+    Dim markerPos As Long
+
+    snapshotId = Trim$(snapshotId)
+    If snapshotId = "" Then Exit Function
+    markerPos = InStr(1, snapshotId, ".invSys.Snapshot.Inventory.xls", vbTextCompare)
+    If markerPos > 1 Then ResolveWarehouseIdFromSnapshotIdApply = Left$(snapshotId, markerPos - 1)
+End Function
+
+Private Function InferWarehouseIdFromWorkbookNameApply(ByVal wbName As String) As String
+    Dim markerPos As Long
+
+    markerPos = InStr(1, wbName, ".invSys.", vbTextCompare)
+    If markerPos > 1 Then
+        InferWarehouseIdFromWorkbookNameApply = Left$(wbName, markerPos - 1)
+        Exit Function
+    End If
+
+    markerPos = InStr(1, wbName, "_", vbTextCompare)
+    If markerPos > 1 Then InferWarehouseIdFromWorkbookNameApply = Left$(wbName, markerPos - 1)
+End Function
+
+Private Sub BuildSkuProjectionDictionariesApply(ByVal loSku As ListObject, _
+                                                ByVal skuQty As Object, _
+                                                ByVal skuLast As Object)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim appliedAt As Variant
+
+    If loSku Is Nothing Then Exit Sub
+    If loSku.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To loSku.ListRows.Count
+        sku = SafeTrimApply(GetCellByColumnApply(loSku, rowIndex, "SKU"))
+        If sku = "" Then GoTo ContinueLoop
+
+        skuQty(sku) = NzDblApply(GetCellByColumnApply(loSku, rowIndex, "QtyOnHand"))
+        appliedAt = GetCellByColumnApply(loSku, rowIndex, "LastAppliedUTC")
+        If IsDate(appliedAt) Then skuLast(sku) = CDate(appliedAt)
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub BuildLocationSummaryDictionaryApply(ByVal loLoc As ListObject, ByVal locSummary As Object)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim locationVal As String
+    Dim qtyOnHand As Double
+    Dim fragment As String
+
+    If loLoc Is Nothing Then Exit Sub
+    If loLoc.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To loLoc.ListRows.Count
+        sku = SafeTrimApply(GetCellByColumnApply(loLoc, rowIndex, "SKU"))
+        If sku = "" Then GoTo ContinueLoop
+        locationVal = SafeTrimApply(GetCellByColumnApply(loLoc, rowIndex, "Location"))
+        qtyOnHand = NzDblApply(GetCellByColumnApply(loLoc, rowIndex, "QtyOnHand"))
+        If locationVal = "" Then GoTo ContinueLoop
+
+        fragment = locationVal & "=" & FormatQuantityApply(qtyOnHand)
+        If locSummary.Exists(sku) Then
+            locSummary(sku) = CStr(locSummary(sku)) & "; " & fragment
+        Else
+            locSummary(sku) = fragment
+        End If
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub BuildLatestMovementDictionariesApply(ByVal loLog As ListObject, _
+                                                 ByVal latestEventType As Object, _
+                                                 ByVal latestEventQty As Object)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim eventType As String
+    Dim qtyDelta As Double
+    Dim appliedAt As Variant
+    Dim stamp As Double
+    Dim bestStamp As Double
+    Dim stampMap As Object
+
+    If loLog Is Nothing Then Exit Sub
+    If loLog.DataBodyRange Is Nothing Then Exit Sub
+
+    Set stampMap = CreateObject("Scripting.Dictionary")
+    stampMap.CompareMode = vbTextCompare
+
+    For rowIndex = 1 To loLog.ListRows.Count
+        sku = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU"))
+        If sku = "" Then GoTo ContinueLoop
+
+        eventType = NormalizeEventType(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "EventType")))
+        qtyDelta = NzDblApply(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
+        appliedAt = GetCellByColumnApply(loLog, rowIndex, "AppliedAtUTC")
+        If IsDate(appliedAt) Then
+            stamp = CDbl(CDate(appliedAt))
+        Else
+            stamp = CDbl(rowIndex)
+        End If
+
+        If stampMap.Exists(sku) Then bestStamp = CDbl(stampMap(sku))
+        If (Not stampMap.Exists(sku)) Or stamp >= bestStamp Then
+            stampMap(sku) = stamp
+            latestEventType(sku) = eventType
+            latestEventQty(sku) = Abs(qtyDelta)
+        End If
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub ApplyCanonicalRuntimeRowApply(ByVal loSource As ListObject, _
+                                          ByVal rowIndex As Long, _
+                                          ByVal skuQty As Object, _
+                                          ByVal skuLast As Object, _
+                                          ByVal locSummary As Object, _
+                                          ByVal latestEventType As Object, _
+                                          ByVal latestEventQty As Object, _
+                                          ByVal sku As String)
+    Dim qtyOnHand As Double
+    Dim summaryText As String
+    Dim appliedAt As Variant
+    Dim primaryLocation As String
+
+    If skuQty.Exists(sku) Then qtyOnHand = CDbl(skuQty(sku))
+    If locSummary.Exists(sku) Then summaryText = CStr(locSummary(sku))
+    If skuLast.Exists(sku) Then appliedAt = skuLast(sku)
+
+    SetInvSysValueApply loSource, rowIndex, "TOTAL INV", qtyOnHand
+    SetInvSysValueApply loSource, rowIndex, "QtyAvailable", qtyOnHand
+    If summaryText <> "" Then
+        SetInvSysValueApply loSource, rowIndex, "LocationSummary", summaryText
+        primaryLocation = ResolvePrimaryLocationFromSummaryApply(summaryText)
+        If primaryLocation <> "" Then SetInvSysValueApply loSource, rowIndex, "LOCATION", primaryLocation
+    Else
+        SetInvSysValueApply loSource, rowIndex, "LocationSummary", vbNullString
+    End If
+    If IsDate(appliedAt) Then
+        SetInvSysValueApply loSource, rowIndex, "LAST EDITED", CDate(appliedAt)
+        SetInvSysValueApply loSource, rowIndex, "TOTAL INV LAST EDIT", CDate(appliedAt)
+    Else
+        SetInvSysValueApply loSource, rowIndex, "LAST EDITED", vbNullString
+        SetInvSysValueApply loSource, rowIndex, "TOTAL INV LAST EDIT", vbNullString
+    End If
+    ApplyLatestMovementToInvSysApply loSource, rowIndex, latestEventType, latestEventQty, sku
+    SetInvSysValueApply loSource, rowIndex, "LastRefreshUTC", Now
+    SetInvSysValueApply loSource, rowIndex, "SourceType", "CANONICAL_RUNTIME"
+    SetInvSysValueApply loSource, rowIndex, "IsStale", False
+End Sub
+
+Private Function CanonicalRuntimeRowWouldChangeApply(ByVal loSource As ListObject, _
+                                                     ByVal rowIndex As Long, _
+                                                     ByVal skuQty As Object, _
+                                                     ByVal locSummary As Object, _
+                                                     ByVal latestEventType As Object, _
+                                                     ByVal latestEventQty As Object, _
+                                                     ByVal sku As String) As Boolean
+    Dim qtyOnHand As Double
+    Dim summaryText As String
+    Dim primaryLocation As String
+    Dim expectedReceived As Double
+    Dim expectedUsed As Double
+    Dim expectedMade As Double
+    Dim expectedShipments As Double
+
+    If skuQty.Exists(sku) Then qtyOnHand = CDbl(skuQty(sku))
+    If locSummary.Exists(sku) Then summaryText = CStr(locSummary(sku))
+    If summaryText <> "" Then primaryLocation = ResolvePrimaryLocationFromSummaryApply(summaryText)
+    ResolveLatestMovementValuesApply latestEventType, latestEventQty, sku, expectedReceived, expectedUsed, expectedMade, expectedShipments
+
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "TOTAL INV"), qtyOnHand) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "QtyAvailable"), qtyOnHand) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferTextApply(GetCellByColumnApply(loSource, rowIndex, "LocationSummary"), summaryText) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If primaryLocation <> "" Then
+        If ValuesDifferTextApply(GetCellByColumnApply(loSource, rowIndex, "LOCATION"), primaryLocation) Then
+            CanonicalRuntimeRowWouldChangeApply = True
+            Exit Function
+        End If
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "RECEIVED"), expectedReceived) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "USED"), expectedUsed) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "MADE"), expectedMade) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+        Exit Function
+    End If
+    If ValuesDifferNumericApply(GetCellByColumnApply(loSource, rowIndex, "SHIPMENTS"), expectedShipments) Then
+        CanonicalRuntimeRowWouldChangeApply = True
+    End If
+End Function
+
+Private Sub ApplyLatestMovementToInvSysApply(ByVal loSource As ListObject, _
+                                             ByVal rowIndex As Long, _
+                                             ByVal latestEventType As Object, _
+                                             ByVal latestEventQty As Object, _
+                                             ByVal sku As String)
+    Dim expectedReceived As Double
+    Dim expectedUsed As Double
+    Dim expectedMade As Double
+    Dim expectedShipments As Double
+
+    ResolveLatestMovementValuesApply latestEventType, latestEventQty, sku, expectedReceived, expectedUsed, expectedMade, expectedShipments
+    SetInvSysValueApply loSource, rowIndex, "RECEIVED", expectedReceived
+    SetInvSysValueApply loSource, rowIndex, "USED", expectedUsed
+    SetInvSysValueApply loSource, rowIndex, "MADE", expectedMade
+    SetInvSysValueApply loSource, rowIndex, "SHIPMENTS", expectedShipments
+End Sub
+
+Private Sub ResolveLatestMovementValuesApply(ByVal latestEventType As Object, _
+                                             ByVal latestEventQty As Object, _
+                                             ByVal sku As String, _
+                                             ByRef receivedOut As Double, _
+                                             ByRef usedOut As Double, _
+                                             ByRef madeOut As Double, _
+                                             ByRef shipmentsOut As Double)
+    Dim eventType As String
+    Dim qty As Double
+
+    If latestEventType Is Nothing Then Exit Sub
+    If latestEventQty Is Nothing Then Exit Sub
+    If Not latestEventType.Exists(sku) Then Exit Sub
+
+    eventType = UCase$(SafeTrimApply(latestEventType(sku)))
+    If latestEventQty.Exists(sku) Then qty = NzDblApply(latestEventQty(sku))
+
+    Select Case eventType
+        Case EVENT_TYPE_RECEIVE
+            receivedOut = qty
+        Case EVENT_TYPE_SHIP
+            shipmentsOut = qty
+        Case EVENT_TYPE_PROD_CONSUME
+            usedOut = qty
+        Case EVENT_TYPE_PROD_COMPLETE
+            madeOut = qty
+    End Select
+End Sub
+
+Private Function ResolveInvSysSkuApply(ByVal lo As ListObject, ByVal rowIndex As Long) As String
+    ResolveInvSysSkuApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "ITEM_CODE"))
+    If ResolveInvSysSkuApply = "" Then ResolveInvSysSkuApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "SKU"))
+End Function
+
+Private Sub SetInvSysValueApply(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueOut As Variant)
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+    idx = GetColumnIndexApply(lo, columnName)
+    If idx = 0 Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    lo.DataBodyRange.Cells(rowIndex, idx).Value = valueOut
+End Sub
+
+Private Function ValuesDifferNumericApply(ByVal currentValue As Variant, ByVal expectedValue As Double) As Boolean
+    ValuesDifferNumericApply = (Abs(NzDblApply(currentValue) - expectedValue) > 0.0001#)
+End Function
+
+Private Function ValuesDifferTextApply(ByVal currentValue As Variant, ByVal expectedValue As String) As Boolean
+    ValuesDifferTextApply = (StrComp(SafeTrimApply(currentValue), SafeTrimApply(expectedValue), vbTextCompare) <> 0)
+End Function
+
+Private Function ResolvePrimaryLocationFromSummaryApply(ByVal summaryText As String) As String
+    Dim firstFragment As String
+    Dim eqPos As Long
+
+    summaryText = Trim$(summaryText)
+    If summaryText = "" Then Exit Function
+    firstFragment = Trim$(Split(summaryText, ";")(0))
+    eqPos = InStr(1, firstFragment, "=", vbTextCompare)
+    If eqPos > 1 Then
+        ResolvePrimaryLocationFromSummaryApply = Trim$(Left$(firstFragment, eqPos - 1))
+    Else
+        ResolvePrimaryLocationFromSummaryApply = firstFragment
+    End If
+End Function
+
+Private Function WorkbookIsAlreadyOpenApply(ByVal fullPath As String) As Boolean
+    Dim wb As Workbook
+
+    fullPath = Trim$(fullPath)
+    If fullPath = "" Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, fullPath, vbTextCompare) = 0 Then
+            WorkbookIsAlreadyOpenApply = True
+            Exit Function
+        End If
+    Next wb
+End Function
+
+Private Function FileExistsApply(ByVal fullPath As String) As Boolean
+    On Error Resume Next
+    FileExistsApply = (Len(Dir$(fullPath)) > 0)
+    On Error GoTo 0
+End Function
+
+Private Function ResolveFileStampApply(ByVal fullPath As String) As String
+    On Error GoTo FailStamp
+
+    If Trim$(fullPath) = "" Then Exit Function
+    If Not FileExistsApply(fullPath) Then Exit Function
+    ResolveFileStampApply = Format$(FileDateTime(fullPath), "yyyymmddhhnnss")
+    Exit Function
+
+FailStamp:
+    ResolveFileStampApply = vbNullString
+End Function
+
+Private Function OpenWorkbookReadOnlyApply(ByVal fullPath As String) As Workbook
+    On Error GoTo FailOpen
+
+    If Trim$(fullPath) = "" Then Exit Function
+    If Not FileExistsApply(fullPath) Then Exit Function
+
+    Set OpenWorkbookReadOnlyApply = Application.Workbooks.Open(Filename:=fullPath, ReadOnly:=True, Notify:=False)
+    If Not OpenWorkbookReadOnlyApply Is Nothing Then HideWorkbookWindowsApply OpenWorkbookReadOnlyApply
+    Exit Function
+
+FailOpen:
+    Set OpenWorkbookReadOnlyApply = Nothing
+End Function
+
+Private Sub HideWorkbookWindowsApply(ByVal wb As Workbook)
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To wb.Windows.Count
+        wb.Windows(i).Visible = False
+    Next i
+    modUiQuiet.ReactivateQuietOwner
+    On Error GoTo 0
+End Sub
+
+Private Sub CloseWorkbookQuietlyApply(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    HideWorkbookWindowsApply wb
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+Private Function FormatQuantityApply(ByVal qty As Double) As String
+    FormatQuantityApply = Replace$(Format$(qty, "0.########"), ",", "")
+End Function
+
+Private Function NzDblApply(ByVal valueIn As Variant) As Double
+    If IsError(valueIn) Or IsNull(valueIn) Or IsEmpty(valueIn) Or valueIn = "" Then Exit Function
+    NzDblApply = CDbl(valueIn)
+End Function
+
+Private Function NormalizeFolderPathApply(ByVal folderPath As String) As String
+    folderPath = Trim$(folderPath)
+    If folderPath = "" Then Exit Function
+    If Right$(folderPath, 1) <> "\" Then folderPath = folderPath & "\"
+    NormalizeFolderPathApply = folderPath
+End Function
+
+Private Function GetParentFolderApply(ByVal fullPath As String) As String
+    Dim lastSlash As Long
+
+    lastSlash = InStrRev(fullPath, "\")
+    If lastSlash > 0 Then GetParentFolderApply = Left$(fullPath, lastSlash - 1)
+End Function
+
+Private Sub EnsureFolderRecursiveApply(ByVal folderPath As String)
+    Dim parentPath As String
+
+    folderPath = Trim$(folderPath)
+    If folderPath = "" Then Exit Sub
+    If Len(Dir$(folderPath, vbDirectory)) > 0 Then Exit Sub
+
+    parentPath = GetParentFolderApply(folderPath)
+    If parentPath <> "" And Len(Dir$(parentPath, vbDirectory)) = 0 Then EnsureFolderRecursiveApply parentPath
+
+    On Error Resume Next
+    MkDir folderPath
+    On Error GoTo 0
+End Sub
+
 Private Function SafeTrimApply(ByVal v As Variant) As String
     On Error Resume Next
     SafeTrimApply = Trim$(CStr(v))
@@ -818,4 +1515,208 @@ Private Sub SetSheetProtectionApply(ByVal ws As Worksheet, ByVal protectAfter As
                       "Excel automation cannot add table rows while the sheet remains protected."
         End If
     End If
+End Sub
+
+Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
+    Dim loLog As ListObject
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim skuQty As Object
+    Dim skuLast As Object
+    Dim locQty As Object
+    Dim locLast As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim locationVal As String
+    Dim qtyDelta As Double
+    Dim appliedAt As Variant
+
+    If wb Is Nothing Then Exit Sub
+
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    Set loSku = FindListObjectByNameApply(wb, "tblSkuBalance")
+    Set loLoc = FindListObjectByNameApply(wb, "tblLocationBalance")
+    If loLog Is Nothing Or loSku Is Nothing Or loLoc Is Nothing Then Exit Sub
+
+    SetSheetProtectionApply loSku.Parent, False
+    SetSheetProtectionApply loLoc.Parent, False
+
+    Set skuQty = CreateObject("Scripting.Dictionary")
+    skuQty.CompareMode = vbTextCompare
+    Set skuLast = CreateObject("Scripting.Dictionary")
+    skuLast.CompareMode = vbTextCompare
+    Set locQty = CreateObject("Scripting.Dictionary")
+    locQty.CompareMode = vbTextCompare
+    Set locLast = CreateObject("Scripting.Dictionary")
+    locLast.CompareMode = vbTextCompare
+
+    If Not loLog.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To loLog.ListRows.Count
+            sku = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU"))
+            If sku = "" Then GoTo ContinueLoop
+
+            qtyDelta = 0#
+            If IsNumeric(GetCellByColumnApply(loLog, rowIndex, "QtyDelta")) Then qtyDelta = CDbl(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
+            locationVal = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location"))
+            appliedAt = GetCellByColumnApply(loLog, rowIndex, "AppliedAtUTC")
+
+            AccumulateProjectionScalars skuQty, skuLast, sku, qtyDelta, appliedAt
+            AccumulateProjectionScalars locQty, locLast, sku & "|" & locationVal, qtyDelta, appliedAt
+ContinueLoop:
+        Next rowIndex
+    End If
+
+    RewriteSkuProjectionTable loSku, skuQty, skuLast
+    RewriteLocationProjectionTable loLoc, locQty, locLast
+
+    SetSheetProtectionApply loSku.Parent, True
+    SetSheetProtectionApply loLoc.Parent, True
+End Sub
+
+Private Sub RefreshLedgerStatus(ByVal wb As Workbook, _
+                                ByVal warehouseId As String, _
+                                ByVal appliedSeq As Long, _
+                                ByVal eventId As String, _
+                                ByVal appliedAt As Date)
+    Dim loStatus As ListObject
+    Dim loLog As ListObject
+    Dim loApplied As ListObject
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim rowIndex As Long
+
+    Set loStatus = FindListObjectByNameApply(wb, "tblInventoryLedgerStatus")
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    Set loApplied = FindListObjectByNameApply(wb, "tblAppliedEvents")
+    Set loSku = FindListObjectByNameApply(wb, "tblSkuBalance")
+    Set loLoc = FindListObjectByNameApply(wb, "tblLocationBalance")
+    If loStatus Is Nothing Then Exit Sub
+
+    SetSheetProtectionApply loStatus.Parent, False
+    rowIndex = EnsureWritableLedgerStatusRow(loStatus)
+
+    SetTableRowValue loStatus, rowIndex, "WarehouseId", warehouseId
+    SetTableRowValue loStatus, rowIndex, "LastAppliedSeq", appliedSeq
+    SetTableRowValue loStatus, rowIndex, "LastEventId", eventId
+    SetTableRowValue loStatus, rowIndex, "LastAppliedAtUTC", appliedAt
+    SetTableRowValue loStatus, rowIndex, "TotalEventRows", CountTableRowsApply(loLog)
+    SetTableRowValue loStatus, rowIndex, "TotalAppliedEvents", CountTableRowsApply(loApplied)
+    SetTableRowValue loStatus, rowIndex, "DistinctSkuCount", CountTableRowsApply(loSku)
+    SetTableRowValue loStatus, rowIndex, "DistinctLocationCount", CountTableRowsApply(loLoc)
+    SetTableRowValue loStatus, rowIndex, "ProjectionRebuiltAtUTC", Now
+    SetTableRowValue loStatus, rowIndex, "Notes", "Authoritative store: tblInventoryLog + tblAppliedEvents; projections are derived."
+
+    SetSheetProtectionApply loStatus.Parent, True
+End Sub
+
+Private Function EnsureWritableLedgerStatusRow(ByVal lo As ListObject) As Long
+    If lo Is Nothing Then Exit Function
+
+    If lo.DataBodyRange Is Nothing Then
+        lo.ListRows.Add
+        EnsureWritableLedgerStatusRow = 1
+        Exit Function
+    End If
+
+    If lo.ListRows.Count = 1 And TableRowIsBlankApply(lo, 1) Then
+        EnsureWritableLedgerStatusRow = 1
+    Else
+        Do While lo.ListRows.Count > 1
+            lo.ListRows(lo.ListRows.Count).Delete
+        Loop
+        EnsureWritableLedgerStatusRow = 1
+    End If
+End Function
+
+Private Function CountTableRowsApply(ByVal lo As ListObject) As Long
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    CountTableRowsApply = lo.ListRows.Count
+End Function
+
+Private Function TableRowIsBlankApply(ByVal lo As ListObject, ByVal rowIndex As Long) As Boolean
+    Dim colIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then
+        TableRowIsBlankApply = True
+        Exit Function
+    End If
+    If rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then Exit Function
+
+    TableRowIsBlankApply = True
+    For colIndex = 1 To lo.ListColumns.Count
+        If SafeTrimApply(lo.DataBodyRange.Cells(rowIndex, colIndex).Value) <> "" Then
+            TableRowIsBlankApply = False
+            Exit Function
+        End If
+    Next colIndex
+End Function
+
+Private Sub AccumulateProjectionScalars(ByVal qtyDict As Object, _
+                                        ByVal lastDict As Object, _
+                                        ByVal dictKey As String, _
+                                        ByVal qtyDelta As Double, _
+                                        ByVal appliedAt As Variant)
+    If qtyDict Is Nothing Or lastDict Is Nothing Then Exit Sub
+
+    If qtyDict.Exists(dictKey) Then
+        qtyDict(dictKey) = CDbl(qtyDict(dictKey)) + qtyDelta
+    Else
+        qtyDict.Add dictKey, qtyDelta
+    End If
+
+    If IsDate(appliedAt) Then
+        If Not lastDict.Exists(dictKey) Then
+            lastDict.Add dictKey, CDate(appliedAt)
+        ElseIf CDate(appliedAt) > CDate(lastDict(dictKey)) Then
+            lastDict(dictKey) = CDate(appliedAt)
+        End If
+    End If
+End Sub
+
+Private Sub RewriteSkuProjectionTable(ByVal lo As ListObject, ByVal qtyDict As Object, ByVal lastDict As Object)
+    Dim key As Variant
+    Dim r As ListRow
+
+    If lo Is Nothing Then Exit Sub
+
+    ClearProjectionRows lo
+    If qtyDict Is Nothing Then Exit Sub
+
+    For Each key In qtyDict.Keys
+        Set r = lo.ListRows.Add
+        SetTableRowValue lo, r.Index, "SKU", CStr(key)
+        SetTableRowValue lo, r.Index, "QtyOnHand", CDbl(qtyDict(key))
+        If lastDict.Exists(CStr(key)) Then SetTableRowValue lo, r.Index, "LastAppliedUTC", CDate(lastDict(key))
+    Next key
+End Sub
+
+Private Sub RewriteLocationProjectionTable(ByVal lo As ListObject, ByVal qtyDict As Object, ByVal lastDict As Object)
+    Dim key As Variant
+    Dim parts() As String
+    Dim r As ListRow
+
+    If lo Is Nothing Then Exit Sub
+
+    ClearProjectionRows lo
+    If qtyDict Is Nothing Then Exit Sub
+
+    For Each key In qtyDict.Keys
+        parts = Split(CStr(key), "|", 2)
+        Set r = lo.ListRows.Add
+        SetTableRowValue lo, r.Index, "SKU", parts(0)
+        If UBound(parts) >= 1 Then SetTableRowValue lo, r.Index, "Location", parts(1)
+        SetTableRowValue lo, r.Index, "QtyOnHand", CDbl(qtyDict(key))
+        If lastDict.Exists(CStr(key)) Then SetTableRowValue lo, r.Index, "LastAppliedUTC", CDate(lastDict(key))
+    Next key
+End Sub
+
+Private Sub ClearProjectionRows(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    Do While lo.ListRows.Count > 0
+        lo.ListRows(lo.ListRows.Count).Delete
+    Loop
 End Sub

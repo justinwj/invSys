@@ -15,23 +15,23 @@ Public Function BuildPhase2ConfigWorkbook(ByVal whId As String, ByVal stId As St
     Set wsSt = wb.Worksheets.Add(After:=wsWh)
     wsSt.Name = "StationConfig"
 
-    wsWh.Range("A1").Resize(1, 20).Value = Array( _
+    wsWh.Range("A1").Resize(1, 21).Value = Array( _
         "WarehouseId", "WarehouseName", "Timezone", "DefaultLocation", _
         "BatchSize", "LockTimeoutMinutes", "HeartbeatIntervalSeconds", "MaxLockHoldMinutes", _
         "SnapshotCadence", "BackupCadence", "PathDataRoot", "PathBackupRoot", "PathSharePointRoot", _
         "DesignsEnabled", "PoisonRetryMax", "AuthCacheTTLSeconds", "ProcessorServiceUserId", _
-        "FF_DesignsEnabled", "FF_OutlookAlerts", "FF_AutoSnapshot")
-    wsWh.Range("A2").Resize(1, 20).Value = Array( _
+        "FF_DesignsEnabled", "FF_OutlookAlerts", "FF_AutoSnapshot", "AutoRefreshIntervalSeconds")
+    wsWh.Range("A2").Resize(1, 21).Value = Array( _
         whId, "Main Warehouse", "UTC", "A1", _
         500, 3, 30, 2, _
         "PER_BATCH", "DAILY", "C:\invSys\" & whId & "\", "C:\invSys\Backups\" & whId & "\", "", _
         False, 3, 300, processorServiceUserId, _
-        False, False, True)
-    wsWh.ListObjects.Add(xlSrcRange, wsWh.Range("A1:T2"), , xlYes).Name = "tblWarehouseConfig"
+        False, False, True, 0)
+    wsWh.ListObjects.Add(xlSrcRange, wsWh.Range("A1:U2"), , xlYes).Name = "tblWarehouseConfig"
 
-    wsSt.Range("A1").Resize(1, 4).Value = Array("StationId", "WarehouseId", "StationName", "RoleDefault")
-    wsSt.Range("A2").Resize(1, 4).Value = Array(stId, whId, Environ$("COMPUTERNAME"), roleDefault)
-    wsSt.ListObjects.Add(xlSrcRange, wsSt.Range("A1:D2"), , xlYes).Name = "tblStationConfig"
+    wsSt.Range("A1").Resize(1, 5).Value = Array("StationId", "WarehouseId", "StationName", "PathInboxRoot", "RoleDefault")
+    wsSt.Range("A2").Resize(1, 5).Value = Array(stId, whId, Environ$("COMPUTERNAME"), "", roleDefault)
+    wsSt.ListObjects.Add(xlSrcRange, wsSt.Range("A1:E2"), , xlYes).Name = "tblStationConfig"
 
     p = BuildUniqueTestWorkbookPath(whId & ".invSys.Config")
     SaveWorkbookAsTestFile wb, p, 51
@@ -44,6 +44,16 @@ Public Sub SetWarehouseConfigValue(ByVal wb As Workbook, ByVal keyName As String
 
     If wb Is Nothing Then Exit Sub
     Set lo = wb.Worksheets("WarehouseConfig").ListObjects("tblWarehouseConfig")
+    idx = lo.ListColumns(keyName).Index
+    lo.DataBodyRange.Cells(1, idx).Value = valueIn
+End Sub
+
+Public Sub SetStationConfigValue(ByVal wb As Workbook, ByVal keyName As String, ByVal valueIn As Variant)
+    Dim lo As ListObject
+    Dim idx As Long
+
+    If wb Is Nothing Then Exit Sub
+    Set lo = wb.Worksheets("StationConfig").ListObjects("tblStationConfig")
     idx = lo.ListColumns(keyName).Index
     lo.DataBodyRange.Cells(1, idx).Value = valueIn
 End Sub
@@ -92,24 +102,21 @@ Public Function BuildPhase2InventoryWorkbook(ByVal whId As String, _
     DeleteAllTableRows wb.Worksheets("InventoryLog").ListObjects("tblInventoryLog"), True
     DeleteAllTableRows wb.Worksheets("AppliedEvents").ListObjects("tblAppliedEvents"), True
     DeleteAllTableRows wb.Worksheets("Locks").ListObjects("tblLocks"), True
+    DeleteAllTableRows wb.Worksheets("SkuBalance").ListObjects("tblSkuBalance"), True
+    DeleteAllTableRows wb.Worksheets("LocationBalance").ListObjects("tblLocationBalance"), True
 
     If Not IsMissing(skuList) Then
-        Set wsSku = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
-        wsSku.Name = "SkuCatalog"
-        wsSku.Range("A1").Value = "SKU"
-        lastRow = 1
+        Set wsSku = wb.Worksheets("SkuCatalog")
+        Set loSku = wsSku.ListObjects("tblSkuCatalog")
+        DeleteAllTableRows loSku, True
+
         If IsArray(skuList) Then
             For i = LBound(skuList) To UBound(skuList)
-                lastRow = lastRow + 1
-                wsSku.Cells(lastRow, 1).Value = skuList(i)
+                AppendSkuCatalogRow loSku, CStr(skuList(i))
             Next i
         ElseIf CStr(skuList) <> "" Then
-            lastRow = 2
-            wsSku.Cells(lastRow, 1).Value = CStr(skuList)
+            AppendSkuCatalogRow loSku, CStr(skuList)
         End If
-        If lastRow = 1 Then lastRow = 2
-        Set loSku = wsSku.ListObjects.Add(xlSrcRange, wsSku.Range("A1:A" & CStr(lastRow)), , xlYes)
-        loSku.Name = "tblSkuCatalog"
     End If
 
     If persistWorkbook Then
@@ -127,6 +134,46 @@ Public Function BuildCanonicalInventoryWorkbook(ByVal whId As String, ByVal root
     targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Data.Inventory.xlsb"
     SaveWorkbookAsCanonicalFile wb, targetPath, 50
     Set BuildCanonicalInventoryWorkbook = wb
+End Function
+
+Private Sub AppendSkuCatalogRow(ByVal loSku As ListObject, ByVal skuValue As String)
+    Dim r As ListRow
+
+    If loSku Is Nothing Then Exit Sub
+    skuValue = Trim$(skuValue)
+    If skuValue = "" Then Exit Sub
+
+    EnsureTableSheetEditable loSku, "tblSkuCatalog"
+    Set r = loSku.ListRows.Add
+    SetTableRowValue loSku, r.Index, "SKU", skuValue
+    SetTableRowValue loSku, r.Index, "ITEM_CODE", skuValue
+    SetTableRowValue loSku, r.Index, "ITEM", skuValue
+End Sub
+
+Public Function BuildCanonicalConfigWorkbook(ByVal whId As String, _
+                                             ByVal stId As String, _
+                                             ByVal rootPath As String, _
+                                             Optional ByVal roleDefault As String = "RECEIVE", _
+                                             Optional ByVal processorServiceUserId As String = "svc_processor") As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildPhase2ConfigWorkbook(whId, stId, roleDefault, processorServiceUserId)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Config.xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalConfigWorkbook = wb
+End Function
+
+Public Function BuildCanonicalAuthWorkbook(ByVal whId As String, _
+                                           ByVal rootPath As String, _
+                                           Optional ByVal processorServiceUserId As String = "svc_processor") As Workbook
+    Dim wb As Workbook
+    Dim targetPath As String
+
+    Set wb = BuildPhase2AuthWorkbook(whId, processorServiceUserId)
+    targetPath = EnsureCanonicalFolder(rootPath) & "\" & whId & ".invSys.Auth.xlsb"
+    SaveWorkbookAsCanonicalFile wb, targetPath, 50
+    Set BuildCanonicalAuthWorkbook = wb
 End Function
 
 Public Function BuildPhase2InboxWorkbook(Optional ByVal stationId As String = "S1") As Workbook

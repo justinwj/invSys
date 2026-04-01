@@ -6,6 +6,15 @@ Private Const TABLE_OUTBOX As String = "tblOutboxEvents"
 
 Private Const SHEET_SNAPSHOT As String = "InventorySnapshot"
 Private Const TABLE_SNAPSHOT As String = "tblInventorySnapshot"
+Private Const SNAPSHOT_SOURCE_LOG As String = "LOG_FALLBACK"
+Private Const SNAPSHOT_SOURCE_PROJECTION As String = "PROJECTION"
+Private Const SNAPSHOT_SOURCE_MANAGED_SURFACE As String = "MANAGED_SURFACE"
+Private Const PUBLISH_LOG_FILE As String = "invSys.Publish.log"
+Private Const PUBLISH_STAGE_SUFFIX As String = ".uploading"
+Private Const PUBLISH_BACKUP_SUFFIX As String = ".previous"
+
+Private mSimulatePublishInterrupt As Boolean
+Private mSimulatePublishInterruptMatch As String
 
 Public Function AppendEventToOutbox(ByVal evt As Object, _
                                     Optional ByVal inventoryWb As Workbook = Nothing, _
@@ -14,6 +23,7 @@ Public Function AppendEventToOutbox(ByVal evt As Object, _
                                     Optional ByRef report As String = "") As Boolean
     On Error GoTo FailAppend
 
+    Dim t0 As Single
     Dim warehouseId As String
     Dim wbOutbox As Workbook
     Dim loOutbox As ListObject
@@ -21,6 +31,10 @@ Public Function AppendEventToOutbox(ByVal evt As Object, _
     Dim eventId As String
     Dim rowIndex As Long
     Dim r As ListRow
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+
+    t0 = Timer
 
     warehouseId = GetEventStringSync(evt, "WarehouseId")
     eventId = GetEventStringSync(evt, "EventID")
@@ -29,18 +43,21 @@ Public Function AppendEventToOutbox(ByVal evt As Object, _
         Exit Function
     End If
 
+    If outboxWb Is Nothing Then Set openPaths = CaptureOpenWorkbookPathsSync()
     Set wbOutbox = ResolveOutboxWorkbook(warehouseId, outboxWb, True)
     If wbOutbox Is Nothing Then
         report = "Outbox workbook not found."
         Exit Function
     End If
-    If Not EnsureOutboxSchema(wbOutbox, report) Then Exit Function
+    openedTransient = (outboxWb Is Nothing) And (Not WorkbookWasAlreadyOpenSync(openPaths, wbOutbox))
+    If openedTransient Then HideWorkbookWindowsSync wbOutbox
+    If Not EnsureOutboxSchema(wbOutbox, report) Then GoTo CleanExit
 
     Set loOutbox = wbOutbox.Worksheets(SHEET_OUTBOX).ListObjects(TABLE_OUTBOX)
     Set appliedMeta = ResolveAppliedMeta(eventId, inventoryWb)
     If appliedMeta Is Nothing Then
         report = "Applied metadata not found for EventID " & eventId
-        Exit Function
+        GoTo CleanExit
     End If
 
     rowIndex = FindRowByValueSync(loOutbox, "EventID", eventId)
@@ -60,12 +77,19 @@ Public Function AppendEventToOutbox(ByVal evt As Object, _
     SetTableRowValueSync loOutbox, rowIndex, "AppliedByUserId", GetEventStringSync(evt, "UserId")
     SetTableRowValueSync loOutbox, rowIndex, "RunId", ResolveStringSync(appliedMeta, "RunId", runId)
     SetTableRowValueSync loOutbox, rowIndex, "DeltaJson", BuildDeltaJsonForOutbox(evt)
+    SaveWorkbookSync wbOutbox
 
+    If Trim$(runId) <> "" Then PerfMarkSafeSync runId, "OutboxWrite", CLng((Timer - t0) * 1000)
     report = "OK"
     AppendEventToOutbox = True
+CleanExit:
+    If openedTransient Then CloseWorkbookQuietlySync wbOutbox
     Exit Function
 
 FailAppend:
+    On Error Resume Next
+    If openedTransient Then CloseWorkbookQuietlySync wbOutbox
+    On Error GoTo 0
     report = "AppendEventToOutbox failed: " & Err.Description
 End Function
 
@@ -93,6 +117,7 @@ Public Function EnsureOutboxSchema(Optional ByVal targetWb As Workbook = Nothing
     headers = Array("EventID", "UndoOfEventId", "EventType", "WarehouseId", "StationId", "OccurredAtUTC", _
                     "AppliedAtUTC", "AppliedByUserId", "RunId", "DeltaJson")
 
+    NormalizeWorkbookSheetsSync wb, Array(SHEET_OUTBOX)
     Set ws = EnsureWorksheetSync(wb, SHEET_OUTBOX)
     EnsureWorksheetEditableSync ws
     On Error Resume Next
@@ -111,7 +136,7 @@ Public Function EnsureOutboxSchema(Optional ByVal targetWb As Workbook = Nothing
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnSync lo, CStr(headers(i))
     Next i
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add
+    RemoveBlankSeedRowSync lo
 
     report = "OK"
     EnsureOutboxSchema = True
@@ -125,19 +150,19 @@ Public Function GenerateWarehouseSnapshot(Optional ByVal warehouseId As String =
                                           Optional ByVal inventoryWb As Workbook = Nothing, _
                                           Optional ByVal outputPath As String = "", _
                                           Optional ByVal snapshotWb As Workbook = Nothing, _
-                                          Optional ByRef report As String = "") As Boolean
+                                          Optional ByRef report As String = "", _
+                                          Optional ByVal perfRunId As String = "") As Boolean
     On Error GoTo FailSnapshot
 
+    Dim t0 As Single
     Dim wbInv As Workbook
     Dim wbSnap As Workbook
-    Dim loLog As ListObject
-    Dim summary As Object
-    Dim lastApplied As Object
-    Dim sku As String
-    Dim qty As Double
-    Dim rowDate As Variant
-    Dim i As Long
+    Dim snapshotRows As Object
     Dim savePath As String
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+
+    t0 = Timer
 
     If warehouseId = "" Then warehouseId = modConfig.GetWarehouseId()
     Set wbInv = ResolveInventoryWorkbookBridge(warehouseId, inventoryWb)
@@ -146,53 +171,112 @@ Public Function GenerateWarehouseSnapshot(Optional ByVal warehouseId As String =
         Exit Function
     End If
 
-    Set loLog = FindListObjectByNameSync(wbInv, "tblInventoryLog")
-    If loLog Is Nothing Then
-        report = "Inventory log table not found."
+    Set snapshotRows = BuildSnapshotRowsSync(wbInv, warehouseId, report)
+    If snapshotRows Is Nothing Then
+        If report = "" Then report = "Snapshot rows could not be built."
         Exit Function
     End If
 
-    Set summary = CreateObject("Scripting.Dictionary")
-    summary.CompareMode = vbTextCompare
-    Set lastApplied = CreateObject("Scripting.Dictionary")
-    lastApplied.CompareMode = vbTextCompare
-
-    If Not loLog.DataBodyRange Is Nothing Then
-        For i = 1 To loLog.ListRows.Count
-            sku = SafeTrimSync(GetCellByColumnSync(loLog, i, "SKU"))
-            If sku <> "" Then
-                qty = 0
-                If IsNumeric(GetCellByColumnSync(loLog, i, "QtyDelta")) Then qty = CDbl(GetCellByColumnSync(loLog, i, "QtyDelta"))
-                If summary.Exists(sku) Then
-                    summary(sku) = CDbl(summary(sku)) + qty
-                Else
-                    summary.Add sku, qty
-                End If
-
-                rowDate = GetCellByColumnSync(loLog, i, "AppliedAtUTC")
-                If IsDate(rowDate) Then
-                    If (Not lastApplied.Exists(sku)) Or CDate(rowDate) > CDate(lastApplied(sku)) Then lastApplied(sku) = CDate(rowDate)
-                End If
-            End If
-        Next i
-    End If
-
+    If snapshotWb Is Nothing Then Set openPaths = CaptureOpenWorkbookPathsSync()
     Set wbSnap = ResolveSnapshotWorkbook(warehouseId, outputPath, snapshotWb, True)
     If wbSnap Is Nothing Then
         report = "Snapshot workbook not resolved."
         Exit Function
     End If
+    openedTransient = (snapshotWb Is Nothing) And (Not WorkbookWasAlreadyOpenSync(openPaths, wbSnap))
+    If openedTransient Then HideWorkbookWindowsSync wbSnap
     savePath = wbSnap.FullName
-    If Not EnsureSnapshotSchema(wbSnap, report) Then Exit Function
-    WriteSnapshotRows wbSnap, warehouseId, summary, lastApplied
+    If Not EnsureSnapshotSchema(wbSnap, report) Then GoTo CleanExit
+    WriteSnapshotRows wbSnap, warehouseId, snapshotRows
     wbSnap.Save
 
+    If Trim$(perfRunId) <> "" Then PerfMarkSafeSync perfRunId, "SnapshotWrite", CLng((Timer - t0) * 1000)
     report = savePath
     GenerateWarehouseSnapshot = True
+CleanExit:
+    If openedTransient Then CloseWorkbookQuietlySync wbSnap
     Exit Function
 
 FailSnapshot:
+    On Error Resume Next
+    If openedTransient Then CloseWorkbookQuietlySync wbSnap
+    On Error GoTo 0
     report = "GenerateWarehouseSnapshot failed: " & Err.Description
+End Function
+
+Public Function PublishWarehouseArtifactsToSharePoint(Optional ByVal warehouseId As String = "", _
+                                                      Optional ByVal sharePointRoot As String = "", _
+                                                      Optional ByVal localOutboxPath As String = "", _
+                                                      Optional ByVal localSnapshotPath As String = "", _
+                                                      Optional ByRef report As String = "", _
+                                                      Optional ByVal perfRunId As String = "") As Boolean
+    On Error GoTo FailPublish
+
+    Dim t0 As Single
+    Dim resolvedWarehouseId As String
+    Dim resolvedSharePointRoot As String
+    Dim resolvedOutboxPath As String
+    Dim resolvedSnapshotPath As String
+    Dim outboxTargetPath As String
+    Dim snapshotTargetPath As String
+    Dim outboxStatus As String
+    Dim snapshotStatus As String
+    Dim hadFailure As Boolean
+
+    t0 = Timer
+
+    resolvedWarehouseId = SafeTrimSync(warehouseId)
+    If resolvedWarehouseId = "" Then resolvedWarehouseId = SafeTrimSync(modConfig.GetWarehouseId())
+    If resolvedWarehouseId = "" Then
+        report = "WarehouseId not resolved."
+        AppendPublishLogSync resolvedWarehouseId, perfRunId, "FAIL", report
+        Exit Function
+    End If
+
+    resolvedSharePointRoot = ResolveSharePointRootSync(sharePointRoot)
+    If resolvedSharePointRoot = "" Then
+        report = "SKIPPED_NOT_CONFIGURED"
+        AppendPublishLogSync resolvedWarehouseId, perfRunId, "SKIP", report
+        PublishWarehouseArtifactsToSharePoint = True
+        Exit Function
+    End If
+
+    resolvedOutboxPath = SafeTrimSync(localOutboxPath)
+    If resolvedOutboxPath = "" Then resolvedOutboxPath = ResolveOutboxPath(resolvedWarehouseId)
+    resolvedSnapshotPath = SafeTrimSync(localSnapshotPath)
+    If resolvedSnapshotPath = "" Then resolvedSnapshotPath = ResolveSnapshotPath(resolvedWarehouseId, "")
+
+    outboxTargetPath = resolvedSharePointRoot & "Events\" & GetFileNameSync(resolvedOutboxPath)
+    snapshotTargetPath = resolvedSharePointRoot & "Snapshots\" & GetFileNameSync(resolvedSnapshotPath)
+
+    If Not PublishFileToSharePointSync(resolvedOutboxPath, outboxTargetPath, outboxStatus) Then hadFailure = True
+    If Not PublishFileToSharePointSync(resolvedSnapshotPath, snapshotTargetPath, snapshotStatus) Then hadFailure = True
+
+    report = "Root=" & resolvedSharePointRoot & "|Outbox=" & outboxStatus & "|Snapshot=" & snapshotStatus
+    AppendPublishLogSync resolvedWarehouseId, perfRunId, IIf(hadFailure, "FAIL", "OK"), report
+    If Trim$(perfRunId) <> "" Then PerfMarkSafeSync perfRunId, "SharePointPublish", CLng((Timer - t0) * 1000)
+    PublishWarehouseArtifactsToSharePoint = Not hadFailure
+    Exit Function
+
+FailPublish:
+    report = "PublishWarehouseArtifactsToSharePoint failed: " & Err.Description
+    AppendPublishLogSync SafeTrimSync(warehouseId), perfRunId, "FAIL", report
+End Function
+
+Public Sub ConfigurePublishInterruptSimulation(Optional ByVal enabled As Boolean = False, _
+                                               Optional ByVal targetPathMatch As String = "")
+    mSimulatePublishInterrupt = enabled
+    mSimulatePublishInterruptMatch = SafeTrimSync(targetPathMatch)
+End Sub
+
+Public Sub ClearPublishInterruptSimulation()
+    ConfigurePublishInterruptSimulation False, vbNullString
+End Sub
+
+Public Function PublishFileToTargetPath(ByVal sourcePath As String, _
+                                        ByVal targetPath As String, _
+                                        Optional ByRef statusOut As String = "") As Boolean
+    PublishFileToTargetPath = PublishFileToSharePointSync(sourcePath, targetPath, statusOut)
 End Function
 
 Public Function ResolveOutboxWorkbook(Optional ByVal warehouseId As String = "", _
@@ -206,7 +290,7 @@ Public Function ResolveOutboxWorkbook(Optional ByVal warehouseId As String = "",
     End If
 
     targetPath = ResolveOutboxPath(warehouseId)
-    Set ResolveOutboxWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing)
+    Set ResolveOutboxWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing, False)
 End Function
 
 Public Function ResolveSnapshotWorkbook(Optional ByVal warehouseId As String = "", _
@@ -221,7 +305,7 @@ Public Function ResolveSnapshotWorkbook(Optional ByVal warehouseId As String = "
     End If
 
     targetPath = ResolveSnapshotPath(warehouseId, outputPath)
-    Set ResolveSnapshotWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing)
+    Set ResolveSnapshotWorkbook = ResolveWorkbookByPathSync(targetPath, createIfMissing, Not createIfMissing)
 End Function
 
 Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As String) As Boolean
@@ -233,7 +317,10 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     Dim startCell As Range
     Dim i As Long
 
-    headers = Array("WarehouseId", "SKU", "QtyOnHand", "LastAppliedAtUTC")
+    headers = Array("WarehouseId", "SKU", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
+                    "RECEIVED", "USED", "MADE", "SHIPMENTS", _
+                    "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedAtUTC")
+    NormalizeWorkbookSheetsSync wb, Array(SHEET_SNAPSHOT)
     Set ws = EnsureWorksheetSync(wb, SHEET_SNAPSHOT)
     EnsureWorksheetEditableSync ws
 
@@ -253,7 +340,8 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnSync lo, CStr(headers(i))
     Next i
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add
+    RemoveBlankSeedRowSync lo
+    ApplySnapshotColumnFormatsSync lo
 
     report = "OK"
     EnsureSnapshotSchema = True
@@ -265,35 +353,547 @@ End Function
 
 Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
                               ByVal warehouseId As String, _
-                              ByVal summary As Object, _
-                              ByVal lastApplied As Object)
+                              ByVal snapshotRows As Object)
     Dim lo As ListObject
     Dim key As Variant
     Dim rowIndex As Long
+    Dim entry As Object
 
     Set lo = wb.Worksheets(SHEET_SNAPSHOT).ListObjects(TABLE_SNAPSHOT)
     DeleteAllRowsSync lo
 
-    If summary Is Nothing Or summary.Count = 0 Then
+    If snapshotRows Is Nothing Or snapshotRows.Count = 0 Then
         EnsureTableSheetEditableSync lo, TABLE_SNAPSHOT
         lo.ListRows.Add
         SetTableRowValueSync lo, 1, "WarehouseId", warehouseId
         SetTableRowValueSync lo, 1, "SKU", ""
+        SetTableRowValueSync lo, 1, "ITEM", ""
+        SetTableRowValueSync lo, 1, "UOM", ""
+        SetTableRowValueSync lo, 1, "LOCATION", ""
+        SetTableRowValueSync lo, 1, "DESCRIPTION", ""
+        SetTableRowValueSync lo, 1, "VENDOR(s)", ""
+        SetTableRowValueSync lo, 1, "VENDOR_CODE", ""
+        SetTableRowValueSync lo, 1, "CATEGORY", ""
+        SetTableRowValueSync lo, 1, "RECEIVED", 0
+        SetTableRowValueSync lo, 1, "USED", 0
+        SetTableRowValueSync lo, 1, "MADE", 0
+        SetTableRowValueSync lo, 1, "SHIPMENTS", 0
         SetTableRowValueSync lo, 1, "QtyOnHand", 0
+        SetTableRowValueSync lo, 1, "QtyAvailable", 0
+        SetTableRowValueSync lo, 1, "LocationSummary", vbNullString
         SetTableRowValueSync lo, 1, "LastAppliedAtUTC", vbNullString
         Exit Sub
     End If
 
-    For Each key In summary.Keys
+    For Each key In snapshotRows.Keys
         EnsureTableSheetEditableSync lo, TABLE_SNAPSHOT
         lo.ListRows.Add
         rowIndex = lo.ListRows.Count
-        SetTableRowValueSync lo, rowIndex, "WarehouseId", warehouseId
-        SetTableRowValueSync lo, rowIndex, "SKU", CStr(key)
-        SetTableRowValueSync lo, rowIndex, "QtyOnHand", CDbl(summary(key))
-        If lastApplied.Exists(key) Then SetTableRowValueSync lo, rowIndex, "LastAppliedAtUTC", lastApplied(key)
+        Set entry = snapshotRows(key)
+        SetTableRowValueSync lo, rowIndex, "WarehouseId", ResolveStringSync(entry, "WarehouseId", warehouseId)
+        SetTableRowValueSync lo, rowIndex, "SKU", ResolveStringSync(entry, "SKU", CStr(key))
+        SetTableRowValueSync lo, rowIndex, "ITEM", ResolveStringSync(entry, "ITEM", ResolveStringSync(entry, "ItemName", ResolveStringSync(entry, "SKU", CStr(key))))
+        SetTableRowValueSync lo, rowIndex, "UOM", ResolveStringSync(entry, "UOM", "")
+        SetTableRowValueSync lo, rowIndex, "LOCATION", ResolveStringSync(entry, "LOCATION", "")
+        SetTableRowValueSync lo, rowIndex, "DESCRIPTION", ResolveStringSync(entry, "DESCRIPTION", "")
+        SetTableRowValueSync lo, rowIndex, "VENDOR(s)", ResolveStringSync(entry, "VENDOR(s)", ResolveStringSync(entry, "VENDORS", ""))
+        SetTableRowValueSync lo, rowIndex, "VENDOR_CODE", ResolveStringSync(entry, "VENDOR_CODE", "")
+        SetTableRowValueSync lo, rowIndex, "CATEGORY", ResolveStringSync(entry, "CATEGORY", "")
+        SetTableRowValueSync lo, rowIndex, "RECEIVED", ResolveNumberSync(entry, "RECEIVED")
+        SetTableRowValueSync lo, rowIndex, "USED", ResolveNumberSync(entry, "USED")
+        SetTableRowValueSync lo, rowIndex, "MADE", ResolveNumberSync(entry, "MADE")
+        SetTableRowValueSync lo, rowIndex, "SHIPMENTS", ResolveNumberSync(entry, "SHIPMENTS")
+        SetTableRowValueSync lo, rowIndex, "QtyOnHand", ResolveNumberSync(entry, "QtyOnHand")
+        SetTableRowValueSync lo, rowIndex, "QtyAvailable", ResolveNumberSync(entry, "QtyAvailable")
+        SetTableRowValueSync lo, rowIndex, "LocationSummary", ResolveStringSync(entry, "LocationSummary", "")
+        If entry.Exists("LastAppliedAtUTC") Then SetTableRowValueSync lo, rowIndex, "LastAppliedAtUTC", entry("LastAppliedAtUTC")
     Next key
 End Sub
+
+Private Function BuildSnapshotRowsSync(ByVal wbInv As Workbook, _
+                                       ByVal warehouseId As String, _
+                                       ByRef report As String) As Object
+    Dim snapshotRows As Object
+
+    Set snapshotRows = BuildSnapshotRowsFromProjectionsSync(wbInv, warehouseId)
+    If Not snapshotRows Is Nothing Then
+        ApplyLatestMovementToSnapshotRowsSync snapshotRows, wbInv, warehouseId
+        AppendCatalogRowsSync snapshotRows, wbInv, warehouseId
+        report = SNAPSHOT_SOURCE_PROJECTION
+        Set BuildSnapshotRowsSync = snapshotRows
+        Exit Function
+    End If
+
+    Set snapshotRows = BuildSnapshotRowsFromLogSync(wbInv, warehouseId)
+    If Not snapshotRows Is Nothing Then
+        ApplyLatestMovementToSnapshotRowsSync snapshotRows, wbInv, warehouseId
+        AppendCatalogRowsSync snapshotRows, wbInv, warehouseId
+        report = SNAPSHOT_SOURCE_LOG
+        Set BuildSnapshotRowsSync = snapshotRows
+        Exit Function
+    End If
+
+    Set snapshotRows = BuildSnapshotRowsFromManagedSurfaceSync(wbInv, warehouseId)
+    If Not snapshotRows Is Nothing Then
+        ApplyLatestMovementToSnapshotRowsSync snapshotRows, wbInv, warehouseId
+        AppendCatalogRowsSync snapshotRows, wbInv, warehouseId
+        report = SNAPSHOT_SOURCE_MANAGED_SURFACE
+        Set BuildSnapshotRowsSync = snapshotRows
+        Exit Function
+    End If
+
+    report = "Inventory snapshot source tables not found."
+End Function
+
+Private Function BuildSnapshotRowsFromProjectionsSync(ByVal wbInv As Workbook, ByVal warehouseId As String) As Object
+    Dim loSku As ListObject
+    Dim loLoc As ListObject
+    Dim rows As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim entry As Object
+    Dim qtyOnHand As Double
+
+    Set loSku = FindListObjectByNameSync(wbInv, "tblSkuBalance")
+    Set loLoc = FindListObjectByNameSync(wbInv, "tblLocationBalance")
+    If loSku Is Nothing Then Exit Function
+
+    Set rows = CreateObject("Scripting.Dictionary")
+    rows.CompareMode = vbTextCompare
+
+    If Not loSku.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To loSku.ListRows.Count
+            sku = SafeTrimSync(GetCellByColumnSync(loSku, rowIndex, "SKU"))
+            If sku = "" Then GoTo ContinueSkuLoop
+
+            Set entry = EnsureSnapshotEntrySync(rows, sku, warehouseId)
+            qtyOnHand = NzDblSync(GetCellByColumnSync(loSku, rowIndex, "QtyOnHand"))
+            entry("QtyOnHand") = qtyOnHand
+            entry("QtyAvailable") = qtyOnHand
+            If IsDate(GetCellByColumnSync(loSku, rowIndex, "LastAppliedUTC")) Then
+                entry("LastAppliedAtUTC") = CDate(GetCellByColumnSync(loSku, rowIndex, "LastAppliedUTC"))
+            End If
+ContinueSkuLoop:
+        Next rowIndex
+    End If
+
+    If Not loLoc Is Nothing Then AppendLocationSummariesSync rows, loLoc, warehouseId
+    Set BuildSnapshotRowsFromProjectionsSync = rows
+End Function
+
+Private Function BuildSnapshotRowsFromLogSync(ByVal wbInv As Workbook, ByVal warehouseId As String) As Object
+    Dim loLog As ListObject
+    Dim rows As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim locationVal As String
+    Dim qty As Double
+    Dim entry As Object
+    Dim rowDate As Variant
+
+    Set loLog = FindListObjectByNameSync(wbInv, "tblInventoryLog")
+    If loLog Is Nothing Then Exit Function
+
+    Set rows = CreateObject("Scripting.Dictionary")
+    rows.CompareMode = vbTextCompare
+
+    If Not loLog.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To loLog.ListRows.Count
+            sku = SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "SKU"))
+            If sku = "" Then GoTo ContinueLogLoop
+
+            Set entry = EnsureSnapshotEntrySync(rows, sku, warehouseId)
+            qty = 0
+            If IsNumeric(GetCellByColumnSync(loLog, rowIndex, "QtyDelta")) Then qty = CDbl(GetCellByColumnSync(loLog, rowIndex, "QtyDelta"))
+            entry("QtyOnHand") = ResolveNumberSync(entry, "QtyOnHand") + qty
+            entry("QtyAvailable") = ResolveNumberSync(entry, "QtyOnHand")
+
+            rowDate = GetCellByColumnSync(loLog, rowIndex, "AppliedAtUTC")
+            If IsDate(rowDate) Then
+                If (Not entry.Exists("LastAppliedAtUTC")) Or CDate(rowDate) > CDate(entry("LastAppliedAtUTC")) Then
+                    entry("LastAppliedAtUTC") = CDate(rowDate)
+                End If
+            End If
+
+            locationVal = SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "Location"))
+            If locationVal <> "" Then AppendLocationFragmentSync entry, locationVal, qty
+ContinueLogLoop:
+        Next rowIndex
+    End If
+
+    Set BuildSnapshotRowsFromLogSync = rows
+End Function
+
+Private Function BuildSnapshotRowsFromManagedSurfaceSync(ByVal wbInv As Workbook, ByVal warehouseId As String) As Object
+    Dim loInv As ListObject
+    Dim rows As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim entry As Object
+    Dim qtyOnHand As Double
+    Dim qtyAvailable As Double
+    Dim locationSummary As String
+    Dim lastApplied As Variant
+
+    Set loInv = FindListObjectByNameSync(wbInv, "invSys")
+    If loInv Is Nothing Then Exit Function
+    If loInv.DataBodyRange Is Nothing Then Exit Function
+
+    Set rows = CreateObject("Scripting.Dictionary")
+    rows.CompareMode = vbTextCompare
+
+    For rowIndex = 1 To loInv.ListRows.Count
+        sku = ResolveCatalogCellTextSync(loInv, rowIndex, "ITEM_CODE")
+        If sku = "" Then sku = ResolveCatalogCellTextSync(loInv, rowIndex, "SKU")
+        If sku = "" Then GoTo ContinueManagedLoop
+
+        Set entry = EnsureSnapshotEntrySync(rows, sku, warehouseId)
+        qtyOnHand = NzDblSync(GetCellByColumnSync(loInv, rowIndex, "TOTAL INV"))
+        qtyAvailable = qtyOnHand
+        If GetColumnIndexSync(loInv, "QtyAvailable") > 0 Then
+            qtyAvailable = NzDblSync(GetCellByColumnSync(loInv, rowIndex, "QtyAvailable"))
+        End If
+        locationSummary = ResolveCatalogCellTextSync(loInv, rowIndex, "LocationSummary")
+        If locationSummary = "" Then locationSummary = ResolveCatalogCellTextSync(loInv, rowIndex, "LOCATION")
+
+        entry("QtyOnHand") = qtyOnHand
+        entry("QtyAvailable") = qtyAvailable
+        entry("LocationSummary") = NormalizeManagedLocationSummarySync(locationSummary, qtyOnHand)
+        ApplyManagedSurfaceMetadataSync entry, loInv, rowIndex
+
+        lastApplied = GetCellByColumnSync(loInv, rowIndex, "LAST EDITED")
+        If Not IsDate(lastApplied) Then lastApplied = GetCellByColumnSync(loInv, rowIndex, "TOTAL INV LAST EDIT")
+        If IsDate(lastApplied) Then entry("LastAppliedAtUTC") = CDate(lastApplied)
+ContinueManagedLoop:
+    Next rowIndex
+
+    Set BuildSnapshotRowsFromManagedSurfaceSync = rows
+End Function
+
+Private Sub ApplyManagedSurfaceMetadataSync(ByVal entry As Object, ByVal loInv As ListObject, ByVal rowIndex As Long)
+    ApplyCatalogValueIfPresentSync entry, "ITEM", ResolveCatalogCellTextSync(loInv, rowIndex, "ITEM")
+    ApplyCatalogValueIfPresentSync entry, "UOM", ResolveCatalogCellTextSync(loInv, rowIndex, "UOM")
+    ApplyCatalogValueIfPresentSync entry, "LOCATION", ResolveCatalogCellTextSync(loInv, rowIndex, "LOCATION")
+    ApplyCatalogValueIfPresentSync entry, "DESCRIPTION", ResolveCatalogCellTextSync(loInv, rowIndex, "DESCRIPTION")
+    ApplyCatalogValueIfPresentSync entry, "VENDOR(s)", ResolveCatalogCellTextSync(loInv, rowIndex, "VENDOR(s)")
+    ApplyCatalogValueIfPresentSync entry, "VENDOR_CODE", ResolveCatalogCellTextSync(loInv, rowIndex, "VENDOR_CODE")
+    ApplyCatalogValueIfPresentSync entry, "CATEGORY", ResolveCatalogCellTextSync(loInv, rowIndex, "CATEGORY")
+End Sub
+
+Private Function NormalizeManagedLocationSummarySync(ByVal locationSummary As String, ByVal qtyOnHand As Double) As String
+    locationSummary = SafeTrimSync(locationSummary)
+    If locationSummary <> "" Then
+        NormalizeManagedLocationSummarySync = locationSummary
+        Exit Function
+    End If
+    If qtyOnHand = 0 Then Exit Function
+    NormalizeManagedLocationSummarySync = "(blank)=" & FormatQuantitySync(qtyOnHand)
+End Function
+
+Private Sub AppendLocationSummariesSync(ByVal snapshotRows As Object, _
+                                        ByVal loLoc As ListObject, _
+                                        ByVal warehouseId As String)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim locationVal As String
+    Dim qtyOnHand As Double
+    Dim entry As Object
+    Dim rowDate As Variant
+
+    If snapshotRows Is Nothing Or loLoc Is Nothing Then Exit Sub
+    If loLoc.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To loLoc.ListRows.Count
+        sku = SafeTrimSync(GetCellByColumnSync(loLoc, rowIndex, "SKU"))
+        If sku = "" Then GoTo ContinueLocLoop
+
+        locationVal = SafeTrimSync(GetCellByColumnSync(loLoc, rowIndex, "Location"))
+        qtyOnHand = NzDblSync(GetCellByColumnSync(loLoc, rowIndex, "QtyOnHand"))
+        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
+        AppendLocationFragmentSync entry, locationVal, qtyOnHand
+
+        rowDate = GetCellByColumnSync(loLoc, rowIndex, "LastAppliedUTC")
+        If IsDate(rowDate) Then
+            If (Not entry.Exists("LastAppliedAtUTC")) Or CDate(rowDate) > CDate(entry("LastAppliedAtUTC")) Then
+                entry("LastAppliedAtUTC") = CDate(rowDate)
+            End If
+        End If
+ContinueLocLoop:
+    Next rowIndex
+End Sub
+
+Private Function EnsureSnapshotEntrySync(ByVal rows As Object, _
+                                         ByVal sku As String, _
+                                         ByVal warehouseId As String) As Object
+    Dim entry As Object
+    Dim locationTotals As Object
+
+    If rows.Exists(sku) Then
+        Set EnsureSnapshotEntrySync = rows(sku)
+        Exit Function
+    End If
+
+    Set entry = CreateObject("Scripting.Dictionary")
+    entry.CompareMode = vbTextCompare
+    entry("WarehouseId") = warehouseId
+    entry("SKU") = sku
+    entry("QtyOnHand") = 0#
+    entry("QtyAvailable") = 0#
+    entry("LocationSummary") = vbNullString
+    Set locationTotals = CreateObject("Scripting.Dictionary")
+    locationTotals.CompareMode = vbTextCompare
+    entry.Add "LocationTotals", locationTotals
+    rows.Add sku, entry
+    Set EnsureSnapshotEntrySync = entry
+End Function
+
+Private Sub AppendCatalogRowsSync(ByVal snapshotRows As Object, ByVal wbInv As Workbook, ByVal warehouseId As String)
+    Dim loCatalog As ListObject
+
+    If snapshotRows Is Nothing Then Exit Sub
+    If wbInv Is Nothing Then Exit Sub
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "invSys")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "tblItemSearchIndex")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+
+    Set loCatalog = FindListObjectByNameSync(wbInv, "tblSkuCatalog")
+    ApplyCatalogTableToSnapshotRowsSync snapshotRows, loCatalog, warehouseId
+End Sub
+
+Private Sub ApplyLatestMovementToSnapshotRowsSync(ByVal snapshotRows As Object, _
+                                                  ByVal wbInv As Workbook, _
+                                                  ByVal warehouseId As String)
+    Dim loLog As ListObject
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim eventType As String
+    Dim qty As Double
+    Dim eventStamp As Double
+    Dim bestStamp As Double
+    Dim rowDate As Variant
+    Dim entry As Object
+    Dim stampMap As Object
+
+    If snapshotRows Is Nothing Then Exit Sub
+    If wbInv Is Nothing Then Exit Sub
+
+    Set loLog = FindListObjectByNameSync(wbInv, "tblInventoryLog")
+    If loLog Is Nothing Then Exit Sub
+    If loLog.DataBodyRange Is Nothing Then Exit Sub
+
+    Set stampMap = CreateObject("Scripting.Dictionary")
+    stampMap.CompareMode = vbTextCompare
+
+    For rowIndex = 1 To loLog.ListRows.Count
+        sku = SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "SKU"))
+        If sku = "" Then GoTo ContinueLoop
+
+        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
+        eventType = UCase$(SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "EventType")))
+        qty = Abs(NzDblSync(GetCellByColumnSync(loLog, rowIndex, "QtyDelta")))
+        rowDate = GetCellByColumnSync(loLog, rowIndex, "AppliedAtUTC")
+        If IsDate(rowDate) Then
+            eventStamp = CDbl(CDate(rowDate))
+        Else
+            eventStamp = CDbl(rowIndex)
+        End If
+
+        If stampMap.Exists(sku) Then bestStamp = CDbl(stampMap(sku))
+        If (Not stampMap.Exists(sku)) Or eventStamp >= bestStamp Then
+            stampMap(sku) = eventStamp
+            entry("RECEIVED") = 0#
+            entry("USED") = 0#
+            entry("MADE") = 0#
+            entry("SHIPMENTS") = 0#
+            Select Case eventType
+                Case "RECEIVE"
+                    entry("RECEIVED") = qty
+                Case "SHIP"
+                    entry("SHIPMENTS") = qty
+                Case "PROD_CONSUME"
+                    entry("USED") = qty
+                Case "PROD_COMPLETE"
+                    entry("MADE") = qty
+            End Select
+        End If
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub ApplyCatalogTableToSnapshotRowsSync(ByVal snapshotRows As Object, _
+                                                ByVal loCatalog As ListObject, _
+                                                ByVal warehouseId As String)
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim entry As Object
+    Dim itemValue As String
+    Dim uomValue As String
+    Dim locationValue As String
+    Dim descriptionValue As String
+    Dim vendorValue As String
+    Dim vendorCodeValue As String
+    Dim categoryValue As String
+
+    If snapshotRows Is Nothing Then Exit Sub
+    If loCatalog Is Nothing Then Exit Sub
+    If loCatalog.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To loCatalog.ListRows.Count
+        sku = ResolveCatalogCellTextSync(loCatalog, rowIndex, "SKU")
+        If sku = "" Then sku = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
+        If sku = "" Then GoTo ContinueLoop
+
+        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
+        itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ItemName")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "NAME")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "SKU")
+        If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
+
+        uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UOM")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNITOFMEASURE")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNITOFMEASUREMENT")
+        If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNIT")
+
+        locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "LOCATION")
+        If locationValue = "" Then locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DEFAULTLOCATION")
+        If locationValue = "" Then locationValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "PRIMARYLOCATION")
+
+        descriptionValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DESCRIPTION")
+        If descriptionValue = "" Then descriptionValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "DESC")
+
+        vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR(s)")
+        If vendorValue = "" Then vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDORS")
+        If vendorValue = "" Then vendorValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR")
+
+        vendorCodeValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDOR_CODE")
+        If vendorCodeValue = "" Then vendorCodeValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "VENDORCODE")
+
+        categoryValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "CATEGORY")
+
+        ApplyCatalogValueIfPresentSync entry, "ITEM", itemValue
+        ApplyCatalogValueIfPresentSync entry, "UOM", uomValue
+        ApplyCatalogValueIfPresentSync entry, "LOCATION", locationValue
+        ApplyCatalogValueIfPresentSync entry, "DESCRIPTION", descriptionValue
+        ApplyCatalogValueIfPresentSync entry, "VENDOR(s)", vendorValue
+        ApplyCatalogValueIfPresentSync entry, "VENDOR_CODE", vendorCodeValue
+        ApplyCatalogValueIfPresentSync entry, "CATEGORY", categoryValue
+ContinueLoop:
+    Next rowIndex
+End Sub
+
+Private Sub ApplyCatalogValueIfPresentSync(ByVal entry As Object, ByVal key As String, ByVal valueIn As String)
+    If entry Is Nothing Then Exit Sub
+    valueIn = SafeTrimSync(valueIn)
+    If valueIn = "" Then Exit Sub
+    entry(key) = valueIn
+End Sub
+
+Private Function ResolveCatalogCellTextSync(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As String
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    idx = GetColumnIndexSync(lo, columnName)
+    If idx = 0 Then Exit Function
+    ResolveCatalogCellTextSync = SafeTrimSync(lo.DataBodyRange.Cells(rowIndex, idx).Value)
+End Function
+
+Private Sub AppendLocationFragmentSync(ByVal entry As Object, ByVal locationVal As String, ByVal qtyOnHand As Double)
+    Dim totals As Object
+    Dim label As String
+
+    If entry Is Nothing Then Exit Sub
+
+    label = NormalizeLocationLabelForSummarySync(locationVal)
+    Set totals = EnsureLocationTotalsSync(entry)
+    If totals.Exists(label) Then
+        totals(label) = CDbl(totals(label)) + qtyOnHand
+    Else
+        totals.Add label, qtyOnHand
+    End If
+
+    entry("LocationSummary") = BuildLocationSummarySync(totals)
+End Sub
+
+Private Function EnsureLocationTotalsSync(ByVal entry As Object) As Object
+    If entry Is Nothing Then Exit Function
+
+    On Error Resume Next
+    If entry.Exists("LocationTotals") Then
+        If IsObject(entry("LocationTotals")) Then
+            Set EnsureLocationTotalsSync = entry("LocationTotals")
+            Exit Function
+        End If
+    End If
+    On Error GoTo 0
+
+    Set EnsureLocationTotalsSync = CreateObject("Scripting.Dictionary")
+    EnsureLocationTotalsSync.CompareMode = vbTextCompare
+    entry.Add "LocationTotals", EnsureLocationTotalsSync
+End Function
+
+Private Function BuildLocationSummarySync(ByVal totals As Object) As String
+    Dim key As Variant
+    Dim fragment As String
+
+    If totals Is Nothing Then Exit Function
+    For Each key In totals.Keys
+        fragment = CStr(key) & "=" & FormatQuantitySync(CDbl(totals(key)))
+        If BuildLocationSummarySync = "" Then
+            BuildLocationSummarySync = fragment
+        Else
+            BuildLocationSummarySync = BuildLocationSummarySync & "; " & fragment
+        End If
+    Next key
+End Function
+
+Private Function NormalizeLocationLabelForSummarySync(ByVal locationVal As String) As String
+    Dim label As String
+    Dim eqPos As Long
+    Dim suffixText As String
+
+    label = Trim$(locationVal)
+    If label = "" Then
+        NormalizeLocationLabelForSummarySync = "(blank)"
+        Exit Function
+    End If
+
+    eqPos = InStrRev(label, "=")
+    If eqPos > 1 Then
+        suffixText = Trim$(Mid$(label, eqPos + 1))
+        suffixText = Replace$(suffixText, ",", "")
+        If suffixText <> "" Then
+            If IsNumeric(suffixText) Then label = Trim$(Left$(label, eqPos - 1))
+        End If
+    End If
+
+    If label = "" Then label = "(blank)"
+    NormalizeLocationLabelForSummarySync = label
+End Function
+
+Private Function FormatQuantitySync(ByVal qtyIn As Double) As String
+    If Abs(qtyIn - CLng(qtyIn)) < 0.0000001 Then
+        FormatQuantitySync = CStr(CLng(qtyIn))
+    Else
+        FormatQuantitySync = Trim$(Format$(qtyIn, "0.########"))
+    End If
+End Function
+
+Private Function NzDblSync(ByVal valueIn As Variant) As Double
+    If IsError(valueIn) Or IsNull(valueIn) Or IsEmpty(valueIn) Or valueIn = "" Then Exit Function
+    NzDblSync = CDbl(valueIn)
+End Function
+
+Private Function ResolveNumberSync(ByVal dict As Object, ByVal keyName As String) As Double
+    If dict Is Nothing Then Exit Function
+    If Not dict.Exists(keyName) Then Exit Function
+    ResolveNumberSync = NzDblSync(dict(keyName))
+End Function
 
 Private Function ResolveAppliedMeta(ByVal eventId As String, ByVal inventoryWb As Workbook) As Object
     Dim wb As Workbook
@@ -343,7 +943,8 @@ End Function
 Private Function ResolveOutboxPath(ByVal warehouseId As String) As String
     Dim rootPath As String
     If warehouseId = "" Then warehouseId = modConfig.GetWarehouseId()
-    rootPath = modConfig.GetString("PathDataRoot", Environ$("TEMP"))
+    rootPath = Trim$(GetCoreDataRootOverride())
+    If rootPath = "" Then rootPath = modConfig.GetString("PathDataRoot", Environ$("TEMP"))
     ResolveOutboxPath = NormalizeFolderPathSync(rootPath) & warehouseId & ".Outbox.Events.xlsb"
 End Function
 
@@ -354,35 +955,239 @@ Private Function ResolveSnapshotPath(ByVal warehouseId As String, ByVal outputPa
         Exit Function
     End If
     If warehouseId = "" Then warehouseId = modConfig.GetWarehouseId()
-    rootPath = modConfig.GetString("PathDataRoot", Environ$("TEMP"))
+    rootPath = Trim$(GetCoreDataRootOverride())
+    If rootPath = "" Then rootPath = modConfig.GetString("PathDataRoot", Environ$("TEMP"))
     ResolveSnapshotPath = NormalizeFolderPathSync(rootPath) & warehouseId & ".invSys.Snapshot.Inventory.xlsb"
 End Function
 
-Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, ByVal createIfMissing As Boolean) As Workbook
+Private Function ResolveSharePointRootSync(ByVal sharePointRoot As String) As String
+    sharePointRoot = SafeTrimSync(sharePointRoot)
+    If sharePointRoot = "" Then sharePointRoot = SafeTrimSync(modConfig.GetString("PathSharePointRoot", ""))
+    If sharePointRoot = "" Then Exit Function
+    ResolveSharePointRootSync = NormalizeFolderPathSync(sharePointRoot)
+End Function
+
+Private Function PublishFileToSharePointSync(ByVal sourcePath As String, _
+                                             ByVal targetPath As String, _
+                                             ByRef statusOut As String) As Boolean
+    On Error GoTo FailCopy
+
+    Dim stagePath As String
+    Dim backupPath As String
+    Dim hadExistingTarget As Boolean
+    Dim restoredPrior As Boolean
+
+    sourcePath = SafeTrimSync(sourcePath)
+    targetPath = SafeTrimSync(targetPath)
+
+    If sourcePath = "" Then
+        statusOut = "SKIPPED_SOURCE_BLANK"
+        PublishFileToSharePointSync = True
+        Exit Function
+    End If
+    If targetPath = "" Then
+        statusOut = "FAILED_TARGET_BLANK"
+        Exit Function
+    End If
+    If Not FileExistsSync(sourcePath) Then
+        statusOut = "SKIPPED_LOCAL_MISSING"
+        PublishFileToSharePointSync = True
+        Exit Function
+    End If
+
+    EnsureFolderForFileSync targetPath
+    stagePath = targetPath & PUBLISH_STAGE_SUFFIX
+    backupPath = targetPath & PUBLISH_BACKUP_SUFFIX
+
+    RecoverInterruptedPublishArtifactsSync targetPath, stagePath, backupPath
+    FileCopy sourcePath, stagePath
+    hadExistingTarget = FileExistsSync(targetPath)
+    If hadExistingTarget Then
+        DeleteFileIfPresentSync backupPath
+        Name targetPath As backupPath
+    End If
+    If ShouldSimulatePublishInterruptSync(targetPath) Then
+        Err.Raise vbObjectError + 6130, "modWarehouseSync.PublishFileToSharePointSync", "Simulated publish interruption after backup handoff."
+    End If
+    Name stagePath As targetPath
+    DeleteFileIfPresentSync backupPath
+
+    statusOut = IIf(hadExistingTarget, "REPLACED:", "COPIED:") & targetPath
+    PublishFileToSharePointSync = True
+    Exit Function
+
+FailCopy:
+    restoredPrior = RestorePublishBackupSync(targetPath, backupPath)
+    If restoredPrior Then
+        statusOut = "FAILED_RESTORED_PRIOR:" & Err.Description
+    Else
+        statusOut = "FAILED:" & Err.Description
+    End If
+    DeleteFileIfPresentSync stagePath
+    DeleteFileIfPresentSync backupPath
+End Function
+
+Private Sub RecoverInterruptedPublishArtifactsSync(ByVal targetPath As String, _
+                                                   ByVal stagePath As String, _
+                                                   ByVal backupPath As String)
+    If FileExistsSync(targetPath) Then
+        DeleteFileIfPresentSync stagePath
+        DeleteFileIfPresentSync backupPath
+        Exit Sub
+    End If
+
+    If FileExistsSync(backupPath) Then
+        Name backupPath As targetPath
+    End If
+    DeleteFileIfPresentSync stagePath
+    DeleteFileIfPresentSync backupPath
+End Sub
+
+Private Function RestorePublishBackupSync(ByVal targetPath As String, ByVal backupPath As String) As Boolean
+    On Error GoTo FailRestore
+
+    If FileExistsSync(targetPath) Then Exit Function
+    If Not FileExistsSync(backupPath) Then Exit Function
+
+    Name backupPath As targetPath
+    RestorePublishBackupSync = True
+    Exit Function
+
+FailRestore:
+    RestorePublishBackupSync = False
+End Function
+
+Private Function ShouldSimulatePublishInterruptSync(ByVal targetPath As String) As Boolean
+    If Not mSimulatePublishInterrupt Then Exit Function
+    If mSimulatePublishInterruptMatch = "" Then
+        ShouldSimulatePublishInterruptSync = True
+    Else
+        ShouldSimulatePublishInterruptSync = (InStr(1, targetPath, mSimulatePublishInterruptMatch, vbTextCompare) > 0)
+    End If
+End Function
+
+Private Sub DeleteFileIfPresentSync(ByVal fullPath As String)
+    If SafeTrimSync(fullPath) = "" Then Exit Sub
+    On Error Resume Next
+    If FileExistsSync(fullPath) Then Kill fullPath
+    On Error GoTo 0
+End Sub
+
+Private Function GetFileNameSync(ByVal fullPath As String) As String
+    Dim sepPos As Long
+
+    fullPath = SafeTrimSync(fullPath)
+    If fullPath = "" Then Exit Function
+
+    sepPos = InStrRev(fullPath, "\")
+    If sepPos > 0 Then
+        GetFileNameSync = Mid$(fullPath, sepPos + 1)
+    Else
+        GetFileNameSync = fullPath
+    End If
+End Function
+
+Private Sub AppendPublishLogSync(ByVal warehouseId As String, _
+                                 ByVal runId As String, _
+                                 ByVal resultCode As String, _
+                                 ByVal detailText As String)
+    Dim fileNum As Integer
+    Dim logPath As String
+    Dim lineText As String
+
+    On Error Resume Next
+    logPath = ResolvePublishLogPathSync()
+    lineText = Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | WarehouseId=" & SafeTrimSync(warehouseId) & _
+               " | RunId=" & SafeTrimSync(runId) & " | Result=" & SafeTrimSync(resultCode) & _
+               " | " & SafeTrimSync(detailText)
+    fileNum = FreeFile
+    Open logPath For Append As #fileNum
+    Print #fileNum, lineText
+    Close #fileNum
+    LogDiagnosticSafeSync "WAN-PUBLISH", Replace$(lineText, " | ", "|")
+    On Error GoTo 0
+End Sub
+
+Private Function ResolvePublishLogPathSync() As String
+    Dim rootPath As String
+
+    rootPath = Trim$(GetCoreDataRootOverride())
+    If rootPath = "" Then rootPath = SafeTrimSync(modConfig.GetString("PathDataRoot", ""))
+    If rootPath = "" Then rootPath = Environ$("TEMP")
+
+    ResolvePublishLogPathSync = NormalizeFolderPathSync(rootPath) & PUBLISH_LOG_FILE
+End Function
+
+Private Function ResolveWorkbookByPathSync(ByVal targetPath As String, _
+                                           ByVal createIfMissing As Boolean, _
+                                           Optional ByVal openReadOnly As Boolean = False) As Workbook
+    On Error GoTo FailOpen
+
     Dim wb As Workbook
     Dim fileExists As Boolean
+    Dim prevEvents As Boolean
+    Dim eventsSuppressed As Boolean
+    Dim prevAlerts As Boolean
+    Dim alertsSuppressed As Boolean
+    Dim prevScreenUpdating As Boolean
 
     If Trim$(targetPath) = "" Then Exit Function
+    prevScreenUpdating = Application.ScreenUpdating
 
     For Each wb In Application.Workbooks
         If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+            If (Not openReadOnly) And wb.ReadOnly Then Exit Function
             Set ResolveWorkbookByPathSync = wb
             Exit Function
         End If
     Next wb
 
-    fileExists = (Len(Dir$(targetPath)) > 0)
-    If fileExists Then
-        Set ResolveWorkbookByPathSync = Application.Workbooks.Open(targetPath)
+    fileExists = FileExistsSync(targetPath)
+    If fileExists Or (IsUncPathSync(targetPath) And Not createIfMissing) Then
+        prevAlerts = Application.DisplayAlerts
+        Application.DisplayAlerts = False
+        alertsSuppressed = True
+        Application.ScreenUpdating = False
+        On Error Resume Next
+        Set ResolveWorkbookByPathSync = Application.Workbooks.Open( _
+            Filename:=targetPath, _
+            UpdateLinks:=0, _
+            ReadOnly:=openReadOnly, _
+            IgnoreReadOnlyRecommended:=True, _
+            Notify:=False, _
+            AddToMru:=False)
+        If Not ResolveWorkbookByPathSync Is Nothing Then HideWorkbookWindowsSync ResolveWorkbookByPathSync
+        If Err.Number <> 0 Then
+            Err.Clear
+            Set ResolveWorkbookByPathSync = Nothing
+        End If
+        On Error GoTo FailOpen
+        Application.ScreenUpdating = prevScreenUpdating
+        Application.DisplayAlerts = prevAlerts
+        alertsSuppressed = False
         Exit Function
     End If
 
     If Not createIfMissing Then Exit Function
 
     EnsureFolderForFileSync targetPath
-    Set wb = Application.Workbooks.Add
+    prevEvents = Application.EnableEvents
+    Application.EnableEvents = False
+    eventsSuppressed = True
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
     wb.SaveAs Filename:=targetPath, FileFormat:=50
+    Application.EnableEvents = prevEvents
+    eventsSuppressed = False
+    HideWorkbookWindowsSync wb
     Set ResolveWorkbookByPathSync = wb
+    Exit Function
+
+FailOpen:
+    On Error Resume Next
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    Application.ScreenUpdating = prevScreenUpdating
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
 End Function
 
 Private Function EnsureWorksheetSync(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
@@ -395,6 +1200,26 @@ Private Function EnsureWorksheetSync(ByVal wb As Workbook, ByVal sheetName As St
         EnsureWorksheetSync.Name = sheetName
     End If
 End Function
+
+Private Sub NormalizeWorkbookSheetsSync(ByVal wb As Workbook, ByVal wantedSheets As Variant)
+    Dim i As Long
+    Dim ws As Worksheet
+    Dim prevAlerts As Boolean
+
+    If wb Is Nothing Then Exit Sub
+
+    For i = LBound(wantedSheets) To UBound(wantedSheets)
+        EnsureWorksheetSync wb, CStr(wantedSheets(i))
+    Next i
+
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    For i = wb.Worksheets.Count To 1 Step -1
+        Set ws = wb.Worksheets(i)
+        If Not WorksheetNameInSetSync(ws.Name, wantedSheets) Then ws.Delete
+    Next i
+    Application.DisplayAlerts = prevAlerts
+End Sub
 
 Private Sub EnsureWorksheetEditableSync(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
@@ -433,6 +1258,15 @@ Private Sub EnsureListColumnSync(ByVal lo As ListObject, ByVal columnName As Str
     lo.ListColumns(lo.ListColumns.Count).Name = columnName
 End Sub
 
+Private Sub RemoveBlankSeedRowSync(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    If lo.ListRows.Count <> 1 Then Exit Sub
+    If Not TableRowIsBlankSync(lo, 1) Then Exit Sub
+    EnsureTableSheetEditableSync lo, lo.Name
+    lo.ListRows(1).Delete
+End Sub
+
 Private Sub DeleteAllRowsSync(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
     EnsureTableSheetEditableSync lo, lo.Name
@@ -440,6 +1274,33 @@ Private Sub DeleteAllRowsSync(ByVal lo As ListObject)
         lo.ListRows(lo.ListRows.Count).Delete
     Loop
 End Sub
+
+Private Function WorksheetNameInSetSync(ByVal sheetName As String, ByVal sheetNames As Variant) As Boolean
+    Dim i As Long
+
+    For i = LBound(sheetNames) To UBound(sheetNames)
+        If StrComp(CStr(sheetNames(i)), sheetName, vbTextCompare) = 0 Then
+            WorksheetNameInSetSync = True
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function TableRowIsBlankSync(ByVal lo As ListObject, ByVal rowIndex As Long) As Boolean
+    Dim colIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    If rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then Exit Function
+
+    TableRowIsBlankSync = True
+    For colIndex = 1 To lo.ListColumns.Count
+        If SafeTrimSync(lo.DataBodyRange.Cells(rowIndex, colIndex).Value) <> "" Then
+            TableRowIsBlankSync = False
+            Exit Function
+        End If
+    Next colIndex
+End Function
 
 Private Function FindListObjectByNameSync(ByVal wb As Workbook, ByVal tableName As String) As ListObject
     Dim ws As Worksheet
@@ -461,6 +1322,76 @@ Private Function FindRowByValueSync(ByVal lo As ListObject, ByVal columnName As 
         End If
     Next i
 End Function
+
+Private Sub SaveWorkbookSync(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    If wb.ReadOnly Then Exit Sub
+    If wb.Path = "" Then Exit Sub
+    wb.Save
+End Sub
+
+Private Function CaptureOpenWorkbookPathsSync() As Object
+    Dim wb As Workbook
+    Dim paths As Object
+
+    Set paths = CreateObject("Scripting.Dictionary")
+    paths.CompareMode = vbTextCompare
+
+    For Each wb In Application.Workbooks
+        If Trim$(wb.FullName) <> "" Then paths(Trim$(wb.FullName)) = True
+    Next wb
+
+    Set CaptureOpenWorkbookPathsSync = paths
+End Function
+
+Private Function WorkbookWasAlreadyOpenSync(ByVal openPaths As Object, ByVal wb As Workbook) As Boolean
+    If openPaths Is Nothing Then Exit Function
+    If wb Is Nothing Then Exit Function
+    If Trim$(wb.FullName) = "" Then Exit Function
+    WorkbookWasAlreadyOpenSync = openPaths.Exists(Trim$(wb.FullName))
+End Function
+
+Private Sub HideWorkbookWindowsSync(ByVal wb As Workbook)
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To wb.Windows.Count
+        wb.Windows(i).Visible = False
+    Next i
+    ReactivateQuietOwnerSafeSync
+    On Error GoTo 0
+End Sub
+
+Private Sub ReactivateQuietOwnerSafeSync()
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modUiQuiet.ReactivateQuietOwner"
+    On Error GoTo 0
+End Sub
+
+Private Sub PerfMarkSafeSync(ByVal runId As String, ByVal segmentName As String, ByVal elapsedMs As Long)
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modPerfLog.PerfMark", runId, segmentName, elapsedMs
+    On Error GoTo 0
+End Sub
+
+Private Sub LogDiagnosticSafeSync(ByVal categoryName As String, ByVal detailText As String)
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modPerfLog.LogDiagnostic", categoryName, detailText
+    On Error GoTo 0
+End Sub
+
+Private Sub CloseWorkbookQuietlySync(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    HideWorkbookWindowsSync wb
+    If Not wb.ReadOnly Then
+        If wb.Saved = False Then wb.Save
+    End If
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
 
 Private Function GetCellByColumnSync(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
     Dim idx As Long
@@ -487,6 +1418,27 @@ Private Function GetColumnIndexSync(ByVal lo As ListObject, ByVal columnName As 
         End If
     Next i
 End Function
+
+Private Sub ApplySnapshotColumnFormatsSync(ByVal lo As ListObject)
+    Dim qtyCols As Variant
+    Dim dateCols As Variant
+    Dim key As Variant
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+
+    qtyCols = Array("QtyOnHand", "QtyAvailable")
+    For Each key In qtyCols
+        idx = GetColumnIndexSync(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "0.########"
+    Next key
+
+    dateCols = Array("LastAppliedAtUTC")
+    For Each key In dateCols
+        idx = GetColumnIndexSync(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "yyyy-mm-dd hh:mm:ss"
+    Next key
+End Sub
 
 Private Function GetEventStringSync(ByVal evt As Object, ByVal key As String) As String
     Dim v As Variant
@@ -536,18 +1488,81 @@ End Sub
 Private Sub CreateFolderRecursiveSync(ByVal folderPath As String)
     Dim parentPath As String
     Dim sepPos As Long
+    Dim fso As Object
 
     folderPath = Trim$(folderPath)
     If folderPath = "" Then Exit Sub
-    If Len(Dir$(folderPath, vbDirectory)) > 0 Then Exit Sub
+    If FolderExistsSync(folderPath) Then Exit Sub
 
     If Right$(folderPath, 1) = "\" Then folderPath = Left$(folderPath, Len(folderPath) - 1)
+    If IsUncShareRootSync(folderPath) Then Exit Sub
+
     sepPos = InStrRev(folderPath, "\")
     If sepPos > 0 Then
         parentPath = Left$(folderPath, sepPos - 1)
         If Right$(parentPath, 1) = ":" Then parentPath = parentPath & "\"
-        If parentPath <> "" And Len(Dir$(parentPath, vbDirectory)) = 0 Then CreateFolderRecursiveSync parentPath
+        If parentPath <> "" And Not FolderExistsSync(parentPath) Then CreateFolderRecursiveSync parentPath
     End If
 
-    If Len(Dir$(folderPath, vbDirectory)) = 0 Then MkDir folderPath
+    If FolderExistsSync(folderPath) Then Exit Sub
+
+    If IsUncPathSync(folderPath) Then
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fso.CreateFolder folderPath
+    Else
+        MkDir folderPath
+    End If
 End Sub
+
+Private Function FileExistsSync(ByVal fullPath As String) As Boolean
+    Dim fso As Object
+
+    fullPath = Trim$(Replace$(fullPath, "/", "\"))
+    If fullPath = "" Then Exit Function
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FileExistsSync = fso.FileExists(fullPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FileExistsSync = (Len(Dir$(fullPath, vbNormal)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function FolderExistsSync(ByVal folderPath As String) As Boolean
+    Dim fso As Object
+
+    folderPath = Trim$(Replace$(folderPath, "/", "\"))
+    If folderPath = "" Then Exit Function
+    If Right$(folderPath, 1) = "\" And Len(folderPath) > 3 Then folderPath = Left$(folderPath, Len(folderPath) - 1)
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FolderExistsSync = fso.FolderExists(folderPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FolderExistsSync = (Len(Dir$(folderPath, vbDirectory)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function IsUncPathSync(ByVal folderPath As String) As Boolean
+    folderPath = Trim$(Replace$(folderPath, "/", "\"))
+    IsUncPathSync = (Left$(folderPath, 2) = "\\")
+End Function
+
+Private Function IsUncShareRootSync(ByVal folderPath As String) As Boolean
+    Dim trimmedPath As String
+    Dim parts() As String
+
+    trimmedPath = Trim$(Replace$(folderPath, "/", "\"))
+    If Right$(trimmedPath, 1) = "\" And Len(trimmedPath) > 3 Then trimmedPath = Left$(trimmedPath, Len(trimmedPath) - 1)
+    If Left$(trimmedPath, 2) <> "\\" Then Exit Function
+
+    trimmedPath = Mid$(trimmedPath, 3)
+    If trimmedPath = "" Then Exit Function
+
+    parts = Split(trimmedPath, "\")
+    IsUncShareRootSync = (UBound(parts) = 1)
+End Function

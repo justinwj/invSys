@@ -7,6 +7,8 @@ Public Sub RunInventorySchemaTests()
 
     Tally TestEnsureInventorySchema_RecreatesTables(), passed, failed
     Tally TestEnsureInventorySchema_AddsMissingColumns(), passed, failed
+    Tally TestEnsureInventorySchema_RemovesBlankSeedRow(), passed, failed
+    Tally TestEnsureInventorySchema_CreatesProjectionTables(), passed, failed
 
     Debug.Print "Inventory schema tests - Passed: " & passed & " Failed: " & failed
 End Sub
@@ -23,6 +25,27 @@ Public Function TestEnsureInventorySchema_RecreatesTables() As Long
             TestEnsureInventorySchema_RecreatesTables = 1
         End If
     End If
+
+CleanExit:
+    CloseNoSave wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestEnsureInventorySchema_CreatesProjectionTables() As Long
+    Dim wb As Workbook
+    Dim report As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then GoTo CleanExit
+    If Not TableExists(wb, "tblSkuBalance") Then GoTo CleanExit
+    If Not TableExists(wb, "tblLocationBalance") Then GoTo CleanExit
+    If Not TableExists(wb, "tblInventoryLedgerStatus") Then GoTo CleanExit
+
+    TestEnsureInventorySchema_CreatesProjectionTables = 1
 
 CleanExit:
     CloseNoSave wb
@@ -51,6 +74,31 @@ Public Function TestEnsureInventorySchema_AddsMissingColumns() As Long
             TestEnsureInventorySchema_AddsMissingColumns = 1
         End If
     End If
+
+CleanExit:
+    CloseNoSave wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestEnsureInventorySchema_RemovesBlankSeedRow() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loLog As ListObject
+    Dim loApplied As ListObject
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then GoTo CleanExit
+
+    Set loLog = wb.Worksheets("InventoryLog").ListObjects("tblInventoryLog")
+    Set loApplied = wb.Worksheets("AppliedEvents").ListObjects("tblAppliedEvents")
+    If loLog.ListRows.Count <> 0 Then GoTo CleanExit
+    If loApplied.ListRows.Count <> 0 Then GoTo CleanExit
+
+    TestEnsureInventorySchema_RemovesBlankSeedRow = 1
 
 CleanExit:
     CloseNoSave wb

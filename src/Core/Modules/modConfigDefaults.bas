@@ -19,7 +19,7 @@ End Type
 
 Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
     Dim idx As Long
-    ReDim defs(1 To 23)
+    ReDim defs(1 To 25)
     idx = 0
 
     AddConfigKey defs, idx, "WarehouseId", CONFIG_TYPE_STRING, "", True, CONFIG_SCOPE_WAREHOUSE
@@ -42,11 +42,13 @@ Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
 
     AddConfigKey defs, idx, "StationId", CONFIG_TYPE_STRING, "", True, CONFIG_SCOPE_STATION
     AddConfigKey defs, idx, "StationName", CONFIG_TYPE_STRING, "", False, CONFIG_SCOPE_STATION
+    AddConfigKey defs, idx, "PathInboxRoot", CONFIG_TYPE_STRING, "", False, CONFIG_SCOPE_STATION
     AddConfigKey defs, idx, "RoleDefault", CONFIG_TYPE_STRING, "RECEIVE", False, CONFIG_SCOPE_STATION
 
     AddConfigKey defs, idx, "FF_DesignsEnabled", CONFIG_TYPE_BOOLEAN, "FALSE", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "FF_OutlookAlerts", CONFIG_TYPE_BOOLEAN, "FALSE", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "FF_AutoSnapshot", CONFIG_TYPE_BOOLEAN, "TRUE", False, CONFIG_SCOPE_WAREHOUSE
+    AddConfigKey defs, idx, "AutoRefreshIntervalSeconds", CONFIG_TYPE_LONG, "0", False, CONFIG_SCOPE_WAREHOUSE
 
     GetConfigSchema = idx
 End Function

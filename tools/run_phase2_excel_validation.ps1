@@ -173,7 +173,8 @@ $cfgXlsx = Join-Path $fixtures "WH1.invSys.Config.sample.xlsx"
 $authXlsx = Join-Path $fixtures "WH1.invSys.Auth.sample.xlsx"
 $cfgXlsb = Join-Path $fixtures "WH1.invSys.Config.xlsb"
 $authXlsb = Join-Path $fixtures "WH1.invSys.Auth.xlsb"
-$harnessPath = Join-Path $fixtures "Phase2_TestHarness.xlsm"
+$harnessRunStamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$harnessPath = Join-Path $fixtures ("Phase2_TestHarness_" + $harnessRunStamp + ".xlsm")
 $resultPath = Join-Path $repo "tests/unit/phase2_test_results.md"
 
 & (Join-Path $repo "tools/create_phase1_fixture_xlsx.ps1") -OutputDir $fixtures | Out-Null
@@ -195,8 +196,11 @@ try {
     $modulePaths = @(
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
+        (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
+        (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
@@ -224,12 +228,16 @@ try {
         "TestCoreAuth.TestRequire_RaisesOnDeny",
         "TestInventorySchema.TestEnsureInventorySchema_RecreatesTables",
         "TestInventorySchema.TestEnsureInventorySchema_AddsMissingColumns",
+        "TestInventorySchema.TestEnsureInventorySchema_RemovesBlankSeedRow",
+        "TestInventorySchema.TestEnsureInventorySchema_CreatesProjectionTables",
         "TestCoreLockManager.TestAcquireReleaseLock_Lifecycle",
         "TestCoreLockManager.TestHeartbeat_ExtendsExpiry",
         "TestInventoryApply.TestApplyReceive_ValidEvent",
         "TestInventoryApply.TestApplyReceive_InvalidSKU",
         "TestInventoryApply.TestApplyReceive_Duplicate",
         "TestInventoryApply.TestApplyReceive_ProtectedSheetReturnsClearError",
+        "TestInventoryApply.TestApplyReceive_RebuildsProjectionTables",
+        "TestInventoryApply.TestResolveInventoryWorkbook_UsesConfiguredPathDataRoot",
         "TestInventoryApply.TestApplyShip_MultiLineEvent",
         "TestInventoryApply.TestApplyProdConsume_MultiLineEvent",
         "TestInventoryApply.TestApplyProdComplete_MultiLineEvent",
@@ -240,7 +248,6 @@ try {
         "TestCoreProcessor.TestRunBatch_ProcessesProdCompleteRow"
     )
 
-    if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }
     $harness = $excel.Workbooks.Add()
     $bootstrap = Add-BootstrapModule -Workbook $harness
     $vbProject = $harness.VBProject

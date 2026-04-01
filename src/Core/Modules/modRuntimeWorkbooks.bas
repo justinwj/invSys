@@ -11,12 +11,18 @@ Public Sub ClearCoreDataRootOverride()
     mCoreDataRootOverride = vbNullString
 End Sub
 
-Public Function ResolveCoreDataRoot(Optional ByVal rootPath As String = "") As String
+Public Function GetCoreDataRootOverride() As String
+    GetCoreDataRootOverride = Trim$(mCoreDataRootOverride)
+End Function
+
+Public Function ResolveCoreDataRoot(Optional ByVal rootPath As String = "", _
+                                    Optional ByVal warehouseId As String = "") As String
     Dim resolvedPath As String
 
     resolvedPath = Trim$(rootPath)
     If resolvedPath = "" Then resolvedPath = Trim$(mCoreDataRootOverride)
-    If resolvedPath = "" Then resolvedPath = Trim$(ThisWorkbook.Path)
+    If resolvedPath = "" Then resolvedPath = ResolveConfiguredRuntimeRoot(warehouseId)
+    If resolvedPath = "" Then resolvedPath = DefaultRuntimeRoot(ResolveWarehouseIdRuntime(warehouseId))
     If resolvedPath = "" Then resolvedPath = Trim$(CurDir$)
 
     ResolveCoreDataRoot = NormalizeFolderPath(resolvedPath)
@@ -30,7 +36,7 @@ Public Function OpenOrCreateConfigWorkbookRuntime(Optional ByVal warehouseId As 
     Dim targetPath As String
 
     resolvedWh = ResolveWarehouseIdRuntime(warehouseId)
-    targetPath = BuildCanonicalWorkbookPath(ResolveCoreDataRoot(rootPath), resolvedWh, "Config")
+    targetPath = BuildCanonicalWorkbookPath(ResolveCoreDataRoot(rootPath, resolvedWh), resolvedWh, "Config")
 
     Set OpenOrCreateConfigWorkbookRuntime = OpenOrCreateRuntimeWorkbook( _
         targetPath, "CONFIG", resolvedWh, ResolveStationIdRuntime(stationId), "", report)
@@ -47,7 +53,7 @@ Public Function OpenOrCreateAuthWorkbookRuntime(Optional ByVal warehouseId As St
     resolvedWh = ResolveWarehouseIdRuntime(warehouseId)
     resolvedServiceUser = Trim$(processorServiceUserId)
     If resolvedServiceUser = "" Then resolvedServiceUser = "svc_processor"
-    targetPath = BuildCanonicalWorkbookPath(ResolveCoreDataRoot(rootPath), resolvedWh, "Auth")
+    targetPath = BuildCanonicalWorkbookPath(ResolveCoreDataRoot(rootPath, resolvedWh), resolvedWh, "Auth")
 
     Set OpenOrCreateAuthWorkbookRuntime = OpenOrCreateRuntimeWorkbook( _
         targetPath, "AUTH", resolvedWh, "", resolvedServiceUser, report)
@@ -71,6 +77,8 @@ Private Function OpenOrCreateRuntimeWorkbook(ByVal targetPath As String, _
 
     Dim wb As Workbook
     Dim wasCreated As Boolean
+    Dim prevEvents As Boolean
+    Dim eventsSuppressed As Boolean
 
     If targetPath = "" Then Exit Function
 
@@ -80,24 +88,31 @@ Private Function OpenOrCreateRuntimeWorkbook(ByVal targetPath As String, _
         If Len(Dir$(targetPath)) > 0 Then
             Set wb = Application.Workbooks.Open(targetPath)
         Else
-            Set wb = Application.Workbooks.Add
+            prevEvents = Application.EnableEvents
+            Application.EnableEvents = False
+            eventsSuppressed = True
+            Set wb = Application.Workbooks.Add(xlWBATWorksheet)
             PrepareWorkbookSurface wb, workbookKind
             wb.SaveAs Filename:=targetPath, FileFormat:=50
             wasCreated = True
+            Application.EnableEvents = prevEvents
+            eventsSuppressed = False
         End If
     End If
 
+    NormalizeRuntimeWorkbookSheets wb, workbookKind
+
     Select Case UCase$(workbookKind)
         Case "CONFIG"
-            If Not modConfig.EnsureConfigSchema(wb, warehouseId, stationId, report) Then GoTo FailSoft
+            If Not EnsureConfigSchemaRuntime(wb, warehouseId, stationId, report) Then GoTo FailSoft
         Case "AUTH"
-            If Not modAuth.EnsureAuthSchema(wb, warehouseId, processorServiceUserId, report) Then GoTo FailSoft
+            If Not EnsureAuthSchemaRuntime(wb, warehouseId, processorServiceUserId, report) Then GoTo FailSoft
         Case Else
             report = "Unsupported workbook kind: " & workbookKind
             GoTo FailSoft
     End Select
 
-    If wasCreated Then wb.Save
+    SaveRuntimeWorkbook wb
     Set OpenOrCreateRuntimeWorkbook = wb
     Exit Function
 
@@ -106,6 +121,9 @@ FailSoft:
     Exit Function
 
 FailOpen:
+    On Error Resume Next
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    On Error GoTo 0
     report = workbookKind & " workbook open/create failed: " & Err.Description
 End Function
 
@@ -118,7 +136,7 @@ Private Function OpenFirstRuntimeWorkbook(ByVal likePattern As String, _
     Dim fileName As String
     Dim targetPath As String
 
-    rootPath = ResolveCoreDataRoot()
+    rootPath = ResolveCoreDataRoot("", ResolveWarehouseIdRuntime(""))
     If rootPath = "" Then Exit Function
 
     fileName = Dir$(rootPath & "\*.xlsb")
@@ -148,33 +166,62 @@ Private Sub PrepareWorkbookSurface(ByVal wb As Workbook, ByVal workbookKind As S
             Exit Sub
     End Select
 
-    EnsureSheetSet wb, wantedSheets
+    NormalizeSheetSet wb, wantedSheets
 End Sub
 
-Private Sub EnsureSheetSet(ByVal wb As Workbook, ByVal sheetNames As Variant)
-    Dim requiredCount As Long
+Private Sub NormalizeRuntimeWorkbookSheets(ByVal wb As Workbook, ByVal workbookKind As String)
+    Select Case UCase$(workbookKind)
+        Case "CONFIG"
+            NormalizeSheetSet wb, Array("WarehouseConfig", "StationConfig")
+        Case "AUTH"
+            NormalizeSheetSet wb, Array("Users", "Capabilities")
+    End Select
+End Sub
+
+Private Sub NormalizeSheetSet(ByVal wb As Workbook, ByVal sheetNames As Variant)
     Dim i As Long
+    Dim prevAlerts As Boolean
+    Dim ws As Worksheet
 
-    requiredCount = UBound(sheetNames) - LBound(sheetNames) + 1
-    Do While wb.Worksheets.Count < requiredCount
-        wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count)
-    Loop
+    If wb Is Nothing Then Exit Sub
 
-    For i = 1 To requiredCount
-        wb.Worksheets(i).Name = CStr(sheetNames(LBound(sheetNames) + i - 1))
+    For i = LBound(sheetNames) To UBound(sheetNames)
+        EnsureNamedWorksheetRuntime wb, CStr(sheetNames(i))
     Next i
 
-    For i = wb.Worksheets.Count To requiredCount + 1 Step -1
-        If WorksheetIsBlankRuntime(wb.Worksheets(i)) Then
-            Application.DisplayAlerts = False
-            wb.Worksheets(i).Delete
-            Application.DisplayAlerts = True
-        End If
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    For i = wb.Worksheets.Count To 1 Step -1
+        Set ws = wb.Worksheets(i)
+        If Not WorksheetNameInSetRuntime(ws.Name, sheetNames) Then ws.Delete
     Next i
+    Application.DisplayAlerts = prevAlerts
 End Sub
 
 Private Function WorksheetIsBlankRuntime(ByVal ws As Worksheet) As Boolean
     WorksheetIsBlankRuntime = (Application.WorksheetFunction.CountA(ws.Cells) = 0 And ws.ListObjects.Count = 0)
+End Function
+
+Private Function EnsureNamedWorksheetRuntime(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+    Set EnsureNamedWorksheetRuntime = wb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If EnsureNamedWorksheetRuntime Is Nothing Then
+        Set EnsureNamedWorksheetRuntime = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        EnsureNamedWorksheetRuntime.Name = sheetName
+    End If
+End Function
+
+Private Function WorksheetNameInSetRuntime(ByVal sheetName As String, ByVal sheetNames As Variant) As Boolean
+    Dim i As Long
+
+    For i = LBound(sheetNames) To UBound(sheetNames)
+        If StrComp(CStr(sheetNames(i)), sheetName, vbTextCompare) = 0 Then
+            WorksheetNameInSetRuntime = True
+            Exit Function
+        End If
+    Next i
 End Function
 
 Private Function FindOpenWorkbookByFullName(ByVal fullNameIn As String) As Workbook
@@ -220,6 +267,21 @@ Private Function GetParentFolder(ByVal pathIn As String) As String
     If sepPos > 1 Then GetParentFolder = Left$(pathIn, sepPos - 1)
 End Function
 
+Private Function ResolveConfiguredRuntimeRoot(ByVal warehouseId As String) As String
+    On Error Resume Next
+    ResolveConfiguredRuntimeRoot = Trim$(GetConfigStringRuntime("PathDataRoot", ""))
+    On Error GoTo 0
+
+    If ResolveConfiguredRuntimeRoot <> "" Then ResolveConfiguredRuntimeRoot = NormalizeFolderPath(ResolveConfiguredRuntimeRoot)
+    If ResolveConfiguredRuntimeRoot = "" And Trim$(warehouseId) <> "" Then
+        ResolveConfiguredRuntimeRoot = NormalizeFolderPath("C:\invSys\" & ResolveWarehouseIdRuntime(warehouseId) & "\")
+    End If
+End Function
+
+Private Function DefaultRuntimeRoot(ByVal warehouseId As String) As String
+    DefaultRuntimeRoot = NormalizeFolderPath("C:\invSys\" & ResolveWarehouseIdRuntime(warehouseId) & "\")
+End Function
+
 Private Sub EnsureFolderRecursiveRuntime(ByVal folderPath As String)
     Dim parentPath As String
     Dim sepPos As Long
@@ -237,3 +299,76 @@ Private Sub EnsureFolderRecursiveRuntime(ByVal folderPath As String)
 
     If Len(Dir$(folderPath, vbDirectory)) = 0 Then MkDir folderPath
 End Sub
+
+Private Sub SaveRuntimeWorkbook(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+    If wb.ReadOnly Then Exit Sub
+    If Trim$(wb.Path) = "" Then Exit Sub
+    wb.Save
+End Sub
+
+Private Function EnsureConfigSchemaRuntime(ByVal wb As Workbook, _
+                                           ByVal warehouseId As String, _
+                                           ByVal stationId As String, _
+                                           ByRef report As String) As Boolean
+    On Error GoTo FailEnsure
+
+    EnsureConfigSchemaRuntime = CBool(RunRuntimeWorkbookMacro4("modConfig.EnsureConfigSchema", wb, warehouseId, stationId, report))
+    If Not EnsureConfigSchemaRuntime And Len(report) = 0 Then report = "EnsureConfigSchema failed."
+    Exit Function
+
+FailEnsure:
+    If Len(report) = 0 Then report = "EnsureConfigSchema failed: " & Err.Description
+End Function
+
+Private Function EnsureAuthSchemaRuntime(ByVal wb As Workbook, _
+                                         ByVal warehouseId As String, _
+                                         ByVal processorServiceUserId As String, _
+                                         ByRef report As String) As Boolean
+    On Error GoTo FailEnsure
+
+    EnsureAuthSchemaRuntime = CBool(RunRuntimeWorkbookMacro4("modAuth.EnsureAuthSchema", wb, warehouseId, processorServiceUserId, report))
+    If Not EnsureAuthSchemaRuntime And Len(report) = 0 Then report = "EnsureAuthSchema failed."
+    Exit Function
+
+FailEnsure:
+    If Len(report) = 0 Then report = "EnsureAuthSchema failed: " & Err.Description
+End Function
+
+Private Function GetConfigStringRuntime(ByVal key As String, ByVal defaultVal As String) As String
+    Dim result As Variant
+
+    On Error GoTo UseDefault
+    result = RunRuntimeWorkbookMacro2("modConfig.GetString", key, defaultVal)
+    GetConfigStringRuntime = Trim$(CStr(result))
+    Exit Function
+
+UseDefault:
+    GetConfigStringRuntime = defaultVal
+End Function
+
+Private Function RunRuntimeWorkbookMacro2(ByVal macroName As String, _
+                                          ByVal arg0 As Variant, _
+                                          ByVal arg1 As Variant) As Variant
+    On Error GoTo TryUnqualified
+    RunRuntimeWorkbookMacro2 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName, arg0, arg1)
+    Exit Function
+
+TryUnqualified:
+    Err.Clear
+    RunRuntimeWorkbookMacro2 = Application.Run(macroName, arg0, arg1)
+End Function
+
+Private Function RunRuntimeWorkbookMacro4(ByVal macroName As String, _
+                                          ByVal arg0 As Variant, _
+                                          ByVal arg1 As Variant, _
+                                          ByVal arg2 As Variant, _
+                                          ByVal arg3 As Variant) As Variant
+    On Error GoTo TryUnqualified
+    RunRuntimeWorkbookMacro4 = Application.Run("'" & ThisWorkbook.Name & "'!" & macroName, arg0, arg1, arg2, arg3)
+    Exit Function
+
+TryUnqualified:
+    Err.Clear
+    RunRuntimeWorkbookMacro4 = Application.Run(macroName, arg0, arg1, arg2, arg3)
+End Function

@@ -48,20 +48,39 @@ Public Function ApplyEventBridgeResult(ByVal evt As Object, _
 End Function
 
 Public Function ApplyEventBridgeEncoded(ByVal evt As Object, _
+                                        Optional ByVal inventoryWb As Workbook = Nothing, _
                                         Optional ByVal runId As String = "") As String
     Dim statusOut As String
     Dim errorCode As String
     Dim errorMessage As String
     Dim success As Boolean
 
-    success = modInventoryApply.ApplyEvent(evt, Nothing, runId, statusOut, errorCode, errorMessage)
+    success = modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
     ApplyEventBridgeEncoded = CStr(Abs(CLng(success))) & vbTab & statusOut & vbTab & errorCode & vbTab & errorMessage
 End Function
 
 Public Function RemoveLastBulkLogEntriesBridgeResult(ByVal countToRemove As Long) As Collection
-    Set RemoveLastBulkLogEntriesBridgeResult = modInvMan.RemoveLastBulkLogEntries(countToRemove)
+    Dim result As Variant
+
+    On Error Resume Next
+    result = Application.Run("'" & ThisWorkbook.Name & "'!modInvMan.RemoveLastBulkLogEntries", countToRemove)
+    On Error GoTo 0
+
+    If IsObject(result) Then
+        Set RemoveLastBulkLogEntriesBridgeResult = result
+    Else
+        Set RemoveLastBulkLogEntriesBridgeResult = New Collection
+    End If
 End Function
 
 Public Sub ReAddBulkLogEntriesBridgeResult(ByVal logDataCollection As Collection)
-    modInvMan.ReAddBulkLogEntries logDataCollection
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modInvMan.ReAddBulkLogEntries", logDataCollection
+    On Error GoTo 0
+End Sub
+
+Public Sub ScheduleSourceWorkbookSyncBridgeResult()
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modInventoryInit.ScheduleSourceWorkbookSync"
+    On Error GoTo 0
 End Sub

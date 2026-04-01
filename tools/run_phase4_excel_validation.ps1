@@ -56,9 +56,16 @@ function Add-TestWrappers {
     for ($i = 0; $i -lt $TargetFunctions.Count; $i++) {
         $fn = $TargetFunctions[$i]
         $wrapper = "RunT" + ($i + 1)
+        $errCell = "A" + ($i + 1)
         $line = @"
 Public Function $wrapper() As Long
+On Error GoTo ErrHandler
+ThisWorkbook.Worksheets(1).Range("$errCell").Value = ""
 $wrapper = Application.Run("$fn")
+Exit Function
+ErrHandler:
+ThisWorkbook.Worksheets(1).Range("$errCell").Value = Err.Description
+$wrapper = 0
 End Function
 "@
         $cm.AddFromString($line)
@@ -82,11 +89,16 @@ try {
 
     $modulePaths = @(
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
+        (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
+        (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
+        (Join-Path $repo "src/Core/Modules/modHqAggregator.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
@@ -98,7 +110,11 @@ try {
         "TestAdminConsole.TestBreakInventoryLock_WritesBrokenStatusAndAudit",
         "TestAdminConsole.TestRunProcessorFromConsole_ProcessesInboxAndWritesAudit",
         "TestAdminConsole.TestReissuePoisonEvent_CreatesChildAndReruns",
-        "TestAdminConsole.TestGenerateInventorySnapshot_WritesWorkbookAndAudit"
+        "TestAdminConsole.TestGenerateInventorySnapshot_WritesWorkbookAndAudit",
+        "TestAdminConsole.TestPublishWarehouseArtifacts_WritesAuditAndPublishesSnapshot",
+        "TestAdminConsole.TestRunScheduledWarehouseBatchForAutomation_ReturnsStableOkResult",
+        "TestAdminConsole.TestRunScheduledWarehousePublishForAutomation_ReturnsStableOkResult",
+        "TestAdminConsole.TestRunScheduledHQAggregationForAutomation_ReturnsStableOkResult"
     )
 
     if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }
@@ -121,9 +137,11 @@ try {
         $name = $allTests[$i]
         $wrapperName = $wrapperNames[$i]
         $passed = Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName $wrapperName
+        $errorText = [string]$harness.Worksheets.Item(1).Range("A$($i + 1)").Value2
         $testRows += [pscustomobject]@{
             TestName = $name
             Passed   = ($passed -eq 1)
+            Error    = $errorText
         }
     }
 
@@ -140,7 +158,8 @@ try {
     $lines += "| Test | Result |"
     $lines += "|---|---|"
     foreach ($r in $testRows) {
-        $lines += "| $($r.TestName) | $([string]::Join('', $(if ($r.Passed) {'PASS'} else {'FAIL'}))) |"
+        $detail = if ($r.Passed) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($r.Error)) { "FAIL" } else { "FAIL - $($r.Error)" }
+        $lines += "| $($r.TestName) | $detail |"
     }
     [System.IO.File]::WriteAllLines($resultPath, $lines)
 

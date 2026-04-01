@@ -18,8 +18,49 @@ Public Function TestEnsureReceivingWorkbookSurface_CreatesExpectedTables() As Lo
        And TableHasColumns(wb, "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW")) _
        And TableHasColumns(wb, "invSysData_Receiving", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION")) _
        And TableHasColumns(wb, "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW")) _
-       And TableHasColumns(wb, "invSys", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION")) Then
+       And TableHasColumns(wb, "invSys", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "TOTAL INV", "QtyAvailable", "LocationSummary", "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")) Then
         TestEnsureReceivingWorkbookSurface_CreatesExpectedTables = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim lo As ListObject
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, report) Then GoTo CleanExit
+    If Not HasTable(wb, "invSys") Then GoTo CleanExit
+    Set lo = wb.Worksheets("InventoryManagement").ListObjects("invSys")
+
+    lo.ListColumns.Add.Name = "SKU"
+    lo.ListColumns.Add.Name = "ItemName"
+    lo.ListColumns.Add.Name = "QtyOnHand"
+    lo.ListColumns.Add.Name = "LastAppliedUTC"
+    lo.ListColumns.Add.Name = "TIMESTAMP"
+
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, report) Then GoTo CleanExit
+
+    If TableColumnHidden(wb, "invSys", "ROW") _
+       And TableColumnHidden(wb, "invSys", "TOTAL INV LAST EDIT") _
+       And Not TableColumnHidden(wb, "invSys", "ITEM_CODE") _
+       And Not TableColumnHidden(wb, "invSys", "TOTAL INV") _
+       And Not TableColumnHidden(wb, "invSys", "QtyAvailable") _
+       And Not TableColumnHidden(wb, "invSys", "LocationSummary") _
+       And Not TableColumnHidden(wb, "invSys", "LastRefreshUTC") _
+       And Not TableColumnHidden(wb, "invSys", "SnapshotId") _
+       And Not TableColumnHidden(wb, "invSys", "SourceType") _
+       And Not TableColumnHidden(wb, "invSys", "IsStale") _
+       And Not TableHasColumns(wb, "invSys", Array("SKU", "ItemName", "QtyOnHand", "LastAppliedUTC", "TIMESTAMP")) Then
+        TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns = 1
     End If
 
 CleanExit:
@@ -236,6 +277,21 @@ Private Function TableHasColumns(ByVal wb As Workbook, ByVal tableName As String
     Next i
 
     TableHasColumns = True
+End Function
+
+Private Function TableColumnHidden(ByVal wb As Workbook, ByVal tableName As String, ByVal columnName As String) As Boolean
+    Dim lo As ListObject
+    Dim lc As ListColumn
+
+    Set lo = FindTable(wb, tableName)
+    If lo Is Nothing Then Exit Function
+
+    For Each lc In lo.ListColumns
+        If StrComp(lc.Name, columnName, vbTextCompare) = 0 Then
+            TableColumnHidden = CBool(lc.Range.EntireColumn.Hidden)
+            Exit Function
+        End If
+    Next lc
 End Function
 
 Private Function WorksheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean

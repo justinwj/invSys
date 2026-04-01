@@ -81,7 +81,7 @@ End Function
 
 $repo = (Resolve-Path $RepoRoot).Path
 $fixtures = Join-Path $repo "tests/fixtures"
-$harnessPath = Join-Path $fixtures "Phase5_TestHarness.xlsm"
+$harnessPath = Join-Path $fixtures "Phase5_Inventory.Domain_Harness.xlsm"
 $resultPath = Join-Path $repo "tests/unit/phase5_test_results.md"
 
 $excel = $null
@@ -93,14 +93,17 @@ try {
     $excel.EnableEvents = $false
 
     $modulePaths = @(
+        (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modHqAggregator.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
@@ -109,8 +112,21 @@ try {
 
     $allTests = @(
         "TestPhase5Sync.TestRunBatch_WritesOutboxAndSnapshot",
+        "TestPhase5Sync.TestRunBatch_SnapshotIncludesCatalogRowsWithZeroQty",
+        "TestPhase5Sync.TestRunBatch_SnapshotNormalizesLocationSummaryAndFormatsColumns",
         "TestPhase5Sync.TestManualCopy_PublishesWarehouseArtifacts",
-        "TestPhase5Sync.TestHqAggregation_TwoWarehousesPreservesPerWarehouseQty"
+        "TestPhase5Sync.TestWanPublish_OnlineCopy_PublishesLocalArtifactsToSharePoint",
+        "TestPhase5Sync.TestWanPublish_OfflineFailure_DoesNotBlockLocalProcessing",
+        "TestPhase5Sync.TestWanPublish_SafeRerun_ReplacesPublishedArtifacts",
+        "TestPhase5Sync.TestWanPublish_InterruptedReplacement_RestoresPriorArtifactAndAllowsCleanRerun",
+        "TestPhase5Sync.TestHqAggregation_TwoWarehousesPreservesPerWarehouseQty",
+        "TestPhase5Sync.TestHqAggregation_RebuildsGlobalSnapshotAfterStaggeredWarehouseUpdates",
+        "TestPhase5Sync.TestHqAggregation_RepeatedRunsRemainStableForWH1AndWH2Fixtures",
+        "TestPhase5Sync.TestHqAggregation_GlobalSnapshotStatusIsAdvisoryOnly",
+        "TestPhase5Sync.TestHqAggregation_TempCopyHelper_PreservesReadableCopyWhenPublishedSourceTurnsCorrupt",
+        "TestPhase5Sync.TestDelayedPublicationRecovery_PreservesLocalOutboxAndGlobalCatchup",
+        "TestPhase5Sync.TestHqAggregation_SkipsUnreadablePublishedSnapshotAndRetainsLastGoodData",
+        "TestPhase5Sync.TestHqAggregation_MixedWarehouseInterruption_RetainsLastGoodAndCatchesUp"
     )
 
     if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }

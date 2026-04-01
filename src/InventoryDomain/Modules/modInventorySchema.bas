@@ -1,6 +1,21 @@
 Attribute VB_Name = "modInventorySchema"
 Option Explicit
 
+Private Const SHEET_INVENTORY_LOG As String = "InventoryLog"
+Private Const TABLE_INVENTORY_LOG As String = "tblInventoryLog"
+Private Const SHEET_APPLIED_EVENTS As String = "AppliedEvents"
+Private Const TABLE_APPLIED_EVENTS As String = "tblAppliedEvents"
+Private Const SHEET_LOCKS As String = "Locks"
+Private Const TABLE_LOCKS As String = "tblLocks"
+Private Const SHEET_SKU_BALANCE As String = "SkuBalance"
+Private Const TABLE_SKU_BALANCE As String = "tblSkuBalance"
+Private Const SHEET_LOCATION_BALANCE As String = "LocationBalance"
+Private Const TABLE_LOCATION_BALANCE As String = "tblLocationBalance"
+Private Const SHEET_LEDGER_STATUS As String = "LedgerStatus"
+Private Const TABLE_LEDGER_STATUS As String = "tblInventoryLedgerStatus"
+Private Const SHEET_SKU_CATALOG As String = "SkuCatalog"
+Private Const TABLE_SKU_CATALOG As String = "tblSkuCatalog"
+
 Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Nothing, _
                                       Optional ByRef report As String = "") As Boolean
     On Error GoTo FailEnsure
@@ -16,15 +31,28 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
 
     Set issues = New Collection
 
-    EnsureTableWithHeaders wb, "InventoryLog", "tblInventoryLog", _
+    EnsureTableWithHeaders wb, SHEET_INVENTORY_LOG, TABLE_INVENTORY_LOG, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
               "WarehouseId", "StationId", "UserId", "SKU", "QtyDelta", "Location", "Note"), issues
 
-    EnsureTableWithHeaders wb, "AppliedEvents", "tblAppliedEvents", _
+    EnsureTableWithHeaders wb, SHEET_APPLIED_EVENTS, TABLE_APPLIED_EVENTS, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
 
-    EnsureTableWithHeaders wb, "Locks", "tblLocks", _
+    EnsureTableWithHeaders wb, SHEET_LOCKS, TABLE_LOCKS, _
         Array("LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", "ExpiresAtUTC", "HeartbeatAtUTC", "Status"), issues
+
+    EnsureTableWithHeaders wb, SHEET_SKU_BALANCE, TABLE_SKU_BALANCE, _
+        Array("SKU", "QtyOnHand", "LastAppliedUTC"), issues
+
+    EnsureTableWithHeaders wb, SHEET_LOCATION_BALANCE, TABLE_LOCATION_BALANCE, _
+        Array("SKU", "Location", "QtyOnHand", "LastAppliedUTC"), issues
+
+    EnsureTableWithHeaders wb, SHEET_LEDGER_STATUS, TABLE_LEDGER_STATUS, _
+        Array("WarehouseId", "LastAppliedSeq", "LastEventId", "LastAppliedAtUTC", "TotalEventRows", _
+              "TotalAppliedEvents", "DistinctSkuCount", "DistinctLocationCount", "ProjectionRebuiltAtUTC", "Notes"), issues
+
+    EnsureTableWithHeaders wb, SHEET_SKU_CATALOG, TABLE_SKU_CATALOG, _
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
 
     report = JoinCollection(issues, "; ")
     EnsureInventorySchema = True
@@ -66,7 +94,7 @@ Private Sub EnsureTableWithHeaders(ByVal wb As Workbook, _
         EnsureListColumn lo, CStr(headers(i)), issues
     Next i
 
-    EnsureTableHasRow lo
+    RemoveBlankSeedRow lo
     StyleProtectedHeaders lo, headers
 End Sub
 
@@ -133,10 +161,29 @@ Private Function GetColumnIndex(ByVal lo As ListObject, ByVal columnName As Stri
     Next i
 End Function
 
-Private Sub EnsureTableHasRow(ByVal lo As ListObject)
+Private Sub RemoveBlankSeedRow(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    If lo.ListRows.Count <> 1 Then Exit Sub
+    If Not TableRowIsBlank(lo, 1) Then Exit Sub
+    lo.ListRows(1).Delete
 End Sub
+
+Private Function TableRowIsBlank(ByVal lo As ListObject, ByVal rowIndex As Long) As Boolean
+    Dim c As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    If rowIndex <= 0 Or rowIndex > lo.ListRows.Count Then Exit Function
+
+    TableRowIsBlank = True
+    For c = 1 To lo.ListColumns.Count
+        If Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, c).Value)) <> "" Then
+            TableRowIsBlank = False
+            Exit Function
+        End If
+    Next c
+End Function
 
 Private Sub StyleProtectedHeaders(ByVal lo As ListObject, ByVal protectedHeaders As Variant)
     Dim key As Variant

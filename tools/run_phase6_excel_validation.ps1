@@ -81,7 +81,8 @@ End Function
 
 $repo = (Resolve-Path $RepoRoot).Path
 $fixtures = Join-Path $repo "tests/fixtures"
-$harnessPath = Join-Path $fixtures "Phase6_TestHarness.xlsm"
+$harnessStamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
+$harnessPath = Join-Path $fixtures "Phase6_Inventory.Domain_Harness_$harnessStamp.xlsm"
 $resultPath = Join-Path $repo "tests/unit/phase6_test_results.md"
 
 $excel = $null
@@ -94,19 +95,78 @@ try {
 
     $modulePaths = @(
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
+        (Join-Path $repo "src/Core/Modules/modWarehouseBootstrap.bas"),
         (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleWorkbookSurfaces.bas"),
+        (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
+        (Join-Path $repo "src/Core/Modules/modOperatorReadModel.bas"),
+        (Join-Path $repo "src/Core/Modules/modPerfLog.bas"),
+        (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
+        (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
+        (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
+        (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
+        (Join-Path $repo "tests/unit/TestWarehouseBootstrap.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
         (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas")
     )
 
     $allTests = @(
+        "TestWarehouseBootstrap.TestValidateWarehouseSpec_TrimsFieldsAndAllowsBlankSharePoint",
+        "TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsEmptyWarehouseId",
+        "TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsWarehouseIdWithSpaces",
+        "TestWarehouseBootstrap.TestValidateWarehouseSpec_AllowsWarehouseIdWithHyphenAndUnderscore",
+        "TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsWarehouseIdWithOtherSpecialCharacters",
+        "TestWarehouseBootstrap.TestWarehouseIdExists_LocalFolderExists",
+        "TestWarehouseBootstrap.TestWarehouseIdExists_SharePointArtifactExists",
+        "TestWarehouseBootstrap.TestWarehouseIdExists_NeitherLocalNorSharePointExists",
+        "TestWarehouseBootstrap.TestWarehouseIdExists_SharePointUnavailableReturnsFalseAndLogsSkip",
+        "TestWarehouseBootstrap.TestBootstrapWarehouseLocal_CreatesBootableLocalRuntime",
+        "TestWarehouseBootstrap.TestBootstrapWarehouseLocal_FailureRollsBackPartialFolders",
+        "TestWarehouseBootstrap.TestPublishInitialArtifacts_PublishSuccess",
+        "TestWarehouseBootstrap.TestPublishInitialArtifacts_SharePointUnavailableReturnsFalse",
+        "TestWarehouseBootstrap.TestPublishInitialArtifacts_RepeatedPublishIsIdempotent",
         "TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_CreatesCanonicalWorkbook",
         "TestPhase6CoreSurfaces.TestLoadConfig_AutoBootstrapsCanonicalWorkbook",
+        "TestPhase6CoreSurfaces.TestLoadConfig_BlankContextAutoBootstrapsDefaultRuntimeWorkbook",
+        "TestPhase6CoreSurfaces.TestEnsureStationBootstrap_CreatesLocalConfigAndInbox",
+        "TestPhase6CoreSurfaces.TestLoadConfig_QuarantinesContaminatedConfigSheet",
         "TestPhase6CoreSurfaces.TestLoadAuth_AutoBootstrapsCanonicalWorkbook",
+        "TestPhase6CoreSurfaces.TestLoadAuth_BootstrapGrantsCurrentOperatorCapabilities",
+        "TestPhase6CoreSurfaces.TestResolveInventoryWorkbookBridge_PrefersCanonicalWorkbookOverOperatorSurface",
+        "TestPhase6CoreSurfaces.TestEnsureInventoryManagementSurface_RemovesDomainArtifacts",
+        "TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_PrunesUnexpectedSheets",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_UpdatesReadModelAndMetadata",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSharePoint_UpdatesReadModelAndMetadata",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSharePoint_StaleSnapshotMarksReadModelStale",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromCache_PreservesLocalStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_AddsRowsWhenInvSysStartsEmpty",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadataForZeroQtyRows",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModelFromSnapshot_NormalizesLegacyLocationSummary",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModel_MissingSnapshotMarksStaleWithoutMutatingReceivingTally",
+        "TestPhase6CoreSurfaces.TestRefreshInventoryReadModel_MissingSharePointSnapshotMarksCachedWithoutMutatingLocalTables",
+        "TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_StaleSharePointSnapshotShowsVisibleMetadataWithoutMutatingLocalTables",
+        "TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRefresh",
+        "TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonicalWorkbooks",
+        "TestPhase6CoreSurfaces.TestSavedReceivingWorkbook_ReopenRefreshPreservesLocalTables",
+        "TestPhase6CoreSurfaces.TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook",
+        "TestPhase6CoreSurfaces.TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook",
+        "TestPhase6CoreSurfaces.TestLanSharedSnapshot_TwoSavedOperatorWorkbooksRefreshWithoutCrossContamination",
+        "TestPhase6CoreSurfaces.TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWorkbooks",
+        "TestPhase6CoreSurfaces.TestProcessor_DiscoversClosedConfiguredStationInboxWorkbook",
+        "TestPhase6CoreSurfaces.TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestSavedProductionWorkbook_ReopenQueueProcessRefreshPreservesStagingAndLogs",
+        "TestPhase6CoreSurfaces.TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit",
+        "TestPhase6CoreSurfaces.TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook",
+        "TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables",
@@ -116,7 +176,6 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureAdminWorkbookSurface_CreatesExpectedTables"
     )
 
-    if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }
     $harness = $excel.Workbooks.Add()
     $bootstrap = Add-BootstrapModule -Workbook $harness
     $vbProject = $harness.VBProject

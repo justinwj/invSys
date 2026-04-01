@@ -10,6 +10,7 @@ Private Const SHEET_TEMPLATES As String = "TemplatesTable"
 Private Const TABLE_RECIPE_CHOOSER As String = "RC_RecipeChoose"
 Private Const TABLE_RECIPE_CHOOSER_GENERATED As String = "RecipeChooser_generated"
 Private Const TABLE_INV_PALETTE_GENERATED As String = "InventoryPalette_generated"
+Private Const TABLE_RECALL_REPORT As String = "RecallCodesReport"
 ' System 1: Recipe List Builder tables.
 Private Const TABLE_RECIPE_BUILDER_HEADER As String = "RB_AddRecipeName"
 Private Const TABLE_RECIPE_BUILDER_LINES As String = "RecipeBuilder"
@@ -52,6 +53,7 @@ Private Const PROD_LAYOUT_CHOOSER_ADDR As String = "Z3"
 Private Const PROD_LAYOUT_CHOOSER_GEN_ADDR As String = "Z6"
 Private Const PROD_LAYOUT_OUTPUT_ADDR As String = "AJ4"
 Private Const PROD_LAYOUT_CHECK_ADDR As String = "AR4"
+Private Const PROD_RECALL_REPORT_SHEET As String = "RecallCodesPrint"
 Private Const SHAPE_TYPE_FORM_CONTROL As Long = 8
 Private Const SHAPE_VISIBLE_FALSE As Long = 0
 Private Const SHAPE_VISIBLE_TRUE As Long = -1
@@ -81,6 +83,7 @@ Public Sub InitializeProductionUiForWorkbook(Optional ByVal targetWb As Workbook
     PrimeProductionRowCountCache wb
     EnsureProductionButtons
     EnsureSystemGroups
+    modOperatorReadModel.InitializeAutoSnapshotForWorkbook wb
 End Sub
 
 ' ===== Worksheet event entry points =====
@@ -474,7 +477,7 @@ Private Sub MoveListObjectToRowCol(ByVal lo As ListObject, ByVal targetRow As Lo
 
     On Error Resume Next
     lo.Range.Cut Destination:=dest
-    modUtils.ClearExcelClipboardState
+    ClearExcelClipboardStateProduction
     Err.Clear
     On Error GoTo 0
 End Sub
@@ -846,8 +849,8 @@ End Sub
 
 Private Sub RefreshProductionUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
-    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
-    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
+    ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
+    ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
 End Sub
 
 Private Sub DeleteLegacyProductionButtons(ByVal ws As Worksheet)
@@ -870,6 +873,12 @@ Private Sub DeleteLegacyProductionButtons(ByVal ws As Worksheet)
     DeleteShapeIfExists ws, BTN_TO_TOTALINV
     DeleteShapeIfExists ws, BTN_NEXT_BATCH
     DeleteShapeIfExists ws, BTN_PRINT_CODES
+End Sub
+
+Private Sub ClearExcelClipboardStateProduction()
+    On Error Resume Next
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    On Error GoTo 0
 End Sub
 
 Private Sub EnsureSystemGroups()
@@ -1313,7 +1322,7 @@ End Sub
 
 Public Sub BtnToMade()
     On Error GoTo ErrHandler
-    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
+    If Not RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1366,6 +1375,7 @@ Public Sub BtnToMade()
     Dim usedTotal As Double
     Dim madeTotal As Double
     Dim queuedEventId As String
+    Dim runtimeReport As String
 
     If Not QueueProductionConsumeEvent(usedDeltas, madeDeltas, errNotes, queuedEventId) Then
         If errNotes = "" Then errNotes = "Unable to queue production consume event."
@@ -1408,6 +1418,13 @@ Public Sub BtnToMade()
         End If
     End If
 
+    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wsProd.Parent, "", "LOCAL", runtimeReport) Then
+        If runtimeReport = "" Then runtimeReport = "Local production post succeeded, but runtime processing or read-model refresh did not complete cleanly."
+        AppendNote errNotes, runtimeReport
+    ElseIf runtimeReport <> "" Then
+        AppendNote errNotes, runtimeReport
+    End If
+
     Dim msg As String
     msg = "Recorded component usage: " & Format$(usedTotal, "0.###") & " units."
     msg = msg & vbCrLf & "Recorded finished goods (MADE): " & Format$(madeTotal, "0.###")
@@ -1425,7 +1442,7 @@ End Sub
 
 Public Sub BtnToTotalInv()
     On Error GoTo ErrHandler
-    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
+    If Not RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1446,6 +1463,7 @@ Public Sub BtnToTotalInv()
     Dim madeNotes As String
     Dim madeDeltas As Collection
     Dim queuedEventId As String
+    Dim runtimeReport As String
     Set madeDeltas = BuildMadeDeltasFromProductionOutput(loOut, invLo, madeNotes)
     If madeDeltas Is Nothing Then
         If madeNotes = "" Then madeNotes = "No made quantities found in ProductionOutput."
@@ -1484,6 +1502,13 @@ Public Sub BtnToTotalInv()
         End If
     End If
 
+    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wsProd.Parent, "", "LOCAL", runtimeReport) Then
+        If runtimeReport = "" Then runtimeReport = "Local production completion succeeded, but runtime processing or read-model refresh did not complete cleanly."
+        AppendNote errNotes, runtimeReport
+    ElseIf runtimeReport <> "" Then
+        AppendNote errNotes, runtimeReport
+    End If
+
     Dim msg As String
     msg = "Moved MADE to TOTAL INV: " & Format$(totalMoved, "0.###") & " units."
     If queuedEventId <> "" Then msg = msg & vbCrLf & "Inbox EventID: " & queuedEventId
@@ -1505,7 +1530,7 @@ Public Function QueueProductionCompleteEventFromCurrentWorkbook(ByRef eventIdOut
     Dim madeNotes As String
     Dim madeDeltas As Collection
 
-    If Not modRoleUiAccess.CanCurrentUserPerformCapability("PROD_POST", "", "", "", errNotes) Then Exit Function
+    If Not CanCurrentUserPerformCapability("PROD_POST", "", "", "", errNotes) Then Exit Function
 
     Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then
@@ -1596,8 +1621,35 @@ ErrHandler:
 End Sub
 
 Public Sub BtnPrintRecallCodes()
-    MsgBox "Print recall codes not implemented yet.", vbInformation
+    On Error GoTo ErrHandler
+
+    Dim wsReport As Worksheet
+    Dim rowCount As Long
+    Dim detail As String
+
+    If Not BuildRecallCodesReportFromCurrentWorkbook(wsReport, rowCount, detail) Then
+        MsgBox detail, vbInformation
+        Exit Sub
+    End If
+
+    wsReport.Activate
+    wsReport.PrintOut Preview:=True
+    Exit Sub
+ErrHandler:
+    MsgBox "BTN_PRINT_CODES failed: " & Err.Description, vbCritical
 End Sub
+
+Public Function GetRecallPrintDiagnostic() As String
+    Dim wsReport As Worksheet
+    Dim rowCount As Long
+    Dim detail As String
+
+    If BuildRecallCodesReportFromCurrentWorkbook(wsReport, rowCount, detail) Then
+        GetRecallPrintDiagnostic = "OK; Sheet=" & wsReport.Name & "; Rows=" & rowCount
+    Else
+        GetRecallPrintDiagnostic = detail
+    End If
+End Function
 
 ' ===== System 2: Inventory Palette Builder =====
 Private Sub SaveIngredientPalette()
@@ -5154,6 +5206,159 @@ Private Function GenerateRecallCode() As String
     GenerateRecallCode = "RC-" & Left$(guidVal, 12)
 End Function
 
+Private Function BuildRecallCodesReportFromCurrentWorkbook(ByRef wsReportOut As Worksheet, ByRef rowCountOut As Long, ByRef detailOut As String) As Boolean
+    Dim wsProd As Worksheet
+    Dim loOut As ListObject
+    Dim invLo As ListObject
+
+    Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then
+        detailOut = "Production sheet not found."
+        Exit Function
+    End If
+
+    Set loOut = FindListObjectByNameOrHeaders(wsProd, "ProductionOutput", Array("PROCESS", "OUTPUT"))
+    If loOut Is Nothing Then
+        detailOut = "ProductionOutput table not found on Production sheet."
+        Exit Function
+    End If
+    If loOut.DataBodyRange Is Nothing Then
+        detailOut = "ProductionOutput has no rows to print."
+        Exit Function
+    End If
+
+    Set invLo = GetInvSysTable()
+    Set wsReportOut = EnsureRecallCodesReportSheet(wsProd.Parent)
+    If wsReportOut Is Nothing Then
+        detailOut = "Unable to create RecallCodesPrint worksheet."
+        Exit Function
+    End If
+
+    rowCountOut = RenderRecallCodesReport(wsProd, loOut, invLo, wsReportOut)
+    If rowCountOut <= 0 Then
+        detailOut = "No recall-coded ProductionOutput rows found. Generate recall codes from checked output rows before printing."
+        Exit Function
+    End If
+
+    detailOut = "Sheet=" & wsReportOut.Name & ";Rows=" & rowCountOut
+    BuildRecallCodesReportFromCurrentWorkbook = True
+End Function
+
+Private Function EnsureRecallCodesReportSheet(ByVal wb As Workbook) As Worksheet
+    If wb Is Nothing Then Exit Function
+
+    Set EnsureRecallCodesReportSheet = WorkbookSheetExists(wb, PROD_RECALL_REPORT_SHEET)
+    If EnsureRecallCodesReportSheet Is Nothing Then
+        Set EnsureRecallCodesReportSheet = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        EnsureRecallCodesReportSheet.Name = PROD_RECALL_REPORT_SHEET
+    End If
+
+    Dim lo As ListObject
+    For Each lo In EnsureRecallCodesReportSheet.ListObjects
+        lo.Delete
+    Next lo
+
+    EnsureRecallCodesReportSheet.Cells.Clear
+End Function
+
+Private Function RenderRecallCodesReport(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal invLo As ListObject, ByVal wsReport As Worksheet) As Long
+    If wsProd Is Nothing Then Exit Function
+    If loOut Is Nothing Then Exit Function
+    If wsReport Is Nothing Then Exit Function
+    If loOut.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cProc As Long: cProc = ColumnIndex(loOut, "PROCESS")
+    Dim cOutput As Long: cOutput = ColumnIndex(loOut, "OUTPUT")
+    Dim cReal As Long: cReal = ColumnIndex(loOut, "REAL OUTPUT")
+    If cReal = 0 Then cReal = ColumnIndexLoose(loOut, "REALOUTPUT", "REAL_OUTPUT")
+    Dim cUom As Long: cUom = ColumnIndex(loOut, "UOM")
+    Dim cBatch As Long: cBatch = ColumnIndex(loOut, "BATCH")
+    Dim cRecall As Long: cRecall = ColumnIndex(loOut, "RECALL CODE")
+    Dim cRow As Long: cRow = ColumnIndex(loOut, "ROW")
+    If cRow = 0 Then cRow = ColumnIndexLoose(loOut, "ROW", "ROWID", "ROW#")
+    If cRecall = 0 Then Exit Function
+
+    Dim src As Variant
+    src = loOut.DataBodyRange.Value
+
+    Dim rowCount As Long
+    Dim r As Long
+    For r = 1 To UBound(src, 1)
+        If Trim$(NzStr(src(r, cRecall))) <> "" Then rowCount = rowCount + 1
+    Next r
+    If rowCount = 0 Then Exit Function
+
+    Dim reportData() As Variant
+    ReDim reportData(1 To rowCount + 1, 1 To 9)
+    reportData(1, 1) = "RECIPE"
+    reportData(1, 2) = "RECIPE_ID"
+    reportData(1, 3) = "PROCESS"
+    reportData(1, 4) = "OUTPUT"
+    reportData(1, 5) = "REAL OUTPUT"
+    reportData(1, 6) = "UOM"
+    reportData(1, 7) = "BATCH"
+    reportData(1, 8) = "RECALL CODE"
+    reportData(1, 9) = "LOCATION"
+
+    Dim recipeName As String
+    Dim recipeId As String
+    GetRecipeChooserInfo wsProd, recipeName, recipeId
+
+    Dim outRow As Long
+    outRow = 2
+    For r = 1 To UBound(src, 1)
+        Dim recallCode As String
+        recallCode = Trim$(NzStr(src(r, cRecall)))
+        If recallCode = "" Then GoTo NextSourceRow
+
+        reportData(outRow, 1) = recipeName
+        reportData(outRow, 2) = recipeId
+        If cProc > 0 Then reportData(outRow, 3) = NzStr(src(r, cProc))
+        If cOutput > 0 Then reportData(outRow, 4) = NzStr(src(r, cOutput))
+        If cReal > 0 Then reportData(outRow, 5) = src(r, cReal)
+        If cUom > 0 Then reportData(outRow, 6) = NzStr(src(r, cUom))
+        If cBatch > 0 Then reportData(outRow, 7) = NzStr(src(r, cBatch))
+        reportData(outRow, 8) = recallCode
+        If cRow > 0 Then
+            reportData(outRow, 9) = ResolveInvSysLocationByRow(invLo, NzLng(src(r, cRow)))
+        End If
+        outRow = outRow + 1
+NextSourceRow:
+    Next r
+
+    With wsReport
+        .Range("A1").Value = "Production Recall Codes"
+        .Range("A2").Value = "Workbook"
+        .Range("B2").Value = wsProd.Parent.Name
+        .Range("C2").Value = "Generated"
+        .Range("D2").Value = Now
+        .Range("A3").Value = "Rows"
+        .Range("B3").Value = rowCount
+        .Range("C3").Value = "User"
+        .Range("D3").Value = Environ$("USERNAME")
+        .Range("A1:D3").Font.Bold = True
+
+        Dim tableRange As Range
+        Set tableRange = .Range("A5").Resize(rowCount + 1, 9)
+        tableRange.Value = reportData
+
+        Dim loReport As ListObject
+        Set loReport = .ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+        loReport.Name = TABLE_RECALL_REPORT
+        loReport.TableStyle = "TableStyleMedium2"
+
+        .Columns("A:I").AutoFit
+        .Range("D2").NumberFormat = "yyyy-mm-dd hh:mm:ss"
+        .PageSetup.Orientation = xlLandscape
+        .PageSetup.Zoom = False
+        .PageSetup.FitToPagesWide = 1
+        .PageSetup.FitToPagesTall = False
+        .PageSetup.PrintArea = .Range("A1").Resize(tableRange.Rows.Count + 4, tableRange.Columns.Count).Address
+    End With
+
+    RenderRecallCodesReport = rowCount
+End Function
+
 Private Function GenerateBatchNumber(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal procName As String) As Long
     GenerateBatchNumber = NextBatchSequenceForProcess(wsProd, loOut, procName)
 End Function
@@ -6380,7 +6585,7 @@ Private Function MoveRecipeBuilderLinesToStaging(ByVal loLines As ListObject) As
     Set dest = ws.Cells(startRow, loLines.Range.Column)
     On Error Resume Next
     loLines.Range.Cut Destination:=dest
-    modUtils.ClearExcelClipboardState
+    ClearExcelClipboardStateProduction
     MoveRecipeBuilderLinesToStaging = (Err.Number = 0)
     If MoveRecipeBuilderLinesToStaging Then
         On Error Resume Next
@@ -6413,7 +6618,7 @@ Private Function EnsureInventoryPaletteLinesTable(ByVal ws As Worksheet, Optiona
             Set dest = ws.Cells(startRow, startCol)
             On Error Resume Next
             lo.Range.Cut Destination:=dest
-            modUtils.ClearExcelClipboardState
+            ClearExcelClipboardStateProduction
             On Error GoTo 0
         End If
         On Error Resume Next

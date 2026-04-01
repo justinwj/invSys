@@ -8,6 +8,10 @@ Private Const SHEET_INBOX_PROD As String = "InboxProd"
 Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
 Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
 Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
+Private Const ROLE_EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Private Const ROLE_EVENT_TYPE_SHIP As String = "SHIP"
+Private Const ROLE_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
+Private Const ROLE_EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 
 Public Function ResolveCurrentUserId() As String
     ResolveCurrentUserId = Trim$(Environ$("USERNAME"))
@@ -25,6 +29,100 @@ Public Function OpenInboxWorkbook(ByVal eventType As String, _
     Set OpenInboxWorkbook = ResolveInboxWorkbookForEventType(eventType, resolvedWh, resolvedSt, errorMessage)
 End Function
 
+Public Function ResolveInboxWorkbookPath(ByVal eventType As String, _
+                                         Optional ByVal warehouseId As String = "", _
+                                         Optional ByVal stationId As String = "", _
+                                         Optional ByRef errorMessage As String = "") As String
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+
+    If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
+    ResolveInboxWorkbookPath = ResolveInboxWorkbookPathResolvedRole(eventType, resolvedWh, resolvedSt, errorMessage)
+End Function
+
+Public Function DescribeInboxPendingRows(ByVal eventType As String, _
+                                         Optional ByVal warehouseId As String = "", _
+                                         Optional ByVal stationId As String = "", _
+                                         Optional ByVal eventIdsCsv As String = "", _
+                                         Optional ByRef pendingCount As Long = 0, _
+                                         Optional ByRef matchingPendingCount As Long = 0, _
+                                         Optional ByRef errorMessage As String = "") As String
+    On Error GoTo FailDescribe
+
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+    Dim fullPath As String
+    Dim wbInbox As Workbook
+    Dim lo As ListObject
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+    Dim rowIndex As Long
+    Dim statusVal As String
+    Dim eventId As String
+    Dim createdVal As Variant
+    Dim oldestCreated As String
+    Dim newestCreated As String
+    Dim sampleIds As String
+
+    pendingCount = 0
+    matchingPendingCount = 0
+    eventIdsCsv = Trim$(eventIdsCsv)
+
+    If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
+
+    fullPath = ResolveInboxWorkbookPathResolvedRole(eventType, resolvedWh, resolvedSt, errorMessage)
+    If fullPath = "" Then Exit Function
+
+    Set openPaths = CaptureOpenWorkbookPathsRole()
+    Set wbInbox = ResolveInboxWorkbookForEventType(eventType, resolvedWh, resolvedSt, errorMessage)
+    If wbInbox Is Nothing Then Exit Function
+    openedTransient = Not WorkbookWasAlreadyOpenRole(openPaths, wbInbox)
+
+    Set lo = FindListObjectByNameRole(wbInbox, InboxTableNameRole(eventType))
+    If lo Is Nothing Then
+        errorMessage = "Inbox table not found for event type '" & eventType & "'."
+        GoTo CleanExit
+    End If
+
+    If Not lo.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To lo.ListRows.Count
+            statusVal = UCase$(Trim$(CStr(GetTableRowValueRole(lo, rowIndex, "Status"))))
+            If statusVal = "" Or statusVal = "NEW" Then
+                pendingCount = pendingCount + 1
+                eventId = Trim$(CStr(GetTableRowValueRole(lo, rowIndex, "EventID")))
+                If EventIdListedRole(eventId, eventIdsCsv) Then matchingPendingCount = matchingPendingCount + 1
+                createdVal = GetTableRowValueRole(lo, rowIndex, "CreatedAtUTC")
+                If IsDate(createdVal) Then
+                    If oldestCreated = "" Then oldestCreated = Format$(CDate(createdVal), "yyyy-mm-dd hh:nn:ss")
+                    newestCreated = Format$(CDate(createdVal), "yyyy-mm-dd hh:nn:ss")
+                End If
+                If sampleIds = "" Then
+                    sampleIds = eventId
+                ElseIf pendingCount <= 3 Then
+                    sampleIds = sampleIds & "," & eventId
+                End If
+            End If
+        Next rowIndex
+    End If
+
+    DescribeInboxPendingRows = "Path=" & fullPath & _
+        "; PendingRows=" & CStr(pendingCount) & _
+        "; MatchingPendingRows=" & CStr(matchingPendingCount) & _
+        "; OldestCreatedAt=" & oldestCreated & _
+        "; NewestCreatedAt=" & newestCreated & _
+        "; SampleEventIds=" & sampleIds
+
+CleanExit:
+    On Error Resume Next
+    If openedTransient Then CloseTransientRoleWorkbook wbInbox
+    On Error GoTo 0
+    Exit Function
+
+FailDescribe:
+    errorMessage = "Inbox pending inspection failed: " & Err.Description
+    Resume CleanExit
+End Function
+
 Public Function QueueReceiveEvent(Optional ByVal warehouseId As String = "", _
                                   Optional ByVal stationId As String = "", _
                                   Optional ByVal userId As String = "", _
@@ -37,8 +135,9 @@ Public Function QueueReceiveEvent(Optional ByVal warehouseId As String = "", _
                                   Optional ByVal createdAtUtc As Date = 0, _
                                   Optional ByVal targetInboxWb As Workbook = Nothing, _
                                   Optional ByRef eventIdOut As String = "", _
-                                  Optional ByRef errorMessage As String = "") As Boolean
-    QueueReceiveEvent = QueueEventCore(EVENT_TYPE_RECEIVE, warehouseId, stationId, userId, sku, qty, location, noteVal, "", parentEventId, undoOfEventId, createdAtUtc, targetInboxWb, eventIdOut, errorMessage)
+                                  Optional ByRef errorMessage As String = "", _
+                                  Optional ByVal perfRunId As String = "") As Boolean
+    QueueReceiveEvent = QueueEventCore(ROLE_EVENT_TYPE_RECEIVE, warehouseId, stationId, userId, sku, qty, location, noteVal, "", parentEventId, undoOfEventId, createdAtUtc, targetInboxWb, eventIdOut, errorMessage, perfRunId)
 End Function
 
 Public Function QueueReceiveEventCurrent(Optional ByVal userId As String = "", _
@@ -47,10 +146,11 @@ Public Function QueueReceiveEventCurrent(Optional ByVal userId As String = "", _
                                          Optional ByVal location As String = "", _
                                          Optional ByVal noteVal As String = "", _
                                          Optional ByRef eventIdOut As String = "", _
-                                         Optional ByRef errorMessage As String = "") As Boolean
+                                         Optional ByRef errorMessage As String = "", _
+                                         Optional ByVal perfRunId As String = "") As Boolean
     Dim targetInboxWb As Workbook
 
-    QueueReceiveEventCurrent = QueueReceiveEvent("", "", userId, sku, qty, location, noteVal, "", "", 0, targetInboxWb, eventIdOut, errorMessage)
+    QueueReceiveEventCurrent = QueueReceiveEvent("", "", userId, sku, qty, location, noteVal, "", "", 0, targetInboxWb, eventIdOut, errorMessage, perfRunId)
 End Function
 
 Public Function QueuePayloadEvent(ByVal eventType As String, _
@@ -64,8 +164,9 @@ Public Function QueuePayloadEvent(ByVal eventType As String, _
                                   Optional ByVal createdAtUtc As Date = 0, _
                                   Optional ByVal targetInboxWb As Workbook = Nothing, _
                                   Optional ByRef eventIdOut As String = "", _
-                                  Optional ByRef errorMessage As String = "") As Boolean
-    QueuePayloadEvent = QueueEventCore(eventType, warehouseId, stationId, userId, "", 0, "", noteVal, payloadJson, parentEventId, undoOfEventId, createdAtUtc, targetInboxWb, eventIdOut, errorMessage)
+                                  Optional ByRef errorMessage As String = "", _
+                                  Optional ByVal perfRunId As String = "") As Boolean
+    QueuePayloadEvent = QueueEventCore(eventType, warehouseId, stationId, userId, "", 0, "", noteVal, payloadJson, parentEventId, undoOfEventId, createdAtUtc, targetInboxWb, eventIdOut, errorMessage, perfRunId)
 End Function
 
 Public Function QueuePayloadEventCurrent(ByVal eventType As String, _
@@ -73,10 +174,11 @@ Public Function QueuePayloadEventCurrent(ByVal eventType As String, _
                                          Optional ByVal payloadJson As String = "", _
                                          Optional ByVal noteVal As String = "", _
                                          Optional ByRef eventIdOut As String = "", _
-                                         Optional ByRef errorMessage As String = "") As Boolean
+                                         Optional ByRef errorMessage As String = "", _
+                                         Optional ByVal perfRunId As String = "") As Boolean
     Dim targetInboxWb As Workbook
 
-    QueuePayloadEventCurrent = QueuePayloadEvent(eventType, "", "", userId, payloadJson, noteVal, "", "", 0, targetInboxWb, eventIdOut, errorMessage)
+    QueuePayloadEventCurrent = QueuePayloadEvent(eventType, "", "", userId, payloadJson, noteVal, "", "", 0, targetInboxWb, eventIdOut, errorMessage, perfRunId)
 End Function
 
 Public Function BuildPayloadJson(ParamArray items() As Variant) As String
@@ -140,7 +242,8 @@ Private Function QueueEventCore(ByVal eventType As String, _
                                 ByVal createdAtUtc As Date, _
                                 ByVal targetInboxWb As Workbook, _
                                 ByRef eventIdOut As String, _
-                                ByRef errorMessage As String) As Boolean
+                                ByRef errorMessage As String, _
+                                Optional ByVal perfRunId As String = "") As Boolean
     On Error GoTo FailQueue
 
     Dim resolvedWh As String
@@ -153,6 +256,13 @@ Private Function QueueEventCore(ByVal eventType As String, _
     Dim ws As Worksheet
     Dim report As String
     Dim capability As String
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+    Dim queueStart As Single
+    Dim queueRunId As String
+    Dim perfStarted As Boolean
+
+    queueStart = Timer
 
     If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
 
@@ -180,37 +290,50 @@ Private Function QueueEventCore(ByVal eventType As String, _
 
     If eventIdOut = "" Then eventIdOut = CreateEventIdRole()
     If createdAtUtc = 0 Then createdAtUtc = Now
+    queueRunId = Trim$(perfRunId)
+    If queueRunId = "" Then queueRunId = eventIdOut
+    If queueRunId <> "" Then
+        PerfBeginSafeRole queueRunId, "RoleEventWriter.QueueEvent"
+        perfStarted = True
+    End If
 
     If targetInboxWb Is Nothing Then
+        Set openPaths = CaptureOpenWorkbookPathsRole()
         Set wbInbox = ResolveInboxWorkbookForEventType(eventType, resolvedWh, resolvedSt, errorMessage)
     Else
         Set wbInbox = targetInboxWb
     End If
     If wbInbox Is Nothing Then Exit Function
+    If wbInbox.ReadOnly Then
+        errorMessage = "Inbox workbook is read-only or locked by another Excel session."
+        GoTo CleanExit
+    End If
+    openedTransient = (targetInboxWb Is Nothing) And (Not WorkbookWasAlreadyOpenRole(openPaths, wbInbox))
+    If openedTransient Then HideWorkbookWindowsRole wbInbox
 
     Select Case UCase$(Trim$(eventType))
-        Case EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, report) Then
                 errorMessage = report
-                Exit Function
+                GoTo CleanExit
             End If
             Set lo = FindListObjectByNameRole(wbInbox, TABLE_INBOX_RECEIVE)
-        Case EVENT_TYPE_SHIP
+        Case ROLE_EVENT_TYPE_SHIP
             If Not modProcessor.EnsureShipInboxSchema(wbInbox, report) Then
                 errorMessage = report
-                Exit Function
+                GoTo CleanExit
             End If
             Set lo = FindListObjectByNameRole(wbInbox, TABLE_INBOX_SHIP)
-        Case EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, report) Then
                 errorMessage = report
-                Exit Function
+                GoTo CleanExit
             End If
             Set lo = FindListObjectByNameRole(wbInbox, TABLE_INBOX_PROD)
     End Select
     If lo Is Nothing Then
         errorMessage = "Inbox table not found for event type '" & eventType & "'."
-        Exit Function
+        GoTo CleanExit
     End If
 
     Set ws = lo.Parent
@@ -238,9 +361,17 @@ Private Function QueueEventCore(ByVal eventType As String, _
     SetTableRowValueRole lo, rowIndex, "FailedAtUTC", ""
 
     SaveWorkbookRole wbInbox
-    If sheetWasProtected Then RestoreWorksheetProtectionRole ws
+    If queueRunId <> "" Then PerfMarkSafeRole queueRunId, "InboxWrite", CLng((Timer - queueStart) * 1000)
 
     QueueEventCore = True
+CleanExit:
+    If perfStarted Then PerfEndSafeRole queueRunId, CLng((Timer - queueStart) * 1000), IIf(QueueEventCore, "OK", "FAIL") & " EventType=" & UCase$(Trim$(eventType))
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        If sheetWasProtected Then RestoreWorksheetProtectionRole ws
+    End If
+    If openedTransient Then CloseTransientRoleWorkbook wbInbox
+    On Error GoTo 0
     Exit Function
 
 FailQueue:
@@ -249,6 +380,7 @@ FailQueue:
     If Not ws Is Nothing Then
         If sheetWasProtected Then RestoreWorksheetProtectionRole ws
     End If
+    If openedTransient Then CloseTransientRoleWorkbook wbInbox
 End Function
 
 Private Function EnsureContextResolved(ByRef resolvedWh As String, _
@@ -278,9 +410,88 @@ Private Function ResolveInboxWorkbookForEventType(ByVal eventType As String, _
                                                   ByVal warehouseId As String, _
                                                   ByVal stationId As String, _
                                                   ByRef errorMessage As String) As Workbook
+    On Error GoTo FailOpen
+
     Dim wb As Workbook
     Dim expectedName As String
     Dim fullPath As String
+    Dim prevEvents As Boolean
+    Dim eventsSuppressed As Boolean
+    Dim prevAlerts As Boolean
+    Dim alertsSuppressed As Boolean
+    Dim prevScreenUpdating As Boolean
+
+    prevScreenUpdating = Application.ScreenUpdating
+    expectedName = InboxWorkbookNameRole(eventType, stationId)
+    fullPath = ResolveInboxWorkbookPathResolvedRole(eventType, warehouseId, stationId, errorMessage)
+    If fullPath = "" Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, fullPath, vbTextCompare) = 0 _
+           Or StrComp(wb.Name, expectedName, vbTextCompare) = 0 Then
+            If wb.ReadOnly Then
+                errorMessage = "Inbox workbook is read-only or locked by another Excel session."
+                Exit Function
+            End If
+            Set ResolveInboxWorkbookForEventType = wb
+            Exit Function
+        End If
+    Next wb
+
+    If Len(Dir$(fullPath, vbNormal)) > 0 Then
+        prevAlerts = Application.DisplayAlerts
+        Application.DisplayAlerts = False
+        alertsSuppressed = True
+        prevScreenUpdating = Application.ScreenUpdating
+        Application.ScreenUpdating = False
+        Set ResolveInboxWorkbookForEventType = Application.Workbooks.Open( _
+            Filename:=fullPath, _
+            UpdateLinks:=0, _
+            ReadOnly:=False, _
+            IgnoreReadOnlyRecommended:=True, _
+            Notify:=False, _
+            AddToMru:=False)
+        Application.ScreenUpdating = prevScreenUpdating
+        Application.DisplayAlerts = prevAlerts
+        alertsSuppressed = False
+        If ResolveInboxWorkbookForEventType Is Nothing Then
+            errorMessage = "Inbox workbook open failed."
+            Exit Function
+        End If
+        If ResolveInboxWorkbookForEventType.ReadOnly Then
+            errorMessage = "Inbox workbook is read-only or locked by another Excel session."
+            ResolveInboxWorkbookForEventType.Close SaveChanges:=False
+            Set ResolveInboxWorkbookForEventType = Nothing
+            Exit Function
+        End If
+        HideWorkbookWindowsRole ResolveInboxWorkbookForEventType
+    Else
+        prevEvents = Application.EnableEvents
+        Application.EnableEvents = False
+        eventsSuppressed = True
+        Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+        SaveWorkbookAsXlsbRole wb, fullPath
+        Application.EnableEvents = prevEvents
+        eventsSuppressed = False
+        HideWorkbookWindowsRole wb
+        Set ResolveInboxWorkbookForEventType = wb
+    End If
+    Exit Function
+
+FailOpen:
+    On Error Resume Next
+    If eventsSuppressed Then Application.EnableEvents = prevEvents
+    Application.ScreenUpdating = prevScreenUpdating
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
+    errorMessage = "Inbox workbook open/create failed: " & Err.Description
+End Function
+
+Private Function ResolveInboxWorkbookPathResolvedRole(ByVal eventType As String, _
+                                                      ByVal warehouseId As String, _
+                                                      ByVal stationId As String, _
+                                                      ByRef errorMessage As String) As String
+    Dim expectedName As String
     Dim targetDir As String
 
     expectedName = InboxWorkbookNameRole(eventType, stationId)
@@ -289,13 +500,6 @@ Private Function ResolveInboxWorkbookForEventType(ByVal eventType As String, _
         Exit Function
     End If
 
-    For Each wb In Application.Workbooks
-        If StrComp(wb.Name, expectedName, vbTextCompare) = 0 Then
-            Set ResolveInboxWorkbookForEventType = wb
-            Exit Function
-        End If
-    Next wb
-
     targetDir = ResolveInboxDirectoryRole(warehouseId, stationId)
     If targetDir = "" Then
         errorMessage = "Unable to resolve inbox directory."
@@ -303,21 +507,18 @@ Private Function ResolveInboxWorkbookForEventType(ByVal eventType As String, _
     End If
 
     EnsureFolderExistsRole targetDir
-    fullPath = CombinePathRole(targetDir, expectedName)
-    If Len(Dir$(fullPath, vbNormal)) > 0 Then
-        Set ResolveInboxWorkbookForEventType = Application.Workbooks.Open(fullPath)
-    Else
-        Set wb = Application.Workbooks.Add(xlWBATWorksheet)
-        SaveWorkbookAsXlsbRole wb, fullPath
-        Set ResolveInboxWorkbookForEventType = wb
-    End If
+    ResolveInboxWorkbookPathResolvedRole = CombinePathRole(targetDir, expectedName)
 End Function
 
 Private Function ResolveInboxDirectoryRole(ByVal warehouseId As String, ByVal stationId As String) As String
     Dim rawPath As String
 
-    rawPath = Trim$(modConfig.GetString("PathDataRoot", ""))
+    rawPath = Trim$(modConfig.GetString("PathInboxRoot", ""))
     rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
+    If rawPath = "" Then
+        rawPath = Trim$(modConfig.GetString("PathDataRoot", ""))
+        rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
+    End If
     If rawPath = "" Then rawPath = ThisWorkbook.Path
     If rawPath = "" Then rawPath = Environ$("TEMP")
     ResolveInboxDirectoryRole = rawPath
@@ -329,7 +530,8 @@ Private Function ExpandConfigPathRole(ByVal rawPath As String, ByVal warehouseId
 
     ExpandConfigPathRole = Replace$(ExpandConfigPathRole, "{WarehouseId}", warehouseId)
     ExpandConfigPathRole = Replace$(ExpandConfigPathRole, "{StationId}", stationId)
-    ExpandConfigPathRole = Replace$(ExpandConfigPathRole, "/", "\")
+    ExpandConfigPathRole = modConfig.NormalizeFolderPathForRuntime(ExpandConfigPathRole, False)
+    If ExpandConfigPathRole = "" Then Exit Function
     Do While Right$(ExpandConfigPathRole, 1) = "\"
         ExpandConfigPathRole = Left$(ExpandConfigPathRole, Len(ExpandConfigPathRole) - 1)
     Loop
@@ -337,44 +539,61 @@ End Function
 
 Private Function InboxWorkbookNameRole(ByVal eventType As String, ByVal stationId As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE
             InboxWorkbookNameRole = "invSys.Inbox.Receiving." & stationId & ".xlsb"
-        Case EVENT_TYPE_SHIP
+        Case ROLE_EVENT_TYPE_SHIP
             InboxWorkbookNameRole = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
             InboxWorkbookNameRole = "invSys.Inbox.Production." & stationId & ".xlsb"
+    End Select
+End Function
+
+Private Function InboxTableNameRole(ByVal eventType As String) As String
+    Select Case UCase$(Trim$(eventType))
+        Case ROLE_EVENT_TYPE_RECEIVE
+            InboxTableNameRole = TABLE_INBOX_RECEIVE
+        Case ROLE_EVENT_TYPE_SHIP
+            InboxTableNameRole = TABLE_INBOX_SHIP
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
+            InboxTableNameRole = TABLE_INBOX_PROD
     End Select
 End Function
 
 Private Function CapabilityForEventTypeRole(ByVal eventType As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE
             CapabilityForEventTypeRole = "RECEIVE_POST"
-        Case EVENT_TYPE_SHIP
+        Case ROLE_EVENT_TYPE_SHIP
             CapabilityForEventTypeRole = "SHIP_POST"
-        Case EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
             CapabilityForEventTypeRole = "PROD_POST"
     End Select
 End Function
 
 Private Sub EnsureFolderExistsRole(ByVal folderPath As String)
-    Dim parts As Variant
-    Dim currentPath As String
-    Dim i As Long
+    Dim parentPath As String
+    Dim sepPos As Long
+    Dim fso As Object
 
+    folderPath = NormalizeFolderPathRole(folderPath, False)
     If folderPath = "" Then Exit Sub
-    parts = Split(folderPath, "\")
-    If UBound(parts) < 0 Then Exit Sub
+    If FolderExistsRole(folderPath) Then Exit Sub
+    If IsUncShareRootRole(folderPath) Then Exit Sub
 
-    currentPath = parts(0)
-    If Right$(currentPath, 1) = ":" Then currentPath = currentPath & "\"
+    sepPos = InStrRev(folderPath, "\")
+    If sepPos > 1 Then
+        parentPath = Left$(folderPath, sepPos - 1)
+        If Right$(parentPath, 1) = ":" Then parentPath = parentPath & "\"
+        If parentPath <> "" And Not FolderExistsRole(parentPath) Then EnsureFolderExistsRole parentPath
+    End If
 
-    For i = 1 To UBound(parts)
-        If parts(i) <> "" Then
-            currentPath = CombinePathRole(currentPath, parts(i))
-            If Len(Dir$(currentPath, vbDirectory)) = 0 Then MkDir currentPath
-        End If
-    Next i
+    If FolderExistsRole(folderPath) Then Exit Sub
+    If IsUncPathRole(folderPath) Then
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fso.CreateFolder folderPath
+    Else
+        MkDir folderPath
+    End If
 End Sub
 
 Private Function CombinePathRole(ByVal basePath As String, ByVal childName As String) As String
@@ -387,8 +606,50 @@ Private Function CombinePathRole(ByVal basePath As String, ByVal childName As St
     End If
 End Function
 
+Private Function NormalizeFolderPathRole(ByVal folderPath As String, ByVal withTrailingSlash As Boolean) As String
+    NormalizeFolderPathRole = modConfig.NormalizeFolderPathForRuntime(folderPath, withTrailingSlash)
+End Function
+
+Private Function FolderExistsRole(ByVal folderPath As String) As Boolean
+    Dim fso As Object
+
+    folderPath = NormalizeFolderPathRole(folderPath, False)
+    If folderPath = "" Then Exit Function
+
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso Is Nothing Then FolderExistsRole = fso.FolderExists(folderPath)
+    If Err.Number <> 0 Then
+        Err.Clear
+        FolderExistsRole = (Len(Dir$(folderPath, vbDirectory)) > 0)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function IsUncPathRole(ByVal folderPath As String) As Boolean
+    folderPath = NormalizeFolderPathRole(folderPath, False)
+    IsUncPathRole = (Left$(folderPath, 2) = "\\")
+End Function
+
+Private Function IsUncShareRootRole(ByVal folderPath As String) As Boolean
+    Dim trimmedPath As String
+    Dim parts() As String
+
+    trimmedPath = NormalizeFolderPathRole(folderPath, False)
+    If Left$(trimmedPath, 2) <> "\\" Then Exit Function
+
+    trimmedPath = Mid$(trimmedPath, 3)
+    If trimmedPath = "" Then Exit Function
+
+    parts = Split(trimmedPath, "\")
+    IsUncShareRootRole = (UBound(parts) = 1)
+End Function
+
 Private Sub SaveWorkbookAsXlsbRole(ByVal wb As Workbook, ByVal fullPath As String)
     If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    On Error GoTo 0
     wb.SaveAs fullPath, 50
 End Sub
 
@@ -396,7 +657,81 @@ Private Sub SaveWorkbookRole(ByVal wb As Workbook)
     If wb Is Nothing Then Exit Sub
     If wb.ReadOnly Then Exit Sub
     If wb.Path = "" Then Exit Sub
+    On Error Resume Next
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    On Error GoTo 0
     wb.Save
+End Sub
+
+Private Function CaptureOpenWorkbookPathsRole() As Object
+    Dim wb As Workbook
+    Dim paths As Object
+
+    Set paths = CreateObject("Scripting.Dictionary")
+    paths.CompareMode = vbTextCompare
+
+    For Each wb In Application.Workbooks
+        If Trim$(wb.FullName) <> "" Then paths(Trim$(wb.FullName)) = True
+    Next wb
+
+    Set CaptureOpenWorkbookPathsRole = paths
+End Function
+
+Private Function WorkbookWasAlreadyOpenRole(ByVal openPaths As Object, ByVal wb As Workbook) As Boolean
+    If openPaths Is Nothing Then Exit Function
+    If wb Is Nothing Then Exit Function
+    If Trim$(wb.FullName) = "" Then Exit Function
+    WorkbookWasAlreadyOpenRole = openPaths.Exists(Trim$(wb.FullName))
+End Function
+
+Private Sub HideWorkbookWindowsRole(ByVal wb As Workbook)
+    Dim i As Long
+
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To wb.Windows.Count
+        wb.Windows(i).Visible = False
+    Next i
+    ReactivateQuietOwnerSafeRole
+    On Error GoTo 0
+End Sub
+
+Private Sub ReactivateQuietOwnerSafeRole()
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modUiQuiet.ReactivateQuietOwner"
+    On Error GoTo 0
+End Sub
+
+Private Sub PerfBeginSafeRole(ByVal runId As String, ByVal activityName As String)
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modPerfLog.PerfBegin", runId, activityName
+    On Error GoTo 0
+End Sub
+
+Private Sub PerfMarkSafeRole(ByVal runId As String, ByVal segmentName As String, ByVal elapsedMs As Long)
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modPerfLog.PerfMark", runId, segmentName, elapsedMs
+    On Error GoTo 0
+End Sub
+
+Private Sub PerfEndSafeRole(ByVal runId As String, ByVal totalMs As Long, ByVal detailText As String)
+    On Error Resume Next
+    Application.Run "'" & ThisWorkbook.Name & "'!modPerfLog.PerfEnd", runId, totalMs, detailText
+    On Error GoTo 0
+End Sub
+
+Private Sub CloseTransientRoleWorkbook(ByVal wb As Workbook)
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    HideWorkbookWindowsRole wb
+    If Not wb.ReadOnly Then
+        If wb.Saved = False Then wb.Save
+    End If
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
 End Sub
 
 Private Sub EnsureWorksheetEditableRole(ByVal ws As Worksheet, ByVal context As String)
@@ -439,6 +774,14 @@ Private Sub SetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long,
     lo.DataBodyRange.Cells(rowIndex, idx).Value = valueIn
 End Sub
 
+Private Function GetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
+    Dim idx As Long
+
+    idx = GetColumnIndexRole(lo, columnName)
+    If idx = 0 Then Exit Function
+    GetTableRowValueRole = lo.DataBodyRange.Cells(rowIndex, idx).Value
+End Function
+
 Private Function GetColumnIndexRole(ByVal lo As ListObject, ByVal columnName As String) As Long
     Dim i As Long
 
@@ -474,6 +817,17 @@ Private Function CreateGuidFallbackRole() As String
         token = token & Mid$(chars, Int((Len(chars) * Rnd) + 1), 1)
     Next i
     CreateGuidFallbackRole = Left$(token, 8) & "-" & Mid$(token, 9, 4) & "-" & Mid$(token, 13, 4) & "-" & Mid$(token, 17, 4) & "-" & Right$(token, 12)
+End Function
+
+Private Function EventIdListedRole(ByVal eventId As String, ByVal eventIdsCsv As String) As Boolean
+    Dim normalizedIds As String
+
+    eventId = Trim$(eventId)
+    eventIdsCsv = Replace$(Trim$(eventIdsCsv), " ", "")
+    If eventId = "" Or eventIdsCsv = "" Then Exit Function
+
+    normalizedIds = "," & eventIdsCsv & ","
+    EventIdListedRole = (InStr(1, normalizedIds, "," & eventId & ",", vbTextCompare) > 0)
 End Function
 
 Private Function DictionaryToJson(ByVal d As Object) As String

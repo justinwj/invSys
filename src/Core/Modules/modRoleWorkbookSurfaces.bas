@@ -108,7 +108,8 @@ Public Function EnsureInventoryManagementSurface(Optional ByVal targetWb As Work
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
     EnsureTableSurface wb, "InventoryManagement", "invSys", InventoryManagementHeadersSurface(), False
-    EnsureInventoryDomainSupportSurface wb
+    RemoveInventoryDomainSupportSurface wb
+    ApplyInventoryManagementPresentationSurface wb
 
     EnsureInventoryManagementSurface = True
     Exit Function
@@ -120,7 +121,9 @@ End Function
 Private Function InventoryManagementHeadersSurface() As Variant
     InventoryManagementHeadersSurface = Array( _
         "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
-        "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "LAST EDITED", "TOTAL INV LAST EDIT", "TIMESTAMP")
+        "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "LAST EDITED", "TOTAL INV LAST EDIT", _
+        "QtyAvailable", "LocationSummary", "LastRefreshUTC", _
+        "SnapshotId", "SourceType", "IsStale")
 End Function
 
 Private Sub EnsureInventoryDomainSupportSurface(ByVal wb As Workbook)
@@ -133,6 +136,68 @@ Private Sub EnsureInventoryDomainSupportSurface(ByVal wb As Workbook)
 
     EnsureTableSurface wb, "Locks", "tblLocks", _
         Array("LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", "ExpiresAtUTC", "HeartbeatAtUTC", "Status"), False
+End Sub
+
+Private Sub RemoveInventoryDomainSupportSurface(ByVal wb As Workbook)
+    DeleteWorksheetSurface wb, "InventoryLog"
+    DeleteWorksheetSurface wb, "AppliedEvents"
+    DeleteWorksheetSurface wb, "Locks"
+End Sub
+
+Private Sub ApplyInventoryManagementPresentationSurface(ByVal wb As Workbook)
+    Dim lo As ListObject
+    Dim visibleCols As Variant
+    Dim hiddenCols As Variant
+    Dim key As Variant
+
+    Set lo = FindTableByNameSurface(wb, "invSys")
+    If lo Is Nothing Then Exit Sub
+
+    visibleCols = Array("ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "CATEGORY", _
+                        "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "QtyAvailable", "LocationSummary", "LAST EDITED", _
+                        "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")
+    hiddenCols = Array("ROW", "VENDOR_CODE", "TOTAL INV LAST EDIT")
+
+    For Each key In visibleCols
+        SetTableColumnHiddenSurface lo, CStr(key), False
+    Next key
+    For Each key In hiddenCols
+        SetTableColumnHiddenSurface lo, CStr(key), True
+    Next key
+
+    ApplyInventoryManagementFormatsSurface lo
+End Sub
+
+Private Sub SetTableColumnHiddenSurface(ByVal lo As ListObject, ByVal columnName As String, ByVal isHidden As Boolean)
+    Dim idx As Long
+
+    idx = GetColumnIndexSurface(lo, columnName)
+    If idx = 0 Then Exit Sub
+
+    On Error Resume Next
+    lo.ListColumns(idx).Range.EntireColumn.Hidden = isHidden
+    On Error GoTo 0
+End Sub
+
+Private Sub ApplyInventoryManagementFormatsSurface(ByVal lo As ListObject)
+    Dim qtyCols As Variant
+    Dim dateCols As Variant
+    Dim key As Variant
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+
+    qtyCols = Array("RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "QtyAvailable")
+    For Each key In qtyCols
+        idx = GetColumnIndexSurface(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "0.########"
+    Next key
+
+    dateCols = Array("LAST EDITED", "TOTAL INV LAST EDIT", "LastRefreshUTC")
+    For Each key In dateCols
+        idx = GetColumnIndexSurface(lo, CStr(key))
+        If idx > 0 Then lo.ListColumns(idx).Range.NumberFormat = "yyyy-mm-dd hh:mm:ss"
+    Next key
 End Sub
 
 Private Function ResolveTargetWorkbookSurface(ByVal targetWb As Workbook) As Workbook
@@ -163,10 +228,36 @@ Public Function ShouldBootstrapRoleWorkbookSurface(Optional ByVal targetWb As Wo
     If wbName = "" Then Exit Function
     If Left$(wbName, 2) = "~$" Then Exit Function
     If wbName = "personal.xlsb" Then Exit Function
+    If wbName Like "*inventory_management*.xls*" Then Exit Function
     If wbName Like "*.xla" Or wbName Like "*.xlam" Then Exit Function
-    If InStr(1, wbName, ".invsys.", vbTextCompare) > 0 Then Exit Function
+    If IsRuntimeWorkbookNameSurface(wbName) Then Exit Function
 
     ShouldBootstrapRoleWorkbookSurface = True
+End Function
+
+Private Function IsRuntimeWorkbookNameSurface(ByVal wbName As String) As Boolean
+    If wbName Like "*.invsys.*.xlsb" _
+       Or wbName Like "*.invsys.*.xlsx" _
+       Or wbName Like "*.invsys.*.xlsm" Then
+        IsRuntimeWorkbookNameSurface = True
+        Exit Function
+    End If
+
+    If wbName Like "invsys.inbox.*.xlsb" _
+       Or wbName Like "invsys.inbox.*.xlsx" _
+       Or wbName Like "invsys.inbox.*.xlsm" Then
+        IsRuntimeWorkbookNameSurface = True
+        Exit Function
+    End If
+
+    If wbName Like "*.outbox.events.xlsb" _
+       Or wbName Like "*.outbox.events.xlsx" _
+       Or wbName Like "*.outbox.events.xlsm" _
+       Or wbName Like "*.snapshot.inventory.xlsb" _
+       Or wbName Like "*.snapshot.inventory.xlsx" _
+       Or wbName Like "*.snapshot.inventory.xlsm" Then
+        IsRuntimeWorkbookNameSurface = True
+    End If
 End Function
 
 Private Sub EnsureTableSurface(ByVal wb As Workbook, _
@@ -201,6 +292,7 @@ Private Sub EnsureTableSurface(ByVal wb As Workbook, _
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnSurface lo, CStr(headers(i))
     Next i
+    PruneInventoryAliasColumnsSurface lo
     RemoveAutogeneratedColumnsSurface lo
 
     If seedEntryRow Then
@@ -208,6 +300,27 @@ Private Sub EnsureTableSurface(ByVal wb As Workbook, _
     ElseIf Not lo.DataBodyRange Is Nothing Then
         If lo.ListRows.Count = 1 And TableRowIsBlankSurface(lo, 1) Then lo.ListRows(1).Delete
     End If
+End Sub
+
+Private Sub PruneInventoryAliasColumnsSurface(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+
+    Select Case LCase$(Trim$(lo.Name))
+        Case "invsys", "invsysdata_receiving", "invsysdata_shipping"
+            DeleteListColumnIfPresentSurface lo, "SKU"
+            DeleteListColumnIfPresentSurface lo, "ItemName"
+            DeleteListColumnIfPresentSurface lo, "QtyOnHand"
+            DeleteListColumnIfPresentSurface lo, "LastAppliedUTC"
+            DeleteListColumnIfPresentSurface lo, "TIMESTAMP"
+    End Select
+End Sub
+
+Private Sub DeleteListColumnIfPresentSurface(ByVal lo As ListObject, ByVal columnName As String)
+    Dim idx As Long
+
+    idx = GetColumnIndexSurface(lo, columnName)
+    If idx = 0 Then Exit Sub
+    lo.ListColumns(idx).Delete
 End Sub
 
 Private Sub RemoveAutogeneratedColumnsSurface(ByVal lo As ListObject)
@@ -220,6 +333,18 @@ Private Sub RemoveAutogeneratedColumnsSurface(ByVal lo As ListObject)
         End If
     Next i
 End Sub
+
+Private Function FindTableByNameSurface(ByVal wb As Workbook, ByVal tableName As String) As ListObject
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        On Error Resume Next
+        Set FindTableByNameSurface = ws.ListObjects(tableName)
+        On Error GoTo 0
+        If Not FindTableByNameSurface Is Nothing Then Exit Function
+    Next ws
+End Function
 
 Private Function EnsureWorksheetSurface(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
     On Error Resume Next
@@ -298,6 +423,24 @@ Private Sub EnsureWorksheetEditableSurface(ByVal ws As Worksheet)
         Err.Raise vbObjectError + 2751, "modRoleWorkbookSurfaces.EnsureWorksheetEditableSurface", _
                   "Worksheet '" & ws.Name & "' is protected and could not be unprotected before updating workbook surfaces."
     End If
+End Sub
+
+Private Sub DeleteWorksheetSurface(ByVal wb As Workbook, ByVal sheetName As String)
+    Dim ws As Worksheet
+    Dim prevAlerts As Boolean
+
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set ws = wb.Worksheets(sheetName)
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+
+    EnsureWorksheetEditableSurface ws
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    ws.Delete
+    Application.DisplayAlerts = prevAlerts
 End Sub
 
 Private Sub FormatWorkbookSurface(ByVal wb As Workbook)

@@ -74,8 +74,9 @@ Public Sub InitializeShipmentsUiForWorkbook(Optional ByVal targetWb As Workbook 
     Call modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wb, surfaceReport)
     ArrangeShippingSurface wb
     NormalizeShippingBootstrapArtifacts wb
-    EnsureShipmentsButtons
+    EnsureShipmentsButtons wb
     EnsureBuilderTablesReady
+    modOperatorReadModel.InitializeAutoSnapshotForWorkbook wb
     If mAggDirty Then RebuildShippingAggregates
 End Sub
 
@@ -226,7 +227,7 @@ Private Sub MoveListObjectToRowColShipping(ByVal lo As ListObject, ByVal targetR
 
     On Error Resume Next
     lo.Range.Cut Destination:=dest
-    modUtils.ClearExcelClipboardState
+    ClearExcelClipboardStateShipping
     Err.Clear
     On Error GoTo 0
 End Sub
@@ -612,7 +613,7 @@ End Sub
 
 Public Sub BtnShipmentsSent()
     On Error GoTo ErrHandler
-    If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
+    If Not RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
     Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
@@ -625,6 +626,7 @@ Public Sub BtnShipmentsSent()
     Dim queuedEventId As String
     Dim errNotes As String
     Dim deltas As Collection
+    Dim runtimeReport As String
     If Not BuildQueueableShipmentsSentDeltas(invLo, ws, deltas, errNotes) Then
         If errNotes = "" Then errNotes = "Unable to build shipment event."
         MsgBox errNotes, vbInformation
@@ -653,6 +655,12 @@ Public Sub BtnShipmentsSent()
     ClearInstructionStaging ws
 
     If shipLogs.Count > 0 Then LogShippingChanges "AggregatePackages_Log", shipLogs
+    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(ws.Parent, "", "LOCAL", runtimeReport) Then
+        If runtimeReport = "" Then runtimeReport = "Local shipment post succeeded, but runtime processing or read-model refresh did not complete cleanly."
+        AppendNote errNotes, runtimeReport
+    ElseIf runtimeReport <> "" Then
+        AppendNote errNotes, runtimeReport
+    End If
 
     Dim msg As String
     msg = "Finalized " & Format$(shippedTotal, "0.###") & " shipments."
@@ -662,7 +670,12 @@ Public Sub BtnShipmentsSent()
         msg = msg & vbCrLf & "SHIPMENTS cleared."
     End If
     If queuedEventId <> "" Then msg = msg & vbCrLf & "Inbox EventID: " & queuedEventId
-    MsgBox msg, vbInformation
+    If errNotes <> "" Then
+        msg = msg & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
+        MsgBox msg, vbExclamation
+    Else
+        MsgBox msg, vbInformation
+    End If
     Exit Sub
 ErrHandler:
     Dim errMsg As String
@@ -676,7 +689,7 @@ Public Function QueueShipmentsSentEventFromCurrentWorkbook(ByRef eventIdOut As S
     Dim invLo As ListObject
     Dim deltas As Collection
 
-    If Not modRoleUiAccess.CanCurrentUserPerformCapability("SHIP_POST", "", "", "", errNotes) Then Exit Function
+    If Not CanCurrentUserPerformCapability("SHIP_POST", "", "", "", errNotes) Then Exit Function
 
     Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then
@@ -857,8 +870,13 @@ ExitHandler:
 End Sub
 
 ' ===== button scaffolding =====
-Private Sub EnsureShipmentsButtons()
-    Dim ws As Worksheet: Set ws = SheetExists(SHEET_SHIPMENTS)
+Private Sub EnsureShipmentsButtons(Optional ByVal targetWb As Workbook = Nothing)
+    Dim ws As Worksheet
+    Dim wb As Workbook
+
+    Set wb = ResolveShippingWorkbook(targetWb, SHEET_SHIPMENTS)
+    If wb Is Nothing Then Exit Sub
+    Set ws = WorkbookSheetExistsShipping(wb, SHEET_SHIPMENTS)
     If ws Is Nothing Then Exit Sub
 
     DeleteLegacyShippingButtons ws
@@ -878,7 +896,7 @@ End Sub
 
 Private Sub RefreshShipmentsUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
-    modRoleUiAccess.ApplyShapeCapability ws, BTN_SHIPMENTS_SENT, "SHIP_POST"
+    ApplyShapeCapability ws, BTN_SHIPMENTS_SENT, "SHIP_POST"
 End Sub
 
 Private Sub DeleteLegacyShippingButtons(ByVal ws As Worksheet)
@@ -896,13 +914,22 @@ Private Sub DeleteLegacyShippingButtons(ByVal ws As Worksheet)
     DeleteShapeIfExists ws, BTN_SHIPMENTS_SENT
 End Sub
 
+Private Sub ClearExcelClipboardStateShipping()
+    On Error Resume Next
+    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
+    On Error GoTo 0
+End Sub
+
 Public Sub ToggleUseExistingInventory()
     InvalidateAggregates True
 End Sub
 
 Private Sub EnsureButtonCustom(ws As Worksheet, shapeName As String, caption As String, onActionMacro As String, leftPos As Double, topPos As Double, Optional widthPts As Double = 118)
     Const BTN_HEIGHT As Double = 20
+    Dim resolvedOnAction As String
+
     If widthPts < 20 Then widthPts = 118
+    resolvedOnAction = ResolveOnActionMacroShipping(onActionMacro)
     Dim shp As Shape
     On Error Resume Next
     Set shp = ws.Shapes(shapeName)
@@ -911,20 +938,23 @@ Private Sub EnsureButtonCustom(ws As Worksheet, shapeName As String, caption As 
         Set shp = ws.Shapes.AddFormControl(xlButtonControl, leftPos, topPos, widthPts, BTN_HEIGHT)
         shp.Name = shapeName
         shp.TextFrame.Characters.Text = caption
-        shp.OnAction = onActionMacro
+        shp.OnAction = resolvedOnAction
     Else
         shp.Left = leftPos
         shp.Top = topPos
         shp.Width = widthPts
         shp.Height = BTN_HEIGHT
         shp.TextFrame.Characters.Text = caption
-        shp.OnAction = onActionMacro
+        shp.OnAction = resolvedOnAction
     End If
 End Sub
 
 Private Sub EnsureCheckbox(ws As Worksheet, shapeName As String, caption As String, onActionMacro As String, leftPos As Double, topPos As Double, Optional widthPts As Double = 118)
     Const CHK_HEIGHT As Double = 26
+    Dim resolvedOnAction As String
+
     If widthPts < 20 Then widthPts = 118
+    resolvedOnAction = ResolveOnActionMacroShipping(onActionMacro)
     Dim shp As Shape
     On Error Resume Next
     Set shp = ws.Shapes(shapeName)
@@ -972,17 +1002,27 @@ Private Sub EnsureCheckbox(ws As Worksheet, shapeName As String, caption As Stri
     If shp Is Nothing Then
         Set shp = ws.Shapes.AddFormControl(xlCheckBox, leftPos, topPos, widthPts, CHK_HEIGHT)
         shp.Name = shapeName
-        shp.OnAction = onActionMacro
+        shp.OnAction = resolvedOnAction
     Else
         shp.Name = shapeName
         shp.Left = leftPos
         shp.Top = topPos
         shp.Width = widthPts
         shp.Height = CHK_HEIGHT
-        shp.OnAction = onActionMacro
+        shp.OnAction = resolvedOnAction
     End If
     ForceCheckboxCaption shp, caption
 End Sub
+
+Private Function ResolveOnActionMacroShipping(ByVal onActionMacro As String) As String
+    onActionMacro = Trim$(onActionMacro)
+    If onActionMacro = "" Then Exit Function
+    If InStr(1, onActionMacro, "!", vbTextCompare) > 0 Then
+        ResolveOnActionMacroShipping = onActionMacro
+    Else
+        ResolveOnActionMacroShipping = "'" & ThisWorkbook.Name & "'!" & onActionMacro
+    End If
+End Function
 
 Private Sub DeleteLegacyCheckBoxes(ws As Worksheet)
     Dim shp As Shape

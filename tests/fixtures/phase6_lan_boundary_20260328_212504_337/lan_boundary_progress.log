@@ -1,0 +1,25 @@
+[2026-03-28 21:25:04] Creating setup harness.
+[2026-03-28 21:25:06] Running seed macro.
+[2026-03-28 21:25:06] Seed result: ERR|That name is already taken. Try a different one.
+[2026-03-28 21:25:06] Creating session A/B harnesses.
+[2026-03-28 21:25:09] Attaching session A.
+[2026-03-28 21:25:10] Attach A result: OK|Warehouse=WH89|Station=S1
+[2026-03-28 21:25:10] Attaching session B.
+[2026-03-28 21:25:10] Attach B result: OK|Warehouse=WH89|Station=S2
+[2026-03-28 21:25:10] Holding canonical inventory in session A.
+[2026-03-28 21:25:10] Hold result: OK|Path=C:\Users\Justin\repos\invSys_fork\tests\fixtures\phase6_lan_boundary_20260328_212504_337\runtime\WH89.invSys.Data.Inventory.xlsb|ReadOnly=False
+[2026-03-28 21:25:10] Running lock-denied receive in session B.
+[2026-03-28 21:25:12] Lock-denied result: OK|EventID=47E23D5C-E1C3-4B48-AD0F-A74145B75810l|Processed=0|Report=Inventory workbook is read-only or locked by another Excel session.|Status=NEW|ErrorCode=|ErrorMessage=
+[2026-03-28 21:25:12] Closing canonical inventory in session A.
+[2026-03-28 21:25:12] Close hold result: OK|Closed
+[2026-03-28 21:25:12] Queueing receive in session A.
+[2026-03-28 21:25:13] Queue A result: OK|EventID=A209265E-75D6-460C-8FF1-EB8324E224C7l
+[2026-03-28 21:25:13] Running batch for queued session A event.
+[2026-03-28 21:25:14] Process A result: OK|EventID=A209265E-75D6-460C-8FF1-EB8324E224C7l|Processed=1|Report=Applied=1; SkipDup=0; Poison=0; RunId=RUN-WH89-INVENTORY-20260328212513-004925|Status=PROCESSED|ErrorCode=|ErrorMessage=
+[2026-03-28 21:25:14] Publishing snapshot from session A.
+[2026-03-28 21:25:15] Publish result: OK|PublishedPath=C:\Users\Justin\repos\invSys_fork\tests\fixtures\phase6_lan_boundary_20260328_212504_337\published\WH89.invSys.Snapshot.Inventory.xlsb
+[2026-03-28 21:25:15] Building saved operator in session B.
+[2026-03-28 21:25:15] Build operator result: OK|OperatorPath=C:\Users\Justin\repos\invSys_fork\tests\fixtures\phase6_lan_boundary_20260328_212504_337\stationB_operator.xlsb
+[2026-03-28 21:25:15] Refreshing station B from published snapshot.
+[2026-03-28 21:25:15] Refresh B result: OK|TotalInv=7|QtyAvailable=7|SnapshotId=WH89.invSys.Snapshot.Inventory.xlsb/20260328212514|SourceType=SHAREPOINT|IsStale=False|Path=C:\Users\Justin\repos\invSys_fork\tests\fixtures\phase6_lan_boundary_20260328_212504_337\stationB_operator.xlsb
+[2026-03-28 21:25:15] Summary: Passed=9 Failed=1 Total=10
