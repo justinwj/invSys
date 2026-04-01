@@ -19,6 +19,12 @@ Sub Open_CreateWarehouse()
     frmCreateWarehouse.Show
 End Sub
 
+Sub Open_RetireMigrateWarehouse()
+    Dim report As String
+    Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)
+    frmRetireMigrateWarehouse.Show
+End Sub
+
 Public Sub Scheduler_RunWarehouseBatch()
     PublishSchedulerResult modAdminConsole.RunScheduledWarehouseBatchForAutomation("", 0)
 End Sub
