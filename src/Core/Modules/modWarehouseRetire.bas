@@ -392,6 +392,8 @@ Public Function DeleteLocalRuntime(ByRef spec As RetireMigrateSpec) As Boolean
     Dim report As String
     Dim targetRoot As String
     Dim tombstonePath As String
+    Dim archiveFolder As String
+    Dim manifestPath As String
 
     On Error GoTo FailDelete
 
@@ -410,6 +412,13 @@ Public Function DeleteLocalRuntime(ByRef spec As RetireMigrateSpec) As Boolean
     tombstonePath = BuildTombstonePathRetire(spec)
     If Not FileExistsRetire(tombstonePath) Then
         report = "Retirement tombstone not found. RetireSourceWarehouse must succeed before delete."
+        GoTo FailSoft
+    End If
+
+    archiveFolder = ResolveLatestArchiveFolderRetire(spec.ArchiveDestPath, spec.SourceWarehouseId)
+    manifestPath = archiveFolder & "\manifest.json"
+    If archiveFolder = "" Or Not FileExistsRetire(manifestPath) Then
+        report = "Archive manifest not found. WriteArchivePackage must succeed before delete."
         GoTo FailSoft
     End If
 
