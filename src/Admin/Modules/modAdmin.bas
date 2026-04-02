@@ -19,6 +19,20 @@ Sub Open_CreateWarehouse()
     frmCreateWarehouse.Show
 End Sub
 
+Sub Verify_AddinsPublished()
+    Dim report As String
+    Dim detail As String
+
+    Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)
+    If modAddinsPublish.VerifyAddinsPublished() Then
+        MsgBox "All required add-ins are published." & vbCrLf & modAddinsPublish.GetLastAddinsPublishReport(), vbInformation, "invSys Admin"
+    Else
+        detail = modAddinsPublish.GetLastAddinsPublishReport()
+        If Len(detail) = 0 Then detail = "One or more required add-ins are missing or zero-byte."
+        MsgBox "Add-ins publish verification failed." & vbCrLf & detail, vbExclamation, "invSys Admin"
+    End If
+End Sub
+
 Sub Admin_RetireMigrateWarehouse_Click()
     Dim report As String
     Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)

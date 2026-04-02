@@ -1,9 +1,9 @@
 # Phase 6 Packaged Ribbon Validation Results
 
-- Date: 2026-04-01 16:48:37
+- Date: 2026-04-02 11:50:34
 - Deploy root: C:\Users\Justin\repos\invSys_fork\deploy\current
-- Runtime root override: C:\Users\Justin\AppData\Local\Temp\invsys-phase6-ribbon-a357e9651d374d12b6bd0ae67c2e842e
-- Passed: 76
+- Runtime root override: C:\Users\Justin\AppData\Local\Temp\invsys-phase6-ribbon-2a46f2cf740f4d1a86cd6517b378524b
+- Passed: 79
 - Failed: 0
 
 | Check | Result | Detail |
@@ -15,7 +15,7 @@
 | invSys.Shipping.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Shipping.xlam |
 | invSys.Production.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Production.xlam |
 | invSys.Admin.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Admin.xlam |
-| Core.RuntimeRootOverride | PASS | C:\Users\Justin\AppData\Local\Temp\invsys-phase6-ribbon-a357e9651d374d12b6bd0ae67c2e842e |
+| Core.RuntimeRootOverride | PASS | C:\Users\Justin\AppData\Local\Temp\invsys-phase6-ribbon-2a46f2cf740f4d1a86cd6517b378524b |
 | Receiving.RibbonXml | PASS | customUI/customUI.xml present. |
 | Receiving.CallbackModule | PASS | modRibbonGenerated |
 | Receiving.RibbonButton.btnReceivingSetup | PASS | Label=Setup UI; OnAction=RibbonOnActionReceiving; Screentip= |
@@ -80,6 +80,9 @@
 | Admin.RibbonButton.btnAdminCreateWarehouse | PASS | Label=Create New Warehouse; OnAction=RibbonOnActionAdmin; Screentip= |
 | Admin.MacroExists.btnAdminCreateWarehouse | PASS | modAdmin.Open_CreateWarehouse |
 | Admin.CallbackMap.btnAdminCreateWarehouse | PASS | btnAdminCreateWarehouse -> modAdmin.Open_CreateWarehouse |
+| Admin.RibbonButton.btnAdminVerifyAddinsPublished | PASS | Label=Verify Add-ins Published; OnAction=RibbonOnActionAdmin; Screentip= |
+| Admin.MacroExists.btnAdminVerifyAddinsPublished | PASS | modAdmin.Verify_AddinsPublished |
+| Admin.CallbackMap.btnAdminVerifyAddinsPublished | PASS | btnAdminVerifyAddinsPublished -> modAdmin.Verify_AddinsPublished |
 | Admin.RibbonButton.btnAdminRetireMigrateWarehouse | PASS | Label=Retire / Migrate Warehouse; OnAction=RibbonOnActionAdmin; Screentip=Archive, migrate, retire, or delete a warehouse runtime |
 | Admin.RibbonButtonScreentip.btnAdminRetireMigrateWarehouse | PASS | Archive, migrate, retire, or delete a warehouse runtime |
 | Admin.MacroExists.btnAdminRetireMigrateWarehouse | PASS | modAdmin.Admin_RetireMigrateWarehouse_Click |
