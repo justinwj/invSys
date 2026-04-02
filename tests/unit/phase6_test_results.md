@@ -1,11 +1,15 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-04-01 17:18:03
-- Passed: 79
+- Date: 2026-04-02 11:33:30
+- Passed: 83
 - Failed: 0
 
 | Test | Result |
 |---|---|
+| TestAddinsPublish.TestVerifyAddinsPublished_AllPresent | PASS |
+| TestAddinsPublish.TestVerifyAddinsPublished_OneMissingLogsDiagnostic | PASS |
+| TestAddinsPublish.TestVerifyAddinsPublished_ZeroByteFileLogsDiagnostic | PASS |
+| TestAddinsPublish.TestPublishAddins_IdempotentRepublishWritesManifest | PASS |
 | TestWarehouseBootstrap.TestValidateWarehouseSpec_TrimsFieldsAndAllowsBlankSharePoint | PASS |
 | TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsEmptyWarehouseId | PASS |
 | TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsWarehouseIdWithSpaces | PASS |

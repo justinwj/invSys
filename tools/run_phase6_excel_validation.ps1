@@ -125,8 +125,10 @@ try {
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/Admin/Modules/modAddinsPublish.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
+        (Join-Path $repo "tests/unit/TestAddinsPublish.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseBootstrap.bas"),
         (Join-Path $repo "tests/unit/test_RetireMigrateSpec.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseRetireReAuth.bas"),
@@ -142,6 +144,10 @@ try {
     )
 
     $allTests = @(
+        "TestAddinsPublish.TestVerifyAddinsPublished_AllPresent",
+        "TestAddinsPublish.TestVerifyAddinsPublished_OneMissingLogsDiagnostic",
+        "TestAddinsPublish.TestVerifyAddinsPublished_ZeroByteFileLogsDiagnostic",
+        "TestAddinsPublish.TestPublishAddins_IdempotentRepublishWritesManifest",
         "TestWarehouseBootstrap.TestValidateWarehouseSpec_TrimsFieldsAndAllowsBlankSharePoint",
         "TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsEmptyWarehouseId",
         "TestWarehouseBootstrap.TestValidateWarehouseSpec_RejectsWarehouseIdWithSpaces",
