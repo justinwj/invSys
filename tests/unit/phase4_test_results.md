@@ -1,7 +1,7 @@
 # Phase 4 VBA Test Results
 
-- Date: 2026-03-30 20:24:09
-- Passed: 8
+- Date: 2026-04-07 14:16:03
+- Passed: 10
 - Failed: 0
 
 | Test | Result |
@@ -14,3 +14,5 @@
 | TestAdminConsole.TestRunScheduledWarehouseBatchForAutomation_ReturnsStableOkResult | PASS |
 | TestAdminConsole.TestRunScheduledWarehousePublishForAutomation_ReturnsStableOkResult | PASS |
 | TestAdminConsole.TestRunScheduledHQAggregationForAutomation_ReturnsStableOkResult | PASS |
+| TestAdminConsole.TestBuildLoadedPackageReport_IncludesResolvedRuntimeArtifacts | PASS |
+| TestAdminConsole.TestExportLoadedPackageReport_WritesFile | PASS |

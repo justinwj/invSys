@@ -1,6 +1,27 @@
 Attribute VB_Name = "modAdminConsole"
 Option Explicit
 
+Private Const SHEET_ADMIN_CONSOLE As String = "AdminConsole"
+Private Const SHEET_ADMIN_AUDIT As String = "AdminAudit"
+Private Const SHEET_ADMIN_POISON As String = "PoisonQueue"
+
+Private Const TABLE_ADMIN_AUDIT As String = "tblAdminAudit"
+Private Const TABLE_ADMIN_POISON As String = "tblAdminPoisonQueue"
+Private Const TABLE_LOCKS As String = "tblLocks"
+Private Const TABLE_APPLIED As String = "tblAppliedEvents"
+Private Const TABLE_LOG As String = "tblInventoryLog"
+
+Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
+Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
+Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
+
+Private Const SNAPSHOT_SHEET As String = "InventorySnapshot"
+Private Const SNAPSHOT_TABLE As String = "tblInventorySnapshot"
+
+Private Const AUTOMATION_OK As String = "OK"
+Private Const AUTOMATION_FAIL As String = "FAIL"
+Private Const AUTOMATION_SKIP As String = "SKIP"
+
 Public Function ValidateWarehouseSpecAdmin(ByVal warehouseId As String, _
                                            ByVal warehouseName As String, _
                                            ByVal stationId As String, _
@@ -78,28 +99,7 @@ Public Function DeleteLocalRuntimeAdmin(ByVal sourceWarehouseId As String, _
                                         ByVal archiveDestPath As String, _
                                         ByVal publishTombstone As Boolean) As Boolean
     DeleteLocalRuntimeAdmin = modWarehouseRetire.DeleteLocalRuntimeValues(sourceWarehouseId, targetWarehouseId, operationMode, adminUser, confirmedByUser, archiveDestPath, publishTombstone)
-End Sub
-
-Private Const SHEET_ADMIN_CONSOLE As String = "AdminConsole"
-Private Const SHEET_ADMIN_AUDIT As String = "AdminAudit"
-Private Const SHEET_ADMIN_POISON As String = "PoisonQueue"
-
-Private Const TABLE_ADMIN_AUDIT As String = "tblAdminAudit"
-Private Const TABLE_ADMIN_POISON As String = "tblAdminPoisonQueue"
-Private Const TABLE_LOCKS As String = "tblLocks"
-Private Const TABLE_APPLIED As String = "tblAppliedEvents"
-Private Const TABLE_LOG As String = "tblInventoryLog"
-
-Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
-Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
-Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
-
-Private Const SNAPSHOT_SHEET As String = "InventorySnapshot"
-Private Const SNAPSHOT_TABLE As String = "tblInventorySnapshot"
-
-Private Const AUTOMATION_OK As String = "OK"
-Private Const AUTOMATION_FAIL As String = "FAIL"
-Private Const AUTOMATION_SKIP As String = "SKIP"
+End Function
 
 Public Function OpenAdminConsole(Optional ByVal adminWb As Workbook = Nothing, _
                                  Optional ByRef report As String = "") As Boolean

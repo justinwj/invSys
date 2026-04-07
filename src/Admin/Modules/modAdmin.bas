@@ -43,6 +43,19 @@ Sub Verify_AddinsPublished()
     End If
 End Sub
 
+Sub Export_LoadedPackageReport()
+    Dim report As String
+    Dim pathOut As String
+
+    Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)
+    If modPackageDiagnostics.ExportLoadedPackageReport("", "", "", pathOut, report) Then
+        MsgBox "Loaded package report written to:" & vbCrLf & pathOut, vbInformation, "invSys Admin"
+    Else
+        If Len(Trim$(report)) = 0 Then report = "Loaded package report export failed."
+        MsgBox report, vbExclamation, "invSys Admin"
+    End If
+End Sub
+
 Sub Admin_RetireMigrateWarehouse_Click()
     Dim report As String
     Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)

@@ -849,8 +849,8 @@ End Sub
 
 Private Sub RefreshProductionUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
-    ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
-    ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
+    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_MADE, "PROD_POST"
+    modRoleUiAccess.ApplyShapeCapability ws, BTN_TO_TOTALINV, "PROD_POST"
 End Sub
 
 Private Sub DeleteLegacyProductionButtons(ByVal ws As Worksheet)
@@ -1322,7 +1322,7 @@ End Sub
 
 Public Sub BtnToMade()
     On Error GoTo ErrHandler
-    If Not RequireCurrentUserCapability("PROD_POST") Then Exit Sub
+    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1442,7 +1442,7 @@ End Sub
 
 Public Sub BtnToTotalInv()
     On Error GoTo ErrHandler
-    If Not RequireCurrentUserCapability("PROD_POST") Then Exit Sub
+    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
 
@@ -1530,7 +1530,7 @@ Public Function QueueProductionCompleteEventFromCurrentWorkbook(ByRef eventIdOut
     Dim madeNotes As String
     Dim madeDeltas As Collection
 
-    If Not CanCurrentUserPerformCapability("PROD_POST", "", "", "", errNotes) Then Exit Function
+    If Not modRoleUiAccess.CanCurrentUserPerformCapability("PROD_POST", "", "", "", errNotes) Then Exit Function
 
     Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then
