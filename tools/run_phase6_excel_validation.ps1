@@ -125,9 +125,11 @@ try {
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
         (Join-Path $repo "src/Admin/Modules/modAddinsPublish.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
+        (Join-Path $repo "tests/unit/TestStub_modTS_Received.bas"),
         (Join-Path $repo "tests/unit/TestAddinsPublish.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseBootstrap.bas"),
         (Join-Path $repo "tests/unit/test_RetireMigrateSpec.bas"),
@@ -135,12 +137,17 @@ try {
         (Join-Path $repo "tests/unit/TestWarehouseRetireArchive.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseRetireMigration.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseRetireLifecycle.bas"),
+        (Join-Path $repo "tests/unit/TestReceivingReadiness.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
         (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas")
     )
 
     $formPaths = @(
         (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm")
+    )
+
+    $classPaths = @(
+        (Join-Path $repo "src/Receiving/ClassModules/cAppEvents.cls")
     )
 
     $allTests = @(
@@ -185,6 +192,18 @@ try {
         "TestWarehouseRetireLifecycle.TestRetireSourceWarehouse_SharePointUnavailableDoesNotBlockRetirement",
         "TestWarehouseRetireLifecycle.TestDeleteLocalRuntime_RejectsWithoutTombstone",
         "TestWarehouseRetireLifecycle.TestDeleteLocalRuntime_RejectsWithoutConfirmation",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_AllReady_ReturnsReady",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_SnapshotOk_WhenAuthMissingCapability",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_SnapshotStale_ReturnsStale",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_SnapshotMissing_ReturnsMissing",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_SnapshotUnreadable_ReturnsUnreadable",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_AuthOk_WhenSnapshotMissing",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_AuthNoUser_ReturnsNoUser",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_AuthMissingCapability_ReturnsMissingCapability",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_AuthInactive_ReturnsInactive",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_RuntimeOk_WhenSnapshotMissingAndNoUser",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_RuntimeMissingTables_ReturnsMissingTables",
+        "TestReceivingReadiness.TestCheckReceivingReadiness_RuntimePathUnresolved_ReturnsPathUnresolved",
         "TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_CreatesCanonicalWorkbook",
         "TestPhase6CoreSurfaces.TestLoadConfig_AutoBootstrapsCanonicalWorkbook",
         "TestPhase6CoreSurfaces.TestLoadConfig_BlankContextAutoBootstrapsDefaultRuntimeWorkbook",
@@ -236,6 +255,11 @@ try {
 
     foreach ($m in $modulePaths) {
         Import-BasModule -VbProject $vbProject -BasPath $m
+        [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
+    }
+    foreach ($c in $classPaths) {
+        if (-not (Test-Path $c)) { throw "Missing class module: $c" }
+        [void]$vbProject.VBComponents.Import($c)
         [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
     }
     foreach ($f in $formPaths) {
