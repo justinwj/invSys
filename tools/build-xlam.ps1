@@ -106,6 +106,28 @@ function New-NormalizedImportFile {
     return $tempPath
 }
 
+function New-NormalizedFormImportFile {
+    param(
+        [System.IO.FileInfo]$FormFile
+    )
+
+    $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("invsys-form-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+    $tempFrmPath = Join-Path $tempDir $FormFile.Name
+    $raw = Get-Content -LiteralPath $FormFile.FullName -Raw
+    $normalized = $raw -replace "`r?`n", "`r`n"
+    [System.IO.File]::WriteAllText($tempFrmPath, $normalized, [System.Text.Encoding]::ASCII)
+
+    $sourceFrxPath = [System.IO.Path]::ChangeExtension($FormFile.FullName, ".frx")
+    if (Test-Path -LiteralPath $sourceFrxPath) {
+        $tempFrxPath = [System.IO.Path]::ChangeExtension($tempFrmPath, ".frx")
+        Copy-Item -LiteralPath $sourceFrxPath -Destination $tempFrxPath -Force
+    }
+
+    return $tempFrmPath
+}
+
 function Get-VbComponentNameFromFile {
     param(
         [System.IO.FileInfo]$SourceFile
@@ -270,6 +292,7 @@ function Add-StubUserForm {
 
     $formName = [System.IO.Path]::GetFileNameWithoutExtension($FormFile.Name)
     Write-Host ("  Stubbing userform " + $formName + " (missing FRX designer)")
+    Remove-ExistingVBComponent -VBProject $VBProject -ComponentName $formName
     $component = $VBProject.VBComponents.Add(3)
     $component.Name = $formName
     $captionLine = Get-Content -LiteralPath $FormFile.FullName | Where-Object { $_ -match '^\s*Caption\s*=\s*"' } | Select-Object -First 1
@@ -284,6 +307,7 @@ function Add-StubUserForm {
         $module.DeleteLines(1, $module.CountOfLines)
     }
     $module.AddFromString("Option Explicit")
+    Assert-VBComponentType -VBProject $VBProject -ComponentName $formName -ExpectedType 3 -Context $FormFile.FullName
 }
 
 function Import-Forms {
@@ -293,12 +317,21 @@ function Import-Forms {
     )
 
     foreach ($formFile in $FormFiles) {
+        $formName = [System.IO.Path]::GetFileNameWithoutExtension($formFile.Name)
         if (Test-FormRequiresStub -FormFile $formFile) {
             Add-StubUserForm -VBProject $VBProject -FormFile $formFile
         }
         else {
             Write-Host ("  Importing " + $formFile.FullName)
-            [void]$VBProject.VBComponents.Import($formFile.FullName)
+            Remove-ExistingVBComponent -VBProject $VBProject -ComponentName $formName
+            $normalizedPath = New-NormalizedFormImportFile -FormFile $formFile
+            try {
+                [void]$VBProject.VBComponents.Import($normalizedPath)
+                Assert-VBComponentType -VBProject $VBProject -ComponentName $formName -ExpectedType 3 -Context $formFile.FullName
+            }
+            finally {
+                Remove-Item -LiteralPath (Split-Path $normalizedPath -Parent) -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
