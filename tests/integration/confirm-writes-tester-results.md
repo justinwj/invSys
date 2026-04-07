@@ -1,22 +1,22 @@
 # Confirm Writes Tester Integration Results
 
-- Date: 2026-04-07 15:06:14
+- Date: 2026-04-07 15:26:08
 - Machine: X1-PRO-AI
-- Overall: FAIL
-- Harness: C:\Users\Justin\repos\invSys_fork\tests\fixtures\ConfirmWritesTester_Integration_Harness_20260407_150551_052.xlsm
-- Summary: One or more Confirm Writes tester proving cases failed.
+- Overall: PASS
+- Harness: C:\Users\Justin\repos\invSys_fork\tests\fixtures\ConfirmWritesTester_Integration_Harness_20260407_152541_817.xlsm
+- Summary: Confirm Writes tester proving flow passed all eight deterministic cases.
 - Runtime user: Justin
 - Tester user: TESTER01
-- Passed checks: 0
-- Failed checks: 8
+- Passed checks: 8
+- Failed checks: 0
 
 | Check | Result | Detail |
 |---|---|---|
-| ReadinessCheck_OK | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| ReadinessCheck_MissingCapability | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| RefreshInventory_Loads | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| ConfirmWrites_SingleRow | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| ProcessorApplies | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| SnapshotRefreshAfterPost | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| IdempotentSetup | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_primary_20260407_150553_2541\runtime\WH1\WH1.invSys.Auth.xlsb |
-| SharePointUnavailable | FAIL | Workbook not found: C:\Users\Justin\AppData\Local\Temp\invSys_confirm_writes_tester_offline_20260407_150554_2587\runtime\WH1\WH1.invSys.Auth.xlsb |
+| ReadinessCheck_OK | PASS | CheckReceivingReadiness returned ready for the configured WH1 receiving workbook. |
+| ReadinessCheck_MissingCapability | PASS | Readiness returned MISSING_CAPABILITY after RECEIVE_POST was removed from the effective runtime user. |
+| RefreshInventory_Loads | PASS | Refresh populated the read model with TEST-SKU-001 at QtyOnHand = 100. |
+| ConfirmWrites_SingleRow | PASS | Confirm Writes cleared staging, appended ReceivedLog, and wrote inbox event 8080FFB6-9470-42E3-BD44-C7834114855Ds with inbox status PROCESSED. |
+| ProcessorApplies | PASS | Inventory QtyOnHand reached 110 and the inbox row is PROCESSED. RunBatch processed 0 rows. |
+| SnapshotRefreshAfterPost | PASS | Snapshot refresh showed TEST-SKU-001 at QtyOnHand = 110 with current LOCAL metadata. |
+| IdempotentSetup | PASS | Rerun reused the runtime, preserved the workbook file, and did not duplicate seed or capability rows. |
+| SharePointUnavailable | PASS | Offline SharePoint refresh completed without hard failure and rendered a stale read-model banner: INVENTORY SNAPSHOT STALE  ;  Source=CACHED  ;  Refreshed=2026-04-07 15:26:08  ;  SnapshotId=WH1.invSys.Snapshot.Inventory.xlsb ; 20260407152605  ;  Snapshot workbook not found for source SHAREPOINT; operator read model kept cached. |
