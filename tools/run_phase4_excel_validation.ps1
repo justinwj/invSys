@@ -76,7 +76,8 @@ End Function
 
 $repo = (Resolve-Path $RepoRoot).Path
 $fixtures = Join-Path $repo "tests/fixtures"
-$harnessPath = Join-Path $fixtures "Phase4_TestHarness.xlsm"
+$harnessStamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
+$harnessPath = Join-Path $fixtures "Phase4_TestHarness_$harnessStamp.xlsm"
 $resultPath = Join-Path $repo "tests/unit/phase4_test_results.md"
 
 $excel = $null
@@ -102,6 +103,7 @@ try {
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas"),
+        (Join-Path $repo "src/Admin/Modules/modPackageDiagnostics.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
         (Join-Path $repo "tests/unit/TestAdminConsole.bas")
     )
@@ -114,10 +116,11 @@ try {
         "TestAdminConsole.TestPublishWarehouseArtifacts_WritesAuditAndPublishesSnapshot",
         "TestAdminConsole.TestRunScheduledWarehouseBatchForAutomation_ReturnsStableOkResult",
         "TestAdminConsole.TestRunScheduledWarehousePublishForAutomation_ReturnsStableOkResult",
-        "TestAdminConsole.TestRunScheduledHQAggregationForAutomation_ReturnsStableOkResult"
+        "TestAdminConsole.TestRunScheduledHQAggregationForAutomation_ReturnsStableOkResult",
+        "TestAdminConsole.TestBuildLoadedPackageReport_IncludesResolvedRuntimeArtifacts",
+        "TestAdminConsole.TestExportLoadedPackageReport_WritesFile"
     )
 
-    if (Test-Path $harnessPath) { Remove-Item $harnessPath -Force }
     $harness = $excel.Workbooks.Add()
     $bootstrap = Add-BootstrapModule -Workbook $harness
     $vbProject = $harness.VBProject

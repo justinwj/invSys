@@ -13,6 +13,8 @@ Public Sub RunAdminConsoleTests()
     Tally TestRunScheduledWarehouseBatchForAutomation_ReturnsStableOkResult(), passed, failed
     Tally TestRunScheduledWarehousePublishForAutomation_ReturnsStableOkResult(), passed, failed
     Tally TestRunScheduledHQAggregationForAutomation_ReturnsStableOkResult(), passed, failed
+    Tally TestBuildLoadedPackageReport_IncludesResolvedRuntimeArtifacts(), passed, failed
+    Tally TestExportLoadedPackageReport_WritesFile(), passed, failed
 
     Debug.Print "Admin.Console tests - Passed: " & passed & " Failed: " & failed
 End Sub
@@ -491,3 +493,77 @@ Private Sub Tally(ByVal testResult As Long, ByRef passed As Long, ByRef failed A
         failed = failed + 1
     End If
 End Sub
+
+Public Function TestBuildLoadedPackageReport_IncludesResolvedRuntimeArtifacts() As Long
+    Dim tempFolder As String
+    Dim shareRoot As String
+    Dim wbCfg As Workbook
+    Dim wbInv As Workbook
+    Dim reportText As String
+
+    On Error GoTo CleanFail
+    tempFolder = TestPhase2Helpers.BuildUniqueTestFolder("AdminLoadedPkgRuntime")
+    shareRoot = TestPhase2Helpers.BuildUniqueTestFolder("AdminLoadedPkgShare")
+    modRuntimeWorkbooks.SetCoreDataRootOverride tempFolder
+
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHDIAG1", "ADM1", tempFolder, "ADMIN")
+    TestPhase2Helpers.SetWarehouseConfigValue wbCfg, "PathDataRoot", tempFolder
+    TestPhase2Helpers.SetWarehouseConfigValue wbCfg, "PathSharePointRoot", shareRoot
+    Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHDIAG1", tempFolder, Array("SKU-001"))
+
+    reportText = modPackageDiagnostics.BuildLoadedPackageReport("WHDIAG1", "ADM1")
+    If InStr(1, reportText, "WarehouseId=WHDIAG1 | StationId=ADM1", vbTextCompare) = 0 Then GoTo CleanExit
+    If InStr(1, reportText, "InventoryWorkbook: " & wbInv.FullName & " | Exists=True | Open=True", vbTextCompare) = 0 Then GoTo CleanExit
+    If InStr(1, reportText, "AddinsRoot=" & shareRoot & "\Addins | Exists=False", vbTextCompare) = 0 Then GoTo CleanExit
+    If InStr(1, reportText, "SharePointAddin invSys.Core.xlam: " & shareRoot & "\Addins\invSys.Core.xlam", vbTextCompare) = 0 Then GoTo CleanExit
+
+    TestBuildLoadedPackageReport_IncludesResolvedRuntimeArtifacts = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInv
+    TestPhase2Helpers.CloseNoSave wbCfg
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestExportLoadedPackageReport_WritesFile() As Long
+    Dim tempFolder As String
+    Dim reportPath As String
+    Dim actualPath As String
+    Dim reportText As String
+    Dim detail As String
+
+    On Error GoTo CleanFail
+    tempFolder = TestPhase2Helpers.BuildUniqueTestFolder("AdminLoadedPkgExport")
+    reportPath = tempFolder & "\loaded-package-report.txt"
+
+    If Not modPackageDiagnostics.ExportLoadedPackageReport(reportPath, "", "", actualPath, detail) Then GoTo CleanExit
+    If StrComp(actualPath, reportPath, vbTextCompare) <> 0 Then GoTo CleanExit
+    If Len(Dir$(reportPath, vbNormal)) = 0 Then GoTo CleanExit
+
+    reportText = ReadAllTextAdminTest(reportPath)
+    If InStr(1, reportText, "invSys Loaded Package Report", vbTextCompare) = 0 Then GoTo CleanExit
+    If InStr(1, reportText, "OpenInvSysWorkbooks", vbTextCompare) = 0 Then GoTo CleanExit
+
+    TestExportLoadedPackageReport_WritesFile = 1
+
+CleanExit:
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Private Function ReadAllTextAdminTest(ByVal filePath As String) As String
+    Dim fileNo As Integer
+
+    If Len(Dir$(filePath, vbNormal)) = 0 Then Exit Function
+    fileNo = FreeFile
+    Open filePath For Binary Access Read As #fileNo
+    If LOF(fileNo) > 0 Then
+        ReadAllTextAdminTest = Space$(LOF(fileNo))
+        Get #fileNo, , ReadAllTextAdminTest
+    End If
+    Close #fileNo
+End Function

@@ -433,7 +433,7 @@ Public Sub ConfirmWrites()
         Exit Sub
     End If
 
-    If Not RequireCurrentUserCapability("RECEIVE_POST") Then Exit Sub
+    If Not modRoleUiAccess.RequireCurrentUserCapability("RECEIVE_POST") Then Exit Sub
     mRedoReady = False
     Dim wsRT As Worksheet: Set wsRT = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
     Dim wsAgg As Worksheet: Set wsAgg = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
@@ -652,7 +652,7 @@ Public Function QueueReceiveEventsFromCurrentWorkbook(ByRef errorMessage As Stri
         Exit Function
     End If
 
-    If Not CanCurrentUserPerformCapability("RECEIVE_POST", "", "", "", errorMessage) Then Exit Function
+    If Not modRoleUiAccess.CanCurrentUserPerformCapability("RECEIVE_POST", "", "", "", errorMessage) Then Exit Function
 
     Set wsAgg = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
     If wsAgg Is Nothing Then
@@ -712,7 +712,7 @@ End Sub
 
 Private Sub RefreshReceivingUiAccess(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
-    ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"
+    modRoleUiAccess.ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"
 End Sub
 
 Private Sub EnsureReceivingButtons(Optional ByVal targetWb As Workbook = Nothing)
