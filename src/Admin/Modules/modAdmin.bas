@@ -19,6 +19,16 @@ Sub Open_CreateWarehouse()
     frmCreateWarehouse.Show
 End Sub
 
+Sub Admin_SetupTesterStation_Click()
+    Dim report As String
+    Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(ThisWorkbook, report)
+    frmSetupTesterStation.Show
+End Sub
+
+Sub Open_SetupTesterStation()
+    Admin_SetupTesterStation_Click
+End Sub
+
 Sub Verify_AddinsPublished()
     Dim report As String
     Dim detail As String
