@@ -47,7 +47,7 @@ Public Function TestConfirmWrites_Tester_EndToEnd() As Long
 
     CleanupConfirmWritesFixture fx
 
-    If SetupConfirmWritesFixture(offlineFx, detailText, "C:\Invalid<SharePointRoot", "offline") Then
+    If SetupConfirmWritesFixture(offlineFx, detailText, Environ$("TEMP") & "\invSys_missing_sharepoint_root", "offline") Then
         RecordConfirmWritesCase "SharePointUnavailable", RunSharePointUnavailableCase(offlineFx, detailText), detailText
     Else
         RecordConfirmWritesCase "SharePointUnavailable", False, detailText
@@ -273,8 +273,8 @@ Private Function RunRefreshInventoryLoadsCase(ByRef fx As ConfirmWritesFixture, 
         detailText = "tblReadModel did not expose TEST-SKU-001 after refresh."
         GoTo CleanExit
     End If
-    If CDbl(GetTableValueConfirmWrites(loInv, rowIndex, "QtyOnHand")) <> 100# Then
-        detailText = "tblReadModel loaded TEST-SKU-001 but QtyOnHand was not 100."
+    If ResolveReadModelQtyConfirmWrites(loInv, rowIndex) <> 100# Then
+        detailText = "tblReadModel loaded TEST-SKU-001 but the visible quantity was not 100."
         GoTo CleanExit
     End If
 
@@ -474,8 +474,12 @@ Private Function RunSnapshotRefreshAfterPostCase(ByRef fx As ConfirmWritesFixtur
         detailText = "tblReadModel did not contain TEST-SKU-001 after refresh."
         GoTo CleanExit
     End If
-    If CDbl(GetTableValueConfirmWrites(loInv, rowIndex, "QtyOnHand")) <> 110# Then
-        detailText = "tblReadModel QtyOnHand was not 110 after refresh."
+    If ResolveReadModelQtyConfirmWrites(loInv, rowIndex) <> 110# Then
+        detailText = "tblReadModel visible quantity was not 110 after refresh."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValueConfirmWrites(loInv, rowIndex, "QtyAvailable")) <> 110# Then
+        detailText = "tblReadModel QtyAvailable was not 110 after refresh."
         GoTo CleanExit
     End If
     If StrComp(CStr(GetTableValueConfirmWrites(loInv, rowIndex, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then
@@ -952,6 +956,20 @@ Private Function GetReadModelStatusBannerTextConfirmWrites(ByVal wb As Workbook)
     On Error GoTo 0
     If shp Is Nothing Then Exit Function
     GetReadModelStatusBannerTextConfirmWrites = Trim$(shp.TextFrame.Characters.Text)
+End Function
+
+Private Function ResolveReadModelQtyConfirmWrites(ByVal lo As ListObject, ByVal rowIndex As Long) As Double
+    If GetColumnIndexConfirmWrites(lo, "QtyOnHand") > 0 Then
+        If IsNumeric(GetTableValueConfirmWrites(lo, rowIndex, "QtyOnHand")) Then
+            ResolveReadModelQtyConfirmWrites = CDbl(GetTableValueConfirmWrites(lo, rowIndex, "QtyOnHand"))
+            Exit Function
+        End If
+    End If
+    If GetColumnIndexConfirmWrites(lo, "TOTAL INV") > 0 Then
+        If IsNumeric(GetTableValueConfirmWrites(lo, rowIndex, "TOTAL INV")) Then
+            ResolveReadModelQtyConfirmWrites = CDbl(GetTableValueConfirmWrites(lo, rowIndex, "TOTAL INV"))
+        End If
+    End If
 End Function
 
 Private Function ResolveCurrentRuntimeUserIdConfirmWrites() As String
