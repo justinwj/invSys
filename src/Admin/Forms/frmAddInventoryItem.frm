@@ -60,6 +60,13 @@ Private mGeneratedRow As Long
 Private mWarehouseId As String
 Private mStationId As String
 Private mUserId As String
+Private mAnchors As Object
+Private mResizeInitialized As Boolean
+
+Private Const ANCHOR_LEFT As Long = 1
+Private Const ANCHOR_TOP As Long = 2
+Private Const ANCHOR_RIGHT As Long = 4
+Private Const ANCHOR_BOTTOM As Long = 8
 
 Public Property Get Accepted() As Boolean
     Accepted = mAccepted
@@ -164,12 +171,29 @@ Private Sub UserForm_Initialize()
     EnsureControls
 End Sub
 
+Private Sub UserForm_Activate()
+    If Not mResizeInitialized Then
+        modUserFormResizeWin.EnableResizableUserForm Me
+        mResizeInitialized = True
+    End If
+    If Not mAnchors Is Nothing Then mAnchors.ResizeControls
+End Sub
+
+Private Sub UserForm_Layout()
+    If mAnchors Is Nothing Then Exit Sub
+    mAnchors.ResizeControls
+End Sub
+
+Private Sub UserForm_Terminate()
+    Set mAnchors = Nothing
+End Sub
+
 Private Sub EnsureControls()
     If Not mBtnOK Is Nothing Then Exit Sub
 
     Me.Caption = "invSys Admin - Add Inventory Item"
     Me.Width = 575
-    Me.Height = 500
+    Me.Height = 575
 
     Set mLblTitle = AddLabel("lblTitle", 14, 12, 530, 20, "Add inventory item")
     mLblTitle.Font.Bold = True
@@ -207,15 +231,36 @@ Private Sub EnsureControls()
     Set mTxtCustomValue = AddTextBox("txtCustomValue", 342, 328, 132, 22)
     Set mBtnAddField = AddButton("btnAddField", 484, 327, 54, 24, "Add")
 
-    Set mLstCustomFields = AddListBox("lstCustomFields", 146, 358, 328, 58)
+    Set mLstCustomFields = AddListBox("lstCustomFields", 146, 358, 328, 96)
     mLstCustomFields.ColumnCount = 2
     mLstCustomFields.ColumnWidths = "130 pt;190 pt"
     Set mBtnRemoveField = AddButton("btnRemoveField", 484, 358, 54, 24, "Remove")
 
-    Set mLblStatus = AddLabel("lblStatus", 146, 424, 328, 28, "")
+    Set mLblStatus = AddLabel("lblStatus", 146, 462, 328, 28, "")
     mLblStatus.ForeColor = 255
-    Set mBtnOK = AddButton("btnOK", 374, 454, 78, 28, "Add Item")
-    Set mBtnCancel = AddButton("btnCancel", 460, 454, 78, 28, "Cancel")
+    Set mBtnOK = AddButton("btnOK", 374, 506, 78, 28, "Add Item")
+    Set mBtnCancel = AddButton("btnCancel", 460, 506, 78, 28, "Cancel")
+
+    InitializeAddInventoryAnchors
+End Sub
+
+Private Sub InitializeAddInventoryAnchors()
+    Set mAnchors = modDynamicForms.CreateFormAnchorManager()
+    mAnchors.Initialize Me, 575, 575
+
+    mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblGenerated, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtItemName, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtDescription, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtVendorName, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtImagePath, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtCustomValue, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mBtnAddField, ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLstCustomFields, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnRemoveField, ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblStatus, ANCHOR_LEFT Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnOK, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnCancel, ANCHOR_RIGHT Or ANCHOR_BOTTOM
 End Sub
 
 Private Sub LoadUomOptions()
