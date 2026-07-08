@@ -238,6 +238,48 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionForm_AssignmentInventorySearchFiltersCachedRows() As Long
+    Dim rowsData(1 To 3, 1 To 7) As Variant
+
+    On Error GoTo CleanFail
+
+    rowsData(1, 1) = "101"
+    rowsData(1, 2) = "Apple Juice"
+    rowsData(1, 3) = "GAL"
+    rowsData(1, 4) = 12
+    rowsData(1, 5) = "A1"
+    rowsData(1, 6) = "Cold pressed juice"
+    rowsData(1, 7) = "SKU-AJ"
+    rowsData(2, 1) = "102"
+    rowsData(2, 2) = "Orange Juice"
+    rowsData(2, 3) = "GAL"
+    rowsData(2, 4) = 8
+    rowsData(2, 5) = "B2"
+    rowsData(2, 6) = "Citrus juice"
+    rowsData(2, 7) = "SKU-OJ"
+    rowsData(3, 1) = "103"
+    rowsData(3, 2) = "Cane Sugar"
+    rowsData(3, 3) = "LB"
+    rowsData(3, 4) = 20
+    rowsData(3, 5) = "C3"
+    rowsData(3, 6) = "Dry ingredient"
+    rowsData(3, 7) = "SKU-SUG"
+
+    If frmProduction.TestFilterAssignmentInventoryCount(rowsData, "juice") <> 2 Then GoTo CleanExit
+    If frmProduction.TestFilterAssignmentInventoryCount(rowsData, "B2") <> 1 Then GoTo CleanExit
+    If frmProduction.TestFilterAssignmentInventoryCount(rowsData, "SKU-SUG") <> 1 Then GoTo CleanExit
+
+    TestProductionForm_AssignmentInventorySearchFiltersCachedRows = 1
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts() As Long
     Dim wb As Workbook
     Dim report As String

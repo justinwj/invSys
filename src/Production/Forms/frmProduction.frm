@@ -74,9 +74,13 @@ Private mTxtOutputReal As MSForms.TextBox
 Private mTxtOutputBatch As MSForms.TextBox
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
+Private mInventoryRows As Variant
+Private mInventoryCacheLoaded As Boolean
 Private mBuilt As Boolean
 Private mLoading As Boolean
 Private mResizeInitialized As Boolean
+
+Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
 
 Private Const TABLE_BUILDER_HEADER As String = "RB_AddRecipeName"
 Private Const TABLE_BUILDER_LINES As String = "RecipeBuilder"
@@ -164,6 +168,12 @@ Public Function TestFillAssignmentIoCount(ByVal values As Variant, ByVal ioValue
             TestFillAssignmentIoCount = TestFillAssignmentIoCount + 1
         End If
     Next i
+End Function
+
+Public Function TestFilterAssignmentInventoryCount(ByVal values As Variant, ByVal filterText As String) As Long
+    If Not mBuilt Then BuildLayout
+    FillInventoryListFromArray values, filterText
+    TestFilterAssignmentInventoryCount = mLstAssignInventory.ListCount
 End Function
 
 Private Sub BuildLayout()
@@ -433,10 +443,12 @@ Private Sub RefreshAssignmentState()
     RefreshAllowedItems
 End Sub
 
-Private Sub RefreshInventoryList()
-    Dim rowsData As Variant
-    rowsData = RunProduction1("LoadProductionInventoryPickerItems", Trim$(mTxtInventorySearch.Text))
-    FillInventoryListFromArray rowsData
+Private Sub RefreshInventoryList(Optional ByVal forceReload As Boolean = False)
+    If forceReload Or Not mInventoryCacheLoaded Then
+        mInventoryRows = RunProduction1("LoadProductionInventoryPickerItems", "")
+        mInventoryCacheLoaded = True
+    End If
+    FillInventoryListFromArray mInventoryRows, Trim$(mTxtInventorySearch.Text)
 End Sub
 
 Private Sub RefreshAllowedItems()
@@ -553,14 +565,19 @@ Private Sub FillInventoryList(ByVal lo As ListObject, ByVal filterText As String
     Next r
 End Sub
 
-Private Sub FillInventoryListFromArray(ByVal values As Variant)
+Private Sub FillInventoryListFromArray(ByVal values As Variant, Optional ByVal filterText As String = "")
     Dim r As Long
+    Dim shown As Long
+    Dim normalizedFilter As String
 
     mLstAssignInventory.Clear
     If IsEmpty(values) Then Exit Sub
     If Not IsArray(values) Then Exit Sub
 
+    normalizedFilter = NormalizeInventorySearch(filterText)
     For r = LBound(values, 1) To UBound(values, 1)
+        If Not InventoryRowMatchesSearch(values, r, normalizedFilter) Then GoTo NextInventoryRow
+        shown = shown + 1
         mLstAssignInventory.AddItem NzStr(values(r, 1))
         If mLstAssignInventory.ColumnCount > 1 Then mLstAssignInventory.List(mLstAssignInventory.ListCount - 1, 1) = NzStr(values(r, 2))
         If mLstAssignInventory.ColumnCount > 2 Then mLstAssignInventory.List(mLstAssignInventory.ListCount - 1, 2) = NzStr(values(r, 3))
@@ -568,7 +585,43 @@ Private Sub FillInventoryListFromArray(ByVal values As Variant)
         If mLstAssignInventory.ColumnCount > 4 Then mLstAssignInventory.List(mLstAssignInventory.ListCount - 1, 4) = NzStr(values(r, 5))
         If mLstAssignInventory.ColumnCount > 5 Then mLstAssignInventory.List(mLstAssignInventory.ListCount - 1, 5) = NzStr(values(r, 6))
         If mLstAssignInventory.ColumnCount > 6 Then mLstAssignInventory.List(mLstAssignInventory.ListCount - 1, 6) = NzStr(values(r, 7))
+        If shown >= ASSIGN_INVENTORY_MAX_VISIBLE Then Exit For
+NextInventoryRow:
     Next r
+End Sub
+
+Private Function InventoryRowMatchesSearch(ByVal values As Variant, ByVal rowIndex As Long, ByVal normalizedFilter As String) As Boolean
+    Dim haystack As String
+
+    If normalizedFilter = "" Then
+        InventoryRowMatchesSearch = True
+        Exit Function
+    End If
+
+    haystack = NormalizeInventorySearch(NzStr(values(rowIndex, 1)) & " " & _
+        NzStr(values(rowIndex, 2)) & " " & NzStr(values(rowIndex, 3)) & " " & _
+        NzStr(values(rowIndex, 5)) & " " & NzStr(values(rowIndex, 6)) & " " & _
+        NzStr(values(rowIndex, 7)))
+    InventoryRowMatchesSearch = (InStr(1, haystack, normalizedFilter, vbTextCompare) > 0)
+End Function
+
+Private Function NormalizeInventorySearch(ByVal filterText As String) As String
+    Dim textOut As String
+
+    textOut = Trim$(filterText)
+    If textOut = "" Then Exit Function
+    textOut = Replace$(textOut, vbCr, " ")
+    textOut = Replace$(textOut, vbLf, " ")
+    textOut = Replace$(textOut, vbTab, " ")
+    Do While InStr(textOut, "  ") > 0
+        textOut = Replace$(textOut, "  ", " ")
+    Loop
+    NormalizeInventorySearch = LCase$(textOut)
+End Function
+
+Private Sub ResetInventoryCache()
+    mInventoryRows = Empty
+    mInventoryCacheLoaded = False
 End Sub
 
 Private Function CellText(ByVal arr As Variant, ByVal rowIndex As Long, ByVal lo As ListObject, ByVal headerName As String) As String
@@ -1167,6 +1220,7 @@ Private Sub mTxtInventorySearch_Change()
 End Sub
 
 Private Sub mBtnAssignRefresh_Click()
+    ResetInventoryCache
     RefreshRecipeLists
     RefreshAssignmentState
     ShowStatus "Ingredients Assignment refreshed."

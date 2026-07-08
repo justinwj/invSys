@@ -642,6 +642,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestProductionForm_InitializeCreatesTabbedSurface",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentIncludesOutputRecipeRows",
+        "TestPhase6RoleSurfaces.TestProductionForm_AssignmentInventorySearchFiltersCachedRows",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureAdminWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_PrefersActiveVisibleWorkbook",
