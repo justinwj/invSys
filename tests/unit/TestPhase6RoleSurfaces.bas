@@ -203,6 +203,41 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionForm_AssignmentIncludesOutputRecipeRows() As Long
+    Dim ingredients(1 To 2, 1 To 7) As Variant
+    Dim formOutputRows As Long
+
+    On Error GoTo CleanFail
+
+    ingredients(1, 1) = "ING-OAR-1"
+    ingredients(1, 2) = "Apple Juice"
+    ingredients(1, 3) = "GAL"
+    ingredients(1, 4) = "BLEND"
+    ingredients(1, 5) = "USED"
+    ingredients(1, 6) = 1
+    ingredients(1, 7) = 100
+    ingredients(2, 1) = "OUT-OAR-1"
+    ingredients(2, 2) = "Finished Apple Juice"
+    ingredients(2, 3) = "GAL"
+    ingredients(2, 4) = "BLEND"
+    ingredients(2, 5) = "OUTPUT"
+    ingredients(2, 6) = 1
+    ingredients(2, 7) = 100
+
+    formOutputRows = frmProduction.TestFillAssignmentIoCount(ingredients, "OUTPUT")
+    If formOutputRows = 1 Then
+        TestProductionForm_AssignmentIncludesOutputRecipeRows = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts() As Long
     Dim wb As Workbook
     Dim report As String

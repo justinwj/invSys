@@ -152,6 +152,20 @@ Public Function TestStatusText() As String
     TestStatusText = mTxtStatus.Text
 End Function
 
+Public Function TestFillAssignmentIoCount(ByVal values As Variant, ByVal ioValue As String) As Long
+    Dim i As Long
+    Dim wanted As String
+
+    If Not mBuilt Then BuildLayout
+    FillIngredientListFromArray mLstAssignIngredients, values
+    wanted = UCase$(Trim$(ioValue))
+    For i = 0 To mLstAssignIngredients.ListCount - 1
+        If UCase$(Trim$(NzStr(mLstAssignIngredients.List(i, 4)))) = wanted Then
+            TestFillAssignmentIoCount = TestFillAssignmentIoCount + 1
+        End If
+    Next i
+End Function
+
 Private Sub BuildLayout()
     If mBuilt Then Exit Sub
 
@@ -468,22 +482,17 @@ End Sub
 Private Sub FillIngredientListFromArray(ByVal lst As MSForms.ListBox, ByVal values As Variant)
     Dim r As Long
     Dim c As Long
-    Dim ioVal As String
 
     lst.Clear
     If IsEmpty(values) Then Exit Sub
     If Not IsArray(values) Then Exit Sub
     For r = LBound(values, 1) To UBound(values, 1)
-        ioVal = ""
-        If UBound(values, 2) >= 5 Then ioVal = UCase$(Trim$(NzStr(values(r, 5))))
-        If ioVal <> "" And ioVal <> "USED" And ioVal <> "INPUT" Then GoTo NextIngredient
         lst.AddItem NzStr(values(r, LBound(values, 2)))
         For c = LBound(values, 2) + 1 To UBound(values, 2)
             If c - LBound(values, 2) < lst.ColumnCount Then
                 lst.List(lst.ListCount - 1, c - LBound(values, 2)) = NzStr(values(r, c))
             End If
         Next c
-NextIngredient:
     Next r
 End Sub
 

@@ -13,6 +13,7 @@ Private Const TABLE_RECIPE_CHOOSER_GENERATED As String = "RecipeChooser_generate
 Private Const TABLE_INV_PALETTE_GENERATED As String = "InventoryPalette_generated"
 Private Const TABLE_RECALL_REPORT As String = "RecallCodesReport"
 Private Const TABLE_RUNTIME_RECIPES As String = "tblProductionRecipes"
+Private Const TABLE_TEMPLATES As String = "TemplatesTable"
 ' System 1: Recipe List Builder tables.
 Private Const TABLE_RECIPE_BUILDER_HEADER As String = "RB_AddRecipeName"
 Private Const TABLE_RECIPE_BUILDER_LINES As String = "RecipeBuilder"
