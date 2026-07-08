@@ -238,6 +238,27 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch() As Long
+    Dim formUnderTest As frmAddInventoryItem
+
+    On Error GoTo CleanFail
+
+    Set formUnderTest = New frmAddInventoryItem
+    formUnderTest.Configure "WH-TEST", "S1", "admin", "ITM-TEST-001", 101, "A1"
+
+    If formUnderTest.GeneratedSku = "ITM-TEST-001" Then
+        TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If Not formUnderTest Is Nothing Then Unload formUnderTest
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestProductionForm_AssignmentInventorySearchFiltersCachedRows() As Long
     Dim rowsData(1 To 3, 1 To 7) As Variant
 

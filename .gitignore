@@ -11,6 +11,7 @@ tests/unit/phase6_test_results_*.md
 # Local machine/session artifacts
 build_xlam_run.log
 xlam_session_status.txt
+~$*.xlam
 *.code-workspace
 
 # Local scratch/render artifacts not part of the product

@@ -129,7 +129,7 @@ function Get-StubUserFormCode {
             }
             continue
         }
-        if ($line -match '^Attribute VB_') {
+        if ($line -match '^Attribute ') {
             continue
         }
         [void]$codeLines.Add($line)
@@ -429,6 +429,7 @@ try {
         (Join-Path $repo "src/Core/Forms/frmWarehouseConnection.frm"),
         (Join-Path $repo "src/Core/Forms/frmSignIn.frm"),
         (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm"),
+        (Join-Path $repo "src/Admin/Forms/frmAddInventoryItem.frm"),
         (Join-Path $repo "src/Production/Forms/frmProduction.frm")
     )
 
@@ -641,6 +642,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestProductionForm_InitializeCreatesTabbedSurface",
+        "TestPhase6RoleSurfaces.TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentIncludesOutputRecipeRows",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentInventorySearchFiltersCachedRows",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_RecreatesDeletedArtifacts",

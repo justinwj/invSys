@@ -23,8 +23,10 @@ Private WithEvents mBtnOK As MSForms.CommandButton
 Attribute mBtnOK.VB_VarHelpID = -1
 Private WithEvents mBtnCancel As MSForms.CommandButton
 Attribute mBtnCancel.VB_VarHelpID = -1
-Private WithEvents mTabs As MSForms.TabStrip
-Attribute mTabs.VB_VarHelpID = -1
+Private WithEvents mBtnAddMode As MSForms.CommandButton
+Attribute mBtnAddMode.VB_VarHelpID = -1
+Private WithEvents mBtnEditMode As MSForms.CommandButton
+Attribute mBtnEditMode.VB_VarHelpID = -1
 Private WithEvents mCmbEditItem As MSForms.ComboBox
 Attribute mCmbEditItem.VB_VarHelpID = -1
 Private WithEvents mCmbUom As MSForms.ComboBox
@@ -73,6 +75,8 @@ Private mEditMode As Boolean
 Private mSelectedEditSku As String
 Private mLoading As Boolean
 Private mPreviousUom As String
+Private mInitStep As String
+Private mAllowUomPrompt As Boolean
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -162,8 +166,13 @@ Public Sub Configure(ByVal warehouseId As Variant, _
                      ByVal generatedSku As Variant, _
                      ByVal generatedRow As Variant, _
                      ByVal defaultLocation As Variant)
-    EnsureControls
+    On Error GoTo FailConfigure
+
     mLoading = True
+    mAllowUomPrompt = False
+    mInitStep = "EnsureControls"
+    EnsureControls
+    mInitStep = "Set scalar context"
     mWarehouseId = SafeFormText(warehouseId)
     mStationId = SafeFormText(stationId)
     mUserId = SafeFormText(userId)
@@ -174,8 +183,11 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mEditMode = False
     mSelectedEditSku = ""
 
+    mInitStep = "Load UOM options"
     LoadUomOptions
+    mInitStep = "Load edit item options"
     LoadEditItemOptions
+    mInitStep = "Reset field values"
     mTxtItemName.Value = ""
     mCmbUom.Value = "EA"
     mPreviousUom = "EA"
@@ -190,11 +202,19 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mTxtCustomName.Value = ""
     mTxtCustomValue.Value = ""
     mLstCustomFields.Clear
-    If Not mTabs Is Nothing Then mTabs.Value = 0
+    mInitStep = "Refresh generated label"
     RefreshGeneratedLabel
+    mInitStep = "Apply mode layout"
     ApplyModeLayout
     mLblStatus.Caption = ""
     mLoading = False
+    mInitStep = ""
+    Exit Sub
+
+FailConfigure:
+    mLoading = False
+    Err.Raise Err.Number, "frmAddInventoryItem.Configure", _
+              "Add Inventory Item form failed during " & mInitStep & ": " & Err.Description
 End Sub
 
 Private Function SafeFormText(ByVal valueIn As Variant) As String
@@ -239,6 +259,7 @@ Public Sub AddCatalogItem(ByVal sku As String, _
     item("IMAGE_PATH") = Trim$(imagePathValue)
     mCatalogItems.Add item
 
+    mLoading = True
     LoadUomOptions
     If selectedUom <> "" Then
         mCmbUom.Value = selectedUom
@@ -246,13 +267,16 @@ Public Sub AddCatalogItem(ByVal sku As String, _
         mCmbUom.Value = "EA"
     End If
     LoadEditItemOptions
+    mLoading = False
 End Sub
 
 Private Sub UserForm_Initialize()
-    EnsureControls
+    mLoading = True
 End Sub
 
 Private Sub UserForm_Activate()
+    mAllowUomPrompt = True
+    If mAnchors Is Nothing Then InitializeAddInventoryAnchors
     If Not mResizeInitialized Then
         modUserFormResizeWin.EnableResizableUserForm Me
         mResizeInitialized = True
@@ -276,10 +300,8 @@ Private Sub EnsureControls()
     Me.Width = 575
     Me.Height = 635
 
-    Set mTabs = AddTabStrip("tabsMode", 14, 10, 530, 24)
-    mTabs.Tabs.Add , , "Add Item"
-    mTabs.Tabs.Add , , "Edit Item"
-    mTabs.Value = 0
+    Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item")
+    Set mBtnEditMode = AddButton("btnEditMode", 138, 10, 118, 24, "Edit Item")
 
     Set mLblTitle = AddLabel("lblTitle", 14, 44, 530, 20, "Add inventory item")
     mLblTitle.Font.Bold = True
@@ -332,7 +354,6 @@ Private Sub EnsureControls()
     Set mBtnOK = AddButton("btnOK", 374, 562, 78, 28, "Add Item")
     Set mBtnCancel = AddButton("btnCancel", 460, 562, 78, 28, "Cancel")
 
-    InitializeAddInventoryAnchors
     ApplyModeLayout
 End Sub
 
@@ -340,7 +361,8 @@ Private Sub InitializeAddInventoryAnchors()
     Set mAnchors = modDynamicForms.CreateFormAnchorManager()
     mAnchors.Initialize Me, 575, 635
 
-    mAnchors.Add mTabs, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mBtnAddMode, ANCHOR_LEFT Or ANCHOR_TOP
+    mAnchors.Add mBtnEditMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mLblGenerated, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mCmbEditItem, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
@@ -462,18 +484,6 @@ Private Function AddCombo(ByVal controlName As String, _
     AddCombo.Height = heightVal
 End Function
 
-Private Function AddTabStrip(ByVal controlName As String, _
-                             ByVal leftPos As Single, _
-                             ByVal topPos As Single, _
-                             ByVal widthVal As Single, _
-                             ByVal heightVal As Single) As MSForms.TabStrip
-    Set AddTabStrip = Me.Controls.Add("Forms.TabStrip.1", controlName, True)
-    AddTabStrip.Left = leftPos
-    AddTabStrip.Top = topPos
-    AddTabStrip.Width = widthVal
-    AddTabStrip.Height = heightVal
-End Function
-
 Private Function AddListBox(ByVal controlName As String, _
                             ByVal leftPos As Single, _
                             ByVal topPos As Single, _
@@ -541,9 +551,15 @@ Private Sub mBtnOK_Click()
     Me.Hide
 End Sub
 
-Private Sub mTabs_Change()
+Private Sub mBtnAddMode_Click()
     If mLoading Then Exit Sub
-    mEditMode = (mTabs.Value = 1)
+    mEditMode = False
+    ApplyModeLayout
+End Sub
+
+Private Sub mBtnEditMode_Click()
+    If mLoading Then Exit Sub
+    mEditMode = True
     ApplyModeLayout
 End Sub
 
@@ -559,6 +575,14 @@ Private Sub mCmbUom_Change()
     If mLoading Then Exit Sub
     If Trim$(CStr(mCmbUom.Value)) <> ADD_UOM_OPTION Then
         If Trim$(CStr(mCmbUom.Value)) <> "" Then mPreviousUom = Trim$(CStr(mCmbUom.Value))
+        Exit Sub
+    End If
+    If Not mAllowUomPrompt Then
+        If mPreviousUom <> "" Then
+            mCmbUom.Value = mPreviousUom
+        Else
+            mCmbUom.Value = "EA"
+        End If
         Exit Sub
     End If
 
@@ -593,11 +617,6 @@ End Sub
 
 Private Sub ApplyModeLayout()
     If mBtnOK Is Nothing Then Exit Sub
-    If mTabs Is Nothing Then
-        mEditMode = False
-    Else
-        mEditMode = (mTabs.Value = 1)
-    End If
     mLblEditItem.Visible = mEditMode
     mCmbEditItem.Visible = mEditMode
     If mEditMode Then

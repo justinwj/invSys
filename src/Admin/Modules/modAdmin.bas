@@ -143,6 +143,7 @@ Sub Add_InventoryItem()
     Dim rowVal As Long
     Dim defaultLocation As String
     Dim catalogItems As Object
+    Dim addForm As frmAddInventoryItem
 
     If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
         MsgBox report, vbExclamation, "invSys Admin"
@@ -154,37 +155,38 @@ Sub Add_InventoryItem()
     defaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
     Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
 
-    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
-    LoadCatalogItemsIntoAddInventoryForm catalogItems
-    frmAddInventoryItem.Show vbModal
-    If Not frmAddInventoryItem.Accepted Then
-        Unload frmAddInventoryItem
+    Set addForm = New frmAddInventoryItem
+    addForm.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+    LoadCatalogItemsIntoAddInventoryForm addForm, catalogItems
+    addForm.Show vbModal
+    If Not addForm.Accepted Then
+        Unload addForm
         Exit Sub
     End If
 
-    If frmAddInventoryItem.EditMode Then
-        If UpdateInventoryItemCatalogForWarehouse(warehouseId, frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
-                                                  frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
-                                                  frmAddInventoryItem.DescriptionValue, frmAddInventoryItem.VendorName, _
-                                                  frmAddInventoryItem.VendorCode, frmAddInventoryItem.Category, _
-                                                  frmAddInventoryItem.ExternalCode, frmAddInventoryItem.ImagePath, _
-                                                  frmAddInventoryItem.CustomFields, report) Then
+    If addForm.EditMode Then
+        If UpdateInventoryItemCatalogForWarehouse(warehouseId, addForm.GeneratedSku, addForm.ItemName, _
+                                                  addForm.Uom, addForm.LocationValue, _
+                                                  addForm.DescriptionValue, addForm.VendorName, _
+                                                  addForm.VendorCode, addForm.Category, _
+                                                  addForm.ExternalCode, addForm.ImagePath, _
+                                                  addForm.CustomFields, report) Then
             MsgBox report, vbInformation, "invSys Admin"
         Else
             MsgBox report, vbExclamation, "invSys Admin"
         End If
-    ElseIf AddInventoryItemForWarehouse(warehouseId, stationId, userId, frmAddInventoryItem.GeneratedRow, _
-                                        frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
-                                        frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
-                                        frmAddInventoryItem.StartingQty, frmAddInventoryItem.DescriptionValue, _
-                                        frmAddInventoryItem.VendorName, frmAddInventoryItem.VendorCode, _
-                                        frmAddInventoryItem.Category, frmAddInventoryItem.ExternalCode, _
-                                        frmAddInventoryItem.ImagePath, frmAddInventoryItem.CustomFields, report) Then
+    ElseIf AddInventoryItemForWarehouse(warehouseId, stationId, userId, addForm.GeneratedRow, _
+                                        addForm.GeneratedSku, addForm.ItemName, _
+                                        addForm.Uom, addForm.LocationValue, _
+                                        addForm.StartingQty, addForm.DescriptionValue, _
+                                        addForm.VendorName, addForm.VendorCode, _
+                                        addForm.Category, addForm.ExternalCode, _
+                                        addForm.ImagePath, addForm.CustomFields, report) Then
         MsgBox report, vbInformation, "invSys Admin"
     Else
         MsgBox report, vbExclamation, "invSys Admin"
     End If
-    Unload frmAddInventoryItem
+    Unload addForm
 End Sub
 
 Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
@@ -463,22 +465,23 @@ CleanExit:
     Set LoadInventoryCatalogItemsAdmin = result
 End Function
 
-Private Sub LoadCatalogItemsIntoAddInventoryForm(ByVal catalogItems As Object)
+Private Sub LoadCatalogItemsIntoAddInventoryForm(ByVal targetForm As frmAddInventoryItem, ByVal catalogItems As Object)
     Dim item As Variant
 
+    If targetForm Is Nothing Then Exit Sub
     If catalogItems Is Nothing Then Exit Sub
     For Each item In catalogItems
-        frmAddInventoryItem.AddCatalogItem CatalogItemTextAdmin(item, "SKU"), _
-                                           CatalogItemTextAdmin(item, "ROW"), _
-                                           CatalogItemTextAdmin(item, "ITEM"), _
-                                           CatalogItemTextAdmin(item, "UOM"), _
-                                           CatalogItemTextAdmin(item, "LOCATION"), _
-                                           CatalogItemTextAdmin(item, "DESCRIPTION"), _
-                                           CatalogItemTextAdmin(item, "VENDOR(s)"), _
-                                           CatalogItemTextAdmin(item, "VENDOR_CODE"), _
-                                           CatalogItemTextAdmin(item, "CATEGORY"), _
-                                           CatalogItemTextAdmin(item, "EXTERNAL_CODE"), _
-                                           CatalogItemTextAdmin(item, "IMAGE_PATH")
+        targetForm.AddCatalogItem CatalogItemTextAdmin(item, "SKU"), _
+                                  CatalogItemTextAdmin(item, "ROW"), _
+                                  CatalogItemTextAdmin(item, "ITEM"), _
+                                  CatalogItemTextAdmin(item, "UOM"), _
+                                  CatalogItemTextAdmin(item, "LOCATION"), _
+                                  CatalogItemTextAdmin(item, "DESCRIPTION"), _
+                                  CatalogItemTextAdmin(item, "VENDOR(s)"), _
+                                  CatalogItemTextAdmin(item, "VENDOR_CODE"), _
+                                  CatalogItemTextAdmin(item, "CATEGORY"), _
+                                  CatalogItemTextAdmin(item, "EXTERNAL_CODE"), _
+                                  CatalogItemTextAdmin(item, "IMAGE_PATH")
     Next item
 End Sub
 
