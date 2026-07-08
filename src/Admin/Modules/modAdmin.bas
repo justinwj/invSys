@@ -142,7 +142,7 @@ Sub Add_InventoryItem()
     Dim sku As String
     Dim rowVal As Long
     Dim defaultLocation As String
-    Dim catalogItems As Collection
+    Dim catalogItems As Object
 
     If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
         MsgBox report, vbExclamation, "invSys Admin"

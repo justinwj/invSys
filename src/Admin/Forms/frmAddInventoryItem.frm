@@ -68,7 +68,7 @@ Private mStationId As String
 Private mUserId As String
 Private mAnchors As Object
 Private mResizeInitialized As Boolean
-Private mCatalogItems As Collection
+Private mCatalogItems As Object
 Private mEditMode As Boolean
 Private mSelectedEditSku As String
 Private mLoading As Boolean
@@ -162,7 +162,7 @@ Public Sub Configure(ByVal warehouseId As String, _
                      ByVal generatedSku As String, _
                      ByVal generatedRow As Long, _
                      ByVal defaultLocation As String, _
-                     Optional ByVal catalogItems As Collection = Nothing)
+                     Optional ByVal catalogItems As Object = Nothing)
     EnsureControls
     mLoading = True
     mWarehouseId = Trim$(warehouseId)
