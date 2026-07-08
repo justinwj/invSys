@@ -142,6 +142,7 @@ Sub Add_InventoryItem()
     Dim sku As String
     Dim rowVal As Long
     Dim defaultLocation As String
+    Dim catalogItems As Collection
 
     If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
         MsgBox report, vbExclamation, "invSys Admin"
@@ -151,21 +152,33 @@ Sub Add_InventoryItem()
     rowVal = NextInventoryRowSuggestionAdmin(warehouseId)
     sku = GenerateInventorySkuAdmin(warehouseId, rowVal)
     defaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
+    Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
 
-    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation, catalogItems
     frmAddInventoryItem.Show vbModal
     If Not frmAddInventoryItem.Accepted Then
         Unload frmAddInventoryItem
         Exit Sub
     End If
 
-    If AddInventoryItemForWarehouse(warehouseId, stationId, userId, frmAddInventoryItem.GeneratedRow, _
-                                    frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
-                                    frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
-                                    frmAddInventoryItem.StartingQty, frmAddInventoryItem.DescriptionValue, _
-                                    frmAddInventoryItem.VendorName, frmAddInventoryItem.VendorCode, _
-                                    frmAddInventoryItem.Category, frmAddInventoryItem.ExternalCode, _
-                                    frmAddInventoryItem.ImagePath, frmAddInventoryItem.CustomFields, report) Then
+    If frmAddInventoryItem.EditMode Then
+        If UpdateInventoryItemCatalogForWarehouse(warehouseId, frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
+                                                  frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
+                                                  frmAddInventoryItem.DescriptionValue, frmAddInventoryItem.VendorName, _
+                                                  frmAddInventoryItem.VendorCode, frmAddInventoryItem.Category, _
+                                                  frmAddInventoryItem.ExternalCode, frmAddInventoryItem.ImagePath, _
+                                                  frmAddInventoryItem.CustomFields, report) Then
+            MsgBox report, vbInformation, "invSys Admin"
+        Else
+            MsgBox report, vbExclamation, "invSys Admin"
+        End If
+    ElseIf AddInventoryItemForWarehouse(warehouseId, stationId, userId, frmAddInventoryItem.GeneratedRow, _
+                                        frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
+                                        frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
+                                        frmAddInventoryItem.StartingQty, frmAddInventoryItem.DescriptionValue, _
+                                        frmAddInventoryItem.VendorName, frmAddInventoryItem.VendorCode, _
+                                        frmAddInventoryItem.Category, frmAddInventoryItem.ExternalCode, _
+                                        frmAddInventoryItem.ImagePath, frmAddInventoryItem.CustomFields, report) Then
         MsgBox report, vbInformation, "invSys Admin"
     Else
         MsgBox report, vbExclamation, "invSys Admin"
@@ -237,7 +250,7 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     item("VENDOR_CODE") = vendorCode
     item("CATEGORY") = category
     item("EXTERNAL_CODE") = externalCode
-    item("IMAGE_PATH") = imagePath
+    AddPictureReferencesToPayloadAdmin item, imagePath
     If Not customFields Is Nothing Then
         For Each customKey In customFields.Keys
             If Trim$(CStr(customKey)) <> "" Then item(Trim$(CStr(customKey))) = customFields(customKey)
@@ -279,6 +292,104 @@ FailAdd:
     report = "AddInventoryItem failed: " & Err.Description
 End Function
 
+Public Function UpdateInventoryItemCatalogForWarehouse(ByVal warehouseId As String, _
+                                                       ByVal sku As String, _
+                                                       ByVal itemName As String, _
+                                                       ByVal uom As String, _
+                                                       ByVal locationVal As String, _
+                                                       Optional ByVal description As String = "", _
+                                                       Optional ByVal vendorName As String = "", _
+                                                       Optional ByVal vendorCode As String = "", _
+                                                       Optional ByVal category As String = "", _
+                                                       Optional ByVal externalCode As String = "", _
+                                                       Optional ByVal imagePath As String = "", _
+                                                       Optional ByVal customFields As Object = Nothing, _
+                                                       Optional ByRef report As String = "") As Boolean
+    Dim path As String
+    Dim wb As Workbook
+    Dim openedHere As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+    Dim customKey As Variant
+
+    On Error GoTo FailUpdate
+
+    warehouseId = Trim$(warehouseId)
+    sku = Trim$(sku)
+    itemName = Trim$(itemName)
+    uom = Trim$(uom)
+
+    If warehouseId = "" Then report = "WarehouseId is required.": Exit Function
+    If sku = "" Then report = "SKU is required.": Exit Function
+    If itemName = "" Then report = "Item name is required.": Exit Function
+    If uom = "" Then report = "UOM is required.": Exit Function
+
+    path = modProcessor.ResolveInventoryWorkbookPathForAutomation(warehouseId)
+    If path = "" Then report = "Inventory workbook path could not be resolved for " & warehouseId & ".": Exit Function
+
+    Set wb = FindOpenWorkbookByFullNameAdmin(path)
+    If wb Is Nothing Then
+        If Len(Dir$(path, vbNormal)) = 0 Then
+            report = "Inventory workbook was not found: " & path
+            Exit Function
+        End If
+        Set wb = Application.Workbooks.Open(path, UpdateLinks:=False, ReadOnly:=False, AddToMru:=False)
+        openedHere = True
+    End If
+    If wb.ReadOnly Then
+        report = "Inventory workbook is open read-only. Close other copies and try again."
+        GoTo CleanExit
+    End If
+
+    Set lo = FindListObjectByNameAdminLocal(wb, "tblSkuCatalog")
+    If lo Is Nothing Then
+        report = "tblSkuCatalog was not found in " & wb.Name & "."
+        GoTo CleanExit
+    End If
+    rowIndex = FindCatalogRowBySkuAdmin(lo, sku)
+    If rowIndex <= 0 Then
+        report = "Inventory item was not found in catalog: " & sku
+        GoTo CleanExit
+    End If
+
+    SetSheetProtectionAdminLocal lo.Parent, False
+    SetCatalogValueAdmin lo, rowIndex, "ITEM_CODE", sku
+    SetCatalogValueAdmin lo, rowIndex, "ITEM", itemName
+    SetCatalogValueAdmin lo, rowIndex, "UOM", uom
+    SetCatalogValueAdmin lo, rowIndex, "LOCATION", locationVal
+    SetCatalogValueAdmin lo, rowIndex, "DESCRIPTION", description
+    SetCatalogValueAdmin lo, rowIndex, "VENDOR(s)", vendorName
+    SetCatalogValueAdmin lo, rowIndex, "VENDOR_CODE", vendorCode
+    SetCatalogValueAdmin lo, rowIndex, "CATEGORY", category
+    SetCatalogValueAdmin lo, rowIndex, "EXTERNAL_CODE", externalCode
+    SetPictureReferencesInCatalogAdmin lo, rowIndex, imagePath
+    If Not customFields Is Nothing Then
+        For Each customKey In customFields.Keys
+            If Trim$(CStr(customKey)) <> "" Then SetCatalogValueAdmin lo, rowIndex, Trim$(CStr(customKey)), customFields(customKey)
+        Next customKey
+    End If
+    SetSheetProtectionAdminLocal lo.Parent, True
+    wb.Save
+
+    report = "Inventory item updated." & vbCrLf & _
+             "Warehouse: " & warehouseId & vbCrLf & _
+             "SKU: " & sku & vbCrLf & _
+             "Item: " & itemName & vbCrLf & _
+             "Refresh inventory in any open role workbook to see the updated catalog fields."
+    UpdateInventoryItemCatalogForWarehouse = True
+
+CleanExit:
+    On Error Resume Next
+    If Not lo Is Nothing Then SetSheetProtectionAdminLocal lo.Parent, True
+    If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+FailUpdate:
+    report = "UpdateInventoryItemCatalog failed: " & Err.Description
+    Resume CleanExit
+End Function
+
 Private Function GenerateInventorySkuAdmin(ByVal warehouseId As String, ByVal rowVal As Long) As String
     Dim rowPart As String
     Dim whPart As String
@@ -294,6 +405,61 @@ Private Function GenerateInventorySkuAdmin(ByVal warehouseId As String, ByVal ro
         rowPart = "0" & rowPart
     Loop
     GenerateInventorySkuAdmin = "ITM-" & whPart & "-" & rowPart
+End Function
+
+Private Function LoadInventoryCatalogItemsAdmin(ByVal warehouseId As String) As Collection
+    Dim path As String
+    Dim wb As Workbook
+    Dim openedHere As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+    Dim item As Object
+    Dim result As Collection
+
+    On Error GoTo CleanExit
+    Set result = New Collection
+    path = modProcessor.ResolveInventoryWorkbookPathForAutomation(warehouseId)
+    If path <> "" Then
+        Set wb = FindOpenWorkbookByFullNameAdmin(path)
+        If wb Is Nothing Then
+            If Len(Dir$(path, vbNormal)) > 0 Then
+                Set wb = Application.Workbooks.Open(path, UpdateLinks:=False, ReadOnly:=True, AddToMru:=False)
+                openedHere = True
+            End If
+        End If
+    End If
+
+    If Not wb Is Nothing Then
+        Set lo = FindListObjectByNameAdminLocal(wb, "tblSkuCatalog")
+        If Not lo Is Nothing Then
+            If Not lo.DataBodyRange Is Nothing Then
+                For rowIndex = 1 To lo.ListRows.Count
+                    If CatalogCellAdmin(lo, rowIndex, "SKU") <> "" Then
+                        Set item = CreateObject("Scripting.Dictionary")
+                        item.CompareMode = vbTextCompare
+                        item("SKU") = CatalogCellAdmin(lo, rowIndex, "SKU")
+                        item("ROW") = CatalogCellAdmin(lo, rowIndex, "ROW")
+                        item("ITEM") = CatalogCellAdmin(lo, rowIndex, "ITEM")
+                        item("UOM") = CatalogCellAdmin(lo, rowIndex, "UOM")
+                        item("LOCATION") = CatalogCellAdmin(lo, rowIndex, "LOCATION")
+                        item("DESCRIPTION") = CatalogCellAdmin(lo, rowIndex, "DESCRIPTION")
+                        item("VENDOR(s)") = CatalogCellAdmin(lo, rowIndex, "VENDOR(s)")
+                        item("VENDOR_CODE") = CatalogCellAdmin(lo, rowIndex, "VENDOR_CODE")
+                        item("CATEGORY") = CatalogCellAdmin(lo, rowIndex, "CATEGORY")
+                        item("EXTERNAL_CODE") = CatalogCellAdmin(lo, rowIndex, "EXTERNAL_CODE")
+                        item("IMAGE_PATH") = CombinedPictureReferencesAdmin(lo, rowIndex)
+                        result.Add item
+                    End If
+                Next rowIndex
+            End If
+        End If
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Set LoadInventoryCatalogItemsAdmin = result
 End Function
 
 Private Function Base36Admin(ByVal valueIn As Long) As String
@@ -503,6 +669,159 @@ Private Function ColumnIndexAdminLocal(ByVal lo As ListObject, ByVal columnName 
             Exit Function
         End If
     Next i
+End Function
+
+Private Function FindCatalogRowBySkuAdmin(ByVal lo As ListObject, ByVal sku As String) As Long
+    Dim cSku As Long
+    Dim rowIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
+
+    cSku = ColumnIndexAdminLocal(lo, "SKU")
+    If cSku = 0 Then cSku = ColumnIndexAdminLocal(lo, "ITEM_CODE")
+    If cSku = 0 Then Exit Function
+
+    For rowIndex = 1 To lo.ListRows.Count
+        If StrComp(Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, cSku).Value)), sku, vbTextCompare) = 0 Then
+            FindCatalogRowBySkuAdmin = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function CatalogCellAdmin(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As String
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    idx = ColumnIndexAdminLocal(lo, columnName)
+    If idx = 0 Then Exit Function
+    CatalogCellAdmin = Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, idx).Value))
+End Function
+
+Private Sub SetCatalogValueAdmin(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueIn As Variant)
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+    If rowIndex <= 0 Then Exit Sub
+    columnName = NormalizeCatalogColumnNameAdmin(columnName)
+    If columnName = "" Then Exit Sub
+    idx = EnsureCatalogColumnAdmin(lo, columnName)
+    If idx = 0 Then Exit Sub
+    lo.DataBodyRange.Cells(rowIndex, idx).Value = valueIn
+End Sub
+
+Private Function EnsureCatalogColumnAdmin(ByVal lo As ListObject, ByVal columnName As String) As Long
+    If lo Is Nothing Then Exit Function
+    columnName = NormalizeCatalogColumnNameAdmin(columnName)
+    If columnName = "" Then Exit Function
+    EnsureCatalogColumnAdmin = ColumnIndexAdminLocal(lo, columnName)
+    If EnsureCatalogColumnAdmin > 0 Then Exit Function
+    EnsureCatalogColumnAdmin = lo.ListColumns.Add.Index
+    lo.ListColumns(EnsureCatalogColumnAdmin).Name = columnName
+End Function
+
+Private Function NormalizeCatalogColumnNameAdmin(ByVal columnName As String) As String
+    columnName = Replace(columnName, vbCr, " ")
+    columnName = Replace(columnName, vbLf, " ")
+    columnName = Replace(columnName, vbTab, " ")
+    columnName = Replace(columnName, "[", "(")
+    columnName = Replace(columnName, "]", ")")
+    Do While InStr(1, columnName, "  ", vbBinaryCompare) > 0
+        columnName = Replace(columnName, "  ", " ")
+    Loop
+    columnName = Trim$(columnName)
+    If Len(columnName) > 48 Then columnName = Left$(columnName, 48)
+    NormalizeCatalogColumnNameAdmin = columnName
+End Function
+
+Private Sub SetSheetProtectionAdminLocal(ByVal ws As Worksheet, ByVal protectAfter As Boolean)
+    On Error Resume Next
+    If ws Is Nothing Then Exit Sub
+    If protectAfter Then
+        ws.Protect UserInterfaceOnly:=True
+    ElseIf ws.ProtectContents Then
+        ws.Unprotect
+    End If
+    On Error GoTo 0
+End Sub
+
+Private Sub AddPictureReferencesToPayloadAdmin(ByVal item As Object, ByVal imagePath As String)
+    Dim refs As Collection
+    Dim i As Long
+
+    If item Is Nothing Then Exit Sub
+    Set refs = ParsePictureReferencesAdmin(imagePath)
+    If refs.Count = 0 Then
+        item("IMAGE_PATH") = ""
+        Exit Sub
+    End If
+    item("IMAGE_PATH") = refs(1)
+    For i = 2 To refs.Count
+        item("IMAGE_PATH_" & CStr(i)) = refs(i)
+    Next i
+End Sub
+
+Private Sub SetPictureReferencesInCatalogAdmin(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal imagePath As String)
+    Dim refs As Collection
+    Dim i As Long
+    Dim columnName As String
+
+    Set refs = ParsePictureReferencesAdmin(imagePath)
+    If refs.Count > 0 Then
+        SetCatalogValueAdmin lo, rowIndex, "IMAGE_PATH", refs(1)
+    Else
+        SetCatalogValueAdmin lo, rowIndex, "IMAGE_PATH", ""
+    End If
+    For i = 2 To 12
+        columnName = "IMAGE_PATH_" & CStr(i)
+        If i <= refs.Count Then
+            SetCatalogValueAdmin lo, rowIndex, columnName, refs(i)
+        ElseIf ColumnIndexAdminLocal(lo, columnName) > 0 Then
+            SetCatalogValueAdmin lo, rowIndex, columnName, ""
+        End If
+    Next i
+End Sub
+
+Private Function CombinedPictureReferencesAdmin(ByVal lo As ListObject, ByVal rowIndex As Long) As String
+    Dim parts As Collection
+    Dim i As Long
+    Dim valueText As String
+    Dim result As String
+
+    Set parts = New Collection
+    valueText = CatalogCellAdmin(lo, rowIndex, "IMAGE_PATH")
+    If valueText <> "" Then parts.Add valueText
+    For i = 2 To 12
+        valueText = CatalogCellAdmin(lo, rowIndex, "IMAGE_PATH_" & CStr(i))
+        If valueText <> "" Then parts.Add valueText
+    Next i
+    For i = 1 To parts.Count
+        If result <> "" Then result = result & "; "
+        result = result & CStr(parts(i))
+    Next i
+    CombinedPictureReferencesAdmin = result
+End Function
+
+Private Function ParsePictureReferencesAdmin(ByVal imagePath As String) As Collection
+    Dim result As Collection
+    Dim rawParts As Variant
+    Dim part As Variant
+    Dim valueText As String
+
+    Set result = New Collection
+    imagePath = Replace(imagePath, "|", ";")
+    imagePath = Replace(imagePath, vbCr, ";")
+    imagePath = Replace(imagePath, vbLf, ";")
+    rawParts = Split(imagePath, ";")
+    For Each part In rawParts
+        valueText = Trim$(CStr(part))
+        If valueText <> "" Then result.Add valueText
+    Next part
+    Set ParsePictureReferencesAdmin = result
 End Function
 
 Private Function SeedDemoInventoryForWarehouse(ByVal warehouseId As String, _
