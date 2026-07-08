@@ -134,6 +134,160 @@ Sub Seed_DemoInventory()
     End If
 End Sub
 
+Sub Add_InventoryItem()
+    Dim warehouseId As String
+    Dim stationId As String
+    Dim userId As String
+    Dim report As String
+    Dim sku As String
+    Dim itemName As String
+    Dim uom As String
+    Dim locationVal As String
+    Dim description As String
+    Dim vendorName As String
+    Dim vendorCode As String
+    Dim category As String
+    Dim qty As Double
+    Dim rowVal As Long
+    Dim rawQty As String
+    Dim rawRow As String
+
+    If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
+        MsgBox report, vbExclamation, "invSys Admin"
+        Exit Sub
+    End If
+
+    sku = Trim$(InputBox("Item code / SKU:", "invSys Admin - Add Inventory Item"))
+    If sku = "" Then Exit Sub
+    itemName = Trim$(InputBox("Item name:", "invSys Admin - Add Inventory Item", sku))
+    If itemName = "" Then itemName = sku
+    uom = Trim$(InputBox("UOM:", "invSys Admin - Add Inventory Item", "EA"))
+    If uom = "" Then Exit Sub
+    locationVal = Trim$(InputBox("Default location:", "invSys Admin - Add Inventory Item", modConfig.GetString("DefaultLocation", "")))
+    rawQty = Trim$(InputBox("Starting quantity. This must be greater than zero.", "invSys Admin - Add Inventory Item", "1"))
+    If rawQty = "" Then Exit Sub
+    qty = CDbl(Val(rawQty))
+    If qty <= 0 Then
+        MsgBox "Starting quantity must be greater than zero. Zero-quantity catalog-only items need a separate catalog maintenance event.", vbExclamation, "invSys Admin"
+        Exit Sub
+    End If
+
+    rawRow = Trim$(InputBox("Inventory ROW id. Leave the suggested value unless you need to preserve a legacy row number.", _
+                            "invSys Admin - Add Inventory Item", CStr(NextInventoryRowSuggestionAdmin(warehouseId))))
+    If rawRow = "" Then Exit Sub
+    rowVal = CLng(Val(rawRow))
+    If rowVal <= 0 Then
+        MsgBox "Inventory ROW id must be a positive number.", vbExclamation, "invSys Admin"
+        Exit Sub
+    End If
+
+    description = Trim$(InputBox("Description (optional):", "invSys Admin - Add Inventory Item"))
+    vendorName = Trim$(InputBox("Vendor(s) (optional):", "invSys Admin - Add Inventory Item"))
+    vendorCode = Trim$(InputBox("Vendor code (optional):", "invSys Admin - Add Inventory Item"))
+    category = Trim$(InputBox("Category (optional, e.g. Raw Material, Packaging, Shippable):", "invSys Admin - Add Inventory Item"))
+
+    If AddInventoryItemForWarehouse(warehouseId, stationId, userId, rowVal, sku, itemName, uom, _
+                                    locationVal, qty, description, vendorName, vendorCode, category, report) Then
+        MsgBox report, vbInformation, "invSys Admin"
+    Else
+        MsgBox report, vbExclamation, "invSys Admin"
+    End If
+End Sub
+
+Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
+                                             ByVal stationId As String, _
+                                             ByVal userId As String, _
+                                             ByVal rowVal As Long, _
+                                             ByVal sku As String, _
+                                             ByVal itemName As String, _
+                                             ByVal uom As String, _
+                                             ByVal locationVal As String, _
+                                             ByVal qty As Double, _
+                                             Optional ByVal description As String = "", _
+                                             Optional ByVal vendorName As String = "", _
+                                             Optional ByVal vendorCode As String = "", _
+                                             Optional ByVal category As String = "", _
+                                             Optional ByRef report As String = "") As Boolean
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim payloadJson As String
+    Dim eventIdOut As String
+    Dim queueError As String
+    Dim batchReport As String
+    Dim processedCount As Long
+    Dim inboxReport As String
+
+    On Error GoTo FailAdd
+
+    warehouseId = Trim$(warehouseId)
+    stationId = Trim$(stationId)
+    userId = Trim$(userId)
+    sku = Trim$(sku)
+    itemName = Trim$(itemName)
+    uom = Trim$(uom)
+    locationVal = Trim$(locationVal)
+
+    If warehouseId = "" Then report = "WarehouseId is required.": Exit Function
+    If stationId = "" Then stationId = "S1"
+    If userId = "" Then report = "Admin user is required.": Exit Function
+    If sku = "" Then report = "SKU is required.": Exit Function
+    If itemName = "" Then itemName = sku
+    If uom = "" Then report = "UOM is required.": Exit Function
+    If rowVal <= 0 Then report = "Inventory ROW id must be positive.": Exit Function
+    If qty <= 0 Then report = "Starting quantity must be greater than zero.": Exit Function
+
+    If Not EnsureDemoStationInboxes(warehouseId, stationId, inboxReport) Then
+        report = inboxReport
+        Exit Function
+    End If
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreatePayloadItem(rowVal, sku, qty, locationVal, "Admin add inventory item", "IMPORT")
+    item("ITEM_CODE") = sku
+    item("ITEM") = itemName
+    item("UOM") = uom
+    item("LOCATION") = locationVal
+    item("TOTAL INV") = qty
+    item("QtyAvailable") = qty
+    item("DESCRIPTION") = description
+    item("VENDOR(s)") = vendorName
+    item("VENDOR_CODE") = vendorCode
+    item("CATEGORY") = category
+    payloadItems.Add item
+
+    payloadJson = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
+    If payloadJson = "" Or payloadJson = "[]" Then
+        report = "Inventory item payload was empty."
+        Exit Function
+    End If
+
+    If Not modRoleEventWriter.QueueMigrationSeedEvent(warehouseId, stationId, userId, payloadJson, _
+                                                      "ADMIN_ADD_INVENTORY_ITEM", "Admin add inventory item " & sku, _
+                                                      0, Nothing, eventIdOut, queueError, "") Then
+        report = "Inventory item event could not be queued: " & queueError & vbCrLf & _
+                 "Use Users & Roles to grant ADMIN_MAINT to '" & userId & "' for " & warehouseId & " / " & stationId & "."
+        Exit Function
+    End If
+
+    processedCount = modProcessor.RunBatch(warehouseId, 0, batchReport)
+    If processedCount < 1 Then
+        report = "Inventory item event was queued but not applied. " & batchReport
+        Exit Function
+    End If
+
+    report = "Inventory item added." & vbCrLf & _
+             "Warehouse: " & warehouseId & vbCrLf & _
+             "SKU: " & sku & vbCrLf & _
+             "Starting quantity: " & CStr(qty) & vbCrLf & _
+             "Processor: " & batchReport & vbCrLf & _
+             "Refresh inventory in any open role workbook to see the new item."
+    AddInventoryItemForWarehouse = True
+    Exit Function
+
+FailAdd:
+    report = "AddInventoryItem failed: " & Err.Description
+End Function
+
 Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
                                              ByRef stationId As String, _
                                              ByRef userId As String, _
@@ -194,6 +348,136 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     End If
 
     ResolveSeedInventoryContext = True
+End Function
+
+Private Function ResolveAdminCurrentTargetContext(ByRef warehouseId As String, _
+                                                  ByRef stationId As String, _
+                                                  ByRef userId As String, _
+                                                  ByRef report As String) As Boolean
+    Dim target As WarehouseTarget
+    Dim accessReport As String
+
+    If Not modRoleUiAccess.CanCurrentUserPerformCapabilityCached("ADMIN_MAINT", accessReport) Then
+        report = accessReport
+        If Trim$(report) = "" Then report = "Sign in as an admin user and connect a warehouse target first."
+        Exit Function
+    End If
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then
+        report = "Connect a warehouse target first."
+        Exit Function
+    End If
+
+    warehouseId = Trim$(target.WarehouseId)
+    stationId = Trim$(target.StationId)
+    userId = Trim$(modAuth.GetCurrentUserId())
+    If stationId = "" Then stationId = "S1"
+    If warehouseId = "" Then
+        report = "Current warehouse target is missing WarehouseId."
+        Exit Function
+    End If
+    If userId = "" Then
+        report = "Current invSys user is not signed in."
+        Exit Function
+    End If
+    If Not modConfig.LoadConfig(warehouseId, stationId) Then
+        report = "Config load failed: " & modConfig.Validate()
+        Exit Function
+    End If
+
+    ResolveAdminCurrentTargetContext = True
+End Function
+
+Private Function NextInventoryRowSuggestionAdmin(ByVal warehouseId As String) As Long
+    Dim path As String
+    Dim wb As Workbook
+    Dim openedHere As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+    Dim cRow As Long
+    Dim maxRow As Long
+    Dim rawValue As Variant
+
+    On Error GoTo Fallback
+    path = modProcessor.ResolveInventoryWorkbookPathForAutomation(warehouseId)
+    If path <> "" Then
+        Set wb = FindOpenWorkbookByFullNameAdmin(path)
+        If wb Is Nothing Then
+            If Len(Dir$(path, vbNormal)) > 0 Then
+                Set wb = Application.Workbooks.Open(path, UpdateLinks:=False, ReadOnly:=True, AddToMru:=False)
+                openedHere = True
+            End If
+        End If
+    End If
+
+    If Not wb Is Nothing Then
+        Set lo = FindListObjectByNameAdminLocal(wb, "tblSkuCatalog")
+        If Not lo Is Nothing Then
+            cRow = ColumnIndexAdminLocal(lo, "ROW")
+            If cRow > 0 And Not lo.DataBodyRange Is Nothing Then
+                For rowIndex = 1 To lo.ListRows.Count
+                    rawValue = lo.DataBodyRange.Cells(rowIndex, cRow).Value
+                    If IsNumeric(rawValue) Then
+                        If CLng(Val(CStr(rawValue))) > maxRow Then maxRow = CLng(Val(CStr(rawValue)))
+                    End If
+                Next rowIndex
+            End If
+        End If
+    End If
+
+    If maxRow > 0 Then
+        NextInventoryRowSuggestionAdmin = maxRow + 1
+    Else
+        NextInventoryRowSuggestionAdmin = CLng((DateDiff("s", DateSerial(2026, 1, 1), Now) Mod 900000) + 10000)
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Fallback:
+    NextInventoryRowSuggestionAdmin = CLng((DateDiff("s", DateSerial(2026, 1, 1), Now) Mod 900000) + 10000)
+    Resume CleanExit
+End Function
+
+Private Function FindOpenWorkbookByFullNameAdmin(ByVal fullName As String) As Workbook
+    Dim wb As Workbook
+
+    fullName = LCase$(Trim$(fullName))
+    If fullName = "" Then Exit Function
+    For Each wb In Application.Workbooks
+        If LCase$(Trim$(wb.FullName)) = fullName Then
+            Set FindOpenWorkbookByFullNameAdmin = wb
+            Exit Function
+        End If
+    Next wb
+End Function
+
+Private Function FindListObjectByNameAdminLocal(ByVal wb As Workbook, ByVal tableName As String) As ListObject
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        On Error Resume Next
+        Set FindListObjectByNameAdminLocal = ws.ListObjects(tableName)
+        On Error GoTo 0
+        If Not FindListObjectByNameAdminLocal Is Nothing Then Exit Function
+    Next ws
+End Function
+
+Private Function ColumnIndexAdminLocal(ByVal lo As ListObject, ByVal columnName As String) As Long
+    Dim i As Long
+
+    If lo Is Nothing Then Exit Function
+    For i = 1 To lo.ListColumns.Count
+        If StrComp(lo.ListColumns(i).Name, columnName, vbTextCompare) = 0 Then
+            ColumnIndexAdminLocal = i
+            Exit Function
+        End If
+    Next i
 End Function
 
 Private Function SeedDemoInventoryForWarehouse(ByVal warehouseId As String, _

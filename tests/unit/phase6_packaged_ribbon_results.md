@@ -1,9 +1,9 @@
 # Phase 6 Packaged Ribbon Validation Results
 
-- Date: 2026-07-08 09:55:34
+- Date: 2026-07-08 10:06:45
 - Deploy root: C:\Users\justu\source\repos\invSys_fork\deploy\current
-- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-ed07cf717f0242fdba2eb52b033ea1dd
-- Passed: 178
+- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-05ac574667914cf8bb4c209527fb127e
+- Passed: 184
 - Failed: 0
 
 | Check | Result | Detail |
@@ -15,7 +15,7 @@
 | invSys.Shipping.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Shipping.xlam |
 | invSys.Production.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Production.xlam |
 | invSys.Admin.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Admin.xlam |
-| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-ed07cf717f0242fdba2eb52b033ea1dd |
+| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-05ac574667914cf8bb4c209527fb127e |
 | Receiving.RibbonXml | PASS | customUI/customUI.xml present. |
 | Receiving.CallbackModule | PASS | modRibbonGenerated |
 | Receiving.StatusLabel.lblReceivingServerStatus | PASS | GetLabel=RibbonServerStatusGetLabel |
@@ -167,6 +167,12 @@
 | Admin.CallbackMap.btnAdminSetupTesterStation | PASS | btnAdminSetupTesterStation -> modAdmin.Admin_SetupTesterStation_Click |
 | Admin.CallbackGetEnabled.btnAdminSetupTesterStation | PASS | btnAdminSetupTesterStation -> ADMIN_MAINT |
 | Admin.DisabledOffline.btnAdminSetupTesterStation | PASS | btnAdminSetupTesterStation enabled=False |
+| Admin.RibbonButton.btnAdminAddInventoryItem | PASS | Label=Add Inventory Item; OnAction=RibbonOnActionAdmin; GetEnabled=RibbonRequiredCapabilityGetEnabledAdmin; Screentip= |
+| Admin.RibbonButtonGetEnabled.btnAdminAddInventoryItem | PASS | RibbonRequiredCapabilityGetEnabledAdmin |
+| Admin.MacroExists.btnAdminAddInventoryItem | PASS | modAdmin.Add_InventoryItem |
+| Admin.CallbackMap.btnAdminAddInventoryItem | PASS | btnAdminAddInventoryItem -> modAdmin.Add_InventoryItem |
+| Admin.CallbackGetEnabled.btnAdminAddInventoryItem | PASS | btnAdminAddInventoryItem -> ADMIN_MAINT |
+| Admin.DisabledOffline.btnAdminAddInventoryItem | PASS | btnAdminAddInventoryItem enabled=False |
 | Admin.RibbonButton.btnAdminSeedInventory | PASS | Label=Seed Demo Inventory; OnAction=RibbonOnActionAdmin; GetEnabled=RibbonRequiredCapabilityGetEnabledAdmin; Screentip= |
 | Admin.RibbonButtonGetEnabled.btnAdminSeedInventory | PASS | RibbonRequiredCapabilityGetEnabledAdmin |
 | Admin.MacroExists.btnAdminSeedInventory | PASS | modAdmin.Seed_DemoInventory |
