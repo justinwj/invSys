@@ -140,58 +140,37 @@ Sub Add_InventoryItem()
     Dim userId As String
     Dim report As String
     Dim sku As String
-    Dim itemName As String
-    Dim uom As String
-    Dim locationVal As String
-    Dim description As String
-    Dim vendorName As String
-    Dim vendorCode As String
-    Dim category As String
-    Dim qty As Double
     Dim rowVal As Long
-    Dim rawQty As String
-    Dim rawRow As String
+    Dim defaultLocation As String
 
     If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
         MsgBox report, vbExclamation, "invSys Admin"
         Exit Sub
     End If
 
-    sku = Trim$(InputBox("Item code / SKU:", "invSys Admin - Add Inventory Item"))
-    If sku = "" Then Exit Sub
-    itemName = Trim$(InputBox("Item name:", "invSys Admin - Add Inventory Item", sku))
-    If itemName = "" Then itemName = sku
-    uom = Trim$(InputBox("UOM:", "invSys Admin - Add Inventory Item", "EA"))
-    If uom = "" Then Exit Sub
-    locationVal = Trim$(InputBox("Default location:", "invSys Admin - Add Inventory Item", modConfig.GetString("DefaultLocation", "")))
-    rawQty = Trim$(InputBox("Starting quantity. This must be greater than zero.", "invSys Admin - Add Inventory Item", "1"))
-    If rawQty = "" Then Exit Sub
-    qty = CDbl(Val(rawQty))
-    If qty <= 0 Then
-        MsgBox "Starting quantity must be greater than zero. Zero-quantity catalog-only items need a separate catalog maintenance event.", vbExclamation, "invSys Admin"
+    rowVal = NextInventoryRowSuggestionAdmin(warehouseId)
+    sku = GenerateInventorySkuAdmin(warehouseId, rowVal)
+    defaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
+
+    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+    frmAddInventoryItem.Show vbModal
+    If Not frmAddInventoryItem.Accepted Then
+        Unload frmAddInventoryItem
         Exit Sub
     End If
 
-    rawRow = Trim$(InputBox("Inventory ROW id. Leave the suggested value unless you need to preserve a legacy row number.", _
-                            "invSys Admin - Add Inventory Item", CStr(NextInventoryRowSuggestionAdmin(warehouseId))))
-    If rawRow = "" Then Exit Sub
-    rowVal = CLng(Val(rawRow))
-    If rowVal <= 0 Then
-        MsgBox "Inventory ROW id must be a positive number.", vbExclamation, "invSys Admin"
-        Exit Sub
-    End If
-
-    description = Trim$(InputBox("Description (optional):", "invSys Admin - Add Inventory Item"))
-    vendorName = Trim$(InputBox("Vendor(s) (optional):", "invSys Admin - Add Inventory Item"))
-    vendorCode = Trim$(InputBox("Vendor code (optional):", "invSys Admin - Add Inventory Item"))
-    category = Trim$(InputBox("Category (optional, e.g. Raw Material, Packaging, Shippable):", "invSys Admin - Add Inventory Item"))
-
-    If AddInventoryItemForWarehouse(warehouseId, stationId, userId, rowVal, sku, itemName, uom, _
-                                    locationVal, qty, description, vendorName, vendorCode, category, report) Then
+    If AddInventoryItemForWarehouse(warehouseId, stationId, userId, frmAddInventoryItem.GeneratedRow, _
+                                    frmAddInventoryItem.GeneratedSku, frmAddInventoryItem.ItemName, _
+                                    frmAddInventoryItem.Uom, frmAddInventoryItem.LocationValue, _
+                                    frmAddInventoryItem.StartingQty, frmAddInventoryItem.DescriptionValue, _
+                                    frmAddInventoryItem.VendorName, frmAddInventoryItem.VendorCode, _
+                                    frmAddInventoryItem.Category, frmAddInventoryItem.ExternalCode, _
+                                    frmAddInventoryItem.ImagePath, frmAddInventoryItem.CustomFields, report) Then
         MsgBox report, vbInformation, "invSys Admin"
     Else
         MsgBox report, vbExclamation, "invSys Admin"
     End If
+    Unload frmAddInventoryItem
 End Sub
 
 Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
@@ -207,9 +186,13 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
                                              Optional ByVal vendorName As String = "", _
                                              Optional ByVal vendorCode As String = "", _
                                              Optional ByVal category As String = "", _
+                                             Optional ByVal externalCode As String = "", _
+                                             Optional ByVal imagePath As String = "", _
+                                             Optional ByVal customFields As Object = Nothing, _
                                              Optional ByRef report As String = "") As Boolean
     Dim payloadItems As Collection
     Dim item As Object
+    Dim customKey As Variant
     Dim payloadJson As String
     Dim eventIdOut As String
     Dim queueError As String
@@ -253,6 +236,13 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     item("VENDOR(s)") = vendorName
     item("VENDOR_CODE") = vendorCode
     item("CATEGORY") = category
+    item("EXTERNAL_CODE") = externalCode
+    item("IMAGE_PATH") = imagePath
+    If Not customFields Is Nothing Then
+        For Each customKey In customFields.Keys
+            If Trim$(CStr(customKey)) <> "" Then item(Trim$(CStr(customKey))) = customFields(customKey)
+        Next customKey
+    End If
     payloadItems.Add item
 
     payloadJson = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
@@ -278,6 +268,7 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     report = "Inventory item added." & vbCrLf & _
              "Warehouse: " & warehouseId & vbCrLf & _
              "SKU: " & sku & vbCrLf & _
+             "Item: " & itemName & vbCrLf & _
              "Starting quantity: " & CStr(qty) & vbCrLf & _
              "Processor: " & batchReport & vbCrLf & _
              "Refresh inventory in any open role workbook to see the new item."
@@ -286,6 +277,40 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
 
 FailAdd:
     report = "AddInventoryItem failed: " & Err.Description
+End Function
+
+Private Function GenerateInventorySkuAdmin(ByVal warehouseId As String, ByVal rowVal As Long) As String
+    Dim rowPart As String
+    Dim whPart As String
+
+    whPart = UCase$(Trim$(warehouseId))
+    whPart = Replace(whPart, " ", "")
+    whPart = Replace(whPart, "-", "")
+    If Len(whPart) > 4 Then whPart = Left$(whPart, 4)
+    If whPart = "" Then whPart = "INV"
+
+    rowPart = Base36Admin(rowVal)
+    Do While Len(rowPart) < 6
+        rowPart = "0" & rowPart
+    Loop
+    GenerateInventorySkuAdmin = "ITM-" & whPart & "-" & rowPart
+End Function
+
+Private Function Base36Admin(ByVal valueIn As Long) As String
+    Const DIGITS As String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    Dim n As Long
+    Dim result As String
+
+    If valueIn <= 0 Then
+        Base36Admin = "0"
+        Exit Function
+    End If
+    n = valueIn
+    Do While n > 0
+        result = Mid$(DIGITS, (n Mod 36) + 1, 1) & result
+        n = n \ 36
+    Loop
+    Base36Admin = result
 End Function
 
 Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _

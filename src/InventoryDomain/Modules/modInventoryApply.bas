@@ -1112,6 +1112,9 @@ Private Sub EnsureSkuCatalogFromPayloadLineApply(ByVal wb As Workbook, ByVal raw
     SetTableRowValueIfNonBlankApply lo, rowIndex, "VENDOR(s)", ResolvePayloadTextApply(rawItem, "VENDOR(s)", "")
     SetTableRowValueIfNonBlankApply lo, rowIndex, "VENDOR_CODE", ResolvePayloadTextApply(rawItem, "VENDOR_CODE", "")
     SetTableRowValueIfNonBlankApply lo, rowIndex, "CATEGORY", ResolvePayloadTextApply(rawItem, "CATEGORY", "")
+    SetTableRowValueIfNonBlankApply lo, rowIndex, "EXTERNAL_CODE", ResolvePayloadTextApply(rawItem, "EXTERNAL_CODE", "")
+    SetTableRowValueIfNonBlankApply lo, rowIndex, "IMAGE_PATH", ResolvePayloadTextApply(rawItem, "IMAGE_PATH", "")
+    ApplyCustomCatalogFieldsApply lo, rowIndex, rawItem
 
 CleanExit:
     On Error Resume Next
@@ -1119,9 +1122,67 @@ CleanExit:
     On Error GoTo 0
 End Sub
 
+Private Sub ApplyCustomCatalogFieldsApply(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal rawItem As Object)
+    Dim key As Variant
+    Dim columnName As String
+    Dim valueText As String
+
+    On Error GoTo CleanExit
+    If lo Is Nothing Then Exit Sub
+    If rawItem Is Nothing Then Exit Sub
+    For Each key In rawItem.Keys
+        columnName = NormalizeCatalogColumnNameApply(CStr(key))
+        If columnName <> "" Then
+            If Not IsReservedPayloadCatalogKeyApply(columnName) Then
+                valueText = SafeTrimApply(GetDictionaryValue(rawItem, CStr(key)))
+                If valueText <> "" Then
+                    EnsureCatalogColumnApply lo, columnName
+                    SetTableRowValue lo, rowIndex, columnName, valueText
+                End If
+            End If
+        End If
+    Next key
+
+CleanExit:
+End Sub
+
+Private Sub EnsureCatalogColumnApply(ByVal lo As ListObject, ByVal columnName As String)
+    If lo Is Nothing Then Exit Sub
+    columnName = NormalizeCatalogColumnNameApply(columnName)
+    If columnName = "" Then Exit Sub
+    If GetColumnIndexApply(lo, columnName) > 0 Then Exit Sub
+    lo.ListColumns.Add.Name = columnName
+End Sub
+
+Private Function NormalizeCatalogColumnNameApply(ByVal columnName As String) As String
+    columnName = Replace(columnName, vbCr, " ")
+    columnName = Replace(columnName, vbLf, " ")
+    columnName = Replace(columnName, vbTab, " ")
+    columnName = Replace(columnName, "[", "(")
+    columnName = Replace(columnName, "]", ")")
+    Do While InStr(1, columnName, "  ", vbBinaryCompare) > 0
+        columnName = Replace(columnName, "  ", " ")
+    Loop
+    columnName = SafeTrimApply(columnName)
+    If Len(columnName) > 48 Then columnName = Left$(columnName, 48)
+    NormalizeCatalogColumnNameApply = columnName
+End Function
+
+Private Function IsReservedPayloadCatalogKeyApply(ByVal columnName As String) As Boolean
+    Select Case UCase$(SafeTrimApply(columnName))
+        Case "SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", _
+             "VENDOR(S)", "VENDOR_CODE", "CATEGORY", "EXTERNAL_CODE", "IMAGE_PATH", _
+             "QTY", "QTYDELTA", "QTYAVAILABLE", "TOTAL INV", "NOTE", "IOTYPE", _
+             "VERSION", "BOMVERSIONLABEL", "CORRECTEDSHIPEVENTID", "REPAIRNARRATIVE", _
+             "MISMATCHFLAG", "LOCATIONFROM", "LOCATIONTO", "PROCESSKEY"
+            IsReservedPayloadCatalogKeyApply = True
+    End Select
+End Function
+
 Private Sub SetTableRowValueIfNonBlankApply(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueText As String)
     valueText = SafeTrimApply(valueText)
     If valueText = "" Then Exit Sub
+    EnsureCatalogColumnApply lo, columnName
     SetTableRowValue lo, rowIndex, columnName, valueText
 End Sub
 
