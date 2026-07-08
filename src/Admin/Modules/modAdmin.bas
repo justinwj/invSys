@@ -154,7 +154,8 @@ Sub Add_InventoryItem()
     defaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
     Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
 
-    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation, catalogItems
+    frmAddInventoryItem.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+    LoadCatalogItemsIntoAddInventoryForm catalogItems
     frmAddInventoryItem.Show vbModal
     If Not frmAddInventoryItem.Accepted Then
         Unload frmAddInventoryItem
@@ -460,6 +461,31 @@ CleanExit:
     If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
     On Error GoTo 0
     Set LoadInventoryCatalogItemsAdmin = result
+End Function
+
+Private Sub LoadCatalogItemsIntoAddInventoryForm(ByVal catalogItems As Object)
+    Dim item As Variant
+
+    If catalogItems Is Nothing Then Exit Sub
+    For Each item In catalogItems
+        frmAddInventoryItem.AddCatalogItem CatalogItemTextAdmin(item, "SKU"), _
+                                           CatalogItemTextAdmin(item, "ROW"), _
+                                           CatalogItemTextAdmin(item, "ITEM"), _
+                                           CatalogItemTextAdmin(item, "UOM"), _
+                                           CatalogItemTextAdmin(item, "LOCATION"), _
+                                           CatalogItemTextAdmin(item, "DESCRIPTION"), _
+                                           CatalogItemTextAdmin(item, "VENDOR(s)"), _
+                                           CatalogItemTextAdmin(item, "VENDOR_CODE"), _
+                                           CatalogItemTextAdmin(item, "CATEGORY"), _
+                                           CatalogItemTextAdmin(item, "EXTERNAL_CODE"), _
+                                           CatalogItemTextAdmin(item, "IMAGE_PATH")
+    Next item
+End Sub
+
+Private Function CatalogItemTextAdmin(ByVal item As Variant, ByVal fieldName As String) As String
+    On Error Resume Next
+    CatalogItemTextAdmin = Trim$(CStr(item(fieldName)))
+    On Error GoTo 0
 End Function
 
 Private Function Base36Admin(ByVal valueIn As Long) As String

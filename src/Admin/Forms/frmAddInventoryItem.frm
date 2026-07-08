@@ -161,8 +161,7 @@ Public Sub Configure(ByVal warehouseId As String, _
                      ByVal userId As String, _
                      ByVal generatedSku As String, _
                      ByVal generatedRow As Long, _
-                     ByVal defaultLocation As String, _
-                     Optional ByVal catalogItems As Object = Nothing)
+                     ByVal defaultLocation As String)
     EnsureControls
     mLoading = True
     mWarehouseId = Trim$(warehouseId)
@@ -170,7 +169,7 @@ Public Sub Configure(ByVal warehouseId As String, _
     mUserId = Trim$(userId)
     mGeneratedSku = Trim$(generatedSku)
     mGeneratedRow = generatedRow
-    Set mCatalogItems = catalogItems
+    Set mCatalogItems = New Collection
     mAccepted = False
     mEditMode = False
     mSelectedEditSku = ""
@@ -196,6 +195,50 @@ Public Sub Configure(ByVal warehouseId As String, _
     ApplyModeLayout
     mLblStatus.Caption = ""
     mLoading = False
+End Sub
+
+Public Sub AddCatalogItem(ByVal sku As String, _
+                          ByVal rowValue As String, _
+                          ByVal itemName As String, _
+                          ByVal uomValue As String, _
+                          ByVal locationValue As String, _
+                          ByVal descriptionValue As String, _
+                          ByVal vendorName As String, _
+                          ByVal vendorCode As String, _
+                          ByVal categoryValue As String, _
+                          ByVal externalCodeValue As String, _
+                          ByVal imagePathValue As String)
+    Dim item As Object
+    Dim selectedUom As String
+
+    EnsureControls
+    If mCatalogItems Is Nothing Then Set mCatalogItems = New Collection
+    sku = Trim$(sku)
+    If sku = "" Then Exit Sub
+    selectedUom = Trim$(CStr(mCmbUom.Value))
+
+    Set item = CreateObject("Scripting.Dictionary")
+    item.CompareMode = vbTextCompare
+    item("SKU") = sku
+    item("ROW") = Trim$(rowValue)
+    item("ITEM") = Trim$(itemName)
+    item("UOM") = UCase$(Trim$(uomValue))
+    item("LOCATION") = Trim$(locationValue)
+    item("DESCRIPTION") = Trim$(descriptionValue)
+    item("VENDOR(s)") = Trim$(vendorName)
+    item("VENDOR_CODE") = Trim$(vendorCode)
+    item("CATEGORY") = Trim$(categoryValue)
+    item("EXTERNAL_CODE") = Trim$(externalCodeValue)
+    item("IMAGE_PATH") = Trim$(imagePathValue)
+    mCatalogItems.Add item
+
+    LoadUomOptions
+    If selectedUom <> "" Then
+        mCmbUom.Value = selectedUom
+    ElseIf Not mEditMode Then
+        mCmbUom.Value = "EA"
+    End If
+    LoadEditItemOptions
 End Sub
 
 Private Sub UserForm_Initialize()
