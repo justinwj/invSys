@@ -254,12 +254,26 @@ $ribbonSpecs = @(
             @{ Id = "btnProductionConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "PROD_POST"'; Execute = $false },
             @{ Id = "btnProductionCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "PROD_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
             @{ Id = "btnProductionSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnProductionSetup"; Label = "Setup UI"; Macro = "mProduction.InitializeProductionUI"; Execute = $false; RequiredCapability = "PROD_POST" },
-            @{ Id = "btnProductionLoad"; Label = "Load Recipe"; Macro = "mProduction.BtnLoadRecipe"; Execute = $false; RequiredCapability = "PROD_POST" },
-            @{ Id = "btnProductionUsed"; Label = "To Used"; Macro = "mProduction.BtnToUsed"; Execute = $false; RequiredCapability = "PROD_POST" },
-            @{ Id = "btnProductionMade"; Label = "To Made"; Macro = "mProduction.BtnToMade"; Execute = $false; RequiredCapability = "PROD_POST" },
-            @{ Id = "btnProductionTotal"; Label = "To Total Inv"; Macro = "mProduction.BtnToTotalInv"; Execute = $false; RequiredCapability = "PROD_POST" },
-            @{ Id = "btnProductionPrintCodes"; Label = "Print Recall Codes"; Macro = "mProduction.BtnPrintRecallCodes"; Execute = $false; RequiredCapability = "PROD_POST" }
+            @{ Id = "btnProductionForm"; Label = "Production Form"; Macro = "mProduction.BtnOpenProductionForm"; Execute = $false; RequiredCapability = "PROD_POST" }
+        )
+        ForbiddenButtons = @(
+            "btnProductionSetup",
+            "btnProductionHide",
+            "btnProductionShow",
+            "btnProductionLoad",
+            "btnProductionSaveRecipe",
+            "btnProductionSaveFormulas",
+            "btnProductionAddTables",
+            "btnProductionRemoveTables",
+            "btnProductionClearBuilder",
+            "btnProductionSavePalette",
+            "btnProductionClearPalette",
+            "btnProductionClearChooser",
+            "btnProductionUsed",
+            "btnProductionMade",
+            "btnProductionTotal",
+            "btnProductionNextBatch",
+            "btnProductionPrintCodes"
         )
     }
     @{
@@ -429,6 +443,12 @@ try {
                 catch {
                     Add-ResultRow -Rows $resultRows -Check "$($spec.Name).SafeExec.$buttonId" -Passed $false -Detail $_.Exception.Message
                 }
+            }
+        }
+
+        if ($spec.ContainsKey("ForbiddenButtons")) {
+            foreach ($forbiddenButtonId in $spec.ForbiddenButtons) {
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).RibbonButtonAbsent.$forbiddenButtonId" -Passed (-not $buttons.ContainsKey($forbiddenButtonId)) -Detail $forbiddenButtonId
             }
         }
     }

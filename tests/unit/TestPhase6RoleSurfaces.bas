@@ -176,6 +176,33 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionForm_InitializeCreatesTabbedSurface() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim pageCount As Long
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    wb.Activate
+
+    pageCount = frmProduction.TestPageCount()
+
+    If pageCount = 4 Then
+        TestProductionForm_InitializeCreatesTabbedSurface = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts() As Long
     Dim wb As Workbook
     Dim report As String

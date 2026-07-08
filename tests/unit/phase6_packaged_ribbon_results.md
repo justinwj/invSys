@@ -1,9 +1,9 @@
 # Phase 6 Packaged Ribbon Validation Results
 
-- Date: 2026-06-17 20:10:00
+- Date: 2026-07-07 18:59:17
 - Deploy root: C:\Users\justu\source\repos\invSys_fork\deploy\current
-- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-f87112eb26014a4083633454afade1d3
-- Passed: 191
+- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-1375bf057ab349d18f45983aa8e43b8e
+- Passed: 178
 - Failed: 0
 
 | Check | Result | Detail |
@@ -15,7 +15,7 @@
 | invSys.Shipping.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Shipping.xlam |
 | invSys.Production.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Production.xlam |
 | invSys.Admin.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Admin.xlam |
-| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-f87112eb26014a4083633454afade1d3 |
+| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-1375bf057ab349d18f45983aa8e43b8e |
 | Receiving.RibbonXml | PASS | customUI/customUI.xml present. |
 | Receiving.CallbackModule | PASS | modRibbonGenerated |
 | Receiving.StatusLabel.lblReceivingServerStatus | PASS | GetLabel=RibbonServerStatusGetLabel |
@@ -91,42 +91,29 @@
 | Production.CallbackMap.btnProductionCurrentUser | PASS | btnProductionCurrentUser -> modRoleEventWriter.PromptSetCurrentUserForCapability "PROD_POST" |
 | Production.RibbonButton.btnProductionSignOut | PASS | Label=Sign Out; OnAction=RibbonOnActionProduction; GetEnabled=; Screentip=Sign out of invSys without disconnecting storage |
 | Production.CallbackMap.btnProductionSignOut | PASS | btnProductionSignOut -> modRoleEventWriter.SignOutCurrentUser |
-| Production.RibbonButton.btnProductionSetup | PASS | Label=Setup UI; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionSetup | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionSetup | PASS | mProduction.InitializeProductionUI |
-| Production.CallbackMap.btnProductionSetup | PASS | btnProductionSetup -> mProduction.InitializeProductionUI |
-| Production.CallbackGetEnabled.btnProductionSetup | PASS | btnProductionSetup -> PROD_POST |
-| Production.DisabledOffline.btnProductionSetup | PASS | btnProductionSetup enabled=False |
-| Production.RibbonButton.btnProductionLoad | PASS | Label=Load Recipe; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionLoad | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionLoad | PASS | mProduction.BtnLoadRecipe |
-| Production.CallbackMap.btnProductionLoad | PASS | btnProductionLoad -> mProduction.BtnLoadRecipe |
-| Production.CallbackGetEnabled.btnProductionLoad | PASS | btnProductionLoad -> PROD_POST |
-| Production.DisabledOffline.btnProductionLoad | PASS | btnProductionLoad enabled=False |
-| Production.RibbonButton.btnProductionUsed | PASS | Label=To Used; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionUsed | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionUsed | PASS | mProduction.BtnToUsed |
-| Production.CallbackMap.btnProductionUsed | PASS | btnProductionUsed -> mProduction.BtnToUsed |
-| Production.CallbackGetEnabled.btnProductionUsed | PASS | btnProductionUsed -> PROD_POST |
-| Production.DisabledOffline.btnProductionUsed | PASS | btnProductionUsed enabled=False |
-| Production.RibbonButton.btnProductionMade | PASS | Label=To Made; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionMade | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionMade | PASS | mProduction.BtnToMade |
-| Production.CallbackMap.btnProductionMade | PASS | btnProductionMade -> mProduction.BtnToMade |
-| Production.CallbackGetEnabled.btnProductionMade | PASS | btnProductionMade -> PROD_POST |
-| Production.DisabledOffline.btnProductionMade | PASS | btnProductionMade enabled=False |
-| Production.RibbonButton.btnProductionTotal | PASS | Label=To Total Inv; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionTotal | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionTotal | PASS | mProduction.BtnToTotalInv |
-| Production.CallbackMap.btnProductionTotal | PASS | btnProductionTotal -> mProduction.BtnToTotalInv |
-| Production.CallbackGetEnabled.btnProductionTotal | PASS | btnProductionTotal -> PROD_POST |
-| Production.DisabledOffline.btnProductionTotal | PASS | btnProductionTotal enabled=False |
-| Production.RibbonButton.btnProductionPrintCodes | PASS | Label=Print Recall Codes; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
-| Production.RibbonButtonGetEnabled.btnProductionPrintCodes | PASS | RibbonRequiredCapabilityGetEnabledProduction |
-| Production.MacroExists.btnProductionPrintCodes | PASS | mProduction.BtnPrintRecallCodes |
-| Production.CallbackMap.btnProductionPrintCodes | PASS | btnProductionPrintCodes -> mProduction.BtnPrintRecallCodes |
-| Production.CallbackGetEnabled.btnProductionPrintCodes | PASS | btnProductionPrintCodes -> PROD_POST |
-| Production.DisabledOffline.btnProductionPrintCodes | PASS | btnProductionPrintCodes enabled=False |
+| Production.RibbonButton.btnProductionForm | PASS | Label=Production Form; OnAction=RibbonOnActionProduction; GetEnabled=RibbonRequiredCapabilityGetEnabledProduction; Screentip= |
+| Production.RibbonButtonGetEnabled.btnProductionForm | PASS | RibbonRequiredCapabilityGetEnabledProduction |
+| Production.MacroExists.btnProductionForm | PASS | mProduction.BtnOpenProductionForm |
+| Production.CallbackMap.btnProductionForm | PASS | btnProductionForm -> mProduction.BtnOpenProductionForm |
+| Production.CallbackGetEnabled.btnProductionForm | PASS | btnProductionForm -> PROD_POST |
+| Production.DisabledOffline.btnProductionForm | PASS | btnProductionForm enabled=False |
+| Production.RibbonButtonAbsent.btnProductionSetup | PASS | btnProductionSetup |
+| Production.RibbonButtonAbsent.btnProductionHide | PASS | btnProductionHide |
+| Production.RibbonButtonAbsent.btnProductionShow | PASS | btnProductionShow |
+| Production.RibbonButtonAbsent.btnProductionLoad | PASS | btnProductionLoad |
+| Production.RibbonButtonAbsent.btnProductionSaveRecipe | PASS | btnProductionSaveRecipe |
+| Production.RibbonButtonAbsent.btnProductionSaveFormulas | PASS | btnProductionSaveFormulas |
+| Production.RibbonButtonAbsent.btnProductionAddTables | PASS | btnProductionAddTables |
+| Production.RibbonButtonAbsent.btnProductionRemoveTables | PASS | btnProductionRemoveTables |
+| Production.RibbonButtonAbsent.btnProductionClearBuilder | PASS | btnProductionClearBuilder |
+| Production.RibbonButtonAbsent.btnProductionSavePalette | PASS | btnProductionSavePalette |
+| Production.RibbonButtonAbsent.btnProductionClearPalette | PASS | btnProductionClearPalette |
+| Production.RibbonButtonAbsent.btnProductionClearChooser | PASS | btnProductionClearChooser |
+| Production.RibbonButtonAbsent.btnProductionUsed | PASS | btnProductionUsed |
+| Production.RibbonButtonAbsent.btnProductionMade | PASS | btnProductionMade |
+| Production.RibbonButtonAbsent.btnProductionTotal | PASS | btnProductionTotal |
+| Production.RibbonButtonAbsent.btnProductionNextBatch | PASS | btnProductionNextBatch |
+| Production.RibbonButtonAbsent.btnProductionPrintCodes | PASS | btnProductionPrintCodes |
 | Admin.RibbonXml | PASS | customUI/customUI.xml present. |
 | Admin.CallbackModule | PASS | modRibbonGenerated |
 | Admin.StatusLabel.lblAdminServerStatus | PASS | GetLabel=RibbonServerStatusGetLabel |

@@ -873,39 +873,11 @@ $projectMap = @(
                         @{ Id = "btnProductionConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""PROD_POST"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
                         @{ Id = "btnProductionCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""PROD_POST"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
                         @{ Id = "btnProductionSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
-                        @{ Id = "btnProductionSetup"; Label = "Setup UI"; Macro = "mProduction.InitializeProductionUI"; ImageMso = "FileNew"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionHide"; Label = "Hide System"; Macro = "mProduction.BtnHideSystem"; ImageMso = "Clear"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionShow"; Label = "Show System"; Macro = "mProduction.BtnShowSystem"; ImageMso = "FileOpen"; RequiredCapability = "PROD_POST" }
+                        @{ Id = "btnProductionForm"; Label = "Production Form"; Macro = "mProduction.BtnOpenProductionForm"; ImageMso = "CreateForm"; RequiredCapability = "PROD_POST" }
                     )
                     StatusLabels = @(
                         @{ Id = "lblProductionServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
                         @{ Id = "lblProductionAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
-                    )
-                }
-                @{
-                    Id      = "grpProductionRecipe"
-                    Label   = "Recipe"
-                    Buttons = @(
-                        @{ Id = "btnProductionLoad"; Label = "Load Recipe"; Macro = "mProduction.BtnLoadRecipe"; ImageMso = "FileOpen"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionSaveRecipe"; Label = "Save Recipe"; Macro = "mProduction.BtnSaveRecipe"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionSaveFormulas"; Label = "Save Formulas"; Macro = "mProduction.BtnSaveFormulas"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionAddTables"; Label = "Add Process Table"; Macro = "mProduction.BtnBuildRecipeProcessTables"; ImageMso = "FileNew"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionRemoveTables"; Label = "Remove Process Table"; Macro = "mProduction.BtnRemoveRecipeProcessTables"; ImageMso = "Clear"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionClearBuilder"; Label = "Clear Recipe Builder"; Macro = "mProduction.BtnClearRecipeBuilder"; ImageMso = "Clear"; RequiredCapability = "PROD_POST" }
-                    )
-                }
-                @{
-                    Id      = "grpProductionActions"
-                    Label   = "Actions"
-                    Buttons = @(
-                        @{ Id = "btnProductionSavePalette"; Label = "Save Palette"; Macro = "mProduction.BtnSavePalette"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionClearPalette"; Label = "Clear Palette Builder"; Macro = "mProduction.BtnClearPaletteBuilder"; ImageMso = "Clear"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionClearChooser"; Label = "Clear Chosen Recipe"; Macro = "mProduction.BtnClearRecipeChooser"; ImageMso = "Clear"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionUsed"; Label = "To Used"; Macro = "mProduction.BtnToUsed"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionMade"; Label = "To Made"; Macro = "mProduction.BtnToMade"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionTotal"; Label = "To Total Inv"; Macro = "mProduction.BtnToTotalInv"; ImageMso = "FileSave"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionNextBatch"; Label = "Next Batch"; Macro = "mProduction.BtnNextBatch"; ImageMso = "Repeat"; RequiredCapability = "PROD_POST" },
-                        @{ Id = "btnProductionPrintCodes"; Label = "Print Recall Codes"; Macro = "mProduction.BtnPrintRecallCodes"; ImageMso = "FilePrint"; RequiredCapability = "PROD_POST" }
                     )
                 }
             )

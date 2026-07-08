@@ -428,7 +428,8 @@ try {
     $formPaths = @(
         (Join-Path $repo "src/Core/Forms/frmWarehouseConnection.frm"),
         (Join-Path $repo "src/Core/Forms/frmSignIn.frm"),
-        (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm")
+        (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm"),
+        (Join-Path $repo "src/Production/Forms/frmProduction.frm")
     )
 
     $classPaths = @(
@@ -617,6 +618,7 @@ try {
         "TestPhase6CoreSurfaces.TestShippingRefresh_FindsBackendShippingBomViewWithoutInvSysSurface",
         "TestPhase6CoreSurfaces.TestShippingRefresh_SkipsBomNetworkWhenViewPopulated",
         "TestPhase6CoreSurfaces.TestShippingRefresh_BlankBomViewDoesNotSkipBackendRefresh",
+        "TestPhase6CoreSurfaces.TestShipmentsFormLoadShippables_RefreshesEmptyBomViewWithoutBoxMaker",
         "TestPhase6CoreSurfaces.TestShippingRefresh_HidesSupportSheetsAfterSurfaceRepair",
         "TestPhase6CoreSurfaces.TestBoxMakerUnbox_QtyGreaterThanInventoryFailsBeforeQueue",
         "TestPhase6CoreSurfaces.TestBoxMakerUnbox_UsesShippingReadModelInventoryWhenInvSysMissing",
@@ -638,6 +640,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables",
+        "TestPhase6RoleSurfaces.TestProductionForm_InitializeCreatesTabbedSurface",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureAdminWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_PrefersActiveVisibleWorkbook",

@@ -7858,6 +7858,114 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestShipmentsFormLoadShippables_RefreshesEmptyBomViewWithoutBoxMaker() As Long
+    Dim rootPath As String
+    Dim report As String
+    Dim failureReason As String
+    Dim wbBom As Workbook
+    Dim wbOps As Workbook
+    Dim loRuntimeBom As ListObject
+    Dim loBomView As ListObject
+    Dim savedBoxes As Variant
+    Dim directShippables As Variant
+    Dim shippables As Variant
+    Dim refreshedBom As Boolean
+
+    rootPath = BuildRuntimeTestRoot("phase6_shipments_form_bom_cold_start")
+    On Error GoTo CleanFail
+
+    If Not PrepareShippingPostSessionForTest(rootPath, "WH123", "S31", "calvin", failureReason) Then GoTo CleanExit
+    Set wbBom = CreateCanonicalShippingBomWorkbookForTest(rootPath, "WH123")
+    If wbBom Is Nothing Then
+        failureReason = "Canonical ShippingBOM workbook could not be created."
+        GoTo CleanExit
+    End If
+    Set loRuntimeBom = FindTableByName(wbBom, "tblShippingBOM")
+    If loRuntimeBom Is Nothing Then
+        failureReason = "Runtime tblShippingBOM table was not created."
+        GoTo CleanExit
+    End If
+    AddShippingBomViewRow loRuntimeBom, 94, "Cold Start Box", 9401, "Cold Start Insert", 1, "EA"
+    wbBom.Save
+    If loRuntimeBom.DataBodyRange Is Nothing Or loRuntimeBom.DataBodyRange.Rows.Count = 0 Then
+        failureReason = "Runtime tblShippingBOM seed row was not written."
+        GoTo CleanExit
+    End If
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wbOps, report) Then
+        failureReason = "EnsureShippingWorkbookSurface failed: " & report
+        GoTo CleanExit
+    End If
+    Set loBomView = FindTableByName(wbOps, "ShippingBOMView")
+    If loBomView Is Nothing Then
+        failureReason = "Operator ShippingBOMView table was not created."
+        GoTo CleanExit
+    End If
+    If Not loBomView.DataBodyRange Is Nothing Then loBomView.DataBodyRange.ClearContents
+
+    wbOps.Activate
+    report = vbNullString
+    If Not RunShippingPrepareRuntimeRefreshSessionForTest(rootPath, "WH123", "S31", report) Then
+        failureReason = "Shipping runtime-refresh session setup failed: " & report
+        GoTo CleanExit
+    End If
+    refreshedBom = RunShippingRefreshBomViewForTest(wbOps, report, True)
+    If Not refreshedBom Then
+        failureReason = "Direct ShippingBOMView refresh failed: " & report
+        GoTo CleanExit
+    End If
+    If loBomView.DataBodyRange Is Nothing Or loBomView.DataBodyRange.Rows.Count = 0 Then
+        failureReason = "Direct ShippingBOMView refresh succeeded but operator projection stayed empty: " & report
+        GoTo CleanExit
+    End If
+    savedBoxes = RunShippingMacro1ForTest("BoxMakerFormLoadSavedBoxes", wbOps)
+    If IsEmpty(savedBoxes) Then
+        failureReason = "BoxMaker saved-box loader returned no rows from the runtime ShippingBOM."
+        GoTo CleanExit
+    End If
+    directShippables = RunShippingMacro2ForTest("BoxMakerFormLoadShippableVersionInventory", savedBoxes, wbOps)
+    If IsEmpty(directShippables) Then
+        failureReason = "BoxMaker shippable-version loader returned no rows after runtime ShippingBOM refresh."
+        GoTo CleanExit
+    End If
+    shippables = RunShippingMacro1ForTest("ShipmentsFormLoadShippables", wbOps)
+    If IsEmpty(shippables) Then
+        failureReason = "Shipments form returned no shippables when only the runtime ShippingBOM had box rows; saved-box and direct shippable loaders both returned rows."
+        GoTo CleanExit
+    End If
+    If CLng(NzDblForTest(shippables(1, 1))) <> 94 Or Trim$(CStr(shippables(1, 2))) <> "Cold Start Box" Then
+        failureReason = "Shipments form loaded the wrong shippable after cold-start BOM refresh."
+        GoTo CleanExit
+    End If
+    If loBomView.DataBodyRange Is Nothing Or loBomView.DataBodyRange.Rows.Count = 0 Then
+        failureReason = "Shipments form did not hydrate the operator ShippingBOMView projection."
+        GoTo CleanExit
+    End If
+
+    TestShipmentsFormLoadShippables_RefreshesEmptyBomViewWithoutBoxMaker = 1
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH123"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbOps
+    CloseWorkbookIfOpen wbBom
+    CloseWorkbookIfOpen FindWorkbookByName("WH123.invSys.Auth.xlsb")
+    CloseWorkbookIfOpen FindWorkbookByName("WH123.invSys.Config.xlsb")
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        mLastTestFailure = failureReason
+        Exit Function
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestShippingRefresh_HidesSupportSheetsAfterSurfaceRepair() As Long
     Dim report As String
     Dim failureReason As String
@@ -10569,6 +10677,7 @@ Private Sub AddShippingBomViewRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "PackageItem", packageItem
     SetOptionalTableCell lo, lr.Index, "PackageUOM", "EA"
     SetOptionalTableCell lo, lr.Index, "PackageLocation", "A1"
+    SetOptionalTableCell lo, lr.Index, "BomVersion", 1
     SetOptionalTableCell lo, lr.Index, "BomVersionLabel", "v1"
     SetOptionalTableCell lo, lr.Index, "IsActive", True
     SetTableCell lo, lr.Index, "ComponentRow", componentRow
@@ -11726,6 +11835,36 @@ Private Function CreateCanonicalInventoryWorkbookForTest(ByVal rootPath As Strin
     EnsureSkuCatalogForTest wb, skuList
     wb.Save
     Set CreateCanonicalInventoryWorkbookForTest = wb
+End Function
+
+Private Function CreateCanonicalShippingBomWorkbookForTest(ByVal rootPath As String, ByVal warehouseId As String) As Workbook
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim targetPath As String
+    Dim headers As Variant
+    Dim i As Long
+    Dim dataRange As Range
+    Dim lo As ListObject
+
+    targetPath = rootPath & "\" & warehouseId & ".invSys.Data.ShippingBOM.xlsb"
+    headers = Array( _
+        "PackageRow", "PackageItem", "PackageUOM", "PackageLocation", "PackageDescription", _
+        "BomVersion", "BomVersionLabel", "IsActive", "EffectiveFromUTC", "EffectiveToUTC", "RetiredAtUTC", _
+        "ComponentRow", "ComponentItemCode", "ComponentItem", "ComponentQty", "ComponentUOM", "ComponentLocation", "ComponentDescription", _
+        "UpdatedAtUTC", "UpdatedBy")
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    Set ws = wb.Worksheets(1)
+    ws.Name = "ShippingBOM"
+    For i = LBound(headers) To UBound(headers)
+        ws.Range("A1").Offset(0, i - LBound(headers)).Value = headers(i)
+    Next i
+    Set dataRange = ws.Range("A1", ws.Range("A1").Offset(1, UBound(headers) - LBound(headers)))
+    Set lo = ws.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
+    lo.Name = "tblShippingBOM"
+    If Not lo.DataBodyRange Is Nothing Then lo.ListRows(1).Delete
+    wb.SaveAs Filename:=targetPath, FileFormat:=50
+    Set CreateCanonicalShippingBomWorkbookForTest = wb
 End Function
 
 Private Function CreateInventoryWorkbookForTestWithName(ByVal rootPath As String, ByVal workbookName As String, ByVal skuList As Variant) As Workbook

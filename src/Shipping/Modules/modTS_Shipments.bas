@@ -6282,7 +6282,7 @@ Private Function BoxMakerShippingBomSourceTable(ByVal ws As Worksheet, _
 
     If ws Is Nothing Then Exit Function
 
-    Set loView = GetListObject(ws, TABLE_SHIPPING_BOM_VIEW)
+    Set loView = GetShippingBomViewTable(ws.Parent)
     If Not loView Is Nothing Then
         If ShippingBomViewHasPackageRows(loView) Then
             Set BoxMakerShippingBomSourceTable = loView
@@ -6296,7 +6296,7 @@ Private Function BoxMakerShippingBomSourceTable(ByVal ws As Worksheet, _
     End If
 
     RefreshShippingBomViewForWorkbook ws.Parent, report, True
-    Set loView = GetListObject(ws, TABLE_SHIPPING_BOM_VIEW)
+    Set loView = GetShippingBomViewTable(ws.Parent)
     If Not loView Is Nothing Then
         If ShippingBomViewHasPackageRows(loView) Then
             Set BoxMakerShippingBomSourceTable = loView
@@ -7033,8 +7033,11 @@ Public Function ShipmentsFormLoadShippables(Optional ByVal operatorWb As Workboo
     Set wb = ResolveShippingWorkbook(operatorWb, SHEET_SHIPMENTS)
     If wb Is Nothing Then Exit Function
     savedBoxes = BoxMakerFormLoadSavedBoxes(wb, False)
+    If IsEmpty(savedBoxes) Then
+        savedBoxes = BoxMakerFormLoadSavedBoxes(wb, True)
+    End If
     If IsEmpty(savedBoxes) Then Exit Function
-    ShipmentsFormLoadShippables = LoadShippableVersionInventoryCore(savedBoxes, wb, False, True)
+    ShipmentsFormLoadShippables = LoadShippableVersionInventoryCore(savedBoxes, wb, True, True)
 End Function
 
 Public Function ShipmentsProjectedDisplayQty(ByVal nasQty As Double, _
