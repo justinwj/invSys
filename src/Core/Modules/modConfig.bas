@@ -359,6 +359,7 @@ Public Function EnsureStationInbox(Optional ByVal warehouseId As String = "", _
     EnsureStationInbox = True
 
 CleanExit:
+    If Not wbCfg Is Nothing Then SaveConfigWorkbookIfWritable wbCfg
     If openedInbox And Not wbInbox Is Nothing Then
         On Error Resume Next
         wbInbox.Close SaveChanges:=False

@@ -707,7 +707,7 @@ Private Function ReadConfigIdentityNas(ByVal configPath As String, _
     On Error GoTo FailRead
     Set wb = FindOpenWorkbookNas(configPath)
     If wb Is Nothing Then
-        Set wb = Application.Workbooks.Open(configPath, ReadOnly:=True, UpdateLinks:=False)
+        Set wb = OpenWorkbookReadOnlyNoPromptNas(configPath)
         openedTransient = True
     End If
 
@@ -755,7 +755,7 @@ Private Function WorkbookReadableNas(ByVal workbookPath As String) As Boolean
     If NormalizeFolderNas(workbookPath) = "" Then Exit Function
     Set wb = FindOpenWorkbookNas(workbookPath)
     If wb Is Nothing Then
-        Set wb = Application.Workbooks.Open(workbookPath, ReadOnly:=True, UpdateLinks:=False)
+        Set wb = OpenWorkbookReadOnlyNoPromptNas(workbookPath)
         openedTransient = True
     End If
     WorkbookReadableNas = Not wb Is Nothing
@@ -770,6 +770,32 @@ CleanExit:
 
 CleanFail:
     WorkbookReadableNas = False
+    Resume CleanExit
+End Function
+
+Private Function OpenWorkbookReadOnlyNoPromptNas(ByVal workbookPath As String) As Workbook
+    Dim prevAlerts As Boolean
+    Dim alertsSuppressed As Boolean
+
+    On Error GoTo CleanFail
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    alertsSuppressed = True
+    Set OpenWorkbookReadOnlyNoPromptNas = Application.Workbooks.Open(Filename:=workbookPath, _
+                                                                     UpdateLinks:=0, _
+                                                                     ReadOnly:=True, _
+                                                                     IgnoreReadOnlyRecommended:=True, _
+                                                                     Notify:=False, _
+                                                                     AddToMru:=False)
+
+CleanExit:
+    On Error Resume Next
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
+    Exit Function
+
+CleanFail:
+    Set OpenWorkbookReadOnlyNoPromptNas = Nothing
     Resume CleanExit
 End Function
 

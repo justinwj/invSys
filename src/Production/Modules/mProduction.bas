@@ -7,12 +7,14 @@ Option Explicit
 Private Const SHEET_PRODUCTION As String = "Production"
 Private Const SHEET_TEMPLATES As String = "TemplatesTable"
 Private Const SHEET_RUNTIME_RECIPES As String = "ProductionRecipes"
+Private Const SHEET_RUNTIME_INGREDIENT_PALETTE As String = "ProductionIngredientPalette"
 
 Private Const TABLE_RECIPE_CHOOSER As String = "RC_RecipeChoose"
 Private Const TABLE_RECIPE_CHOOSER_GENERATED As String = "RecipeChooser_generated"
 Private Const TABLE_INV_PALETTE_GENERATED As String = "InventoryPalette_generated"
 Private Const TABLE_RECALL_REPORT As String = "RecallCodesReport"
 Private Const TABLE_RUNTIME_RECIPES As String = "tblProductionRecipes"
+Private Const TABLE_RUNTIME_INGREDIENT_PALETTE As String = "tblProductionIngredientPalette"
 Private Const TABLE_TEMPLATES As String = "TemplatesTable"
 ' System 1: Recipe List Builder tables.
 Private Const TABLE_RECIPE_BUILDER_HEADER As String = "RB_AddRecipeName"
@@ -2027,7 +2029,19 @@ Private Sub SaveIngredientPalette()
 NextItem:
     Next i
 
-    MsgBox "Saved IngredientPalette rows: " & added & ".", vbInformation
+    Dim runtimeReport As String
+    Dim runtimeSaved As Boolean
+    Dim msg As String
+
+    runtimeSaved = PublishIngredientPaletteRowsToRuntime(wbProd, loPal, recipeId, ingredientId, runtimeReport)
+    msg = "Saved IngredientPalette rows: " & added & "."
+    If runtimeSaved Then
+        msg = msg & vbCrLf & "Server/NAS saved: yes."
+    ElseIf Trim$(runtimeReport) <> "" Then
+        msg = msg & vbCrLf & "Server/NAS save did not complete: " & runtimeReport
+    End If
+
+    MsgBox msg, vbInformation
     Exit Sub
 ErrHandler:
     MsgBox "Save IngredientPalette failed: " & Err.description, vbCritical
@@ -2152,6 +2166,8 @@ Public Sub HandlePaletteIngredientSelected(ByVal recipeId As String, ByVal ingre
     If Trim$(ingredientId) = "" Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
+    Dim syncReport As String
+    RefreshProductionIngredientPaletteFromRuntime wsProd.Parent, syncReport
     Dim loItems As ListObject
     Set loItems = FindListObjectByNameOrHeaders(wsProd, "IP_ChooseItem", Array("ITEMS", "RECIPE_ID", "INGREDIENT_ID"))
     If Not loItems Is Nothing Then
@@ -3360,14 +3376,14 @@ Public Function LoadProductionInventoryPickerItems(Optional ByVal filterText As 
         If Len(Dir$(inventoryPath, vbNormal)) > 0 Then
             Set wbRuntime = OpenWorkbookHiddenProduction(inventoryPath, True, openedTransient)
             If Not wbRuntime Is Nothing Then
-                Set lo = GetInvSysTableFromWorkbook(wbRuntime)
-                result = BuildProductionInventoryPickerItems(lo, filterText)
+                result = BuildProductionCanonicalInventoryPickerItems(wbRuntime, filterText)
                 If Not IsEmpty(result) Then
                     LoadProductionInventoryPickerItems = result
                     GoTo CleanExit
                 End If
 
-                result = BuildProductionCanonicalInventoryPickerItems(wbRuntime, filterText)
+                Set lo = GetInvSysTableFromWorkbook(wbRuntime)
+                result = BuildProductionInventoryPickerItems(lo, filterText)
                 If Not IsEmpty(result) Then
                     LoadProductionInventoryPickerItems = result
                     GoTo CleanExit
@@ -7526,6 +7542,444 @@ Private Function CurrentProductionUserId() As String
     On Error GoTo 0
     If CurrentProductionUserId = "" Then CurrentProductionUserId = Trim$(Environ$("USERNAME"))
     If CurrentProductionUserId = "" Then CurrentProductionUserId = "unknown"
+End Function
+
+Public Function RefreshProductionIngredientPaletteFromRuntime(Optional ByVal operatorWb As Workbook = Nothing, _
+                                                              Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailSoft
+
+    Dim wbOps As Workbook
+    Dim surfaceReport As String
+    Dim wsPal As Worksheet
+    Dim loLocal As ListObject
+    Dim wbRuntime As Workbook
+    Dim loRuntime As ListObject
+    Dim warehouseId As String
+    Dim rootPath As String
+    Dim openedTransient As Boolean
+
+    Set wbOps = ResolveProductionWorkbook(operatorWb, "IngredientPalette")
+    If wbOps Is Nothing Then Set wbOps = ResolveProductionWorkbook(operatorWb, "IngredientsPalette")
+    If wbOps Is Nothing Then Set wbOps = ResolveProductionWorkbook(operatorWb, SHEET_PRODUCTION)
+    If wbOps Is Nothing Then
+        report = "No Production operator workbook was available."
+        Exit Function
+    End If
+
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wbOps, surfaceReport) Then
+        report = "Production surface repair failed: " & surfaceReport
+        Exit Function
+    End If
+
+    Set wsPal = WorkbookSheetExists(wbOps, "IngredientPalette")
+    If wsPal Is Nothing Then Set wsPal = WorkbookSheetExists(wbOps, "IngredientsPalette")
+    If wsPal Is Nothing Then
+        report = "IngredientPalette sheet was not found in the operator workbook."
+        Exit Function
+    End If
+    Set loLocal = FindListObjectByNameOrHeaders(wsPal, "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "ROW"))
+    If loLocal Is Nothing Then
+        report = "IngredientPalette table was not found in the operator workbook."
+        Exit Function
+    End If
+
+    If Not ResolveProductionRecipesStorageTarget(warehouseId, rootPath, report) Then Exit Function
+
+    Set wbRuntime = OpenProductionRecipesWorkbook(warehouseId, rootPath, False, openedTransient, report)
+    If wbRuntime Is Nothing Then GoTo CleanExit
+
+    Set loRuntime = EnsureProductionIngredientPaletteSchema(wbRuntime, report)
+    If loRuntime Is Nothing Then GoTo CleanExit
+    If loRuntime.DataBodyRange Is Nothing Then
+        report = "Production ingredient palette runtime workbook has no saved assignment rows."
+        RefreshProductionIngredientPaletteFromRuntime = True
+        GoTo CleanExit
+    End If
+
+    MergeIngredientPaletteRuntimeRowsToLocal loRuntime, loLocal
+    RefreshProductionIngredientPaletteFromRuntime = True
+    report = "Production ingredient palette refreshed from " & wbRuntime.FullName
+
+CleanExit:
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+    Exit Function
+
+FailSoft:
+    report = "RefreshProductionIngredientPaletteFromRuntime failed: " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function PublishIngredientPaletteRowsToRuntime(ByVal operatorWb As Workbook, _
+                                                       ByVal loLocalPalette As ListObject, _
+                                                       ByVal recipeId As String, _
+                                                       ByVal ingredientId As String, _
+                                                       ByRef report As String) As Boolean
+    On Error GoTo FailSoft
+
+    Dim warehouseId As String
+    Dim rootPath As String
+    Dim wbRuntime As Workbook
+    Dim loRuntime As ListObject
+    Dim openedTransient As Boolean
+    Dim copiedCount As Long
+
+    recipeId = Trim$(recipeId)
+    ingredientId = Trim$(ingredientId)
+    If recipeId = "" Or ingredientId = "" Then
+        report = "RECIPE_ID and INGREDIENT_ID are required before saving Production assignments to the server."
+        Exit Function
+    End If
+    If loLocalPalette Is Nothing Then
+        report = "Local IngredientPalette table is not available."
+        Exit Function
+    End If
+    If loLocalPalette.DataBodyRange Is Nothing Then
+        report = "Local IngredientPalette table has no rows to publish."
+        Exit Function
+    End If
+
+    If Not ResolveProductionRecipesStorageTarget(warehouseId, rootPath, report) Then Exit Function
+
+    Set wbRuntime = OpenProductionRecipesWorkbook(warehouseId, rootPath, True, openedTransient, report)
+    If wbRuntime Is Nothing Then GoTo CleanExit
+    If wbRuntime.ReadOnly Then
+        report = "Production recipes runtime workbook is read-only: " & wbRuntime.FullName
+        GoTo CleanExit
+    End If
+
+    Set loRuntime = EnsureProductionIngredientPaletteSchema(wbRuntime, report)
+    If loRuntime Is Nothing Then GoTo CleanExit
+
+    DeleteIngredientPaletteRowsByKey loRuntime, recipeId, ingredientId
+    copiedCount = CopyIngredientPaletteRowsByKey(loLocalPalette, loRuntime, recipeId, ingredientId, True)
+    If copiedCount = 0 Then
+        report = "No local IngredientPalette rows matched RECIPE_ID " & recipeId & " / INGREDIENT_ID " & ingredientId & "."
+        GoTo CleanExit
+    End If
+
+    wbRuntime.Save
+    PublishIngredientPaletteRowsToRuntime = True
+    report = "Production ingredient palette runtime updated: " & wbRuntime.FullName & " (" & copiedCount & " rows)"
+
+CleanExit:
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+    Exit Function
+
+FailSoft:
+    report = "PublishIngredientPaletteRowsToRuntime failed: " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function EnsureProductionIngredientPaletteSchema(ByVal wb As Workbook, ByRef report As String) As ListObject
+    On Error GoTo FailSoft
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim headers As Variant
+    Dim i As Long
+    Dim startCell As Range
+    Dim dataRange As Range
+
+    If wb Is Nothing Then Exit Function
+    Set ws = WorkbookSheetExists(wb, SHEET_RUNTIME_INGREDIENT_PALETTE)
+    If ws Is Nothing Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = SHEET_RUNTIME_INGREDIENT_PALETTE
+    End If
+
+    On Error Resume Next
+    Set lo = ws.ListObjects(TABLE_RUNTIME_INGREDIENT_PALETTE)
+    On Error GoTo FailSoft
+
+    headers = IngredientPaletteRuntimeHeaders()
+    If lo Is Nothing Then
+        Set startCell = ws.Range("A1")
+        For i = LBound(headers) To UBound(headers)
+            startCell.Offset(0, i - LBound(headers)).Value = headers(i)
+        Next i
+        Set dataRange = ws.Range(startCell, startCell.Offset(1, UBound(headers) - LBound(headers)))
+        Set lo = ws.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
+        lo.Name = TABLE_RUNTIME_INGREDIENT_PALETTE
+        If Not lo.DataBodyRange Is Nothing Then lo.ListRows(1).Delete
+    End If
+
+    For i = LBound(headers) To UBound(headers)
+        EnsureProductionColumnExists lo, CStr(headers(i))
+    Next i
+
+    Set EnsureProductionIngredientPaletteSchema = lo
+    Exit Function
+
+FailSoft:
+    report = "EnsureProductionIngredientPaletteSchema failed: " & Err.Description
+End Function
+
+Private Sub MergeIngredientPaletteRuntimeRowsToLocal(ByVal loRuntime As ListObject, ByVal loLocal As ListObject)
+    Dim keys As Object
+    Dim cRuntimeRecipe As Long
+    Dim cRuntimeIngredient As Long
+    Dim arr As Variant
+    Dim r As Long
+    Dim key As Variant
+    Dim recipeId As String
+    Dim ingredientId As String
+
+    If loRuntime Is Nothing Or loLocal Is Nothing Then Exit Sub
+    If loRuntime.DataBodyRange Is Nothing Then Exit Sub
+
+    cRuntimeRecipe = ColumnIndex(loRuntime, "RECIPE_ID")
+    cRuntimeIngredient = ColumnIndex(loRuntime, "INGREDIENT_ID")
+    If cRuntimeRecipe = 0 Or cRuntimeIngredient = 0 Then Exit Sub
+
+    Set keys = CreateObject("Scripting.Dictionary")
+    arr = loRuntime.DataBodyRange.Value
+    For r = 1 To UBound(arr, 1)
+        recipeId = Trim$(NzStr(arr(r, cRuntimeRecipe)))
+        ingredientId = Trim$(NzStr(arr(r, cRuntimeIngredient)))
+        If recipeId <> "" And ingredientId <> "" Then keys(NormalizeIdFirst(recipeId) & "|" & NormalizeIdLast(ingredientId)) = Array(recipeId, ingredientId)
+    Next r
+
+    For Each key In keys.Keys
+        Dim keyParts As Variant
+        keyParts = keys(key)
+        DeleteIngredientPaletteRowsByKey loLocal, CStr(keyParts(0)), CStr(keyParts(1))
+    Next key
+
+    CopyIngredientPaletteRowsByKey loRuntime, loLocal, vbNullString, vbNullString, False
+End Sub
+
+Private Function CopyIngredientPaletteRowsByKey(ByVal loSource As ListObject, _
+                                                ByVal loTarget As ListObject, _
+                                                ByVal recipeId As String, _
+                                                ByVal ingredientId As String, _
+                                                Optional ByVal stampMetadata As Boolean = False) As Long
+    Dim headers As Variant
+    Dim cSourceRecipe As Long
+    Dim cSourceIngredient As Long
+    Dim i As Long
+    Dim h As Long
+    Dim srcCol As Long
+    Dim targetCol As Long
+    Dim lr As ListRow
+
+    If loSource Is Nothing Or loTarget Is Nothing Then Exit Function
+    If loSource.DataBodyRange Is Nothing Then Exit Function
+
+    cSourceRecipe = ColumnIndex(loSource, "RECIPE_ID")
+    cSourceIngredient = ColumnIndex(loSource, "INGREDIENT_ID")
+    If cSourceRecipe = 0 Or cSourceIngredient = 0 Then Exit Function
+
+    headers = IngredientPaletteLocalHeaders()
+    recipeId = Trim$(recipeId)
+    ingredientId = Trim$(ingredientId)
+    For i = 1 To loSource.DataBodyRange.Rows.Count
+        If recipeId <> "" Then
+            If Not IngredientPaletteRowMatches(loSource, i, cSourceRecipe, cSourceIngredient, recipeId, ingredientId) Then GoTo NextRow
+        End If
+
+        Set lr = loTarget.ListRows.Add
+        For h = LBound(headers) To UBound(headers)
+            srcCol = ColumnIndex(loSource, CStr(headers(h)))
+            targetCol = ColumnIndex(loTarget, CStr(headers(h)))
+            If srcCol > 0 And targetCol > 0 Then
+                lr.Range.Cells(1, targetCol).Value = loSource.DataBodyRange.Cells(i, srcCol).Value
+            End If
+        Next h
+
+        If stampMetadata Then
+            SetProductionTableCellByHeader loTarget, lr.Index, "UPDATED_AT_UTC", Now
+            SetProductionTableCellByHeader loTarget, lr.Index, "UPDATED_BY", CurrentProductionUserId()
+        End If
+        CopyIngredientPaletteRowsByKey = CopyIngredientPaletteRowsByKey + 1
+NextRow:
+    Next i
+End Function
+
+Private Sub DeleteIngredientPaletteRowsByKey(ByVal lo As ListObject, ByVal recipeId As String, ByVal ingredientId As String)
+    Dim cRecipeId As Long
+    Dim cIngredientId As Long
+    Dim r As Long
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    recipeId = Trim$(recipeId)
+    ingredientId = Trim$(ingredientId)
+    If recipeId = "" Or ingredientId = "" Then Exit Sub
+
+    cRecipeId = ColumnIndex(lo, "RECIPE_ID")
+    cIngredientId = ColumnIndex(lo, "INGREDIENT_ID")
+    If cRecipeId = 0 Or cIngredientId = 0 Then Exit Sub
+
+    For r = lo.DataBodyRange.Rows.Count To 1 Step -1
+        If IngredientPaletteRowMatches(lo, r, cRecipeId, cIngredientId, recipeId, ingredientId) Then
+            lo.ListRows(r).Delete
+        End If
+    Next r
+End Sub
+
+Private Function IngredientPaletteRowMatches(ByVal lo As ListObject, ByVal rowIndex As Long, _
+                                             ByVal cRecipeId As Long, ByVal cIngredientId As Long, _
+                                             ByVal recipeId As String, ByVal ingredientId As String) As Boolean
+    IngredientPaletteRowMatches = (NormalizeIdFirst(NzStr(lo.DataBodyRange.Cells(rowIndex, cRecipeId).Value)) = NormalizeIdFirst(recipeId) _
+                                   And NormalizeIdLast(NzStr(lo.DataBodyRange.Cells(rowIndex, cIngredientId).Value)) = NormalizeIdLast(ingredientId))
+End Function
+
+Private Function IngredientPaletteLocalHeaders() As Variant
+    IngredientPaletteLocalHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID")
+End Function
+
+Private Function IngredientPaletteRuntimeHeaders() As Variant
+    IngredientPaletteRuntimeHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID", "UPDATED_AT_UTC", "UPDATED_BY")
+End Function
+
+Public Function TestProductionIngredientPaletteRuntimeRoundTrip(ByVal runtimeRoot As String) As String
+    On Error GoTo FailSoft
+
+    Dim priorRoot As String
+    Dim wbOps As Workbook
+    Dim wsPal As Worksheet
+    Dim loLocal As ListObject
+    Dim lr As ListRow
+    Dim report As String
+    Dim ok As Boolean
+    Dim cRecipeId As Long
+    Dim cIngredientId As Long
+    Dim cRow As Long
+    Dim r As Long
+    Dim found As Boolean
+
+    priorRoot = modRuntimeWorkbooks.GetCoreDataRootOverride()
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wbOps, report) Then
+        TestProductionIngredientPaletteRuntimeRoundTrip = "FAILED: surface: " & report
+        GoTo CleanExit
+    End If
+
+    Set wsPal = WorkbookSheetExists(wbOps, "IngredientPalette")
+    If wsPal Is Nothing Then Set wsPal = WorkbookSheetExists(wbOps, "IngredientsPalette")
+    Set loLocal = FindListObjectByNameOrHeaders(wsPal, "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "ROW"))
+    ClearListObjectData loLocal
+
+    Set lr = loLocal.ListRows.Add
+    SetProductionTableCellByHeader loLocal, lr.Index, "RECIPE_ID", "PAL"
+    SetProductionTableCellByHeader loLocal, lr.Index, "INGREDIENT_ID", "ING-PAL"
+    SetProductionTableCellByHeader loLocal, lr.Index, "INPUT/OUTPUT", "INPUT"
+    SetProductionTableCellByHeader loLocal, lr.Index, "ITEM", "Malawi Black Tea"
+    SetProductionTableCellByHeader loLocal, lr.Index, "PERCENT", 100
+    SetProductionTableCellByHeader loLocal, lr.Index, "UOM", "LB"
+    SetProductionTableCellByHeader loLocal, lr.Index, "AMOUNT", 1
+    SetProductionTableCellByHeader loLocal, lr.Index, "ROW", 95
+    SetProductionTableCellByHeader loLocal, lr.Index, "GUID", "GUID-PAL"
+
+    ok = PublishIngredientPaletteRowsToRuntime(wbOps, loLocal, "PAL", "ING-PAL", report)
+    If Not ok Then
+        TestProductionIngredientPaletteRuntimeRoundTrip = "FAILED: publish: " & report
+        GoTo CleanExit
+    End If
+
+    ClearListObjectData loLocal
+    ok = RefreshProductionIngredientPaletteFromRuntime(wbOps, report)
+    If Not ok Then
+        TestProductionIngredientPaletteRuntimeRoundTrip = "FAILED: refresh: " & report
+        GoTo CleanExit
+    End If
+
+    cRecipeId = ColumnIndex(loLocal, "RECIPE_ID")
+    cIngredientId = ColumnIndex(loLocal, "INGREDIENT_ID")
+    cRow = ColumnIndex(loLocal, "ROW")
+    If Not loLocal.DataBodyRange Is Nothing And cRecipeId > 0 And cIngredientId > 0 And cRow > 0 Then
+        For r = 1 To loLocal.DataBodyRange.Rows.Count
+            If NormalizeIdFirst(NzStr(loLocal.DataBodyRange.Cells(r, cRecipeId).Value)) = NormalizeIdFirst("PAL") _
+               And NormalizeIdLast(NzStr(loLocal.DataBodyRange.Cells(r, cIngredientId).Value)) = NormalizeIdLast("ING-PAL") _
+               And CLng(NzLng(loLocal.DataBodyRange.Cells(r, cRow).Value)) = 95 Then
+                found = True
+                Exit For
+            End If
+        Next r
+    End If
+
+    If found Then
+        TestProductionIngredientPaletteRuntimeRoundTrip = "OK"
+    Else
+        TestProductionIngredientPaletteRuntimeRoundTrip = "FAILED: refreshed IngredientPalette row was not found."
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If Not wbOps Is Nothing Then wbOps.Close SaveChanges:=False
+    modRuntimeWorkbooks.SetCoreDataRootOverride priorRoot
+    On Error GoTo 0
+    Exit Function
+
+FailSoft:
+    TestProductionIngredientPaletteRuntimeRoundTrip = "FAILED: " & Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestProductionInventoryPickerPrefersCanonicalRuntime(ByVal runtimeRoot As String) As String
+    On Error GoTo FailSoft
+
+    Dim priorRoot As String
+    Dim wbInv As Workbook
+    Dim wsLegacy As Worksheet
+    Dim wsCatalog As Worksheet
+    Dim wsBalance As Worksheet
+    Dim inventoryPath As String
+    Dim items As Variant
+
+    priorRoot = modRuntimeWorkbooks.GetCoreDataRootOverride()
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    EnsureFolderRecursiveProduction runtimeRoot
+
+    inventoryPath = NormalizeFolderPathProduction(runtimeRoot) & "\WH1.invSys.Data.Inventory.xlsb"
+    Set wbInv = Application.Workbooks.Add(xlWBATWorksheet)
+    Set wsLegacy = wbInv.Worksheets(1)
+    wsLegacy.Name = "InventoryManagement"
+    wsLegacy.Range("A1:G1").Value = Array("ROW", "ITEM", "UOM", "TOTAL INV", "LOCATION", "DESCRIPTION", "ITEM_CODE")
+    wsLegacy.Range("A2:G2").Value = Array(1, "Old Runtime Item", "EA", 1, "A1", "stale legacy row", "OLD-001")
+    wsLegacy.ListObjects.Add(xlSrcRange, wsLegacy.Range("A1:G2"), , xlYes).Name = "invSys"
+
+    Set wsCatalog = wbInv.Worksheets.Add(After:=wsLegacy)
+    wsCatalog.Name = "SkuCatalog"
+    wsCatalog.Range("A1:H1").Value = Array("SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "ITEM_KIND")
+    wsCatalog.Range("A2:H2").Value = Array("ITM-PICK-001", 95, "ITM-PICK-001", "Malawi Black Tea", "LB", "A1", "canonical catalog row", "INVENTORY")
+    wsCatalog.ListObjects.Add(xlSrcRange, wsCatalog.Range("A1:H2"), , xlYes).Name = "tblSkuCatalog"
+
+    Set wsBalance = wbInv.Worksheets.Add(After:=wsCatalog)
+    wsBalance.Name = "SkuBalance"
+    wsBalance.Range("A1:B1").Value = Array("SKU", "Qty")
+    wsBalance.Range("A2:B2").Value = Array("ITM-PICK-001", 1)
+    wsBalance.ListObjects.Add(xlSrcRange, wsBalance.Range("A1:B2"), , xlYes).Name = "tblSkuBalance"
+
+    wbInv.SaveAs Filename:=inventoryPath, FileFormat:=50
+    wbInv.Close SaveChanges:=False
+    Set wbInv = Nothing
+
+    items = LoadProductionInventoryPickerItems("Malawi")
+    If IsEmpty(items) Then
+        TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: picker returned no rows for canonical catalog item."
+        GoTo CleanExit
+    End If
+    If NzStr(items(1, 1)) <> "95" Or NzStr(items(1, 2)) <> "Malawi Black Tea" Then
+        TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: picker did not prefer canonical catalog row. Row=" & _
+            NzStr(items(1, 1)) & "; Item=" & NzStr(items(1, 2))
+        GoTo CleanExit
+    End If
+
+    TestProductionInventoryPickerPrefersCanonicalRuntime = "OK"
+
+CleanExit:
+    On Error Resume Next
+    If Not wbInv Is Nothing Then wbInv.Close SaveChanges:=False
+    modRuntimeWorkbooks.SetCoreDataRootOverride priorRoot
+    On Error GoTo 0
+    Exit Function
+
+FailSoft:
+    TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: " & Err.Description
+    Resume CleanExit
 End Function
 
 Private Function ProductionRecipesWorkbookPath(ByVal warehouseId As String, ByVal rootPath As String) As String

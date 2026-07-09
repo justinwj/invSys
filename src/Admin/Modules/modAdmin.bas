@@ -144,6 +144,22 @@ Sub Add_InventoryItem()
     Dim defaultLocation As String
     Dim catalogItems As Object
     Dim addForm As frmAddInventoryItem
+    Dim accepted As Boolean
+    Dim isEdit As Boolean
+    Dim formSku As String
+    Dim formRow As Long
+    Dim formItemName As String
+    Dim formUom As String
+    Dim formLocation As String
+    Dim formQty As Double
+    Dim formDescription As String
+    Dim formVendorName As String
+    Dim formVendorCode As String
+    Dim formCategory As String
+    Dim formExternalCode As String
+    Dim formImagePath As String
+    Dim formCustomFields As Object
+    Dim actionSucceeded As Boolean
 
     If Not ResolveAdminCurrentTargetContext(warehouseId, stationId, userId, report) Then
         MsgBox report, vbExclamation, "invSys Admin"
@@ -158,35 +174,74 @@ Sub Add_InventoryItem()
     Set addForm = New frmAddInventoryItem
     addForm.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
     LoadCatalogItemsIntoAddInventoryForm addForm, catalogItems
-    addForm.Show vbModal
-    If Not addForm.Accepted Then
-        Unload addForm
-        Exit Sub
-    End If
 
-    If addForm.EditMode Then
-        If UpdateInventoryItemCatalogForWarehouse(warehouseId, addForm.GeneratedSku, addForm.ItemName, _
-                                                  addForm.Uom, addForm.LocationValue, _
-                                                  addForm.DescriptionValue, addForm.VendorName, _
-                                                  addForm.VendorCode, addForm.Category, _
-                                                  addForm.ExternalCode, addForm.ImagePath, _
-                                                  addForm.CustomFields, report) Then
+    Do
+        addForm.Show vbModal
+
+        On Error GoTo FormUnavailable
+        accepted = addForm.Accepted
+        On Error GoTo 0
+        If Not accepted Then Exit Do
+
+        On Error GoTo FormUnavailable
+        isEdit = addForm.EditMode
+        formSku = addForm.GeneratedSku
+        formRow = addForm.GeneratedRow
+        formItemName = addForm.ItemName
+        formUom = addForm.Uom
+        formLocation = addForm.LocationValue
+        formQty = addForm.StartingQty
+        formDescription = addForm.DescriptionValue
+        formVendorName = addForm.VendorName
+        formVendorCode = addForm.VendorCode
+        formCategory = addForm.Category
+        formExternalCode = addForm.ExternalCode
+        formImagePath = addForm.ImagePath
+        Set formCustomFields = addForm.CustomFields
+        On Error GoTo 0
+
+        report = vbNullString
+        actionSucceeded = False
+        If isEdit Then
+            actionSucceeded = UpdateInventoryItemCatalogForWarehouse(warehouseId, formSku, formItemName, _
+                                                                     formUom, formLocation, _
+                                                                     formDescription, formVendorName, _
+                                                                     formVendorCode, formCategory, _
+                                                                     formExternalCode, formImagePath, _
+                                                                     formCustomFields, report)
+        Else
+            actionSucceeded = AddInventoryItemForWarehouse(warehouseId, stationId, userId, formRow, _
+                                                           formSku, formItemName, _
+                                                           formUom, formLocation, _
+                                                           formQty, formDescription, _
+                                                           formVendorName, formVendorCode, _
+                                                           formCategory, formExternalCode, _
+                                                           formImagePath, formCustomFields, report)
+        End If
+
+        If actionSucceeded Then
             MsgBox report, vbInformation, "invSys Admin"
+            rowVal = NextInventoryRowSuggestionAdmin(warehouseId)
+            sku = GenerateInventorySkuAdmin(warehouseId, rowVal)
+            Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
+            addForm.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+            LoadCatalogItemsIntoAddInventoryForm addForm, catalogItems
         Else
             MsgBox report, vbExclamation, "invSys Admin"
         End If
-    ElseIf AddInventoryItemForWarehouse(warehouseId, stationId, userId, addForm.GeneratedRow, _
-                                        addForm.GeneratedSku, addForm.ItemName, _
-                                        addForm.Uom, addForm.LocationValue, _
-                                        addForm.StartingQty, addForm.DescriptionValue, _
-                                        addForm.VendorName, addForm.VendorCode, _
-                                        addForm.Category, addForm.ExternalCode, _
-                                        addForm.ImagePath, addForm.CustomFields, report) Then
-        MsgBox report, vbInformation, "invSys Admin"
-    Else
-        MsgBox report, vbExclamation, "invSys Admin"
-    End If
+    Loop
+
+CleanExit:
+    On Error Resume Next
     Unload addForm
+    On Error GoTo 0
+    Exit Sub
+
+FormUnavailable:
+    report = Err.Description
+    On Error GoTo 0
+    If Trim$(report) <> "" Then MsgBox report, vbExclamation, "invSys Admin"
+    Resume CleanExit
 End Sub
 
 Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
@@ -233,7 +288,12 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     If itemName = "" Then itemName = sku
     If uom = "" Then report = "UOM is required.": Exit Function
     If rowVal <= 0 Then report = "Inventory ROW id must be positive.": Exit Function
-    If qty <= 0 Then report = "Starting quantity must be greater than zero.": Exit Function
+    If IsNonCountedCustomFieldsAdmin(customFields) Then
+        qty = 0#
+    ElseIf qty <= 0 Then
+        report = "Starting quantity must be greater than zero."
+        Exit Function
+    End If
 
     If Not EnsureDemoStationInboxes(warehouseId, stationId, inboxReport) Then
         report = inboxReport
@@ -254,6 +314,10 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     item("CATEGORY") = category
     item("EXTERNAL_CODE") = externalCode
     AddPictureReferencesToPayloadAdmin item, imagePath
+    If IsNonCountedCustomFieldsAdmin(customFields) Then
+        item("TRACK_QTY") = "FALSE"
+        item("ITEM_KIND") = NonCountedItemKindAdmin(customFields)
+    End If
     If Not customFields Is Nothing Then
         For Each customKey In customFields.Keys
             If Trim$(CStr(customKey)) <> "" Then item(Trim$(CStr(customKey))) = customFields(customKey)
@@ -285,7 +349,7 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
              "Warehouse: " & warehouseId & vbCrLf & _
              "SKU: " & sku & vbCrLf & _
              "Item: " & itemName & vbCrLf & _
-             "Starting quantity: " & CStr(qty) & vbCrLf & _
+             "Starting quantity: " & IIf(IsNonCountedCustomFieldsAdmin(customFields), "not counted", CStr(qty)) & vbCrLf & _
              "Processor: " & batchReport & vbCrLf & _
              "Refresh inventory in any open role workbook to see the new item."
     AddInventoryItemForWarehouse = True
@@ -451,6 +515,8 @@ Private Function LoadInventoryCatalogItemsAdmin(ByVal warehouseId As String) As 
                         item("CATEGORY") = CatalogCellAdmin(lo, rowIndex, "CATEGORY")
                         item("EXTERNAL_CODE") = CatalogCellAdmin(lo, rowIndex, "EXTERNAL_CODE")
                         item("IMAGE_PATH") = CombinedPictureReferencesAdmin(lo, rowIndex)
+                        item("TRACK_QTY") = CatalogCellAdmin(lo, rowIndex, "TRACK_QTY")
+                        item("ITEM_KIND") = CatalogCellAdmin(lo, rowIndex, "ITEM_KIND")
                         result.Add item
                     End If
                 Next rowIndex
@@ -481,9 +547,41 @@ Private Sub LoadCatalogItemsIntoAddInventoryForm(ByVal targetForm As frmAddInven
                                   CatalogItemTextAdmin(item, "VENDOR_CODE"), _
                                   CatalogItemTextAdmin(item, "CATEGORY"), _
                                   CatalogItemTextAdmin(item, "EXTERNAL_CODE"), _
-                                  CatalogItemTextAdmin(item, "IMAGE_PATH")
+                                  CatalogItemTextAdmin(item, "IMAGE_PATH"), _
+                                  CatalogItemTextAdmin(item, "TRACK_QTY"), _
+                                  CatalogItemTextAdmin(item, "ITEM_KIND")
     Next item
 End Sub
+
+Private Function IsNonCountedCustomFieldsAdmin(ByVal customFields As Object) As Boolean
+    Dim trackQty As String
+    Dim itemKind As String
+
+    On Error Resume Next
+    If Not customFields Is Nothing Then
+        trackQty = UCase$(Trim$(CStr(customFields("TRACK_QTY"))))
+        itemKind = UCase$(Trim$(CStr(customFields("ITEM_KIND"))))
+    End If
+    On Error GoTo 0
+
+    IsNonCountedCustomFieldsAdmin = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+                                     Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED")
+End Function
+
+Private Function NonCountedItemKindAdmin(ByVal customFields As Object) As String
+    Dim itemKind As String
+
+    On Error Resume Next
+    If Not customFields Is Nothing Then itemKind = UCase$(Trim$(CStr(customFields("ITEM_KIND"))))
+    On Error GoTo 0
+
+    Select Case itemKind
+        Case "UTILITY", "SERVICE", "NON_COUNTED"
+            NonCountedItemKindAdmin = itemKind
+        Case Else
+            NonCountedItemKindAdmin = "NON_COUNTED"
+    End Select
+End Function
 
 Private Function CatalogItemTextAdmin(ByVal item As Variant, ByVal fieldName As String) As String
     On Error Resume Next

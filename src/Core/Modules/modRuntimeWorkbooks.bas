@@ -251,7 +251,7 @@ Private Function OpenOrCreateRuntimeWorkbook(ByVal targetPath As String, _
     If wb Is Nothing Then
         EnsureFolderRecursiveRuntime GetParentFolder(targetPath)
         If Len(Dir$(targetPath)) > 0 Then
-            Set wb = Application.Workbooks.Open(targetPath)
+            Set wb = OpenExistingRuntimeWorkbookNoPrompt(targetPath)
         Else
             prevEvents = Application.EnableEvents
             Application.EnableEvents = False
@@ -335,6 +335,9 @@ Private Sub PrepareWorkbookSurface(ByVal wb As Workbook, ByVal workbookKind As S
 End Sub
 
 Private Sub NormalizeRuntimeWorkbookSheets(ByVal wb As Workbook, ByVal workbookKind As String)
+    If wb Is Nothing Then Exit Sub
+    If wb.ReadOnly Then Exit Sub
+
     Select Case UCase$(workbookKind)
         Case "CONFIG"
             NormalizeSheetSet wb, Array("WarehouseConfig", "StationConfig")
@@ -398,6 +401,65 @@ Private Function FindOpenWorkbookByFullName(ByVal fullNameIn As String) As Workb
             Exit Function
         End If
     Next wb
+End Function
+
+Private Function OpenExistingRuntimeWorkbookNoPrompt(ByVal targetPath As String) As Workbook
+    Dim wb As Workbook
+    Dim prevAlerts As Boolean
+    Dim alertsSuppressed As Boolean
+
+    On Error GoTo TryReadOnly
+
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    alertsSuppressed = True
+
+    Set wb = Application.Workbooks.Open(Filename:=targetPath, _
+                                        UpdateLinks:=0, _
+                                        ReadOnly:=False, _
+                                        IgnoreReadOnlyRecommended:=True, _
+                                        Notify:=False, _
+                                        AddToMru:=False)
+    Set OpenExistingRuntimeWorkbookNoPrompt = wb
+    GoTo CleanExit
+
+TryReadOnly:
+    Err.Clear
+    On Error GoTo CleanFail
+    Set wb = Application.Workbooks.Open(Filename:=targetPath, _
+                                        UpdateLinks:=0, _
+                                        ReadOnly:=True, _
+                                        IgnoreReadOnlyRecommended:=True, _
+                                        Notify:=False, _
+                                        AddToMru:=False)
+    Set OpenExistingRuntimeWorkbookNoPrompt = wb
+
+CleanExit:
+    On Error Resume Next
+    If alertsSuppressed Then Application.DisplayAlerts = prevAlerts
+    On Error GoTo 0
+    Exit Function
+
+CleanFail:
+    Set OpenExistingRuntimeWorkbookNoPrompt = Nothing
+    Resume CleanExit
+End Function
+
+Private Function WorkbookHasListObjectRuntime(ByVal wb As Workbook, ByVal tableName As String) As Boolean
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        Set lo = Nothing
+        On Error Resume Next
+        Set lo = ws.ListObjects(tableName)
+        On Error GoTo 0
+        If Not lo Is Nothing Then
+            WorkbookHasListObjectRuntime = True
+            Exit Function
+        End If
+    Next ws
 End Function
 
 Private Function BuildCanonicalWorkbookPath(ByVal rootPath As String, ByVal warehouseId As String, ByVal workbookType As String) As String
@@ -499,6 +561,14 @@ Private Function EnsureConfigSchemaRuntime(ByVal wb As Workbook, _
                                            ByRef report As String) As Boolean
     On Error GoTo FailEnsure
 
+    If wb.ReadOnly Then
+        EnsureConfigSchemaRuntime = WorkbookHasListObjectRuntime(wb, "tblWarehouseConfig") _
+                                    And WorkbookHasListObjectRuntime(wb, "tblStationConfig")
+        If Not EnsureConfigSchemaRuntime And Len(report) = 0 Then _
+            report = "Config workbook is read-only and missing required config tables."
+        Exit Function
+    End If
+
     EnsureConfigSchemaRuntime = CBool(RunRuntimeWorkbookMacro4("modConfig.EnsureConfigSchema", wb, warehouseId, stationId, report))
     If Not EnsureConfigSchemaRuntime And Len(report) = 0 Then report = "EnsureConfigSchema failed."
     Exit Function
@@ -512,6 +582,14 @@ Private Function EnsureAuthSchemaRuntime(ByVal wb As Workbook, _
                                          ByVal processorServiceUserId As String, _
                                          ByRef report As String) As Boolean
     On Error GoTo FailEnsure
+
+    If wb.ReadOnly Then
+        EnsureAuthSchemaRuntime = WorkbookHasListObjectRuntime(wb, "tblUsers") _
+                                  And WorkbookHasListObjectRuntime(wb, "tblCapabilities")
+        If Not EnsureAuthSchemaRuntime And Len(report) = 0 Then _
+            report = "Auth workbook is read-only and missing required auth tables."
+        Exit Function
+    End If
 
     EnsureAuthSchemaRuntime = CBool(RunRuntimeWorkbookMacro4("modAuth.EnsureAuthSchema", wb, warehouseId, processorServiceUserId, report))
     If Not EnsureAuthSchemaRuntime And Len(report) = 0 Then report = "EnsureAuthSchema failed."

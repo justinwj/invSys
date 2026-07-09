@@ -1,6 +1,16 @@
 Attribute VB_Name = "TestPhase6RoleSurfaces"
 Option Explicit
 
+Private mLastTestFailure As String
+
+Public Sub ClearLastTestFailure()
+    mLastTestFailure = vbNullString
+End Sub
+
+Public Function GetLastTestFailure() As String
+    GetLastTestFailure = mLastTestFailure
+End Function
+
 Public Function TestEnsureReceivingWorkbookSurface_CreatesExpectedTables() As Long
     Dim wb As Workbook
     Dim report As String
@@ -240,13 +250,25 @@ End Function
 
 Public Function TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch() As Long
     Dim formUnderTest As frmAddInventoryItem
+    Dim customFields As Object
+    Dim defaultStateOk As Boolean
 
     On Error GoTo CleanFail
 
     Set formUnderTest = New frmAddInventoryItem
     formUnderTest.Configure "WH-TEST", "S1", "admin", "ITM-TEST-001", 101, "A1"
+    defaultStateOk = (formUnderTest.ImagePath = "" _
+                      And formUnderTest.NonCountedItem = False _
+                      And formUnderTest.StartingQty = 1)
+    formUnderTest.TestSetQuantityMode "Utility"
+    Set customFields = formUnderTest.CustomFields
 
-    If formUnderTest.GeneratedSku = "ITM-TEST-001" Then
+    If formUnderTest.GeneratedSku = "ITM-TEST-001" _
+       And defaultStateOk _
+       And formUnderTest.NonCountedItem = True _
+       And formUnderTest.StartingQty = 0 _
+       And CStr(customFields("TRACK_QTY")) = "FALSE" _
+       And CStr(customFields("ITEM_KIND")) = "UTILITY" Then
         TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch = 1
     End If
 
@@ -331,6 +353,48 @@ CleanExit:
     CloseNoSavePhase6 wb
     Exit Function
 CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionIngredientPaletteRuntimeRoundTrip() As Long
+    Dim runtimeRoot As String
+    Dim result As String
+
+    On Error GoTo CleanFail
+
+    runtimeRoot = BuildRoleSurfaceTempRoot("prod_palette_runtime")
+    result = CStr(Application.Run("'" & ThisWorkbook.Name & "'!mProduction.TestProductionIngredientPaletteRuntimeRoundTrip", runtimeRoot))
+    If Left$(result, 2) = "OK" Then
+        TestProductionIngredientPaletteRuntimeRoundTrip = 1
+    Else
+        mLastTestFailure = result
+    End If
+
+CleanExit:
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestProductionInventoryPickerPrefersCanonicalRuntime() As Long
+    Dim runtimeRoot As String
+    Dim result As String
+
+    On Error GoTo CleanFail
+
+    runtimeRoot = BuildRoleSurfaceTempRoot("prod_inventory_picker")
+    result = CStr(Application.Run("'" & ThisWorkbook.Name & "'!mProduction.TestProductionInventoryPickerPrefersCanonicalRuntime", runtimeRoot))
+    If Left$(result, 2) = "OK" Then
+        TestProductionInventoryPickerPrefersCanonicalRuntime = 1
+    Else
+        mLastTestFailure = result
+    End If
+
+CleanExit:
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
     Resume CleanExit
 End Function
 
@@ -616,3 +680,8 @@ Private Sub CloseNoSavePhase6(ByVal wb As Workbook)
     wb.Close SaveChanges:=False
     On Error GoTo 0
 End Sub
+
+Private Function BuildRoleSurfaceTempRoot(ByVal leafName As String) As String
+    BuildRoleSurfaceTempRoot = Environ$("TEMP") & "\invSys_" & leafName & "_" & Format$(Now, "yyyymmdd_hhnnss") & "_" & CStr(CLng(Timer * 1000))
+    If Len(Dir$(BuildRoleSurfaceTempRoot, vbDirectory)) = 0 Then MkDir BuildRoleSurfaceTempRoot
+End Function

@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmAddInventoryItem
    Caption         =   "invSys Admin - Add Inventory Item"
-   ClientHeight    =   5700
+   ClientHeight    =   6100
    ClientLeft      =   110
    ClientTop       =   450
    ClientWidth     =   6900
@@ -31,6 +31,10 @@ Private WithEvents mCmbEditItem As MSForms.ComboBox
 Attribute mCmbEditItem.VB_VarHelpID = -1
 Private WithEvents mCmbUom As MSForms.ComboBox
 Attribute mCmbUom.VB_VarHelpID = -1
+Private WithEvents mTxtQty As MSForms.ComboBox
+Attribute mTxtQty.VB_VarHelpID = -1
+Private WithEvents mTxtImagePath As MSForms.TextBox
+Attribute mTxtImagePath.VB_VarHelpID = -1
 
 Private mLblTitle As MSForms.Label
 Private mLblContext As MSForms.Label
@@ -50,14 +54,12 @@ Private mLblCustomValue As MSForms.Label
 Private mLblGenerated As MSForms.Label
 Private mLblStatus As MSForms.Label
 Private mTxtItemName As MSForms.TextBox
-Private mTxtQty As MSForms.TextBox
 Private mTxtLocation As MSForms.TextBox
 Private mTxtDescription As MSForms.TextBox
 Private mTxtCategory As MSForms.TextBox
 Private mTxtVendorName As MSForms.TextBox
 Private mTxtVendorCode As MSForms.TextBox
 Private mTxtExternalCode As MSForms.TextBox
-Private mTxtImagePath As MSForms.TextBox
 Private mTxtCustomName As MSForms.TextBox
 Private mTxtCustomValue As MSForms.TextBox
 Private mLstCustomFields As MSForms.ListBox
@@ -77,12 +79,17 @@ Private mLoading As Boolean
 Private mPreviousUom As String
 Private mInitStep As String
 Private mAllowUomPrompt As Boolean
+Private mImagePlaceholderActive As Boolean
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
 Private Const ANCHOR_RIGHT As Long = 4
 Private Const ANCHOR_BOTTOM As Long = 8
 Private Const ADD_UOM_OPTION As String = "+ Add UOM..."
+Private Const IMAGE_PATH_PLACEHOLDER As String = "Paste picture file path(s) or URL(s); separate multiple pictures with ;"
+Private Const QTY_OPTION_UTILITY As String = "Utility"
+Private Const QTY_OPTION_SERVICE As String = "Service"
+Private Const QTY_OPTION_NOT_COUNTED As String = "Not counted"
 
 Public Property Get Accepted() As Boolean
     Accepted = mAccepted
@@ -113,7 +120,12 @@ Public Property Get Uom() As String
 End Property
 
 Public Property Get StartingQty() As Double
+    If NonCountedItem Then Exit Property
     StartingQty = CDbl(Val(CStr(mTxtQty.Value)))
+End Property
+
+Public Property Get NonCountedItem() As Boolean
+    NonCountedItem = QuantityModeIsNonCounted(QuantityModeText())
 End Property
 
 Public Property Get LocationValue() As String
@@ -141,6 +153,7 @@ Public Property Get ExternalCode() As String
 End Property
 
 Public Property Get ImagePath() As String
+    If mImagePlaceholderActive Then Exit Property
     ImagePath = Trim$(CStr(mTxtImagePath.Value))
 End Property
 
@@ -150,6 +163,13 @@ Public Property Get CustomFields() As Object
 
     Set result = CreateObject("Scripting.Dictionary")
     result.CompareMode = vbTextCompare
+    If NonCountedItem Then
+        result("TRACK_QTY") = "FALSE"
+        result("ITEM_KIND") = NonCountedItemKind()
+    Else
+        result("TRACK_QTY") = "TRUE"
+        result("ITEM_KIND") = "INVENTORY"
+    End If
     If Not mLstCustomFields Is Nothing Then
         For i = 0 To mLstCustomFields.ListCount - 1
             If Trim$(CStr(mLstCustomFields.List(i, 0))) <> "" Then
@@ -159,6 +179,12 @@ Public Property Get CustomFields() As Object
     End If
     Set CustomFields = result
 End Property
+
+Public Sub TestSetQuantityMode(ByVal quantityMode As String)
+    If mTxtQty Is Nothing Then EnsureControls
+    mTxtQty.Value = quantityMode
+    ApplyQuantityModeState
+End Sub
 
 Public Sub Configure(ByVal warehouseId As Variant, _
                      ByVal stationId As Variant, _
@@ -198,7 +224,8 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
-    mTxtImagePath.Value = ""
+    ApplyQuantityModeState
+    ShowImagePathPlaceholder
     mTxtCustomName.Value = ""
     mTxtCustomValue.Value = ""
     mLstCustomFields.Clear
@@ -234,7 +261,9 @@ Public Sub AddCatalogItem(ByVal sku As String, _
                           ByVal vendorCode As String, _
                           ByVal categoryValue As String, _
                           ByVal externalCodeValue As String, _
-                          ByVal imagePathValue As String)
+                          ByVal imagePathValue As String, _
+                          Optional ByVal trackQtyValue As String = "", _
+                          Optional ByVal itemKindValue As String = "")
     Dim item As Object
     Dim selectedUom As String
 
@@ -257,6 +286,8 @@ Public Sub AddCatalogItem(ByVal sku As String, _
     item("CATEGORY") = Trim$(categoryValue)
     item("EXTERNAL_CODE") = Trim$(externalCodeValue)
     item("IMAGE_PATH") = Trim$(imagePathValue)
+    item("TRACK_QTY") = UCase$(Trim$(trackQtyValue))
+    item("ITEM_KIND") = UCase$(Trim$(itemKindValue))
     mCatalogItems.Add item
 
     mLoading = True
@@ -320,7 +351,8 @@ Private Sub EnsureControls()
     Set mCmbUom = AddCombo("cmbUom", 146, 186, 120, 22)
     LoadUomOptions
     Set mLblQty = AddLabel("lblQty", 288, 190, 92, 18, "Starting qty *")
-    Set mTxtQty = AddTextBox("txtQty", 386, 186, 152, 22)
+    Set mTxtQty = AddCombo("txtQty", 386, 186, 152, 22)
+    LoadQuantityOptions
 
     Set mLblLocation = AddLabel("lblLocation", 14, 222, 126, 18, "Default location")
     Set mTxtLocation = AddTextBox("txtLocation", 146, 218, 120, 22)
@@ -337,6 +369,7 @@ Private Sub EnsureControls()
     Set mTxtExternalCode = AddTextBox("txtExternalCode", 386, 314, 152, 22)
     Set mLblImagePath = AddLabel("lblImagePath", 14, 350, 126, 18, "Picture path/URL")
     Set mTxtImagePath = AddTextBox("txtImagePath", 146, 346, 392, 22)
+    ShowImagePathPlaceholder
 
     Set mLblCustomName = AddLabel("lblCustomName", 14, 388, 126, 18, "Additional field")
     Set mTxtCustomName = AddTextBox("txtCustomName", 146, 384, 144, 22)
@@ -430,6 +463,15 @@ Private Sub LoadEditItemOptions()
             mCmbEditItem.List(rowIndex, 1) = CatalogField(item, "SKU")
         End If
     Next item
+End Sub
+
+Private Sub LoadQuantityOptions()
+    If mTxtQty Is Nothing Then Exit Sub
+    mTxtQty.Clear
+    mTxtQty.AddItem "1"
+    mTxtQty.AddItem QTY_OPTION_UTILITY
+    mTxtQty.AddItem QTY_OPTION_SERVICE
+    mTxtQty.AddItem QTY_OPTION_NOT_COUNTED
 End Sub
 
 Private Sub RefreshGeneratedLabel()
@@ -600,6 +642,84 @@ Private Sub mCmbUom_Change()
     mPreviousUom = newUom
 End Sub
 
+Private Sub mTxtQty_Change()
+    If mLoading Then Exit Sub
+    ApplyQuantityModeState
+End Sub
+
+Private Sub mTxtImagePath_Enter()
+    If mImagePlaceholderActive Then
+        mImagePlaceholderActive = False
+        mTxtImagePath.Value = ""
+        mTxtImagePath.ForeColor = vbWindowText
+    End If
+End Sub
+
+Private Sub mTxtImagePath_Exit(ByVal Cancel As MSForms.ReturnBoolean)
+    If Trim$(CStr(mTxtImagePath.Value)) = "" Then ShowImagePathPlaceholder
+End Sub
+
+Private Sub ShowImagePathPlaceholder()
+    If mTxtImagePath Is Nothing Then Exit Sub
+    mImagePlaceholderActive = True
+    mTxtImagePath.Value = IMAGE_PATH_PLACEHOLDER
+    mTxtImagePath.ForeColor = RGB(128, 128, 128)
+End Sub
+
+Private Sub SetImagePathValue(ByVal imagePathValue As String)
+    imagePathValue = Trim$(imagePathValue)
+    If imagePathValue = "" Then
+        ShowImagePathPlaceholder
+    Else
+        mImagePlaceholderActive = False
+        mTxtImagePath.ForeColor = vbWindowText
+        mTxtImagePath.Value = imagePathValue
+    End If
+End Sub
+
+Private Function QuantityModeText() As String
+    If mTxtQty Is Nothing Then Exit Function
+    QuantityModeText = Trim$(CStr(mTxtQty.Value))
+End Function
+
+Private Function QuantityModeIsNonCounted(ByVal valueText As String) As Boolean
+    Select Case UCase$(Trim$(valueText))
+        Case "UTILITY", "SERVICE", "NOT COUNTED", "NON-COUNTED", "NONCOUNTED", "UNTRACKED"
+            QuantityModeIsNonCounted = True
+    End Select
+End Function
+
+Private Function NonCountedItemKind() As String
+    Select Case UCase$(QuantityModeText())
+        Case "UTILITY"
+            NonCountedItemKind = "UTILITY"
+        Case "SERVICE"
+            NonCountedItemKind = "SERVICE"
+        Case Else
+            NonCountedItemKind = "NON_COUNTED"
+    End Select
+End Function
+
+Private Sub ApplyQuantityModeState()
+    If mTxtQty Is Nothing Or mLblQty Is Nothing Then Exit Sub
+    mTxtQty.Enabled = Not mEditMode
+    If NonCountedItem Then
+        mLblQty.Caption = "Qty mode"
+        If Not mTxtCategory Is Nothing Then
+            If Trim$(CStr(mTxtCategory.Value)) = "" Then mTxtCategory.Value = NonCountedItemKind()
+        End If
+        If UCase$(QuantityModeText()) = "UTILITY" Then
+            If Not mTxtVendorName Is Nothing Then
+                If Trim$(CStr(mTxtVendorName.Value)) = "" Then mTxtVendorName.Value = "Utility"
+            End If
+        End If
+    ElseIf mEditMode Then
+        mLblQty.Caption = "Qty"
+    Else
+        mLblQty.Caption = "Starting qty *"
+    End If
+End Sub
+
 Private Sub InsertUomBeforeAddOption(ByVal uomValue As String)
     Dim i As Long
 
@@ -630,13 +750,13 @@ Private Sub ApplyModeLayout()
         mLblQty.Caption = "Starting qty *"
         mBtnOK.Caption = "Add Item"
     End If
-    mTxtQty.Enabled = Not mEditMode
     If Not mEditMode Then
         mSelectedEditSku = ""
         If mGeneratedRow < 0 Then mGeneratedRow = 0
     ElseIf mCmbEditItem.ListIndex < 0 Then
         ClearEditableFields
     End If
+    ApplyQuantityModeState
     RefreshGeneratedLabel
     mLblStatus.Caption = ""
 End Sub
@@ -652,7 +772,8 @@ Private Sub ClearEditableFields()
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
-    mTxtImagePath.Value = ""
+    ApplyQuantityModeState
+    ShowImagePathPlaceholder
     mTxtCustomName.Value = ""
     mTxtCustomValue.Value = ""
     mLstCustomFields.Clear
@@ -685,7 +806,18 @@ Private Sub LoadSelectedEditItem()
     mTxtVendorName.Value = CatalogField(item, "VENDOR(s)")
     mTxtVendorCode.Value = CatalogField(item, "VENDOR_CODE")
     mTxtExternalCode.Value = CatalogField(item, "EXTERNAL_CODE")
-    mTxtImagePath.Value = CatalogField(item, "IMAGE_PATH")
+    If CatalogItemIsNonCounted(item) Then
+        Select Case UCase$(CatalogField(item, "ITEM_KIND"))
+            Case "UTILITY"
+                mTxtQty.Value = QTY_OPTION_UTILITY
+            Case "SERVICE"
+                mTxtQty.Value = QTY_OPTION_SERVICE
+            Case Else
+                mTxtQty.Value = QTY_OPTION_NOT_COUNTED
+        End Select
+    End If
+    ApplyQuantityModeState
+    SetImagePathValue CatalogField(item, "IMAGE_PATH")
     mLstCustomFields.Clear
     RefreshGeneratedLabel
     mLblStatus.Caption = ""
@@ -718,8 +850,12 @@ Private Function ValidateForm() As Boolean
         Exit Function
     End If
     If Not mEditMode Then
+        If NonCountedItem Then
+            ValidateForm = True
+            Exit Function
+        End If
         If Not IsNumeric(CStr(mTxtQty.Value)) Then
-            mLblStatus.Caption = "Starting quantity must be numeric."
+            mLblStatus.Caption = "Starting quantity must be numeric or a mode like Utility."
             Exit Function
         End If
         If StartingQty <= 0 Then
@@ -728,6 +864,16 @@ Private Function ValidateForm() As Boolean
         End If
     End If
     ValidateForm = True
+End Function
+
+Private Function CatalogItemIsNonCounted(ByVal item As Variant) As Boolean
+    Dim trackQty As String
+    Dim itemKind As String
+
+    trackQty = UCase$(CatalogField(item, "TRACK_QTY"))
+    itemKind = UCase$(CatalogField(item, "ITEM_KIND"))
+    CatalogItemIsNonCounted = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+                               Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED")
 End Function
 
 Private Function FindCatalogItemBySku(ByVal sku As String) As Object
@@ -778,7 +924,7 @@ Private Function IsReservedCustomField(ByVal fieldName As String) As Boolean
     Select Case UCase$(Trim$(fieldName))
         Case "SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "QTY", "TOTAL INV", _
              "QTYAVAILABLE", "DESCRIPTION", "VENDOR(S)", "VENDOR_CODE", "CATEGORY", _
-             "EXTERNAL_CODE", "IMAGE_PATH", "NOTE", "IOTYPE"
+             "EXTERNAL_CODE", "IMAGE_PATH", "TRACK_QTY", "ITEM_KIND", "NOTE", "IOTYPE"
             IsReservedCustomField = True
     End Select
 End Function

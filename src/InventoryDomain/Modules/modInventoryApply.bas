@@ -532,12 +532,14 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
             End If
         Else
             If qty <= 0 Then
+                If eventType = EVENT_TYPE_MIGRATION_SEED And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
                 errorCode = "INVALID_QTY"
                 errorMessage = "Payload Qty must be greater than zero."
                 Set BuildPayloadLines = Nothing
                 Exit Function
             End If
         End If
+QtyAccepted:
         rawItem("SKU") = sku
         If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
             EnsureSkuCatalogFromPayloadLineApply wb, rawItem
@@ -572,6 +574,17 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
+End Function
+
+Private Function PayloadLineIsNonCountedApply(ByVal rawItem As Object) As Boolean
+    Dim trackQty As String
+    Dim itemKind As String
+
+    If rawItem Is Nothing Then Exit Function
+    trackQty = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "TRACK_QTY")))
+    itemKind = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "ITEM_KIND")))
+    PayloadLineIsNonCountedApply = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+                                    Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED")
 End Function
 
 Private Function ValidateBoxUnboxDoesNotCreateNegativeInventory(ByVal loLog As ListObject, _

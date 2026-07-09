@@ -1193,6 +1193,49 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestOpenOrCreateConfigWorkbookRuntime_ReusesReadOnlyConfigWithoutMutation() As Long
+    Dim rootPath As String
+    Dim configPath As String
+    Dim wbCreated As Workbook
+    Dim wbReadOnly As Workbook
+    Dim wbResolved As Workbook
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_cfg_readonly")
+    configPath = rootPath & "\WH126.invSys.Config.xlsb"
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    Set wbCreated = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH126", "S1", rootPath, report)
+    If wbCreated Is Nothing Then GoTo CleanExit
+    CloseWorkbookIfOpen wbCreated
+    Set wbCreated = Nothing
+
+    Set wbReadOnly = Application.Workbooks.Open(Filename:=configPath, _
+                                                UpdateLinks:=0, _
+                                                ReadOnly:=True, _
+                                                IgnoreReadOnlyRecommended:=True, _
+                                                Notify:=False, _
+                                                AddToMru:=False)
+    Set wbResolved = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH126", "S1", rootPath, report)
+    If wbResolved Is Nothing Then GoTo CleanExit
+
+    If wbResolved Is wbReadOnly _
+       And wbResolved.ReadOnly _
+       And Len(report) = 0 Then
+        TestOpenOrCreateConfigWorkbookRuntime_ReusesReadOnlyConfigWithoutMutation = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbResolved
+    If Not wbReadOnly Is Nothing Then CloseWorkbookIfOpen wbReadOnly
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestLoadConfig_AutoBootstrapsCanonicalWorkbook() As Long
     Dim rootPath As String
     Dim configPath As String
