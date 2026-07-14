@@ -108,7 +108,7 @@ Public Function EnsureProductionWorkbookSurface(Optional ByVal targetWb As Workb
     EnsureTableSurface wb, "Production", "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "ROW", "RECIPE_ID", "INGREDIENT_ID"), True
     EnsureTableSurface wb, "Production", "RC_RecipeChoose", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "DEPARTMENT", "PROCESS"), True
     EnsureTableSurface wb, "Production", "RecipeChooser_generated", Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT NEEDED", "INGREDIENT_ID", "RECIPE_LIST_ROW"), False
-    EnsureTableSurface wb, "Production", "InventoryPalette_generated", Array("ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "PROCESS", "LOCATION", "ROW", "INPUT/OUTPUT"), False
+    EnsureTableSurface wb, "Production", "InventoryPalette_generated", Array("INGREDIENT", "INGREDIENT_ID", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "PERCENT", "SPLIT %", "UOM", "QUANTITY", "BASE QUANTITY", "PROCESS", "LOCATION", "ROW", "INPUT/OUTPUT"), False
     EnsureTableSurface wb, "Production", "ProductionOutput", Array("PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "ROW"), False
     EnsureTableSurface wb, "Production", "Prod_invSys_Check", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "USED", "TOTAL INV"), False
     EnsureTableSurface wb, "Recipes", "Recipes", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "DEPARTMENT", "PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID"), False
