@@ -9,6 +9,7 @@ Public Const EVENT_TYPE_SHIP As String = "SHIP"
 Public Const EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Public Const EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
 Public Const EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE As String = "ADMIN_SHIPMENT_RECONCILE"
+Public Const EVENT_TYPE_ADMIN_INVENTORY_ADJUST As String = "ADMIN_INVENTORY_ADJUST"
 Public Const EVENT_TYPE_BOX_BUILD As String = "BOX_BUILD"
 Public Const EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Public Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
@@ -413,7 +414,7 @@ Private Function BuildApplyLines(ByVal evt As Object, _
     Select Case eventType
         Case EVENT_TYPE_RECEIVE
             Set BuildApplyLines = BuildReceiveLines(evt, wb, errorCode, errorMessage)
-        Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED
+        Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_ADMIN_INVENTORY_ADJUST, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED
             Set BuildApplyLines = BuildPayloadLines(evt, wb, eventType, errorCode, errorMessage)
         Case Else
             errorCode = "INVALID_EVENT_TYPE"
@@ -523,10 +524,10 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
             Set BuildPayloadLines = Nothing
             Exit Function
         End If
-        If eventType = EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE Then
+        If eventType = EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE Or eventType = EVENT_TYPE_ADMIN_INVENTORY_ADJUST Then
             If qty = 0 Then
                 errorCode = "INVALID_QTY"
-                errorMessage = "ADMIN_SHIPMENT_RECONCILE Qty must be the signed inventory correction delta and cannot be zero."
+                errorMessage = eventType & " Qty must be the signed inventory correction delta and cannot be zero."
                 Set BuildPayloadLines = Nothing
                 Exit Function
             End If
@@ -560,6 +561,7 @@ QtyAccepted:
             Set BuildPayloadLines = Nothing
             Exit Function
         End If
+        If PayloadSkuIsNonCountedApply(wb, sku) Then qtyDelta = 0
 
         locationVal = SafeTrimApply(GetDictionaryValue(rawItem, "Location"))
         If locationVal = "" Then locationVal = GetEventString(evt, "Location")
@@ -574,6 +576,34 @@ QtyAccepted:
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
+End Function
+
+Private Function PayloadSkuIsNonCountedApply(ByVal wb As Workbook, ByVal sku As String) As Boolean
+    PayloadSkuIsNonCountedApply = CatalogSkuIsNonCountedInTableApply(FindListObjectByNameApply(wb, "tblSkuCatalog"), sku)
+    If PayloadSkuIsNonCountedApply Then Exit Function
+    PayloadSkuIsNonCountedApply = CatalogSkuIsNonCountedInTableApply(FindListObjectByNameApply(wb, "invSys"), sku)
+    If PayloadSkuIsNonCountedApply Then Exit Function
+    PayloadSkuIsNonCountedApply = CatalogSkuIsNonCountedInTableApply(FindListObjectByNameApply(wb, "tblItemSearchIndex"), sku)
+End Function
+
+Private Function CatalogSkuIsNonCountedInTableApply(ByVal lo As ListObject, ByVal sku As String) As Boolean
+    Dim rowIndex As Long
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryVal As String
+
+    sku = SafeTrimApply(sku)
+    If lo Is Nothing Or sku = "" Then Exit Function
+    rowIndex = FindRowByColumnValueApply(lo, "SKU", sku)
+    If rowIndex = 0 Then rowIndex = FindRowByColumnValueApply(lo, "ITEM_CODE", sku)
+    If rowIndex = 0 Then Exit Function
+
+    trackQty = UCase$(SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "TRACK_QTY")))
+    itemKind = UCase$(SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "ITEM_KIND")))
+    categoryVal = UCase$(SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "CATEGORY")))
+    CatalogSkuIsNonCountedInTableApply = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+                                          Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+                                          Or categoryVal = "UTILITY" Or categoryVal = "SERVICE")
 End Function
 
 Private Function PayloadLineIsNonCountedApply(ByVal rawItem As Object) As Boolean
@@ -731,6 +761,13 @@ Private Function ResolvePayloadQtyDelta(ByVal eventType As String, _
             If ioType <> "" And ioType <> "ADJUST" And ioType <> "RECONCILE" Then
                 errorCode = "INVALID_PAYLOAD"
                 errorMessage = "ADMIN_SHIPMENT_RECONCILE payload line items may only use IoType ADJUST or RECONCILE."
+            Else
+                ResolvePayloadQtyDelta = qty
+            End If
+        Case EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+            If ioType <> "" And ioType <> "ADJUST" And ioType <> "RECONCILE" Then
+                errorCode = "INVALID_PAYLOAD"
+                errorMessage = "ADMIN_INVENTORY_ADJUST payload line items may only use IoType ADJUST or RECONCILE."
             Else
                 ResolvePayloadQtyDelta = qty
             End If

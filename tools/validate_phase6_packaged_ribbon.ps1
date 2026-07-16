@@ -217,10 +217,7 @@ $ribbonSpecs = @(
             @{ Id = "btnReceivingConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "RECEIVE_POST"'; Execute = $false },
             @{ Id = "btnReceivingCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "RECEIVE_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
             @{ Id = "btnReceivingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnReceivingSetup"; Label = "Setup UI"; Macro = "modTS_Received.EnsureGeneratedButtons"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
-            @{ Id = "btnReceivingConfirm"; Label = "Confirm Writes"; Macro = "modTS_Received.ConfirmWrites"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
-            @{ Id = "btnReceivingUndo"; Label = "Undo"; Macro = "modTS_Received.MacroUndo"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
-            @{ Id = "btnReceivingRedo"; Label = "Redo"; Macro = "modTS_Received.MacroRedo"; Execute = $false; RequiredCapability = "RECEIVE_POST" }
+            @{ Id = "btnReceivingForm"; Label = "Receiving Form"; Macro = "modTS_Received.ShowReceivingForm"; Execute = $false; RequiredCapability = "RECEIVE_POST" }
         )
     }
     @{

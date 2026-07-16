@@ -431,6 +431,7 @@ try {
         (Join-Path $repo "src/Core/Forms/frmSignIn.frm"),
         (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm"),
         (Join-Path $repo "src/Admin/Forms/frmAddInventoryItem.frm"),
+        (Join-Path $repo "src/Receiving/Forms/frmReceiving.frm"),
         (Join-Path $repo "src/Production/Forms/frmProduction.frm")
     )
 
@@ -640,6 +641,12 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
+        "TestPhase6RoleSurfaces.TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal",
+        "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderUsesRawRowValue",
+        "TestPhase6RoleSurfaces.TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
+        "TestPhase6RoleSurfaces.TestReceivingForm_AddStagesSelectedInventoryForConfirm",
+        "TestPhase6RoleSurfaces.TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef",
+        "TestPhase6RoleSurfaces.TestReceivingForm_AddStagesByItemCodeWhenRowsCollide",
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables",

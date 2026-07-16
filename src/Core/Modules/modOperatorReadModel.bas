@@ -516,11 +516,18 @@ CleanExit:
     Exit Function
 
 FailRefresh:
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    errNumber = Err.Number
+    errDescription = Err.Description
+    If errDescription = "" Then errDescription = "No VBA error description was provided."
+
     On Error Resume Next
     If screenSuppressed Then Application.ScreenUpdating = prevScreenUpdating
     On Error GoTo 0
-    report = "RunBatchAndRefreshOperatorWorkbook failed: " & Err.Description
-    LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefreshError|Workbook=" & ResolveWorkbookNameReadModel(wb) & "|WarehouseId=" & resolvedWarehouseId & "|Error=" & Err.Description
+    report = "RunBatchAndRefreshOperatorWorkbook failed: " & CStr(errNumber) & " - " & errDescription
+    LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefreshError|Workbook=" & ResolveWorkbookNameReadModel(wb) & "|WarehouseId=" & resolvedWarehouseId & "|ErrorNumber=" & CStr(errNumber) & "|Error=" & errDescription
 End Function
 
 Private Function ResolveCurrentStationIdReadModel(ByVal warehouseId As String) As String

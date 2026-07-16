@@ -146,6 +146,290 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal() As Long
+    Dim values(1 To 3, 1 To 8) As Variant
+    Dim matchCount As Long
+
+    On Error GoTo CleanFail
+    values(1, 1) = 95
+    values(1, 2) = "ITM-TEA-001"
+    values(1, 3) = "Malawi Black Tea"
+    values(1, 4) = "LB"
+    values(1, 5) = 100
+    values(1, 6) = "CLEARVIEW"
+    values(1, 7) = "Fine cut black tea"
+    values(1, 8) = "Henry"
+    values(2, 1) = 96
+    values(2, 2) = "ITM-WTR-001"
+    values(2, 3) = "Filtered Water"
+    values(2, 4) = "GAL"
+    values(2, 5) = 0
+    values(2, 6) = "A1"
+    values(2, 7) = "Utility water"
+    values(2, 8) = "Utility"
+    values(3, 1) = 97
+    values(3, 2) = "ITM-TEA-002"
+    values(3, 3) = "Assam Black Tea"
+    values(3, 4) = "LB"
+    values(3, 5) = 40
+    values(3, 6) = "NAS-A1"
+    values(3, 7) = "Coarse leaf tea"
+    values(3, 8) = "Vendor"
+
+    matchCount = frmReceiving.TestSearchInventoryCount(values, "black tea")
+    If matchCount = 2 _
+       And frmReceiving.TestSearchInventoryCount(values, "clearview") = 1 _
+       And frmReceiving.TestReceiptIdSeparatedFromReference() = 1 Then
+        TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmReceiving
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReceivingForm_InventoryLoaderUsesRawRowValue() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim lr As ListRow
+    Dim rowsOut As Variant
+    Dim rowCol As Long
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    If loInv Is Nothing Then GoTo CleanExit
+
+    If loInv.DataBodyRange Is Nothing Then
+        Set lr = loInv.ListRows.Add
+    Else
+        Set lr = loInv.ListRows(1)
+    End If
+    SetTableValueByColumn loInv, lr.Index, "ROW", 14
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-ROW-014"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Row Format Test"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "EA"
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "A1"
+    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Date formatted row"
+    SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 5
+    SetTableValueByColumn loInv, lr.Index, "QtyAvailable", 5
+
+    rowCol = TableColumnIndex(loInv, "ROW")
+    If rowCol = 0 Then GoTo CleanExit
+    loInv.ListColumns(rowCol).DataBodyRange.NumberFormat = "m/d/yyyy"
+    wb.Activate
+
+    rowsOut = modTS_Received.LoadReceivingFormInventory("")
+    If IsEmpty(rowsOut) Or Not IsArray(rowsOut) Then GoTo CleanExit
+    If CStr(rowsOut(1, 1)) = "14" Then
+        TestReceivingForm_InventoryLoaderUsesRawRowValue = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReceivingForm_HidesSupportSheetsAfterFormRefresh() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim wsOperator As Worksheet
+    Dim wsRt As Worksheet
+    Dim wsInv As Worksheet
+    Dim wsLog As Worksheet
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+
+    On Error GoTo CleanFail
+    Set wsOperator = wb.Worksheets(1)
+    wsOperator.Name = "OperatorVisible"
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set wsRt = wb.Worksheets("ReceivedTally")
+    Set wsInv = wb.Worksheets("InventoryManagement")
+    Set wsLog = wb.Worksheets("ReceivedLog")
+    wsRt.Visible = xlSheetVisible
+    wsInv.Visible = xlSheetVisible
+    wsLog.Visible = xlSheetVisible
+
+    modTS_Received.EnforceReceivingSupportSheetsHidden wb
+    If wsRt.Visible <> xlSheetVeryHidden Then GoTo CleanExit
+    If wsInv.Visible <> xlSheetVeryHidden Then GoTo CleanExit
+    If wsLog.Visible <> xlSheetVeryHidden Then GoTo CleanExit
+    If wsOperator.Visible <> xlSheetVisible Then GoTo CleanExit
+
+    TestReceivingForm_HidesSupportSheetsAfterFormRefresh = 1
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReceivingForm_AddStagesSelectedInventoryForConfirm() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loRt As ListObject
+    Dim loAgg As ListObject
+    Dim lr As ListRow
+    Dim stageReport As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loRt = FindTable(wb, "ReceivedTally")
+    Set loAgg = FindTable(wb, "AggregateReceived")
+    If loInv Is Nothing Or loRt Is Nothing Or loAgg Is Nothing Then GoTo CleanExit
+
+    If loInv.DataBodyRange Is Nothing Then
+        Set lr = loInv.ListRows.Add
+    Else
+        Set lr = loInv.ListRows(1)
+    End If
+    SetTableValueByColumn loInv, lr.Index, "ROW", 701
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-RECV-701"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Received Test Tea"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "DOCK"
+    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Receiving form add test"
+    SetTableValueByColumn loInv, lr.Index, "VENDOR(s)", "Test Vendor"
+    SetTableValueByColumn loInv, lr.Index, "VENDOR_CODE", "TV-701"
+    SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 0
+    SetTableValueByColumn loInv, lr.Index, "QtyAvailable", 0
+
+    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-701", 701, 12, stageReport) Then GoTo CleanExit
+    If loRt.DataBodyRange Is Nothing Or loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    If CStr(GetTableValueByColumn(loRt, 1, "REF_NUMBER")) = "PO-701" _
+       And CStr(GetTableValueByColumn(loRt, 1, "ITEMS")) = "Received Test Tea" _
+       And CDbl(GetTableValueByColumn(loRt, 1, "QUANTITY")) = 12 _
+       And CLng(GetTableValueByColumn(loRt, 1, "ROW")) = 701 _
+       And CStr(GetTableValueByColumn(loAgg, 1, "ITEM_CODE")) = "ITM-RECV-701" _
+       And CStr(GetTableValueByColumn(loAgg, 1, "ITEM")) = "Received Test Tea" _
+       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 12 _
+       And CLng(GetTableValueByColumn(loAgg, 1, "ROW")) = 701 Then
+        TestReceivingForm_AddStagesSelectedInventoryForConfirm = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loRt As ListObject
+    Dim loAgg As ListObject
+    Dim lr As ListRow
+    Dim stageReport As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loRt = FindTable(wb, "ReceivedTally")
+    Set loAgg = FindTable(wb, "AggregateReceived")
+    If loInv Is Nothing Or loRt Is Nothing Or loAgg Is Nothing Then GoTo CleanExit
+
+    If loInv.DataBodyRange Is Nothing Then
+        Set lr = loInv.ListRows.Add
+    Else
+        Set lr = loInv.ListRows(1)
+    End If
+    SetTableValueByColumn loInv, lr.Index, "ROW", 706
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-RECV-706"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Cardamom Pods"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "DOCK"
+    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Receiving merge test"
+    SetTableValueByColumn loInv, lr.Index, "VENDOR(s)", "Test Vendor"
+    SetTableValueByColumn loInv, lr.Index, "VENDOR_CODE", "TV-706"
+
+    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-706", 706, 500, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-706", 706, 100, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-707", 706, 25, stageReport) Then GoTo CleanExit
+    If loRt.DataBodyRange Is Nothing Or loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    If loRt.ListRows.Count >= 2 _
+       And CStr(GetTableValueByColumn(loRt, 1, "REF_NUMBER")) = "PO-706" _
+       And CDbl(GetTableValueByColumn(loRt, 1, "QUANTITY")) = 600 _
+       And CStr(GetTableValueByColumn(loRt, 2, "REF_NUMBER")) = "PO-707" _
+       And CDbl(GetTableValueByColumn(loRt, 2, "QUANTITY")) = 25 _
+       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 625 _
+       And CStr(GetTableValueByColumn(loAgg, 1, "REF_NUMBER")) = "PO-706,PO-707" Then
+        TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReceivingForm_AddStagesByItemCodeWhenRowsCollide() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loAgg As ListObject
+    Dim lr As ListRow
+    Dim stageReport As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loAgg = FindTable(wb, "AggregateReceived")
+    If loInv Is Nothing Or loAgg Is Nothing Then GoTo CleanExit
+
+    Set lr = loInv.ListRows.Add
+    SetTableValueByColumn loInv, lr.Index, "ROW", 1
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "DEMO-RAW-BLACK-TEA"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Demo Black Tea"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "NAS-A1"
+
+    Set lr = loInv.ListRows.Add
+    SetTableValueByColumn loInv, lr.Index, "ROW", 1
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITEM-0002"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Black Tea Base"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "CLEARVIEW"
+
+    If Not modTS_Received.StageReceivingFormItemForWorkbook(wb, "BOL-2", 1, "ITEM-0002", 7, stageReport) Then GoTo CleanExit
+    If loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    If CStr(GetTableValueByColumn(loAgg, 1, "ITEM_CODE")) = "ITEM-0002" _
+       And CStr(GetTableValueByColumn(loAgg, 1, "ITEM")) = "Black Tea Base" _
+       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 7 Then
+        TestReceivingForm_AddStagesByItemCodeWhenRowsCollide = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestEnsureProductionWorkbookSurface_CreatesExpectedTables() As Long
     Dim wb As Workbook
     Dim report As String
@@ -670,6 +954,41 @@ Private Function HasColumn(ByVal lo As ListObject, ByVal columnName As String) A
     For Each lc In lo.ListColumns
         If StrComp(lc.Name, columnName, vbTextCompare) = 0 Then
             HasColumn = True
+            Exit Function
+        End If
+    Next lc
+End Function
+
+Private Sub SetTableValueByColumn(ByVal lo As ListObject, ByVal rowIndex As Long, _
+                                  ByVal columnName As String, ByVal valueOut As Variant)
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    If rowIndex < 1 Or rowIndex > lo.DataBodyRange.Rows.Count Then Exit Sub
+    idx = TableColumnIndex(lo, columnName)
+    If idx = 0 Then Exit Sub
+    lo.DataBodyRange.Cells(rowIndex, idx).Value = valueOut
+End Sub
+
+Private Function GetTableValueByColumn(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
+    Dim idx As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    If rowIndex < 1 Or rowIndex > lo.DataBodyRange.rows.Count Then Exit Function
+    idx = TableColumnIndex(lo, columnName)
+    If idx = 0 Then Exit Function
+    GetTableValueByColumn = lo.DataBodyRange.Cells(rowIndex, idx).Value
+End Function
+
+Private Function TableColumnIndex(ByVal lo As ListObject, ByVal columnName As String) As Long
+    Dim lc As ListColumn
+
+    If lo Is Nothing Then Exit Function
+    For Each lc In lo.ListColumns
+        If StrComp(lc.Name, columnName, vbTextCompare) = 0 Then
+            TableColumnIndex = lc.Index
             Exit Function
         End If
     Next lc

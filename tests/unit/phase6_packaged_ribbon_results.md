@@ -1,9 +1,9 @@
 # Phase 6 Packaged Ribbon Validation Results
 
-- Date: 2026-07-13 18:34:12
+- Date: 2026-07-16 10:40:34
 - Deploy root: C:\Users\justu\source\repos\invSys_fork\deploy\current
-- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-8763d6bbcdaf4bbdb782b08cfadb3513
-- Passed: 184
+- Runtime root override: C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-9946ebc3327c41a9be232a868efb506f
+- Passed: 166
 - Failed: 0
 
 | Check | Result | Detail |
@@ -15,7 +15,7 @@
 | invSys.Shipping.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Shipping.xlam |
 | invSys.Production.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Production.xlam |
 | invSys.Admin.xlam.Open | PASS | Opened from C:\Users\justu\source\repos\invSys_fork\deploy\current\invSys.Admin.xlam |
-| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-8763d6bbcdaf4bbdb782b08cfadb3513 |
+| Core.RuntimeRootOverride | PASS | C:\Users\justu\AppData\Local\Temp\invsys-phase6-ribbon-9946ebc3327c41a9be232a868efb506f |
 | Receiving.RibbonXml | PASS | customUI/customUI.xml present. |
 | Receiving.CallbackModule | PASS | modRibbonGenerated |
 | Receiving.StatusLabel.lblReceivingServerStatus | PASS | GetLabel=RibbonServerStatusGetLabel |
@@ -27,30 +27,12 @@
 | Receiving.CallbackMap.btnReceivingCurrentUser | PASS | btnReceivingCurrentUser -> modRoleEventWriter.PromptSetCurrentUserForCapability "RECEIVE_POST" |
 | Receiving.RibbonButton.btnReceivingSignOut | PASS | Label=Sign Out; OnAction=RibbonOnActionReceiving; GetEnabled=; Screentip=Sign out of invSys without disconnecting storage |
 | Receiving.CallbackMap.btnReceivingSignOut | PASS | btnReceivingSignOut -> modRoleEventWriter.SignOutCurrentUser |
-| Receiving.RibbonButton.btnReceivingSetup | PASS | Label=Setup UI; OnAction=RibbonOnActionReceiving; GetEnabled=RibbonRequiredCapabilityGetEnabledReceiving; Screentip= |
-| Receiving.RibbonButtonGetEnabled.btnReceivingSetup | PASS | RibbonRequiredCapabilityGetEnabledReceiving |
-| Receiving.MacroExists.btnReceivingSetup | PASS | modTS_Received.EnsureGeneratedButtons |
-| Receiving.CallbackMap.btnReceivingSetup | PASS | btnReceivingSetup -> modTS_Received.EnsureGeneratedButtons |
-| Receiving.CallbackGetEnabled.btnReceivingSetup | PASS | btnReceivingSetup -> RECEIVE_POST |
-| Receiving.DisabledOffline.btnReceivingSetup | PASS | btnReceivingSetup enabled=False |
-| Receiving.RibbonButton.btnReceivingConfirm | PASS | Label=Confirm Writes; OnAction=RibbonOnActionReceiving; GetEnabled=RibbonRequiredCapabilityGetEnabledReceiving; Screentip= |
-| Receiving.RibbonButtonGetEnabled.btnReceivingConfirm | PASS | RibbonRequiredCapabilityGetEnabledReceiving |
-| Receiving.MacroExists.btnReceivingConfirm | PASS | modTS_Received.ConfirmWrites |
-| Receiving.CallbackMap.btnReceivingConfirm | PASS | btnReceivingConfirm -> modTS_Received.ConfirmWrites |
-| Receiving.CallbackGetEnabled.btnReceivingConfirm | PASS | btnReceivingConfirm -> RECEIVE_POST |
-| Receiving.DisabledOffline.btnReceivingConfirm | PASS | btnReceivingConfirm enabled=False |
-| Receiving.RibbonButton.btnReceivingUndo | PASS | Label=Undo; OnAction=RibbonOnActionReceiving; GetEnabled=RibbonRequiredCapabilityGetEnabledReceiving; Screentip= |
-| Receiving.RibbonButtonGetEnabled.btnReceivingUndo | PASS | RibbonRequiredCapabilityGetEnabledReceiving |
-| Receiving.MacroExists.btnReceivingUndo | PASS | modTS_Received.MacroUndo |
-| Receiving.CallbackMap.btnReceivingUndo | PASS | btnReceivingUndo -> modTS_Received.MacroUndo |
-| Receiving.CallbackGetEnabled.btnReceivingUndo | PASS | btnReceivingUndo -> RECEIVE_POST |
-| Receiving.DisabledOffline.btnReceivingUndo | PASS | btnReceivingUndo enabled=False |
-| Receiving.RibbonButton.btnReceivingRedo | PASS | Label=Redo; OnAction=RibbonOnActionReceiving; GetEnabled=RibbonRequiredCapabilityGetEnabledReceiving; Screentip= |
-| Receiving.RibbonButtonGetEnabled.btnReceivingRedo | PASS | RibbonRequiredCapabilityGetEnabledReceiving |
-| Receiving.MacroExists.btnReceivingRedo | PASS | modTS_Received.MacroRedo |
-| Receiving.CallbackMap.btnReceivingRedo | PASS | btnReceivingRedo -> modTS_Received.MacroRedo |
-| Receiving.CallbackGetEnabled.btnReceivingRedo | PASS | btnReceivingRedo -> RECEIVE_POST |
-| Receiving.DisabledOffline.btnReceivingRedo | PASS | btnReceivingRedo enabled=False |
+| Receiving.RibbonButton.btnReceivingForm | PASS | Label=Receiving Form; OnAction=RibbonOnActionReceiving; GetEnabled=RibbonRequiredCapabilityGetEnabledReceiving; Screentip= |
+| Receiving.RibbonButtonGetEnabled.btnReceivingForm | PASS | RibbonRequiredCapabilityGetEnabledReceiving |
+| Receiving.MacroExists.btnReceivingForm | PASS | modTS_Received.ShowReceivingForm |
+| Receiving.CallbackMap.btnReceivingForm | PASS | btnReceivingForm -> modTS_Received.ShowReceivingForm |
+| Receiving.CallbackGetEnabled.btnReceivingForm | PASS | btnReceivingForm -> RECEIVE_POST |
+| Receiving.DisabledOffline.btnReceivingForm | PASS | btnReceivingForm enabled=False |
 | Shipping.RibbonXml | PASS | customUI/customUI.xml present. |
 | Shipping.CallbackModule | PASS | modRibbonGenerated |
 | Shipping.StatusLabel.lblShippingServerStatus | PASS | GetLabel=RibbonServerStatusGetLabel |

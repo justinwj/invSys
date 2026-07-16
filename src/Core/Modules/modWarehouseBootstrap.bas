@@ -861,9 +861,9 @@ Private Function BuildBootstrapDemoPayload() As Collection
     Dim items As Collection
 
     Set items = New Collection
-    items.Add BuildBootstrapDemoPayloadItem(1, "DEMO-RAW-BLACK-TEA", "Black Tea", "lbs", "CLEARVIEW", "Loose black tea for receiving test.", "Tea Importers", "TEA-001", "raw", 500#)
-    items.Add BuildBootstrapDemoPayloadItem(2, "DEMO-RAW-CARDAMOM", "Cardamom", "lbs", "CLEARVIEW", "Cardamom for receiving test.", "Spice House", "SPICE-001", "raw", 50#)
-    items.Add BuildBootstrapDemoPayloadItem(3, "DEMO-FG-CLASSIC-CHAI", "Classic Chai Concentrate", "gal", "CLEARVIEW", "Finished good receiving test item.", "Internal", "FG-001", "shippable", 25#)
+    items.Add BuildBootstrapDemoPayloadItem(9001, "DEMO-RAW-BLACK-TEA", "Black Tea", "lbs", "CLEARVIEW", "Loose black tea for receiving test.", "Tea Importers", "TEA-001", "raw", 500#)
+    items.Add BuildBootstrapDemoPayloadItem(9003, "DEMO-RAW-CARDAMOM", "Cardamom", "lbs", "CLEARVIEW", "Cardamom for receiving test.", "Spice House", "SPICE-001", "raw", 50#)
+    items.Add BuildBootstrapDemoPayloadItem(9016, "DEMO-FG-CLASSIC-CHAI", "Classic Chai Concentrate", "gal", "CLEARVIEW", "Finished good receiving test item.", "Internal", "FG-001", "shippable", 25#)
     Set BuildBootstrapDemoPayload = items
 End Function
 

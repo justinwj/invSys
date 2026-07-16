@@ -23,11 +23,25 @@ End Function
 Public Function ResolveCoreDataRoot(Optional ByVal rootPath As String = "", _
                                     Optional ByVal warehouseId As String = "") As String
     Dim resolvedPath As String
+    Dim resolvedWh As String
+    Dim candidateRoot As String
 
+    resolvedWh = ResolveWarehouseIdRuntime(warehouseId)
     resolvedPath = Trim$(rootPath)
-    If resolvedPath = "" Then resolvedPath = Trim$(mCoreDataRootOverride)
-    If resolvedPath = "" Then resolvedPath = ResolveConfiguredRuntimeRoot(warehouseId)
-    If resolvedPath = "" Then resolvedPath = DefaultRuntimeRoot(ResolveWarehouseIdRuntime(warehouseId))
+    If resolvedPath = "" Then
+        candidateRoot = Trim$(mCoreDataRootOverride)
+        If candidateRoot <> "" Then
+            If Trim$(warehouseId) = "" Or RuntimeArtifactsExistRuntime(candidateRoot, resolvedWh) Then
+                resolvedPath = candidateRoot
+            End If
+        End If
+    End If
+    If resolvedPath = "" And Trim$(warehouseId) <> "" Then
+        candidateRoot = TryResolveExistingRuntimeRoot(resolvedWh)
+        If candidateRoot <> "" Then resolvedPath = candidateRoot
+    End If
+    If resolvedPath = "" Then resolvedPath = ResolveConfiguredRuntimeRoot(resolvedWh)
+    If resolvedPath = "" Then resolvedPath = DefaultRuntimeRoot(resolvedWh)
     If resolvedPath = "" Then resolvedPath = Trim$(CurDir$)
 
     ResolveCoreDataRoot = NormalizeFolderPath(resolvedPath)

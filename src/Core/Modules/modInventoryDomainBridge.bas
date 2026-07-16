@@ -590,6 +590,14 @@ Private Function OpenOrCreateCanonicalInventoryWorkbookLocal(ByVal warehouseId A
     Dim eventsSuppressed As Boolean
     Dim wasCreated As Boolean
 
+    Set wb = FindOpenCanonicalInventoryWorkbookByWarehouseLocal(warehouseId)
+    If Not wb Is Nothing Then
+        HideInventoryBridgeWorkbookWindows wb
+        If Not EnsureInventorySchemaLocal(wb, report) Then Exit Function
+        Set OpenOrCreateCanonicalInventoryWorkbookLocal = wb
+        Exit Function
+    End If
+
     targetPath = BuildCanonicalInventoryPathLocal(warehouseId)
     If targetPath = "" Then Exit Function
 
@@ -643,6 +651,22 @@ FailOpen:
     report = "Inventory workbook open/create failed: " & Err.Description
 End Function
 
+Private Function FindOpenCanonicalInventoryWorkbookByWarehouseLocal(ByVal warehouseId As String) As Workbook
+    Dim wb As Workbook
+    Dim expectedName As String
+
+    warehouseId = SafeTrim(warehouseId)
+    If warehouseId = "" Then Exit Function
+    expectedName = LCase$(warehouseId & ".invSys.Data.Inventory.xlsb")
+
+    For Each wb In Application.Workbooks
+        If LCase$(wb.Name) = expectedName Then
+            Set FindOpenCanonicalInventoryWorkbookByWarehouseLocal = wb
+            Exit Function
+        End If
+    Next wb
+End Function
+
 Private Sub HideInventoryBridgeWorkbookWindows(ByVal wb As Workbook)
     Dim i As Long
 
@@ -681,7 +705,7 @@ Private Function BuildCanonicalInventoryPathLocal(ByVal warehouseId As String) A
     If resolvedWh = "" Then resolvedWh = SafeTrim(modConfig.GetString("WarehouseId", "WH1"))
     If resolvedWh = "" Then resolvedWh = "WH1"
 
-    rootPath = CurrentTargetRuntimeRootLocal()
+    rootPath = CurrentTargetRuntimeRootForWarehouseLocal(resolvedWh)
     If rootPath = "" Then rootPath = SafeTrim(GetCoreDataRootOverride())
     If rootPath = "" Then rootPath = SafeTrim(modConfig.GetString("PathDataRoot", ""))
     If rootPath = "" Then rootPath = DefaultInventoryRootLocal(resolvedWh)
@@ -717,6 +741,31 @@ Private Function CurrentTargetRuntimeRootLocal() As String
     End If
     If target Is Nothing Then Exit Function
     CurrentTargetRuntimeRootLocal = SafeTrim(target.RuntimeRoot)
+
+CleanExit:
+End Function
+
+Private Function CurrentTargetRuntimeRootForWarehouseLocal(ByVal warehouseId As String) As String
+    On Error GoTo CleanExit
+
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim requestedWarehouseId As String
+    Dim targetWarehouseId As String
+
+    requestedWarehouseId = SafeTrim(warehouseId)
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then
+        Call modNasConnection.ResolveWarehouseTarget(target, statusCode)
+    End If
+    If target Is Nothing Then Exit Function
+
+    targetWarehouseId = SafeTrim(target.WarehouseId)
+    If requestedWarehouseId <> "" And targetWarehouseId <> "" Then
+        If StrComp(requestedWarehouseId, targetWarehouseId, vbTextCompare) <> 0 Then Exit Function
+    End If
+
+    CurrentTargetRuntimeRootForWarehouseLocal = SafeTrim(target.RuntimeRoot)
 
 CleanExit:
 End Function

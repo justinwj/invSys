@@ -46,7 +46,9 @@ Public Function QueueReceiveEventsFromWorkbook(ByVal wb As Workbook, Optional By
     For r = 1 To UBound(arr, 1)
         eventIdOut = ""
         rowError = ""
-        If Not modRoleEventWriter.QueueReceiveEventCurrent( _
+        If Not modRoleEventWriter.QueueReceiveEventServer( _
+            "", _
+            "", _
             currentUserId, _
             NzStrReceive(arr(r, cols("ITEM_CODE"))), _
             NzDblReceive(arr(r, cols("QUANTITY"))), _

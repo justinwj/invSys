@@ -1,16 +1,16 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-06-17 08:14:14
-- Passed: 20
-- Failed: 0
-- Range: 1-20 of 129
+- Date: 2026-07-15 14:06:49
+- Passed: 19
+- Failed: 1
+- Range: 1-20 of 221
 
 | Test | Result |
 |---|---|
 | TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_ReadsWarehouseIdFromConfig | PASS |
 | TestPhase6CoreSurfaces.TestNasGetCurrentTarget_ReturnsDeepCopy | PASS |
 | TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_RequiresStationInboxRejectsBlankStation | PASS |
-| TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AllowsRoamingBlankStationWithoutInboxRequirement | PASS |
+| TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AllowsRoamingBlankStationWithoutInboxRequirement | FAIL |
 | TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots | PASS |
 | TestPhase6CoreSurfaces.TestNasScanRoot_ReturnsPathStringsWithoutWarehouseInference | PASS |
 | TestPhase6CoreSurfaces.TestNasScanRoot_RejectsMismatchedConfigAuthPair | PASS |

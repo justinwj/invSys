@@ -13,6 +13,7 @@ Private Const PROC_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const PROC_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const PROC_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
 Private Const PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE As String = "ADMIN_SHIPMENT_RECONCILE"
+Private Const PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST As String = "ADMIN_INVENTORY_ADJUST"
 Private Const PROC_EVENT_TYPE_BOX_BUILD As String = "BOX_BUILD"
 Private Const PROC_EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Private Const PROC_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
@@ -93,7 +94,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             LogInventoryWorkbookLockDiagnosticsProcessor warehouseId, Nothing, openWorkbookPaths
             report = "Inventory workbook is read-only or locked by another Excel session."
         Else
-            report = "Inventory workbook not found."
+            report = "Inventory workbook not found. " & modInventoryDomainBridge.ResolveInventoryWorkbookBridgeDiagnostic(warehouseId)
         End If
         Exit Function
     End If
@@ -260,7 +261,7 @@ Private Function ResolveInventoryWorkbookPathProcessor(ByVal warehouseId As Stri
     If resolvedWh = "" Then resolvedWh = modConfig.GetString("WarehouseId", "")
     If resolvedWh = "" Then resolvedWh = "WH1"
 
-    rootPath = ResolveCurrentTargetRuntimeRootProcessor()
+    rootPath = ResolveCurrentTargetRuntimeRootForWarehouseProcessor(resolvedWh)
     If rootPath = "" Then rootPath = Trim$(modRuntimeWorkbooks.GetCoreDataRootOverride())
     If rootPath = "" Then rootPath = Trim$(modConfig.GetString("PathDataRoot", ""))
     If rootPath = "" Then rootPath = modDeploymentPaths.DefaultWarehouseRuntimeRootPath(resolvedWh, True)
@@ -297,6 +298,31 @@ Private Function ResolveCurrentTargetRuntimeRootProcessor() As String
     End If
     If target Is Nothing Then Exit Function
     ResolveCurrentTargetRuntimeRootProcessor = Trim$(target.RuntimeRoot)
+
+CleanExit:
+End Function
+
+Private Function ResolveCurrentTargetRuntimeRootForWarehouseProcessor(ByVal warehouseId As String) As String
+    On Error GoTo CleanExit
+
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim requestedWarehouseId As String
+    Dim targetWarehouseId As String
+
+    requestedWarehouseId = Trim$(warehouseId)
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then
+        Call modNasConnection.ResolveWarehouseTarget(target, statusCode)
+    End If
+    If target Is Nothing Then Exit Function
+
+    targetWarehouseId = Trim$(target.WarehouseId)
+    If requestedWarehouseId <> "" And targetWarehouseId <> "" Then
+        If StrComp(requestedWarehouseId, targetWarehouseId, vbTextCompare) <> 0 Then Exit Function
+    End If
+
+    ResolveCurrentTargetRuntimeRootForWarehouseProcessor = Trim$(target.RuntimeRoot)
 
 CleanExit:
 End Function
@@ -535,10 +561,18 @@ Private Sub EnsureInboxDefaultEventType(ByVal lo As ListObject, ByVal defaultEve
 End Sub
 
 Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report As String) As Boolean
+    Dim runtimeRoot As String
+
+    runtimeRoot = ResolveOpenRuntimeRootForWarehouseProcessor(warehouseId)
+    If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+
     If Not modConfig.LoadConfig(warehouseId, "") Then
         report = "Config load failed: " & modConfig.Validate()
         Exit Function
     End If
+
+    runtimeRoot = Trim$(modConfig.GetString("PathDataRoot", ""))
+    If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
 
     If Not modAuth.LoadAuth(modConfig.GetString("WarehouseId", warehouseId)) Then
         report = "Auth load failed: " & modAuth.ValidateAuth()
@@ -546,6 +580,26 @@ Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report A
     End If
 
     EnsurePhase2Context = True
+End Function
+
+Private Function ResolveOpenRuntimeRootForWarehouseProcessor(ByVal warehouseId As String) As String
+    Dim wb As Workbook
+    Dim prefix As String
+    Dim wbPath As String
+
+    warehouseId = Trim$(warehouseId)
+    If warehouseId = "" Then Exit Function
+    prefix = LCase$(warehouseId & ".invsys.")
+
+    For Each wb In Application.Workbooks
+        If LCase$(Left$(wb.Name, Len(prefix))) = prefix Then
+            wbPath = Trim$(wb.Path)
+            If wbPath <> "" Then
+                ResolveOpenRuntimeRootForWarehouseProcessor = modConfig.NormalizeFolderPathForRuntime(wbPath, False)
+                Exit Function
+            End If
+        End If
+    Next wb
 End Function
 
 Private Function ResolveInboxTargets(Optional ByVal warehouseId As String = "") As Collection
@@ -775,7 +829,7 @@ Private Function InboxWorkbookNameProcessor(ByVal eventType As String, ByVal sta
             InboxWorkbookNameProcessor = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameProcessor = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE
+        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             InboxWorkbookNameProcessor = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function
@@ -980,7 +1034,7 @@ Private Function CapabilityForEventType(ByVal eventType As String) As String
             CapabilityForEventType = "ADMIN_MAINT"
         Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE
             CapabilityForEventType = "PROD_POST"
-        Case PROC_EVENT_TYPE_MIGRATION_SEED
+        Case PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventType = "ADMIN_MAINT"
     End Select
 End Function

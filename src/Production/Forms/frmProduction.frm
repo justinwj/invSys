@@ -15,6 +15,12 @@ Attribute VB_Exposed = False
 '@RuntimeStubUserFormCode
 Option Explicit
 
+Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
+Private Const RUN_LOADER_LINE_WIDTHS As String = "85 pt;0 pt;55 pt;155 pt;50 pt;45 pt;65 pt;0 pt"
+Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;125 pt;35 pt;145 pt;48 pt;58 pt;38 pt;70 pt;90 pt"
+Private Const RUN_OUTPUT_WIDTHS As String = "75 pt;115 pt;35 pt;50 pt;45 pt;65 pt;35 pt"
+Private Const RUN_CHECK_WIDTHS As String = "38 pt;95 pt;200 pt;45 pt;60 pt;70 pt"
+
 Private WithEvents mPages As MSForms.MultiPage
 Private WithEvents mLstBuilderRecipes As MSForms.ListBox
 Private WithEvents mLstBuilderLines As MSForms.ListBox
@@ -48,15 +54,21 @@ Private WithEvents mLstLoaderLines As MSForms.ListBox
 Private WithEvents mLstLoaderOutput As MSForms.ListBox
 Private WithEvents mLstRunPalette As MSForms.ListBox
 Private WithEvents mLstRunTree As MSForms.ListBox
+Private WithEvents mCmbRunProcess As MSForms.ComboBox
+Private WithEvents mCmbTreeRunProcess As MSForms.ComboBox
+Private WithEvents mCmbRunLocation As MSForms.ComboBox
+Private WithEvents mCmbTreeRunLocation As MSForms.ComboBox
 Private WithEvents mBtnLoaderRefresh As MSForms.CommandButton
 Private WithEvents mBtnLoaderLoad As MSForms.CommandButton
 Private WithEvents mBtnLoaderClear As MSForms.CommandButton
 Private WithEvents mBtnRunTreeExpandAll As MSForms.CommandButton
 Private WithEvents mBtnRunTreeCollapseAll As MSForms.CommandButton
+Private WithEvents mBtnRunTreeApplyPalette As MSForms.CommandButton
 
 Private WithEvents mLstManagerOutput As MSForms.ListBox
 Private WithEvents mLstManagerCheck As MSForms.ListBox
 Private WithEvents mBtnRunApplyPalette As MSForms.CommandButton
+Private WithEvents mBtnManagerCheckIn As MSForms.CommandButton
 Private WithEvents mBtnManagerRefresh As MSForms.CommandButton
 Private WithEvents mBtnManagerPrepare As MSForms.CommandButton
 Private WithEvents mBtnManagerApplyOutput As MSForms.CommandButton
@@ -70,15 +82,19 @@ Private WithEvents mBtnClose As MSForms.CommandButton
 Private mTxtRecipeName As MSForms.TextBox
 Private mTxtRecipeId As MSForms.TextBox
 Private mTxtRecipeDescription As MSForms.TextBox
+Private mTxtRecipeRowBudget As MSForms.TextBox
 Private mTxtLineProcess As MSForms.TextBox
 Private mTxtLineIngredient As MSForms.TextBox
 Private mTxtLinePercent As MSForms.TextBox
 Private mTxtLineUom As MSForms.TextBox
 Private mTxtLineAmount As MSForms.TextBox
-Private mTxtPaletteSplit As MSForms.TextBox
-Private mTxtPaletteQty As MSForms.TextBox
-Private mTxtOutputReal As MSForms.TextBox
+Private WithEvents mTxtPaletteSplit As MSForms.TextBox
+Private WithEvents mTxtPaletteQty As MSForms.TextBox
+Private WithEvents mTxtTreePaletteSplit As MSForms.TextBox
+Private WithEvents mTxtTreePaletteQty As MSForms.TextBox
+Private WithEvents mTxtOutputReal As MSForms.TextBox
 Private mTxtOutputBatch As MSForms.TextBox
+Private mTxtOutputTotal As MSForms.TextBox
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
 Private mInventoryRows As Variant
@@ -88,10 +104,16 @@ Private mLoading As Boolean
 Private mResizeInitialized As Boolean
 Private mResizingLayout As Boolean
 Private mRunTreeCollapsed As Object
+Private mRunSplitOverrides As Object
+Private mRunBaseQtyByKey As Object
+Private mUpdatingPaletteInputs As Boolean
+Private mPaletteInputSource As String
 
 Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
 Private Const PRODUCTION_BASE_WIDTH As Double = 1110
 Private Const PRODUCTION_BASE_HEIGHT As Double = 690
+Private Const PRODUCTION_DEFAULT_ROW_BUDGET As Long = 50
+Private Const PRODUCTION_MAX_ROW_BUDGET As Long = 1000
 Private Const RUN_TREE_PARENT_MARKER As String = "__RUN_TREE_PARENT__"
 
 Private Const TABLE_BUILDER_HEADER As String = "RB_AddRecipeName"
@@ -106,26 +128,42 @@ Private Const TABLE_MANAGER_OUTPUT As String = "ProductionOutput"
 Private Const TABLE_MANAGER_CHECK As String = "Prod_invSys_Check"
 
 Private Sub UserForm_Initialize()
+    On Error GoTo FailInitialize
     BuildLayout
+    Exit Sub
+
+FailInitialize:
+    MsgBox "Production form failed to initialize: " & Err.Description, vbExclamation, "invSys Production"
 End Sub
 
 Private Sub UserForm_Activate()
+    On Error GoTo FailActivate
     If Not mResizeInitialized Then
         On Error Resume Next
         Application.Run "modUserFormResizeWin.EnableResizableUserForm", Me
-        On Error GoTo 0
+        On Error GoTo FailActivate
         mResizeInitialized = True
     End If
     ResizeProductionLayout
+    Exit Sub
+
+FailActivate:
+    On Error Resume Next
+    ShowStatus "Production form activation skipped: " & Err.Description
+    On Error GoTo 0
 End Sub
 
 Private Sub UserForm_Resize()
+    On Error Resume Next
     ResizeProductionLayout
+    On Error GoTo 0
 End Sub
 
 Private Sub UserForm_Terminate()
     Set mOperatorWorkbook = Nothing
     Set mRunTreeCollapsed = Nothing
+    Set mRunSplitOverrides = Nothing
+    Set mRunBaseQtyByKey = Nothing
 End Sub
 
 Public Sub SetOperatorWorkbook(ByVal wb As Workbook)
@@ -249,8 +287,10 @@ Private Sub BuildRecipeBuilderPage(ByVal pg As MSForms.Page)
     Set mTxtRecipeName = AddText(pg, "txtRecipeName", 350, 32, 240, 22)
     AddLabel pg, "Recipe ID", 610, 12, 80, 16
     Set mTxtRecipeId = AddText(pg, "txtRecipeId", 610, 32, 230, 22)
+    AddLabel pg, "Row Budget", 610, 62, 90, 16
+    Set mTxtRecipeRowBudget = AddText(pg, "txtRecipeRowBudget", 700, 58, 140, 22)
     AddLabel pg, "Description", 350, 62, 120, 16
-    Set mTxtRecipeDescription = AddText(pg, "txtRecipeDescription", 350, 82, 490, 44)
+    Set mTxtRecipeDescription = AddText(pg, "txtRecipeDescription", 350, 96, 490, 30)
     mTxtRecipeDescription.MultiLine = True
 
     Set mBtnBuilderRefresh = AddButton(pg, "btnBuilderRefresh", "Refresh", 860, 32, 170, 24)
@@ -308,49 +348,147 @@ End Sub
 
 Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Recipes", 12, 12, 140, 16
-    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 32, 270, 165, 3, "0 pt;120 pt;130 pt")
+    AddColumnHeaders pg, "LoaderRecipes", Array("", "Recipe", "Description"), 12, 32, RUN_LOADER_RECIPE_WIDTHS
+    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 147, 3, RUN_LOADER_RECIPE_WIDTHS)
     Set mBtnLoaderRefresh = AddButton(pg, "btnLoaderRefresh", "Refresh", 300, 32, 130, 24)
     Set mBtnLoaderLoad = AddButton(pg, "btnLoaderLoad", "Load Recipe", 300, 64, 130, 24)
     Set mBtnLoaderClear = AddButton(pg, "btnLoaderClear", "Clear Run", 300, 96, 130, 24)
 
     AddLabel pg, "Loaded Recipe Lines", 455, 12, 180, 16
-    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 32, 575, 165, 8, "85 pt;0 pt;55 pt;155 pt;50 pt;45 pt;65 pt;0 pt")
+    AddColumnHeaders pg, "LoaderLines", Array("Process", "", "I/O", "Ingredient", "%", "UOM", "Amount", ""), 455, 32, RUN_LOADER_LINE_WIDTHS
+    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 50, 575, 147, 8, RUN_LOADER_LINE_WIDTHS)
 
     AddLabel pg, "Acceptable Inventory For Run", 12, 215, 230, 16
-    Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 235, 650, 140, 10, "0 pt;0 pt;150 pt;38 pt;180 pt;52 pt;64 pt;45 pt;90 pt;0 pt")
-    AddLabel pg, "Split %", 680, 214, 70, 16
-    Set mTxtPaletteSplit = AddText(pg, "txtPaletteSplit", 680, 234, 70, 22)
-    AddLabel pg, "Qty", 765, 214, 45, 16
-    Set mTxtPaletteQty = AddText(pg, "txtPaletteQty", 765, 234, 80, 22)
-    Set mBtnRunApplyPalette = AddButton(pg, "btnRunApplyPalette", "Apply Split", 860, 233, 130, 24)
+    AddRunPaletteHeader pg, 12, 235
+    Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 253, 650, 122, 10, RUN_PALETTE_WIDTHS)
+    AddLabel pg, "Process", 680, 144, 70, 16
+    Set mCmbRunProcess = AddCombo(pg, "cmbRunProcess", 790, 140, 200, 22)
+    AddLabel pg, "Run Location", 680, 174, 90, 16
+    Set mCmbRunLocation = AddCombo(pg, "cmbRunLocation", 790, 170, 200, 22)
+    AddLabel pg, "% of Requirement", 680, 214, 110, 16
+    Set mTxtPaletteSplit = AddText(pg, "txtPaletteSplit", 680, 234, 90, 22)
+    AddLabel pg, "Qty", 790, 214, 45, 16
+    Set mTxtPaletteQty = AddText(pg, "txtPaletteQty", 790, 234, 90, 22)
+    Set mBtnRunApplyPalette = AddButton(pg, "btnRunApplyPalette", "Apply", 900, 233, 90, 24)
 
     AddLabel pg, "Production Output", 680, 272, 170, 16
-    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 680, 292, 350, 106, 7, "75 pt;115 pt;35 pt;50 pt;45 pt;65 pt;35 pt")
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Real", "Batch", "Recall", "ROW"), 680, 292, RUN_OUTPUT_WIDTHS
+    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 680, 310, 350, 88, 7, RUN_OUTPUT_WIDTHS)
     AddLabel pg, "Real Output", 680, 410, 80, 16
     Set mTxtOutputReal = AddText(pg, "txtOutputReal", 760, 406, 80, 22)
     AddLabel pg, "Batch", 850, 410, 50, 16
     Set mTxtOutputBatch = AddText(pg, "txtOutputBatch", 900, 406, 80, 22)
-    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Apply Output", 680, 440, 120, 24)
+    AddLabel pg, "Output Total", 680, 434, 80, 16
+    Set mTxtOutputTotal = AddText(pg, "txtOutputTotal", 760, 430, 220, 22)
+    mTxtOutputTotal.Locked = True
+    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 680, 462, 95, 24)
+    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 790, 462, 120, 24)
 
     AddLabel pg, "Inventory Check", 12, 395, 150, 16
-    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 415, 650, 105, 6, "38 pt;95 pt;200 pt;45 pt;60 pt;70 pt")
+    AddColumnHeaders pg, "ManagerCheck", Array("ROW", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 415, RUN_CHECK_WIDTHS
+    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 433, 650, 87, 6, RUN_CHECK_WIDTHS)
 
-    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 820, 440, 95, 24)
-    Set mBtnManagerPrepare = AddButton(pg, "btnManagerPrepare", "Prepare", 930, 440, 95, 24)
-    Set mBtnManagerUsed = AddButton(pg, "btnManagerUsed", "To USED", 680, 484, 95, 26)
-    Set mBtnManagerMade = AddButton(pg, "btnManagerMade", "To MADE", 790, 484, 95, 26)
-    Set mBtnManagerTotal = AddButton(pg, "btnManagerTotal", "To TOTAL", 900, 484, 95, 26)
-    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 680, 524, 120, 26)
-    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 820, 524, 120, 26)
+    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 930, 462, 95, 24)
+    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 680, 506, 120, 26)
+    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 820, 506, 120, 26)
 End Sub
 
 Private Sub BuildRunTreePage(ByVal pg As MSForms.Page)
     AddLabel pg, "Recipe Ingredient / Inventory Choices", 12, 12, 260, 16
-    Set mBtnRunTreeExpandAll = AddButton(pg, "btnRunTreeExpandAll", "Expand All", 760, 8, 120, 24)
-    Set mBtnRunTreeCollapseAll = AddButton(pg, "btnRunTreeCollapseAll", "Collapse All", 894, 8, 130, 24)
-    Set mLstRunTree = AddList(pg, "lstRunTree", 12, 42, 1018, 478, 10, "0 pt;0 pt;360 pt;45 pt;180 pt;60 pt;70 pt;50 pt;120 pt;0 pt")
+    AddLabel pg, "% of Requirement", 300, 10, 110, 16
+    Set mTxtTreePaletteSplit = AddText(pg, "txtTreePaletteSplit", 410, 8, 70, 22)
+    AddLabel pg, "Qty", 492, 10, 35, 16
+    Set mTxtTreePaletteQty = AddText(pg, "txtTreePaletteQty", 530, 8, 80, 22)
+    Set mBtnRunTreeApplyPalette = AddButton(pg, "btnRunTreeApplyPalette", "Apply", 622, 7, 70, 24)
+    AddLabel pg, "Process", 704, 10, 55, 16
+    Set mCmbTreeRunProcess = AddCombo(pg, "cmbTreeRunProcess", 760, 8, 100, 22)
+    AddLabel pg, "Location", 870, 10, 58, 16
+    Set mCmbTreeRunLocation = AddCombo(pg, "cmbTreeRunLocation", 930, 8, 100, 22)
+    Set mBtnRunTreeExpandAll = AddButton(pg, "btnRunTreeExpandAll", "Expand", 850, 528, 70, 24)
+    Set mBtnRunTreeCollapseAll = AddButton(pg, "btnRunTreeCollapseAll", "Collapse", 930, 528, 80, 24)
+    AddRunPaletteHeader pg, 12, 42
+    Set mLstRunTree = AddList(pg, "lstRunTree", 12, 60, 1018, 460, 10, "0 pt;0 pt;300 pt;42 pt;165 pt;58 pt;68 pt;48 pt;80 pt;110 pt")
     mLstRunTree.Font.Size = 11
 End Sub
+
+Private Sub AddRunPaletteHeader(ByVal pg As MSForms.Page, ByVal leftVal As Single, ByVal topVal As Single)
+    AddLabel pg, "Ingredient", leftVal + 2, topVal, 135, 14
+    AddLabel pg, "ROW", leftVal + 130, topVal, 35, 14
+    AddLabel pg, "Inventory Item", leftVal + 168, topVal, 145, 14
+    AddLabel pg, "% Req", leftVal + 315, topVal, 46, 14
+    AddLabel pg, "Qty", leftVal + 365, topVal, 50, 14
+    AddLabel pg, "UOM", leftVal + 425, topVal, 40, 14
+    AddLabel pg, "Inv", leftVal + 465, topVal, 45, 14
+    AddLabel pg, "Location", leftVal + 540, topVal, 70, 14
+End Sub
+
+Private Sub AddColumnHeaders(ByVal parent As Object, ByVal groupName As String, ByVal labels As Variant, _
+                             ByVal leftVal As Single, ByVal topVal As Single, ByVal widths As String)
+    Dim i As Long
+    Dim idx As Long
+    Dim x As Single
+    Dim colWidth As Single
+    Dim caption As String
+    Dim lbl As MSForms.Label
+
+    x = leftVal
+    For i = LBound(labels) To UBound(labels)
+        idx = i - LBound(labels)
+        colWidth = ColumnWidthPoints(widths, idx, 60)
+        caption = Trim$(CStr(labels(i)))
+        If colWidth > 0 And caption <> "" Then
+            Set lbl = parent.Controls.Add("Forms.Label.1", "hdr" & CleanControlName(groupName) & CStr(idx + 1), True)
+            With lbl
+                .Caption = caption
+                .Left = x + 2
+                .Top = topVal
+                .Width = MaxDoubleForm(1, colWidth - 4)
+                .Height = 14
+                .Font.Bold = True
+            End With
+        End If
+        x = x + colWidth
+    Next i
+End Sub
+
+Private Sub PositionColumnHeaders(ByVal parent As Object, ByVal groupName As String, _
+                                  ByVal leftVal As Single, ByVal topVal As Single, ByVal widths As String)
+    Dim parts As Variant
+    Dim i As Long
+    Dim x As Single
+    Dim colWidth As Single
+    Dim lbl As MSForms.Label
+
+    parts = Split(widths, ";")
+    x = leftVal
+    For i = LBound(parts) To UBound(parts)
+        colWidth = ColumnWidthPoints(widths, i, 60)
+        Set lbl = Nothing
+        On Error Resume Next
+        Set lbl = parent.Controls("hdr" & CleanControlName(groupName) & CStr(i + 1))
+        On Error GoTo 0
+        If Not lbl Is Nothing Then
+            lbl.Left = x + 2
+            lbl.Top = topVal
+            lbl.Width = MaxDoubleForm(1, colWidth - 4)
+        End If
+        x = x + colWidth
+    Next i
+End Sub
+
+Private Function ColumnWidthPoints(ByVal widths As String, ByVal zeroBasedIndex As Long, _
+                                   Optional ByVal defaultWidth As Single = 60) As Single
+    Dim parts As Variant
+    Dim rawValue As String
+
+    parts = Split(widths, ";")
+    If zeroBasedIndex < LBound(parts) Or zeroBasedIndex > UBound(parts) Then
+        ColumnWidthPoints = defaultWidth
+        Exit Function
+    End If
+    rawValue = Replace$(LCase$(Trim$(CStr(parts(zeroBasedIndex)))), "pt", "")
+    ColumnWidthPoints = CSng(Val(rawValue))
+End Function
 
 Private Sub ResizeProductionLayout()
     On Error GoTo CleanExit
@@ -385,10 +523,12 @@ End Sub
 Private Sub ResizeProductionPages()
     Dim pageW As Double
     Dim pageH As Double
+    Dim runRightPanelLeft As Double
 
     If mPages Is Nothing Then Exit Sub
     pageW = MaxDoubleForm(700, mPages.Width - 20)
     pageH = MaxDoubleForm(420, mPages.Height - 45)
+    runRightPanelLeft = 680
 
     If Not mLstBuilderRecipes Is Nothing Then mLstBuilderRecipes.Height = MaxDoubleForm(130, pageH - 290)
     If Not mLstBuilderLines Is Nothing Then
@@ -411,21 +551,27 @@ Private Sub ResizeProductionPages()
 
     If Not mLstLoaderLines Is Nothing Then mLstLoaderLines.Width = MaxDoubleForm(420, pageW - mLstLoaderLines.Left - 30)
     If Not mLstRunPalette Is Nothing Then
-        mLstRunPalette.Width = MaxDoubleForm(430, pageW - 410)
+        mLstRunPalette.Width = MaxDoubleForm(430, runRightPanelLeft - mLstRunPalette.Left - 28)
         mLstRunPalette.Height = MaxDoubleForm(90, (pageH - 330) / 2)
     End If
     If Not mLstManagerCheck Is Nothing And Not mLstRunPalette Is Nothing Then
         mLstManagerCheck.Top = mLstRunPalette.Top + mLstRunPalette.Height + 68
         mLstManagerCheck.Width = mLstRunPalette.Width
         mLstManagerCheck.Height = MaxDoubleForm(70, pageH - mLstManagerCheck.Top - 18)
+        PositionColumnHeaders mPages.Pages(2), "ManagerCheck", mLstManagerCheck.Left, mLstManagerCheck.Top - 18, RUN_CHECK_WIDTHS
     End If
+    If Not mLstManagerOutput Is Nothing Then mLstManagerOutput.Width = MaxDoubleForm(350, pageW - mLstManagerOutput.Left - 28)
 
     If Not mLstRunTree Is Nothing Then
         mLstRunTree.Width = MaxDoubleForm(520, pageW - 40)
         mLstRunTree.Height = MaxDoubleForm(260, pageH - mLstRunTree.Top - 18)
     End If
-    If Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeCollapseAll.Left = MaxDoubleForm(150, pageW - 158)
-    If Not mBtnRunTreeExpandAll Is Nothing And Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeExpandAll.Left = mBtnRunTreeCollapseAll.Left - 134
+    If Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeCollapseAll.Left = MaxDoubleForm(150, pageW - 85)
+    If Not mBtnRunTreeExpandAll Is Nothing And Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeExpandAll.Left = mBtnRunTreeCollapseAll.Left - 66
+    If Not mCmbTreeRunLocation Is Nothing And Not mBtnRunTreeExpandAll Is Nothing Then mCmbTreeRunLocation.Left = mBtnRunTreeExpandAll.Left - 115
+    If Not mBtnRunTreeApplyPalette Is Nothing And Not mCmbTreeRunLocation Is Nothing Then mBtnRunTreeApplyPalette.Left = mCmbTreeRunLocation.Left - 88
+    If Not mTxtTreePaletteQty Is Nothing And Not mBtnRunTreeApplyPalette Is Nothing Then mTxtTreePaletteQty.Left = mBtnRunTreeApplyPalette.Left - 92
+    If Not mTxtTreePaletteSplit Is Nothing And Not mTxtTreePaletteQty Is Nothing Then mTxtTreePaletteSplit.Left = mTxtTreePaletteQty.Left - 120
 End Sub
 
 Private Function MaxDoubleForm(ByVal leftValue As Double, ByVal rightValue As Double) As Double
@@ -535,6 +681,7 @@ Private Sub RefreshBuilderHeader()
     mTxtRecipeName.Text = FirstRowValue(lo, "RECIPE_NAME")
     mTxtRecipeId.Text = FirstRowValue(lo, "RECIPE_ID")
     mTxtRecipeDescription.Text = FirstRowValue(lo, "DESCRIPTION")
+    mTxtRecipeRowBudget.Text = NormalizeRecipeRowBudgetText(FirstRowValue(lo, "ROW_BUDGET"))
     If Trim$(mTxtRecipeId.Text) = "" And Trim$(mTxtRecipeName.Text) = "" Then
         mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
     End If
@@ -578,6 +725,7 @@ End Sub
 Private Sub RefreshLoaderState()
     FillListFromTable mLstLoaderLines, ProductionTable(TABLE_LOADER_LINES), _
         Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT NEEDED", "INGREDIENT_ID")
+    RefreshRunProcessChoices
     If Not mLstLoaderOutput Is Nothing Then
         FillListFromTable mLstLoaderOutput, ProductionTable(TABLE_MANAGER_OUTPUT), _
             Array("PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "ROW")
@@ -599,15 +747,19 @@ Private Sub RefreshRunPaletteState()
     Dim choices As Variant
     Dim filterIngredientId As String
     Dim filterIngredientName As String
+    Dim filterProcess As String
 
     If mLstRunPalette Is Nothing Then Exit Sub
     mLstRunPalette.Clear
     If Not mLstRunTree Is Nothing Then mLstRunTree.Clear
     GetSelectedRunIngredientFilter filterIngredientId, filterIngredientName
+    filterProcess = ActiveRunProcess()
+    EnsureRunInventoryCache
+    RefreshRunLocationChoices
 
     choices = RunProduction1("LoadProductionRunIngredientChoices", NzStr(RunProduction0("GetCurrentProductionRunRecipeId")))
     If Not IsEmpty(choices) Then
-        AddRunChoiceRows choices, filterIngredientId, filterIngredientName
+        AddRunChoiceRows choices, filterIngredientId, filterIngredientName, filterProcess
         BuildRunTreeFromPaletteList
         Exit Sub
     End If
@@ -616,21 +768,23 @@ Private Sub RefreshRunPaletteState()
     If ws Is Nothing Then Exit Sub
 
     For Each lo In ws.ListObjects
-        If IsRunPaletteTable(lo) Then AddRunPaletteRows lo, filterIngredientId, filterIngredientName
+        If IsRunPaletteTable(lo) Then AddRunPaletteRows lo, filterIngredientId, filterIngredientName, filterProcess
     Next lo
     BuildRunTreeFromPaletteList
 End Sub
 
 Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngredientId As String = "", _
-                             Optional ByVal filterIngredientName As String = "")
+                             Optional ByVal filterIngredientName As String = "", Optional ByVal filterProcess As String = "")
     Dim r As Long
     Dim listRow As Long
     Dim rowVal As String
     Dim itemVal As String
     Dim uomVal As String
     Dim locVal As String
+    Dim invVal As String
     Dim ingredientId As String
     Dim ingredientName As String
+    Dim processVal As String
 
     If IsEmpty(values) Then Exit Sub
     If Not IsArray(values) Then Exit Sub
@@ -638,15 +792,17 @@ Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngre
     For r = LBound(values, 1) To UBound(values, 1)
         ingredientId = NzStr(values(r, 2))
         ingredientName = NzStr(values(r, 3))
+        processVal = NzStr(values(r, 1))
+        If Not RunProcessMatchesFilter(processVal, filterProcess) Then GoTo NextRow
         If Not RunIngredientMatchesFilter(ingredientId, ingredientName, filterIngredientId, filterIngredientName) Then GoTo NextRow
 
         rowVal = NzStr(values(r, 4))
         itemVal = NzStr(values(r, 5))
         uomVal = NzStr(values(r, 8))
         locVal = NzStr(values(r, 9))
-        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, locVal
+        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, invVal, locVal
 
-        mLstRunPalette.AddItem NzStr(values(r, 1))
+        mLstRunPalette.AddItem processVal
         listRow = mLstRunPalette.ListCount - 1
         mLstRunPalette.List(listRow, 1) = ingredientId
         mLstRunPalette.List(listRow, 2) = ingredientName
@@ -655,8 +811,10 @@ Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngre
         mLstRunPalette.List(listRow, 5) = NzStr(values(r, 6))
         mLstRunPalette.List(listRow, 6) = NzStr(values(r, 7))
         mLstRunPalette.List(listRow, 7) = uomVal
-        mLstRunPalette.List(listRow, 8) = locVal
-        mLstRunPalette.List(listRow, 9) = NzStr(values(r, 10))
+        mLstRunPalette.List(listRow, 8) = invVal
+        mLstRunPalette.List(listRow, 9) = locVal
+        StoreRunBaseQty mLstRunPalette, listRow, NzStr(values(r, 10))
+        ApplyRunAllocationOverride mLstRunPalette, listRow
 NextRow:
     Next r
 End Sub
@@ -674,7 +832,7 @@ Private Function IsRunPaletteTable(ByVal lo As ListObject) As Boolean
 End Function
 
 Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngredientId As String = "", _
-                              Optional ByVal filterIngredientName As String = "")
+                              Optional ByVal filterIngredientName As String = "", Optional ByVal filterProcess As String = "")
     Dim arr As Variant
     Dim r As Long
     Dim listRow As Long
@@ -687,7 +845,9 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
     Dim qtyVal As String
     Dim uomVal As String
     Dim locVal As String
+    Dim invVal As String
     Dim baseQty As String
+    Dim ioVal As String
 
     If lo Is Nothing Then Exit Sub
     If lo.DataBodyRange Is Nothing Then Exit Sub
@@ -697,6 +857,9 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
         ingredientVal = CellText(arr, r, lo, "INGREDIENT")
         ingredientId = CellText(arr, r, lo, "INGREDIENT_ID")
         processVal = CellText(arr, r, lo, "PROCESS")
+        If Not RunProcessMatchesFilter(processVal, filterProcess) Then GoTo NextRow
+        ioVal = UCase$(Trim$(CellText(arr, r, lo, "INPUT/OUTPUT")))
+        If ioVal <> "" And ioVal <> "USED" Then GoTo NextRow
         If Not RunIngredientMatchesFilter(ingredientId, IngredientDisplayName(ingredientVal, processVal), filterIngredientId, filterIngredientName) Then GoTo NextRow
 
         rowVal = CellText(arr, r, lo, "ROW")
@@ -706,7 +869,7 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
         uomVal = CellText(arr, r, lo, "UOM")
         locVal = CellText(arr, r, lo, "LOCATION")
         baseQty = CellText(arr, r, lo, "BASE QUANTITY")
-        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, locVal
+        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, invVal, locVal
 
         mLstRunPalette.AddItem lo.Name
         listRow = mLstRunPalette.ListCount - 1
@@ -717,10 +880,129 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
         mLstRunPalette.List(listRow, 5) = splitVal
         mLstRunPalette.List(listRow, 6) = qtyVal
         mLstRunPalette.List(listRow, 7) = uomVal
-        mLstRunPalette.List(listRow, 8) = locVal
-        mLstRunPalette.List(listRow, 9) = baseQty
+        mLstRunPalette.List(listRow, 8) = invVal
+        mLstRunPalette.List(listRow, 9) = locVal
+        StoreRunBaseQty mLstRunPalette, listRow, baseQty
+        ApplyRunAllocationOverride mLstRunPalette, listRow
 NextRow:
     Next r
+End Sub
+
+Private Sub EnsureRunSplitOverrides()
+    If mRunSplitOverrides Is Nothing Then Set mRunSplitOverrides = CreateObject("Scripting.Dictionary")
+End Sub
+
+Private Sub EnsureRunBaseQtyMap()
+    If mRunBaseQtyByKey Is Nothing Then Set mRunBaseQtyByKey = CreateObject("Scripting.Dictionary")
+End Sub
+
+Private Function RunAllocationKeyFromList(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As String
+    If lst Is Nothing Then Exit Function
+    If rowIndex < 0 Then Exit Function
+    RunAllocationKeyFromList = Trim$(NzStr(lst.List(rowIndex, 0))) & "|" & _
+                               Trim$(NzStr(lst.List(rowIndex, 1))) & "|" & _
+                               Trim$(NzStr(lst.List(rowIndex, 3))) & "|" & _
+                               Trim$(NzStr(lst.List(rowIndex, 4)))
+End Function
+
+Private Sub StoreRunBaseQty(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long, ByVal baseQtyText As String)
+    Dim key As String
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    If key = "" Then Exit Sub
+    EnsureRunBaseQtyMap
+    mRunBaseQtyByKey(key) = baseQtyText
+End Sub
+
+Private Function RunBaseQtyFromList(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As Double
+    Dim key As String
+    Dim baseText As String
+
+    If lst Is Nothing Then Exit Function
+    If rowIndex < 0 Then Exit Function
+    If mRunBaseQtyByKey Is Nothing Then Exit Function
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    If key = "" Then Exit Function
+    If Not mRunBaseQtyByKey.Exists(key) Then Exit Function
+    baseText = NzStr(mRunBaseQtyByKey(key))
+    If IsNumeric(baseText) Then RunBaseQtyFromList = CDbl(baseText)
+End Function
+
+Private Function RunAllocationGroupKeyFromList(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As String
+    Dim r As Long
+
+    If lst Is Nothing Then Exit Function
+    If rowIndex < 0 Then Exit Function
+    If Not mLstRunTree Is Nothing Then
+        If lst Is mLstRunTree Then
+            If IsRunTreeParentRow(lst, rowIndex) Then
+                RunAllocationGroupKeyFromList = Trim$(NzStr(lst.List(rowIndex, 1)))
+                Exit Function
+            End If
+            For r = rowIndex To 0 Step -1
+                If IsRunTreeParentRow(lst, r) Then
+                    RunAllocationGroupKeyFromList = Trim$(NzStr(lst.List(r, 1)))
+                    Exit Function
+                End If
+            Next r
+        End If
+    End If
+    RunAllocationGroupKeyFromList = Trim$(NzStr(lst.List(rowIndex, 1)))
+    If RunAllocationGroupKeyFromList = "" Or IsNumeric(RunAllocationGroupKeyFromList) Then
+        RunAllocationGroupKeyFromList = Trim$(NzStr(lst.List(rowIndex, 2)))
+    End If
+End Function
+
+Private Function RunAllocationPercentForGroup(ByVal groupKey As String, Optional ByVal excludeAllocationKey As String = "") As Double
+    Dim i As Long
+    Dim splitText As String
+
+    If mLstRunPalette Is Nothing Then Exit Function
+    groupKey = Trim$(groupKey)
+    For i = 0 To mLstRunPalette.ListCount - 1
+        If StrComp(RunAllocationGroupKeyFromList(mLstRunPalette, i), groupKey, vbTextCompare) = 0 Then
+            If excludeAllocationKey = "" Or RunAllocationKeyFromList(mLstRunPalette, i) <> excludeAllocationKey Then
+                splitText = Trim$(NzStr(mLstRunPalette.List(i, 5)))
+                If IsNumeric(splitText) Then RunAllocationPercentForGroup = RunAllocationPercentForGroup + CDbl(splitText)
+            End If
+        End If
+    Next i
+End Function
+
+Private Function RunAllocationStatusText(ByVal groupKey As String) As String
+    Dim totalPct As Double
+
+    totalPct = RunAllocationPercentForGroup(groupKey)
+    If totalPct >= 99.999 And totalPct <= 100.001 Then
+        RunAllocationStatusText = "FILLED 100%"
+    ElseIf totalPct > 0 Then
+        RunAllocationStatusText = FormatRunNumber(totalPct) & "% filled"
+    Else
+        RunAllocationStatusText = "0% filled"
+    End If
+End Function
+
+Private Sub StoreRunAllocationOverride(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long, _
+                                       ByVal splitText As String, ByVal qtyText As String)
+    Dim key As String
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    If key = "" Then Exit Sub
+    EnsureRunSplitOverrides
+    mRunSplitOverrides(key) = Array(splitText, qtyText)
+End Sub
+
+Private Sub ApplyRunAllocationOverride(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long)
+    Dim key As String
+    Dim values As Variant
+
+    If lst Is Nothing Then Exit Sub
+    If rowIndex < 0 Then Exit Sub
+    If mRunSplitOverrides Is Nothing Then Exit Sub
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    If key = "" Then Exit Sub
+    If Not mRunSplitOverrides.Exists(key) Then Exit Sub
+    values = mRunSplitOverrides(key)
+    lst.List(rowIndex, 5) = NzStr(values(0))
+    lst.List(rowIndex, 6) = NzStr(values(1))
 End Sub
 
 Private Sub GetSelectedRunIngredientFilter(ByRef ingredientId As String, ByRef ingredientName As String)
@@ -751,6 +1033,16 @@ Private Function RunIngredientMatchesFilter(ByVal rowIngredientId As String, ByV
     End If
 End Function
 
+Private Function RunProcessMatchesFilter(ByVal rowProcess As String, ByVal filterProcess As String) As Boolean
+    rowProcess = Trim$(rowProcess)
+    filterProcess = Trim$(filterProcess)
+    If filterProcess = "" Then
+        RunProcessMatchesFilter = True
+    Else
+        RunProcessMatchesFilter = (StrComp(rowProcess, filterProcess, vbTextCompare) = 0)
+    End If
+End Function
+
 Private Sub BuildRunTreeFromPaletteList()
     Dim i As Long
     Dim key As String
@@ -772,7 +1064,7 @@ Private Sub BuildRunTreeFromPaletteList()
             mLstRunTree.AddItem RUN_TREE_PARENT_MARKER
             rowIndex = mLstRunTree.ListCount - 1
             mLstRunTree.List(rowIndex, 1) = key
-            mLstRunTree.List(rowIndex, 2) = RunTreeParentCaption(parentText, collapsed)
+            mLstRunTree.List(rowIndex, 2) = RunTreeParentCaption(parentText, collapsed, key)
             lastKey = key
         End If
 
@@ -792,8 +1084,7 @@ Private Sub EnsureRunTreeState()
 End Sub
 
 Private Function RunTreeGroupKey(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As String
-    RunTreeGroupKey = Trim$(NzStr(lst.List(rowIndex, 1)))
-    If RunTreeGroupKey = "" Then RunTreeGroupKey = Trim$(NzStr(lst.List(rowIndex, 2)))
+    RunTreeGroupKey = RunAllocationGroupKeyFromList(lst, rowIndex)
 End Function
 
 Private Function RunTreeGroupCollapsed(ByVal groupKey As String) As Boolean
@@ -802,11 +1093,13 @@ Private Function RunTreeGroupCollapsed(ByVal groupKey As String) As Boolean
     If mRunTreeCollapsed.Exists(groupKey) Then RunTreeGroupCollapsed = CBool(mRunTreeCollapsed(groupKey))
 End Function
 
-Private Function RunTreeParentCaption(ByVal parentText As String, ByVal collapsed As Boolean) As String
+Private Function RunTreeParentCaption(ByVal parentText As String, ByVal collapsed As Boolean, ByVal groupKey As String) As String
+    Dim statusText As String
+    statusText = RunAllocationStatusText(groupKey)
     If collapsed Then
-        RunTreeParentCaption = "[ SHOW CHOICES ]  " & parentText
+        RunTreeParentCaption = "[ SHOW CHOICES ]  " & parentText & "  --  " & statusText
     Else
-        RunTreeParentCaption = "[ HIDE CHOICES ]  " & parentText
+        RunTreeParentCaption = "[ HIDE CHOICES ]  " & parentText & "  --  " & statusText
     End If
 End Function
 
@@ -872,25 +1165,225 @@ Private Sub EnsureRunInventoryCache()
     End If
 End Sub
 
+Private Sub RefreshRunLocationChoices()
+    Dim dict As Object
+    Dim r As Long
+    Dim locVal As String
+    Dim selectedLoc As String
+    Dim wasLoading As Boolean
+
+    If mCmbRunLocation Is Nothing And mCmbTreeRunLocation Is Nothing Then Exit Sub
+    If IsEmpty(mInventoryRows) Then Exit Sub
+    If Not IsArray(mInventoryRows) Then Exit Sub
+
+    selectedLoc = ActiveRunLocation()
+    Set dict = CreateObject("Scripting.Dictionary")
+    For r = LBound(mInventoryRows, 1) To UBound(mInventoryRows, 1)
+        locVal = Trim$(NzStr(mInventoryRows(r, 5)))
+        If locVal <> "" Then
+            If Not dict.Exists(LCase$(locVal)) Then dict.Add LCase$(locVal), locVal
+        End If
+    Next r
+
+    wasLoading = mLoading
+    mLoading = True
+    PopulateRunLocationCombo mCmbRunLocation, dict, selectedLoc
+    PopulateRunLocationCombo mCmbTreeRunLocation, dict, selectedLoc
+    mLoading = wasLoading
+End Sub
+
+Private Sub RefreshRunProcessChoices()
+    Dim dict As Object
+    Dim i As Long
+    Dim procVal As String
+    Dim selectedProcess As String
+    Dim wasLoading As Boolean
+
+    If mCmbRunProcess Is Nothing And mCmbTreeRunProcess Is Nothing Then Exit Sub
+    If mLstLoaderLines Is Nothing Then Exit Sub
+
+    selectedProcess = ActiveRunProcess()
+    Set dict = CreateObject("Scripting.Dictionary")
+    For i = 0 To mLstLoaderLines.ListCount - 1
+        procVal = Trim$(NzStr(mLstLoaderLines.List(i, 0)))
+        If procVal <> "" Then
+            If Not dict.Exists(LCase$(procVal)) Then dict.Add LCase$(procVal), procVal
+        End If
+    Next i
+
+    wasLoading = mLoading
+    mLoading = True
+    PopulateRunProcessCombo mCmbRunProcess, dict, selectedProcess
+    PopulateRunProcessCombo mCmbTreeRunProcess, dict, selectedProcess
+    mLoading = wasLoading
+End Sub
+
+Private Sub PopulateRunProcessCombo(ByVal cmb As MSForms.ComboBox, ByVal dict As Object, ByVal selectedProcess As String)
+    Dim key As Variant
+    Dim i As Long
+
+    If cmb Is Nothing Then Exit Sub
+    cmb.Clear
+    cmb.AddItem ""
+    If Not dict Is Nothing Then
+        For Each key In dict.Keys
+            cmb.AddItem CStr(dict(key))
+        Next key
+    End If
+    cmb.ListIndex = 0
+    selectedProcess = Trim$(selectedProcess)
+    If selectedProcess <> "" Then
+        For i = 0 To cmb.ListCount - 1
+            If StrComp(NzStr(cmb.List(i)), selectedProcess, vbTextCompare) = 0 Then
+                cmb.ListIndex = i
+                Exit For
+            End If
+        Next i
+    End If
+End Sub
+
+Private Sub PopulateRunLocationCombo(ByVal cmb As MSForms.ComboBox, ByVal dict As Object, ByVal selectedLoc As String)
+    Dim key As Variant
+    Dim i As Long
+
+    If cmb Is Nothing Then Exit Sub
+    cmb.Clear
+    cmb.AddItem ""
+    If Not dict Is Nothing Then
+        For Each key In dict.Keys
+            cmb.AddItem CStr(dict(key))
+        Next key
+    End If
+    cmb.ListIndex = 0
+    selectedLoc = Trim$(selectedLoc)
+    If selectedLoc <> "" Then
+        For i = 0 To cmb.ListCount - 1
+            If StrComp(NzStr(cmb.List(i)), selectedLoc, vbTextCompare) = 0 Then
+                cmb.ListIndex = i
+                Exit For
+            End If
+        Next i
+    End If
+End Sub
+
+Private Function ActiveRunLocation() As String
+    If Not mPages Is Nothing Then
+        If mPages.Value = 3 Then
+            ActiveRunLocation = ComboText(mCmbTreeRunLocation)
+            If ActiveRunLocation <> "" Then Exit Function
+        End If
+    End If
+    ActiveRunLocation = ComboText(mCmbRunLocation)
+    If ActiveRunLocation = "" Then ActiveRunLocation = ComboText(mCmbTreeRunLocation)
+End Function
+
+Private Function ActiveRunProcess() As String
+    If Not mPages Is Nothing Then
+        If mPages.Value = 3 Then
+            ActiveRunProcess = ComboText(mCmbTreeRunProcess)
+            If ActiveRunProcess <> "" Then Exit Function
+        End If
+    End If
+    ActiveRunProcess = ComboText(mCmbRunProcess)
+    If ActiveRunProcess = "" Then ActiveRunProcess = ComboText(mCmbTreeRunProcess)
+End Function
+
+Private Function ComboText(ByVal cmb As MSForms.ComboBox) As String
+    If cmb Is Nothing Then Exit Function
+    If cmb.ListIndex < 0 Then Exit Function
+    ComboText = Trim$(NzStr(cmb.Value))
+End Function
+
+Private Function RunLocationChoiceRequired() As Boolean
+    If Not mCmbRunLocation Is Nothing Then
+        If mCmbRunLocation.ListCount > 1 Then
+            RunLocationChoiceRequired = True
+            Exit Function
+        End If
+    End If
+    If Not mCmbTreeRunLocation Is Nothing Then
+        If mCmbTreeRunLocation.ListCount > 1 Then RunLocationChoiceRequired = True
+    End If
+End Function
+
+Private Sub SyncRunLocationCombo(ByVal sourceCombo As MSForms.ComboBox, ByVal targetCombo As MSForms.ComboBox)
+    Dim i As Long
+    Dim locVal As String
+    Dim wasLoading As Boolean
+
+    If mLoading Then Exit Sub
+    If sourceCombo Is Nothing Or targetCombo Is Nothing Then Exit Sub
+    locVal = ComboText(sourceCombo)
+    wasLoading = mLoading
+    mLoading = True
+    targetCombo.ListIndex = 0
+    For i = 0 To targetCombo.ListCount - 1
+        If StrComp(NzStr(targetCombo.List(i)), locVal, vbTextCompare) = 0 Then
+            targetCombo.ListIndex = i
+            Exit For
+        End If
+    Next i
+    mLoading = wasLoading
+End Sub
+
+Private Sub SyncRunProcessCombo(ByVal sourceCombo As MSForms.ComboBox, ByVal targetCombo As MSForms.ComboBox)
+    Dim i As Long
+    Dim procVal As String
+    Dim wasLoading As Boolean
+
+    If mLoading Then Exit Sub
+    If sourceCombo Is Nothing Or targetCombo Is Nothing Then Exit Sub
+    procVal = ComboText(sourceCombo)
+    wasLoading = mLoading
+    mLoading = True
+    targetCombo.ListIndex = 0
+    For i = 0 To targetCombo.ListCount - 1
+        If StrComp(NzStr(targetCombo.List(i)), procVal, vbTextCompare) = 0 Then
+            targetCombo.ListIndex = i
+            Exit For
+        End If
+    Next i
+    mLoading = wasLoading
+End Sub
+
 Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemVal As String, _
-                                       ByRef uomVal As String, ByRef locVal As String)
+                                       ByRef uomVal As String, ByRef invVal As String, _
+                                       ByRef locVal As String)
     Dim r As Long
     Dim rowKey As String
+    Dim totalVal As String
+    Dim rawLoc As String
 
-    If Trim$(itemVal) <> "" And Trim$(uomVal) <> "" And Trim$(locVal) <> "" Then Exit Sub
     If IsEmpty(mInventoryRows) Then Exit Sub
     If Not IsArray(mInventoryRows) Then Exit Sub
 
     rowKey = NormalizeRunRowKey(rowVal)
+    If rowKey = "" Then Exit Sub
     For r = LBound(mInventoryRows, 1) To UBound(mInventoryRows, 1)
         If NormalizeRunRowKey(NzStr(mInventoryRows(r, 1))) = rowKey Then
             If Trim$(itemVal) = "" Then itemVal = NzStr(mInventoryRows(r, 2))
             If Trim$(uomVal) = "" Then uomVal = NzStr(mInventoryRows(r, 3))
-            If Trim$(locVal) = "" Then locVal = NzStr(mInventoryRows(r, 5))
+            totalVal = NzStr(mInventoryRows(r, 4))
+            rawLoc = NzStr(mInventoryRows(r, 5))
+            invVal = RunInventoryAvailableDisplay(totalVal, uomVal)
+            locVal = rawLoc
             Exit For
         End If
     Next r
 End Sub
+
+Private Function RunInventoryAvailableDisplay(ByVal totalVal As String, ByVal uomVal As String) As String
+    totalVal = Trim$(totalVal)
+    uomVal = Trim$(uomVal)
+    If StrComp(totalVal, "utility", vbTextCompare) = 0 Then
+        RunInventoryAvailableDisplay = "utility"
+        Exit Function
+    End If
+    If totalVal <> "" Then
+        RunInventoryAvailableDisplay = totalVal
+        If uomVal <> "" Then RunInventoryAvailableDisplay = RunInventoryAvailableDisplay & " " & uomVal
+    End If
+End Function
 
 Private Function NormalizeRunRowKey(ByVal value As String) As String
     NormalizeRunRowKey = Trim$(value)
@@ -946,13 +1439,26 @@ Private Sub FillListFromTable(ByVal lst As MSForms.ListBox, ByVal lo As ListObje
     If lo.DataBodyRange Is Nothing Then Exit Sub
     arr = lo.DataBodyRange.Value
     For r = 1 To UBound(arr, 1)
+        If Not TableArrayRowHasAnyValue(arr, r, lo, headers) Then GoTo NextTableRow
         lst.AddItem CellText(arr, r, lo, CStr(headers(LBound(headers))))
         For c = LBound(headers) + 1 To UBound(headers)
             colIdx = c - LBound(headers)
             If colIdx < lst.ColumnCount Then lst.List(lst.ListCount - 1, colIdx) = CellText(arr, r, lo, CStr(headers(c)))
         Next c
+NextTableRow:
     Next r
 End Sub
+
+Private Function TableArrayRowHasAnyValue(ByVal arr As Variant, ByVal rowIndex As Long, ByVal lo As ListObject, ByVal headers As Variant) As Boolean
+    Dim c As Long
+
+    For c = LBound(headers) To UBound(headers)
+        If Trim$(CellText(arr, rowIndex, lo, CStr(headers(c)))) <> "" Then
+            TableArrayRowHasAnyValue = True
+            Exit Function
+        End If
+    Next c
+End Function
 
 Private Sub FillInventoryList(ByVal lo As ListObject, ByVal filterText As String)
     Dim arr As Variant
@@ -1119,9 +1625,11 @@ Private Sub WriteRecipeHeaderFromForm()
     If lo Is Nothing Then Exit Sub
     EnsureTableRow lo
     If Trim$(mTxtRecipeId.Text) = "" Then mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
+    mTxtRecipeRowBudget.Text = NormalizeRecipeRowBudgetText(mTxtRecipeRowBudget.Text)
     SetFirstRowValue lo, "RECIPE_NAME", mTxtRecipeName.Text
     SetFirstRowValue lo, "RECIPE_ID", mTxtRecipeId.Text
     SetFirstRowValue lo, "DESCRIPTION", mTxtRecipeDescription.Text
+    SetFirstRowValue lo, "ROW_BUDGET", CLng(Val(mTxtRecipeRowBudget.Text))
 End Sub
 
 Private Sub ClearRecipeBuilderForNew()
@@ -1137,6 +1645,7 @@ Private Sub ClearRecipeBuilderForNew()
     mTxtRecipeName.Text = ""
     mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
     mTxtRecipeDescription.Text = ""
+    mTxtRecipeRowBudget.Text = CStr(PRODUCTION_DEFAULT_ROW_BUDGET)
     ClearLineInputs
     RefreshBuilderLines
     ShowStatus "Ready for a new recipe."
@@ -1195,7 +1704,7 @@ Private Sub AddRecipeBuilderLine()
         ShowStatus "RecipeBuilder table is missing."
         Exit Sub
     End If
-    Set lr = lo.ListRows.Add
+    Set lr = lo.ListRows.Add(AlwaysInsert:=False)
     WriteRecipeLineToRow lo, lr.Index
     RefreshBuilderLines
     ClearLineInputs
@@ -1240,10 +1749,7 @@ End Sub
 Private Sub WriteRecipeLineToRow(ByVal lo As ListObject, ByVal rowIndex As Long)
     If lo Is Nothing Then Exit Sub
     If rowIndex < 1 Then Exit Sub
-    EnsureTableRow lo
-    Do While lo.ListRows.Count < rowIndex
-        lo.ListRows.Add AlwaysInsert:=True
-    Loop
+    If Not EnsureTableRows(lo, rowIndex) Then Exit Sub
     SetCellByHeader lo, rowIndex, "PROCESS", mTxtLineProcess.Text
     SetCellByHeader lo, rowIndex, "INPUT/OUTPUT", LineIoValue()
     SetCellByHeader lo, rowIndex, "INGREDIENT", mTxtLineIngredient.Text
@@ -1421,6 +1927,7 @@ Private Sub LoadSelectedProductionOutput()
     If idx < 0 Then Exit Sub
     mTxtOutputReal.Text = NzStr(mLstManagerOutput.List(idx, 3))
     mTxtOutputBatch.Text = NzStr(mLstManagerOutput.List(idx, 4))
+    UpdateOutputRunningTotalDisplay
 End Sub
 
 Private Sub ApplySelectedProductionOutput()
@@ -1439,21 +1946,492 @@ Private Sub ApplySelectedProductionOutput()
     SetCellByHeader lo, idx + 1, "BATCH", mTxtOutputBatch.Text
     RefreshManagerState
     If idx < mLstManagerOutput.ListCount Then mLstManagerOutput.ListIndex = idx
+    UpdateOutputRunningTotalDisplay
     ShowStatus "Production output row updated."
 End Sub
+
+Private Sub UpdateOutputRunningTotalDisplay()
+    Dim idx As Long
+    Dim rowVal As String
+    Dim procVal As String
+    Dim outputVal As String
+    Dim uomVal As String
+    Dim batchVal As String
+    Dim totalQty As Double
+    Dim currentQty As Double
+    Dim loggedCount As Long
+
+    If mTxtOutputTotal Is Nothing Then Exit Sub
+    mTxtOutputTotal.Text = ""
+    If mLstManagerOutput Is Nothing Then Exit Sub
+    idx = mLstManagerOutput.ListIndex
+    If idx < 0 Then Exit Sub
+
+    procVal = Trim$(NzStr(mLstManagerOutput.List(idx, 0)))
+    outputVal = Trim$(NzStr(mLstManagerOutput.List(idx, 1)))
+    uomVal = Trim$(NzStr(mLstManagerOutput.List(idx, 2)))
+    batchVal = Trim$(NzStr(mLstManagerOutput.List(idx, 4)))
+    rowVal = Trim$(NzStr(mLstManagerOutput.List(idx, 6)))
+
+    totalQty = LoggedOutputTotal(rowVal, procVal, outputVal, loggedCount)
+    If Not mTxtOutputReal Is Nothing Then
+        If IsNumeric(mTxtOutputReal.Text) Then
+            currentQty = CDbl(mTxtOutputReal.Text)
+            If currentQty > 0 Then
+                If Not OutputBatchAlreadyLogged(rowVal, procVal, outputVal, batchVal, currentQty) Then
+                    totalQty = totalQty + currentQty
+                End If
+            End If
+        End If
+    End If
+    mTxtOutputTotal.Text = "Output Total: " & FormatRunNumber(totalQty) & IIf(uomVal <> "", " " & uomVal, "")
+End Sub
+
+Private Function LoggedOutputTotal(ByVal rowVal As String, ByVal procVal As String, ByVal outputVal As String, _
+                                   Optional ByRef loggedCount As Long = 0) As Double
+    Dim loLog As ListObject
+    Dim r As Long
+    Dim cReal As Long
+    Dim cProc As Long
+    Dim cItem As Long
+    Dim cOutput As Long
+    Dim cRow As Long
+    Dim logRowVal As String
+    Dim logProc As String
+    Dim logOutput As String
+
+    Set loLog = ProductionLogTable()
+    If loLog Is Nothing Then Exit Function
+    If loLog.DataBodyRange Is Nothing Then Exit Function
+
+    cReal = ProductionColumnIndex(loLog, "REAL OUTPUT")
+    If cReal = 0 Then Exit Function
+    cProc = ProductionColumnIndex(loLog, "PROCESS")
+    cItem = ProductionColumnIndex(loLog, "ITEM")
+    cOutput = ProductionColumnIndex(loLog, "OUTPUT")
+    cRow = ProductionColumnIndex(loLog, "ROW")
+
+    For r = 1 To loLog.ListRows.Count
+        If Not ProductionLogRowMatchesOutput(loLog, r, rowVal, procVal, outputVal, cRow, cProc, cItem, cOutput) Then GoTo NextRow
+        If IsNumeric(loLog.DataBodyRange.Cells(r, cReal).Value) Then
+            LoggedOutputTotal = LoggedOutputTotal + CDbl(loLog.DataBodyRange.Cells(r, cReal).Value)
+            loggedCount = loggedCount + 1
+        End If
+NextRow:
+    Next r
+End Function
+
+Private Function OutputBatchAlreadyLogged(ByVal rowVal As String, ByVal procVal As String, ByVal outputVal As String, _
+                                          ByVal batchVal As String, ByVal realQty As Double) As Boolean
+    Dim loLog As ListObject
+    Dim r As Long
+    Dim cReal As Long
+    Dim cBatch As Long
+    Dim cProc As Long
+    Dim cItem As Long
+    Dim cOutput As Long
+    Dim cRow As Long
+    Dim logBatch As String
+    Dim logQty As Double
+
+    If Trim$(batchVal) = "" Then Exit Function
+    Set loLog = ProductionLogTable()
+    If loLog Is Nothing Then Exit Function
+    If loLog.DataBodyRange Is Nothing Then Exit Function
+
+    cReal = ProductionColumnIndex(loLog, "REAL OUTPUT")
+    cBatch = ProductionColumnIndex(loLog, "BATCH")
+    If cReal = 0 Or cBatch = 0 Then Exit Function
+    cProc = ProductionColumnIndex(loLog, "PROCESS")
+    cItem = ProductionColumnIndex(loLog, "ITEM")
+    cOutput = ProductionColumnIndex(loLog, "OUTPUT")
+    cRow = ProductionColumnIndex(loLog, "ROW")
+
+    For r = 1 To loLog.ListRows.Count
+        If Not ProductionLogRowMatchesOutput(loLog, r, rowVal, procVal, outputVal, cRow, cProc, cItem, cOutput) Then GoTo NextRow
+        logBatch = Trim$(NzStr(loLog.DataBodyRange.Cells(r, cBatch).Value))
+        If StrComp(logBatch, batchVal, vbTextCompare) = 0 Then
+            logQty = NzDblLocal(loLog.DataBodyRange.Cells(r, cReal).Value)
+            If Abs(logQty - realQty) < 0.0000001 Then
+                OutputBatchAlreadyLogged = True
+                Exit Function
+            End If
+        End If
+NextRow:
+    Next r
+End Function
+
+Private Function ProductionLogRowMatchesOutput(ByVal loLog As ListObject, ByVal rowIndex As Long, _
+                                               ByVal rowVal As String, ByVal procVal As String, ByVal outputVal As String, _
+                                               ByVal cRow As Long, ByVal cProc As Long, ByVal cItem As Long, ByVal cOutput As Long) As Boolean
+    Dim logRowVal As String
+    Dim logProc As String
+    Dim logOutput As String
+
+    If loLog Is Nothing Then Exit Function
+    If loLog.DataBodyRange Is Nothing Then Exit Function
+    If cRow > 0 Then
+        logRowVal = NormalizeRunRowKey(NzStr(loLog.DataBodyRange.Cells(rowIndex, cRow).Value))
+        If NormalizeRunRowKey(rowVal) <> "" And logRowVal = NormalizeRunRowKey(rowVal) Then
+            ProductionLogRowMatchesOutput = True
+            Exit Function
+        End If
+    End If
+
+    If cProc > 0 Then logProc = Trim$(NzStr(loLog.DataBodyRange.Cells(rowIndex, cProc).Value))
+    If cItem > 0 Then logOutput = Trim$(NzStr(loLog.DataBodyRange.Cells(rowIndex, cItem).Value))
+    If logOutput = "" And cOutput > 0 Then logOutput = Trim$(NzStr(loLog.DataBodyRange.Cells(rowIndex, cOutput).Value))
+    ProductionLogRowMatchesOutput = (StrComp(logProc, procVal, vbTextCompare) = 0 _
+        And StrComp(logOutput, outputVal, vbTextCompare) = 0)
+End Function
+
+Private Function ProductionLogTable() As ListObject
+    Dim ws As Worksheet
+
+    Set ws = RunProductionObject1("SheetExists", "ProductionLog")
+    If ws Is Nothing Then Exit Function
+    On Error Resume Next
+    Set ProductionLogTable = ws.ListObjects("ProductionLog")
+    If ProductionLogTable Is Nothing Then Set ProductionLogTable = ws.ListObjects("Table46")
+    On Error GoTo 0
+    If Not ProductionLogTable Is Nothing Then Exit Function
+
+    Dim lo As ListObject
+    For Each lo In ws.ListObjects
+        If ProductionColumnIndex(lo, "PROCESS") > 0 _
+           And ProductionColumnIndex(lo, "REAL OUTPUT") > 0 _
+           And ProductionColumnIndex(lo, "BATCH") > 0 Then
+            Set ProductionLogTable = lo
+            Exit Function
+        End If
+    Next lo
+End Function
+
+Private Sub CheckInProductionRun()
+    Dim usedPayloadJson As String
+    Dim stagedTotal As Double
+
+    If mLstLoaderLines.ListIndex >= 0 Then
+        mLstLoaderLines.ListIndex = -1
+        RefreshRunPaletteState
+    End If
+    If mLstRunPalette Is Nothing Or mLstRunPalette.ListCount = 0 Then
+        ShowStatus "Load a recipe and choose acceptable inventory before checking inventory into Production."
+        Exit Sub
+    End If
+    If Not ValidateRunAllocationsComplete() Then Exit Sub
+
+    usedPayloadJson = BuildRunUsedPayloadJson(stagedTotal)
+    If stagedTotal <= 0 Then
+        ShowStatus "No inventory was checked in. Enter allocation quantities first."
+        Exit Sub
+    End If
+    If Not WriteProductionCheckRowsFromRunPalette() Then
+        ShowStatus "Check In failed. The Inventory Check list could not be updated. Refresh Production Run before completing."
+        Exit Sub
+    End If
+
+    RefreshManagerState
+    ShowStatus "Checked in " & FormatRunNumber(stagedTotal) & " units to Production. Complete Run will consume these checked-in quantities."
+End Sub
+
+Private Sub CompleteProductionRun()
+    Dim outputIndex As Long
+    Dim processName As String
+    Dim prepared As Variant
+    Dim completionReport As String
+
+    If Not HasProductionCheckRows() Then
+        ShowStatus "Check inventory into Production before completing the run."
+        Exit Sub
+    End If
+
+    processName = ActiveRunProcess()
+    If mLstManagerOutput.ListCount = 0 Then
+        prepared = RunProduction0("PrepareProductionOutputForCurrentRecipe")
+        RefreshManagerState
+        If Not CBool(prepared) Then
+            ShowStatus "No production output rows were prepared. Confirm the recipe has an OUTPUT line."
+            Exit Sub
+        End If
+    End If
+    If processName <> "" Then
+        If Not SelectProductionOutputForProcess(processName) Then
+            ShowStatus "No Production Output row matches process '" & processName & "'."
+            Exit Sub
+        End If
+    End If
+
+    outputIndex = mLstManagerOutput.ListIndex
+    If outputIndex < 0 And mLstManagerOutput.ListCount = 1 Then
+        mLstManagerOutput.ListIndex = 0
+        LoadSelectedProductionOutput
+        outputIndex = 0
+    End If
+    If outputIndex < 0 Then
+        ShowStatus "Select the Production Output row for this run."
+        Exit Sub
+    End If
+    If Trim$(mTxtOutputBatch.Text) = "" Then mTxtOutputBatch.Text = "1"
+    If Trim$(mTxtOutputReal.Text) = "" Then
+        ShowStatus "Enter the real output quantity before completing the run."
+        Exit Sub
+    End If
+    If Not IsNumeric(mTxtOutputReal.Text) Or CDbl(mTxtOutputReal.Text) <= 0 Then
+        ShowStatus "Real Output must be a number greater than zero."
+        Exit Sub
+    End If
+
+    ApplySelectedProductionOutput
+    If Not CBool(Application.Run("mProduction.CompleteProductionRunAfterCheckInForOutput", outputIndex + 1, completionReport)) Then
+        If Trim$(completionReport) = "" Then completionReport = "Complete Run failed."
+        ShowStatus completionReport
+        Exit Sub
+    End If
+    RefreshLoaderState
+    RefreshManagerState
+    ShowStatus "Production run completed. Checked-in inventory was consumed, Real Output was added to inventory, and the batch was logged." & IIf(Trim$(completionReport) <> "", " " & completionReport, "")
+End Sub
+
+Private Function HasProductionCheckRows() As Boolean
+    Dim lo As ListObject
+
+    Set lo = ProductionTable(TABLE_MANAGER_CHECK)
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    HasProductionCheckRows = (lo.ListRows.Count > 0 And Trim$(FirstNonBlankCheckRow(lo)) <> "")
+End Function
+
+Private Sub ClearProductionCheckRows()
+    Dim lo As ListObject
+
+    Set lo = ProductionTable(TABLE_MANAGER_CHECK)
+    If lo Is Nothing Then Exit Sub
+    ClearTableContentsKeepRows lo
+    If Not mLstManagerCheck Is Nothing Then mLstManagerCheck.Clear
+End Sub
+
+Private Function FirstNonBlankCheckRow(ByVal lo As ListObject) As String
+    Dim r As Long
+    Dim cRow As Long
+    Dim cUsed As Long
+
+    cRow = ProductionColumnIndex(lo, "ROW")
+    cUsed = ProductionColumnIndex(lo, "USED")
+    If cRow = 0 Or cUsed = 0 Then Exit Function
+    For r = 1 To lo.ListRows.Count
+        If Trim$(NzStr(lo.DataBodyRange.Cells(r, cRow).Value)) <> "" _
+           And NzDblLocal(lo.DataBodyRange.Cells(r, cUsed).Value) > 0 Then
+            FirstNonBlankCheckRow = NzStr(lo.DataBodyRange.Cells(r, cRow).Value)
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function SelectProductionOutputForProcess(ByVal processName As String) As Boolean
+    Dim i As Long
+
+    If mLstManagerOutput Is Nothing Then Exit Function
+    processName = Trim$(processName)
+    If processName = "" Then Exit Function
+    For i = 0 To mLstManagerOutput.ListCount - 1
+        If StrComp(Trim$(NzStr(mLstManagerOutput.List(i, 0))), processName, vbTextCompare) = 0 Then
+            mLstManagerOutput.ListIndex = i
+            LoadSelectedProductionOutput
+            SelectProductionOutputForProcess = True
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ValidateRunAllocationsComplete() As Boolean
+    Dim seen As Object
+    Dim items As Variant
+    Dim i As Long
+    Dim groupKey As String
+    Dim totalPct As Double
+
+    If mLstRunPalette Is Nothing Then Exit Function
+    Set seen = CreateObject("Scripting.Dictionary")
+    For i = 0 To mLstRunPalette.ListCount - 1
+        groupKey = RunAllocationGroupKeyFromList(mLstRunPalette, i)
+        If groupKey <> "" Then
+            If Not seen.Exists(LCase$(groupKey)) Then seen.Add LCase$(groupKey), groupKey
+        End If
+    Next i
+
+    items = seen.Items
+    For i = LBound(items) To UBound(items)
+        groupKey = CStr(items(i))
+        totalPct = RunAllocationPercentForGroup(groupKey)
+        If totalPct < 99.999 Or totalPct > 100.001 Then
+            ShowStatus "Cannot complete run. Ingredient '" & groupKey & "' is " & FormatRunNumber(totalPct) & "% allocated; it must be 100%."
+            Exit Function
+        End If
+    Next i
+    ValidateRunAllocationsComplete = (seen.Count > 0)
+End Function
+
+Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
+    Dim agg As Object
+    Dim i As Long
+    Dim rowVal As String
+    Dim qtyVal As Double
+    Dim locVal As String
+    Dim key As Variant
+    Dim payloadItems As Collection
+    Dim payloadItem As Object
+
+    stagedTotal = 0
+    Set agg = CreateObject("Scripting.Dictionary")
+    For i = 0 To mLstRunPalette.ListCount - 1
+        rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
+        If rowVal = "" Then GoTo NextChoice
+        If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
+        qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
+        If qtyVal <= 0 Then GoTo NextChoice
+        If RunChoiceWouldExceedInventory(i, qtyVal) Then
+            ShowStatus "Cannot complete run. ROW " & rowVal & " requires " & FormatRunNumber(qtyVal) & " but only " & NzStr(mLstRunPalette.List(i, 8)) & " is available."
+            Exit Function
+        End If
+        locVal = NzStr(mLstRunPalette.List(i, 9))
+        If agg.Exists(rowVal) Then
+            Dim existingAgg As Variant
+            existingAgg = agg(rowVal)
+            agg(rowVal) = Array(CDbl(existingAgg(0)) + qtyVal, locVal)
+        Else
+            agg.Add rowVal, Array(qtyVal, locVal)
+        End If
+NextChoice:
+    Next i
+
+    If agg.Count = 0 Then Exit Function
+    Set payloadItems = New Collection
+    For Each key In agg.Keys
+        qtyVal = CDbl(agg(key)(0))
+        locVal = NzStr(agg(key)(1))
+        Set payloadItem = CreateObject("Scripting.Dictionary")
+        payloadItem.CompareMode = vbTextCompare
+        payloadItem("Row") = CLng(Val(CStr(key)))
+        payloadItem("SKU") = ""
+        payloadItem("Qty") = qtyVal
+        payloadItem("Location") = locVal
+        payloadItem("IoType") = "USED"
+        payloadItem("Note") = "Production run input"
+        payloadItems.Add payloadItem
+        stagedTotal = stagedTotal + qtyVal
+    Next key
+    BuildRunUsedPayloadJson = NzStr(Application.Run("modRoleEventWriter.BuildPayloadJsonFromCollection", payloadItems))
+End Function
+
+Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
+    Dim lo As ListObject
+    Dim agg As Object
+    Dim i As Long
+    Dim rowVal As String
+    Dim qtyVal As Double
+    Dim entry As Variant
+    Dim key As Variant
+    Dim outRow As Long
+
+    Set lo = ProductionTable(TABLE_MANAGER_CHECK)
+    If lo Is Nothing Then Exit Function
+    Set agg = CreateObject("Scripting.Dictionary")
+
+    For i = 0 To mLstRunPalette.ListCount - 1
+        rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
+        If rowVal = "" Then GoTo NextChoice
+        If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
+        qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
+        If qtyVal <= 0 Then GoTo NextChoice
+        If agg.Exists(rowVal) Then
+            entry = agg(rowVal)
+            entry(3) = CDbl(entry(3)) + qtyVal
+            agg(rowVal) = entry
+        Else
+            agg.Add rowVal, Array( _
+                NzStr(mLstRunPalette.List(i, 4)), _
+                NzStr(mLstRunPalette.List(i, 7)), _
+                NzStr(mLstRunPalette.List(i, 8)), _
+                qtyVal)
+        End If
+NextChoice:
+    Next i
+
+    If agg.Count = 0 Then Exit Function
+    ClearTableContentsKeepRows lo
+    If Not EnsureTableRows(lo, MaxLongLocal(agg.Count, CurrentRecipeRowBudget())) Then Exit Function
+    For Each key In agg.Keys
+        outRow = outRow + 1
+        entry = agg(key)
+        SetCellByHeader lo, outRow, "ROW", CStr(key)
+        SetCellByHeader lo, outRow, "ITEM_CODE", ""
+        SetCellByHeader lo, outRow, "ITEM", NzStr(entry(0))
+        SetCellByHeader lo, outRow, "UOM", NzStr(entry(1))
+        SetCellByHeader lo, outRow, "USED", CDbl(entry(3))
+        SetCellByHeader lo, outRow, "TOTAL INV", NzStr(entry(2))
+    Next key
+    WriteProductionCheckRowsFromRunPalette = True
+End Function
+
+Private Function RunChoiceWouldExceedInventory(ByVal listIndex As Long, ByVal qtyVal As Double) As Boolean
+    Dim invText As String
+    Dim invQty As Double
+
+    invText = Trim$(NzStr(mLstRunPalette.List(listIndex, 8)))
+    If invText = "" Then Exit Function
+    If Not IsNumeric(Left$(invText, 1)) Then Exit Function
+    invQty = CDbl(Val(invText))
+    RunChoiceWouldExceedInventory = (qtyVal > invQty + 0.0000001)
+End Function
+
+Private Function NzDblLocal(ByVal value As Variant) As Double
+    If IsError(value) Then Exit Function
+    If IsNull(value) Or IsEmpty(value) Then Exit Function
+    If IsNumeric(value) Then NzDblLocal = CDbl(value)
+End Function
+
+Private Function CurrentRecipeRowBudget() As Long
+    CurrentRecipeRowBudget = CLng(Val(NormalizeRecipeRowBudgetText(mTxtRecipeRowBudget.Text)))
+End Function
+
+Private Function NormalizeRecipeRowBudgetText(ByVal valueText As String) As String
+    Dim n As Long
+
+    n = CLng(Val(Trim$(valueText)))
+    If n <= 0 Then n = PRODUCTION_DEFAULT_ROW_BUDGET
+    If n > PRODUCTION_MAX_ROW_BUDGET Then n = PRODUCTION_MAX_ROW_BUDGET
+    NormalizeRecipeRowBudgetText = CStr(n)
+End Function
+
+Private Function MaxLongLocal(ByVal leftValue As Long, ByVal rightValue As Long) As Long
+    If leftValue >= rightValue Then
+        MaxLongLocal = leftValue
+    Else
+        MaxLongLocal = rightValue
+    End If
+End Function
 
 Private Sub LoadSelectedRunPaletteRow()
     Dim idx As Long
     Dim lst As MSForms.ListBox
+    Dim splitTextBox As MSForms.TextBox
+    Dim qtyTextBox As MSForms.TextBox
 
     Set lst = ActiveRunPaletteList()
     If lst Is Nothing Then Exit Sub
+    Set splitTextBox = ActiveRunSplitTextBox()
+    Set qtyTextBox = ActiveRunQtyTextBox()
+    If splitTextBox Is Nothing Or qtyTextBox Is Nothing Then Exit Sub
     idx = lst.ListIndex
     If idx < 0 Then Exit Sub
     If IsRunTreeParentRow(lst, idx) Then Exit Sub
-    If NzStr(lst.List(idx, 0)) = "" Then Exit Sub
-    mTxtPaletteSplit.Text = NzStr(lst.List(idx, 5))
-    mTxtPaletteQty.Text = NzStr(lst.List(idx, 6))
+    mUpdatingPaletteInputs = True
+    splitTextBox.Text = NzStr(lst.List(idx, 5))
+    qtyTextBox.Text = NzStr(lst.List(idx, 6))
+    mPaletteInputSource = ""
+    mUpdatingPaletteInputs = False
+    SetRunAllocationVisualState splitTextBox, qtyTextBox, RunAllocationPercentForGroup(RunAllocationGroupKeyFromList(lst, idx))
 End Sub
 
 Private Sub ApplySelectedRunPaletteSplit()
@@ -1467,9 +2445,24 @@ Private Sub ApplySelectedRunPaletteSplit()
     Dim baseQtyText As String
     Dim splitVal As Double
     Dim qtyVal As Double
+    Dim baseQtyVal As Double
+    Dim hasSplit As Boolean
+    Dim hasQty As Boolean
+    Dim splitTextBox As MSForms.TextBox
+    Dim qtyTextBox As MSForms.TextBox
+    Dim groupKey As String
+    Dim allocationKey As String
+    Dim otherPct As Double
+    Dim newTotalPct As Double
+    Dim runLoc As String
+    Dim invLoc As String
+    Dim locationWarning As String
 
     Set lst = ActiveRunPaletteList()
     If lst Is Nothing Then Exit Sub
+    Set splitTextBox = ActiveRunSplitTextBox()
+    Set qtyTextBox = ActiveRunQtyTextBox()
+    If splitTextBox Is Nothing Or qtyTextBox Is Nothing Then Exit Sub
     idx = lst.ListIndex
     If idx < 0 Then
         ShowStatus "Select an acceptable inventory row first."
@@ -1482,48 +2475,165 @@ Private Sub ApplySelectedRunPaletteSplit()
 
     tableName = NzStr(lst.List(idx, 0))
     rowIndex = CLng(Val(NzStr(lst.List(idx, 1))))
-    If tableName = "" Or rowIndex < 1 Then Exit Sub
-
-    Set lo = ProductionTable(tableName)
-    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
-    If rowIndex > lo.ListRows.Count Then Exit Sub
-
-    splitText = Trim$(mTxtPaletteSplit.Text)
-    qtyText = Trim$(mTxtPaletteQty.Text)
-    baseQtyText = CellByHeader(lo, rowIndex, "BASE QUANTITY")
-
-    If splitText <> "" Then
-        If Not IsNumeric(splitText) Then
-            ShowStatus "Split % must be numeric."
-            Exit Sub
+    runLoc = ActiveRunLocation()
+    invLoc = Trim$(NzStr(lst.List(idx, 9)))
+    If RunLocationChoiceRequired() And runLoc = "" Then
+        locationWarning = " Choose a production run location before finalizing this run."
+    End If
+    If runLoc <> "" And invLoc <> "" Then
+        If StrComp(runLoc, invLoc, vbTextCompare) <> 0 Then
+            locationWarning = " Inventory is at " & invLoc & "; move it to " & runLoc & " before using it."
         End If
-        splitVal = CDbl(splitText)
-        If splitVal < 0 Then
-            ShowStatus "Split % cannot be negative."
-            Exit Sub
-        End If
-        SetCellByHeader lo, rowIndex, "SPLIT %", splitVal
-        If IsNumeric(baseQtyText) Then
-            qtyVal = CDbl(baseQtyText) * splitVal / 100#
-            SetCellByHeader lo, rowIndex, "QUANTITY", qtyVal
-            mTxtPaletteQty.Text = Format$(qtyVal, "0.###")
-        End If
-    ElseIf qtyText <> "" Then
-        If Not IsNumeric(qtyText) Then
-            ShowStatus "Quantity must be numeric."
-            Exit Sub
-        End If
-        qtyVal = CDbl(qtyText)
-        If qtyVal < 0 Then
-            ShowStatus "Quantity cannot be negative."
-            Exit Sub
-        End If
-        SetCellByHeader lo, rowIndex, "QUANTITY", qtyVal
     End If
 
-    RefreshRunPaletteState
-    ShowStatus "Acceptable inventory split updated."
+    splitText = Trim$(splitTextBox.Text)
+    qtyText = Trim$(qtyTextBox.Text)
+    baseQtyVal = RunBaseQtyFromList(lst, idx)
+
+    If splitText <> "" Then
+        If Not TryParseNonNegativeRunNumber(splitText, splitVal, "% of Requirement") Then Exit Sub
+        hasSplit = True
+    End If
+    If qtyText <> "" Then
+        If Not TryParseNonNegativeRunNumber(qtyText, qtyVal, "Quantity") Then Exit Sub
+        hasQty = True
+    End If
+
+    If mPaletteInputSource = "QTY" And hasQty Then
+        If baseQtyVal > 0 Then
+            splitVal = qtyVal / baseQtyVal * 100#
+            splitText = FormatRunNumber(splitVal)
+            hasSplit = True
+            SetPaletteTextSilently splitTextBox, splitText
+        End If
+    ElseIf hasSplit Then
+        If baseQtyVal > 0 Then
+            qtyVal = baseQtyVal * splitVal / 100#
+            qtyText = FormatRunNumber(qtyVal)
+            hasQty = True
+            SetPaletteTextSilently qtyTextBox, qtyText
+        End If
+    ElseIf hasQty And baseQtyVal > 0 Then
+        splitVal = qtyVal / baseQtyVal * 100#
+        splitText = FormatRunNumber(splitVal)
+        hasSplit = True
+        SetPaletteTextSilently splitTextBox, splitText
+    End If
+
+    If Not hasSplit And Not hasQty Then
+        ShowStatus "Enter % of Requirement or Qty first."
+        Exit Sub
+    End If
+    If Not hasSplit Then
+        ShowStatus "Cannot validate allocation without a % of Requirement. Select a row with a recipe requirement first."
+        Exit Sub
+    End If
+
+    groupKey = RunAllocationGroupKeyFromList(lst, idx)
+    allocationKey = RunAllocationKeyFromList(lst, idx)
+    otherPct = RunAllocationPercentForGroup(groupKey, allocationKey)
+    newTotalPct = otherPct + splitVal
+    If newTotalPct > 100.001 Then
+        SetRunAllocationVisualState splitTextBox, qtyTextBox, newTotalPct
+        ShowStatus "Allocation rejected. Other choices already use " & FormatRunNumber(otherPct) & "%. This would make " & FormatRunNumber(newTotalPct) & "%; maximum is 100%."
+        Exit Sub
+    End If
+
+    If tableName <> "" And rowIndex >= 1 Then
+        Set lo = ProductionTable(tableName)
+        If Not lo Is Nothing Then
+            If Not lo.DataBodyRange Is Nothing Then
+                If rowIndex <= lo.ListRows.Count Then
+                    If hasSplit Then SetCellByHeader lo, rowIndex, "SPLIT %", splitVal
+                    If hasQty Then SetCellByHeader lo, rowIndex, "QUANTITY", qtyVal
+                End If
+            End If
+        End If
+    End If
+
+    If hasSplit Then lst.List(idx, 5) = splitText
+    If hasQty Then lst.List(idx, 6) = qtyText
+    StoreRunAllocationOverride lst, idx, NzStr(lst.List(idx, 5)), NzStr(lst.List(idx, 6))
+    SyncRunAllocationToPaletteList lst, idx
+    BuildRunTreeFromPaletteList
+    SetRunAllocationVisualState splitTextBox, qtyTextBox, newTotalPct
+    ShowStatus "Acceptable inventory allocation updated. Ingredient is " & FormatRunNumber(newTotalPct) & "% filled." & locationWarning
 End Sub
+
+Private Function TryParseNonNegativeRunNumber(ByVal numberText As String, ByRef numberValue As Double, ByVal labelText As String) As Boolean
+    If Not IsNumeric(numberText) Then
+        ShowStatus labelText & " must be numeric."
+        Exit Function
+    End If
+    numberValue = CDbl(numberText)
+    If numberValue < 0 Then
+        ShowStatus labelText & " cannot be negative."
+        Exit Function
+    End If
+    TryParseNonNegativeRunNumber = True
+End Function
+
+Private Function FormatRunNumber(ByVal numberValue As Double) As String
+    FormatRunNumber = Format$(numberValue, "0.###")
+End Function
+
+Private Sub SetPaletteTextSilently(ByVal txt As MSForms.TextBox, ByVal valueText As String)
+    mUpdatingPaletteInputs = True
+    txt.Text = valueText
+    mUpdatingPaletteInputs = False
+End Sub
+
+Private Sub SetRunAllocationVisualState(ByVal splitTextBox As MSForms.TextBox, ByVal qtyTextBox As MSForms.TextBox, ByVal totalPct As Double)
+    Dim fillColor As Long
+
+    If totalPct > 100.001 Then
+        fillColor = RGB(255, 210, 210)
+    ElseIf totalPct >= 99.999 Then
+        fillColor = RGB(210, 245, 210)
+    ElseIf totalPct > 0 Then
+        fillColor = RGB(255, 245, 200)
+    Else
+        fillColor = vbWhite
+    End If
+    If Not splitTextBox Is Nothing Then
+        splitTextBox.BackColor = fillColor
+        splitTextBox.Font.Bold = (totalPct >= 99.999 And totalPct <= 100.001)
+    End If
+    If Not qtyTextBox Is Nothing Then
+        qtyTextBox.BackColor = fillColor
+        qtyTextBox.Font.Bold = (totalPct >= 99.999 And totalPct <= 100.001)
+    End If
+End Sub
+
+Private Sub SyncRunAllocationToPaletteList(ByVal sourceList As MSForms.ListBox, ByVal sourceRow As Long)
+    Dim sourceKey As String
+    Dim i As Long
+
+    If mLstRunPalette Is Nothing Or sourceList Is Nothing Then Exit Sub
+    sourceKey = RunAllocationKeyFromList(sourceList, sourceRow)
+    If sourceKey = "" Then Exit Sub
+    For i = 0 To mLstRunPalette.ListCount - 1
+        If RunAllocationKeyFromList(mLstRunPalette, i) = sourceKey Then
+            mLstRunPalette.List(i, 5) = NzStr(sourceList.List(sourceRow, 5))
+            mLstRunPalette.List(i, 6) = NzStr(sourceList.List(sourceRow, 6))
+            StoreRunAllocationOverride mLstRunPalette, i, NzStr(mLstRunPalette.List(i, 5)), NzStr(mLstRunPalette.List(i, 6))
+            Exit For
+        End If
+    Next i
+End Sub
+
+Private Function SelectedRunPaletteBaseQty() As Double
+    Dim lst As MSForms.ListBox
+    Dim idx As Long
+    Dim baseText As String
+
+    Set lst = ActiveRunPaletteList()
+    If lst Is Nothing Then Exit Function
+    idx = lst.ListIndex
+    If idx < 0 Then Exit Function
+    If IsRunTreeParentRow(lst, idx) Then Exit Function
+    SelectedRunPaletteBaseQty = RunBaseQtyFromList(lst, idx)
+End Function
 
 Private Function ActiveRunPaletteList() As MSForms.ListBox
     If Not mPages Is Nothing Then
@@ -1535,10 +2645,47 @@ Private Function ActiveRunPaletteList() As MSForms.ListBox
     Set ActiveRunPaletteList = mLstRunPalette
 End Function
 
+Private Function ActiveRunSplitTextBox() As MSForms.TextBox
+    If Not mPages Is Nothing Then
+        If mPages.Value = 3 Then
+            Set ActiveRunSplitTextBox = mTxtTreePaletteSplit
+            Exit Function
+        End If
+    End If
+    Set ActiveRunSplitTextBox = mTxtPaletteSplit
+End Function
+
+Private Function ActiveRunQtyTextBox() As MSForms.TextBox
+    If Not mPages Is Nothing Then
+        If mPages.Value = 3 Then
+            Set ActiveRunQtyTextBox = mTxtTreePaletteQty
+            Exit Function
+        End If
+    End If
+    Set ActiveRunQtyTextBox = mTxtPaletteQty
+End Function
+
 Private Sub EnsureTableRow(ByVal lo As ListObject)
-    If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then lo.ListRows.Add AlwaysInsert:=True
+    EnsureTableRows lo, 1
 End Sub
+
+Private Function EnsureTableRows(ByVal lo As ListObject, ByVal rowCount As Long) As Boolean
+    On Error GoTo Fail
+
+    If lo Is Nothing Then Exit Function
+    If rowCount < 1 Then
+        EnsureTableRows = True
+        Exit Function
+    End If
+    Do While lo.ListRows.Count < rowCount
+        lo.ListRows.Add AlwaysInsert:=False
+    Loop
+    EnsureTableRows = True
+    Exit Function
+
+Fail:
+    EnsureTableRows = False
+End Function
 
 Private Sub ClearListRows(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
@@ -1547,6 +2694,12 @@ Private Sub ClearListRows(ByVal lo As ListObject)
         lo.ListRows(1).Delete
     Loop
     On Error GoTo 0
+End Sub
+
+Private Sub ClearTableContentsKeepRows(ByVal lo As ListObject)
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    lo.DataBodyRange.ClearContents
 End Sub
 
 Private Function CellByHeader(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal headerName As String) As String
@@ -1563,12 +2716,9 @@ Private Sub SetCellByHeader(ByVal lo As ListObject, ByVal rowIndex As Long, ByVa
     Dim colIndex As Long
     If lo Is Nothing Then Exit Sub
     If rowIndex < 1 Then Exit Sub
-    EnsureTableRow lo
-    Do While lo.ListRows.Count < rowIndex
-        lo.ListRows.Add AlwaysInsert:=True
-    Loop
     colIndex = ProductionColumnIndex(lo, headerName)
     If colIndex <= 0 Then Exit Sub
+    If Not EnsureTableRows(lo, rowIndex) Then Exit Sub
     lo.DataBodyRange.Cells(rowIndex, colIndex).Value = value
 End Sub
 
@@ -1619,6 +2769,10 @@ End Function
 
 Private Function RunProduction1(ByVal procName As String, ByVal arg1 As Variant) As Variant
     RunProduction1 = Application.Run("mProduction." & procName, arg1)
+End Function
+
+Private Function RunProduction2(ByVal procName As String, ByVal arg1 As Variant, ByRef arg2 As Variant) As Variant
+    RunProduction2 = Application.Run("mProduction." & procName, arg1, arg2)
 End Function
 
 Private Sub RunProductionSub0(ByVal procName As String)
@@ -1740,6 +2894,93 @@ Private Sub mTxtInventorySearch_Change()
     RefreshInventoryList
 End Sub
 
+Private Sub mCmbRunLocation_Change()
+    SyncRunLocationCombo mCmbRunLocation, mCmbTreeRunLocation
+End Sub
+
+Private Sub mCmbTreeRunLocation_Change()
+    SyncRunLocationCombo mCmbTreeRunLocation, mCmbRunLocation
+End Sub
+
+Private Sub mTxtPaletteSplit_Change()
+    PaletteSplitTextChanged mTxtPaletteSplit, mTxtPaletteQty
+End Sub
+
+Private Sub mTxtTreePaletteSplit_Change()
+    PaletteSplitTextChanged mTxtTreePaletteSplit, mTxtTreePaletteQty
+End Sub
+
+Private Sub mTxtPaletteQty_Change()
+    PaletteQtyTextChanged mTxtPaletteQty, mTxtPaletteSplit
+End Sub
+
+Private Sub mTxtTreePaletteQty_Change()
+    PaletteQtyTextChanged mTxtTreePaletteQty, mTxtTreePaletteSplit
+End Sub
+
+Private Sub mTxtOutputReal_Change()
+    If mLoading Then Exit Sub
+    UpdateOutputRunningTotalDisplay
+End Sub
+
+Private Sub PaletteSplitTextChanged(ByVal splitTextBox As MSForms.TextBox, ByVal qtyTextBox As MSForms.TextBox)
+    Dim baseQty As Double
+    Dim splitVal As Double
+    Dim lst As MSForms.ListBox
+    Dim idx As Long
+    Dim totalPct As Double
+
+    If mLoading Or mUpdatingPaletteInputs Then Exit Sub
+    mPaletteInputSource = "SPLIT"
+    If splitTextBox Is Nothing Or qtyTextBox Is Nothing Then Exit Sub
+    If Trim$(splitTextBox.Text) = "" Then Exit Sub
+    If Not IsNumeric(splitTextBox.Text) Then Exit Sub
+    splitVal = CDbl(splitTextBox.Text)
+    If splitVal < 0 Then Exit Sub
+    baseQty = SelectedRunPaletteBaseQty()
+    If baseQty <= 0 Then Exit Sub
+    SetPaletteTextSilently qtyTextBox, FormatRunNumber(baseQty * splitVal / 100#)
+    Set lst = ActiveRunPaletteList()
+    If Not lst Is Nothing Then
+        idx = lst.ListIndex
+        If idx >= 0 And Not IsRunTreeParentRow(lst, idx) Then
+            totalPct = RunAllocationPercentForGroup(RunAllocationGroupKeyFromList(lst, idx), RunAllocationKeyFromList(lst, idx)) + splitVal
+            SetRunAllocationVisualState splitTextBox, qtyTextBox, totalPct
+        End If
+    End If
+    mPaletteInputSource = "SPLIT"
+End Sub
+
+Private Sub PaletteQtyTextChanged(ByVal qtyTextBox As MSForms.TextBox, ByVal splitTextBox As MSForms.TextBox)
+    Dim baseQty As Double
+    Dim qtyVal As Double
+    Dim splitVal As Double
+    Dim lst As MSForms.ListBox
+    Dim idx As Long
+    Dim totalPct As Double
+
+    If mLoading Or mUpdatingPaletteInputs Then Exit Sub
+    mPaletteInputSource = "QTY"
+    If qtyTextBox Is Nothing Or splitTextBox Is Nothing Then Exit Sub
+    If Trim$(qtyTextBox.Text) = "" Then Exit Sub
+    If Not IsNumeric(qtyTextBox.Text) Then Exit Sub
+    qtyVal = CDbl(qtyTextBox.Text)
+    If qtyVal < 0 Then Exit Sub
+    baseQty = SelectedRunPaletteBaseQty()
+    If baseQty <= 0 Then Exit Sub
+    splitVal = qtyVal / baseQty * 100#
+    SetPaletteTextSilently splitTextBox, FormatRunNumber(splitVal)
+    Set lst = ActiveRunPaletteList()
+    If Not lst Is Nothing Then
+        idx = lst.ListIndex
+        If idx >= 0 And Not IsRunTreeParentRow(lst, idx) Then
+            totalPct = RunAllocationPercentForGroup(RunAllocationGroupKeyFromList(lst, idx), RunAllocationKeyFromList(lst, idx)) + splitVal
+            SetRunAllocationVisualState splitTextBox, qtyTextBox, totalPct
+        End If
+    End If
+    mPaletteInputSource = "QTY"
+End Sub
+
 Private Sub mBtnAssignRefresh_Click()
     ResetInventoryCache
     RefreshRecipeLists
@@ -1828,6 +3069,10 @@ Private Sub mBtnRunApplyPalette_Click()
     ApplySelectedRunPaletteSplit
 End Sub
 
+Private Sub mBtnRunTreeApplyPalette_Click()
+    ApplySelectedRunPaletteSplit
+End Sub
+
 Private Sub mBtnManagerRefresh_Click()
     RefreshLoaderState
     RefreshManagerState
@@ -1839,12 +3084,16 @@ Private Sub mLstManagerOutput_Click()
     LoadSelectedProductionOutput
 End Sub
 
+Private Sub mBtnManagerCheckIn_Click()
+    CheckInProductionRun
+End Sub
+
 Private Sub mBtnManagerPrepare_Click()
     PrepareProductionOutput
 End Sub
 
 Private Sub mBtnManagerApplyOutput_Click()
-    ApplySelectedProductionOutput
+    CompleteProductionRun
 End Sub
 
 Private Sub mBtnManagerUsed_Click()
@@ -1865,6 +3114,18 @@ Private Sub mBtnManagerTotal_Click()
     RunProductionSub0 "BtnToTotalInv"
     RefreshManagerState
     ShowStatus "To TOTAL INV completed."
+End Sub
+
+Private Sub mCmbRunProcess_Change()
+    If mLoading Then Exit Sub
+    SyncRunProcessCombo mCmbRunProcess, mCmbTreeRunProcess
+    RefreshRunPaletteState
+End Sub
+
+Private Sub mCmbTreeRunProcess_Change()
+    If mLoading Then Exit Sub
+    SyncRunProcessCombo mCmbTreeRunProcess, mCmbRunProcess
+    RefreshRunPaletteState
 End Sub
 
 Private Sub mBtnManagerNext_Click()

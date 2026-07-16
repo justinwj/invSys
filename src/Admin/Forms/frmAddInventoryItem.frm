@@ -29,6 +29,8 @@ Private WithEvents mBtnEditMode As MSForms.CommandButton
 Attribute mBtnEditMode.VB_VarHelpID = -1
 Private WithEvents mCmbEditItem As MSForms.ComboBox
 Attribute mCmbEditItem.VB_VarHelpID = -1
+Private WithEvents mLstEditItemResults As MSForms.ListBox
+Attribute mLstEditItemResults.VB_VarHelpID = -1
 Private WithEvents mCmbUom As MSForms.ComboBox
 Attribute mCmbUom.VB_VarHelpID = -1
 Private WithEvents mTxtQty As MSForms.ComboBox
@@ -49,6 +51,7 @@ Private mLblVendorName As MSForms.Label
 Private mLblVendorCode As MSForms.Label
 Private mLblExternalCode As MSForms.Label
 Private mLblImagePath As MSForms.Label
+Private mLblEditReason As MSForms.Label
 Private mLblCustomName As MSForms.Label
 Private mLblCustomValue As MSForms.Label
 Private mLblGenerated As MSForms.Label
@@ -60,6 +63,7 @@ Private mTxtCategory As MSForms.TextBox
 Private mTxtVendorName As MSForms.TextBox
 Private mTxtVendorCode As MSForms.TextBox
 Private mTxtExternalCode As MSForms.TextBox
+Private mTxtEditReason As MSForms.TextBox
 Private mTxtCustomName As MSForms.TextBox
 Private mTxtCustomValue As MSForms.TextBox
 Private mLstCustomFields As MSForms.ListBox
@@ -76,6 +80,7 @@ Private mCatalogItems As Object
 Private mEditMode As Boolean
 Private mSelectedEditSku As String
 Private mLoading As Boolean
+Private mFilteringEditItems As Boolean
 Private mPreviousUom As String
 Private mInitStep As String
 Private mAllowUomPrompt As Boolean
@@ -157,6 +162,11 @@ Public Property Get ImagePath() As String
     ImagePath = Trim$(CStr(mTxtImagePath.Value))
 End Property
 
+Public Property Get EditReason() As String
+    If mTxtEditReason Is Nothing Then Exit Property
+    EditReason = Trim$(CStr(mTxtEditReason.Value))
+End Property
+
 Public Property Get CustomFields() As Object
     Dim result As Object
     Dim i As Long
@@ -224,6 +234,7 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
+    If Not mTxtEditReason Is Nothing Then mTxtEditReason.Value = ""
     ApplyQuantityModeState
     ShowImagePathPlaceholder
     mTxtCustomName.Value = ""
@@ -263,7 +274,8 @@ Public Sub AddCatalogItem(ByVal sku As String, _
                           ByVal externalCodeValue As String, _
                           ByVal imagePathValue As String, _
                           Optional ByVal trackQtyValue As String = "", _
-                          Optional ByVal itemKindValue As String = "")
+                          Optional ByVal itemKindValue As String = "", _
+                          Optional ByVal qtyOnHandValue As String = "")
     Dim item As Object
     Dim selectedUom As String
 
@@ -288,6 +300,7 @@ Public Sub AddCatalogItem(ByVal sku As String, _
     item("IMAGE_PATH") = Trim$(imagePathValue)
     item("TRACK_QTY") = UCase$(Trim$(trackQtyValue))
     item("ITEM_KIND") = UCase$(Trim$(itemKindValue))
+    item("QTY_ON_HAND") = Trim$(qtyOnHandValue)
     mCatalogItems.Add item
 
     mLoading = True
@@ -320,6 +333,14 @@ Private Sub UserForm_Layout()
     mAnchors.ResizeControls
 End Sub
 
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = 0 Then
+        mAccepted = False
+        Cancel = True
+        Me.Hide
+    End If
+End Sub
+
 Private Sub UserForm_Terminate()
     Set mAnchors = Nothing
 End Sub
@@ -329,7 +350,7 @@ Private Sub EnsureControls()
 
     Me.Caption = "invSys Admin - Add Inventory Item"
     Me.Width = 575
-    Me.Height = 635
+    Me.Height = 665
 
     Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item")
     Set mBtnEditMode = AddButton("btnEditMode", 138, 10, 118, 24, "Edit Item")
@@ -343,7 +364,14 @@ Private Sub EnsureControls()
     Set mCmbEditItem = AddCombo("cmbEditItem", 146, 124, 392, 22)
     mCmbEditItem.ColumnCount = 2
     mCmbEditItem.ColumnWidths = "360 pt;0 pt"
-    mCmbEditItem.Style = fmStyleDropDownList
+    mCmbEditItem.Style = fmStyleDropDownCombo
+    mCmbEditItem.MatchEntry = fmMatchEntryNone
+    mCmbEditItem.AutoWordSelect = False
+    mCmbEditItem.ListRows = 12
+    Set mLstEditItemResults = AddListBox("lstEditItemResults", 146, 148, 392, 96)
+    mLstEditItemResults.ColumnCount = 2
+    mLstEditItemResults.ColumnWidths = "360 pt;0 pt"
+    mLstEditItemResults.Visible = False
 
     Set mLblItemName = AddLabel("lblItemName", 14, 158, 126, 18, "Item name *")
     Set mTxtItemName = AddTextBox("txtItemName", 146, 154, 392, 22)
@@ -371,34 +399,40 @@ Private Sub EnsureControls()
     Set mTxtImagePath = AddTextBox("txtImagePath", 146, 346, 392, 22)
     ShowImagePathPlaceholder
 
-    Set mLblCustomName = AddLabel("lblCustomName", 14, 388, 126, 18, "Additional field")
-    Set mTxtCustomName = AddTextBox("txtCustomName", 146, 384, 144, 22)
-    Set mLblCustomValue = AddLabel("lblCustomValue", 298, 388, 42, 18, "Value")
-    Set mTxtCustomValue = AddTextBox("txtCustomValue", 342, 384, 132, 22)
-    Set mBtnAddField = AddButton("btnAddField", 484, 383, 54, 24, "Add")
+    Set mLblEditReason = AddLabel("lblEditReason", 14, 382, 126, 18, "Why the edit? *")
+    Set mTxtEditReason = AddTextBox("txtEditReason", 146, 378, 392, 22)
+    mLblEditReason.Visible = False
+    mTxtEditReason.Visible = False
 
-    Set mLstCustomFields = AddListBox("lstCustomFields", 146, 414, 328, 96)
+    Set mLblCustomName = AddLabel("lblCustomName", 14, 382, 126, 18, "Additional field")
+    Set mTxtCustomName = AddTextBox("txtCustomName", 146, 378, 144, 22)
+    Set mLblCustomValue = AddLabel("lblCustomValue", 298, 382, 42, 18, "Value")
+    Set mTxtCustomValue = AddTextBox("txtCustomValue", 342, 378, 132, 22)
+    Set mBtnAddField = AddButton("btnAddField", 484, 377, 54, 24, "Add")
+
+    Set mLstCustomFields = AddListBox("lstCustomFields", 146, 408, 328, 134)
     mLstCustomFields.ColumnCount = 2
     mLstCustomFields.ColumnWidths = "130 pt;190 pt"
-    Set mBtnRemoveField = AddButton("btnRemoveField", 484, 414, 54, 24, "Remove")
+    Set mBtnRemoveField = AddButton("btnRemoveField", 484, 446, 54, 24, "Remove")
 
-    Set mLblStatus = AddLabel("lblStatus", 146, 518, 328, 28, "")
+    Set mLblStatus = AddLabel("lblStatus", 146, 550, 328, 28, "")
     mLblStatus.ForeColor = 255
-    Set mBtnOK = AddButton("btnOK", 374, 562, 78, 28, "Add Item")
-    Set mBtnCancel = AddButton("btnCancel", 460, 562, 78, 28, "Cancel")
+    Set mBtnOK = AddButton("btnOK", 374, 594, 78, 28, "Add Item")
+    Set mBtnCancel = AddButton("btnCancel", 460, 594, 78, 28, "Cancel")
 
     ApplyModeLayout
 End Sub
 
 Private Sub InitializeAddInventoryAnchors()
     Set mAnchors = modDynamicForms.CreateFormAnchorManager()
-    mAnchors.Initialize Me, 575, 635
+    mAnchors.Initialize Me, 575, 665
 
     mAnchors.Add mBtnAddMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mBtnEditMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mLblGenerated, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mCmbEditItem, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLstEditItemResults, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mTxtItemName, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mTxtDescription, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mTxtVendorName, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
@@ -445,25 +479,124 @@ Private Sub AddUomOption(ByVal seen As Object, ByVal uomValue As String)
     mCmbUom.AddItem uomValue
 End Sub
 
-Private Sub LoadEditItemOptions()
+Private Sub LoadEditItemOptions(Optional ByVal filterText As String = "")
     Dim item As Variant
     Dim displayText As String
     Dim rowIndex As Long
+    Dim normalizedFilter As String
+    Dim sku As String
+    Dim rowValue As String
+    Dim itemName As String
 
     If mCmbEditItem Is Nothing Then Exit Sub
     mCmbEditItem.Clear
+    If Not mLstEditItemResults Is Nothing Then mLstEditItemResults.Clear
     If mCatalogItems Is Nothing Then Exit Sub
+    normalizedFilter = AdminNormalizeSearchText(filterText)
     For Each item In mCatalogItems
-        If CatalogField(item, "SKU") <> "" Then
-            displayText = CatalogField(item, "ITEM")
-            If displayText = "" Then displayText = CatalogField(item, "SKU")
+        sku = CatalogField(item, "SKU")
+        rowValue = CatalogField(item, "ROW")
+        itemName = CatalogField(item, "ITEM")
+        If sku <> "" Then
+            If normalizedFilter <> "" Then
+                If Not AdminAnyTextMatchesSearch(normalizedFilter, sku, rowValue, itemName, _
+                                                 CatalogField(item, "UOM"), CatalogField(item, "LOCATION"), _
+                                                 CatalogField(item, "DESCRIPTION"), CatalogField(item, "VENDOR(s)"), _
+                                                 CatalogField(item, "VENDOR_CODE"), CatalogField(item, "CATEGORY"), _
+                                                 CatalogField(item, "EXTERNAL_CODE")) Then GoTo NextItem
+            End If
+            displayText = itemName
+            If displayText = "" Then displayText = sku
             If CatalogField(item, "UOM") <> "" Then displayText = displayText & " [" & CatalogField(item, "UOM") & "]"
+            If sku <> "" Then displayText = displayText & "  " & sku
             mCmbEditItem.AddItem displayText
             rowIndex = mCmbEditItem.ListCount - 1
-            mCmbEditItem.List(rowIndex, 1) = CatalogField(item, "SKU")
+            mCmbEditItem.List(rowIndex, 1) = sku
         End If
+NextItem:
     Next item
+    mCmbEditItem.ListRows = MaxLongAdminForm(1, MinLongAdminForm(12, mCmbEditItem.ListCount))
 End Sub
+
+Private Sub ShowEditItemSearchResults(ByVal searchText As String)
+    Dim i As Long
+    Dim rowIndex As Long
+    Dim resultCount As Long
+
+    If mLstEditItemResults Is Nothing Then Exit Sub
+    mLstEditItemResults.Clear
+    If AdminNormalizeSearchText(searchText) = "" Or mCmbEditItem.ListCount = 0 Then
+        HideEditItemSearchResults
+        Exit Sub
+    End If
+
+    For i = 0 To mCmbEditItem.ListCount - 1
+        mLstEditItemResults.AddItem CStr(mCmbEditItem.List(i, 0))
+        rowIndex = mLstEditItemResults.ListCount - 1
+        mLstEditItemResults.List(rowIndex, 1) = CStr(mCmbEditItem.List(i, 1))
+    Next i
+
+    resultCount = mLstEditItemResults.ListCount
+    mLstEditItemResults.Height = 16 * MaxLongAdminForm(1, MinLongAdminForm(8, resultCount))
+    mLstEditItemResults.Visible = (resultCount > 0)
+    If mLstEditItemResults.Visible Then mLstEditItemResults.ZOrder 0
+End Sub
+
+Private Sub HideEditItemSearchResults()
+    If mLstEditItemResults Is Nothing Then Exit Sub
+    mLstEditItemResults.Visible = False
+    mLstEditItemResults.Clear
+End Sub
+
+Private Function MaxLongAdminForm(ByVal leftValue As Long, ByVal rightValue As Long) As Long
+    If leftValue >= rightValue Then
+        MaxLongAdminForm = leftValue
+    Else
+        MaxLongAdminForm = rightValue
+    End If
+End Function
+
+Private Function MinLongAdminForm(ByVal leftValue As Long, ByVal rightValue As Long) As Long
+    If leftValue <= rightValue Then
+        MinLongAdminForm = leftValue
+    Else
+        MinLongAdminForm = rightValue
+    End If
+End Function
+
+Private Function AdminNormalizeSearchText(ByVal valueIn As String) As String
+    Dim textOut As String
+
+    textOut = Trim$(CStr(valueIn))
+    textOut = Replace(textOut, vbTab, " ")
+    Do While InStr(1, textOut, "  ", vbBinaryCompare) > 0
+        textOut = Replace(textOut, "  ", " ")
+    Loop
+    AdminNormalizeSearchText = LCase$(textOut)
+End Function
+
+Private Function AdminTextMatchesSearch(ByVal candidate As String, ByVal searchTerm As String) As Boolean
+    If searchTerm = "" Then
+        AdminTextMatchesSearch = True
+    Else
+        AdminTextMatchesSearch = (InStr(1, AdminNormalizeSearchText(candidate), searchTerm, vbTextCompare) > 0)
+    End If
+End Function
+
+Private Function AdminAnyTextMatchesSearch(ByVal searchTerm As String, ParamArray candidates() As Variant) As Boolean
+    Dim i As Long
+
+    If searchTerm = "" Then
+        AdminAnyTextMatchesSearch = True
+        Exit Function
+    End If
+    For i = LBound(candidates) To UBound(candidates)
+        If AdminTextMatchesSearch(CStr(candidates(i)), searchTerm) Then
+            AdminAnyTextMatchesSearch = True
+            Exit Function
+        End If
+    Next i
+End Function
 
 Private Sub LoadQuantityOptions()
     If mTxtQty Is Nothing Then Exit Sub
@@ -589,9 +722,28 @@ End Sub
 
 Private Sub mBtnOK_Click()
     If Not ValidateForm Then Exit Sub
+    If mEditMode Then
+        If Not PromptForEditReason Then Exit Sub
+    End If
     mAccepted = True
     Me.Hide
 End Sub
+
+Private Function PromptForEditReason() As Boolean
+    Dim answer As String
+
+    answer = Trim$(InputBox("Why the edit?" & vbCrLf & vbCrLf & _
+                            "The reason will be saved with the current user and date/time.", _
+                            "invSys Admin - Edit Inventory Item", EditReason))
+    If answer = "" Then
+        mLblStatus.Caption = "Why the edit is required."
+        Exit Function
+    End If
+
+    mTxtEditReason.Value = answer
+    mLblStatus.Caption = ""
+    PromptForEditReason = True
+End Function
 
 Private Sub mBtnAddMode_Click()
     If mLoading Then Exit Sub
@@ -606,9 +758,62 @@ Private Sub mBtnEditMode_Click()
 End Sub
 
 Private Sub mCmbEditItem_Change()
+    On Error GoTo CleanFail
+
+    Dim searchText As String
+
     If mLoading Then Exit Sub
     If Not mEditMode Then Exit Sub
-    LoadSelectedEditItem
+    If mFilteringEditItems Then Exit Sub
+    searchText = Trim$(CStr(mCmbEditItem.Text))
+    mFilteringEditItems = True
+    mLoading = True
+    LoadEditItemOptions searchText
+    mCmbEditItem.ListIndex = -1
+    mCmbEditItem.Text = searchText
+    mCmbEditItem.SelStart = Len(searchText)
+    ShowEditItemSearchResults searchText
+    mLoading = False
+    mFilteringEditItems = False
+    Exit Sub
+
+CleanFail:
+    mLoading = False
+    mFilteringEditItems = False
+    mLblStatus.Caption = "Inventory search failed: " & Err.Description
+End Sub
+
+Private Sub mCmbEditItem_Click()
+    If mLoading Then Exit Sub
+    If Not mEditMode Then Exit Sub
+    ShowEditItemSearchResults CStr(mCmbEditItem.Text)
+End Sub
+
+Private Sub mCmbEditItem_AfterUpdate()
+    If mLoading Then Exit Sub
+    If Not mEditMode Then Exit Sub
+    If mSelectedEditSku = "" Then ShowEditItemSearchResults CStr(mCmbEditItem.Text)
+End Sub
+
+Private Sub mLstEditItemResults_Click()
+    Dim sku As String
+    Dim displayText As String
+
+    If mLoading Then Exit Sub
+    If Not mEditMode Then Exit Sub
+    If mLstEditItemResults Is Nothing Then Exit Sub
+    If mLstEditItemResults.ListIndex < 0 Then Exit Sub
+
+    displayText = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 0))
+    sku = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 1))
+    HideEditItemSearchResults
+
+    mLoading = True
+    mCmbEditItem.Text = displayText
+    mCmbEditItem.ListIndex = -1
+    mLoading = False
+
+    LoadSelectedEditItemBySku sku
 End Sub
 
 Private Sub mCmbUom_Change()
@@ -702,7 +907,7 @@ End Function
 
 Private Sub ApplyQuantityModeState()
     If mTxtQty Is Nothing Or mLblQty Is Nothing Then Exit Sub
-    mTxtQty.Enabled = Not mEditMode
+    mTxtQty.Enabled = True
     If NonCountedItem Then
         mLblQty.Caption = "Qty mode"
         If Not mTxtCategory Is Nothing Then
@@ -714,7 +919,7 @@ Private Sub ApplyQuantityModeState()
             End If
         End If
     ElseIf mEditMode Then
-        mLblQty.Caption = "Qty"
+        mLblQty.Caption = "Set qty"
     Else
         mLblQty.Caption = "Starting qty *"
     End If
@@ -739,10 +944,13 @@ Private Sub ApplyModeLayout()
     If mBtnOK Is Nothing Then Exit Sub
     mLblEditItem.Visible = mEditMode
     mCmbEditItem.Visible = mEditMode
+    HideEditItemSearchResults
+    If Not mLblEditReason Is Nothing Then mLblEditReason.Visible = False
+    If Not mTxtEditReason Is Nothing Then mTxtEditReason.Visible = False
     If mEditMode Then
         mLblTitle.Caption = "Edit inventory item"
-        mLblContext.Caption = "Edit catalog fields for an existing inventory item."
-        mLblQty.Caption = "Qty"
+        mLblContext.Caption = "Edit catalog fields for an existing inventory item. Qty sets the target on-hand total."
+        mLblQty.Caption = "Set qty"
         mBtnOK.Caption = "Save Item"
     Else
         mLblTitle.Caption = "Add inventory item"
@@ -772,6 +980,7 @@ Private Sub ClearEditableFields()
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
+    If Not mTxtEditReason Is Nothing Then mTxtEditReason.Value = ""
     ApplyQuantityModeState
     ShowImagePathPlaceholder
     mTxtCustomName.Value = ""
@@ -781,10 +990,17 @@ End Sub
 
 Private Sub LoadSelectedEditItem()
     Dim sku As String
-    Dim item As Object
 
     If mCmbEditItem.ListIndex < 0 Then Exit Sub
     sku = CStr(mCmbEditItem.List(mCmbEditItem.ListIndex, 1))
+    LoadSelectedEditItemBySku sku
+End Sub
+
+Private Sub LoadSelectedEditItemBySku(ByVal sku As String)
+    Dim item As Object
+
+    sku = Trim$(sku)
+    If sku = "" Then Exit Sub
     Set item = FindCatalogItemBySku(sku)
     If item Is Nothing Then Exit Sub
 
@@ -806,6 +1022,7 @@ Private Sub LoadSelectedEditItem()
     mTxtVendorName.Value = CatalogField(item, "VENDOR(s)")
     mTxtVendorCode.Value = CatalogField(item, "VENDOR_CODE")
     mTxtExternalCode.Value = CatalogField(item, "EXTERNAL_CODE")
+    If Not mTxtEditReason Is Nothing Then mTxtEditReason.Value = ""
     If CatalogItemIsNonCounted(item) Then
         Select Case UCase$(CatalogField(item, "ITEM_KIND"))
             Case "UTILITY"
@@ -815,6 +1032,8 @@ Private Sub LoadSelectedEditItem()
             Case Else
                 mTxtQty.Value = QTY_OPTION_NOT_COUNTED
         End Select
+    ElseIf CatalogField(item, "QTY_ON_HAND") <> "" Then
+        mTxtQty.Value = CatalogField(item, "QTY_ON_HAND")
     End If
     ApplyQuantityModeState
     SetImagePathValue CatalogField(item, "IMAGE_PATH")
@@ -860,6 +1079,15 @@ Private Function ValidateForm() As Boolean
         End If
         If StartingQty <= 0 Then
             mLblStatus.Caption = "Starting quantity must be greater than zero."
+            Exit Function
+        End If
+    ElseIf Trim$(CStr(mTxtQty.Value)) <> "" And Not NonCountedItem Then
+        If Not IsNumeric(CStr(mTxtQty.Value)) Then
+            mLblStatus.Caption = "Set qty must be numeric."
+            Exit Function
+        End If
+        If StartingQty < 0 Then
+            mLblStatus.Caption = "Set qty cannot be negative."
             Exit Function
         End If
     End If

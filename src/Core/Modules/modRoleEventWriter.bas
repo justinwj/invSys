@@ -13,6 +13,7 @@ Private Const ROLE_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const ROLE_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const ROLE_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
 Private Const ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE As String = "ADMIN_SHIPMENT_RECONCILE"
+Private Const ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST As String = "ADMIN_INVENTORY_ADJUST"
 Private Const ROLE_EVENT_TYPE_BOX_BUILD As String = "BOX_BUILD"
 Private Const ROLE_EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Private Const ROLE_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
@@ -405,7 +406,7 @@ Public Function DescribeInboxPendingRows(ByVal eventType As String, _
                 errorMessage = report
                 GoTo CleanExit
             End If
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -421,9 +422,9 @@ Public Function DescribeInboxPendingRows(ByVal eventType As String, _
     If Not lo.DataBodyRange Is Nothing Then
         For rowIndex = 1 To lo.ListRows.Count
             statusVal = UCase$(Trim$(CStr(GetTableRowValueRole(lo, rowIndex, "Status"))))
-            If statusVal = "" Or statusVal = "NEW" Then
+            eventId = Trim$(CStr(GetTableRowValueRole(lo, rowIndex, "EventID")))
+            If eventId <> "" And (statusVal = "" Or statusVal = "NEW") Then
                 pendingCount = pendingCount + 1
-                eventId = Trim$(CStr(GetTableRowValueRole(lo, rowIndex, "EventID")))
                 If EventIdListedRole(eventId, eventIdsCsv) Then matchingPendingCount = matchingPendingCount + 1
                 createdVal = GetTableRowValueRole(lo, rowIndex, "CreatedAtUTC")
                 If IsDate(createdVal) Then
@@ -489,6 +490,19 @@ Public Function QueueReceiveEventCurrent(Optional ByVal userId As String = "", _
     QueueReceiveEventCurrent = QueueReceiveEvent("", "", resolvedUser, sku, qty, location, noteVal, "", "", 0, targetInboxWb, eventIdOut, errorMessage, perfRunId)
 End Function
 
+Public Function QueueReceiveEventServer(Optional ByVal warehouseId As String = "", _
+                                        Optional ByVal stationId As String = "", _
+                                        Optional ByVal userId As String = "", _
+                                        Optional ByVal sku As String = "", _
+                                        Optional ByVal qty As Double = 0, _
+                                        Optional ByVal location As String = "", _
+                                        Optional ByVal noteVal As String = "", _
+                                        Optional ByRef eventIdOut As String = "", _
+                                        Optional ByRef errorMessage As String = "", _
+                                        Optional ByVal perfRunId As String = "") As Boolean
+    QueueReceiveEventServer = QueueEventCore(ROLE_EVENT_TYPE_RECEIVE, warehouseId, stationId, userId, sku, qty, location, noteVal, "", "", "", "", 0, Nothing, eventIdOut, errorMessage, perfRunId, False, True)
+End Function
+
 Public Function QueuePayloadEvent(ByVal eventType As String, _
                                   Optional ByVal warehouseId As String = "", _
                                   Optional ByVal stationId As String = "", _
@@ -532,6 +546,18 @@ Public Function QueueMigrationSeedEvent(Optional ByVal warehouseId As String = "
                                         Optional ByRef errorMessage As String = "", _
                                         Optional ByVal perfRunId As String = "") As Boolean
     QueueMigrationSeedEvent = QueueEventCore(ROLE_EVENT_TYPE_MIGRATION_SEED, warehouseId, stationId, userId, "", 0, "", noteVal, payloadJson, migrationSourceId, "", "", createdAtUtc, targetInboxWb, eventIdOut, errorMessage, perfRunId)
+End Function
+
+Public Function QueueAdminInventoryAdjustEvent(Optional ByVal warehouseId As String = "", _
+                                               Optional ByVal stationId As String = "", _
+                                               Optional ByVal userId As String = "", _
+                                               Optional ByVal payloadJson As String = "", _
+                                               Optional ByVal noteVal As String = "", _
+                                               Optional ByVal createdAtUtc As Date = 0, _
+                                               Optional ByRef eventIdOut As String = "", _
+                                               Optional ByRef errorMessage As String = "", _
+                                               Optional ByVal perfRunId As String = "") As Boolean
+    QueueAdminInventoryAdjustEvent = QueueEventCore(ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, warehouseId, stationId, userId, "", 0, "", noteVal, payloadJson, "", "", "", createdAtUtc, Nothing, eventIdOut, errorMessage, perfRunId)
 End Function
 
 Public Function QueuePayloadEventCurrent(ByVal eventType As String, _
@@ -741,7 +767,7 @@ Private Function QueueEventCore(ByVal eventType As String, _
                 GoTo CleanExit
             End If
             Set lo = FindListObjectByNameRole(wbInbox, TABLE_INBOX_SHIP)
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -1050,6 +1076,7 @@ Private Function ShouldStageEventLocallyRole(ByVal eventType As String) As Boole
              ROLE_EVENT_TYPE_BOX_UNBOX, _
              ROLE_EVENT_TYPE_PROD_CONSUME, _
              ROLE_EVENT_TYPE_PROD_COMPLETE, _
+             ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
              ROLE_EVENT_TYPE_MIGRATION_SEED
             ShouldStageEventLocallyRole = True
     End Select
@@ -1197,7 +1224,7 @@ Private Function MergeRowsIntoNasInboxRole(ByVal rows As Collection, _
                 report = schemaReport
                 GoTo CleanExit
             End If
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, schemaReport) Then
                 report = schemaReport
                 GoTo CleanExit
@@ -1886,12 +1913,29 @@ Private Function EnsureContextResolved(ByRef resolvedWh As String, _
                                        ByVal warehouseId As String, _
                                        ByVal stationId As String, _
                                        ByRef errorMessage As String) As Boolean
+    Dim target As WarehouseTarget
+
     resolvedWh = Trim$(warehouseId)
     resolvedSt = Trim$(stationId)
 
-    If Not modConfig.LoadConfig(resolvedWh, resolvedSt) Then
-        errorMessage = "Config load failed: " & modConfig.Validate()
-        Exit Function
+    If resolvedWh = "" Or resolvedSt = "" Then
+        Set target = modNasConnection.GetCurrentTarget()
+        If Not target Is Nothing Then
+            If resolvedWh = "" Then resolvedWh = Trim$(target.WarehouseId)
+            If resolvedSt = "" Then resolvedSt = Trim$(target.StationId)
+        End If
+    End If
+
+    If modConfig.IsLoaded() _
+       And (resolvedWh = "" Or StrComp(Trim$(modConfig.GetWarehouseId()), resolvedWh, vbTextCompare) = 0) _
+       And (resolvedSt = "" Or StrComp(Trim$(modConfig.GetStationId()), resolvedSt, vbTextCompare) = 0) Then
+        If resolvedWh = "" Then resolvedWh = modConfig.GetWarehouseId()
+        If resolvedSt = "" Then resolvedSt = modConfig.GetStationId()
+    Else
+        If Not modConfig.LoadConfig(resolvedWh, resolvedSt) Then
+            errorMessage = "Config load failed: " & modConfig.Validate()
+            Exit Function
+        End If
     End If
 
     If resolvedWh = "" Then resolvedWh = modConfig.GetWarehouseId()
@@ -1997,28 +2041,33 @@ Private Function ResolveInboxWorkbookPathResolvedRole(ByVal eventType As String,
         Exit Function
     End If
 
-    targetDir = ResolveInboxDirectoryRole(warehouseId, stationId)
+    targetDir = ResolveInboxDirectoryRole(warehouseId, stationId, expectedName)
     If targetDir = "" Then
         errorMessage = "Unable to resolve inbox directory."
         Exit Function
     End If
 
-    EnsureFolderExistsRole targetDir
+    If Not EnsureFolderExistsSafeRole(targetDir, errorMessage) Then Exit Function
     ResolveInboxWorkbookPathResolvedRole = CombinePathRole(targetDir, expectedName)
 End Function
 
-Private Function ResolveInboxDirectoryRole(ByVal warehouseId As String, ByVal stationId As String) As String
+Private Function ResolveInboxDirectoryRole(ByVal warehouseId As String, ByVal stationId As String, ByVal expectedInboxName As String) As String
     Dim rawPath As String
     Dim overrideRoot As String
     Dim target As WarehouseTarget
+    Dim candidates As Collection
+    Dim candidate As Variant
+    Dim normalizedPath As String
+    Dim firstCandidate As String
+    Dim firstExistingFolder As String
 
+    Set candidates = New Collection
     Set target = modNasConnection.GetCurrentTarget()
     If Not target Is Nothing Then
         If StrComp(Trim$(target.WarehouseId), Trim$(warehouseId), vbTextCompare) = 0 _
-           And (Trim$(stationId) = "" Or Trim$(target.StationId) = "" Or StrComp(Trim$(target.StationId), Trim$(stationId), vbTextCompare) = 0) _
-           And Trim$(target.InboxRoot) <> "" Then
-            ResolveInboxDirectoryRole = modConfig.NormalizeFolderPathForRuntime(Trim$(target.InboxRoot), False)
-            If ResolveInboxDirectoryRole <> "" Then Exit Function
+           And (Trim$(stationId) = "" Or Trim$(target.StationId) = "" Or StrComp(Trim$(target.StationId), Trim$(stationId), vbTextCompare) = 0) Then
+            AddInboxDirectoryCandidateRole candidates, Trim$(target.InboxRoot)
+            AddInboxDirectoryCandidateRole candidates, Trim$(target.RuntimeRoot)
         End If
     End If
 
@@ -2026,34 +2075,58 @@ Private Function ResolveInboxDirectoryRole(ByVal warehouseId As String, ByVal st
     If overrideRoot <> "" Then
         rawPath = Trim$(modConfig.GetString("PathInboxRoot", ""))
         rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
-        If rawPath <> "" Then
-            ResolveInboxDirectoryRole = rawPath
-        Else
-            ResolveInboxDirectoryRole = modConfig.NormalizeFolderPathForRuntime(overrideRoot, False)
-        End If
-        Exit Function
-    End If
+        AddInboxDirectoryCandidateRole candidates, rawPath
+        AddInboxDirectoryCandidateRole candidates, overrideRoot
+    Else
+        rawPath = Trim$(modConfig.GetString("PathInboxRoot", ""))
+        rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
+        AddInboxDirectoryCandidateRole candidates, rawPath
 
-    rawPath = Trim$(modConfig.GetString("PathInboxRoot", ""))
-    rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
-    If rawPath = "" Then
-        Set target = modNasConnection.GetCurrentTarget()
-        If Not target Is Nothing Then
-            If StrComp(Trim$(target.WarehouseId), Trim$(warehouseId), vbTextCompare) = 0 _
-               And (Trim$(stationId) = "" Or Trim$(target.StationId) = "" Or StrComp(Trim$(target.StationId), Trim$(stationId), vbTextCompare) = 0) _
-               And Trim$(target.RuntimeRoot) <> "" Then
-                rawPath = modConfig.NormalizeFolderPathForRuntime(Trim$(target.RuntimeRoot), False)
-            End If
-        End If
-    End If
-    If rawPath = "" Then
         rawPath = Trim$(modConfig.GetString("PathDataRoot", ""))
         rawPath = ExpandConfigPathRole(rawPath, warehouseId, stationId)
+        AddInboxDirectoryCandidateRole candidates, rawPath
     End If
-    If rawPath = "" Then rawPath = ThisWorkbook.Path
-    If rawPath = "" Then rawPath = Environ$("TEMP")
-    ResolveInboxDirectoryRole = rawPath
+
+    ' Dev-only fallback: when a warehouse target/config supplied any candidate,
+    ' fail against those paths instead of drifting to a local workbook/temp path.
+    If candidates.Count = 0 Then
+        AddInboxDirectoryCandidateRole candidates, ThisWorkbook.Path
+        AddInboxDirectoryCandidateRole candidates, Environ$("TEMP")
+    End If
+
+    For Each candidate In candidates
+        normalizedPath = modConfig.NormalizeFolderPathForRuntime(CStr(candidate), False)
+        If normalizedPath <> "" Then
+            If firstCandidate = "" Then firstCandidate = normalizedPath
+            If firstExistingFolder = "" And FolderExistsRole(normalizedPath) Then firstExistingFolder = normalizedPath
+            If expectedInboxName <> "" Then
+                If FileExistsRole(CombinePathRole(normalizedPath, expectedInboxName)) Then
+                    ResolveInboxDirectoryRole = normalizedPath
+                    Exit Function
+                End If
+            End If
+        End If
+    Next candidate
+
+    If firstExistingFolder <> "" Then
+        ResolveInboxDirectoryRole = firstExistingFolder
+    Else
+        ResolveInboxDirectoryRole = firstCandidate
+    End If
 End Function
+
+Private Sub AddInboxDirectoryCandidateRole(ByVal candidates As Collection, ByVal folderPath As String)
+    Dim normalizedPath As String
+    Dim candidate As Variant
+
+    If candidates Is Nothing Then Exit Sub
+    normalizedPath = modConfig.NormalizeFolderPathForRuntime(Trim$(folderPath), False)
+    If normalizedPath = "" Then Exit Sub
+    For Each candidate In candidates
+        If StrComp(CStr(candidate), normalizedPath, vbTextCompare) = 0 Then Exit Sub
+    Next candidate
+    candidates.Add normalizedPath
+End Sub
 
 Private Function ExpandConfigPathRole(ByVal rawPath As String, ByVal warehouseId As String, ByVal stationId As String) As String
     ExpandConfigPathRole = Trim$(rawPath)
@@ -2074,7 +2147,7 @@ Private Function InboxWorkbookNameRole(ByVal eventType As String, ByVal stationI
             InboxWorkbookNameRole = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameRole = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             InboxWorkbookNameRole = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function
@@ -2085,7 +2158,7 @@ Private Function InboxTableNameRole(ByVal eventType As String) As String
             InboxTableNameRole = TABLE_INBOX_RECEIVE
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxTableNameRole = TABLE_INBOX_SHIP
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             InboxTableNameRole = TABLE_INBOX_PROD
     End Select
 End Function
@@ -2100,7 +2173,7 @@ Private Function CapabilityForEventTypeRole(ByVal eventType As String) As String
             CapabilityForEventTypeRole = "ADMIN_MAINT"
         Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
             CapabilityForEventTypeRole = "PROD_POST"
-        Case ROLE_EVENT_TYPE_MIGRATION_SEED
+        Case ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventTypeRole = "ADMIN_MAINT"
     End Select
 End Function
@@ -2130,6 +2203,35 @@ Private Sub EnsureFolderExistsRole(ByVal folderPath As String)
         MkDir folderPath
     End If
 End Sub
+
+Private Function EnsureFolderExistsSafeRole(ByVal folderPath As String, ByRef errorMessage As String) As Boolean
+    On Error GoTo FailEnsure
+
+    folderPath = NormalizeFolderPathRole(folderPath, False)
+    If folderPath = "" Then
+        errorMessage = "Folder path is blank."
+        Exit Function
+    End If
+    If FolderExistsRole(folderPath) Then
+        EnsureFolderExistsSafeRole = True
+        Exit Function
+    End If
+
+    EnsureFolderExistsRole folderPath
+    If FolderExistsRole(folderPath) Then
+        EnsureFolderExistsSafeRole = True
+    Else
+        errorMessage = "Folder does not exist and could not be created: " & folderPath
+    End If
+    Exit Function
+
+FailEnsure:
+    If FolderExistsRole(folderPath) Then
+        EnsureFolderExistsSafeRole = True
+    Else
+        errorMessage = "Folder does not exist and could not be created: " & folderPath & ". " & Err.Description
+    End If
+End Function
 
 Private Function CombinePathRole(ByVal basePath As String, ByVal childName As String) As String
     If basePath = "" Then

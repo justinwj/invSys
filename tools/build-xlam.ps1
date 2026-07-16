@@ -764,10 +764,7 @@ $projectMap = @(
                         @{ Id = "btnReceivingConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""RECEIVE_POST"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
                         @{ Id = "btnReceivingCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""RECEIVE_POST"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
                         @{ Id = "btnReceivingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
-                        @{ Id = "btnReceivingSetup"; Label = "Setup UI"; Macro = "modTS_Received.EnsureGeneratedButtons"; ImageMso = "FileNew"; RequiredCapability = "RECEIVE_POST" },
-                        @{ Id = "btnReceivingConfirm"; Label = "Confirm Writes"; Macro = "modTS_Received.ConfirmWrites"; ImageMso = "FileSave"; RequiredCapability = "RECEIVE_POST" },
-                        @{ Id = "btnReceivingUndo"; Label = "Undo"; Macro = "modTS_Received.MacroUndo"; ImageMso = "Undo"; RequiredCapability = "RECEIVE_POST" },
-                        @{ Id = "btnReceivingRedo"; Label = "Redo"; Macro = "modTS_Received.MacroRedo"; ImageMso = "Redo"; RequiredCapability = "RECEIVE_POST" }
+                        @{ Id = "btnReceivingForm"; Label = "Receiving Form"; Macro = "modTS_Received.ShowReceivingForm"; ImageMso = "FormControlButton"; RequiredCapability = "RECEIVE_POST" }
                     )
                     StatusLabels = @(
                         @{ Id = "lblReceivingServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
