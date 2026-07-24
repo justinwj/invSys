@@ -533,6 +533,45 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionForm_AssignmentOutputRejectsAcceptableInventory() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loRecipes As ListObject
+    Dim lr As ListRow
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loRecipes = FindTable(wb, "Recipes")
+    If loRecipes Is Nothing Then GoTo CleanExit
+    If Not loRecipes.DataBodyRange Is Nothing Then loRecipes.DataBodyRange.Delete
+
+    Set lr = loRecipes.ListRows.Add
+    SetTableValueByColumn loRecipes, lr.Index, "RECIPE", "Output Guard Recipe"
+    SetTableValueByColumn loRecipes, lr.Index, "RECIPE_ID", "R-OUT-GUARD"
+    SetTableValueByColumn loRecipes, lr.Index, "PROCESS", "1"
+    SetTableValueByColumn loRecipes, lr.Index, "INPUT/OUTPUT", "OUTPUT"
+    SetTableValueByColumn loRecipes, lr.Index, "INGREDIENT", "Finished Tea"
+    SetTableValueByColumn loRecipes, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loRecipes, lr.Index, "AMOUNT", 400
+    SetTableValueByColumn loRecipes, lr.Index, "INGREDIENT_ID", "OUT-FINISHED-TEA"
+
+    wb.Activate
+    If frmProduction.TestAssignmentOutputSelectionClearsStaging(wb, "R-OUT-GUARD", "Finished Tea") = 1 Then
+        TestProductionForm_AssignmentOutputRejectsAcceptableInventory = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch() As Long
     Dim formUnderTest As frmAddInventoryItem
     Dim customFields As Object
@@ -605,6 +644,144 @@ CleanExit:
     On Error GoTo 0
     Exit Function
 CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_RunLocationRejectsMismatchedInventory() As Long
+    On Error GoTo CleanFail
+
+    If frmProduction.TestProductionRunLocationAllowed("CLEARVIEW", "CLEARVIEW", 400) <> 1 Then GoTo CleanExit
+    If frmProduction.TestProductionRunLocationAllowed("CLEARVIEW", "A1", 400) <> 0 Then GoTo CleanExit
+    If frmProduction.TestProductionRunLocationAllowed("CLEARVIEW", "A1", 0) <> 1 Then GoTo CleanExit
+    If frmProduction.TestProductionRunLocationAllowed("", "CLEARVIEW", 400) <> 0 Then GoTo CleanExit
+
+    TestProductionForm_RunLocationRejectsMismatchedInventory = 1
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_SaveRecipeAppliesSelectedBuilderLineEdit() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loLines As ListObject
+    Dim lr As ListRow
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loLines = FindTable(wb, "RecipeBuilder")
+    If loLines Is Nothing Then GoTo CleanExit
+
+    If loLines.DataBodyRange Is Nothing Then
+        Set lr = loLines.ListRows.Add
+    Else
+        Set lr = loLines.ListRows(1)
+    End If
+    SetTableValueByColumn loLines, lr.Index, "PROCESS", "2"
+    SetTableValueByColumn loLines, lr.Index, "INPUT/OUTPUT", "OUTPUT"
+    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "Brew Black Tea"
+    SetTableValueByColumn loLines, lr.Index, "UOM", "LBS"
+    SetTableValueByColumn loLines, lr.Index, "AMOUNT", 400
+    wb.Activate
+
+    If frmProduction.TestRecipeBuilderSelectedLineProcessUpdate(wb, "1") = 1 Then
+        TestProductionForm_SaveRecipeAppliesSelectedBuilderLineEdit = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_AssignmentReflectsSavedRecipeProcess() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loRecipes As ListObject
+    Dim lr As ListRow
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loRecipes = FindTable(wb, "Recipes")
+    If loRecipes Is Nothing Then GoTo CleanExit
+
+    Set lr = loRecipes.ListRows.Add
+    SetTableValueByColumn loRecipes, lr.Index, "RECIPE", "Brewed Black Tea"
+    SetTableValueByColumn loRecipes, lr.Index, "RECIPE_ID", "R-TEA"
+    SetTableValueByColumn loRecipes, lr.Index, "DESCRIPTION", "strong tea"
+    SetTableValueByColumn loRecipes, lr.Index, "PROCESS", "1"
+    SetTableValueByColumn loRecipes, lr.Index, "INPUT/OUTPUT", "OUTPUT"
+    SetTableValueByColumn loRecipes, lr.Index, "INGREDIENT", "Brew Black Tea"
+    SetTableValueByColumn loRecipes, lr.Index, "UOM", "LBS"
+    SetTableValueByColumn loRecipes, lr.Index, "AMOUNT", 400
+    SetTableValueByColumn loRecipes, lr.Index, "INGREDIENT_ID", "OUT-TEA"
+    wb.Activate
+
+    If frmProduction.TestAssignmentIngredientProcessForRecipe(wb, "R-TEA", "Brew Black Tea") = "1" Then
+        TestProductionForm_AssignmentReflectsSavedRecipeProcess = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionRecipes_LocalRowsWinOverStaleRuntime() As Long
+    Dim runtimeRoot As String
+    Dim result As String
+
+    On Error GoTo CleanFail
+
+    runtimeRoot = BuildRoleSurfaceTempRoot("prod_recipe_local_first")
+    result = CStr(Application.Run("'" & ThisWorkbook.Name & "'!mProduction.TestProductionRecipesLocalRowsWinOverStaleRuntime", runtimeRoot))
+    If Left$(result, 2) = "OK" Then
+        TestProductionRecipes_LocalRowsWinOverStaleRuntime = 1
+    Else
+        mLastTestFailure = result
+    End If
+
+CleanExit:
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionRecipeBuilder_SaveAfterLoadPersistsEditedLines() As Long
+    Dim runtimeRoot As String
+    Dim result As String
+
+    On Error GoTo CleanFail
+
+    runtimeRoot = BuildRoleSurfaceTempRoot("prod_recipe_save_after_load")
+    result = CStr(Application.Run("'" & ThisWorkbook.Name & "'!mProduction.TestProductionRecipeBuilderSaveAfterLoadPersistsEditedLines", runtimeRoot))
+    If Left$(result, 2) = "OK" Then
+        TestProductionRecipeBuilder_SaveAfterLoadPersistsEditedLines = 1
+    Else
+        mLastTestFailure = result
+    End If
+
+CleanExit:
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
     Resume CleanExit
 End Function
 

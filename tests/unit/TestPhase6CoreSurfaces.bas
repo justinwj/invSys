@@ -9213,6 +9213,13 @@ Public Function TestProductionEventCreator_QueuesSignedInCurrentTargetEvent() As
             failureReason = "Production event creator wrote local staging, but local staging sync failed before processor catch-up: " & stagingReport
             GoTo CleanExit
         End If
+        CloseWorkbookIfOpen wbInbox
+        Set wbInbox = modRoleEventWriter.OpenInboxWorkbook(CORE_EVENT_TYPE_PROD_COMPLETE, "WH97", "S32", report)
+        If wbInbox Is Nothing Then
+            failureReason = "Production event creator merged local staging, but the resolved production inbox could not be reopened: " & report
+            GoTo CleanExit
+        End If
+        Set loInbox = FindTableByName(wbInbox, "tblInboxProd")
         inboxRow = FindRowByColumnValueInTable(loInbox, "EventID", eventIdOut)
         If inboxRow = 0 Then
             failureReason = "Production event creator did not merge the production event into the NAS production inbox before processor catch-up. StagingReport=" & stagingReport
@@ -9276,6 +9283,99 @@ CleanExit:
         mLastTestFailure = failureReason
         On Error GoTo 0
         Err.Raise vbObjectError + 7112, "TestProductionEventCreator_QueuesSignedInCurrentTargetEvent", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput() As Long
+    Dim failureReason As String
+    Dim wbInv As Workbook
+    Dim loLog As ListObject
+    Dim consumeItems As Collection
+    Dim completeItems As Collection
+    Dim consumeItem As Object
+    Dim completeItem As Object
+    Dim consumeEvent As Object
+    Dim completeEvent As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim consumeQty As Double
+    Dim completeQty As Double
+
+    On Error GoTo CleanFail
+    mLastTestFailure = vbNullString
+
+    Set wbInv = TestPhase2Helpers.BuildPhase2InventoryWorkbook("WH122", Array("SKU-PROD-IN", "SKU-PROD-OUT"))
+    If wbInv Is Nothing Then
+        failureReason = "Inventory workbook could not be created."
+        GoTo CleanExit
+    End If
+
+    Set consumeItems = New Collection
+    Set consumeItem = modRoleEventWriter.CreatePayloadItem(971, "", 12, "MIX", "checked into production", "USED")
+    consumeItem("ITEM_CODE") = "SKU-PROD-IN"
+    consumeItem("ITEM") = "Production Input Item"
+    consumeItem("ROW") = 971
+    consumeItems.Add consumeItem
+    Set consumeEvent = TestPhase2Helpers.CreatePayloadEvent( _
+        "EVT-PROD-COMPLETE-RUN-CONSUME", _
+        "PROD_CONSUME", _
+        "WH122", _
+        "S37", _
+        "calvin", _
+        modRoleEventWriter.BuildPayloadJsonFromCollection(consumeItems))
+
+    Set completeItems = New Collection
+    Set completeItem = modRoleEventWriter.CreatePayloadItem(972, "", 8, "MIX", "real output", "MADE")
+    completeItem("ITEM_CODE") = "SKU-PROD-OUT"
+    completeItem("ITEM") = "Production Output Item"
+    completeItem("ROW") = 972
+    completeItems.Add completeItem
+    Set completeEvent = TestPhase2Helpers.CreatePayloadEvent( _
+        "EVT-PROD-COMPLETE-RUN-MADE", _
+        "PROD_COMPLETE", _
+        "WH122", _
+        "S37", _
+        "calvin", _
+        modRoleEventWriter.BuildPayloadJsonFromCollection(completeItems))
+
+    If Not modInventoryApply.ApplyEvent(consumeEvent, wbInv, "RUN-PROD-COMPLETE-RUN", statusOut, errorCode, errorMessage) Then
+        failureReason = "PROD_CONSUME did not apply: " & errorCode & " " & errorMessage
+        GoTo CleanExit
+    End If
+    If Not modInventoryApply.ApplyEvent(completeEvent, wbInv, "RUN-PROD-COMPLETE-RUN", statusOut, errorCode, errorMessage) Then
+        failureReason = "PROD_COMPLETE did not apply: " & errorCode & " " & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set loLog = FindTableByName(wbInv, "tblInventoryLog")
+    If loLog Is Nothing Then
+        failureReason = "Inventory log was missing after production events."
+        GoTo CleanExit
+    End If
+    consumeQty = SumInventoryLogQtyDeltaForTest(loLog, "PROD_CONSUME", "SKU-PROD-IN")
+    completeQty = SumInventoryLogQtyDeltaForTest(loLog, "PROD_COMPLETE", "SKU-PROD-OUT")
+    If consumeQty <> -12 Then
+        failureReason = "Complete Run payload did not deduct checked-in input inventory. QtyDelta=" & CStr(consumeQty)
+        GoTo CleanExit
+    End If
+    If completeQty <> 8 Then
+        failureReason = "Complete Run payload did not add Real Output to inventory. QtyDelta=" & CStr(completeQty)
+        GoTo CleanExit
+    End If
+
+    TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput = 1
+
+CleanExit:
+    CloseWorkbookIfOpen wbInv
+    If failureReason <> "" Then
+        mLastTestFailure = failureReason
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7113, "TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput", failureReason
     End If
     Exit Function
 CleanFail:
@@ -10612,6 +10712,21 @@ Private Sub AddInventoryLogRowForTest(ByVal wb As Workbook, _
     SetTableCell lo, lr.Index, "Note", noteText
     If wasProtected Then ws.Protect UserInterfaceOnly:=True, AllowFiltering:=True, AllowSorting:=True
 End Sub
+
+Private Function SumInventoryLogQtyDeltaForTest(ByVal lo As ListObject, _
+                                                ByVal eventType As String, _
+                                                ByVal sku As String) As Double
+    Dim r As Long
+
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    For r = 1 To lo.ListRows.Count
+        If StrComp(CStr(GetTableValue(lo, r, "EventType")), eventType, vbTextCompare) = 0 _
+           And StrComp(CStr(GetTableValue(lo, r, "SKU")), sku, vbTextCompare) = 0 Then
+            SumInventoryLogQtyDeltaForTest = SumInventoryLogQtyDeltaForTest + CDbl(GetTableValue(lo, r, "QtyDelta"))
+        End If
+    Next r
+End Function
 
 Private Sub AddAggregatePackagesLogRow(ByVal lo As ListObject, _
                                        ByVal guidVal As String, _

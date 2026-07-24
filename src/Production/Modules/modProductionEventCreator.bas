@@ -54,6 +54,9 @@ Private Function QueueProductionCompleteEventCore(ByVal madeDeltas As Collection
             "", _
             NzStrProd(delta("ITEM_NAME")), _
             "MADE")
+        payloadItems(payloadItems.Count)("ROW") = NzLngProd(delta("ROW"))
+        payloadItems(payloadItems.Count)("ITEM_CODE") = NzStrProd(delta("ITEM_CODE"))
+        payloadItems(payloadItems.Count)("ITEM") = NzStrProd(delta("ITEM_NAME"))
     Next delta
 
     QueueProductionCompleteEventCore = modRoleEventWriter.QueuePayloadEventCurrent( _
