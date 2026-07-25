@@ -696,6 +696,7 @@ try {
         "TestDesignsDomain.TestDesignsSchema_CreatesAndValidatesAuthoritativeTables",
         "TestDesignsDomain.TestDesignsSchema_IsIdempotent",
         "TestDesignsDomain.TestDesignsQueries_ListDesignsAndGetBOMAreReadOnly",
+        "TestDesignsDomain.TestDesignsQueries_StatusConstrainedBOMRejectsDraftAndObsolete",
         "TestDesignsDomain.TestDesignsDomain_DiagnosticDeclaresNoStartupMutation",
         "TestDesignsDomain.TestDesignInboxSchema_CarriesDesignIdentity",
         "TestDesignsDomain.TestDesignsApply_LifecycleIsIdempotentAndRebuildable",

@@ -96,6 +96,48 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestDesignsQueries_StatusConstrainedBOMRejectsDraftAndObsolete() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim evt As Object
+    Dim bom As Variant
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-STATUS-1", "DESIGN_CREATE", "TEA-STATUS", "1", _
+        "[{""DesignType"":""RECIPE"",""DesignName"":""Status Tea"",""LineNo"":1," & _
+        """IOType"":""OUTPUT"",""ComponentSKU"":""SKU-STATUS-TEA"",""Qty"":1,""UOM"":""LB""}]")
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-STATUS-1", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    bom = modDesignsQueries.GetBOMForStatus("TEA-STATUS", "1", "RELEASED", wb)
+    If IsUsableDesignsTestArray(bom) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-STATUS-2", "DESIGN_RELEASE", "TEA-STATUS", "1", "")
+    statusOut = "": errorCode = "": errorMessage = ""
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-STATUS-2", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    bom = modDesignsQueries.GetBOMForStatus("TEA-STATUS", "1", "RELEASED", wb)
+    If Not IsUsableDesignsTestArray(bom) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-STATUS-3", "DESIGN_OBSOLETE", "TEA-STATUS", "1", "")
+    statusOut = "": errorCode = "": errorMessage = ""
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-STATUS-3", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    bom = modDesignsQueries.GetBOMForStatus("TEA-STATUS", "1", "RELEASED", wb)
+    If IsUsableDesignsTestArray(bom) Then GoTo CleanExit
+
+    TestDesignsQueries_StatusConstrainedBOMRejectsDraftAndObsolete = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestDesignsDomain_DiagnosticDeclaresNoStartupMutation() As Long
     Dim diagnostic As String
     diagnostic = modDesignsInit.DiagnoseDesignsDomain()
@@ -623,6 +665,13 @@ Private Function DesignsTestColumnExists(ByVal lo As ListObject, ByVal columnNam
     On Error Resume Next
     DesignsTestColumnExists = Not lo.ListColumns(columnName) Is Nothing
     On Error GoTo 0
+End Function
+
+Private Function IsUsableDesignsTestArray(ByVal values As Variant) As Boolean
+    On Error GoTo CleanExit
+    If IsEmpty(values) Or Not IsArray(values) Then Exit Function
+    IsUsableDesignsTestArray = (UBound(values, 1) >= LBound(values, 1))
+CleanExit:
 End Function
 
 Private Function BuildDesignsTestEvent(ByVal eventId As String, ByVal eventType As String, _

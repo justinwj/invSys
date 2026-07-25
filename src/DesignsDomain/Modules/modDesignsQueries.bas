@@ -97,6 +97,43 @@ FailQuery:
     GetBOM = Empty
 End Function
 
+Public Function GetBOMForStatus(ByVal designId As String, _
+                                ByVal designVersion As String, _
+                                ByVal requiredStatus As String, _
+                                Optional ByVal designsWb As Workbook = Nothing) As Variant
+    On Error GoTo FailQuery
+
+    Dim wb As Workbook
+    Dim lo As ListObject
+    Dim src As Variant
+    Dim r As Long
+    Dim report As String
+
+    designId = Trim$(designId)
+    designVersion = Trim$(designVersion)
+    requiredStatus = UCase$(Trim$(requiredStatus))
+    If designId = "" Or designVersion = "" Or requiredStatus = "" Then Exit Function
+
+    Set wb = modDesignsRuntime.ResolveDesignsWorkbook("", designsWb, report)
+    If wb Is Nothing Then Exit Function
+    Set lo = FindDesignsTableQuery(wb, "tblDesigns")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+
+    src = lo.DataBodyRange.Value
+    For r = 1 To UBound(src, 1)
+        If StrComp(ReadDesignCellQuery(lo, src, r, "DesignId"), designId, vbTextCompare) = 0 _
+           And StrComp(ReadDesignCellQuery(lo, src, r, "DesignVersion"), designVersion, vbTextCompare) = 0 Then
+            If StrComp(ReadDesignCellQuery(lo, src, r, "Status"), requiredStatus, vbTextCompare) <> 0 Then Exit Function
+            GetBOMForStatus = GetBOM(designId, designVersion, wb)
+            Exit Function
+        End If
+    Next r
+    Exit Function
+
+FailQuery:
+    GetBOMForStatus = Empty
+End Function
+
 Private Function FindDesignsTableQuery(ByVal wb As Workbook, ByVal tableName As String) As ListObject
     Dim ws As Worksheet
     If wb Is Nothing Then Exit Function

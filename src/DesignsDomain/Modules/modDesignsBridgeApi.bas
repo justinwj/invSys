@@ -47,6 +47,14 @@ Public Function GetBOMBridgeResult(ByVal designId As String, ByVal designVersion
     GetBOMBridgeResult = modDesignsQueries.GetBOM(designId, designVersion, designsWb)
 End Function
 
+Public Function GetBOMForStatusBridgeResult(ByVal designId As String, _
+                                            ByVal designVersion As String, _
+                                            ByVal requiredStatus As String, _
+                                            Optional ByVal designsWb As Workbook = Nothing) As Variant
+    GetBOMForStatusBridgeResult = modDesignsQueries.GetBOMForStatus( _
+        designId, designVersion, requiredStatus, designsWb)
+End Function
+
 Public Function DiagnoseDesignsDomainBridgeResult() As String
     DiagnoseDesignsDomainBridgeResult = modDesignsInit.DiagnoseDesignsDomain()
 End Function

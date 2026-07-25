@@ -100,6 +100,17 @@ Public Function GetDesignBOMBridge(ByVal designId As String, ByVal designVersion
 CleanFail:
 End Function
 
+Public Function GetDesignBOMForStatusBridge(ByVal designId As String, _
+                                            ByVal designVersion As String, _
+                                            ByVal requiredStatus As String, _
+                                            Optional ByVal designsWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+    GetDesignBOMForStatusBridge = Application.Run( _
+        ResolveDesignsDomainMacroName("modDesignsBridgeApi.GetBOMForStatusBridgeResult"), _
+        designId, designVersion, requiredStatus, designsWb)
+CleanFail:
+End Function
+
 Public Function DiagnoseDesignsDomainBridge() As String
     On Error GoTo FailBridge
     DiagnoseDesignsDomainBridge = CStr(Application.Run( _

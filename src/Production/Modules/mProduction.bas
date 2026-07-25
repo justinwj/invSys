@@ -3656,7 +3656,12 @@ Private Function HydrateLocalRecipeFromDesigns(ByVal operatorWb As Workbook, _
         Exit Function
     End If
 
-    bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
+    If Trim$(statusFilter) = "" Then
+        bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
+    Else
+        bom = modDesignsDomainBridge.GetDesignBOMForStatusBridge( _
+            recipeId, designVersion, statusFilter, Nothing)
+    End If
     If Not IsUsableProductionArray(bom) Then
         report = "The Designs Domain recipe has no BOM lines."
         Exit Function
