@@ -706,6 +706,7 @@ $projectMap = @(
         OutputFile = "invSys.Inventory.Domain.xlam"
         LegacyOutputFiles = @()
         SourceDirs = @((Join-Path $repo "src/InventoryDomain"))
+        ExcludeFiles = @("modInvMan.bas")
         References = @("Core")
         Sheets     = @("INVENTORY MANAGEMENT", "InventoryLog", "AppliedEvents", "Locks")
         AddVbideReference = $false
@@ -1000,6 +1001,10 @@ try {
         $wb = $null
         try {
             $codeFiles = @(Get-CodeFiles -SourceDirs $project.SourceDirs)
+            if ($project.ContainsKey("ExcludeFiles")) {
+                $excludedNames = @($project.ExcludeFiles)
+                $codeFiles = @($codeFiles | Where-Object { $_.Name -notin $excludedNames })
+            }
             $sheetFiles = @(Get-SheetModuleFiles -CodeFiles $codeFiles)
             $importFiles = @(Get-ImportFiles -CodeFiles $codeFiles)
             $formFiles = @(Get-FormFiles -CodeFiles $codeFiles)

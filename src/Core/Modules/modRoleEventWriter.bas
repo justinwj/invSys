@@ -19,6 +19,9 @@ Private Const ROLE_EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Private Const ROLE_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Private Const ROLE_EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 Private Const ROLE_EVENT_TYPE_MIGRATION_SEED As String = "MIGRATION_SEED"
+Private Const ROLE_EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
+Private Const ROLE_EVENT_TYPE_DESIGN_RELEASE As String = "DESIGN_RELEASE"
+Private Const ROLE_EVENT_TYPE_DESIGN_OBSOLETE As String = "DESIGN_OBSOLETE"
 Private Const SETTINGS_APP As String = "invSys"
 Private Const SETTINGS_SECTION_RUNTIME As String = "Runtime"
 Private Const SETTINGS_CURRENT_USER_ID As String = "CurrentUserId"
@@ -406,7 +409,8 @@ Public Function DescribeInboxPendingRows(ByVal eventType As String, _
                 errorMessage = report
                 GoTo CleanExit
             End If
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -599,6 +603,59 @@ Public Function QueuePayloadEventCurrent(ByVal eventType As String, _
                                              True)
 End Function
 
+Public Function QueueDesignEventCurrent(ByVal eventType As String, _
+                                        ByVal designId As String, _
+                                        ByVal designVersion As String, _
+                                        Optional ByVal payloadJson As String = "", _
+                                        Optional ByVal noteVal As String = "", _
+                                        Optional ByVal userId As String = "", _
+                                        Optional ByRef eventIdOut As String = "", _
+                                        Optional ByRef errorMessage As String = "", _
+                                        Optional ByVal perfRunId As String = "") As Boolean
+    Dim targetInboxWb As Workbook
+    Dim resolvedUser As String
+    Dim capability As String
+    Dim target As WarehouseTarget
+
+    eventType = UCase$(Trim$(eventType))
+    designId = Trim$(designId)
+    designVersion = Trim$(designVersion)
+    If designId = "" Or designVersion = "" Then
+        errorMessage = "DesignId and DesignVersion are required."
+        Exit Function
+    End If
+
+    capability = CapabilityForEventTypeRole(eventType)
+    If Not EnsureCurrentRoleWriteAllowed(capability, userId, resolvedUser, errorMessage) Then Exit Function
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then
+        errorMessage = "A connected NAS warehouse target is required before posting design events."
+        Exit Function
+    End If
+
+    QueueDesignEventCurrent = QueueEventCore(eventType, _
+                                            target.WarehouseId, _
+                                            target.StationId, _
+                                            resolvedUser, _
+                                            "", _
+                                            0, _
+                                            "", _
+                                            noteVal, _
+                                            payloadJson, _
+                                            "", _
+                                            "", _
+                                            "", _
+                                            0, _
+                                            targetInboxWb, _
+                                            eventIdOut, _
+                                            errorMessage, _
+                                            perfRunId, _
+                                            True, _
+                                            False, _
+                                            designId, _
+                                            designVersion)
+End Function
+
 Public Function BuildPayloadJson(ParamArray items() As Variant) As String
     Dim i As Long
     Dim item As Object
@@ -664,7 +721,9 @@ Private Function QueueEventCore(ByVal eventType As String, _
                                 ByRef errorMessage As String, _
                                 Optional ByVal perfRunId As String = "", _
                                 Optional ByVal currentAuthAlreadyChecked As Boolean = False, _
-                                Optional ByVal forceServerInbox As Boolean = False) As Boolean
+                                Optional ByVal forceServerInbox As Boolean = False, _
+                                Optional ByVal designId As String = "", _
+                                Optional ByVal designVersion As String = "") As Boolean
     On Error GoTo FailQueue
 
     Dim resolvedWh As String
@@ -730,7 +789,7 @@ Private Function QueueEventCore(ByVal eventType As String, _
 
     Set rowValues = BuildInboxRowValuesRole(eventIdOut, parentEventId, undoOfEventId, _
         eventType, createdAtUtc, resolvedWh, resolvedSt, resolvedUser, migrationSourceId, _
-        sku, qty, location, noteVal, payloadJson)
+        sku, qty, location, noteVal, payloadJson, designId, designVersion)
 
     If localStageOnly Then
         stagingPath = LocalStagingPathRole(eventType, resolvedWh, resolvedSt)
@@ -767,7 +826,8 @@ Private Function QueueEventCore(ByVal eventType As String, _
                 GoTo CleanExit
             End If
             Set lo = FindListObjectByNameRole(wbInbox, TABLE_INBOX_SHIP)
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -1035,7 +1095,9 @@ Private Function BuildInboxRowValuesRole(ByVal eventId As String, _
                                          ByVal qty As Double, _
                                          ByVal location As String, _
                                          ByVal noteVal As String, _
-                                         ByVal payloadJson As String) As Object
+                                         ByVal payloadJson As String, _
+                                         Optional ByVal designId As String = "", _
+                                         Optional ByVal designVersion As String = "") As Object
     Dim d As Object
 
     Set d = CreateObject("Scripting.Dictionary")
@@ -1056,6 +1118,8 @@ Private Function BuildInboxRowValuesRole(ByVal eventId As String, _
         d("Qty") = ""
     End If
     d("Location") = location
+    d("DesignId") = designId
+    d("DesignVersion") = designVersion
     d("Note") = noteVal
     d("PayloadJson") = payloadJson
     d("Status") = "NEW"
@@ -1076,6 +1140,9 @@ Private Function ShouldStageEventLocallyRole(ByVal eventType As String) As Boole
              ROLE_EVENT_TYPE_BOX_UNBOX, _
              ROLE_EVENT_TYPE_PROD_CONSUME, _
              ROLE_EVENT_TYPE_PROD_COMPLETE, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, _
+             ROLE_EVENT_TYPE_DESIGN_RELEASE, _
+             ROLE_EVENT_TYPE_DESIGN_OBSOLETE, _
              ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
              ROLE_EVENT_TYPE_MIGRATION_SEED
             ShouldStageEventLocallyRole = True
@@ -1224,7 +1291,8 @@ Private Function MergeRowsIntoNasInboxRole(ByVal rows As Collection, _
                 report = schemaReport
                 GoTo CleanExit
             End If
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, schemaReport) Then
                 report = schemaReport
                 GoTo CleanExit
@@ -1285,6 +1353,8 @@ Private Sub WriteInboxRowValuesRole(ByVal lo As ListObject, ByVal rowValues As O
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "SKU"
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "Qty"
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "Location"
+    SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "DesignId"
+    SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "DesignVersion"
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "Note"
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "PayloadJson"
     SetTableRowValueFromDictionaryRole lo, rowIndex, rowValues, "Status"
@@ -2147,7 +2217,8 @@ Private Function InboxWorkbookNameRole(ByVal eventType As String, ByVal stationI
             InboxWorkbookNameRole = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameRole = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
             InboxWorkbookNameRole = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function
@@ -2158,7 +2229,8 @@ Private Function InboxTableNameRole(ByVal eventType As String) As String
             InboxTableNameRole = TABLE_INBOX_RECEIVE
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxTableNameRole = TABLE_INBOX_SHIP
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
             InboxTableNameRole = TABLE_INBOX_PROD
     End Select
 End Function
@@ -2171,9 +2243,9 @@ Private Function CapabilityForEventTypeRole(ByVal eventType As String) As String
             CapabilityForEventTypeRole = "SHIP_POST"
         Case ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE
             CapabilityForEventTypeRole = "ADMIN_MAINT"
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_DESIGN_CREATE
             CapabilityForEventTypeRole = "PROD_POST"
-        Case ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventTypeRole = "ADMIN_MAINT"
     End Select
 End Function

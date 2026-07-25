@@ -43,6 +43,18 @@ function Run-WorkbookMacro {
     [void]$Excel.Run($fullMacro)
 }
 
+function Run-WorkbookMacro1 {
+    param(
+        [object]$Excel,
+        [string]$WorkbookName,
+        [string]$MacroName,
+        [object]$Argument1
+    )
+
+    $fullMacro = "'$WorkbookName'!$MacroName"
+    return $Excel.Run($fullMacro, $Argument1)
+}
+
 function Begin-QuietUi {
     param([object]$Excel)
 
@@ -159,6 +171,25 @@ function Test-VbComponentCode {
     return "OK"
 }
 
+function Test-VbComponentPresence {
+    param(
+        [object]$Workbook,
+        [string]$ComponentName,
+        [bool]$ShouldExist
+    )
+
+    $exists = $false
+    try {
+        $null = $Workbook.VBProject.VBComponents.Item($ComponentName)
+        $exists = $true
+    }
+    catch {}
+
+    if ($exists -eq $ShouldExist) { return "OK" }
+    if ($ShouldExist) { return "Missing VB component: $ComponentName" }
+    return "Retired VB component is still packaged: $ComponentName"
+}
+
 $repo = (Resolve-Path $RepoRoot).Path
 $deployPath = Join-Path $repo $DeployRoot
 $resultPath = Join-Path $repo "tests/unit/phase6_packaged_xlam_results.md"
@@ -213,6 +244,7 @@ $validationSpecs = @(
         TargetFile = "WH1.Production.Operator.xlsx"
         InitMacro = "modProductionInit.InitProductionAddin"
         SafeMacro = "mProduction.InitializeProductionUI"
+        FormSmokeMacro = "mProduction.ProductionFormInitializeSmokeForWorkbook"
         Tables = @(
             @{ Sheet = "TemplatesTable"; Table = "TemplatesTable"; Columns = @("TEMPLATE_SCOPE", "RECIPE_ID", "INGREDIENT_ID", "PROCESS", "TARGET_TABLE", "TARGET_COLUMN", "FORMULA", "GUID", "NOTES", "ACTIVE", "CREATED_AT", "UPDATED_AT") },
             @{ Sheet = "ProductionLog"; Table = "ProductionLog"; Columns = @("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID") },
@@ -225,6 +257,7 @@ $validationSpecs = @(
         TargetFile = "WH1.Admin.Console.xlsx"
         InitMacro = "modAdminInit.InitAdminAddin"
         SafeMacro = ""
+        FormSmokeMacro = "modAdmin.AdminSettingsFormInitializeSmokeForWorkbook"
         Tables = @(
             @{ Sheet = "UserCredentials"; Table = "UserCredentials"; Columns = @("USER_ID", "USERNAME", "PIN", "ROLE", "STATUS", "LAST LOGIN") },
             @{ Sheet = "Emails"; Table = "Emails"; Columns = @("EMAIL_ID", "EMAIL_ADDRESS", "DISPLAY_NAME", "STATUS") },
@@ -250,6 +283,20 @@ try {
     $excel.EnableEvents = $true
     $excel.AutomationSecurity = 1
 
+    $sentinelWb = $excel.Workbooks.Add()
+    $targetWorkbooks.Add($sentinelWb) | Out-Null
+    $sentinelWs = $sentinelWb.Worksheets.Item(1)
+    $sentinelWs.Name = "OperatorSentinel"
+    $sentinelWs.Range("A1").Value2 = "UNCHANGED"
+    $sentinelWs.Range("A3").Value2 = "ROW"
+    $sentinelWs.Range("B3").Value2 = "LOCATION"
+    $sentinelWs.Range("A4").Value2 = 99
+    $sentinelWs.Range("B4").Value2 = "CLEARVIEW"
+    $sentinelTable = $sentinelWs.ListObjects.Add(1, $sentinelWs.Range("A3:B4"), $null, 1)
+    $sentinelTable.Name = "invSys"
+    $sentinelWb.Names.Add("RunLocation", $sentinelWs.Range("B4")) | Out-Null
+    $sentinelWb.Activate()
+
     foreach ($fileName in $openOrder) {
         $path = Join-Path $deployPath $fileName
         if (-not (Test-Path -LiteralPath $path)) {
@@ -267,6 +314,36 @@ try {
         catch {
             Add-ResultRow -Rows $resultRows -Check "$fileName.Open" -Passed $false -Detail $_.Exception.Message
         }
+
+        if ($fileName -eq "invSys.Designs.Domain.xlam") {
+            $sentinelUnchanged = (
+                [string]$sentinelWs.Range("A1").Value2 -eq "UNCHANGED" -and
+                [int]$sentinelWs.Range("A4").Value2 -eq 99 -and
+                [string]$sentinelWs.Range("B4").Value2 -eq "CLEARVIEW" -and
+                $sentinelWs.ListObjects.Count -eq 1 -and
+                $sentinelWb.Worksheets.Count -eq 1
+            )
+            Add-ResultRow -Rows $resultRows -Check "DomainStartup.OperatorIsolation" -Passed $sentinelUnchanged -Detail "Core, Inventory Domain, and Designs Domain left the active operator sentinel unchanged."
+        }
+    }
+
+    $componentSpecs = @(
+        @{ File = "invSys.Core.xlam"; Component = "modInventoryDomainBridge"; Exists = $true },
+        @{ File = "invSys.Core.xlam"; Component = "modDesignsDomainBridge"; Exists = $true },
+        @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryApply"; Exists = $true },
+        @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryQueries"; Exists = $true },
+        @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInvMan"; Exists = $false },
+        @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsApply"; Exists = $true },
+        @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsQueries"; Exists = $true },
+        @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true }
+    )
+    foreach ($componentSpec in $componentSpecs) {
+        if (-not $workbookMap.ContainsKey($componentSpec.File)) {
+            Add-ResultRow -Rows $resultRows -Check "$($componentSpec.File).$($componentSpec.Component)" -Passed $false -Detail "Workbook not open."
+            continue
+        }
+        $presenceResult = Test-VbComponentPresence -Workbook $workbookMap[$componentSpec.File] -ComponentName $componentSpec.Component -ShouldExist $componentSpec.Exists
+        Add-ResultRow -Rows $resultRows -Check "$($componentSpec.File).$($componentSpec.Component)" -Passed ($presenceResult -eq "OK") -Detail $presenceResult
     }
 
     foreach ($spec in $validationSpecs) {
@@ -276,6 +353,9 @@ try {
             Add-ResultRow -Rows $resultRows -Check "$($spec.Name).Surface" -Passed $false -Detail "Workbook not open."
             if ($spec.SafeMacro -ne "") {
                 Add-ResultRow -Rows $resultRows -Check "$($spec.Name).SafeMacro" -Passed $false -Detail "Workbook not open."
+            }
+            if ($spec.ContainsKey("FormSmokeMacro")) {
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).FormInitialize" -Passed $false -Detail "Workbook not open."
             }
             if ($spec.ContainsKey("FormCode")) {
                 foreach ($formSpec in $spec.FormCode) {
@@ -330,9 +410,62 @@ try {
             }
         }
 
+        if ($spec.ContainsKey("FormSmokeMacro")) {
+            try {
+                if ($null -eq $targetWb) {
+                    throw "Production target workbook is not open."
+                }
+                $targetWb.Activate()
+                Begin-QuietUi -Excel $excel
+                $formSmoke = [string](Run-WorkbookMacro1 -Excel $excel -WorkbookName $wb.Name -MacroName $spec.FormSmokeMacro -Argument1 $targetWb)
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).FormInitialize" -Passed $formSmoke.StartsWith("OK|", [System.StringComparison]::Ordinal) -Detail $formSmoke
+            }
+            catch {
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).FormInitialize" -Passed $false -Detail $_.Exception.Message
+            }
+            finally {
+                End-QuietUi -Excel $excel
+            }
+        }
+
         $surfaceWorkbook = if ($null -ne $targetWb) { $targetWb } else { $wb }
         $surfaceResult = Test-WorkbookSurface -Workbook $surfaceWorkbook -TableSpecs $spec.Tables
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).Surface" -Passed ($surfaceResult -eq "OK") -Detail $surfaceResult
+    }
+
+    if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
+        try {
+            $workbookMap["invSys.Inventory.Domain.xlam"].Close($false)
+            $diagnosticMacro = "'$($workbookMap["invSys.Core.xlam"].Name)'!modInventoryDomainBridge.DiagnoseInventoryDomainBridge"
+            $diagnostic = [string]$excel.Run($diagnosticMacro)
+            $passed = -not [string]::IsNullOrWhiteSpace($diagnostic) -and `
+                      -not $diagnostic.StartsWith("Inventory Domain unavailable", [System.StringComparison]::OrdinalIgnoreCase)
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.PeerAutoLoad" -Passed $passed -Detail $diagnostic
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.PeerAutoLoad" -Passed $false -Detail $_.Exception.Message
+        }
+    }
+
+    if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Designs.Domain.xlam")) {
+        try {
+            $workbookMap["invSys.Designs.Domain.xlam"].Close($false)
+            $diagnosticMacro = "'$($workbookMap["invSys.Core.xlam"].Name)'!modDesignsDomainBridge.DiagnoseDesignsDomainBridge"
+            $diagnostic = [string]$excel.Run($diagnosticMacro)
+            $domainReopened = $false
+            foreach ($candidate in $excel.Workbooks) {
+                if ([string]::Equals([string]$candidate.Name, "invSys.Designs.Domain.xlam", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $domainReopened = $true
+                    break
+                }
+            }
+            $passed = -not [string]::IsNullOrWhiteSpace($diagnostic) -and `
+                      -not $diagnostic.StartsWith("Designs Domain unavailable", [System.StringComparison]::OrdinalIgnoreCase)
+            Add-ResultRow -Rows $resultRows -Check "DesignsDomain.PeerAutoLoad" -Passed $passed -Detail "$diagnostic; WorkbookOpen=$domainReopened"
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "DesignsDomain.PeerAutoLoad" -Passed $false -Detail $_.Exception.Message
+        }
     }
 }
 finally {

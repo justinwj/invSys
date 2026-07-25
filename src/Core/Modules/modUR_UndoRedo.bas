@@ -29,15 +29,17 @@ Public Sub UndoLastAction()
     End If
     Dim Action As clsUndoAction
     Set Action = UndoStack(UndoStack.count)
-    UndoStack.Remove UndoStack.count
     Select Case Action.ActionType
         Case "BulkTransaction"
-            ' Remove the last LogCount rows from InventoryLog and store them
-            Set Action.logData = RemoveLastBulkLogEntriesBridge(Action.LogCount)
-            Call modUR_Snapshot.RestoreSnapshot(Action.SnapshotID)
+            MsgBox "This legacy undo action is disabled because inventory history is append-only." & vbCrLf & _
+                   "Reverse the transaction with a compensating inventory event.", _
+                   vbExclamation, "Undo"
+            Exit Sub
         Case Else
             Debug.Print "Unknown Undo Action Type:", Action.ActionType
+            Exit Sub
     End Select
+    UndoStack.Remove UndoStack.count
     RedoStack.Add Action
     MsgBox "Undo successful.", vbInformation, "Undo"
 End Sub
@@ -48,14 +50,17 @@ Public Sub RedoLastAction()
     End If
     Dim Action As clsUndoAction
     Set Action = RedoStack(RedoStack.count)
-    RedoStack.Remove RedoStack.count
     Select Case Action.ActionType
         Case "BulkTransaction"
-            Call modUR_Snapshot.RestoreSnapshot(Action.RedoSnapshotID)
-            ReAddBulkLogEntriesBridge Action.logData
+            MsgBox "This legacy redo action is disabled because inventory history is append-only." & vbCrLf & _
+                   "Submit the intended transaction as a new inventory event.", _
+                   vbExclamation, "Redo"
+            Exit Sub
         Case Else
             Debug.Print "Unknown Redo Action Type:", Action.ActionType
+            Exit Sub
     End Select
+    RedoStack.Remove RedoStack.count
     UndoStack.Add Action
     MsgBox "Redo successful.", vbInformation, "Redo"
 End Sub
@@ -75,7 +80,6 @@ End Sub
 Public Function GetUndoStack() As Collection
     Set GetUndoStack = UndoStack
 End Function
-
 
 
 

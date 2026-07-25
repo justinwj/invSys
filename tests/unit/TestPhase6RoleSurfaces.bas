@@ -498,6 +498,319 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionForm_OutputSelectionMapsPastBlankTableRows() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loOutput As ListObject
+    Dim lr As ListRow
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loOutput = FindTable(wb, "ProductionOutput")
+    If loOutput Is Nothing Then GoTo CleanExit
+
+    If loOutput.DataBodyRange Is Nothing Then
+        Set lr = loOutput.ListRows.Add
+    Else
+        loOutput.DataBodyRange.ClearContents
+    End If
+    Set lr = loOutput.ListRows.Add
+    SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BLEND"
+    SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Finished Tea"
+    SetTableValueByColumn loOutput, lr.Index, "ROW", 1202
+
+    wb.Activate
+    If frmProduction.TestSelectedProductionOutputTableRow(wb, 0) = 2 Then
+        TestProductionForm_OutputSelectionMapsPastBlankTableRows = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loOutput As ListObject
+    Dim loCheck As ListObject
+    Dim lr As ListRow
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loOutput = FindTable(wb, "ProductionOutput")
+    Set loCheck = FindTable(wb, "Prod_invSys_Check")
+    If loInv Is Nothing Or loOutput Is Nothing Or loCheck Is Nothing Then GoTo CleanExit
+
+    If Not loInv.DataBodyRange Is Nothing Then loInv.DataBodyRange.Delete
+    If Not loOutput.DataBodyRange Is Nothing Then loOutput.DataBodyRange.Delete
+    If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.Delete
+
+    Set lr = loOutput.ListRows.Add
+    SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BLEND"
+    SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Finished Tea"
+    SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 8
+    SetTableValueByColumn loOutput, lr.Index, "BATCH", 1
+    SetTableValueByColumn loOutput, lr.Index, "ROW", 1202
+
+    Set lr = loCheck.ListRows.Add
+    SetTableValueByColumn loCheck, lr.Index, "ROW", 1201
+    SetTableValueByColumn loCheck, lr.Index, "ITEM_CODE", "SKU-TEA-IN"
+    SetTableValueByColumn loCheck, lr.Index, "ITEM", "Tea Input"
+    SetTableValueByColumn loCheck, lr.Index, "USED", 12
+
+    result = mProduction.TestCompletionDeltasFromStagedRows(loOutput, loCheck)
+    If result = "OK|MadeRow=1202;MadeQty=8;UsedRow=1201;UsedQty=12" Then
+        TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker() As Long
+    Dim pickerItems(1 To 2, 1 To 7) As Variant
+    Dim result As String
+
+    On Error GoTo CleanFail
+    pickerItems(1, 1) = 1301
+    pickerItems(1, 2) = "Brewed Black Tea"
+    pickerItems(1, 3) = "LBS"
+    pickerItems(1, 6) = "Finished concentrated black tea"
+    pickerItems(1, 7) = "SKU-BREWED-BLACK-TEA"
+    pickerItems(2, 1) = 1302
+    pickerItems(2, 2) = "Green Tea"
+    pickerItems(2, 3) = "LBS"
+    pickerItems(2, 7) = "SKU-GREEN-TEA"
+
+    result = mProduction.TestLookupOutputRowLooseFromPicker(pickerItems, "Brew Black Tea")
+    If Left$(result, 5) = "1301|" Then
+        TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker = 1
+    End If
+    Exit Function
+
+CleanFail:
+End Function
+
+Public Function TestProductionCompleteRun_LogsOutputIdempotently() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loOutput As ListObject
+    Dim loLog As ListObject
+    Dim lr As ListRow
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loOutput = FindTable(wb, "ProductionOutput")
+    Set loLog = FindTable(wb, "ProductionLog")
+    If loOutput Is Nothing Or loLog Is Nothing Then GoTo CleanExit
+
+    If Not loOutput.DataBodyRange Is Nothing Then loOutput.DataBodyRange.Delete
+    If Not loLog.DataBodyRange Is Nothing Then loLog.DataBodyRange.Delete
+
+    Set lr = loOutput.ListRows.Add
+    SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BREW"
+    SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Brew Black Tea"
+    SetTableValueByColumn loOutput, lr.Index, "UOM", "LBS"
+    SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 400
+    SetTableValueByColumn loOutput, lr.Index, "BATCH", 1
+    SetTableValueByColumn loOutput, lr.Index, "ROW", 1301
+
+    result = mProduction.TestLogProductionOutputRow(wb.Worksheets("Production"), loOutput, 1)
+    If Left$(result, 3) = "OK|" And loLog.ListRows.Count = 1 Then
+        If CDbl(GetTableValueByColumn(loLog, 1, "REAL OUTPUT")) = 400 _
+           And CLng(GetTableValueByColumn(loLog, 1, "ROW")) = 1301 Then
+            TestProductionCompleteRun_LogsOutputIdempotently = 1
+        End If
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionCompleteRun_ReResolvesStaleOutputRow() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loOutput As ListObject
+    Dim lr As ListRow
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loOutput = FindTable(wb, "ProductionOutput")
+    If loInv Is Nothing Or loOutput Is Nothing Then GoTo CleanExit
+
+    If Not loInv.DataBodyRange Is Nothing Then loInv.DataBodyRange.Delete
+    If Not loOutput.DataBodyRange Is Nothing Then loOutput.DataBodyRange.Delete
+
+    Set lr = loInv.ListRows.Add
+    SetTableValueByColumn loInv, lr.Index, "ROW", 1301
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-BREWED-BLACK-TEA"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Brewed Black Tea"
+    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Finished concentrated black tea"
+
+    Set lr = loOutput.ListRows.Add
+    SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BREW"
+    SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Brew Black Tea"
+    SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 400
+    SetTableValueByColumn loOutput, lr.Index, "BATCH", 2
+    SetTableValueByColumn loOutput, lr.Index, "ROW", 67
+
+    result = mProduction.TestSelectedMadeDeltaRow(loOutput, loInv)
+    If Left$(result, 8) = "OK|1301|" Then
+        If CLng(GetTableValueByColumn(loOutput, 1, "ROW")) = 1301 Then
+            TestProductionCompleteRun_ReResolvesStaleOutputRow = 1
+        End If
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection() As Long
+    Dim pickerItems(1 To 2, 1 To 7) As Variant
+    Dim result As String
+
+    On Error GoTo CleanFail
+    pickerItems(1, 1) = 67
+    pickerItems(1, 2) = "Brewed Black Tea"
+    pickerItems(1, 3) = "LBS"
+    pickerItems(1, 6) = "Finished concentrated black tea"
+    pickerItems(1, 7) = "SKU-BREWED-BLACK-TEA"
+    pickerItems(2, 1) = 96
+    pickerItems(2, 2) = "Malawi Fine Cut Black Tea"
+    pickerItems(2, 3) = "LB"
+    pickerItems(2, 7) = "SKU-MALAWI-FINE-CUT"
+
+    result = mProduction.TestOutputIdentityFromPicker(pickerItems, 67, "Brew Black Tea")
+    If result = "67|SKU-BREWED-BLACK-TEA|Brewed Black Tea" Then
+        TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection = 1
+    End If
+    Exit Function
+
+CleanFail:
+End Function
+
+Public Function TestProductionRunInventory_PrefersOperatorLocationRows() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim lr As ListRow
+    Dim items As Variant
+    Dim r As Long
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    If loInv Is Nothing Then GoTo CleanExit
+    If Not loInv.DataBodyRange Is Nothing Then loInv.DataBodyRange.Delete
+
+    Set lr = loInv.ListRows.Add
+    SetTableValueByColumn loInv, lr.Index, "ROW", 96
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-MALAWI-FINE-CUT"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Malawi Fine Cut Black Tea"
+    SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
+    SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 3175
+    SetTableValueByColumn loInv, lr.Index, "LOCATION", "CLEARVIEW"
+
+    wb.Activate
+    items = mProduction.LoadProductionRunInventoryPickerItems("")
+    If IsEmpty(items) Or Not IsArray(items) Then GoTo CleanExit
+    For r = LBound(items, 1) To UBound(items, 1)
+        If CStr(items(r, 1)) = "96" Then
+            If CStr(items(r, 4)) = "3175" And CStr(items(r, 5)) = "CLEARVIEW" Then
+                TestProductionRunInventory_PrefersOperatorLocationRows = 1
+            End If
+            Exit For
+        End If
+    Next r
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_BatchDisplaysCompletedCount() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loOutput As ListObject
+    Dim loLog As ListObject
+    Dim lr As ListRow
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loOutput = FindTable(wb, "ProductionOutput")
+    Set loLog = FindTable(wb, "ProductionLog")
+    If loOutput Is Nothing Or loLog Is Nothing Then GoTo CleanExit
+
+    If Not loOutput.DataBodyRange Is Nothing Then loOutput.DataBodyRange.Delete
+    If Not loLog.DataBodyRange Is Nothing Then loLog.DataBodyRange.Delete
+
+    Set lr = loOutput.ListRows.Add
+    SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BREW"
+    SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Brew Black Tea"
+    SetTableValueByColumn loOutput, lr.Index, "ROW", 1301
+
+    wb.Activate
+    If frmProduction.TestProductionOutputDisplayedBatch(wb, 0) <> "0" Then GoTo CleanExit
+
+    Set lr = loLog.ListRows.Add
+    SetTableValueByColumn loLog, lr.Index, "PROCESS", "BREW"
+    SetTableValueByColumn loLog, lr.Index, "OUTPUT", "Brew Black Tea"
+    SetTableValueByColumn loLog, lr.Index, "ITEM", "Brew Black Tea"
+    SetTableValueByColumn loLog, lr.Index, "REAL OUTPUT", 400
+    SetTableValueByColumn loLog, lr.Index, "BATCH", 1
+    SetTableValueByColumn loLog, lr.Index, "ROW", 1301
+    SetTableValueByColumn loLog, lr.Index, "TIMESTAMP", Now
+
+    If frmProduction.TestProductionOutputDisplayedBatch(wb, 0) = "1" Then
+        TestProductionForm_BatchDisplaysCompletedCount = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestProductionForm_AssignmentIncludesOutputRecipeRows() As Long
     Dim ingredients(1 To 2, 1 To 7) As Variant
     Dim formOutputRows As Long

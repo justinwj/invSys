@@ -19,6 +19,9 @@ Private Const PROC_EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Private Const PROC_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Private Const PROC_EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 Private Const PROC_EVENT_TYPE_MIGRATION_SEED As String = "MIGRATION_SEED"
+Private Const PROC_EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
+Private Const PROC_EVENT_TYPE_DESIGN_RELEASE As String = "DESIGN_RELEASE"
+Private Const PROC_EVENT_TYPE_DESIGN_OBSOLETE As String = "DESIGN_OBSOLETE"
 
 Private Const SHEET_INBOX_RECEIVE As String = "InboxReceive"
 Private Const SHEET_INBOX_SHIP As String = "InboxShip"
@@ -61,6 +64,9 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim inventoryOpenedTransient As Boolean
     Dim localStagingReport As String
     Dim localStagingOk As Boolean
+    Dim designsWb As Workbook
+    Dim designsOpenedTransient As Boolean
+    Dim eventApplied As Boolean
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -154,7 +160,26 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             errorCode = vbNullString
             errorMessage = vbNullString
 
-            If ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage) Then
+            eventApplied = False
+            If IsDesignEventTypeProcessor(GetDictionaryString(evt, "EventType")) Then
+                If designsWb Is Nothing Then
+                    Set designsWb = modDesignsDomainBridge.ResolveDesignsWorkbookBridge(warehouseId)
+                    If Not designsWb Is Nothing Then
+                        designsOpenedTransient = Not WorkbookWasAlreadyOpenProcessor(openWorkbookPaths, designsWb)
+                    End If
+                End If
+                If designsWb Is Nothing Then
+                    errorCode = "DESIGNS_WORKBOOK_NOT_FOUND"
+                    errorMessage = "The authoritative Designs workbook could not be resolved."
+                Else
+                    eventApplied = modDesignsDomainBridge.ApplyDesignEventBridge( _
+                        evt, designsWb, runId, statusOut, errorCode, errorMessage)
+                End If
+            Else
+                eventApplied = ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
+            End If
+
+            If eventApplied Then
                 Select Case UCase$(statusOut)
                     Case PROC_APPLY_STATUS_APPLIED
                         artifactReport = vbNullString
@@ -223,6 +248,7 @@ CleanExit:
     End If
     If lockHeld Then Call modLockManager.ReleaseLock("INVENTORY", runId, inventoryWb)
     If inventoryOpenedTransient Then CloseTransientProcessorWorkbook inventoryWb
+    If designsOpenedTransient Then CloseTransientProcessorWorkbook designsWb
     If perfOwned Then PerfEndSafeProcessor runId, CLng((Timer - totalStart) * 1000), report
     Exit Function
 
@@ -508,7 +534,7 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
     End If
 
     headers = Array("EventID", "ParentEventId", "UndoOfEventId", "EventType", "CreatedAtUTC", "WarehouseId", "StationId", _
-                    "UserId", "MigrationSourceId", "SKU", "Qty", "Location", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
+                    "UserId", "MigrationSourceId", "SKU", "Qty", "Location", "DesignId", "DesignVersion", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
                     "ErrorMessage", "FailedAtUTC")
 
     NormalizeWorkbookSheetsProcessor wb, Array(sheetName)
@@ -968,6 +994,8 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, _
     evt("SKU") = GetCellByColumnProcessor(lo, rowIndex, "SKU")
     evt("Qty") = GetCellByColumnProcessor(lo, rowIndex, "Qty")
     evt("Location") = GetCellByColumnProcessor(lo, rowIndex, "Location")
+    evt("DesignId") = GetCellByColumnProcessor(lo, rowIndex, "DesignId")
+    evt("DesignVersion") = GetCellByColumnProcessor(lo, rowIndex, "DesignVersion")
     evt("Note") = GetCellByColumnProcessor(lo, rowIndex, "Note")
     evt("PayloadJson") = GetCellByColumnProcessor(lo, rowIndex, "PayloadJson")
     evt("SourceInbox") = workbookName & ":" & tableName
@@ -1032,10 +1060,17 @@ Private Function CapabilityForEventType(ByVal eventType As String) As String
             CapabilityForEventType = "SHIP_POST"
         Case PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE
             CapabilityForEventType = "ADMIN_MAINT"
-        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE
+        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_DESIGN_CREATE
             CapabilityForEventType = "PROD_POST"
-        Case PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventType = "ADMIN_MAINT"
+    End Select
+End Function
+
+Private Function IsDesignEventTypeProcessor(ByVal eventType As String) As Boolean
+    Select Case UCase$(SafeTrimProcessor(eventType))
+        Case PROC_EVENT_TYPE_DESIGN_CREATE, PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE
+            IsDesignEventTypeProcessor = True
     End Select
 End Function
 

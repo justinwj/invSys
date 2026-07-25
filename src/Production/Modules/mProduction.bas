@@ -10,6 +10,7 @@ Private Const SHEET_RUNTIME_RECIPES As String = "ProductionRecipes"
 Private Const SHEET_RUNTIME_INGREDIENT_PALETTE As String = "ProductionIngredientPalette"
 Private Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Private Const EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
+Private Const EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
 Private Const PRODUCTION_DEFAULT_ROW_BUDGET As Long = 50
 Private Const PRODUCTION_MAX_ROW_BUDGET As Long = 1000
 
@@ -147,6 +148,53 @@ ErrHandler:
     MsgBox "Production form failed: " & Err.Description, vbCritical
     Resume CleanExit
 End Sub
+
+Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
+    On Error GoTo ErrHandler
+
+    Dim frm As frmProduction
+    Dim pageCount As Long
+    Dim statusText As String
+
+    If operatorWb Is Nothing Then
+        Err.Raise vbObjectError + 7310, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Production operator workbook is required."
+    End If
+    If operatorWb.IsAddin Then
+        Err.Raise vbObjectError + 7311, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Production operator workbook cannot be an add-in."
+    End If
+
+    Set frm = New frmProduction
+    pageCount = frm.TestInitializeForWorkbook(operatorWb)
+    statusText = frm.TestStatusText()
+
+    If pageCount <> 4 Then
+        Err.Raise vbObjectError + 7312, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Production form page count was " & CStr(pageCount) & "; expected 4."
+    End If
+    If InStr(1, statusText, "failed", vbTextCompare) > 0 Then
+        Err.Raise vbObjectError + 7313, "ProductionFormInitializeSmokeForWorkbook", statusText
+    End If
+    If InStr(1, statusText, "Inventory: ContractVersion=R1-INVENTORY-1", vbTextCompare) = 0 Then
+        Err.Raise vbObjectError + 7314, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Production form did not report a healthy Inventory Domain. " & statusText
+    End If
+
+    ProductionFormInitializeSmokeForWorkbook = "OK|Pages=" & CStr(pageCount) & _
+                                                "|Status=" & statusText
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+
+ErrHandler:
+    ProductionFormInitializeSmokeForWorkbook = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
 
 ' ===== Worksheet event entry points =====
 Public Sub HandleProductionSelectionChange(ByVal target As Range)
@@ -543,6 +591,28 @@ Private Sub MoveListObjectToRowCol(ByVal lo As ListObject, ByVal targetRow As Lo
 End Sub
 
 Public Function LoadRecipeList() As Variant
+    Dim designs As Variant
+
+    designs = LoadRecipeListFromDesigns("")
+    If IsUsableProductionArray(designs) Then
+        LoadRecipeList = designs
+    Else
+        LoadRecipeList = LoadLegacyRecipeList()
+    End If
+End Function
+
+Public Function LoadReleasedRecipeList() As Variant
+    Dim designs As Variant
+
+    designs = LoadRecipeListFromDesigns("RELEASED")
+    If IsUsableProductionArray(designs) Then
+        LoadReleasedRecipeList = designs
+    Else
+        LoadReleasedRecipeList = LoadLegacyRecipeList()
+    End If
+End Function
+
+Private Function LoadLegacyRecipeList() As Variant
     Dim syncReport As String
     Dim wbOps As Workbook
     Set wbOps = ResolveProductionWorkbook(, "Recipes")
@@ -590,7 +660,7 @@ NextRow:
         result(i, 3) = infoArr(3)
         i = i + 1
     Next key
-    LoadRecipeList = result
+    LoadLegacyRecipeList = result
 End Function
 
 Public Function GenerateRecipeId(Optional ByVal preferredWb As Workbook = Nothing) As String
@@ -682,7 +752,12 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
     Dim syncReport As String
-    If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+    If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
+        Call HydrateLocalRecipeFromDesigns(wsProd.Parent, recipeId, "RELEASED", syncReport)
+    End If
+    If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
+        RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+    End If
     Dim wsRec As Worksheet: Set wsRec = SheetExists("Recipes")
     If wsRec Is Nothing Then
         MsgBox "Recipes sheet not found.", vbCritical
@@ -1759,25 +1834,28 @@ ErrHandler:
 End Function
 
 Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber As Long, Optional ByRef report As String = "") As Boolean
+    Dim completionStep As String
+
     On Error GoTo ErrHandler
 
+    completionStep = "checking PROD_POST capability"
     If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then
         report = "Current user lacks PROD_POST capability."
         Exit Function
     End If
 
+    completionStep = "resolving the Production worksheet"
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then
         report = "Production sheet not found."
         Exit Function
     End If
 
-    Dim invLo As ListObject: Set invLo = GetInvSysTable()
-    If invLo Is Nothing Then
-        report = "InventoryManagement!invSys table not found."
-        Exit Function
-    End If
+    completionStep = "resolving the operator inventory table"
+    Dim invLo As ListObject
+    Set invLo = GetInvSysTableFromWorkbook(wsProd.Parent)
 
+    completionStep = "resolving the Production Output table"
     Dim loOut As ListObject
     Set loOut = FindListObjectByNameOrHeaders(wsProd, "ProductionOutput", Array("PROCESS", "OUTPUT"))
     If loOut Is Nothing Then
@@ -1789,6 +1867,7 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
         Exit Function
     End If
 
+    completionStep = "building the finished-output inventory delta"
     Dim madeNotes As String
     Dim madeDeltas As Collection
     Set madeDeltas = BuildMadeDeltasFromProductionOutputRow(loOut, invLo, outputRowNumber, madeNotes)
@@ -1802,6 +1881,7 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
         Exit Function
     End If
 
+    completionStep = "building the checked-in input inventory deltas"
     Dim errNotes As String
     Dim usedNotes As String
     Dim usedDeltas As Collection
@@ -1822,6 +1902,7 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
         Exit Function
     End If
 
+    completionStep = "queueing PROD_CONSUME"
     Dim consumeEventId As String
     If Not QueueProductionConsumeEvent(usedDeltas, Nothing, errNotes, consumeEventId) Then
         If errNotes = "" Then errNotes = "Unable to queue production input consumption event."
@@ -1829,6 +1910,7 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
         Exit Function
     End If
 
+    completionStep = "queueing PROD_COMPLETE"
     Dim completeEventId As String
     If Not QueueProductionCompleteEvent(madeDeltas, errNotes, completeEventId) Then
         If errNotes = "" Then errNotes = "Unable to queue production completion event."
@@ -1836,26 +1918,39 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
         Exit Function
     End If
 
+    completionStep = "applying recall-code metadata"
     ApplyRecallCodesForOutput wsProd, loOut, invLo, errNotes
 
+    completionStep = "capturing pending output values"
     Dim pendingOutputValues As Object
     Set pendingOutputValues = CaptureProductionOutputCompletionValues(loOut, outputRowNumber)
 
+    completionStep = "processing queued production events and refreshing inventory"
     Dim runtimeReport As String
-    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wsProd.Parent, "", "LOCAL", runtimeReport) Then
+    Dim queuedWorkHandled As Boolean
+    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wsProd.Parent, "", "LOCAL", runtimeReport, True, queuedWorkHandled) Then
         If runtimeReport = "" Then runtimeReport = "Production completion queued, but runtime processing or read-model refresh did not complete cleanly."
         AppendNote errNotes, runtimeReport
-        report = "CompleteEvent=" & completeEventId & "; " & errNotes
-        Exit Function
+        If Not queuedWorkHandled Then
+            report = "ConsumeEvent=" & consumeEventId & "; CompleteEvent=" & completeEventId & "; " & errNotes
+            Exit Function
+        End If
     ElseIf runtimeReport <> "" Then
         AppendNote errNotes, runtimeReport
     End If
 
+    completionStep = "restoring completed output values after inventory refresh"
     RestoreProductionOutputCompletionValues loOut, pendingOutputValues
+
+    completionStep = "writing the completed output to ProductionLog"
     Dim logNotes As String
-    LogProductionOutputToProductionLog wsProd, loOut, invLo, logNotes, outputRowNumber
+    If Not LogProductionOutputToProductionLog(wsProd, loOut, invLo, logNotes, outputRowNumber) Then
+        If logNotes = "" Then logNotes = "ProductionLog did not accept the completed output."
+        Err.Raise vbObjectError + 2101, "mProduction.CompleteProductionRunAfterCheckInForOutput", logNotes
+    End If
     If logNotes <> "" Then AppendNote errNotes, logNotes
 
+    completionStep = "clearing completed Production Run staging"
     ClearUsedStageColumns invLo, usedDeltas
     If Not loCheck Is Nothing Then
         If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.ClearContents
@@ -1867,7 +1962,111 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
     Exit Function
 
 ErrHandler:
-    report = "CompleteProductionRunAfterCheckInForOutput failed: " & Err.Description
+    report = "CompleteProductionRunAfterCheckInForOutput failed while " & completionStep & _
+        ": " & CStr(Err.Number) & " - " & Err.Description
+End Function
+
+Public Function CompleteProductionRunAfterCheckInForOutputResult(ByVal outputRowNumber As Long) As String
+    Dim report As String
+    Dim succeeded As Boolean
+
+    On Error GoTo ErrHandler
+    succeeded = CompleteProductionRunAfterCheckInForOutput(outputRowNumber, report)
+    If succeeded Then
+        CompleteProductionRunAfterCheckInForOutputResult = "OK" & vbTab & report
+    Else
+        If Trim$(report) = "" Then report = "The Production completion backend returned False without a diagnostic report."
+        CompleteProductionRunAfterCheckInForOutputResult = "FAIL" & vbTab & report
+    End If
+    Exit Function
+
+ErrHandler:
+    CompleteProductionRunAfterCheckInForOutputResult = "FAIL" & vbTab & _
+        "CompleteProductionRunAfterCheckInForOutputResult failed: " & Err.Description
+End Function
+
+Public Sub RepairLastCompletedProductionRun()
+    Dim report As String
+
+    If FinalizePostedProductionRunLocal(report) Then
+        MsgBox report, vbInformation, "Production Complete Run Repair"
+    Else
+        MsgBox report, vbExclamation, "Production Complete Run Repair"
+    End If
+End Sub
+
+Public Function FinalizePostedProductionRunLocal(Optional ByRef report As String = "") As Boolean
+    On Error GoTo ErrHandler
+
+    Dim wsProd As Worksheet
+    Set wsProd = SheetExists(SHEET_PRODUCTION)
+    If wsProd Is Nothing Then
+        report = "Production sheet not found."
+        Exit Function
+    End If
+
+    Dim loOut As ListObject
+    Set loOut = FindListObjectByNameOrHeaders(wsProd, "ProductionOutput", Array("PROCESS", "OUTPUT"))
+    If loOut Is Nothing Or loOut.DataBodyRange Is Nothing Then
+        report = "ProductionOutput table not found or empty."
+        Exit Function
+    End If
+
+    Dim cReal As Long
+    cReal = ColumnIndex(loOut, "REAL OUTPUT")
+    If cReal = 0 Then cReal = ColumnIndexLoose(loOut, "REALOUTPUT", "REAL_OUTPUT")
+    If cReal = 0 Then
+        report = "ProductionOutput is missing its Real Output column."
+        Exit Function
+    End If
+
+    Dim outputRowNumber As Long
+    Dim positiveRows As Long
+    Dim r As Long
+    For r = 1 To loOut.ListRows.Count
+        If NzDbl(loOut.DataBodyRange.Cells(r, cReal).Value) > 0 Then
+            positiveRows = positiveRows + 1
+            outputRowNumber = r
+        End If
+    Next r
+
+    If positiveRows = 0 Then
+        report = "No Production Output row contains a positive Real Output to repair."
+        Exit Function
+    End If
+    If positiveRows > 1 Then
+        report = "More than one Production Output row contains a Real Output. Clear unrelated entries before running this repair."
+        Exit Function
+    End If
+
+    Dim invLo As ListObject
+    Set invLo = GetInvSysTableFromWorkbook(wsProd.Parent)
+
+    Dim logNotes As String
+    If Not LogProductionOutputToProductionLog(wsProd, loOut, invLo, logNotes, outputRowNumber) Then
+        If logNotes = "" Then logNotes = "ProductionLog did not accept the completed output."
+        report = logNotes
+        Exit Function
+    End If
+
+    Dim loCheck As ListObject
+    Set loCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
+    If Not loCheck Is Nothing Then
+        If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.ClearContents
+    End If
+
+    loOut.DataBodyRange.Cells(outputRowNumber, cReal).ClearContents
+    Dim cBatch As Long
+    cBatch = ColumnIndex(loOut, "BATCH")
+    If cBatch > 0 Then loOut.DataBodyRange.Cells(outputRowNumber, cBatch).ClearContents
+
+    FinalizePostedProductionRunLocal = True
+    report = "The already-posted batch was recorded in ProductionLog and local run staging was cleared. Inventory was not posted again. Refresh Production Run to display Last, Batch, and Total."
+    If logNotes <> "" Then report = report & " " & logNotes
+    Exit Function
+
+ErrHandler:
+    report = "Local Production completion repair failed: " & CStr(Err.Number) & " - " & Err.Description
 End Function
 
 Public Sub BtnToMade()
@@ -2182,6 +2381,93 @@ Public Function ValidateQueueProductionCompleteEventFromCurrentWorkbook() As Str
     Else
         ValidateQueueProductionCompleteEventFromCurrentWorkbook = errNotes
     End If
+End Function
+
+Public Function TestCompletionDeltasFromStagedRows(ByVal loOut As ListObject, ByVal loCheck As ListObject) As String
+    Dim madeNotes As String
+    Dim usedNotes As String
+    Dim madeDeltas As Collection
+    Dim usedDeltas As Collection
+    Dim madeDelta As Object
+    Dim usedDelta As Object
+
+    On Error GoTo ErrHandler
+    Set madeDeltas = BuildMadeDeltasFromProductionOutputRow(loOut, Nothing, 1, madeNotes)
+    Set usedDeltas = BuildUsedDeltaPacketFromCheck(loCheck, Nothing, usedNotes)
+    If madeDeltas Is Nothing Then
+        TestCompletionDeltasFromStagedRows = "FAIL|Made=" & madeNotes
+        Exit Function
+    End If
+    If usedDeltas Is Nothing Then
+        TestCompletionDeltasFromStagedRows = "FAIL|Used=" & usedNotes
+        Exit Function
+    End If
+    If madeDeltas.Count <> 1 Or usedDeltas.Count <> 1 Then
+        TestCompletionDeltasFromStagedRows = "FAIL|MadeCount=" & CStr(madeDeltas.Count) & ";UsedCount=" & CStr(usedDeltas.Count)
+        Exit Function
+    End If
+
+    Set madeDelta = madeDeltas(1)
+    Set usedDelta = usedDeltas(1)
+    TestCompletionDeltasFromStagedRows = "OK|MadeRow=" & CStr(madeDelta("ROW")) & _
+        ";MadeQty=" & CStr(madeDelta("QTY")) & _
+        ";UsedRow=" & CStr(usedDelta("ROW")) & _
+        ";UsedQty=" & CStr(usedDelta("QTY"))
+    Exit Function
+
+ErrHandler:
+    TestCompletionDeltasFromStagedRows = "FAIL|" & Err.Description
+End Function
+
+Public Function TestLookupOutputRowLooseFromPicker(ByVal pickerItems As Variant, ByVal outputName As String) As String
+    Dim notes As String
+    Dim rowVal As Long
+
+    rowVal = LookupOutputRowLooseFromPicker(pickerItems, outputName, notes)
+    TestLookupOutputRowLooseFromPicker = CStr(rowVal) & "|" & notes
+End Function
+
+Public Function TestSelectedMadeDeltaRow(ByVal loOut As ListObject, ByVal invLo As ListObject) As String
+    Dim notes As String
+    Dim deltas As Collection
+    Dim delta As Object
+
+    Set deltas = BuildMadeDeltasFromProductionOutputRow(loOut, invLo, 1, notes)
+    If deltas Is Nothing Then
+        TestSelectedMadeDeltaRow = "FAIL|" & notes
+        Exit Function
+    End If
+    If deltas.Count <> 1 Then
+        TestSelectedMadeDeltaRow = "FAIL|Count=" & CStr(deltas.Count) & "|" & notes
+        Exit Function
+    End If
+    Set delta = deltas(1)
+    TestSelectedMadeDeltaRow = "OK|" & CStr(delta("ROW")) & "|" & notes
+End Function
+
+Public Function TestOutputIdentityFromPicker(ByVal pickerItems As Variant, ByVal rowVal As Long, ByVal outputName As String) As String
+    Dim delta As Object
+    Set delta = CreateObject("Scripting.Dictionary")
+    delta("ROW") = rowVal
+    delta("ITEM_CODE") = ""
+    delta("ITEM_NAME") = outputName
+    EnrichOutputDeltaFromPicker delta, pickerItems, rowVal
+    TestOutputIdentityFromPicker = CStr(delta("ROW")) & "|" & NzStr(delta("ITEM_CODE")) & "|" & NzStr(delta("ITEM_NAME"))
+End Function
+
+Public Function TestLogProductionOutputRow(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal outputRowNumber As Long) As String
+    Dim firstNotes As String
+    Dim secondNotes As String
+
+    If Not LogProductionOutputToProductionLog(wsProd, loOut, Nothing, firstNotes, outputRowNumber) Then
+        TestLogProductionOutputRow = "FAIL|First=" & firstNotes
+        Exit Function
+    End If
+    If Not LogProductionOutputToProductionLog(wsProd, loOut, Nothing, secondNotes, outputRowNumber) Then
+        TestLogProductionOutputRow = "FAIL|Second=" & secondNotes
+        Exit Function
+    End If
+    TestLogProductionOutputRow = "OK|" & firstNotes & "|" & secondNotes
 End Function
 
 Public Sub BtnNextBatch()
@@ -2909,6 +3195,17 @@ Public Function GetPaletteIngredientId() As String
 End Function
 
 Public Function LoadIngredientListForRecipe(ByVal recipeId As String) As Variant
+    Dim ingredients As Variant
+
+    ingredients = LoadIngredientListFromDesigns(recipeId)
+    If IsUsableProductionArray(ingredients) Then
+        LoadIngredientListForRecipe = ingredients
+    Else
+        LoadIngredientListForRecipe = LoadLegacyIngredientListForRecipe(recipeId)
+    End If
+End Function
+
+Private Function LoadLegacyIngredientListForRecipe(ByVal recipeId As String) As Variant
     Dim syncReport As String
     Dim wbOps As Workbook
     Set wbOps = ResolveProductionWorkbook(, "Recipes")
@@ -2969,8 +3266,426 @@ Public Function LoadIngredientListForRecipe(ByVal recipeId As String) As Variant
         result(i, 7) = infoArr(7)
         i = i + 1
     Next k
-    LoadIngredientListForRecipe = result
+    LoadLegacyIngredientListForRecipe = result
 End Function
+
+Private Function LoadRecipeListFromDesigns(ByVal statusFilter As String) As Variant
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim latest As Object
+    Dim info As Variant
+    Dim result() As Variant
+    Dim r As Long
+    Dim i As Long
+    Dim designId As String
+    Dim designVersion As String
+    Dim designType As String
+    Dim key As Variant
+
+    If Not ProductionDesignsEnabled() Then Exit Function
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, statusFilter)
+    If Not IsUsableProductionArray(designs) Then Exit Function
+
+    Set latest = CreateObject("Scripting.Dictionary")
+    latest.CompareMode = vbTextCompare
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        designId = Trim$(NzStr(designs(r, 1)))
+        designVersion = Trim$(NzStr(designs(r, 2)))
+        designType = UCase$(Trim$(NzStr(designs(r, 3))))
+        If designId = "" Or designVersion = "" Then GoTo NextDesign
+        If designType <> "" And designType <> "RECIPE" Then GoTo NextDesign
+
+        If Not latest.Exists(designId) Then
+            latest.Add designId, Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
+        Else
+            info = latest(designId)
+            If IsNewerDesignVersionProduction(designVersion, NzStr(info(0))) Then
+                latest(designId) = Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
+            End If
+        End If
+NextDesign:
+    Next r
+
+    If latest.Count = 0 Then Exit Function
+    ReDim result(1 To latest.Count, 1 To 3)
+    i = 1
+    For Each key In latest.Keys
+        info = latest(key)
+        result(i, 1) = CStr(key)
+        result(i, 2) = info(1)
+        result(i, 3) = info(2)
+        i = i + 1
+    Next key
+    LoadRecipeListFromDesigns = result
+CleanFail:
+End Function
+
+Private Function LoadIngredientListFromDesigns(ByVal recipeId As String) As Variant
+    On Error GoTo CleanFail
+
+    Dim designVersion As String
+    Dim designName As String
+    Dim designDescription As String
+    Dim designStatus As String
+    Dim bom As Variant
+    Dim result() As Variant
+    Dim r As Long
+    Dim ingredientId As String
+    Dim ingredientName As String
+
+    recipeId = Trim$(recipeId)
+    If recipeId = "" Then Exit Function
+    If Not ProductionDesignsEnabled() Then Exit Function
+    If Not FindLatestDesignSummaryProduction(recipeId, "", designVersion, designName, designDescription, designStatus) Then Exit Function
+
+    bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
+    If Not IsUsableProductionArray(bom) Then Exit Function
+
+    ReDim result(LBound(bom, 1) To UBound(bom, 1), 1 To 7)
+    For r = LBound(bom, 1) To UBound(bom, 1)
+        ingredientId = Trim$(NzStr(bom(r, 5)))
+        If ingredientId = "" Then ingredientId = Trim$(NzStr(bom(r, 4)))
+        ingredientName = Trim$(NzStr(bom(r, 10)))
+        If ingredientName = "" Then ingredientName = ingredientId
+
+        result(r, 1) = ingredientId
+        result(r, 2) = ingredientName
+        result(r, 3) = bom(r, 8)
+        result(r, 4) = bom(r, 2)
+        result(r, 5) = bom(r, 3)
+        result(r, 6) = bom(r, 7)
+        result(r, 7) = bom(r, 9)
+    Next r
+    LoadIngredientListFromDesigns = result
+CleanFail:
+End Function
+
+Private Function FindLatestDesignSummaryProduction(ByVal designId As String, _
+                                                   ByVal statusFilter As String, _
+                                                   ByRef designVersion As String, _
+                                                   ByRef designName As String, _
+                                                   ByRef designDescription As String, _
+                                                   ByRef designStatus As String) As Boolean
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim r As Long
+    Dim candidateVersion As String
+
+    If Not ProductionDesignsEnabled() Then Exit Function
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, statusFilter)
+    If Not IsUsableProductionArray(designs) Then Exit Function
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(designId), vbTextCompare) = 0 Then
+            candidateVersion = Trim$(NzStr(designs(r, 2)))
+            If designVersion = "" Or IsNewerDesignVersionProduction(candidateVersion, designVersion) Then
+                designVersion = candidateVersion
+                designName = NzStr(designs(r, 4))
+                designDescription = NzStr(designs(r, 5))
+                designStatus = NzStr(designs(r, 6))
+            End If
+        End If
+    Next r
+    FindLatestDesignSummaryProduction = (designVersion <> "")
+CleanFail:
+End Function
+
+Private Function IsNewerDesignVersionProduction(ByVal candidateVersion As String, _
+                                                ByVal currentVersion As String) As Boolean
+    candidateVersion = Trim$(candidateVersion)
+    currentVersion = Trim$(currentVersion)
+    If currentVersion = "" Then
+        IsNewerDesignVersionProduction = (candidateVersion <> "")
+    ElseIf IsNumeric(candidateVersion) And IsNumeric(currentVersion) Then
+        IsNewerDesignVersionProduction = (CDbl(candidateVersion) > CDbl(currentVersion))
+    Else
+        IsNewerDesignVersionProduction = (StrComp(candidateVersion, currentVersion, vbTextCompare) > 0)
+    End If
+End Function
+
+Private Function IsUsableProductionArray(ByVal values As Variant) As Boolean
+    On Error GoTo CleanFail
+    If IsEmpty(values) Then Exit Function
+    If Not IsArray(values) Then Exit Function
+    IsUsableProductionArray = (UBound(values, 1) >= LBound(values, 1))
+CleanFail:
+End Function
+
+Private Function ProductionDesignsEnabled() As Boolean
+    On Error GoTo CleanFail
+    If Not modConfig.IsLoaded() Then Exit Function
+    ProductionDesignsEnabled = modConfig.GetBool("DesignsEnabled", False) _
+                               Or modConfig.GetBool("FF_DesignsEnabled", False)
+CleanFail:
+End Function
+
+Public Function GetProductionInventoryModeStatus() As String
+    On Error GoTo FailStatus
+    GetProductionInventoryModeStatus = "Inventory: " & modInventoryDomainBridge.DiagnoseInventoryDomainBridge()
+    Exit Function
+FailStatus:
+    GetProductionInventoryModeStatus = "Inventory: unavailable (" & Err.Description & ")."
+End Function
+
+Public Function GetProductionDesignsModeStatus() As String
+    On Error GoTo FailStatus
+    If Not ProductionDesignsEnabled() Then
+        GetProductionDesignsModeStatus = "Designs: legacy recipe fallback (disabled in warehouse config)."
+        Exit Function
+    End If
+    GetProductionDesignsModeStatus = "Designs: " & modDesignsDomainBridge.DiagnoseDesignsDomainBridge()
+    Exit Function
+FailStatus:
+    GetProductionDesignsModeStatus = "Designs: unavailable (" & Err.Description & ")."
+End Function
+
+Private Function QueueSavedRecipeDesignCreate(ByVal loRecipes As ListObject, _
+                                              ByVal recipeId As String, _
+                                              ByVal recipeName As String, _
+                                              ByVal recipeDescription As String, _
+                                              ByRef designVersion As String, _
+                                              ByRef report As String) As Boolean
+    On Error GoTo FailQueue
+
+    Dim payloadRows As Collection
+    Dim payloadItem As Object
+    Dim payloadJson As String
+    Dim eventId As String
+    Dim queueError As String
+    Dim processorReport As String
+    Dim appliedCount As Long
+    Dim r As Long
+    Dim cRecipeId As Long
+    Dim cProcess As Long
+    Dim cIo As Long
+    Dim cIngredient As Long
+    Dim cIngredientId As Long
+    Dim cAmount As Long
+    Dim cUom As Long
+    Dim cPercent As Long
+    Dim cLineNo As Long
+    Dim lineNo As Long
+
+    If loRecipes Is Nothing Or loRecipes.DataBodyRange Is Nothing Then
+        report = "No saved recipe rows were available for the Designs event."
+        Exit Function
+    End If
+
+    designVersion = NextRecipeDesignVersionProduction(recipeId)
+    If designVersion = "" Then designVersion = "1"
+
+    cRecipeId = ColumnIndex(loRecipes, "RECIPE_ID")
+    cProcess = ColumnIndex(loRecipes, "PROCESS")
+    cIo = ColumnIndex(loRecipes, "INPUT/OUTPUT")
+    cIngredient = ColumnIndex(loRecipes, "INGREDIENT")
+    cIngredientId = ColumnIndex(loRecipes, "INGREDIENT_ID")
+    cAmount = ColumnIndex(loRecipes, "AMOUNT")
+    cUom = ColumnIndex(loRecipes, "UOM")
+    cPercent = ColumnIndex(loRecipes, "PERCENT")
+    cLineNo = ColumnIndex(loRecipes, "RECIPE_LIST_ROW")
+    If cRecipeId = 0 Then
+        report = "Recipes table is missing RECIPE_ID."
+        Exit Function
+    End If
+
+    Set payloadRows = New Collection
+    For r = 1 To loRecipes.ListRows.Count
+        If StrComp(Trim$(NzStr(loRecipes.DataBodyRange.Cells(r, cRecipeId).Value)), _
+                   Trim$(recipeId), vbTextCompare) = 0 Then
+            Set payloadItem = CreateObject("Scripting.Dictionary")
+            payloadItem.CompareMode = vbTextCompare
+            If payloadRows.Count = 0 Then
+                payloadItem("DesignType") = "RECIPE"
+                payloadItem("DesignName") = recipeName
+                payloadItem("Description") = recipeDescription
+            End If
+
+            lineNo = payloadRows.Count + 1
+            If cLineNo > 0 Then
+                If IsNumeric(loRecipes.DataBodyRange.Cells(r, cLineNo).Value) Then
+                    lineNo = CLng(loRecipes.DataBodyRange.Cells(r, cLineNo).Value)
+                End If
+            End If
+            payloadItem("LineNo") = lineNo
+            If cProcess > 0 Then payloadItem("Process") = NzStr(loRecipes.DataBodyRange.Cells(r, cProcess).Value)
+            If cIo > 0 Then payloadItem("IOType") = NzStr(loRecipes.DataBodyRange.Cells(r, cIo).Value)
+            If cIngredientId > 0 Then payloadItem("ComponentDesignId") = NzStr(loRecipes.DataBodyRange.Cells(r, cIngredientId).Value)
+            If cAmount > 0 Then payloadItem("Qty") = NzDbl(loRecipes.DataBodyRange.Cells(r, cAmount).Value)
+            If cUom > 0 Then payloadItem("UOM") = NzStr(loRecipes.DataBodyRange.Cells(r, cUom).Value)
+            If cPercent > 0 Then payloadItem("Percent") = NzDbl(loRecipes.DataBodyRange.Cells(r, cPercent).Value)
+            If cIngredient > 0 Then payloadItem("Instruction") = NzStr(loRecipes.DataBodyRange.Cells(r, cIngredient).Value)
+            payloadRows.Add payloadItem
+        End If
+    Next r
+
+    If payloadRows.Count = 0 Then
+        report = "No saved rows matched recipe " & recipeId & "."
+        Exit Function
+    End If
+
+    payloadJson = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadRows)
+    If Not modRoleEventWriter.QueueDesignEventCurrent(EVENT_TYPE_DESIGN_CREATE, _
+                                                      recipeId, _
+                                                      designVersion, _
+                                                      payloadJson, _
+                                                      "Production Recipe Builder save", _
+                                                      "", _
+                                                      eventId, _
+                                                      queueError) Then
+        report = queueError
+        Exit Function
+    End If
+
+    appliedCount = modProcessor.RunBatch("", 0, processorReport)
+    If DesignVersionExistsProduction(recipeId, designVersion) Then
+        report = "applied; EventID=" & eventId
+    Else
+        report = "queued; EventID=" & eventId
+        If Trim$(processorReport) <> "" Then report = report & "; Processor=" & processorReport
+    End If
+    QueueSavedRecipeDesignCreate = True
+    Exit Function
+
+FailQueue:
+    report = "QueueSavedRecipeDesignCreate failed: " & Err.Description
+End Function
+
+Private Function NextRecipeDesignVersionProduction(ByVal recipeId As String) As String
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim r As Long
+    Dim maxNumericVersion As Long
+    Dim candidate As String
+    Dim foundNonNumeric As Boolean
+
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
+    If Not IsUsableProductionArray(designs) Then
+        NextRecipeDesignVersionProduction = "1"
+        Exit Function
+    End If
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(recipeId), vbTextCompare) = 0 Then
+            candidate = Trim$(NzStr(designs(r, 2)))
+            If IsNumeric(candidate) Then
+                If CLng(CDbl(candidate)) > maxNumericVersion Then maxNumericVersion = CLng(CDbl(candidate))
+            ElseIf candidate <> "" Then
+                foundNonNumeric = True
+            End If
+        End If
+    Next r
+
+    If foundNonNumeric And maxNumericVersion = 0 Then
+        NextRecipeDesignVersionProduction = Format$(Now, "yyyymmddhhnnss")
+    Else
+        NextRecipeDesignVersionProduction = CStr(maxNumericVersion + 1)
+    End If
+    Exit Function
+CleanFail:
+    NextRecipeDesignVersionProduction = "1"
+End Function
+
+Private Function DesignVersionExistsProduction(ByVal designId As String, ByVal designVersion As String) As Boolean
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim r As Long
+
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
+    If Not IsUsableProductionArray(designs) Then Exit Function
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(designId), vbTextCompare) = 0 _
+           And StrComp(Trim$(NzStr(designs(r, 2))), Trim$(designVersion), vbTextCompare) = 0 Then
+            DesignVersionExistsProduction = True
+            Exit Function
+        End If
+    Next r
+CleanFail:
+End Function
+
+Private Function HydrateLocalRecipeFromDesigns(ByVal operatorWb As Workbook, _
+                                               ByVal recipeId As String, _
+                                               ByVal statusFilter As String, _
+                                               Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailHydrate
+
+    Dim designVersion As String
+    Dim recipeName As String
+    Dim recipeDescription As String
+    Dim designStatus As String
+    Dim bom As Variant
+    Dim wsRecipes As Worksheet
+    Dim loRecipes As ListObject
+    Dim lr As ListRow
+    Dim r As Long
+    Dim ingredientId As String
+    Dim ingredientName As String
+
+    If operatorWb Is Nothing Then
+        report = "Production operator workbook was not resolved."
+        Exit Function
+    End If
+    If Not FindLatestDesignSummaryProduction(recipeId, statusFilter, designVersion, recipeName, recipeDescription, designStatus) Then
+        report = "No matching Designs Domain recipe was found."
+        Exit Function
+    End If
+
+    bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
+    If Not IsUsableProductionArray(bom) Then
+        report = "The Designs Domain recipe has no BOM lines."
+        Exit Function
+    End If
+
+    Set wsRecipes = WorkbookSheetExists(operatorWb, "Recipes")
+    If wsRecipes Is Nothing Then
+        report = "Recipes sheet was not found in the Production operator workbook."
+        Exit Function
+    End If
+    Set loRecipes = GetListObject(wsRecipes, "Recipes")
+    If loRecipes Is Nothing Then
+        report = "Recipes table was not found in the Production operator workbook."
+        Exit Function
+    End If
+
+    For r = LBound(bom, 1) To UBound(bom, 1)
+        ingredientId = Trim$(NzStr(bom(r, 5)))
+        If ingredientId = "" Then ingredientId = Trim$(NzStr(bom(r, 4)))
+        ingredientName = Trim$(NzStr(bom(r, 10)))
+        If ingredientName = "" Then ingredientName = ingredientId
+
+        Set lr = loRecipes.ListRows.Add
+        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE_ID", recipeId
+        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE", recipeName
+        SetRecipeHydrationValue loRecipes, lr.Index, "DESCRIPTION", recipeDescription
+        SetRecipeHydrationValue loRecipes, lr.Index, "ROW_BUDGET", PRODUCTION_DEFAULT_ROW_BUDGET
+        SetRecipeHydrationValue loRecipes, lr.Index, "PROCESS", bom(r, 2)
+        SetRecipeHydrationValue loRecipes, lr.Index, "INPUT/OUTPUT", bom(r, 3)
+        SetRecipeHydrationValue loRecipes, lr.Index, "INGREDIENT", ingredientName
+        SetRecipeHydrationValue loRecipes, lr.Index, "PERCENT", bom(r, 9)
+        SetRecipeHydrationValue loRecipes, lr.Index, "UOM", bom(r, 8)
+        SetRecipeHydrationValue loRecipes, lr.Index, "AMOUNT", bom(r, 7)
+        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE_LIST_ROW", bom(r, 1)
+        SetRecipeHydrationValue loRecipes, lr.Index, "INGREDIENT_ID", ingredientId
+        SetRecipeHydrationValue loRecipes, lr.Index, "GUID", ProductionGuid()
+    Next r
+
+    report = "Hydrated Designs Domain recipe " & recipeId & " version " & designVersion & _
+             " (" & designStatus & ")."
+    HydrateLocalRecipeFromDesigns = True
+    Exit Function
+
+FailHydrate:
+    report = "HydrateLocalRecipeFromDesigns failed: " & Err.Description
+End Function
+
+Private Sub SetRecipeHydrationValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
+                                    ByVal columnName As String, ByVal cellValue As Variant)
+    Dim columnIndex As Long
+    columnIndex = ColumnIndex(lo, columnName)
+    If columnIndex = 0 Then Exit Sub
+    lo.DataBodyRange.Cells(rowIndex, columnIndex).Value = cellValue
+End Sub
 
 Public Function GetCurrentProductionRunRecipeId() As String
     Dim wsProd As Worksheet
@@ -3981,6 +4696,71 @@ FailSoft:
     Resume CleanExit
 End Function
 
+Public Function LoadProductionRunInventoryPickerItems(Optional ByVal filterText As String = "") As Variant
+    On Error GoTo FailSoft
+
+    Dim wbOps As Workbook
+    Dim lo As ListObject
+    Dim result As Variant
+
+    filterText = Trim$(filterText)
+    result = modInventoryDomainBridge.ListInventoryPickerItemsBridge(filterText)
+    If Not IsEmpty(result) Then
+        If IsArray(result) Then
+            LoadProductionRunInventoryPickerItems = result
+            Exit Function
+        End If
+    End If
+
+    ' Compatibility fallback for workbooks that have not yet been published into
+    ' the canonical Inventory Domain. The Domain result remains authoritative.
+    Set wbOps = ResolveProductionWorkbook(, SHEET_PRODUCTION)
+    If Not wbOps Is Nothing Then
+        Set lo = GetInvSysTableFromWorkbook(wbOps)
+        result = BuildProductionInventoryPickerItems(lo, filterText)
+        If Not IsEmpty(result) Then
+            LoadProductionRunInventoryPickerItems = result
+            Exit Function
+        End If
+    End If
+
+FailSoft:
+    LoadProductionRunInventoryPickerItems = Empty
+End Function
+
+Public Function RefreshProductionInventoryReadModelForWorkbookResult(ByVal targetWb As Workbook) As String
+    On Error GoTo FailRefresh
+
+    Dim report As String
+    Dim refreshed As Boolean
+
+    refreshed = modOperatorReadModel.RefreshInventoryReadModelForWorkbook(targetWb, "", "LOCAL", report)
+    If report = "" Then report = IIf(refreshed, "OK", "Inventory read-model refresh failed.")
+    RefreshProductionInventoryReadModelForWorkbookResult = IIf(refreshed, "OK", "FAIL") & vbTab & report
+    Exit Function
+
+FailRefresh:
+    RefreshProductionInventoryReadModelForWorkbookResult = "FAIL" & vbTab & _
+        "Production inventory read-model refresh failed: " & Err.Description
+End Function
+
+Public Function DiagnoseProductionInventoryReadModelForWorkbook(ByVal targetWb As Workbook) As String
+    On Error GoTo FailDiagnose
+    DiagnoseProductionInventoryReadModelForWorkbook = _
+        modOperatorReadModel.DiagnoseInventoryReadModelRefresh(targetWb, "", "LOCAL")
+    Exit Function
+
+FailDiagnose:
+    DiagnoseProductionInventoryReadModelForWorkbook = _
+        "Production inventory read-model diagnostic failed: " & Err.Description
+End Function
+
+Public Function GetProductionRunDefaultLocation() As String
+    On Error GoTo CleanFail
+    GetProductionRunDefaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
+CleanFail:
+End Function
+
 Private Function BuildProductionInventoryPickerItems(ByVal loInv As ListObject, _
                                                      Optional ByVal filterText As String = "") As Variant
     On Error GoTo FailSoft
@@ -4093,6 +4873,7 @@ Private Function BuildProductionCanonicalInventoryPickerItems(ByVal wbInv As Wor
     Dim loCatalog As ListObject
     Dim loBalance As ListObject
     Dim balances As Object
+    Dim locations As Object
     Dim src As Variant
     Dim result() As Variant
     Dim trimmed() As Variant
@@ -4116,6 +4897,7 @@ Private Function BuildProductionCanonicalInventoryPickerItems(ByVal wbInv As Wor
     If loCatalog.DataBodyRange Is Nothing Then Exit Function
     Set loBalance = FindProductionListObjectByName(wbInv, "tblSkuBalance")
     Set balances = BuildProductionSkuBalanceDictionary(loBalance)
+    Set locations = BuildProductionLocationBalanceDictionary(FindProductionListObjectByName(wbInv, "tblLocationBalance"))
 
     Dim cSku As Long: cSku = ColumnIndex(loCatalog, "SKU")
     Dim cRow As Long: cRow = ColumnIndex(loCatalog, "ROW")
@@ -4181,6 +4963,7 @@ Private Function BuildProductionCanonicalInventoryPickerItems(ByVal wbInv As Wor
             If NzStr(result(outRow, 4)) = "" And itemCode <> "" And balances.Exists(UCase$(itemCode)) Then result(outRow, 4) = balances(UCase$(itemCode))
             If NzStr(result(outRow, 4)) = "" And rowVal <> "" And balances.Exists("ROW:" & UCase$(rowVal)) Then result(outRow, 4) = balances("ROW:" & UCase$(rowVal))
         End If
+        If locVal = "" Then locVal = ProductionLocationForIdentity(locations, sku, itemCode)
         result(outRow, 5) = locVal
         result(outRow, 6) = descVal
         result(outRow, 7) = itemCode
@@ -4199,6 +4982,66 @@ NextRow:
 
 FailSoft:
     BuildProductionCanonicalInventoryPickerItems = Empty
+End Function
+
+Private Function BuildProductionLocationBalanceDictionary(ByVal loLocation As ListObject) As Object
+    On Error GoTo FailSoft
+
+    If loLocation Is Nothing Then Exit Function
+    If loLocation.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cSku As Long: cSku = ColumnIndex(loLocation, "SKU")
+    Dim cLocation As Long: cLocation = ColumnIndex(loLocation, "Location")
+    Dim cQty As Long: cQty = ColumnIndex(loLocation, "QtyOnHand")
+    If cSku = 0 Or cLocation = 0 Then Exit Function
+
+    Dim best As Object
+    Set best = CreateObject("Scripting.Dictionary")
+    best.CompareMode = vbTextCompare
+
+    Dim values As Variant
+    values = loLocation.DataBodyRange.Value
+    Dim r As Long
+    Dim sku As String
+    Dim locVal As String
+    Dim qtyVal As Double
+    Dim current As Variant
+    For r = 1 To UBound(values, 1)
+        sku = UCase$(Trim$(NzStr(values(r, cSku))))
+        locVal = Trim$(NzStr(values(r, cLocation)))
+        If sku = "" Or locVal = "" Then GoTo NextRow
+        If cQty > 0 Then qtyVal = NzDbl(values(r, cQty)) Else qtyVal = 0#
+        If Not best.Exists(sku) Then
+            best.Add sku, Array(locVal, qtyVal)
+        Else
+            current = best(sku)
+            If qtyVal > CDbl(current(1)) Then best(sku) = Array(locVal, qtyVal)
+        End If
+NextRow:
+    Next r
+
+    If best.Count > 0 Then Set BuildProductionLocationBalanceDictionary = best
+    Exit Function
+
+FailSoft:
+    Set BuildProductionLocationBalanceDictionary = Nothing
+End Function
+
+Private Function ProductionLocationForIdentity(ByVal locations As Object, ByVal sku As String, ByVal itemCode As String) As String
+    If locations Is Nothing Then Exit Function
+    sku = UCase$(Trim$(sku))
+    itemCode = UCase$(Trim$(itemCode))
+
+    Dim info As Variant
+    If sku <> "" And locations.Exists(sku) Then
+        info = locations(sku)
+        ProductionLocationForIdentity = NzStr(info(0))
+        Exit Function
+    End If
+    If itemCode <> "" And locations.Exists(itemCode) Then
+        info = locations(itemCode)
+        ProductionLocationForIdentity = NzStr(info(0))
+    End If
 End Function
 
 Private Function ProductionInventoryItemIsNonCounted(ByVal trackQtyVal As String, _
@@ -4959,11 +5802,56 @@ Private Function ResolveProductionOutputInventoryRow(ByVal invLo As ListObject, 
         ResolveProductionOutputInventoryRow = lookupRow
         Exit Function
     End If
+    Dim pickerItems As Variant
+    pickerItems = LoadProductionInventoryPickerItems("")
+    lookupRow = LookupOutputRowLooseFromPicker(pickerItems, outputName, errNotes)
+    If lookupRow <> 0 Then
+        ResolveProductionOutputInventoryRow = lookupRow
+        Exit Function
+    End If
 
     If existingRow <> 0 Then
         AppendNote errNotes, "Production output ROW " & CStr(existingRow) & " did not match output '" & outputName & "' and no replacement inventory row was found."
     Else
         AppendNote errNotes, "No inventory row was found for production output '" & outputName & "'."
+    End If
+End Function
+
+Private Function LookupOutputRowLooseFromPicker(ByVal pickerItems As Variant, ByVal outputName As String, ByRef errNotes As String) As Long
+    Dim wantedTokens As Object
+    Dim r As Long
+    Dim rowVal As Long
+    Dim candidateText As String
+    Dim candidateName As String
+    Dim matchedRow As Long
+    Dim matchedName As String
+
+    Set wantedTokens = LookupTokens(outputName)
+    If wantedTokens Is Nothing Then Exit Function
+    If wantedTokens.count = 0 Then Exit Function
+    If IsEmpty(pickerItems) Then Exit Function
+    If Not IsArray(pickerItems) Then Exit Function
+
+    For r = LBound(pickerItems, 1) To UBound(pickerItems, 1)
+        rowVal = NzLng(pickerItems(r, 1))
+        If rowVal = 0 Then GoTo NextRow
+        candidateName = NzStr(pickerItems(r, 2))
+        candidateText = candidateName & " " & NzStr(pickerItems(r, 6)) & " " & NzStr(pickerItems(r, 7))
+        If LookupCandidateMatchesTokens(candidateText, wantedTokens) Then
+            If matchedRow = 0 Then
+                matchedRow = rowVal
+                matchedName = candidateName
+            ElseIf matchedRow <> rowVal Then
+                AppendNote errNotes, "Production output '" & outputName & "' matched more than one canonical inventory row. Set the Production Output ROW before completing the run."
+                Exit Function
+            End If
+        End If
+NextRow:
+    Next r
+
+    If matchedRow <> 0 Then
+        AppendNote errNotes, "Production output '" & outputName & "' resolved to canonical inventory ROW " & CStr(matchedRow) & IIf(matchedName <> "", " (" & matchedName & ")", "") & "."
+        LookupOutputRowLooseFromPicker = matchedRow
     End If
 End Function
 
@@ -5182,37 +6070,28 @@ Private Function BuildUsedDeltaPacketFromCheck(ByVal loCheck As ListObject, ByVa
         errNotes = "No checked-in production input rows were found."
         Exit Function
     End If
-    If invLo Is Nothing Then
-        errNotes = "InventoryManagement!invSys table not found."
-        Exit Function
-    End If
-    If invLo.DataBodyRange Is Nothing Then
-        errNotes = "InventoryManagement!invSys table not found."
-        Exit Function
-    End If
-
     Dim cRowChk As Long: cRowChk = ColumnIndex(loCheck, "ROW")
     If cRowChk = 0 Then cRowChk = ColumnIndexLoose(loCheck, "ROW", "ROWID", "ROW#")
     Dim cUsedChk As Long: cUsedChk = ColumnIndex(loCheck, "USED")
     If cUsedChk = 0 Then cUsedChk = ColumnIndexLoose(loCheck, "USED")
+    Dim cItemCodeChk As Long: cItemCodeChk = ColumnIndex(loCheck, "ITEM_CODE")
+    Dim cItemNameChk As Long: cItemNameChk = ColumnIndex(loCheck, "ITEM")
     If cRowChk = 0 Or cUsedChk = 0 Then
         errNotes = "Prod_invSys_Check table missing ROW/USED columns."
         Exit Function
     End If
 
     Dim rowIndex As Object
-    Set rowIndex = BuildInvSysRowIndex(invLo)
-    If rowIndex Is Nothing Then
-        errNotes = "invSys ROW index not available."
-        Exit Function
-    End If
-    If rowIndex.count = 0 Then
-        errNotes = "invSys ROW index not available."
-        Exit Function
+    If Not invLo Is Nothing Then
+        If Not invLo.DataBodyRange Is Nothing Then Set rowIndex = BuildInvSysRowIndex(invLo)
     End If
 
-    Dim cItemCode As Long: cItemCode = ColumnIndex(invLo, "ITEM_CODE")
-    Dim cItemName As Long: cItemName = ColumnIndex(invLo, "ITEM")
+    Dim cItemCode As Long
+    Dim cItemName As Long
+    If Not invLo Is Nothing Then
+        cItemCode = ColumnIndex(invLo, "ITEM_CODE")
+        cItemName = ColumnIndex(invLo, "ITEM")
+    End If
     Dim result As New Collection
     Dim r As Long
     For r = 1 To loCheck.ListRows.count
@@ -5221,19 +6100,21 @@ Private Function BuildUsedDeltaPacketFromCheck(ByVal loCheck As ListObject, ByVa
         Dim qtyVal As Double
         qtyVal = NzDbl(loCheck.DataBodyRange.Cells(r, cUsedChk).value)
         If rowVal <= 0 Or qtyVal <= 0 Then GoTo NextRow
-        If Not rowIndex.Exists(CStr(rowVal)) Then
-            AppendNote errNotes, "Checked-in ROW " & CStr(rowVal) & " was not found in invSys."
-            GoTo NextRow
-        End If
 
-        Dim invIdx As Long
-        invIdx = CLng(rowIndex(CStr(rowVal)))
         Dim delta As Object
         Set delta = CreateObject("Scripting.Dictionary")
         delta("ROW") = rowVal
         delta("QTY") = qtyVal
-        If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemCode).value)
-        If cItemName > 0 Then delta("ITEM_NAME") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemName).value)
+        If cItemCodeChk > 0 Then delta("ITEM_CODE") = NzStr(loCheck.DataBodyRange.Cells(r, cItemCodeChk).value)
+        If cItemNameChk > 0 Then delta("ITEM_NAME") = NzStr(loCheck.DataBodyRange.Cells(r, cItemNameChk).value)
+        If Not rowIndex Is Nothing Then
+            If rowIndex.Exists(CStr(rowVal)) Then
+                Dim invIdx As Long
+                invIdx = CLng(rowIndex(CStr(rowVal)))
+                If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemCode).value)
+                If cItemName > 0 Then delta("ITEM_NAME") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemName).value)
+            End If
+        End If
         result.Add delta
 NextRow:
     Next r
@@ -5425,10 +6306,6 @@ End Function
 Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObject, ByVal invLo As ListObject, ByVal outputRowNumber As Long, ByRef errNotes As String) As Collection
     errNotes = ""
     If loOut Is Nothing Or loOut.DataBodyRange Is Nothing Then Exit Function
-    If invLo Is Nothing Or invLo.DataBodyRange Is Nothing Then
-        AppendNote errNotes, "invSys table not found."
-        Exit Function
-    End If
     If outputRowNumber < 1 Or outputRowNumber > loOut.ListRows.Count Then
         errNotes = "Selected ProductionOutput row is out of range."
         Exit Function
@@ -5457,13 +6334,8 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
     End If
 
     Dim rowIndex As Object
-    Set rowIndex = BuildInvSysRowIndex(invLo)
-    If rowIndex Is Nothing Then
-        AppendNote errNotes, "invSys ROW index not available."
-        Exit Function
-    ElseIf rowIndex.count = 0 Then
-        AppendNote errNotes, "invSys ROW index not available."
-        Exit Function
+    If Not invLo Is Nothing Then
+        If Not invLo.DataBodyRange Is Nothing Then Set rowIndex = BuildInvSysRowIndex(invLo)
     End If
 
     Dim outputName As String
@@ -5471,37 +6343,69 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
 
     Dim rowVal As Long
     Dim outputLookup As Object
-    If cOutput > 0 Then Set outputLookup = BuildInvSysOutputLookup(invLo)
     If cRowOut > 0 Then rowVal = NzLng(loOut.DataBodyRange.Cells(outputRowNumber, cRowOut).value)
-    If cOutput > 0 Then rowVal = ResolveProductionOutputInventoryRow(invLo, outputLookup, rowVal, outputName, "", "", errNotes)
+    Dim mustResolveRow As Boolean
+    mustResolveRow = (rowVal = 0)
+    If Not rowIndex Is Nothing Then
+        If rowVal > 0 Then mustResolveRow = Not rowIndex.Exists(CStr(rowVal))
+    End If
+    If cOutput > 0 And mustResolveRow Then
+        If Not invLo Is Nothing Then
+            If Not invLo.DataBodyRange Is Nothing Then Set outputLookup = BuildInvSysOutputLookup(invLo)
+        End If
+        rowVal = ResolveProductionOutputInventoryRow(invLo, outputLookup, rowVal, outputName, "", "", errNotes)
+    End If
     If cRowOut > 0 And rowVal <> 0 Then loOut.DataBodyRange.Cells(outputRowNumber, cRowOut).value = rowVal
     If rowVal = 0 Then
         If errNotes = "" Then
-            errNotes = "Output row missing ROW: " & outputName
+            errNotes = "Selected Production Output is missing its inventory ROW identity: " & outputName
         Else
-            AppendNote errNotes, "Output row missing ROW: " & outputName
+            AppendNote errNotes, "Selected Production Output is missing its inventory ROW identity: " & outputName
         End If
         Exit Function
     End If
-    If Not rowIndex.Exists(CStr(rowVal)) Then
-        errNotes = "invSys row " & rowVal & " not found."
-        Exit Function
+    Dim cItemCode As Long
+    Dim cItemName As Long
+    Dim invIdx As Long
+    If Not rowIndex Is Nothing Then
+        cItemCode = ColumnIndex(invLo, "ITEM_CODE")
+        cItemName = ColumnIndex(invLo, "ITEM")
+        If rowIndex.Exists(CStr(rowVal)) Then invIdx = CLng(rowIndex(CStr(rowVal)))
     End If
-
-    Dim cItemCode As Long: cItemCode = ColumnIndex(invLo, "ITEM_CODE")
-    Dim cItemName As Long: cItemName = ColumnIndex(invLo, "ITEM")
-    Dim invIdx As Long: invIdx = CLng(rowIndex(CStr(rowVal)))
 
     Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
     delta("ROW") = rowVal
     delta("QTY") = qtyVal
-    If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemCode).value)
-    If cItemName > 0 Then delta("ITEM_NAME") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemName).value)
+    delta("ITEM_CODE") = ""
+    delta("ITEM_NAME") = outputName
+    If invIdx > 0 Then
+        If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemCode).value)
+        If cItemName > 0 Then delta("ITEM_NAME") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemName).value)
+    Else
+        Dim pickerItems As Variant
+        pickerItems = LoadProductionInventoryPickerItems("")
+        EnrichOutputDeltaFromPicker delta, pickerItems, rowVal
+    End If
 
     Dim result As New Collection
     result.Add delta
     Set BuildMadeDeltasFromProductionOutputRow = result
 End Function
+
+Private Sub EnrichOutputDeltaFromPicker(ByVal delta As Object, ByVal pickerItems As Variant, ByVal rowVal As Long)
+    If delta Is Nothing Then Exit Sub
+    If IsEmpty(pickerItems) Then Exit Sub
+    If Not IsArray(pickerItems) Then Exit Sub
+
+    Dim r As Long
+    For r = LBound(pickerItems, 1) To UBound(pickerItems, 1)
+        If NzLng(pickerItems(r, 1)) = rowVal Then
+            If NzStr(pickerItems(r, 7)) <> "" Then delta("ITEM_CODE") = NzStr(pickerItems(r, 7))
+            If NzStr(pickerItems(r, 2)) <> "" Then delta("ITEM_NAME") = NzStr(pickerItems(r, 2))
+            Exit Sub
+        End If
+    Next r
+End Sub
 
 Private Function ApplyUsedDeltasLocal(ByVal invLo As ListObject, ByVal deltas As Collection, ByRef errNotes As String) As Double
     ApplyUsedDeltasLocal = 0
@@ -6913,26 +7817,35 @@ Private Sub RestoreProductionOutputCell(ByVal loOut As ListObject, ByVal rowInde
     End If
 End Sub
 
-Private Sub LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal invLo As ListObject, ByRef errNotes As String, Optional ByVal onlyOutputRow As Long = 0)
-    If wsProd Is Nothing Then Exit Sub
-    If loOut Is Nothing Then Exit Sub
-    If loOut.DataBodyRange Is Nothing Then Exit Sub
+Private Function LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal invLo As ListObject, ByRef errNotes As String, Optional ByVal onlyOutputRow As Long = 0) As Boolean
+    Dim logStep As String
+    Dim lr As ListRow
+    Dim addedRow As Boolean
+
+    On Error GoTo ErrHandler
+
+    logStep = "validating Production output rows"
+    If wsProd Is Nothing Then Exit Function
+    If loOut Is Nothing Then Exit Function
+    If loOut.DataBodyRange Is Nothing Then Exit Function
 
     Dim wsLog As Worksheet
-    Set wsLog = SheetExists("ProductionLog")
+    logStep = "finding the ProductionLog worksheet"
+    Set wsLog = WorksheetFromWorkbook(wsProd.Parent, "ProductionLog")
     If wsLog Is Nothing Then
         AppendNote errNotes, "ProductionLog sheet not found."
-        Exit Sub
+        Exit Function
     End If
 
     Dim loLog As ListObject
+    logStep = "finding the ProductionLog table"
     Set loLog = FindListObjectByNameOrHeaders(wsLog, "ProductionLog", Array("PROCESS", "BATCH", "TIMESTAMP"))
     If loLog Is Nothing Then
         Set loLog = FindListObjectByNameOrHeaders(wsLog, "Table46", Array("PROCESS", "BATCH", "TIMESTAMP"))
     End If
     If loLog Is Nothing Then
         AppendNote errNotes, "ProductionLog table not found."
-        Exit Sub
+        Exit Function
     End If
 
     Dim cLogRecipe As Long: cLogRecipe = ColumnIndex(loLog, "RECIPE")
@@ -6982,7 +7895,10 @@ Private Sub LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, ByVal 
     Dim cBatch As Long: cBatch = ColumnIndex(loOut, "BATCH")
     Dim cRow As Long: cRow = ColumnIndex(loOut, "ROW")
 
-    If cReal = 0 Or cProc = 0 Then Exit Sub
+    If cReal = 0 Or cProc = 0 Then
+        AppendNote errNotes, "ProductionOutput is missing PROCESS or REAL OUTPUT."
+        Exit Function
+    End If
 
     Dim rowIndex As Object
     If Not invLo Is Nothing Then
@@ -7055,8 +7971,16 @@ Private Sub LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, ByVal 
         If itemName = "" Then itemName = outputName
         If uomVal = "" And cUom > 0 Then uomVal = NzStr(loOut.DataBodyRange.Cells(r, cUom).value)
 
-        Dim lr As ListRow
+        logStep = "checking for an existing ProductionLog row"
+        If ProductionLogRowExists(loLog, procName, outputName, batchVal, rowVal, realVal) Then
+            AppendNote errNotes, "The completed output was already present in ProductionLog; no duplicate row was added."
+            GoTo NextRow
+        End If
+
+        logStep = "adding a ProductionLog row"
         Set lr = loLog.ListRows.Add
+        addedRow = True
+        logStep = "writing ProductionLog fields"
         If cLogRecipe > 0 Then lr.Range.Cells(1, cLogRecipe).value = recipeName
         If cLogRecipeId > 0 Then lr.Range.Cells(1, cLogRecipeId).value = recipeId
         If cLogDept > 0 Then lr.Range.Cells(1, cLogDept).value = recipeDept
@@ -7079,9 +8003,75 @@ Private Sub LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, ByVal 
         If cLogTime > 0 Then lr.Range.Cells(1, cLogTime).value = Now
         If cLogIngId > 0 Then lr.Range.Cells(1, cLogIngId).value = ""
         If cLogGuid > 0 Then lr.Range.Cells(1, cLogGuid).value = ProductionGuid()
+        addedRow = False
+        Set lr = Nothing
 NextRow:
     Next r
-End Sub
+    LogProductionOutputToProductionLog = True
+    Exit Function
+
+ErrHandler:
+    Dim failureNumber As Long
+    Dim failureDescription As String
+    failureNumber = Err.Number
+    failureDescription = Err.Description
+    If addedRow Then
+        On Error Resume Next
+        If Not lr Is Nothing Then lr.Delete
+        On Error GoTo 0
+    End If
+    AppendNote errNotes, "ProductionLog failed while " & logStep & ": " & _
+        CStr(failureNumber) & " - " & failureDescription
+End Function
+
+Private Function WorksheetFromWorkbook(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        If StrComp(ws.Name, sheetName, vbTextCompare) = 0 _
+           Or StrComp(ws.CodeName, sheetName, vbTextCompare) = 0 Then
+            Set WorksheetFromWorkbook = ws
+            Exit Function
+        End If
+    Next ws
+End Function
+
+Private Function ProductionLogRowExists(ByVal loLog As ListObject, _
+                                        ByVal procName As String, _
+                                        ByVal outputName As String, _
+                                        ByVal batchVal As String, _
+                                        ByVal rowVal As Long, _
+                                        ByVal realVal As Double) As Boolean
+    If loLog Is Nothing Then Exit Function
+    If loLog.DataBodyRange Is Nothing Then Exit Function
+
+    Dim cProc As Long: cProc = ColumnIndex(loLog, "PROCESS")
+    Dim cOutput As Long: cOutput = ColumnIndex(loLog, "OUTPUT")
+    Dim cBatch As Long: cBatch = ColumnIndex(loLog, "BATCH")
+    Dim cRow As Long: cRow = ColumnIndex(loLog, "ROW")
+    Dim cReal As Long: cReal = ColumnIndex(loLog, "REAL OUTPUT")
+    If cReal = 0 Then cReal = ColumnIndexLoose(loLog, "REALOUTPUT", "REAL_OUTPUT")
+    If cProc = 0 Or cBatch = 0 Or cReal = 0 Then Exit Function
+
+    Dim values As Variant
+    values = loLog.DataBodyRange.Value
+
+    Dim r As Long
+    For r = 1 To UBound(values, 1)
+        If StrComp(Trim$(NzStr(values(r, cProc))), Trim$(procName), vbTextCompare) <> 0 Then GoTo NextRow
+        If StrComp(Trim$(NzStr(values(r, cBatch))), Trim$(batchVal), vbTextCompare) <> 0 Then GoTo NextRow
+        If Abs(NzDbl(values(r, cReal)) - realVal) > 0.0000001 Then GoTo NextRow
+        If rowVal > 0 And cRow > 0 Then
+            If NzLng(values(r, cRow)) <> rowVal Then GoTo NextRow
+        ElseIf outputName <> "" And cOutput > 0 Then
+            If StrComp(Trim$(NzStr(values(r, cOutput))), Trim$(outputName), vbTextCompare) <> 0 Then GoTo NextRow
+        End If
+        ProductionLogRowExists = True
+        Exit Function
+NextRow:
+    Next r
+End Function
 
 Private Sub ApplyRecallCodesForOutput(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal invLo As ListObject, ByRef errNotes As String)
     If wsProd Is Nothing Then Exit Sub
@@ -8010,19 +9000,29 @@ Private Sub SaveRecipeToRecipes()
         MsgBox "No recipe lines with data were found to save.", vbExclamation
     Else
         Dim msg As String
-        Dim runtimeReport As String
-        Dim runtimeSaved As Boolean
-
-        runtimeSaved = PublishProductionRecipeRowsToRuntime(wsProd.Parent, loRecipes, recipeId, runtimeReport)
         msg = "Saved recipe '" & recipeName & "' (" & savedCount & " lines)."
         If useActiveBuilderLines Then
             templateCount = BuildRecipeProcessTablesFromLines(recipeId, True, Not IsRecipeLinesStaged(loLines))
         End If
         If templateCount > 0 Then msg = msg & vbCrLf & "Templates saved: " & templateCount & "."
-        If runtimeSaved Then
-            msg = msg & vbCrLf & "Server/NAS saved: yes."
-        ElseIf Trim$(runtimeReport) <> "" Then
-            msg = msg & vbCrLf & "Server/NAS save did not complete: " & runtimeReport
+
+        Dim runtimeReport As String
+        Dim runtimeSaved As Boolean
+        Dim designVersion As String
+        If ProductionDesignsEnabled() Then
+            runtimeSaved = QueueSavedRecipeDesignCreate(loRecipes, recipeId, recipeName, recipeDesc, designVersion, runtimeReport)
+            If runtimeSaved Then
+                msg = msg & vbCrLf & "Designs Domain version " & designVersion & ": " & runtimeReport
+            Else
+                msg = msg & vbCrLf & "Designs Domain save did not complete: " & runtimeReport
+            End If
+        Else
+            runtimeSaved = PublishProductionRecipeRowsToRuntime(wsProd.Parent, loRecipes, recipeId, runtimeReport)
+            If runtimeSaved Then
+                msg = msg & vbCrLf & "Legacy server recipe saved (Designs disabled)."
+            ElseIf Trim$(runtimeReport) <> "" Then
+                msg = msg & vbCrLf & "Legacy server save did not complete: " & runtimeReport
+            End If
         End If
         MsgBox msg, vbInformation
     End If
@@ -8114,6 +9114,9 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
         Exit Sub
     End If
     If recipeId <> "" Then
+        If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
+            Call HydrateLocalRecipeFromDesigns(wsProd.Parent, recipeId, "", syncReport)
+        End If
         If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
             RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
         End If
@@ -10767,18 +11770,30 @@ Private Function NzStr(v As Variant) As String
 End Function
 
 Private Function NzDbl(v As Variant) As Double
-    If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
+    If IsError(v) Then
         NzDbl = 0#
-    Else
+    ElseIf IsNull(v) Or IsEmpty(v) Then
+        NzDbl = 0#
+    ElseIf Trim$(CStr(v)) = "" Then
+        NzDbl = 0#
+    ElseIf IsNumeric(v) Then
         NzDbl = CDbl(v)
+    Else
+        NzDbl = 0#
     End If
 End Function
 
 Private Function NzLng(v As Variant) As Long
-    If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
+    If IsError(v) Then
         NzLng = 0
-    Else
+    ElseIf IsNull(v) Or IsEmpty(v) Then
+        NzLng = 0
+    ElseIf Trim$(CStr(v)) = "" Then
+        NzLng = 0
+    ElseIf IsNumeric(v) Then
         NzLng = CLng(v)
+    Else
+        NzLng = 0
     End If
 End Function
 

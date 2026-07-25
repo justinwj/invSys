@@ -421,7 +421,8 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
                                                    Optional ByVal warehouseId As String = "", _
                                                    Optional ByVal sourceType As String = "LOCAL", _
                                                    Optional ByRef report As String = "", _
-                                                   Optional ByVal requireQueuedWork As Boolean = True) As Boolean
+                                                   Optional ByVal requireQueuedWork As Boolean = True, _
+                                                   Optional ByRef queuedWorkHandled As Boolean = False) As Boolean
     On Error GoTo FailRefresh
 
     Dim wb As Workbook
@@ -441,6 +442,7 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     Dim stagingReport As String
     Dim stagingStationId As String
 
+    queuedWorkHandled = False
     Set wb = ResolveOperatorWorkbook(targetWb)
     If wb Is Nothing Then
         report = "Operator workbook not resolved."
@@ -480,6 +482,7 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
                  FormatRuntimeTimingReadModel(ElapsedMillisecondsReadModel(totalTimer), batchMs, 0, 0)
         GoTo CleanExit
     End If
+    queuedWorkHandled = BatchReportHandledQueuedRowsReadModel(processedCount, batchReport)
     If processedCount > 0 Then
         If Not modInventoryDomainBridge.PublishInventorySnapshotBridge(resolvedWarehouseId, Nothing, publishReport) Then
             If publishReport = "" Then publishReport = "Snapshot publish failed."

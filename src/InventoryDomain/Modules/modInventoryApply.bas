@@ -116,9 +116,7 @@ Public Function ApplyEvent(ByVal evt As Object, _
         errorMessage = "Event did not produce any inventory lines."
         GoTo CleanExit
     End If
-    If eventType = EVENT_TYPE_BOX_UNBOX Then
-        If Not ValidateBoxUnboxDoesNotCreateNegativeInventory(loLog, linesToApply, errorCode, errorMessage) Then GoTo CleanExit
-    End If
+    If Not ValidateEventDoesNotCreateNegativeInventory(loLog, linesToApply, eventType, errorCode, errorMessage) Then GoTo CleanExit
 
     appliedAt = Now
     appliedSeq = GetNextAppliedSeq(wb)
@@ -192,6 +190,29 @@ Public Function ApplyReceiveEvent(ByVal evt As Object, _
                                   Optional ByRef errorCode As String = "", _
                                   Optional ByRef errorMessage As String = "") As Boolean
     ApplyReceiveEvent = ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
+End Function
+
+Public Function RebuildInventoryProjectionsForWorkbook(ByVal inventoryWb As Workbook, _
+                                                       Optional ByRef report As String = "") As Boolean
+    On Error GoTo FailRebuild
+
+    If inventoryWb Is Nothing Then
+        report = "Authoritative Inventory workbook was not supplied."
+        Exit Function
+    End If
+    If inventoryWb.IsAddin Then
+        report = "Inventory projections cannot be rebuilt inside an XLAM."
+        Exit Function
+    End If
+    If Not modInventorySchema.EnsureInventorySchema(inventoryWb, report) Then Exit Function
+    RebuildInventoryProjections inventoryWb
+    If Not inventoryWb.ReadOnly And Trim$(inventoryWb.Path) <> "" Then inventoryWb.Save
+    report = "OK"
+    RebuildInventoryProjectionsForWorkbook = True
+    Exit Function
+
+FailRebuild:
+    report = "RebuildInventoryProjectionsForWorkbook failed: " & Err.Description
 End Function
 
 Public Function ResolveInventoryWorkbook(Optional ByVal warehouseId As String = "", _
@@ -617,37 +638,48 @@ Private Function PayloadLineIsNonCountedApply(ByVal rawItem As Object) As Boolea
                                     Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED")
 End Function
 
-Private Function ValidateBoxUnboxDoesNotCreateNegativeInventory(ByVal loLog As ListObject, _
-                                                                ByVal linesToApply As Collection, _
-                                                                ByRef errorCode As String, _
-                                                                ByRef errorMessage As String) As Boolean
+Private Function ValidateEventDoesNotCreateNegativeInventory(ByVal loLog As ListObject, _
+                                                             ByVal linesToApply As Collection, _
+                                                             ByVal eventType As String, _
+                                                             ByRef errorCode As String, _
+                                                             ByRef errorMessage As String) As Boolean
     Dim balances As Object
+    Dim eventDeltas As Object
     Dim lineItem As Variant
-    Dim sku As String
+    Dim sku As Variant
     Dim qtyDelta As Double
     Dim currentQty As Double
     Dim nextQty As Double
 
     Set balances = BuildCurrentSkuBalanceFromLogApply(loLog)
+    Set eventDeltas = CreateObject("Scripting.Dictionary")
+    eventDeltas.CompareMode = vbTextCompare
 
     For Each lineItem In linesToApply
         sku = SafeTrimApply(CStr(lineItem("SKU")))
         qtyDelta = CDbl(lineItem("QtyDelta"))
         If sku = "" Then GoTo NextLine
+        If eventDeltas.Exists(sku) Then
+            eventDeltas(sku) = CDbl(eventDeltas(sku)) + qtyDelta
+        Else
+            eventDeltas.Add sku, qtyDelta
+        End If
+NextLine:
+    Next lineItem
 
+    For Each sku In eventDeltas.Keys
+        qtyDelta = CDbl(eventDeltas(sku))
         If balances.Exists(sku) Then currentQty = CDbl(balances(sku)) Else currentQty = 0
         nextQty = currentQty + qtyDelta
         If qtyDelta < 0 And nextQty < -0.0000001 Then
             errorCode = "INSUFFICIENT_INVENTORY"
-            errorMessage = "BOX_UNBOX would make inventory negative for SKU '" & sku & "'. Current=" & _
+            errorMessage = eventType & " would make inventory negative for SKU '" & CStr(sku) & "'. Current=" & _
                            Format$(currentQty, "0.###") & "; Requested=" & Format$(Abs(qtyDelta), "0.###") & "."
             Exit Function
         End If
-        balances(sku) = nextQty
-NextLine:
-    Next lineItem
+    Next sku
 
-    ValidateBoxUnboxDoesNotCreateNegativeInventory = True
+    ValidateEventDoesNotCreateNegativeInventory = True
 End Function
 
 Private Function BuildCurrentSkuBalanceFromLogApply(ByVal loLog As ListObject) As Object

@@ -556,6 +556,153 @@ Public Function GetString(ByVal key As String, ByVal defaultVal As String) As St
     End If
 End Function
 
+Public Function GetConfigEditorRows() As Variant
+    On Error GoTo CleanFail
+
+    Dim defs() As ConfigKeyDef
+    Dim defCount As Long
+    Dim rows() As Variant
+    Dim valueOut As Variant
+    Dim i As Long
+
+    If Not mIsLoaded Then
+        If Not LoadConfig("", "") Then Exit Function
+    End If
+
+    defCount = GetConfigSchema(defs)
+    If defCount = 0 Then Exit Function
+    ReDim rows(1 To defCount, 1 To 5)
+    For i = 1 To defCount
+        rows(i, 1) = defs(i).Key
+        If TryGet(defs(i).Key, valueOut) Then
+            If VarType(valueOut) = vbBoolean Then
+                rows(i, 2) = IIf(CBool(valueOut), "TRUE", "FALSE")
+            ElseIf IsEmpty(valueOut) Or IsNull(valueOut) Then
+                rows(i, 2) = ""
+            Else
+                rows(i, 2) = CStr(valueOut)
+            End If
+        End If
+        rows(i, 3) = defs(i).DataType
+        rows(i, 4) = defs(i).Scope
+        rows(i, 5) = IIf(defs(i).Required, "YES", "NO")
+    Next i
+    GetConfigEditorRows = rows
+CleanFail:
+End Function
+
+Public Function UpdateConfigValue(ByVal key As String, ByVal rawValue As Variant, _
+                                  Optional ByRef report As String = "", _
+                                  Optional ByVal warehouseId As String = "", _
+                                  Optional ByVal stationId As String = "") As Boolean
+    On Error GoTo FailUpdate
+
+    Dim defs() As ConfigKeyDef
+    Dim defCount As Long
+    Dim found As Boolean
+    Dim selectedType As String
+    Dim selectedScope As String
+    Dim selectedRequired As Boolean
+    Dim coercedValue As Variant
+    Dim preOpen As Object
+    Dim wb As Workbook
+    Dim openedTransient As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+    Dim i As Long
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+
+    key = Trim$(key)
+    If key = "" Then
+        report = "Select a config key before saving."
+        Exit Function
+    End If
+    If StrComp(key, "WarehouseId", vbTextCompare) = 0 Or StrComp(key, "StationId", vbTextCompare) = 0 Then
+        report = key & " is runtime identity and cannot be renamed from the Settings form."
+        Exit Function
+    End If
+
+    resolvedWh = Trim$(warehouseId)
+    resolvedSt = Trim$(stationId)
+    If Not mIsLoaded _
+       Or (resolvedWh <> "" And StrComp(resolvedWh, mWarehouseId, vbTextCompare) <> 0) _
+       Or (resolvedSt <> "" And StrComp(resolvedSt, mStationId, vbTextCompare) <> 0) Then
+        If Not LoadConfig(resolvedWh, resolvedSt) Then
+            report = "Config load failed: " & Validate()
+            Exit Function
+        End If
+    End If
+    If resolvedWh = "" Then resolvedWh = mWarehouseId
+    If resolvedSt = "" Then resolvedSt = mStationId
+
+    defCount = GetConfigSchema(defs)
+    For i = 1 To defCount
+        If StrComp(defs(i).Key, key, vbTextCompare) = 0 Then
+            selectedType = defs(i).DataType
+            selectedScope = defs(i).Scope
+            selectedRequired = defs(i).Required
+            found = True
+            Exit For
+        End If
+    Next i
+    If Not found Then
+        report = "Unknown config key: " & key
+        Exit Function
+    End If
+
+    If IsBlankValue(rawValue) And Not selectedRequired Then
+        coercedValue = ""
+    ElseIf Not TryCoerceValue(selectedType, rawValue, coercedValue) Then
+        report = key & " requires a " & LCase$(selectedType) & " value."
+        Exit Function
+    End If
+
+    Set preOpen = CaptureOpenWorkbookPathsConfig()
+    Set wb = ResolveConfigWorkbook(resolvedWh, resolvedSt)
+    If wb Is Nothing Then
+        report = "Canonical config workbook could not be resolved."
+        Exit Function
+    End If
+    openedTransient = Not WorkbookWasAlreadyOpenConfig(preOpen, wb)
+    If wb.ReadOnly Then
+        report = "Config workbook is read-only or locked: " & wb.FullName
+        GoTo CleanExit
+    End If
+    If Not EnsureConfigSchema(wb, resolvedWh, resolvedSt, report) Then GoTo CleanExit
+
+    If UCase$(selectedScope) = CONFIG_SCOPE_STATION Then
+        Set lo = FindListObjectByName(wb, "tblStationConfig")
+        rowIndex = ResolveStationRow(lo, resolvedSt, resolvedWh)
+    Else
+        Set lo = FindListObjectByName(wb, "tblWarehouseConfig")
+        rowIndex = ResolveWarehouseRow(lo, resolvedWh, wb.Name)
+    End If
+    If lo Is Nothing Or rowIndex = 0 Then
+        report = "The target config row could not be resolved for " & key & "."
+        GoTo CleanExit
+    End If
+
+    EnsureWorksheetEditableConfig lo.Parent
+    SetConfigCellValue lo, rowIndex, key, coercedValue
+    SaveConfigWorkbookIfWritable wb
+    If mConfigCache Is Nothing Then
+        Set mConfigCache = CreateObject("Scripting.Dictionary")
+        mConfigCache.CompareMode = vbTextCompare
+    End If
+    mConfigCache(key) = coercedValue
+    UpdateConfigValue = True
+    report = key & " saved to " & wb.Name & "."
+
+CleanExit:
+    CloseTransientConfigAfterLoad wb, openedTransient
+    Exit Function
+
+FailUpdate:
+    report = "UpdateConfigValue failed: " & Err.Description
+    Resume CleanExit
+End Function
+
 Private Sub InitializeState()
     Set mConfigCache = CreateObject("Scripting.Dictionary")
     mConfigCache.CompareMode = vbTextCompare

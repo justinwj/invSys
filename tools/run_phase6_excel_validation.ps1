@@ -395,15 +395,24 @@ try {
         (Join-Path $repo "src/Core/Modules/modPerfLog.bas"),
         (Join-Path $repo "src/Core/Modules/modDiagnostics.bas"),
         (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
+        (Join-Path $repo "src/Core/Modules/modDesignsDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryQueries.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsInit.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsSchema.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsRuntime.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsApply.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsQueries.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsBridgeApi.bas"),
         (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
         (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
@@ -423,7 +432,8 @@ try {
         (Join-Path $repo "tests/unit/TestWarehouseRetireLifecycle.bas"),
         (Join-Path $repo "tests/unit/TestReceivingReadiness.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
-        (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas")
+        (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas"),
+        (Join-Path $repo "tests/unit/TestDesignsDomain.bas")
     )
 
     $formPaths = @(
@@ -437,6 +447,7 @@ try {
 
     $classPaths = @(
         (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
+        (Join-Path $repo "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls"),
         (Join-Path $repo "src/Receiving/ClassModules/cAppEvents.cls")
     )
 
@@ -526,6 +537,7 @@ try {
         "TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_ReusesReadOnlyConfigWithoutMutation",
         "TestPhase6CoreSurfaces.TestLoadConfig_AutoBootstrapsCanonicalWorkbook",
         "TestPhase6CoreSurfaces.TestLoadConfig_BlankContextAutoBootstrapsDefaultRuntimeWorkbook",
+        "TestPhase6CoreSurfaces.TestAdminConfigEditor_UpdatesCanonicalTypedValueAndProtectsIdentity",
         "TestPhase6CoreSurfaces.TestEnsureStationBootstrap_CreatesLocalConfigAndInbox",
         "TestPhase6CoreSurfaces.TestLoadConfig_QuarantinesContaminatedConfigSheet",
         "TestPhase6CoreSurfaces.TestLoadAuth_AutoBootstrapsCanonicalWorkbook",
@@ -652,6 +664,14 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestProductionForm_InitializeCreatesTabbedSurface",
+        "TestPhase6RoleSurfaces.TestProductionForm_OutputSelectionMapsPastBlankTableRows",
+        "TestPhase6RoleSurfaces.TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData",
+        "TestPhase6RoleSurfaces.TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker",
+        "TestPhase6RoleSurfaces.TestProductionCompleteRun_LogsOutputIdempotently",
+        "TestPhase6RoleSurfaces.TestProductionCompleteRun_ReResolvesStaleOutputRow",
+        "TestPhase6RoleSurfaces.TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection",
+        "TestPhase6RoleSurfaces.TestProductionRunInventory_PrefersOperatorLocationRows",
+        "TestPhase6RoleSurfaces.TestProductionForm_BatchDisplaysCompletedCount",
         "TestPhase6RoleSurfaces.TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentIncludesOutputRecipeRows",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentOutputRejectsAcceptableInventory",
@@ -668,7 +688,21 @@ try {
         "TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_PrefersActiveVisibleWorkbook",
         "TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_ExplicitWorkbookWinsOverActiveWorkbook",
         "TestPhase6RoleSurfaces.TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook",
-        "TestPhase6RoleSurfaces.TestOpenAdminConsole_WithoutRuntime_DoesNotCreateDefaultWarehouse"
+        "TestPhase6RoleSurfaces.TestOpenAdminConsole_WithoutRuntime_DoesNotCreateDefaultWarehouse",
+        "TestDesignsDomain.TestDesignsSchema_CreatesAndValidatesAuthoritativeTables",
+        "TestDesignsDomain.TestDesignsSchema_IsIdempotent",
+        "TestDesignsDomain.TestDesignsQueries_ListDesignsAndGetBOMAreReadOnly",
+        "TestDesignsDomain.TestDesignsDomain_DiagnosticDeclaresNoStartupMutation",
+        "TestDesignsDomain.TestDesignInboxSchema_CarriesDesignIdentity",
+        "TestDesignsDomain.TestDesignsApply_LifecycleIsIdempotentAndRebuildable",
+        "TestDesignsDomain.TestDesignsApply_RejectsDuplicateImmutableVersion",
+        "TestDesignsDomain.TestInventorySchema_RejectsMissingOrAddinAuthority",
+        "TestDesignsDomain.TestInventoryDomain_DiagnosticDisablesLegacyDirectWrites",
+        "TestDesignsDomain.TestInventoryDomain_LegacyLogDeletionBridgeIsNoOp",
+        "TestDesignsDomain.TestInventoryQueries_ReadRebuiltEventLogProjection",
+        "TestDesignsDomain.TestInventoryQueries_PickerPublishesEverySkuLocation",
+        "TestDesignsDomain.TestInventoryApply_ShipRejectsNegativeInventory",
+        "TestDesignsDomain.TestInventoryApply_ProductionConsumeRejectsNegativeInventory"
     )
 
     $totalAvailableTests = $allTests.Count

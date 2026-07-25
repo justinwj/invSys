@@ -60,23 +60,14 @@ Public Function ApplyEventBridgeEncoded(ByVal evt As Object, _
 End Function
 
 Public Function RemoveLastBulkLogEntriesBridgeResult(ByVal countToRemove As Long) As Collection
-    Dim result As Variant
-
-    On Error Resume Next
-    result = Application.Run("'" & ThisWorkbook.Name & "'!modInvMan.RemoveLastBulkLogEntries", countToRemove)
-    On Error GoTo 0
-
-    If IsObject(result) Then
-        Set RemoveLastBulkLogEntriesBridgeResult = result
-    Else
-        Set RemoveLastBulkLogEntriesBridgeResult = New Collection
-    End If
+    ' Compatibility entry point only. Inventory history is append-only; undo
+    ' must be represented by a compensating event, never by deleting log rows.
+    Set RemoveLastBulkLogEntriesBridgeResult = New Collection
 End Function
 
 Public Sub ReAddBulkLogEntriesBridgeResult(ByVal logDataCollection As Collection)
-    On Error Resume Next
-    Application.Run "'" & ThisWorkbook.Name & "'!modInvMan.ReAddBulkLogEntries", logDataCollection
-    On Error GoTo 0
+    ' Compatibility entry point only. Replaying deleted rows would bypass
+    ' ApplyEvent validation, idempotency, locking, and projection rebuilding.
 End Sub
 
 Public Sub ScheduleSourceWorkbookSyncBridgeResult()
@@ -91,4 +82,31 @@ Public Function PublishInventorySnapshotBridgeEncoded(Optional ByVal targetWb As
 
     success = modInventoryPublisher.EnsureSnapshotPublicationForWorkbook(targetWb, report)
     PublishInventorySnapshotBridgeEncoded = CStr(Abs(CLng(success))) & vbTab & report
+End Function
+
+Public Function RebuildInventoryProjectionsBridgeEncoded(ByVal inventoryWb As Workbook) As String
+    Dim report As String
+    Dim success As Boolean
+
+    success = modInventoryApply.RebuildInventoryProjectionsForWorkbook(inventoryWb, report)
+    RebuildInventoryProjectionsBridgeEncoded = CStr(Abs(CLng(success))) & vbTab & report
+End Function
+
+Public Function GetOnHandQtyBridgeResult(ByVal sku As String, _
+                                         Optional ByVal inventoryWb As Workbook = Nothing) As Double
+    GetOnHandQtyBridgeResult = modInventoryQueries.GetOnHandQty(sku, inventoryWb)
+End Function
+
+Public Function GetLocationBalancesBridgeResult(ByVal sku As String, _
+                                                Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    GetLocationBalancesBridgeResult = modInventoryQueries.GetLocationBalances(sku, inventoryWb)
+End Function
+
+Public Function ListInventoryPickerItemsBridgeResult(Optional ByVal filterText As String = "", _
+                                                     Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    ListInventoryPickerItemsBridgeResult = modInventoryQueries.ListInventoryPickerItems(filterText, inventoryWb)
+End Function
+
+Public Function DiagnoseInventoryDomainBridgeResult() As String
+    DiagnoseInventoryDomainBridgeResult = modInventoryInit.DiagnoseInventoryDomain()
 End Function

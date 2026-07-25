@@ -7,6 +7,7 @@ Private gSourceSyncScheduled As Boolean
 Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 2
 Private Const SOURCE_SYNC_IDLE_INTERVAL_SECONDS As Long = 2
 Private Const SOURCE_SYNC_LOG_FILENAME As String = "invSys.Inventory.Sync.log"
+Private Const INVENTORY_DOMAIN_CONTRACT_VERSION As String = "R1-INVENTORY-1"
 
 Public Sub InitInventoryDomainAddin()
     Dim report As String
@@ -16,105 +17,53 @@ Public Sub InitInventoryDomainAddin()
         gAppEvents.Init
     End If
     Call modInventoryPublisher.PublishOpenInventorySnapshots(report)
-    ScheduleSourceWorkbookSync
+    ' D3/D9 boundary: Inventory Domain is an engine. It may publish canonical
+    ' snapshots, but Core alone refreshes an explicitly targeted operator
+    ' workbook from those snapshots.
 End Sub
 
 Public Sub Auto_Open()
     InitInventoryDomainAddin
 End Sub
 
+Public Function GetInventoryDomainContractVersion() As String
+    GetInventoryDomainContractVersion = INVENTORY_DOMAIN_CONTRACT_VERSION
+End Function
+
+Public Function DiagnoseInventoryDomain() As String
+    DiagnoseInventoryDomain = _
+        "ContractVersion=" & INVENTORY_DOMAIN_CONTRACT_VERSION & _
+        "|Workbook=" & ThisWorkbook.Name & _
+        "|IsAddin=" & CStr(ThisWorkbook.IsAddin) & _
+        "|StartupOperatorMutation=False" & _
+        "|LegacyDirectWrites=False" & _
+        "|UndoModel=CompensatingEvent" & _
+        "|Authority=WHx.invSys.Data.Inventory.xlsb"
+End Function
+
 Public Sub ScheduleSourceWorkbookSync(Optional ByVal delaySeconds As Long = 3)
-    Dim procedureName As String
-
-    If Not IsSourceSyncSchedulerHostInit() Then
-        gSourceSyncScheduled = False
-        AppendSyncLogEntry "SCHEDULE_SKIP", "Workbook=" & ThisWorkbook.Name & "|Reason=NotInventoryDomainAddin"
-        Exit Sub
-    End If
-
-    procedureName = BuildSourceSyncProcedureInit()
-
+    ' Compatibility entry point for older Core builds. Cross-workbook
+    ' canonical pulls bypassed the snapshot contract and broke add-in
+    ' isolation, so cancel any old timer and schedule nothing.
     On Error Resume Next
     If gSourceSyncScheduled Then
         Application.OnTime EarliestTime:=gNextSourceSync, _
-                           Procedure:=procedureName, _
+                           Procedure:=BuildSourceSyncProcedureInit(), _
                            Schedule:=False
-    End If
-    If Err.Number <> 0 Then
-        AppendSyncLogEntry "CANCEL_WARN", "Workbook=" & ThisWorkbook.Name & "|Error=" & Err.Description
-        Err.Clear
     End If
     On Error GoTo 0
 
-    On Error GoTo ScheduleFailed
-    If delaySeconds <= 0 Then delaySeconds = 3
-    gNextSourceSync = Now + (CDbl(delaySeconds) / 86400#)
-    Application.OnTime EarliestTime:=gNextSourceSync, _
-                       Procedure:=procedureName, _
-                       Schedule:=True
-    gSourceSyncScheduled = True
-    AppendSyncLogEntry "SCHEDULE", "NextRun=" & Format$(gNextSourceSync, "yyyy-mm-dd hh:nn:ss") & "|DelaySeconds=" & CStr(delaySeconds)
-    Exit Sub
-
-ScheduleFailed:
     gSourceSyncScheduled = False
-    AppendSyncLogEntry "SCHEDULE_ERROR", "Workbook=" & ThisWorkbook.Name & "|Error=" & Err.Description
+    AppendSyncLogEntry "SCHEDULE_DISABLED", _
+        "Workbook=" & ThisWorkbook.Name & "|Reason=OperatorReadModelsAreCoreSnapshotOwned"
 End Sub
 
 Public Sub SyncSourceWorkbookFromCanonicalRuntime()
-    Dim prevEvents As Boolean
-    Dim prevScreenUpdating As Boolean
-    Dim prevAlerts As Boolean
-    Dim wb As Workbook
-    Dim hasSyncTargets As Boolean
-    Dim detectionLog As String
-    Dim syncReport As String
-    Dim pullReport As String
-
-    prevEvents = Application.EnableEvents
-    prevScreenUpdating = Application.ScreenUpdating
-    prevAlerts = Application.DisplayAlerts
+    ' Compatibility target for a timer queued by an older loaded build.
+    ' Never inspect or mutate open operator workbooks and never reschedule.
     gSourceSyncScheduled = False
-    AppendSyncLogEntry "CANARY", "SchedulerFired=" & Format$(Now, "yyyy-mm-dd hh:nn:ss")
-
-    On Error GoTo CleanExit
-
-    Application.EnableEvents = False
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-
-    detectionLog = "OpenWbs=" & CStr(Application.Workbooks.Count) & "|"
-    For Each wb In Application.Workbooks
-        detectionLog = detectionLog & wb.Name & "=" & CStr(ShouldSyncSourceWorkbookInit(wb)) & ";"
-    Next wb
-    AppendSyncLogEntry "DETECTION", detectionLog
-
-    For Each wb In Application.Workbooks
-        If ShouldSyncSourceWorkbookInit(wb) Then
-            hasSyncTargets = True
-            pullReport = vbNullString
-            Call modInventoryApply.RefreshInvSysFromCanonicalRuntime(wb, "", pullReport)
-            If syncReport <> "" Then syncReport = syncReport & " || "
-            syncReport = syncReport & pullReport
-        End If
-    Next wb
-
-CleanExit:
-    If Err.Number <> 0 Then
-        AppendSyncLogEntry "ERROR", "SyncSourceWorkbookFromCanonicalRuntime failed: " & Err.Description
-    ElseIf hasSyncTargets Then
-        AppendSyncLogEntry "SYNC", syncReport
-    Else
-        AppendSyncLogEntry "SYNC", "No source workbooks matched sync predicate."
-    End If
-    Application.EnableEvents = prevEvents
-    Application.ScreenUpdating = prevScreenUpdating
-    Application.DisplayAlerts = prevAlerts
-    If hasSyncTargets Then
-        ScheduleSourceWorkbookSync SOURCE_SYNC_INTERVAL_SECONDS
-    Else
-        ScheduleSourceWorkbookSync SOURCE_SYNC_IDLE_INTERVAL_SECONDS
-    End If
+    AppendSyncLogEntry "SYNC_DISABLED", _
+        "Workbook=" & ThisWorkbook.Name & "|Reason=OperatorReadModelsAreCoreSnapshotOwned"
 End Sub
 
 Public Function GetSyncLogPath() As String

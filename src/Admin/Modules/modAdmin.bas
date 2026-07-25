@@ -89,10 +89,44 @@ Sub Open_Settings()
     Dim report As String
     Dim targetWb As Workbook
 
+    If Not modRoleUiAccess.RequireCurrentUserCapabilityCached("ADMIN_MAINT", "", report) Then Exit Sub
     Set targetWb = ResolveInteractiveAdminWorkbook()
     Call modRoleWorkbookSurfaces.EnsureAdminLegacyWorkbookSurface(targetWb, report)
+    If Not modConfig.IsLoaded() Then
+        If Not modConfig.LoadConfig("", "") Then
+            MsgBox "Canonical config could not be loaded." & vbCrLf & vbCrLf & _
+                   modConfig.Validate(), vbExclamation, "invSys Settings"
+            Exit Sub
+        End If
+    End If
     frmAdminSettings.Show
 End Sub
+
+Public Function AdminSettingsFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
+    On Error GoTo FailSmoke
+
+    Dim frm As frmAdminSettings
+    Dim detail As String
+
+    Set frm = New frmAdminSettings
+    detail = frm.TestInitializeConfigEditor()
+    If InStr(1, detail, "Rows=27", vbTextCompare) = 0 Then
+        Err.Raise vbObjectError + 7320, "AdminSettingsFormInitializeSmokeForWorkbook", _
+                  "Admin config editor did not load all 27 config keys. " & detail
+    End If
+    AdminSettingsFormInitializeSmokeForWorkbook = "OK|" & detail
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+
+FailSmoke:
+    AdminSettingsFormInitializeSmokeForWorkbook = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
 
 Sub Add_WarehouseDirectoryRoot()
     Dim report As String

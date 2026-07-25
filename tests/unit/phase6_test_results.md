@@ -1,9 +1,10 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-06-29 17:51:01
-- Passed: 196
+- Date: 2026-07-25 00:55:43
+- Passed: 134
 - Failed: 0
-- Range: 1-196 of 196
+- Range: 1-251 of 251
+- Status: PARTIAL
 
 | Test | Result |
 |---|---|
@@ -89,8 +90,10 @@
 | TestReceivingReadiness.TestEnsureReceivingSurface_BlankWorkbookWithConfigLoaded_DoesNotApplyReadiness | PASS |
 | TestReceivingReadiness.TestCheckReceivingReadiness_RuntimePathUnresolved_ReturnsPathUnresolved | PASS |
 | TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_CreatesCanonicalWorkbook | PASS |
+| TestPhase6CoreSurfaces.TestOpenOrCreateConfigWorkbookRuntime_ReusesReadOnlyConfigWithoutMutation | PASS |
 | TestPhase6CoreSurfaces.TestLoadConfig_AutoBootstrapsCanonicalWorkbook | PASS |
 | TestPhase6CoreSurfaces.TestLoadConfig_BlankContextAutoBootstrapsDefaultRuntimeWorkbook | PASS |
+| TestPhase6CoreSurfaces.TestAdminConfigEditor_UpdatesCanonicalTypedValueAndProtectsIdentity | PASS |
 | TestPhase6CoreSurfaces.TestEnsureStationBootstrap_CreatesLocalConfigAndInbox | PASS |
 | TestPhase6CoreSurfaces.TestLoadConfig_QuarantinesContaminatedConfigSheet | PASS |
 | TestPhase6CoreSurfaces.TestLoadAuth_AutoBootstrapsCanonicalWorkbook | PASS |
@@ -130,6 +133,7 @@
 | TestPhase6CoreSurfaces.TestShippingAggregateBomMath_MultipliesComponentQtyByPackageQty | PASS |
 | TestPhase6CoreSurfaces.TestBoxBuilderArchive_HidesArchivedBoxesUnlessRequested | PASS |
 | TestPhase6CoreSurfaces.TestBoxBuilderForm_InitializesWithActiveArchiveFilters | PASS |
+| TestPhase6CoreSurfaces.TestBoxMakerProjectedComponentInventory_SubtractsRequirementFromNas | PASS |
 | TestPhase6CoreSurfaces.TestShippingCommitLine_MergesPostedSameRefBoxVersionCarrier | PASS |
 | TestPhase6CoreSurfaces.TestShippingBoard_TwoAddsSameRefBoxVersionCarrierShowOneRow | PASS |
 | TestPhase6CoreSurfaces.TestShippingAdd_DefaultsOrderToWarehouseArea | PASS |
@@ -138,68 +142,3 @@
 | TestPhase6CoreSurfaces.TestShippingAdd_UsesDisplayedProjectedInventoryWhenVersionLedgerIsEmpty | PASS |
 | TestPhase6CoreSurfaces.TestShippingAdd_UsesDisplayedProjectedInventoryWhenTotalInvIsStaleZero | PASS |
 | TestPhase6CoreSurfaces.TestShippingAdd_RepairsMissingInvSysRowFromVisibleNas | PASS |
-| TestPhase6CoreSurfaces.TestShippingRemove_LockedRowReleasesInventory | PASS |
-| TestPhase6CoreSurfaces.TestShippingRemove_StaleLockedRowClearsWithoutInflatingInventory | PASS |
-| TestPhase6CoreSurfaces.TestShippingRemove_RepairsMissingInvSysRowBeforeRelease | PASS |
-| TestPhase6CoreSurfaces.TestShippingRemove_ReleaseDeltaRepairsMissingLocalStage | PASS |
-| TestPhase6CoreSurfaces.TestShippingHold_PreservesReservationAndLocalDeduction | PASS |
-| TestPhase6CoreSurfaces.TestShippingToShipments_ReservedMultiSelectKeepsRowsAndProjection | PASS |
-| TestPhase6CoreSurfaces.TestShippingToShipments_LocalLockStaysVisible | PASS |
-| TestPhase6CoreSurfaces.TestShippingUpdate_PreservesExistingReservationWithoutDoubleDeducting | PASS |
-| TestPhase6CoreSurfaces.TestShippingUpdate_ReservedQtyChangeAppliesOnlyDeltaOverlay | PASS |
-| TestPhase6CoreSurfaces.TestShippingUpdate_RepairsMissingInvSysRowBeforeDelta | PASS |
-| TestPhase6CoreSurfaces.TestShippingQtyDelta_RepairsMissingInvSysRowFromSelectedDisplay | PASS |
-| TestPhase6CoreSurfaces.TestShippingAdd_NewReservedRowAppliesSingleProjectedDeduction | PASS |
-| TestPhase6CoreSurfaces.TestShippingAdd_MergingExistingReservedRowAppliesOnlyDelta | PASS |
-| TestPhase6CoreSurfaces.TestShippingAdd_ComposesActiveReservationWithPendingSentOverlay | PASS |
-| TestPhase6CoreSurfaces.TestShippingShippables_NasInvPrefersCurrentInvSysForSingleActiveVersion | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedDisplay_SubtractsLockedAndUnreservedRows | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_ReservedRowDoesNotAddBackTotalInv | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_UnreservedDirtyRowDoesNotDeductTotalInv | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_ReservedRowClearsLockedReservationTotal | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_DoesNotIncreaseProjectedInventoryOverlay | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_ReservedCompletionKeepsProjectedDeductionWhenNasStale | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_RepairsMissingInvSysRowFromShipmentLine | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentPayload_UsesVisibleShipmentItemWhenInvSysCodeStale | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_FullRunNeverIncreasesProjectedInventory | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_PreservesNasBaselineAcrossSentReregister | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_EvictsStaleZeroWhenBackendPositive | PASS |
-| TestPhase6CoreSurfaces.TestShippingHydrateShippables_DoesNotWriteTotalInv | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_KeepsFreshSentOverlayAtBaseline | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_EvictsSentOverlayWhenNasCatchesUp | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_KeepsSentOverlayWithActiveLock | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_PersistsAcrossRestartUntilNasCatchesUp | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_LocalCatchupDoesNotClearBeforeNas | PASS |
-| TestPhase6CoreSurfaces.TestShippingProjectedOverlay_ClearsWhenBackendRisesAboveBaseline | PASS |
-| TestPhase6CoreSurfaces.TestShippingReserve_RunBatchRefreshUpdatesNasInvFromProjected | PASS |
-| TestPhase6CoreSurfaces.TestShippingRefresh_MergesLocalBoxBuildStagingAndClearsStaleOverlay | PASS |
-| TestPhase6CoreSurfaces.TestShippingRefresh_FindsBackendShippingBomViewWithoutInvSysSurface | PASS |
-| TestPhase6CoreSurfaces.TestShippingRefresh_SkipsBomNetworkWhenViewPopulated | PASS |
-| TestPhase6CoreSurfaces.TestShippingRefresh_BlankBomViewDoesNotSkipBackendRefresh | PASS |
-| TestPhase6CoreSurfaces.TestShippingRefresh_HidesSupportSheetsAfterSurfaceRepair | PASS |
-| TestPhase6CoreSurfaces.TestBoxMakerUnbox_QtyGreaterThanInventoryFailsBeforeQueue | PASS |
-| TestPhase6CoreSurfaces.TestBoxMakerUnbox_UsesShippingReadModelInventoryWhenInvSysMissing | PASS |
-| TestPhase6CoreSurfaces.TestShippingReservationTotals_IgnoreSameWorkbookStaleActiveReservationWithoutLocalLine | PASS |
-| TestPhase6CoreSurfaces.TestShippingReservationTotals_IgnoreLocallySentActiveLedgerRows | PASS |
-| TestPhase6CoreSurfaces.TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs | PASS |
-| TestPhase6CoreSurfaces.TestSavedProductionWorkbook_ReopenQueueProcessRefreshPreservesStagingAndLogs | PASS |
-| TestPhase6CoreSurfaces.TestProductionEventCreator_QueuesSignedInCurrentTargetEvent | PASS |
-| TestPhase6CoreSurfaces.TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit | PASS |
-| TestPhase6CoreSurfaces.TestAdminShipmentReconcile_AppliesSignedDeltaWithCorrectedShipEvidence | PASS |
-| TestPhase6CoreSurfaces.TestAdminShipmentReconcile_RejectsOrphanAndMissingNarrative | PASS |
-| TestPhase6CoreSurfaces.TestAdminShipmentReconcile_DetectsNasIncreaseAfterLatestShip | PASS |
-| TestPhase6CoreSurfaces.TestAdminShipmentReconcile_RecentShipmentsSentLogShowsLast20 | PASS |
-| TestPhase6CoreSurfaces.TestAdminShipmentReconcile_RecentLogIncludesShipReserveEvidence | PASS |
-| TestPhase6CoreSurfaces.TestApplyReceive_RebuildsDeletedProjectionTablesInCanonicalWorkbook | PASS |
-| TestPhase6RoleSurfaces.TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns | PASS |
-| TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables | PASS |
-| TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts | PASS |
-| TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_CreatesExpectedTables | PASS |
-| TestPhase6RoleSurfaces.TestEnsureShippingWorkbookSurface_RecreatesDeletedArtifacts | PASS |
-| TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_CreatesExpectedTables | PASS |
-| TestPhase6RoleSurfaces.TestEnsureProductionWorkbookSurface_RecreatesDeletedArtifacts | PASS |
-| TestPhase6RoleSurfaces.TestEnsureAdminWorkbookSurface_CreatesExpectedTables | PASS |
-| TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_PrefersActiveVisibleWorkbook | PASS |
-| TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_ExplicitWorkbookWinsOverActiveWorkbook | PASS |
-| TestPhase6RoleSurfaces.TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook | PASS |
-| TestPhase6RoleSurfaces.TestOpenAdminConsole_WithoutRuntime_DoesNotCreateDefaultWarehouse | PASS |

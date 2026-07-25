@@ -186,6 +186,59 @@ FailPublish:
     PublishInventorySnapshotBridge = False
 End Function
 
+Public Function GetInventoryOnHandQtyBridge(ByVal sku As String, _
+                                            Optional ByVal inventoryWb As Workbook = Nothing) As Double
+    On Error GoTo CleanFail
+    If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge("")
+    GetInventoryOnHandQtyBridge = CDbl(RunInventoryDomainMacro2( _
+        "modInventoryBridgeApi.GetOnHandQtyBridgeResult", sku, inventoryWb))
+CleanFail:
+End Function
+
+Public Function GetInventoryLocationBalancesBridge(ByVal sku As String, _
+                                                   Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+    If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge("")
+    GetInventoryLocationBalancesBridge = RunInventoryDomainMacro2( _
+        "modInventoryBridgeApi.GetLocationBalancesBridgeResult", sku, inventoryWb)
+CleanFail:
+End Function
+
+Public Function ListInventoryPickerItemsBridge(Optional ByVal filterText As String = "", _
+                                               Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+    If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge("")
+    If inventoryWb Is Nothing Then Exit Function
+    ListInventoryPickerItemsBridge = RunInventoryDomainMacro2( _
+        "modInventoryBridgeApi.ListInventoryPickerItemsBridgeResult", filterText, inventoryWb)
+CleanFail:
+End Function
+
+Public Function RebuildInventoryProjectionsBridge(ByVal inventoryWb As Workbook, _
+                                                  Optional ByRef report As String = "") As Boolean
+    Dim encoded As String
+    Dim parts() As String
+
+    On Error GoTo FailRebuild
+    encoded = CStr(RunInventoryDomainMacro1( _
+        "modInventoryBridgeApi.RebuildInventoryProjectionsBridgeEncoded", inventoryWb))
+    parts = Split(encoded, vbTab)
+    RebuildInventoryProjectionsBridge = (Trim$(parts(0)) = "1")
+    If UBound(parts) >= 1 Then report = parts(1)
+    Exit Function
+FailRebuild:
+    report = "RebuildInventoryProjectionsBridge failed: " & Err.Description
+End Function
+
+Public Function DiagnoseInventoryDomainBridge() As String
+    On Error GoTo FailDiagnostic
+    DiagnoseInventoryDomainBridge = CStr(RunInventoryDomainMacro0( _
+        "modInventoryBridgeApi.DiagnoseInventoryDomainBridgeResult"))
+    Exit Function
+FailDiagnostic:
+    DiagnoseInventoryDomainBridge = "Inventory Domain unavailable: " & Err.Description
+End Function
+
 Private Function RunInventoryDomainMacro0(ByVal macroName As String) As Variant
     RunInventoryDomainMacro0 = RunInventoryDomainMacroFallback0(macroName)
 End Function
@@ -256,26 +309,6 @@ Private Function FindInventoryDomainMacroHostName() As String
         End If
     Next wb
 
-    On Error Resume Next
-    For Each addin In Application.AddIns
-        If addin Is Nothing Then GoTo NextAddIn
-        If Not addin.Installed Then GoTo NextAddIn
-        If StrComp(addin.Name, INVENTORY_DOMAIN_ADDIN_NAME, vbTextCompare) = 0 Then
-            FindInventoryDomainMacroHostName = addin.Name
-            Exit Function
-        End If
-        If StrComp(addin.Name, INVENTORY_DOMAIN_REF_ADDIN_NAME, vbTextCompare) = 0 Then
-            FindInventoryDomainMacroHostName = addin.Name
-            Exit Function
-        End If
-        If InStr(1, addin.Name, "Inventory.Domain", vbTextCompare) > 0 Then
-            FindInventoryDomainMacroHostName = addin.Name
-            Exit Function
-        End If
-NextAddIn:
-    Next addin
-    On Error GoTo 0
-
     peerPath = ThisWorkbook.Path
     If Trim$(peerPath) <> "" Then
         If Right$(peerPath, 1) <> "\" Then peerPath = peerPath & "\"
@@ -300,6 +333,27 @@ NextAddIn:
             End If
         End If
     End If
+
+    On Error Resume Next
+    For Each addin In Application.AddIns
+        If addin Is Nothing Then GoTo NextAddIn
+        If Not addin.Installed Then GoTo NextAddIn
+        If Len(Dir$(addin.FullName, vbNormal)) = 0 Then GoTo NextAddIn
+        If StrComp(addin.Name, INVENTORY_DOMAIN_ADDIN_NAME, vbTextCompare) = 0 Then
+            FindInventoryDomainMacroHostName = addin.Name
+            Exit Function
+        End If
+        If StrComp(addin.Name, INVENTORY_DOMAIN_REF_ADDIN_NAME, vbTextCompare) = 0 Then
+            FindInventoryDomainMacroHostName = addin.Name
+            Exit Function
+        End If
+        If InStr(1, addin.Name, "Inventory.Domain", vbTextCompare) > 0 Then
+            FindInventoryDomainMacroHostName = addin.Name
+            Exit Function
+        End If
+NextAddIn:
+    Next addin
+    On Error GoTo 0
 End Function
 
 Private Function OpenInventoryDomainMacroHostIfExists(ByVal workbookPath As String) As Workbook

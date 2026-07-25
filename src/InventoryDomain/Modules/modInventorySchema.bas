@@ -24,10 +24,14 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
     Dim issues As Collection
 
     If targetWb Is Nothing Then
-        Set wb = ThisWorkbook
-    Else
-        Set wb = targetWb
+        report = "Authoritative Inventory workbook was not supplied."
+        Exit Function
     End If
+    If targetWb.IsAddin Then
+        report = "Inventory schema cannot be created inside an XLAM."
+        Exit Function
+    End If
+    Set wb = targetWb
 
     Set issues = New Collection
 

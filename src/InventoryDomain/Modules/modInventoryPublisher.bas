@@ -169,6 +169,28 @@ Public Sub HandlePotentialInventoryWorkbook(Optional ByVal targetWb As Workbook 
     Call EnsureSnapshotPublicationForWorkbook(targetWb, report)
 End Sub
 
+Public Function DiagnoseInventorySourceWorkbook(Optional ByVal targetWb As Workbook = Nothing) As String
+    Dim wb As Workbook
+
+    Set wb = targetWb
+    If wb Is Nothing Then Set wb = ResolveCandidateInventoryWorkbookPublisher()
+    If wb Is Nothing Then
+        DiagnoseInventorySourceWorkbook = "Workbook=<none>"
+        Exit Function
+    End If
+
+    DiagnoseInventorySourceWorkbook = _
+        "Workbook=" & wb.Name & _
+        "|IsAddin=" & CStr(wb.IsAddin) & _
+        "|HasInvSys=" & CStr(Not FindManagedInventoryTablePublisher(wb) Is Nothing) & _
+        "|IsRuntime=" & CStr(IsRuntimeInventoryWorkbookPublisher(wb)) & _
+        "|HasRoleOperationalTables=" & CStr(HasRoleOperationalTablesPublisher(wb)) & _
+        "|IsLegacyManaged=" & CStr(IsLegacyManagedInventoryWorkbookPublisher(wb)) & _
+        "|HasManagedMarkers=" & CStr(HasManagedCatalogSourceMarkersPublisher(wb)) & _
+        "|IsManagedCatalogSource=" & CStr(IsManagedCatalogSourceWorkbookPublisher(wb)) & _
+        "|IsInventorySource=" & CStr(IsInventorySourceWorkbookPublisher(wb))
+End Function
+
 Private Function ResolveCandidateInventoryWorkbookPublisher() As Workbook
     If Not Application.ActiveWorkbook Is Nothing Then
         If Not Application.ActiveWorkbook.IsAddin Then
@@ -208,6 +230,9 @@ Private Function IsManagedCatalogSourceWorkbookPublisher(ByVal wb As Workbook) A
     If wb Is Nothing Then Exit Function
     If wb.IsAddin Then Exit Function
     If IsRuntimeInventoryWorkbookPublisher(wb) Then Exit Function
+    ' Role workbooks may contain local recipe/catalog-like tables, but they are
+    ' operator work surfaces and snapshot consumers—not domain catalog sources.
+    If HasRoleOperationalTablesPublisher(wb) Then Exit Function
     If FindManagedInventoryTablePublisher(wb) Is Nothing Then Exit Function
 
     If IsLegacyManagedInventoryWorkbookPublisher(wb) Then
@@ -300,6 +325,17 @@ Private Function TryResolveInventorySourceWarehouseIdPublisher(ByVal wb As Workb
         Exit Function
     End If
 
+    ' An explicitly loaded Core warehouse context is authoritative for a
+    ' non-canonical legacy donor. Do not let unrelated open/sibling config
+    ' workbooks rebind publication to another warehouse.
+    If modConfig.IsLoaded() Then
+        warehouseId = Trim$(modConfig.GetWarehouseId())
+        If warehouseId <> "" Then
+            TryResolveInventorySourceWarehouseIdPublisher = True
+            Exit Function
+        End If
+    End If
+
     warehouseId = ResolveWarehouseIdFromSiblingConfigPublisher(wb)
     If warehouseId <> "" Then
         TryResolveInventorySourceWarehouseIdPublisher = True
@@ -318,10 +354,6 @@ Private Function TryResolveInventorySourceWarehouseIdPublisher(ByVal wb As Workb
         Exit Function
     End If
 
-    If modConfig.IsLoaded() Then
-        warehouseId = Trim$(modConfig.GetWarehouseId())
-        TryResolveInventorySourceWarehouseIdPublisher = (warehouseId <> "")
-    End If
 End Function
 
 Private Function ResolveWarehouseIdFromInvSysSnapshotPublisher(ByVal wb As Workbook) As String

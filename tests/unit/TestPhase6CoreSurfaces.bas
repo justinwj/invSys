@@ -1330,6 +1330,47 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestAdminConfigEditor_UpdatesCanonicalTypedValueAndProtectsIdentity() As Long
+    Dim rootPath As String
+    Dim wbCfg As Workbook
+    Dim loWh As ListObject
+    Dim report As String
+    Dim rawValue As Variant
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_config_editor")
+
+    On Error GoTo CleanFail
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WHCFGEDIT", "SCFGEDIT", rootPath, report)
+    If wbCfg Is Nothing Then GoTo CleanExit
+    If Not modConfig.LoadConfig("WHCFGEDIT", "SCFGEDIT") Then GoTo CleanExit
+    If Not modConfig.UpdateConfigValue("DefaultLocation", "CLEARVIEW", report, "WHCFGEDIT", "SCFGEDIT") Then GoTo CleanExit
+    If StrComp(modConfig.GetString("DefaultLocation", ""), "CLEARVIEW", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(modConfig.GetWarehouseId(), "WHCFGEDIT", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(modConfig.GetStationId(), "SCFGEDIT", vbTextCompare) <> 0 Then GoTo CleanExit
+    If Not modConfig.UpdateConfigValue("DesignsEnabled", "TRUE", report) Then GoTo CleanExit
+    If Not modConfig.GetBool("DesignsEnabled", False) Then GoTo CleanExit
+
+    Set loWh = FindTableByName(wbCfg, "tblWarehouseConfig")
+    If loWh Is Nothing Then GoTo CleanExit
+    rawValue = loWh.DataBodyRange.Cells(1, loWh.ListColumns("DefaultLocation").Index).Value
+    If StrComp(CStr(rawValue), "CLEARVIEW", vbTextCompare) <> 0 Then GoTo CleanExit
+    rawValue = loWh.DataBodyRange.Cells(1, loWh.ListColumns("DesignsEnabled").Index).Value
+    If Not CBool(rawValue) Then GoTo CleanExit
+    If modConfig.UpdateConfigValue("WarehouseId", "RENAMED", report) Then GoTo CleanExit
+    If InStr(1, report, "runtime identity", vbTextCompare) = 0 Then GoTo CleanExit
+
+    TestAdminConfigEditor_UpdatesCanonicalTypedValueAndProtectsIdentity = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    CloseWorkbookIfOpen wbCfg
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestEnsureStationBootstrap_CreatesLocalConfigAndInbox() As Long
     Dim rootPath As String
     Dim sharedRoot As String
@@ -3104,6 +3145,8 @@ Public Function TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook
     Dim loSnap As ListObject
     Dim rowSku1 As Long
     Dim rowSku2 As Long
+    Dim catalogDetail As String
+    Dim catalogRow As Long
 
     rootPath = BuildRuntimeTestRoot("phase6_inventory_open_publish")
 
@@ -3124,7 +3167,8 @@ Public Function TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook
 
     publishCount = modInventoryPublisher.PublishOpenInventorySnapshots(report)
     If publishCount < 1 Then
-        failureReason = "PublishOpenInventorySnapshots did not publish the open inventory workbook. " & report
+        failureReason = "PublishOpenInventorySnapshots did not publish the open inventory workbook. " & _
+            report & " " & modInventoryPublisher.DiagnoseInventorySourceWorkbook(wbInv)
         GoTo CleanExit
     End If
 
@@ -3139,7 +3183,17 @@ Public Function TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook
         GoTo CleanExit
     End If
     If FindRowByColumnValueInTable(loRuntimeCatalog, "SKU", "SKU-PUB-001") = 0 Or FindRowByColumnValueInTable(loRuntimeCatalog, "SKU", "SKU-PUB-002") = 0 Then
-        failureReason = "Canonical runtime SKU catalog did not receive the donor workbook managed inventory rows."
+        If Not loRuntimeCatalog.DataBodyRange Is Nothing Then
+            For catalogRow = 1 To loRuntimeCatalog.ListRows.Count
+                If catalogDetail <> "" Then catalogDetail = catalogDetail & ","
+                catalogDetail = catalogDetail & CStr(GetTableValue(loRuntimeCatalog, catalogRow, "SKU"))
+            Next catalogRow
+        End If
+        failureReason = "Canonical runtime SKU catalog did not receive the donor workbook managed inventory rows." & _
+            " Runtime=" & wbRuntime.FullName & _
+            " Rows=" & CStr(loRuntimeCatalog.ListRows.Count) & _
+            " SKUs=[" & catalogDetail & "]" & _
+            " PublishReport=" & report
         GoTo CleanExit
     End If
 
@@ -3173,6 +3227,11 @@ Public Function TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook
     TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook = 1
 
 CleanExit:
+    If failureReason <> "" Then
+        On Error Resume Next
+        WriteTextFileForTest Environ$("TEMP") & "\invSys.publisher.test.failure.txt", failureReason
+        On Error GoTo 0
+    End If
     modRuntimeWorkbooks.ClearCoreDataRootOverride
     CloseWorkbookIfOpen wbSnap
     CloseWorkbookIfOpen wbRuntime
@@ -9300,6 +9359,7 @@ Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput
     Dim completeItem As Object
     Dim consumeEvent As Object
     Dim completeEvent As Object
+    Dim seedEvent As Object
     Dim statusOut As String
     Dim errorCode As String
     Dim errorMessage As String
@@ -9312,6 +9372,13 @@ Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput
     Set wbInv = TestPhase2Helpers.BuildPhase2InventoryWorkbook("WH122", Array("SKU-PROD-IN", "SKU-PROD-OUT"))
     If wbInv Is Nothing Then
         failureReason = "Inventory workbook could not be created."
+        GoTo CleanExit
+    End If
+    Set seedEvent = TestPhase2Helpers.CreateReceiveEvent( _
+        "EVT-PROD-COMPLETE-RUN-SEED", "WH122", "S37", "calvin", _
+        "SKU-PROD-IN", 20, "MIX", "seed production input")
+    If Not modInventoryApply.ApplyEvent(seedEvent, wbInv, "RUN-PROD-COMPLETE-RUN-SEED", statusOut, errorCode, errorMessage) Then
+        failureReason = "Production input seed did not apply: " & errorCode & " " & errorMessage
         GoTo CleanExit
     End If
 
@@ -12049,15 +12116,11 @@ Private Function CreateManagedInventoryDonorWorkbookForTest(ByVal rootPath As St
 
     targetPath = rootPath & "\" & workbookName
     Set wb = Application.Workbooks.Add(xlWBATWorksheet)
-    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then
-        CloseWorkbookIfOpen wb
-        Exit Function
-    End If
-    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wb, report) Then
-        CloseWorkbookIfOpen wb
-        Exit Function
-    End If
-    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then
+    ' This fixture is a dedicated legacy inventory/catalog donor.  Giving it
+    ' Receiving, Shipping, and Production operational tables incorrectly turns
+    ' it into an operator workbook, which Domain must never publish as a
+    ' managed catalog source.
+    If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, report) Then
         CloseWorkbookIfOpen wb
         Exit Function
     End If

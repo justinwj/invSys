@@ -30,11 +30,11 @@ Public Function ResolveCoreDataRoot(Optional ByVal rootPath As String = "", _
     resolvedPath = Trim$(rootPath)
     If resolvedPath = "" Then
         candidateRoot = Trim$(mCoreDataRootOverride)
-        If candidateRoot <> "" Then
-            If Trim$(warehouseId) = "" Or RuntimeArtifactsExistRuntime(candidateRoot, resolvedWh) Then
-                resolvedPath = candidateRoot
-            End If
-        End If
+        ' An explicit session override is the selected runtime authority,
+        ' including before the first Config/Auth/Inventory artifacts exist.
+        ' Requiring a complete runtime here redirected bootstrap writes to the
+        ' default C:\invSys\<WarehouseId> root.
+        If candidateRoot <> "" Then resolvedPath = candidateRoot
     End If
     If resolvedPath = "" And Trim$(warehouseId) <> "" Then
         candidateRoot = TryResolveExistingRuntimeRoot(resolvedWh)

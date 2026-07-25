@@ -97,6 +97,8 @@ Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
 Private mInventoryRows As Variant
 Private mInventoryCacheLoaded As Boolean
+Private mRunInventoryRows As Variant
+Private mRunInventoryCacheLoaded As Boolean
 Private mBuilt As Boolean
 Private mLoading As Boolean
 Private mResizeInitialized As Boolean
@@ -187,9 +189,12 @@ Public Sub InitializeFromProduction()
     wb.Activate
     On Error GoTo ErrHandler
     RunProductionSub1 "InitializeProductionUiForWorkbook", wb
+    ResetInventoryCache
     RefreshAllViews
     mLoading = False
-    ShowStatus "Production form loaded for " & wb.Name & "."
+    ShowStatus "Production form loaded for " & wb.Name & ". " & _
+               NzStr(RunProduction0("GetProductionInventoryModeStatus")) & " " & _
+               NzStr(RunProduction0("GetProductionDesignsModeStatus"))
     Exit Sub
 
 ErrHandler:
@@ -211,6 +216,25 @@ End Function
 Public Function TestStatusText() As String
     If mTxtStatus Is Nothing Then BuildLayout
     TestStatusText = mTxtStatus.Text
+End Function
+
+Public Function TestSelectedProductionOutputTableRow(ByVal wb As Workbook, ByVal listIndex As Long) As Long
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    If Not wb Is Nothing Then wb.Activate
+    RefreshProductionOutputList mLstManagerOutput
+    If listIndex < 0 Or listIndex >= mLstManagerOutput.ListCount Then Exit Function
+    mLstManagerOutput.ListIndex = listIndex
+    TestSelectedProductionOutputTableRow = SelectedProductionOutputTableRow()
+End Function
+
+Public Function TestProductionOutputDisplayedBatch(ByVal wb As Workbook, ByVal listIndex As Long) As String
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    If Not wb Is Nothing Then wb.Activate
+    RefreshProductionOutputList mLstManagerOutput
+    If listIndex < 0 Or listIndex >= mLstManagerOutput.ListCount Then Exit Function
+    TestProductionOutputDisplayedBatch = NzStr(mLstManagerOutput.List(listIndex, 4))
 End Function
 
 Public Function TestFillAssignmentIoCount(ByVal values As Variant, ByVal ioValue As String) As Long
@@ -828,10 +852,13 @@ End Sub
 
 Private Sub RefreshRecipeLists()
     Dim recipes As Variant
+    Dim releasedRecipes As Variant
+
     recipes = RunProduction0("LoadRecipeList")
+    releasedRecipes = RunProduction0("LoadReleasedRecipeList")
     FillListFromArray mLstBuilderRecipes, recipes
     FillListFromArray mLstAssignRecipes, recipes
-    FillListFromArray mLstLoaderRecipes, recipes
+    FillListFromArray mLstLoaderRecipes, releasedRecipes
 End Sub
 
 Private Sub RefreshBuilderHeader()
@@ -1455,9 +1482,9 @@ Private Function IngredientDisplayName(ByVal ingredientVal As String, ByVal proc
 End Function
 
 Private Sub EnsureRunInventoryCache()
-    If Not mInventoryCacheLoaded Then
-        mInventoryRows = RunProduction1("LoadProductionInventoryPickerItems", "")
-        mInventoryCacheLoaded = True
+    If Not mRunInventoryCacheLoaded Then
+        mRunInventoryRows = RunProduction1("LoadProductionRunInventoryPickerItems", "")
+        mRunInventoryCacheLoaded = True
     End If
 End Sub
 
@@ -1465,27 +1492,35 @@ Private Sub RefreshRunLocationChoices()
     Dim dict As Object
     Dim r As Long
     Dim locVal As String
+    Dim defaultLoc As String
     Dim selectedLoc As String
     Dim wasLoading As Boolean
 
     If mCmbRunLocation Is Nothing And mCmbTreeRunLocation Is Nothing Then Exit Sub
-    If IsEmpty(mInventoryRows) Then Exit Sub
-    If Not IsArray(mInventoryRows) Then Exit Sub
 
     selectedLoc = ActiveRunLocation()
     Set dict = CreateObject("Scripting.Dictionary")
-    For r = LBound(mInventoryRows, 1) To UBound(mInventoryRows, 1)
-        locVal = Trim$(NzStr(mInventoryRows(r, 5)))
-        If locVal <> "" Then
-            If Not dict.Exists(LCase$(locVal)) Then dict.Add LCase$(locVal), locVal
-        End If
-    Next r
+    If Not IsEmpty(mRunInventoryRows) And IsArray(mRunInventoryRows) Then
+        For r = LBound(mRunInventoryRows, 1) To UBound(mRunInventoryRows, 1)
+            locVal = Trim$(NzStr(mRunInventoryRows(r, 5)))
+            AddRunLocationChoice dict, locVal
+        Next r
+    End If
+    AddRunLocationChoice dict, selectedLoc
+    defaultLoc = Trim$(NzStr(RunProduction0("GetProductionRunDefaultLocation")))
+    AddRunLocationChoice dict, defaultLoc
 
     wasLoading = mLoading
     mLoading = True
     PopulateRunLocationCombo mCmbRunLocation, dict, selectedLoc
     PopulateRunLocationCombo mCmbTreeRunLocation, dict, selectedLoc
     mLoading = wasLoading
+End Sub
+
+Private Sub AddRunLocationChoice(ByVal dict As Object, ByVal locationText As String)
+    locationText = Trim$(locationText)
+    If dict Is Nothing Or locationText = "" Then Exit Sub
+    If Not dict.Exists(LCase$(locationText)) Then dict.Add LCase$(locationText), locationText
 End Sub
 
 Private Sub RefreshRunProcessChoices()
@@ -1646,26 +1681,40 @@ Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemVal As 
                                        ByRef uomVal As String, ByRef invVal As String, _
                                        ByRef locVal As String)
     Dim r As Long
+    Dim selectedRow As Long
     Dim rowKey As String
     Dim totalVal As String
     Dim rawLoc As String
+    Dim preferredLoc As String
 
-    If IsEmpty(mInventoryRows) Then Exit Sub
-    If Not IsArray(mInventoryRows) Then Exit Sub
+    If IsEmpty(mRunInventoryRows) Then Exit Sub
+    If Not IsArray(mRunInventoryRows) Then Exit Sub
 
     rowKey = NormalizeRunRowKey(rowVal)
     If rowKey = "" Then Exit Sub
-    For r = LBound(mInventoryRows, 1) To UBound(mInventoryRows, 1)
-        If NormalizeRunRowKey(NzStr(mInventoryRows(r, 1))) = rowKey Then
-            If Trim$(itemVal) = "" Then itemVal = NzStr(mInventoryRows(r, 2))
-            If Trim$(uomVal) = "" Then uomVal = NzStr(mInventoryRows(r, 3))
-            totalVal = NzStr(mInventoryRows(r, 4))
-            rawLoc = NzStr(mInventoryRows(r, 5))
-            invVal = RunInventoryAvailableDisplay(totalVal, uomVal)
-            locVal = rawLoc
-            Exit For
+    selectedRow = -1
+    preferredLoc = ActiveRunLocation()
+    For r = LBound(mRunInventoryRows, 1) To UBound(mRunInventoryRows, 1)
+        If NormalizeRunRowKey(NzStr(mRunInventoryRows(r, 1))) = rowKey Then
+            rawLoc = NzStr(mRunInventoryRows(r, 5))
+            If selectedRow < 0 Then selectedRow = r
+            If Trim$(rawLoc) <> "" And Trim$(NzStr(mRunInventoryRows(selectedRow, 5))) = "" Then selectedRow = r
+            If preferredLoc <> "" Then
+                If StrComp(Trim$(rawLoc), preferredLoc, vbTextCompare) = 0 Then
+                    selectedRow = r
+                    Exit For
+                End If
+            End If
         End If
     Next r
+    If selectedRow < 0 Then Exit Sub
+
+    If Trim$(itemVal) = "" Then itemVal = NzStr(mRunInventoryRows(selectedRow, 2))
+    If Trim$(uomVal) = "" Then uomVal = NzStr(mRunInventoryRows(selectedRow, 3))
+    totalVal = NzStr(mRunInventoryRows(selectedRow, 4))
+    rawLoc = NzStr(mRunInventoryRows(selectedRow, 5))
+    invVal = RunInventoryAvailableDisplay(totalVal, uomVal)
+    locVal = rawLoc
 End Sub
 
 Private Function RunInventoryAvailableDisplay(ByVal totalVal As String, ByVal uomVal As String) As String
@@ -1793,7 +1842,10 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
         lst.List(listRow, 1) = outputVal
         lst.List(listRow, 2) = uomVal
         lst.List(listRow, 3) = IIf(loggedCount > 0, FormatRunNumber(lastQty), "")
-        lst.List(listRow, 4) = CStr(maxBatch + 1)
+        ' The Batch column is completed-run history: 0 before the first
+        ' completion, 1 after the first completion, and so on.  The next
+        ' internal batch number is calculated only when Real Output is staged.
+        lst.List(listRow, 4) = CStr(maxBatch)
         lst.List(listRow, 5) = IIf(loggedCount > 0, FormatRunNumber(totalQty), "0")
         lst.List(listRow, 6) = recallVal
         lst.List(listRow, 7) = rowVal
@@ -1907,6 +1959,8 @@ End Function
 Private Sub ResetInventoryCache()
     mInventoryRows = Empty
     mInventoryCacheLoaded = False
+    mRunInventoryRows = Empty
+    mRunInventoryCacheLoaded = False
 End Sub
 
 Private Function CellText(ByVal arr As Variant, ByVal rowIndex As Long, ByVal lo As ListObject, ByVal headerName As String) As String
@@ -1953,6 +2007,37 @@ Private Function ResolveOperatorWorkbook() As Workbook
             End If
         End If
     Next wb
+End Function
+
+Private Function RefreshProductionInventoryReadModel(ByRef reportOut As String) As Boolean
+    On Error GoTo CleanFail
+
+    Dim wb As Workbook
+    Dim resultText As String
+    Dim separatorAt As Long
+    Dim resultCode As String
+
+    Set wb = ResolveOperatorWorkbook()
+    If wb Is Nothing Then
+        reportOut = "Open a Production operator workbook before refreshing inventory."
+        Exit Function
+    End If
+
+    resultText = NzStr(RunProduction1("RefreshProductionInventoryReadModelForWorkbookResult", wb))
+    separatorAt = InStr(1, resultText, vbTab, vbBinaryCompare)
+    If separatorAt > 0 Then
+        resultCode = Left$(resultText, separatorAt - 1)
+        reportOut = Mid$(resultText, separatorAt + 1)
+    Else
+        resultCode = resultText
+        reportOut = resultText
+    End If
+    If Trim$(reportOut) = "" Then reportOut = IIf(resultCode = "OK", "OK", "Inventory refresh failed.")
+    RefreshProductionInventoryReadModel = (StrComp(Trim$(resultCode), "OK", vbTextCompare) = 0)
+    Exit Function
+
+CleanFail:
+    reportOut = "Production inventory refresh failed: " & Err.Description
 End Function
 
 Private Function IsUsableWorkbook(ByVal wb As Workbook) As Boolean
@@ -2306,19 +2391,22 @@ End Sub
 Private Sub LoadSelectedProductionOutput()
     Dim idx As Long
     Dim lo As ListObject
+    Dim tableRowNumber As Long
 
     idx = mLstManagerOutput.ListIndex
     If idx < 0 Then Exit Sub
     Set lo = ProductionTable(TABLE_MANAGER_OUTPUT)
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
-    If idx + 1 > lo.ListRows.Count Then Exit Sub
-    mTxtOutputReal.Text = CellByHeader(lo, idx + 1, "REAL OUTPUT")
+    tableRowNumber = SelectedProductionOutputTableRow()
+    If tableRowNumber = 0 Then Exit Sub
+    mTxtOutputReal.Text = CellByHeader(lo, tableRowNumber, "REAL OUTPUT")
 End Sub
 
 Private Sub ApplySelectedProductionOutput()
     Dim idx As Long
     Dim lo As ListObject
     Dim batchVal As String
+    Dim tableRowNumber As Long
 
     idx = mLstManagerOutput.ListIndex
     If idx < 0 Then
@@ -2327,15 +2415,77 @@ Private Sub ApplySelectedProductionOutput()
     End If
     Set lo = ProductionTable(TABLE_MANAGER_OUTPUT)
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
-    If idx + 1 > lo.ListRows.Count Then Exit Sub
-    batchVal = NzStr(mLstManagerOutput.List(idx, 4))
-    If Trim$(batchVal) = "" Then batchVal = CStr(NextOutputBatchNumberForListIndex(idx))
-    SetCellByHeader lo, idx + 1, "REAL OUTPUT", mTxtOutputReal.Text
-    SetCellByHeader lo, idx + 1, "BATCH", batchVal
+    tableRowNumber = SelectedProductionOutputTableRow()
+    If tableRowNumber = 0 Then
+        ShowStatus "The selected Production Output row could not be resolved."
+        Exit Sub
+    End If
+    batchVal = CStr(NextOutputBatchNumberForListIndex(idx))
+    SetCellByHeader lo, tableRowNumber, "REAL OUTPUT", mTxtOutputReal.Text
+    SetCellByHeader lo, tableRowNumber, "BATCH", batchVal
     RefreshManagerState
     If idx < mLstManagerOutput.ListCount Then mLstManagerOutput.ListIndex = idx
     ShowStatus "Real Output staged for batch " & batchVal & "."
 End Sub
+
+Private Function SelectedProductionOutputTableRow() As Long
+    Dim idx As Long
+    Dim lo As ListObject
+
+    If mLstManagerOutput Is Nothing Then Exit Function
+    idx = mLstManagerOutput.ListIndex
+    If idx < 0 Or idx >= mLstManagerOutput.ListCount Then Exit Function
+    Set lo = ProductionTable(TABLE_MANAGER_OUTPUT)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+
+    SelectedProductionOutputTableRow = FindProductionOutputTableRow( _
+        lo, _
+        NzStr(mLstManagerOutput.List(idx, 7)), _
+        NzStr(mLstManagerOutput.List(idx, 0)), _
+        NzStr(mLstManagerOutput.List(idx, 1)), _
+        idx + 1)
+End Function
+
+Private Function FindProductionOutputTableRow(ByVal lo As ListObject, _
+                                              ByVal rowVal As String, _
+                                              ByVal procVal As String, _
+                                              ByVal outputVal As String, _
+                                              Optional ByVal fallbackRow As Long = 0) As Long
+    Dim r As Long
+    Dim cRow As Long
+    Dim cProc As Long
+    Dim cOutput As Long
+    Dim wantedRow As String
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    cRow = ProductionColumnIndex(lo, "ROW")
+    cProc = ProductionColumnIndex(lo, "PROCESS")
+    cOutput = ProductionColumnIndex(lo, "OUTPUT")
+    wantedRow = NormalizeRunRowKey(rowVal)
+
+    If wantedRow <> "" And cRow > 0 Then
+        For r = 1 To lo.ListRows.Count
+            If NormalizeRunRowKey(NzStr(lo.DataBodyRange.Cells(r, cRow).Value)) = wantedRow Then
+                FindProductionOutputTableRow = r
+                Exit Function
+            End If
+        Next r
+    End If
+
+    If cProc > 0 And cOutput > 0 Then
+        For r = 1 To lo.ListRows.Count
+            If StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cProc).Value)), Trim$(procVal), vbTextCompare) = 0 _
+               And StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cOutput).Value)), Trim$(outputVal), vbTextCompare) = 0 Then
+                FindProductionOutputTableRow = r
+                Exit Function
+            End If
+        Next r
+    End If
+
+    If fallbackRow >= 1 And fallbackRow <= lo.ListRows.Count Then
+        FindProductionOutputTableRow = fallbackRow
+    End If
+End Function
 
 Private Function NextOutputBatchNumberForListIndex(ByVal outputIndex As Long) As Long
     Dim lastQty As Double
@@ -2490,10 +2640,17 @@ End Sub
 
 Private Sub CompleteProductionRun()
     Dim outputIndex As Long
+    Dim outputRowNumber As Long
+    Dim outputRowVal As String
+    Dim outputProcess As String
+    Dim outputName As String
     Dim processName As String
     Dim prepared As Variant
     Dim completionReport As String
+    Dim completionResult As String
+    Dim reportSeparator As Long
     Dim enteredRealOutput As String
+    Dim lo As ListObject
 
     If Not HasProductionCheckRows() Then
         ShowStatus "Check inventory into Production before completing the run."
@@ -2539,15 +2696,36 @@ Private Sub CompleteProductionRun()
         Exit Sub
     End If
 
-    ApplySelectedProductionOutput
-    If Not CBool(Application.Run("mProduction.CompleteProductionRunAfterCheckInForOutput", outputIndex + 1, completionReport)) Then
-        If Trim$(completionReport) = "" Then completionReport = "Complete Run failed."
-        ShowStatus completionReport
+    outputRowNumber = SelectedProductionOutputTableRow()
+    If outputRowNumber = 0 Then
+        ShowStatus "The selected Production Output row could not be resolved. Refresh Production Run and select the output again."
         Exit Sub
     End If
+    outputRowVal = NzStr(mLstManagerOutput.List(outputIndex, 7))
+    outputProcess = NzStr(mLstManagerOutput.List(outputIndex, 0))
+    outputName = NzStr(mLstManagerOutput.List(outputIndex, 1))
+
+    ApplySelectedProductionOutput
+    completionResult = CStr(Application.Run("mProduction.CompleteProductionRunAfterCheckInForOutputResult", outputRowNumber))
+    reportSeparator = InStr(1, completionResult, vbTab, vbBinaryCompare)
+    If reportSeparator > 0 Then
+        completionReport = Mid$(completionResult, reportSeparator + 1)
+        completionResult = Left$(completionResult, reportSeparator - 1)
+    Else
+        completionReport = completionResult
+    End If
+    If StrComp(completionResult, "OK", vbTextCompare) <> 0 Then
+        If Trim$(completionReport) = "" Then completionReport = "Complete Run failed."
+        ShowStatus completionReport
+        MsgBox completionReport, vbExclamation, "Production Complete Run"
+        Exit Sub
+    End If
+    ResetInventoryCache
     RefreshLoaderState
     RefreshManagerState
-    ClearProductionOutputEntry outputIndex + 1
+    Set lo = ProductionTable(TABLE_MANAGER_OUTPUT)
+    outputRowNumber = FindProductionOutputTableRow(lo, outputRowVal, outputProcess, outputName, outputRowNumber)
+    ClearProductionOutputEntry outputRowNumber
     mTxtOutputReal.Text = ""
     RefreshManagerState
     ShowStatus "Production run completed. Checked-in inventory was consumed, Real Output was added to inventory, and the batch was logged." & IIf(Trim$(completionReport) <> "", " " & completionReport, "")
@@ -3012,7 +3190,7 @@ Private Sub ApplySelectedRunPaletteSplit()
             If runLoc = "" Then
                 ShowStatus "Choose a production run location before allocating inventory."
             ElseIf invLoc = "" Then
-                ShowStatus "Cannot allocate this inventory because it has no location. Use inventory at " & runLoc & "."
+                ShowStatus "This operator inventory row has no refreshed location. Click Refresh in Production Run, then select inventory at " & runLoc & "."
             Else
                 ShowStatus "Allocation rejected. Inventory is at " & invLoc & "; production run location is " & runLoc & ". Use inventory at the production location. This row was cleared from the run."
             End If
@@ -3528,10 +3706,20 @@ Private Sub mBtnAssignClear_Click()
 End Sub
 
 Private Sub mBtnLoaderRefresh_Click()
+    Dim refreshReport As String
+    Dim refreshed As Boolean
+
+    refreshed = RefreshProductionInventoryReadModel(refreshReport)
+    ResetInventoryCache
     RefreshRecipeLists
     RefreshLoaderState
     RefreshManagerState
-    ShowStatus "Production Run refreshed."
+    If refreshed Then
+        ShowStatus "Production Run inventory refreshed. " & refreshReport
+    Else
+        ShowStatus refreshReport
+        MsgBox refreshReport, vbExclamation, "Production Inventory Refresh"
+    End If
 End Sub
 
 Private Sub mBtnLoaderLoad_Click()
@@ -3585,9 +3773,19 @@ Private Sub mBtnRunTreeApplyPalette_Click()
 End Sub
 
 Private Sub mBtnManagerRefresh_Click()
+    Dim refreshReport As String
+    Dim refreshed As Boolean
+
+    refreshed = RefreshProductionInventoryReadModel(refreshReport)
+    ResetInventoryCache
     RefreshLoaderState
     RefreshManagerState
-    ShowStatus "Production Run refreshed."
+    If refreshed Then
+        ShowStatus "Production Run inventory refreshed. " & refreshReport
+    Else
+        ShowStatus refreshReport
+        MsgBox refreshReport, vbExclamation, "Production Inventory Refresh"
+    End If
 End Sub
 
 Private Sub mLstManagerOutput_Click()
@@ -3641,6 +3839,7 @@ End Sub
 
 Private Sub mBtnManagerNext_Click()
     RunProductionSub0 "BtnNextBatch"
+    ResetInventoryCache
     RefreshLoaderState
     RefreshManagerState
     ShowStatus "Next Batch completed."
