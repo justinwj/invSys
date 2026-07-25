@@ -1,7 +1,7 @@
 # Phase 6 Ribbon Generation Contract Results
 
-- Date: 2026-07-08 19:07:50
-- Passed: 42
+- Date: 2026-07-25 13:05:34
+- Passed: 44
 - Failed: 0
 
 | Check | Result | Detail |
@@ -21,6 +21,8 @@
 | Build.ReceivingCapability | PASS | Receiving buttons declare capability. |
 | Build.ShippingCapability | PASS | Shipping buttons declare capability. |
 | Build.ProductionCapability | PASS | Production buttons declare capability. |
+| Build.AdminDesignLifecycleButtons | PASS | Admin ribbon exposes Designs release and obsolete actions. |
+| Admin.DesignLifecycleCallbacks | PASS | Admin Designs lifecycle ribbon callbacks exist. |
 | Build.RoleConnectServerButtons | PASS | Role ribbons expose Connect Server buttons. |
 | Build.RoleSignOutButtons | PASS | Role ribbons expose Sign Out buttons. |
 | Build.SignInLabelCallback | PASS | Current user button acts as Sign In while signed out. |

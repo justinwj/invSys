@@ -32,6 +32,7 @@ $validatorText = Get-Content -LiteralPath $validatorPath -Raw
 $runtimeStatusText = Get-Content -LiteralPath (Join-Path $repo "src/Core/Modules/modRibbonRuntimeStatus.bas") -Raw
 $nasConnectionText = Get-Content -LiteralPath (Join-Path $repo "src/Core/Modules/modNasConnection.bas") -Raw
 $adminConsoleText = Get-Content -LiteralPath (Join-Path $repo "src/Admin/Modules/modAdminConsole.bas") -Raw
+$adminLifecycleText = Get-Content -LiteralPath (Join-Path $repo "src/Admin/Modules/modAdminDesignLifecycle.bas") -Raw
 $authText = Get-Content -LiteralPath (Join-Path $repo "src/Core/Modules/modAuth.bas") -Raw
 
 Add-Check "Build.GetEnabledXml" ($buildText.Contains('getEnabled="{0}"') -and $buildText.Contains('$enabledCallbackName')) "RequiredCapability buttons emit configured getEnabled callbacks."
@@ -50,6 +51,8 @@ Add-Check "Build.StubFormsDropAllAttributes" ($buildText.Contains("if (`$line -m
 Add-Check "Build.ReceivingCapability" ($buildText.Contains('RequiredCapability = "RECEIVE_POST"')) "Receiving buttons declare capability."
 Add-Check "Build.ShippingCapability" ($buildText.Contains('RequiredCapability = "SHIP_POST"')) "Shipping buttons declare capability."
 Add-Check "Build.ProductionCapability" ($buildText.Contains('RequiredCapability = "PROD_POST"')) "Production buttons declare capability."
+Add-Check "Build.AdminDesignLifecycleButtons" ($buildText.Contains('btnAdminReleaseDesign') -and $buildText.Contains('btnAdminObsoleteDesign')) "Admin ribbon exposes Designs release and obsolete actions."
+Add-Check "Admin.DesignLifecycleCallbacks" ($adminLifecycleText.Contains('Public Sub Admin_ReleaseDesignVersion_Click()') -and $adminLifecycleText.Contains('Public Sub Admin_ObsoleteDesignVersion_Click()')) "Admin Designs lifecycle ribbon callbacks exist."
 Add-Check "Build.RoleConnectServerButtons" ($buildText.Contains('btnReceivingConnectServer') -and $buildText.Contains('btnShippingConnectServer') -and $buildText.Contains('btnProductionConnectServer')) "Role ribbons expose Connect Server buttons."
 Add-Check "Build.RoleSignOutButtons" ($buildText.Contains('btnReceivingSignOut') -and $buildText.Contains('btnShippingSignOut') -and $buildText.Contains('btnProductionSignOut')) "Role ribbons expose Sign Out buttons."
 Add-Check "Build.SignInLabelCallback" ($buildText.Contains('returnedVal = "Sign In"') -and $buildText.Contains('RibbonCurrentUserGetLabel')) "Current user button acts as Sign In while signed out."
