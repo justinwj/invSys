@@ -859,6 +859,23 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestAdminDesignLifecycleForm_BuildsVersionPicker() As Long
+    Dim frm As frmAdminDesignLifecycle
+
+    On Error GoTo CleanFail
+    Set frm = New frmAdminDesignLifecycle
+    If frm.TestLayoutReady() = 1 Then TestAdminDesignLifecycleForm_BuildsVersionPicker = 1
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestProductionForm_BatchDisplaysCompletedCount() As Long
     Dim wb As Workbook
     Dim report As String

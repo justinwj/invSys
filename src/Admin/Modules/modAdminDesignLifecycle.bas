@@ -5,11 +5,11 @@ Private Const DESIGN_EVENT_RELEASE As String = "DESIGN_RELEASE"
 Private Const DESIGN_EVENT_OBSOLETE As String = "DESIGN_OBSOLETE"
 
 Public Sub Admin_ReleaseDesignVersion_Click()
-    PromptAndQueueDesignLifecycleEvent DESIGN_EVENT_RELEASE
+    frmAdminDesignLifecycle.Show vbModal
 End Sub
 
 Public Sub Admin_ObsoleteDesignVersion_Click()
-    PromptAndQueueDesignLifecycleEvent DESIGN_EVENT_OBSOLETE
+    frmAdminDesignLifecycle.Show vbModal
 End Sub
 
 Public Function ReleaseDesignVersion(ByVal designId As String, _
@@ -30,75 +30,41 @@ Public Function ObsoleteDesignVersion(ByVal designId As String, _
         DESIGN_EVENT_OBSOLETE, designId, designVersion, noteVal, eventIdOut, errorMessage)
 End Function
 
-Private Sub PromptAndQueueDesignLifecycleEvent(ByVal eventType As String)
-    On Error GoTo FailPrompt
-
-    Dim designId As String
-    Dim designVersion As String
-    Dim noteVal As String
+Public Function ExecuteDesignLifecycleCommand(ByVal eventType As String, _
+                                              ByVal designId As String, _
+                                              ByVal designVersion As String, _
+                                              Optional ByVal noteVal As String = "", _
+                                              Optional ByRef report As String = "") As Boolean
     Dim eventId As String
     Dim queueError As String
     Dim processorReport As String
     Dim appliedCount As Long
-    Dim actionLabel As String
     Dim expectedStatus As String
     Dim currentStatus As String
 
+    eventType = NormalizeDesignLifecycleEventType(eventType, report)
+    If eventType = "" Then Exit Function
     If eventType = DESIGN_EVENT_RELEASE Then
-        actionLabel = "Release Design"
         expectedStatus = "RELEASED"
     Else
-        actionLabel = "Obsolete Design"
         expectedStatus = "OBSOLETE"
     End If
 
-    designId = Trim$(InputBox("Enter the DesignId.", "invSys Admin - " & actionLabel))
-    If designId = "" Then Exit Sub
-    designVersion = Trim$(InputBox("Enter the immutable DesignVersion for " & designId & ".", _
-                                   "invSys Admin - " & actionLabel))
-    If designVersion = "" Then Exit Sub
-    noteVal = Trim$(InputBox("Enter an audit note (optional).", "invSys Admin - " & actionLabel))
-
-    If eventType = DESIGN_EVENT_OBSOLETE Then
-        If MsgBox("Obsolete design " & designId & " version " & designVersion & "?" & vbCrLf & _
-                  "Production will no longer offer this version for new runs.", _
-                  vbQuestion Or vbYesNo Or vbDefaultButton2, _
-                  "invSys Admin - Obsolete Design") <> vbYes Then Exit Sub
+    If Not QueueCurrentDesignLifecycleEvent(eventType, designId, designVersion, _
+                                            noteVal, eventId, queueError) Then
+        report = queueError
+        Exit Function
     End If
-
-    If eventType = DESIGN_EVENT_RELEASE Then
-        If Not ReleaseDesignVersion(designId, designVersion, noteVal, eventId, queueError) Then
-            MsgBox actionLabel & " was not queued." & vbCrLf & vbCrLf & queueError, _
-                   vbExclamation, "invSys Admin"
-            Exit Sub
-        End If
-    Else
-        If Not ObsoleteDesignVersion(designId, designVersion, noteVal, eventId, queueError) Then
-            MsgBox actionLabel & " was not queued." & vbCrLf & vbCrLf & queueError, _
-                   vbExclamation, "invSys Admin"
-            Exit Sub
-        End If
-    End If
-
     appliedCount = modProcessor.RunBatch("", 0, processorReport)
     currentStatus = FindCurrentDesignStatus(designId, designVersion)
     If StrComp(currentStatus, expectedStatus, vbTextCompare) = 0 Then
-        MsgBox actionLabel & " completed." & vbCrLf & _
-               "Design: " & designId & " version " & designVersion & vbCrLf & _
-               "Status: " & currentStatus & vbCrLf & _
-               "EventID: " & eventId, vbInformation, "invSys Admin"
+        report = expectedStatus & "; EventID=" & eventId
+        ExecuteDesignLifecycleCommand = True
     Else
-        MsgBox actionLabel & " was queued for processor handling." & vbCrLf & _
-               "Design: " & designId & " version " & designVersion & vbCrLf & _
-               "EventID: " & eventId & vbCrLf & _
-               "Processor applied: " & CStr(appliedCount) & vbCrLf & vbCrLf & processorReport, _
-               vbInformation, "invSys Admin"
+        report = "Queued EventID=" & eventId & "; processor applied " & _
+                 CStr(appliedCount) & ". " & processorReport
     End If
-    Exit Sub
-
-FailPrompt:
-    MsgBox actionLabel & " failed: " & Err.Description, vbExclamation, "invSys Admin"
-End Sub
+End Function
 
 Private Function FindCurrentDesignStatus(ByVal designId As String, _
                                          ByVal designVersion As String) As String

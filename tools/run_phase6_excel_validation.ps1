@@ -444,6 +444,7 @@ try {
         (Join-Path $repo "src/Core/Forms/frmSignIn.frm"),
         (Join-Path $repo "src/Admin/Forms/frmReAuthGate.frm"),
         (Join-Path $repo "src/Admin/Forms/frmAddInventoryItem.frm"),
+        (Join-Path $repo "src/Admin/Forms/frmAdminDesignLifecycle.frm"),
         (Join-Path $repo "src/Receiving/Forms/frmReceiving.frm"),
         (Join-Path $repo "src/Production/Forms/frmProduction.frm")
     )
@@ -678,6 +679,7 @@ try {
         "TestPhase6RoleSurfaces.TestProductionForm_BatchDisplaysCompletedCount",
         "TestPhase6RoleSurfaces.TestProductionDesignStaging_DoesNotMutateOperatorRecipes",
         "TestPhase6RoleSurfaces.TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch",
+        "TestPhase6RoleSurfaces.TestAdminDesignLifecycleForm_BuildsVersionPicker",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentIncludesOutputRecipeRows",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentOutputRejectsAcceptableInventory",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentInventorySearchFiltersCachedRows",
