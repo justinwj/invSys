@@ -801,6 +801,64 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionDesignStaging_DoesNotMutateOperatorRecipes() As Long
+    Dim operatorWb As Workbook
+    Dim stagingWb As Workbook
+    Dim wsOperator As Worksheet
+    Dim loOperator As ListObject
+    Dim loStaging As ListObject
+    Dim bom(1 To 2, 1 To 10) As Variant
+    Dim report As String
+
+    Set operatorWb = Application.Workbooks.Add(xlWBATWorksheet)
+    Set wsOperator = operatorWb.Worksheets(1)
+    wsOperator.Name = "Recipes"
+    wsOperator.Range("A1").Value = "RECIPE_ID"
+    wsOperator.Range("B1").Value = "RECIPE"
+    wsOperator.Range("A2").Value = "LOCAL-1"
+    wsOperator.Range("B2").Value = "Local Draft"
+    Set loOperator = wsOperator.ListObjects.Add(xlSrcRange, wsOperator.Range("A1:B2"), , xlYes)
+    loOperator.Name = "Recipes"
+
+    bom(1, 1) = 1
+    bom(1, 2) = 1
+    bom(1, 3) = "USED"
+    bom(1, 4) = "SKU-TEA"
+    bom(1, 7) = 2.5
+    bom(1, 8) = "LB"
+    bom(1, 9) = 100
+    bom(1, 10) = "Tea"
+    bom(2, 1) = 2
+    bom(2, 2) = 1
+    bom(2, 3) = "OUTPUT"
+    bom(2, 4) = "SKU-BREW"
+    bom(2, 7) = 10
+    bom(2, 8) = "LB"
+    bom(2, 10) = "Brew"
+
+    On Error GoTo CleanFail
+    Set stagingWb = mProduction.BuildDesignRecipeStagingWorkbookFromData( _
+        "DES-1", "Released Brew", "canonical", bom, report)
+    If stagingWb Is Nothing Then mLastTestFailure = report: GoTo CleanExit
+    If stagingWb Is operatorWb Then mLastTestFailure = "Staging reused the operator workbook.": GoTo CleanExit
+    Set loStaging = stagingWb.Worksheets("Recipes").ListObjects("Recipes")
+    If loStaging.ListRows.Count <> 2 Then mLastTestFailure = "Expected two staged BOM rows.": GoTo CleanExit
+    If loOperator.ListRows.Count <> 1 Then mLastTestFailure = "Operator Recipes row count changed.": GoTo CleanExit
+    If CStr(loOperator.DataBodyRange.Cells(1, 1).Value) <> "LOCAL-1" Then mLastTestFailure = "Operator recipe identity changed.": GoTo CleanExit
+    If CStr(loOperator.DataBodyRange.Cells(1, 2).Value) <> "Local Draft" Then mLastTestFailure = "Operator recipe content changed.": GoTo CleanExit
+    If CStr(loStaging.DataBodyRange.Cells(1, loStaging.ListColumns("RECIPE_ID").Index).Value) <> "DES-1" Then _
+        mLastTestFailure = "Canonical DesignId was not staged.": GoTo CleanExit
+    TestProductionDesignStaging_DoesNotMutateOperatorRecipes = 1
+
+CleanExit:
+    CloseNoSavePhase6 stagingWb
+    CloseNoSavePhase6 operatorWb
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestProductionForm_BatchDisplaysCompletedCount() As Long
     Dim wb As Workbook
     Dim report As String

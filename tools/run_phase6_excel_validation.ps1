@@ -676,6 +676,7 @@ try {
         "TestPhase6RoleSurfaces.TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection",
         "TestPhase6RoleSurfaces.TestProductionRunInventory_PrefersOperatorLocationRows",
         "TestPhase6RoleSurfaces.TestProductionForm_BatchDisplaysCompletedCount",
+        "TestPhase6RoleSurfaces.TestProductionDesignStaging_DoesNotMutateOperatorRecipes",
         "TestPhase6RoleSurfaces.TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentIncludesOutputRecipeRows",
         "TestPhase6RoleSurfaces.TestProductionForm_AssignmentOutputRejectsAcceptableInventory",

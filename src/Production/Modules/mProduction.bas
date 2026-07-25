@@ -752,23 +752,31 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
     Dim syncReport As String
-    If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
-        Call HydrateLocalRecipeFromDesigns(wsProd.Parent, recipeId, "RELEASED", syncReport)
+    Dim stagingWb As Workbook
+    Dim wsRec As Worksheet
+    If ProductionDesignsEnabled() Then
+        Set stagingWb = BuildReleasedDesignRecipeStagingWorkbook(recipeId, syncReport)
+        If stagingWb Is Nothing Then
+            MsgBox syncReport, vbExclamation, "Production Designs"
+            Exit Sub
+        End If
+        Set wsRec = WorkbookSheetExists(stagingWb, "Recipes")
+    Else
+        If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
+            RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+        End If
+        Set wsRec = SheetExists("Recipes")
     End If
-    If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
-        RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
-    End If
-    Dim wsRec As Worksheet: Set wsRec = SheetExists("Recipes")
     If wsRec Is Nothing Then
         MsgBox "Recipes sheet not found.", vbCritical
-        Exit Sub
+        GoTo CleanExit
     End If
 
     Dim loChooser As ListObject
     Set loChooser = FindListObjectByNameOrHeaders(wsProd, TABLE_RECIPE_CHOOSER, Array("RECIPE", "RECIPE_ID"))
     If loChooser Is Nothing Then
         MsgBox "RC_RecipeChoose table not found on Production sheet.", vbExclamation
-        Exit Sub
+        GoTo CleanExit
     End If
 
     EnsureTableHasRow loChooser
@@ -822,9 +830,14 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
     ApplyProductionOutputTemplates recipeId, wsProd
     RenderOutputRowCheckboxes wsProd
 
+CleanExit:
+    On Error Resume Next
+    If Not stagingWb Is Nothing Then stagingWb.Close SaveChanges:=False
+    On Error GoTo 0
     Exit Sub
 ErrHandler:
     MsgBox "Load Recipe Chooser failed: " & Err.description, vbCritical
+    Resume CleanExit
 End Sub
 
 Private Function FindListObjectByNameOrHeaders(ws As Worksheet, tableName As String, headers As Variant) As ListObject
@@ -3629,33 +3642,28 @@ Private Function DesignVersionExistsProduction(ByVal designId As String, ByVal d
 CleanFail:
 End Function
 
-Private Function HydrateLocalRecipeFromDesigns(ByVal operatorWb As Workbook, _
-                                               ByVal recipeId As String, _
-                                               ByVal statusFilter As String, _
-                                               Optional ByRef report As String = "") As Boolean
-    On Error GoTo FailHydrate
+Private Function BuildReleasedDesignRecipeStagingWorkbook(ByVal recipeId As String, _
+                                                          ByRef report As String) As Workbook
+    Set BuildReleasedDesignRecipeStagingWorkbook = _
+        BuildDesignRecipeStagingWorkbook(recipeId, "RELEASED", report)
+End Function
+
+Private Function BuildDesignRecipeStagingWorkbook(ByVal recipeId As String, _
+                                                   ByVal statusFilter As String, _
+                                                   ByRef report As String) As Workbook
+    On Error GoTo FailBuild
 
     Dim designVersion As String
     Dim recipeName As String
     Dim recipeDescription As String
     Dim designStatus As String
     Dim bom As Variant
-    Dim wsRecipes As Worksheet
-    Dim loRecipes As ListObject
-    Dim lr As ListRow
-    Dim r As Long
-    Dim ingredientId As String
-    Dim ingredientName As String
 
-    If operatorWb Is Nothing Then
-        report = "Production operator workbook was not resolved."
+    If Not FindLatestDesignSummaryProduction(recipeId, statusFilter, designVersion, _
+                                             recipeName, recipeDescription, designStatus) Then
+        report = "No matching Designs Domain recipe was found for " & recipeId & "."
         Exit Function
     End If
-    If Not FindLatestDesignSummaryProduction(recipeId, statusFilter, designVersion, recipeName, recipeDescription, designStatus) Then
-        report = "No matching Designs Domain recipe was found."
-        Exit Function
-    End If
-
     If Trim$(statusFilter) = "" Then
         bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
     Else
@@ -3663,20 +3671,55 @@ Private Function HydrateLocalRecipeFromDesigns(ByVal operatorWb As Workbook, _
             recipeId, designVersion, statusFilter, Nothing)
     End If
     If Not IsUsableProductionArray(bom) Then
-        report = "The Designs Domain recipe has no BOM lines."
+        report = "Design " & recipeId & " version " & designVersion & " has no available BOM lines."
         Exit Function
     End If
 
-    Set wsRecipes = WorkbookSheetExists(operatorWb, "Recipes")
-    If wsRecipes Is Nothing Then
-        report = "Recipes sheet was not found in the Production operator workbook."
+    Set BuildDesignRecipeStagingWorkbook = _
+        BuildDesignRecipeStagingWorkbookFromData(recipeId, recipeName, recipeDescription, bom, report)
+    Exit Function
+
+FailBuild:
+    report = "BuildDesignRecipeStagingWorkbook failed: " & Err.Description
+End Function
+
+Public Function BuildDesignRecipeStagingWorkbookFromData(ByVal recipeId As String, _
+                                                         ByVal recipeName As String, _
+                                                         ByVal recipeDescription As String, _
+                                                         ByVal bom As Variant, _
+                                                         Optional ByRef report As String = "") As Workbook
+    On Error GoTo FailBuild
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim headers As Variant
+    Dim tableRange As Range
+    Dim r As Long
+    Dim c As Long
+    Dim ingredientId As String
+    Dim ingredientName As String
+
+    If Trim$(recipeId) = "" Then
+        report = "RecipeId is required for Designs staging."
         Exit Function
     End If
-    Set loRecipes = GetListObject(wsRecipes, "Recipes")
-    If loRecipes Is Nothing Then
-        report = "Recipes table was not found in the Production operator workbook."
+    If Not IsUsableProductionArray(bom) Then
+        report = "A Designs BOM array is required for staging."
         Exit Function
     End If
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Recipes"
+    headers = ProductionRecipeRuntimeHeaders()
+    Set tableRange = ws.Range(ws.Cells(1, 1), _
+        ws.Cells(UBound(bom, 1) - LBound(bom, 1) + 2, UBound(headers) - LBound(headers) + 1))
+    For c = LBound(headers) To UBound(headers)
+        tableRange.Cells(1, c - LBound(headers) + 1).Value = headers(c)
+    Next c
+    Set lo = ws.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+    lo.Name = "Recipes"
 
     For r = LBound(bom, 1) To UBound(bom, 1)
         ingredientId = Trim$(NzStr(bom(r, 5)))
@@ -3684,38 +3727,66 @@ Private Function HydrateLocalRecipeFromDesigns(ByVal operatorWb As Workbook, _
         ingredientName = Trim$(NzStr(bom(r, 10)))
         If ingredientName = "" Then ingredientName = ingredientId
 
-        Set lr = loRecipes.ListRows.Add
-        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE_ID", recipeId
-        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE", recipeName
-        SetRecipeHydrationValue loRecipes, lr.Index, "DESCRIPTION", recipeDescription
-        SetRecipeHydrationValue loRecipes, lr.Index, "ROW_BUDGET", PRODUCTION_DEFAULT_ROW_BUDGET
-        SetRecipeHydrationValue loRecipes, lr.Index, "PROCESS", bom(r, 2)
-        SetRecipeHydrationValue loRecipes, lr.Index, "INPUT/OUTPUT", bom(r, 3)
-        SetRecipeHydrationValue loRecipes, lr.Index, "INGREDIENT", ingredientName
-        SetRecipeHydrationValue loRecipes, lr.Index, "PERCENT", bom(r, 9)
-        SetRecipeHydrationValue loRecipes, lr.Index, "UOM", bom(r, 8)
-        SetRecipeHydrationValue loRecipes, lr.Index, "AMOUNT", bom(r, 7)
-        SetRecipeHydrationValue loRecipes, lr.Index, "RECIPE_LIST_ROW", bom(r, 1)
-        SetRecipeHydrationValue loRecipes, lr.Index, "INGREDIENT_ID", ingredientId
-        SetRecipeHydrationValue loRecipes, lr.Index, "GUID", ProductionGuid()
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "RECIPE_ID", recipeId
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "RECIPE", recipeName
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "DESCRIPTION", recipeDescription
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "ROW_BUDGET", PRODUCTION_DEFAULT_ROW_BUDGET
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "PROCESS", bom(r, 2)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "INPUT/OUTPUT", bom(r, 3)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "INGREDIENT", ingredientName
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "PERCENT", bom(r, 9)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "UOM", bom(r, 8)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "AMOUNT", bom(r, 7)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "RECIPE_LIST_ROW", bom(r, 1)
+        SetProductionTableCellByHeader lo, r - LBound(bom, 1) + 1, "INGREDIENT_ID", ingredientId
     Next r
 
-    report = "Hydrated Designs Domain recipe " & recipeId & " version " & designVersion & _
-             " (" & designStatus & ")."
-    HydrateLocalRecipeFromDesigns = True
+    On Error Resume Next
+    wb.Windows(1).Visible = False
+    On Error GoTo FailBuild
+    report = "Prepared transient Designs staging for " & recipeId & "."
+    Set BuildDesignRecipeStagingWorkbookFromData = wb
     Exit Function
 
-FailHydrate:
-    report = "HydrateLocalRecipeFromDesigns failed: " & Err.Description
+FailBuild:
+    report = "BuildDesignRecipeStagingWorkbookFromData failed: " & Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
 End Function
 
-Private Sub SetRecipeHydrationValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
-                                    ByVal columnName As String, ByVal cellValue As Variant)
-    Dim columnIndex As Long
-    columnIndex = ColumnIndex(lo, columnName)
-    If columnIndex = 0 Then Exit Sub
-    lo.DataBodyRange.Cells(rowIndex, columnIndex).Value = cellValue
-End Sub
+Private Function CreateEmptyDesignRecipeStagingWorkbook(ByRef report As String) As Workbook
+    On Error GoTo FailBuild
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim headers As Variant
+    Dim c As Long
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Recipes"
+    headers = ProductionRecipeRuntimeHeaders()
+    For c = LBound(headers) To UBound(headers)
+        ws.Cells(1, c - LBound(headers) + 1).Value = headers(c)
+    Next c
+    Set lo = ws.ListObjects.Add(xlSrcRange, _
+        ws.Range(ws.Cells(1, 1), ws.Cells(2, UBound(headers) - LBound(headers) + 1)), , xlYes)
+    lo.Name = "Recipes"
+    If Not lo.DataBodyRange Is Nothing Then lo.ListRows(1).Delete
+    On Error Resume Next
+    wb.Windows(1).Visible = False
+    On Error GoTo FailBuild
+    Set CreateEmptyDesignRecipeStagingWorkbook = wb
+    Exit Function
+
+FailBuild:
+    report = "CreateEmptyDesignRecipeStagingWorkbook failed: " & Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Function
 
 Public Function GetCurrentProductionRunRecipeId() As String
     Dim wsProd As Worksheet
@@ -8911,11 +8982,9 @@ Private Sub SaveRecipeToRecipes()
     On Error GoTo ErrHandler
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
-    Dim wsRec As Worksheet: Set wsRec = SheetExists("Recipes")
-    If wsRec Is Nothing Then
-        MsgBox "Recipes sheet not found.", vbCritical
-        Exit Sub
-    End If
+    Dim wsRec As Worksheet
+    Dim stagingWb As Workbook
+    Dim stagingReport As String
 
     Dim loHeader As ListObject
     Dim loLines As ListObject
@@ -8984,15 +9053,30 @@ Private Sub SaveRecipeToRecipes()
         End If
     End If
 
+    If ProductionDesignsEnabled() Then
+        Set stagingWb = CreateEmptyDesignRecipeStagingWorkbook(stagingReport)
+        If stagingWb Is Nothing Then
+            MsgBox stagingReport, vbExclamation, "Production Designs"
+            Exit Sub
+        End If
+        Set wsRec = WorkbookSheetExists(stagingWb, "Recipes")
+    Else
+        Set wsRec = SheetExists("Recipes")
+    End If
+    If wsRec Is Nothing Then
+        MsgBox "Recipes sheet not found.", vbCritical
+        GoTo CleanExit
+    End If
+
     Dim loRecipes As ListObject: Set loRecipes = GetListObject(wsRec, "Recipes")
     If loRecipes Is Nothing Then
         MsgBox "Recipes table not found on Recipes sheet.", vbCritical
-        Exit Sub
+        GoTo CleanExit
     End If
     Dim cRecRecipeId As Long: cRecRecipeId = ColumnIndex(loRecipes, "RECIPE_ID")
     If cRecRecipeId = 0 Then
         MsgBox "Recipes table missing RECIPE_ID column.", vbCritical
-        Exit Sub
+        GoTo CleanExit
     End If
 
     ' Delete existing rows for this recipe ID (overwrite behavior).
@@ -9066,9 +9150,14 @@ Private Sub SaveRecipeToRecipes()
         End If
         MsgBox msg, vbInformation
     End If
+CleanExit:
+    On Error Resume Next
+    If Not stagingWb Is Nothing Then stagingWb.Close SaveChanges:=False
+    On Error GoTo 0
     Exit Sub
 ErrHandler:
     MsgBox "Save Recipe failed: " & Err.description, vbCritical
+    Resume CleanExit
 End Sub
 
 Private Function BuildRecipeSaveSourceTables(ByVal wsProd As Worksheet, ByVal loLines As ListObject, _
@@ -9097,11 +9186,8 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)
     If wsProd Is Nothing Then Exit Sub
     Dim syncReport As String
-    Dim wsRec As Worksheet: Set wsRec = SheetExists("Recipes")
-    If wsRec Is Nothing Then
-        MsgBox "Recipes sheet not found.", vbCritical
-        Exit Sub
-    End If
+    Dim stagingWb As Workbook
+    Dim wsRec As Worksheet
 
     Dim loHeader As ListObject
     Dim loLines As ListObject
@@ -9148,20 +9234,32 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
 
     If recipeId = "" And recipeName = "" Then Exit Sub
 
+    If ProductionDesignsEnabled() And recipeId <> "" Then
+        Set stagingWb = BuildDesignRecipeStagingWorkbook(recipeId, "", syncReport)
+        If stagingWb Is Nothing Then
+            MsgBox syncReport, vbExclamation, "Production Designs"
+            Exit Sub
+        End If
+        Set wsRec = WorkbookSheetExists(stagingWb, "Recipes")
+    Else
+        Set wsRec = SheetExists("Recipes")
+        If recipeId <> "" Then
+            If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
+                RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+            End If
+        ElseIf Not LocalProductionRecipeRowsExist(wsProd.Parent) Then
+            RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+        End If
+    End If
+    If wsRec Is Nothing Then
+        MsgBox "Recipes sheet not found.", vbCritical
+        GoTo CleanExit
+    End If
+
     Dim loRecipes As ListObject: Set loRecipes = GetListObject(wsRec, "Recipes")
     If loRecipes Is Nothing Then
         MsgBox "Recipes table not found on Recipes sheet.", vbCritical
-        Exit Sub
-    End If
-    If recipeId <> "" Then
-        If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
-            Call HydrateLocalRecipeFromDesigns(wsProd.Parent, recipeId, "", syncReport)
-        End If
-        If Not LocalProductionRecipeRowsExist(wsProd.Parent, recipeId) Then
-            RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
-        End If
-    ElseIf Not LocalProductionRecipeRowsExist(wsProd.Parent) Then
-        RefreshProductionRecipesFromRuntime wsProd.Parent, syncReport
+        GoTo CleanExit
     End If
 
     Dim cRecRecipeId As Long: cRecRecipeId = ColumnIndex(loRecipes, "RECIPE_ID")
@@ -9197,7 +9295,7 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
 
     If matches.count = 0 Then
         MsgBox "No recipe rows found for the selected RECIPE_ID.", vbExclamation
-        Exit Sub
+        GoTo CleanExit
     End If
 
     ' Update header table.
@@ -9270,9 +9368,14 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     loadMsg = "Loaded recipe '" & recipeName & "' (" & matches.count & " lines)."
     If procCount > 0 Then loadMsg = loadMsg & vbCrLf & "Process tables built: " & procCount & "."
     MsgBox loadMsg, vbInformation
+CleanExit:
+    On Error Resume Next
+    If Not stagingWb Is Nothing Then stagingWb.Close SaveChanges:=False
+    On Error GoTo 0
     Exit Sub
 ErrHandler:
     MsgBox "Load Recipe failed: " & Err.description, vbCritical
+    Resume CleanExit
 End Sub
 
 ' System 1: Recipe List Builder - write recipe rows to Recipes table.
