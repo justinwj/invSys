@@ -538,6 +538,26 @@ Public Function QueuePayloadEventServer(ByVal eventType As String, _
     QueuePayloadEventServer = QueueEventCore(eventType, warehouseId, stationId, userId, "", 0, "", noteVal, payloadJson, "", parentEventId, undoOfEventId, createdAtUtc, Nothing, eventIdOut, errorMessage, perfRunId, False, True)
 End Function
 
+Public Function QueueDesignEvent(ByVal eventType As String, _
+                                 ByVal warehouseId As String, _
+                                 ByVal stationId As String, _
+                                 ByVal userId As String, _
+                                 ByVal designId As String, _
+                                 ByVal designVersion As String, _
+                                 Optional ByVal payloadJson As String = "", _
+                                 Optional ByVal migrationSourceId As String = "", _
+                                 Optional ByVal noteVal As String = "", _
+                                 Optional ByVal createdAtUtc As Date = 0, _
+                                 Optional ByVal targetInboxWb As Workbook = Nothing, _
+                                 Optional ByRef eventIdOut As String = "", _
+                                 Optional ByRef errorMessage As String = "", _
+                                 Optional ByVal perfRunId As String = "") As Boolean
+    QueueDesignEvent = QueueEventCore(eventType, warehouseId, stationId, userId, _
+                                     "", 0, "", noteVal, payloadJson, migrationSourceId, _
+                                     "", "", createdAtUtc, targetInboxWb, eventIdOut, _
+                                     errorMessage, perfRunId, False, False, designId, designVersion)
+End Function
+
 Public Function QueueMigrationSeedEvent(Optional ByVal warehouseId As String = "", _
                                         Optional ByVal stationId As String = "", _
                                         Optional ByVal userId As String = "", _
@@ -611,7 +631,10 @@ Public Function QueueDesignEventCurrent(ByVal eventType As String, _
                                         Optional ByVal userId As String = "", _
                                         Optional ByRef eventIdOut As String = "", _
                                         Optional ByRef errorMessage As String = "", _
-                                        Optional ByVal perfRunId As String = "") As Boolean
+                                        Optional ByVal perfRunId As String = "", _
+                                        Optional ByVal migrationSourceId As String = "", _
+                                        Optional ByVal eventIdOverride As String = "", _
+                                        Optional ByVal createdAtUtc As Date = 0) As Boolean
     Dim targetInboxWb As Workbook
     Dim resolvedUser As String
     Dim capability As String
@@ -632,6 +655,7 @@ Public Function QueueDesignEventCurrent(ByVal eventType As String, _
         errorMessage = "A connected NAS warehouse target is required before posting design events."
         Exit Function
     End If
+    If Trim$(eventIdOverride) <> "" Then eventIdOut = Trim$(eventIdOverride)
 
     QueueDesignEventCurrent = QueueEventCore(eventType, _
                                             target.WarehouseId, _
@@ -642,10 +666,10 @@ Public Function QueueDesignEventCurrent(ByVal eventType As String, _
                                             "", _
                                             noteVal, _
                                             payloadJson, _
+                                            migrationSourceId, _
                                             "", _
                                             "", _
-                                            "", _
-                                            0, _
+                                            createdAtUtc, _
                                             targetInboxWb, _
                                             eventIdOut, _
                                             errorMessage, _

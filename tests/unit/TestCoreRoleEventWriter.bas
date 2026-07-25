@@ -1,6 +1,16 @@
 Attribute VB_Name = "TestCoreRoleEventWriter"
 Option Explicit
 
+Private mLastTestFailure As String
+
+Public Sub ClearLastTestFailure()
+    mLastTestFailure = ""
+End Sub
+
+Public Function GetLastTestFailure() As String
+    GetLastTestFailure = mLastTestFailure
+End Function
+
 Public Sub RunCoreRoleEventWriterTests()
     Dim passed As Long
     Dim failed As Long
@@ -187,6 +197,73 @@ Public Function TestBuildPayloadJson_WithObjectItems() As Long
 CleanExit:
     Exit Function
 CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestQueueDesignMigrationEvent_PreservesDeterministicIdentity() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim wbInbox As Workbook
+    Dim lo As ListObject
+    Dim payloadJson As String
+    Dim eventIdOut As String
+    Dim errorMessage As String
+    Dim migrationSourceId As String
+    Dim rowIndex As Long
+    Dim foundRow As Long
+    Dim failureReason As String
+    Dim rootPath As String
+
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("design_migration_inbox")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHD1", "D1", rootPath, "PROD")
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHD1", rootPath)
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalProductionInboxWorkbook("D1", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    TestPhase2Helpers.AddCapability wbAuth, "user1", "PROD_POST", "WHD1", "D1", "ACTIVE"
+    wbAuth.Save
+    payloadJson = "[{""DesignType"":""RECIPE"",""DesignName"":""Migrated Tea""}]"
+    eventIdOut = "MIG-DESIGN-TEA-1-ABC123"
+    migrationSourceId = "LEGACY_RECIPE|DONOR.XLSB|RECIPES|TEA-1|1"
+
+    On Error GoTo CleanFail
+    If Not modRoleEventWriter.QueueDesignEvent( _
+        "DESIGN_CREATE", "WHD1", "D1", "user1", "TEA-1", "1", _
+        payloadJson, migrationSourceId, "migration test", Now, wbInbox, _
+        eventIdOut, errorMessage) Then
+        failureReason = "QueueDesignEvent failed: " & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set lo = wbInbox.Worksheets("InboxProd").ListObjects("tblInboxProd")
+    For rowIndex = 1 To lo.ListRows.Count
+        If CStr(TestPhase2Helpers.GetRowValue(lo, rowIndex, "EventID")) = "MIG-DESIGN-TEA-1-ABC123" Then
+            foundRow = rowIndex
+            Exit For
+        End If
+    Next rowIndex
+    If foundRow = 0 Then
+        failureReason = "Deterministic EventID was not found in tblInboxProd."
+        GoTo CleanExit
+    End If
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "EventType")) <> "DESIGN_CREATE" Then failureReason = "EventType mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "DesignId")) <> "TEA-1" Then failureReason = "DesignId mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "DesignVersion")) <> "1" Then failureReason = "DesignVersion mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "MigrationSourceId")) <> migrationSourceId Then failureReason = "MigrationSourceId mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "PayloadJson")) <> payloadJson Then failureReason = "PayloadJson mismatch.": GoTo CleanExit
+    TestQueueDesignMigrationEvent_PreservesDeterministicIdentity = 1
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInbox
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
+    mLastTestFailure = failureReason
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
     Resume CleanExit
 End Function
 

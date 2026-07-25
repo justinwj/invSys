@@ -454,6 +454,81 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestDesignMigration_BuildsDeterministicEventsWithoutMutatingDonor() As Long
+    Dim donorWb As Workbook
+    Dim designsWb As Workbook
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim planOne As Collection
+    Dim planTwo As Collection
+    Dim item As Object
+    Dim itemTwo As Object
+    Dim blackTeaItem As Object
+    Dim evt As Object
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim r As Long
+    Dim beforeRows As Long
+    Dim beforeSheets As Long
+    Dim beforeValue As String
+    Dim loDesigns As ListObject
+    Dim loLines As ListObject
+
+    Set donorWb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    Set ws = donorWb.Worksheets(1)
+    ws.Name = "Recipes"
+    ws.Range("A1:J1").Value = Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "PROCESS", "INPUT/OUTPUT", "INGREDIENT", "INGREDIENT_ID", "AMOUNT", "UOM", "PERCENT")
+    Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:J4"), , xlYes)
+    lo.Name = "Recipes"
+    lo.DataBodyRange.Rows(1).Value = Array("Brewed Black Tea", "TEA-BLACK", "Concentrate", 1, "USED", "Black Tea", "SKU-BLACK", 32.5, "LB", 100)
+    lo.DataBodyRange.Rows(2).Value = Array("Brewed Black Tea", "TEA-BLACK", "Concentrate", 1, "OUTPUT", "Brew Black Tea", "OUT-BLACK", 400, "LB", 100)
+    lo.DataBodyRange.Rows(3).Value = Array("Simple Syrup", "SYRUP-SIMPLE", "Syrup", 1, "OUTPUT", "Simple Syrup", "OUT-SYRUP", 100, "LB", 100)
+    beforeRows = lo.ListRows.Count
+    beforeSheets = donorWb.Worksheets.Count
+    beforeValue = CStr(lo.DataBodyRange.Cells(1, 1).Value)
+
+    Set planOne = modAdminDesignMigration.BuildLegacyRecipeDesignMigrationPlan(donorWb, "Recipes", report)
+    If planOne Is Nothing Or planOne.Count <> 2 Then GoTo CleanExit
+    Set planTwo = modAdminDesignMigration.BuildLegacyRecipeDesignMigrationPlan(donorWb, "Recipes", report)
+    If planTwo Is Nothing Or planTwo.Count <> 2 Then GoTo CleanExit
+    For r = 1 To planOne.Count
+        Set item = planOne(r)
+        Set itemTwo = planTwo(r)
+        If CStr(item("EventID")) <> CStr(itemTwo("EventID")) Then GoTo CleanExit
+        If InStr(1, CStr(item("MigrationSourceId")), donorWb.Name, vbTextCompare) = 0 Then GoTo CleanExit
+        If StrComp(CStr(item("DesignId")), "TEA-BLACK", vbTextCompare) = 0 Then Set blackTeaItem = item
+    Next r
+    If blackTeaItem Is Nothing Then GoTo CleanExit
+    If donorWb.Worksheets.Count <> beforeSheets Then GoTo CleanExit
+    If lo.ListRows.Count <> beforeRows Then GoTo CleanExit
+    If CStr(lo.DataBodyRange.Cells(1, 1).Value) <> beforeValue Then GoTo CleanExit
+
+    Set designsWb = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modDesignsSchema.EnsureDesignsSchema(designsWb, report) Then GoTo CleanExit
+    Set evt = BuildDesignsTestEvent(CStr(blackTeaItem("EventID")), _
+                                    CStr(blackTeaItem("EventType")), _
+                                    CStr(blackTeaItem("DesignId")), _
+                                    CStr(blackTeaItem("DesignVersion")), _
+                                    CStr(blackTeaItem("PayloadJson")))
+    evt("MigrationSourceId") = CStr(blackTeaItem("MigrationSourceId"))
+    If Not modDesignsApply.ApplyDesignEvent(evt, designsWb, "RUN-DES-MIG", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    Set loDesigns = FindDesignsTestTable(designsWb, "tblDesigns")
+    Set loLines = FindDesignsTestTable(designsWb, "tblDesignLines")
+    If loDesigns Is Nothing Or loLines Is Nothing Then GoTo CleanExit
+    If loDesigns.ListRows.Count <> 1 Or loLines.ListRows.Count <> 2 Then GoTo CleanExit
+    TestDesignMigration_BuildsDeterministicEventsWithoutMutatingDonor = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook designsWb
+    CloseDesignsTestWorkbook donorWb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestInventoryApply_ProductionConsumeRejectsNegativeInventory() As Long
     Dim wb As Workbook
     Dim consumeEvent As Object
