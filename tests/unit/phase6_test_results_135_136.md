@@ -1,11 +1,11 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-06-22 16:37:07
+- Date: 2026-07-25 11:50:14
 - Passed: 2
 - Failed: 0
-- Range: 135-136 of 168
+- Range: 135-136 of 252
 
 | Test | Result |
 |---|---|
-| TestPhase6CoreSurfaces.TestShippingSentRows_ReservedCompletionKeepsProjectedDeductionWhenNasStale | PASS |
-| TestPhase6CoreSurfaces.TestShippingSentRows_FullRunNeverIncreasesProjectedInventory | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_LockedRowReleasesInventory | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_StaleLockedRowClearsWithoutInflatingInventory | PASS |

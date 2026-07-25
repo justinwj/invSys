@@ -1,7 +1,6 @@
 Attribute VB_Name = "modInventoryInit"
 Option Explicit
 
-Private gAppEvents As cInventoryAppEvents
 Private gNextSourceSync As Date
 Private gSourceSyncScheduled As Boolean
 Private Const SOURCE_SYNC_INTERVAL_SECONDS As Long = 2
@@ -10,16 +9,10 @@ Private Const SOURCE_SYNC_LOG_FILENAME As String = "invSys.Inventory.Sync.log"
 Private Const INVENTORY_DOMAIN_CONTRACT_VERSION As String = "R1-INVENTORY-1"
 
 Public Sub InitInventoryDomainAddin()
-    Dim report As String
-
-    If gAppEvents Is Nothing Then
-        Set gAppEvents = New cInventoryAppEvents
-        gAppEvents.Init
-    End If
-    Call modInventoryPublisher.PublishOpenInventorySnapshots(report)
-    ' D3/D9 boundary: Inventory Domain is an engine. It may publish canonical
-    ' snapshots, but Core alone refreshes an explicitly targeted operator
-    ' workbook from those snapshots.
+    ' D3 boundary: loading the Inventory Domain must be inert. Snapshot
+    ' publication and catalog commands are invoked explicitly by Core against
+    ' an identified authoritative workbook; the Domain never scans open
+    ' operator workbooks or subscribes to Application.WorkbookOpen.
 End Sub
 
 Public Sub Auto_Open()

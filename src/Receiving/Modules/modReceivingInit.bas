@@ -53,10 +53,7 @@ Public Sub InitReceivingAddin()
     prevScreenUpdating = Application.ScreenUpdating
     Application.EnableEvents = False
     Application.ScreenUpdating = False
-    If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
-        gAppEvents.Init
-    End If
+    InitializeReceivingEventHooks
     Set activeWb = Application.ActiveWorkbook
     EnsureReceivingSurfaceForWorkbook activeWb
     Application.ScreenUpdating = prevScreenUpdating
@@ -64,7 +61,16 @@ Public Sub InitReceivingAddin()
 End Sub
 
 Public Sub Auto_Open()
-    InitReceivingAddin
+    ' Startup is registration-only. Explicit Receiving UI entry points own
+    ' any workbook surface creation or refresh.
+    InitializeReceivingEventHooks
+End Sub
+
+Private Sub InitializeReceivingEventHooks()
+    If gAppEvents Is Nothing Then
+        Set gAppEvents = New cAppEvents
+        gAppEvents.Init
+    End If
 End Sub
 
 Public Function CheckReceivingReadiness() As ReceivingReadinessResult

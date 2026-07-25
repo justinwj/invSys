@@ -9,10 +9,7 @@ Public Sub InitShippingAddin()
 
     prevEvents = Application.EnableEvents
     Application.EnableEvents = False
-    If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
-        gAppEvents.Init
-    End If
+    InitializeShippingEventHooks
     Call modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(ThisWorkbook, report)
 
     Application.EnableEvents = prevEvents
@@ -21,7 +18,16 @@ Public Sub InitShippingAddin()
 End Sub
 
 Public Sub Auto_Open()
-    InitShippingAddin
+    ' Do not synchronize inboxes or touch an active operator workbook merely
+    ' because the Shipping XLAM was loaded.
+    InitializeShippingEventHooks
+End Sub
+
+Private Sub InitializeShippingEventHooks()
+    If gAppEvents Is Nothing Then
+        Set gAppEvents = New cAppEvents
+        gAppEvents.Init
+    End If
 End Sub
 
 Public Sub EnsureShippingSurfaceForWorkbook(ByVal wb As Workbook)

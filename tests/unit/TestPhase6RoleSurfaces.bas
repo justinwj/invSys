@@ -583,6 +583,45 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestProductionRun_CheckInStagesOutsideInvSysReadModel() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim loCheck As ListObject
+    Dim lr As ListRow
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    Set loCheck = FindTable(wb, "Prod_invSys_Check")
+    If loInv Is Nothing Or loCheck Is Nothing Then GoTo CleanExit
+    If Not loInv.DataBodyRange Is Nothing Then loInv.DataBodyRange.Delete
+    If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.Delete
+
+    Set lr = loInv.ListRows.Add
+    SetTableValueByColumn loInv, lr.Index, "ROW", 96
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-MALAWI-FINE-CUT"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Malawi Fine Cut Black Tea"
+    SetTableValueByColumn loInv, lr.Index, "USED", 0
+    SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 3175
+
+    result = mProduction.TestProductionUsedStagingDoesNotMutateInvSys(loInv, loCheck, 96, 32.5)
+    If Left$(result, 3) = "OK|" _
+       And CDbl(GetTableValueByColumn(loInv, 1, "USED")) = 0 _
+       And CDbl(GetTableValueByColumn(loInv, 1, "TOTAL INV")) = 3175 _
+       And CDbl(GetTableValueByColumn(loCheck, 1, "USED")) = 32.5 Then
+        TestProductionRun_CheckInStagesOutsideInvSysReadModel = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker() As Long
     Dim pickerItems(1 To 2, 1 To 7) As Variant
     Dim result As String

@@ -1516,11 +1516,8 @@ Public Sub BtnToUsed()
     End If
 
     Dim errNotes As String
-    Dim priorUsed As Object
-    Set priorUsed = BuildUsedSnapshotFromCheck(FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV")))
-
     Dim stagedTotal As Double
-    stagedTotal = StageUsedToInvSys(invLo, usedDict, priorUsed, errNotes)
+    stagedTotal = ValidateUsedStagingAgainstInvSys(invLo, usedDict, errNotes)
     If stagedTotal < 0 Then
         If errNotes = "" Then errNotes = "Unknown staging failure."
         MsgBox "To USED cancelled: " & errNotes, vbCritical
@@ -1529,12 +1526,14 @@ Public Sub BtnToUsed()
 
     Dim loCheck As ListObject
     Set loCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
-    If Not loCheck Is Nothing Then
-        WriteProdInvSysCheck loCheck, invLo, usedDict
+    If loCheck Is Nothing Then
+        MsgBox "To USED cancelled: Production staging table Prod_invSys_Check was not found.", vbCritical
+        Exit Sub
     End If
+    WriteProdInvSysCheck loCheck, invLo, usedDict
 
     Dim msg As String
-    msg = "Applied USED deltas: " & Format$(stagedTotal, "0.###") & " units."
+    msg = "Staged production usage: " & Format$(stagedTotal, "0.###") & " units."
     If errNotes <> "" Then
         msg = msg & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
         MsgBox msg, vbExclamation
@@ -1726,11 +1725,8 @@ Public Function CheckInProductionRunWithUsedPayload(ByVal usedPayloadJson As Str
         Exit Function
     End If
 
-    Dim priorUsed As Object
-    Set priorUsed = BuildUsedSnapshotFromCheck(FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV")))
-
     Dim stagedTotal As Double
-    stagedTotal = StageUsedToInvSys(invLo, usedDict, priorUsed, errNotes)
+    stagedTotal = ValidateUsedStagingAgainstInvSys(invLo, usedDict, errNotes)
     If stagedTotal < 0 Then
         If errNotes = "" Then errNotes = "Unable to stage production input rows."
         report = errNotes
@@ -1739,7 +1735,11 @@ Public Function CheckInProductionRunWithUsedPayload(ByVal usedPayloadJson As Str
 
     Dim loCheck As ListObject
     Set loCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
-    If Not loCheck Is Nothing Then WriteProdInvSysCheck loCheck, invLo, usedDict
+    If loCheck Is Nothing Then
+        report = "Production staging table Prod_invSys_Check was not found."
+        Exit Function
+    End If
+    WriteProdInvSysCheck loCheck, invLo, usedDict
 
     CheckInProductionRunWithUsedPayload = True
     report = "StagedUsed=" & Format$(stagedTotal, "0.###")
@@ -1889,9 +1889,6 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
     Set loCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
     Set usedDeltas = BuildUsedDeltaPacketFromCheck(loCheck, invLo, usedNotes)
     If usedDeltas Is Nothing Then
-        Set usedDeltas = BuildUsedDeltaPacketFromInvSys(invLo, usedNotes)
-    End If
-    If usedDeltas Is Nothing Then
         If usedNotes = "" Then usedNotes = "No checked-in production input rows were found."
         report = usedNotes
         Exit Function
@@ -1951,7 +1948,6 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
     If logNotes <> "" Then AppendNote errNotes, logNotes
 
     completionStep = "clearing completed Production Run staging"
-    ClearUsedStageColumns invLo, usedDeltas
     If Not loCheck Is Nothing Then
         If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.ClearContents
     End If
@@ -2106,7 +2102,14 @@ Public Sub BtnToMade()
 
     Dim usedNotes As String
     Dim usedDeltas As Collection
-    Set usedDeltas = BuildUsedDeltaPacketFromInvSys(invLo, usedNotes)
+    Dim loUsedCheck As ListObject
+    Set loUsedCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
+    Set usedDeltas = BuildUsedDeltaPacketFromCheck(loUsedCheck, invLo, usedNotes)
+    If usedDeltas Is Nothing Then
+        If usedNotes = "" Then usedNotes = "No checked-in production input rows were found."
+        MsgBox "Send to MADE cancelled: " & usedNotes, vbExclamation
+        Exit Sub
+    End If
 
     Dim madeNotes As String
     Dim madeDeltas As Collection
@@ -2133,22 +2136,12 @@ Public Sub BtnToMade()
     End If
 
     If Not usedDeltas Is Nothing Then
-        usedTotal = ApplyUsedDeltasLocal(invLo, usedDeltas, errNotes)
-        If usedTotal < 0 Then
-            If errNotes = "" Then errNotes = "Unable to deduct USED inventory."
-            MsgBox "Send to MADE cancelled: " & errNotes, vbExclamation
-            Exit Sub
-        End If
+        usedTotal = SumProductionDeltaQuantities(usedDeltas)
     ElseIf usedNotes <> "" Then
         AppendNote errNotes, usedNotes
     End If
 
-    madeTotal = ApplyMadeDeltasLocal(invLo, madeDeltas, errNotes)
-    If madeTotal < 0 Then
-        If errNotes = "" Then errNotes = "Unable to stage MADE inventory."
-        MsgBox "Send to MADE cancelled: " & errNotes, vbExclamation
-        Exit Sub
-    End If
+    madeTotal = SumProductionDeltaQuantities(madeDeltas)
 
     Dim logNotes As String
     LogProductionOutputToProductionLog wsProd, loOut, invLo, logNotes
@@ -2174,9 +2167,6 @@ Public Sub BtnToMade()
         AppendNote errNotes, runtimeReport
     End If
     AllowExcelRefreshToSettleProduction
-    Set invLo = GetInvSysTableFromWorkbook(wsProd.Parent)
-    ClearUsedStageColumns invLo, usedDeltas
-    RestoreMadeStageColumns invLo, madeDeltas
 
     Dim msg As String
     msg = "Recorded component usage: " & Format$(usedTotal, "0.###") & " units."
@@ -2239,25 +2229,7 @@ Public Sub BtnToTotalInv()
     End If
 
     Dim totalMoved As Double
-    totalMoved = ApplyMadeToInventoryDeltasLocal(invLo, madeDeltas, errNotes)
-    If totalMoved < 0 Then
-        If errNotes = "" Then errNotes = "Unable to move MADE to TOTAL INV."
-        MsgBox "Send to TOTAL INV cancelled: " & errNotes, vbExclamation
-        Exit Sub
-    End If
-
-    Dim rowKeys As Object
-    Set rowKeys = BuildRowKeySetFromDeltas(Nothing, madeDeltas)
-    Dim usedSnapshot As Object
-    Set usedSnapshot = BuildUsedSnapshotForRows(invLo, rowKeys)
-
-    Dim loCheck As ListObject
-    Set loCheck = FindListObjectByNameOrHeaders(wsProd, "Prod_invSys_Check", Array("USED", "TOTAL INV"))
-    If Not loCheck Is Nothing Then
-        If Not usedSnapshot Is Nothing Then
-            WriteProdInvSysCheck loCheck, invLo, usedSnapshot
-        End If
-    End If
+    totalMoved = SumProductionDeltaQuantities(madeDeltas)
 
     If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wsProd.Parent, "", "LOCAL", runtimeReport) Then
         If runtimeReport = "" Then runtimeReport = "Local production completion succeeded, but runtime processing or read-model refresh did not complete cleanly."
@@ -2266,8 +2238,6 @@ Public Sub BtnToTotalInv()
         AppendNote errNotes, runtimeReport
     End If
     AllowExcelRefreshToSettleProduction
-    Set invLo = GetInvSysTableFromWorkbook(wsProd.Parent)
-    ClearMadeStageColumns invLo, madeDeltas
 
     Dim msg As String
     msg = "Moved MADE to TOTAL INV: " & Format$(totalMoved, "0.###") & " units."
@@ -2417,6 +2387,61 @@ Public Function TestCompletionDeltasFromStagedRows(ByVal loOut As ListObject, By
 
 ErrHandler:
     TestCompletionDeltasFromStagedRows = "FAIL|" & Err.Description
+End Function
+
+Public Function TestProductionUsedStagingDoesNotMutateInvSys(ByVal invLo As ListObject, _
+                                                             ByVal loCheck As ListObject, _
+                                                             ByVal rowValue As Long, _
+                                                             ByVal qtyValue As Double) As String
+    Dim usedDict As Object
+    Dim rowIndex As Object
+    Dim invIndex As Long
+    Dim cUsed As Long
+    Dim cTotal As Long
+    Dim cCheckUsed As Long
+    Dim beforeUsed As Double
+    Dim beforeTotal As Double
+    Dim stagedTotal As Double
+    Dim errNotes As String
+
+    On Error GoTo ErrHandler
+    Set rowIndex = BuildInvSysRowIndex(invLo)
+    If rowIndex Is Nothing Then GoTo MissingRow
+    If Not rowIndex.Exists(CStr(rowValue)) Then GoTo MissingRow
+    invIndex = CLng(rowIndex(CStr(rowValue)))
+    cUsed = ColumnIndex(invLo, "USED")
+    cTotal = ColumnIndex(invLo, "TOTAL INV")
+    cCheckUsed = ColumnIndex(loCheck, "USED")
+    If cUsed = 0 Or cTotal = 0 Or cCheckUsed = 0 Then
+        TestProductionUsedStagingDoesNotMutateInvSys = "FAIL|Required columns missing."
+        Exit Function
+    End If
+
+    beforeUsed = NzDbl(invLo.DataBodyRange.Cells(invIndex, cUsed).Value)
+    beforeTotal = NzDbl(invLo.DataBodyRange.Cells(invIndex, cTotal).Value)
+    Set usedDict = CreateObject("Scripting.Dictionary")
+    usedDict(CStr(rowValue)) = qtyValue
+    stagedTotal = ValidateUsedStagingAgainstInvSys(invLo, usedDict, errNotes)
+    If stagedTotal < 0 Then
+        TestProductionUsedStagingDoesNotMutateInvSys = "FAIL|" & errNotes
+        Exit Function
+    End If
+    WriteProdInvSysCheck loCheck, invLo, usedDict
+
+    TestProductionUsedStagingDoesNotMutateInvSys = _
+        "OK|BeforeUsed=" & Format$(beforeUsed, "0.############") & _
+        ";AfterUsed=" & Format$(NzDbl(invLo.DataBodyRange.Cells(invIndex, cUsed).Value), "0.############") & _
+        ";BeforeTotal=" & Format$(beforeTotal, "0.############") & _
+        ";AfterTotal=" & Format$(NzDbl(invLo.DataBodyRange.Cells(invIndex, cTotal).Value), "0.############") & _
+        ";CheckUsed=" & Format$(NzDbl(loCheck.DataBodyRange.Cells(1, cCheckUsed).Value), "0.############")
+    Exit Function
+
+MissingRow:
+    TestProductionUsedStagingDoesNotMutateInvSys = "FAIL|Inventory row was not found."
+    Exit Function
+
+ErrHandler:
+    TestProductionUsedStagingDoesNotMutateInvSys = "FAIL|" & Err.Description
 End Function
 
 Public Function TestLookupOutputRowLooseFromPicker(ByVal pickerItems As Variant, ByVal outputName As String) As String
@@ -5229,8 +5254,9 @@ Private Function BuildInvSysRowIndex(ByVal invLo As ListObject) As Object
     Set BuildInvSysRowIndex = dict
 End Function
 
-Private Function StageUsedToInvSys(ByVal invLo As ListObject, ByVal usedDict As Object, ByVal priorUsed As Object, ByRef errNotes As String) As Double
-    StageUsedToInvSys = -1
+Private Function ValidateUsedStagingAgainstInvSys(ByVal invLo As ListObject, ByVal usedDict As Object, _
+                                                  ByRef errNotes As String) As Double
+    ValidateUsedStagingAgainstInvSys = -1
     If invLo Is Nothing Then
         AppendNote errNotes, "invSys table not found."
         Exit Function
@@ -5247,13 +5273,6 @@ Private Function StageUsedToInvSys(ByVal invLo As ListObject, ByVal usedDict As 
         Exit Function
     End If
 
-    Dim cUsed As Long: cUsed = ColumnIndex(invLo, "USED")
-    If cUsed = 0 Then cUsed = ColumnIndexLoose(invLo, "USED")
-    If cUsed = 0 Then
-        AppendNote errNotes, "invSys USED column not found."
-        Exit Function
-    End If
-
     Dim rowIndex As Object
     Set rowIndex = BuildInvSysRowIndex(invLo)
     If rowIndex Is Nothing Then
@@ -5264,33 +5283,37 @@ Private Function StageUsedToInvSys(ByVal invLo As ListObject, ByVal usedDict As 
         Exit Function
     End If
 
+    Dim cTotal As Long: cTotal = ColumnIndex(invLo, "TOTAL INV")
+    If cTotal = 0 Then cTotal = ColumnIndexLoose(invLo, "TOTALINV", "TOTAL_INV", "TOTALINVENTORY")
+
     Dim key As Variant
     For Each key In usedDict.keys
         If Not rowIndex.Exists(CStr(key)) Then
             AppendNote errNotes, "invSys ROW " & CStr(key) & " not found; staging cancelled."
+        ElseIf cTotal > 0 Then
+            Dim idx As Long
+            idx = CLng(rowIndex(CStr(key)))
+            If NzDbl(usedDict(key)) > NzDbl(invLo.DataBodyRange.Cells(idx, cTotal).Value) + 0.0000001 Then
+                AppendNote errNotes, "invSys ROW " & CStr(key) & " does not have enough available inventory."
+            End If
         End If
     Next key
     If errNotes <> "" Then Exit Function
 
     Dim total As Double
     For Each key In usedDict.keys
-        Dim idx As Long
-        idx = CLng(rowIndex(CStr(key)))
-        Dim qty As Double
-        qty = NzDbl(usedDict(key))
-        Dim prevQty As Double
-        If Not priorUsed Is Nothing Then
-            If priorUsed.Exists(CStr(key)) Then prevQty = NzDbl(priorUsed(CStr(key)))
-        End If
-        Dim delta As Double
-        delta = qty - prevQty
-        If delta <> 0 Then
-            invLo.DataBodyRange.Cells(idx, cUsed).value = NzDbl(invLo.DataBodyRange.Cells(idx, cUsed).value) + delta
-            total = total + delta
-        End If
+        total = total + NzDbl(usedDict(key))
     Next key
 
-    StageUsedToInvSys = total
+    ValidateUsedStagingAgainstInvSys = total
+End Function
+
+Private Function SumProductionDeltaQuantities(ByVal deltas As Collection) As Double
+    Dim delta As Variant
+    If deltas Is Nothing Then Exit Function
+    For Each delta In deltas
+        SumProductionDeltaQuantities = SumProductionDeltaQuantities + NzDbl(delta("QTY"))
+    Next delta
 End Function
 
 Private Sub WriteProdInvSysCheck(ByVal loCheck As ListObject, ByVal invLo As ListObject, ByVal usedDict As Object)
@@ -6408,6 +6431,8 @@ Private Sub EnrichOutputDeltaFromPicker(ByVal delta As Object, ByVal pickerItems
 End Sub
 
 Private Function ApplyUsedDeltasLocal(ByVal invLo As ListObject, ByVal deltas As Collection, ByRef errNotes As String) As Double
+    Err.Raise vbObjectError + 2191, "mProduction.ApplyUsedDeltasLocal", _
+              "Retired by the v4.10 domain boundary. Queue PROD_CONSUME and refresh the operator read model."
     ApplyUsedDeltasLocal = 0
     errNotes = ""
     If invLo Is Nothing Then
@@ -6476,6 +6501,8 @@ Private Function ApplyUsedDeltasLocal(ByVal invLo As ListObject, ByVal deltas As
 End Function
 
 Private Function ApplyMadeDeltasLocal(ByVal invLo As ListObject, ByVal deltas As Collection, ByRef errNotes As String) As Double
+    Err.Raise vbObjectError + 2192, "mProduction.ApplyMadeDeltasLocal", _
+              "Retired by the v4.10 domain boundary. Use Production staging tables, not invSys.MADE."
     ApplyMadeDeltasLocal = 0
     errNotes = ""
     If invLo Is Nothing Then
@@ -6530,6 +6557,8 @@ Private Function ApplyMadeDeltasLocal(ByVal invLo As ListObject, ByVal deltas As
 End Function
 
 Private Function ApplyMadeToInventoryDeltasLocal(ByVal invLo As ListObject, ByVal deltas As Collection, ByRef errNotes As String) As Double
+    Err.Raise vbObjectError + 2193, "mProduction.ApplyMadeToInventoryDeltasLocal", _
+              "Retired by the v4.10 domain boundary. Queue PROD_COMPLETE and refresh the operator read model."
     ApplyMadeToInventoryDeltasLocal = 0
     errNotes = ""
     If invLo Is Nothing Then
@@ -6598,6 +6627,8 @@ Private Function ApplyMadeToInventoryDeltasLocal(ByVal invLo As ListObject, ByVa
 End Function
 
 Private Sub ClearUsedStageColumns(ByVal invLo As ListObject, ByVal deltas As Collection)
+    Err.Raise vbObjectError + 2194, "mProduction.ClearUsedStageColumns", _
+              "Retired by the v4.10 domain boundary. USED staging belongs in Prod_invSys_Check."
     If invLo Is Nothing Then Exit Sub
     If deltas Is Nothing Then Exit Sub
     If deltas.Count = 0 Then Exit Sub
@@ -6643,6 +6674,8 @@ Private Sub ClearUsedStageByItemCode(ByVal invLo As ListObject, ByVal usedColumn
 End Sub
 
 Private Sub RestoreMadeStageColumns(ByVal invLo As ListObject, ByVal deltas As Collection)
+    Err.Raise vbObjectError + 2195, "mProduction.RestoreMadeStageColumns", _
+              "Retired by the v4.10 domain boundary. MADE staging must not mutate the invSys read model."
     If invLo Is Nothing Then Exit Sub
     If deltas Is Nothing Then Exit Sub
     If deltas.Count = 0 Then Exit Sub
@@ -6691,6 +6724,8 @@ Private Sub RestoreMadeStageByItemCode(ByVal invLo As ListObject, ByVal madeColu
 End Sub
 
 Private Sub ClearMadeStageColumns(ByVal invLo As ListObject, ByVal deltas As Collection)
+    Err.Raise vbObjectError + 2196, "mProduction.ClearMadeStageColumns", _
+              "Retired by the v4.10 domain boundary. MADE staging must not mutate the invSys read model."
     If invLo Is Nothing Then Exit Sub
     If deltas Is Nothing Then Exit Sub
     If deltas.Count = 0 Then Exit Sub

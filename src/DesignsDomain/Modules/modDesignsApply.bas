@@ -72,6 +72,13 @@ Public Function ApplyDesignEvent(ByVal evt As Object, _
         ApplyDesignEvent = True
         Exit Function
     End If
+    ' Lifecycle decisions are derived from authoritative event history, never
+    ' from whatever projection rows happen to be present in the workbook.
+    If Not RebuildDesignProjections(wb, report) Then
+        errorCode = "DESIGN_PROJECTION_FAILED"
+        errorMessage = report
+        Exit Function
+    End If
     If Not ValidateLifecycleTransition(wb, eventType, designId, designVersion, payloadJson, errorCode, errorMessage) Then
         Exit Function
     End If
@@ -128,6 +135,8 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
     Dim loLines As ListObject
     Dim values As Variant
     Dim r As Long
+    Dim replayOrder As Variant
+    Dim orderIndex As Long
     Dim errorMessage As String
 
     If designsWb Is Nothing Then
@@ -147,12 +156,18 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
 
     If Not loEvents.DataBodyRange Is Nothing Then
         values = loEvents.DataBodyRange.Value
-        For r = 1 To UBound(values, 1)
+        replayOrder = DesignEventReplayOrder(loEvents, values, errorMessage)
+        If IsEmpty(replayOrder) Then
+            report = "Projection replay order is invalid: " & errorMessage
+            Exit Function
+        End If
+        For orderIndex = LBound(replayOrder) To UBound(replayOrder)
+            r = CLng(replayOrder(orderIndex))
             If Not ReplayDesignEvent(loEvents, values, r, loDesigns, loLines, errorMessage) Then
                 report = "Projection replay failed at event row " & CStr(r) & ": " & errorMessage
                 Exit Function
             End If
-        Next r
+        Next orderIndex
     End If
     report = "OK"
     RebuildDesignProjections = True
@@ -160,6 +175,54 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
 
 FailRebuild:
     report = "RebuildDesignProjections failed: " & Err.Description
+End Function
+
+Private Function DesignEventReplayOrder(ByVal loEvents As ListObject, ByVal values As Variant, _
+                                        ByRef errorMessage As String) As Variant
+    Dim rowCount As Long
+    Dim order() As Long
+    Dim seqs() As Long
+    Dim seen As Object
+    Dim i As Long
+    Dim j As Long
+    Dim seqValue As Variant
+    Dim swapValue As Long
+
+    rowCount = UBound(values, 1)
+    If rowCount <= 0 Then Exit Function
+    ReDim order(1 To rowCount)
+    ReDim seqs(1 To rowCount)
+    Set seen = CreateObject("Scripting.Dictionary")
+
+    For i = 1 To rowCount
+        seqValue = ReadDesignTableValue(loEvents, values, i, "AppliedSeq")
+        If Not IsNumeric(seqValue) Then
+            errorMessage = "AppliedSeq is required at event row " & CStr(i) & "."
+            Exit Function
+        End If
+        seqs(i) = CLng(seqValue)
+        If seqs(i) <= 0 Then
+            errorMessage = "AppliedSeq must be positive at event row " & CStr(i) & "."
+            Exit Function
+        End If
+        If seen.Exists(CStr(seqs(i))) Then
+            errorMessage = "Duplicate AppliedSeq " & CStr(seqs(i)) & "."
+            Exit Function
+        End If
+        seen.Add CStr(seqs(i)), True
+        order(i) = i
+    Next i
+
+    For i = 1 To rowCount - 1
+        For j = i + 1 To rowCount
+            If seqs(order(j)) < seqs(order(i)) Then
+                swapValue = order(i)
+                order(i) = order(j)
+                order(j) = swapValue
+            End If
+        Next j
+    Next i
+    DesignEventReplayOrder = order
 End Function
 
 Private Function ValidateLifecycleTransition(ByVal wb As Workbook, ByVal eventType As String, _

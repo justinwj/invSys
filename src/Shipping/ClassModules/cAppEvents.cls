@@ -16,49 +16,55 @@ Public Sub Init()
 End Sub
 
 Private Sub App_WorkbookOpen(ByVal Wb As Workbook)
-    If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
-    If Wb Is Nothing Then Exit Sub
-    modShippingInit.EnsureShippingSurfaceForWorkbook Wb
+    ' Never mutate a workbook because it was opened while this XLAM is loaded.
 End Sub
 
 Private Sub App_NewWorkbook(ByVal Wb As Workbook)
-    If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
-    If Wb Is Nothing Then Exit Sub
-    modShippingInit.EnsureShippingSurfaceForWorkbook Wb
+    ' Surface creation is explicit through Shipping ribbon/form entry points.
 End Sub
 
 Private Sub App_WorkbookActivate(ByVal Wb As Workbook)
-    If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
-    If Wb Is Nothing Then Exit Sub
-    modShippingInit.EnsureShippingSurfaceForWorkbook Wb
+    ' Never mutate a workbook because it became active.
 End Sub
 
 Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
+    If Not IsShippingRoleWorkbook(Wb) Then Exit Sub
     If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
     modOperatorReadModel.UnregisterAutoSnapshotWorkbook Wb
 End Sub
 
 Private Sub App_SheetActivate(ByVal Sh As Object)
+    If Not IsShippingRoleSheet(Sh) Then Exit Sub
     If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
 End Sub
 
 Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)
+    If Not IsShippingRoleSheet(Sh) Then Exit Sub
     If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
     On Error Resume Next
     modTS_Shipments.HandleShippingSelectionChange Target
     On Error GoTo 0
 End Sub
 
 Private Sub App_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    If Not IsShippingRoleSheet(Sh) Then Exit Sub
     If modUiQuiet.QuietUiIsActive() Then Exit Sub
-    Application.EnableEvents = True
     On Error Resume Next
     modTS_Shipments.HandleShippingSheetChange Target
     On Error GoTo 0
 End Sub
+
+Private Function IsShippingRoleWorkbook(ByVal Wb As Workbook) As Boolean
+    On Error GoTo NotRole
+    If Wb Is Nothing Then Exit Function
+    IsShippingRoleWorkbook = Not Wb.Worksheets("ShipmentsTally").ListObjects("ShipmentsTally") Is Nothing
+NotRole:
+End Function
+
+Private Function IsShippingRoleSheet(ByVal Sh As Object) As Boolean
+    On Error GoTo NotRole
+    If Sh Is Nothing Then Exit Function
+    If StrComp(CStr(Sh.Name), "ShipmentsTally", vbTextCompare) <> 0 Then Exit Function
+    IsShippingRoleSheet = IsShippingRoleWorkbook(Sh.Parent)
+NotRole:
+End Function

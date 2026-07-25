@@ -5104,7 +5104,14 @@ NextPackage:
         inventoryPath = CurrentShippingInventoryWorkbookPath(warehouseId)
         openedTransient = (inventoryPath <> "" And FindOpenWorkbookByFullNameShipping(inventoryPath) Is Nothing)
         Set inventoryWb = ResolveInventoryWorkbookBridgeSoftShipping(warehouseId)
-        If inventoryWb Is Nothing Then Set inventoryWb = ResolveShippingInventoryWorkbookForLogRead(warehouseId, inventoryPath, openedTransient)
+        If inventoryWb Is Nothing Then
+            Set inventoryWb = ResolveShippingInventoryWorkbookForLogRead(warehouseId, inventoryPath, openedTransient)
+        Else
+            ' The Inventory Domain bridge returned an already-owned workbook.
+            ' Shipping did not open it and therefore must never close it as a
+            ' transient workbook merely because an expected path differed.
+            openedTransient = False
+        End If
         If Not inventoryWb Is Nothing Then
             If wb Is Nothing Or Not inventoryWb Is wb Then
                 Set loLog = FindListObjectByNameShipping(inventoryWb, "tblInventoryLog")
@@ -8684,6 +8691,12 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
                 End If
                 If Not MarkShippingReservationRows(lo, singleRow, SHIP_RESERVATION_RELEASED, releaseEventId, report) Then GoTo CleanExit
             End If
+            ' Projected Inv is derived from the active Shipments row. Once the
+            ' row is removed, its persisted compatibility overlay must not keep
+            ' the released quantity deducted from the NAS read-model value.
+            ClearActiveOverlayForRowVersion _
+                NzLng(ShipmentRowText(lo, tableRowIndex, "ROW")), _
+                NormalizeBoxBomVersionLabelShipping(ShipmentRowText(lo, tableRowIndex, "DESCRIPTION"))
         End If
         lo.ListRows(tableRowIndex).Delete
         InvalidateAggregates

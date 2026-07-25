@@ -11,10 +11,7 @@ Public Sub InitProductionAddin()
     prevScreenUpdating = Application.ScreenUpdating
     Application.EnableEvents = False
     Application.ScreenUpdating = False
-    If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
-        gAppEvents.Init
-    End If
+    InitializeProductionEventHooks
     mProduction.InitializeProductionUiForWorkbook ThisWorkbook
     EnsureProductionSurfaceForWorkbook Application.ActiveWorkbook
     Application.ScreenUpdating = prevScreenUpdating
@@ -22,7 +19,17 @@ Public Sub InitProductionAddin()
 End Sub
 
 Public Sub Auto_Open()
-    InitProductionAddin
+    ' Loading one role XLAM must not create or repair surfaces in whichever
+    ' operator workbook happens to be active. Ribbon/form entry points call
+    ' InitProductionAddin explicitly when Production is actually requested.
+    InitializeProductionEventHooks
+End Sub
+
+Private Sub InitializeProductionEventHooks()
+    If gAppEvents Is Nothing Then
+        Set gAppEvents = New cAppEvents
+        gAppEvents.Init
+    End If
 End Sub
 
 Public Sub EnsureProductionSurfaceForWorkbook(ByVal wb As Workbook)

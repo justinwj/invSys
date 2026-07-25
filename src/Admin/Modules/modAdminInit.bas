@@ -13,5 +13,6 @@ Public Sub InitAdminAddin()
 End Sub
 
 Public Sub Auto_Open()
-    InitAdminAddin
+    ' Admin is an explicit orchestration console. Loading the XLAM must not
+    ' bootstrap the active role/operator workbook.
 End Sub

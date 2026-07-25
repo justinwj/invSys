@@ -327,12 +327,100 @@ try {
         }
     }
 
+    $autoOpenMacros = @(
+        @{ File = "invSys.Inventory.Domain.xlam"; Macro = "modInventoryInit.Auto_Open" },
+        @{ File = "invSys.Designs.Domain.xlam"; Macro = "modDesignsInit.Auto_Open" },
+        @{ File = "invSys.Receiving.xlam"; Macro = "modReceivingInit.Auto_Open" },
+        @{ File = "invSys.Shipping.xlam"; Macro = "modShippingInit.Auto_Open" },
+        @{ File = "invSys.Production.xlam"; Macro = "modProductionInit.Auto_Open" },
+        @{ File = "invSys.Admin.xlam"; Macro = "modAdminInit.Auto_Open" }
+    )
+    $autoOpenError = ""
+    foreach ($autoOpenSpec in $autoOpenMacros) {
+        if (-not $workbookMap.ContainsKey($autoOpenSpec.File)) {
+            $autoOpenError = "Workbook not open: $($autoOpenSpec.File)"
+            break
+        }
+        try {
+            $sentinelWb.Activate()
+            Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap[$autoOpenSpec.File].Name -MacroName $autoOpenSpec.Macro
+        }
+        catch {
+            $autoOpenError = "$($autoOpenSpec.Macro): $($_.Exception.Message)"
+            break
+        }
+    }
+    $sentinelUnchanged = (
+        $autoOpenError -eq "" -and
+        [string]$sentinelWs.Range("A1").Value2 -eq "UNCHANGED" -and
+        [int]$sentinelWs.Range("A4").Value2 -eq 99 -and
+        [string]$sentinelWs.Range("B4").Value2 -eq "CLEARVIEW" -and
+        $sentinelWs.ListObjects.Count -eq 1 -and
+        $sentinelWb.Worksheets.Count -eq 1
+    )
+    $autoOpenDetail = if ($autoOpenError -eq "") {
+        "All Domain/Role/Admin Auto_Open entry points left the active operator workbook unchanged."
+    }
+    else {
+        $autoOpenError
+    }
+    Add-ResultRow -Rows $resultRows -Check "XLAMStartup.ExplicitAutoOpenOperatorIsolation" -Passed $sentinelUnchanged -Detail $autoOpenDetail
+
+    try {
+        $eventSentinelPath = Join-Path $targetRoot "Unrelated.Operator.xlsx"
+        $eventSentinelWb = $excel.Workbooks.Add()
+        $eventSentinelWs = $eventSentinelWb.Worksheets.Item(1)
+        $eventSentinelWs.Range("A1").Value2 = "EVENT-UNCHANGED"
+        $eventSentinelWb.SaveAs($eventSentinelPath, 51)
+        $eventSentinelWb.Close($false)
+        Release-ComObject $eventSentinelWb
+        $eventSentinelWb = $excel.Workbooks.Open($eventSentinelPath)
+        $targetWorkbooks.Add($eventSentinelWb) | Out-Null
+        $eventSentinelWs = $eventSentinelWb.Worksheets.Item(1)
+        $eventIsolationPassed = (
+            [string]$eventSentinelWs.Range("A1").Value2 -eq "EVENT-UNCHANGED" -and
+            $eventSentinelWb.Worksheets.Count -eq 1 -and
+            $eventSentinelWs.ListObjects.Count -eq 0
+        )
+        Add-ResultRow -Rows $resultRows -Check "RoleEvents.WorkbookOpenOperatorIsolation" -Passed $eventIsolationPassed -Detail "WorkbookOpen/NewWorkbook handlers left an unrelated operator workbook unchanged."
+    }
+    catch {
+        Add-ResultRow -Rows $resultRows -Check "RoleEvents.WorkbookOpenOperatorIsolation" -Passed $false -Detail $_.Exception.Message
+    }
+
+    try {
+        $roleNameSentinelWb = $excel.Workbooks.Add()
+        $targetWorkbooks.Add($roleNameSentinelWb) | Out-Null
+        $roleSheetNames = @("Production", "ShipmentsTally", "ReceivedTally")
+        foreach ($roleSheetName in $roleSheetNames) {
+            $roleNameWs = $roleNameSentinelWb.Worksheets.Add()
+            $roleNameWs.Name = $roleSheetName
+            [void]$roleNameWs.Activate()
+            [void]$roleNameWs.Range("A1").Select()
+            $roleNameWs.Range("A1").Value2 = "$roleSheetName-UNCHANGED"
+        }
+        $roleNameIsolationPassed = ($roleNameSentinelWb.Worksheets.Count -eq 4)
+        foreach ($roleSheetName in $roleSheetNames) {
+            $roleNameWs = $roleNameSentinelWb.Worksheets.Item($roleSheetName)
+            $roleNameIsolationPassed = (
+                $roleNameIsolationPassed -and
+                [string]$roleNameWs.Range("A1").Value2 -eq "$roleSheetName-UNCHANGED" -and
+                $roleNameWs.ListObjects.Count -eq 0
+            )
+        }
+        Add-ResultRow -Rows $resultRows -Check "RoleEvents.NamedSheetOperatorIsolation" -Passed $roleNameIsolationPassed -Detail "Selection/change handlers ignored unrelated workbooks whose sheet names resembled role sheets but lacked role-owned tables."
+    }
+    catch {
+        Add-ResultRow -Rows $resultRows -Check "RoleEvents.NamedSheetOperatorIsolation" -Passed $false -Detail $_.Exception.Message
+    }
+
     $componentSpecs = @(
         @{ File = "invSys.Core.xlam"; Component = "modInventoryDomainBridge"; Exists = $true },
         @{ File = "invSys.Core.xlam"; Component = "modDesignsDomainBridge"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryApply"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryQueries"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInvMan"; Exists = $false },
+        @{ File = "invSys.Inventory.Domain.xlam"; Component = "cInventoryAppEvents"; Exists = $false },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsApply"; Exists = $true },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsQueries"; Exists = $true },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true }
