@@ -176,6 +176,52 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestDesignsApply_ObsoleteLifecycleIsRebuildable() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim evt As Object
+    Dim loDesigns As ListObject
+    Dim loLines As ListObject
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-40", "DESIGN_CREATE", "TEA-OBSOLETE", "3", _
+        "[{""DesignType"":""RECIPE"",""DesignName"":""Retired Tea"",""LineNo"":1," & _
+        """IOType"":""OUTPUT"",""ComponentSKU"":""SKU-RETIRED-TEA"",""Qty"":1,""UOM"":""LB""}]")
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-DES-40", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-41", "DESIGN_RELEASE", "TEA-OBSOLETE", "3", "")
+    statusOut = "": errorCode = "": errorMessage = ""
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-DES-41", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    Set evt = BuildDesignsTestEvent("DES-EVT-42", "DESIGN_OBSOLETE", "TEA-OBSOLETE", "3", "")
+    statusOut = "": errorCode = "": errorMessage = ""
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-DES-42", statusOut, errorCode, errorMessage) Then GoTo CleanExit
+
+    Set loDesigns = FindDesignsTestTable(wb, "tblDesigns")
+    Set loLines = FindDesignsTestTable(wb, "tblDesignLines")
+    If loDesigns.ListRows.Count <> 1 Or loLines.ListRows.Count <> 1 Then GoTo CleanExit
+    If CStr(loDesigns.DataBodyRange.Cells(1, loDesigns.ListColumns("Status").Index).Value) <> "OBSOLETE" Then GoTo CleanExit
+
+    Do While loDesigns.ListRows.Count > 0: loDesigns.ListRows(1).Delete: Loop
+    Do While loLines.ListRows.Count > 0: loLines.ListRows(1).Delete: Loop
+    If Not modDesignsApply.RebuildDesignProjections(wb, report) Then GoTo CleanExit
+    If loDesigns.ListRows.Count <> 1 Or loLines.ListRows.Count <> 1 Then GoTo CleanExit
+    If CStr(loDesigns.DataBodyRange.Cells(1, loDesigns.ListColumns("Status").Index).Value) <> "OBSOLETE" Then GoTo CleanExit
+    TestDesignsApply_ObsoleteLifecycleIsRebuildable = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestDesignsApply_RejectsDuplicateImmutableVersion() As Long
     Dim wb As Workbook
     Dim report As String

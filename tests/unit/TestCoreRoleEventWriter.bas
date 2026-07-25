@@ -267,6 +267,65 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestAdminDesignLifecycle_QueuesAuthorizedRelease() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim wbInbox As Workbook
+    Dim lo As ListObject
+    Dim eventIdOut As String
+    Dim errorMessage As String
+    Dim rowIndex As Long
+    Dim foundRow As Long
+    Dim failureReason As String
+    Dim rootPath As String
+
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("design_lifecycle_inbox")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHD2", "D2", rootPath, "ADMIN")
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHD2", rootPath)
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalProductionInboxWorkbook("D2", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    TestPhase2Helpers.AddCapability wbAuth, "admin1", "ADMIN_MAINT", "WHD2", "D2", "ACTIVE"
+    wbAuth.Save
+
+    On Error GoTo CleanFail
+    If Not modAdminDesignLifecycle.QueueAdminDesignLifecycleEvent( _
+        "DESIGN_RELEASE", "WHD2", "D2", "admin1", "TEA-ADMIN", "7", _
+        "approved release", wbInbox, eventIdOut, errorMessage) Then
+        failureReason = "QueueAdminDesignLifecycleEvent failed: " & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set lo = wbInbox.Worksheets("InboxProd").ListObjects("tblInboxProd")
+    For rowIndex = 1 To lo.ListRows.Count
+        If CStr(TestPhase2Helpers.GetRowValue(lo, rowIndex, "EventID")) = eventIdOut Then
+            foundRow = rowIndex
+            Exit For
+        End If
+    Next rowIndex
+    If foundRow = 0 Then failureReason = "Queued release EventID was not found.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "EventType")) <> "DESIGN_RELEASE" Then failureReason = "EventType mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "DesignId")) <> "TEA-ADMIN" Then failureReason = "DesignId mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "DesignVersion")) <> "7" Then failureReason = "DesignVersion mismatch.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "PayloadJson")) <> "" Then failureReason = "Lifecycle payload must be empty.": GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, foundRow, "Note")) <> "approved release" Then failureReason = "Lifecycle note mismatch.": GoTo CleanExit
+    TestAdminDesignLifecycle_QueuesAuthorizedRelease = 1
+
+CleanExit:
+    mLastTestFailure = failureReason
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInbox
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
+    Exit Function
+
+CleanFail:
+    failureReason = "Unexpected error " & CStr(Err.Number) & ": " & Err.Description
+    Resume CleanExit
+End Function
+
 Private Sub Tally(ByVal resultIn As Long, ByRef passed As Long, ByRef failed As Long)
     If resultIn = 1 Then
         passed = passed + 1
