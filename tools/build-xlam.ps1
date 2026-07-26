@@ -945,14 +945,6 @@ if (-not (Test-Path -LiteralPath $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 }
 
-$archiveDir = Join-Path (Split-Path $outputDir -Parent) "archive"
-if (-not (Test-Path -LiteralPath $archiveDir)) {
-    New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
-}
-
-$stagingDir = Join-Path $outputDir (".build-staging-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
-
 Write-Host "Planned outputs:"
 foreach ($project in $projectMap) {
     Write-Host ("- " + (Join-Path $outputDir $project.OutputFile))
@@ -984,6 +976,10 @@ if (-not $Apply) {
     exit 0
 }
 
+$archiveDir = Join-Path (Split-Path $outputDir -Parent) "archive"
+$stagingDir = Join-Path $outputDir (".build-staging-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+
 $referenceDir = Join-Path $outputDir ".refs"
 if (Test-Path -LiteralPath $referenceDir) {
     Write-Host ("Removing legacy reference copy directory " + $referenceDir)
@@ -992,8 +988,11 @@ if (Test-Path -LiteralPath $referenceDir) {
 
 $builtOutputs = @{}
 $excel = $null
-$buildSucceeded = $false
 try {
+    if (($legacyArtifacts.Count -gt 0) -and (-not (Test-Path -LiteralPath $archiveDir))) {
+        New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
+    }
+
     foreach ($artifact in $legacyArtifacts) {
         $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
         $archivePath = Join-Path $archiveDir (($artifact.Project + "." + $timestamp + "." + $artifact.Name))
@@ -1082,7 +1081,6 @@ try {
         Copy-Item -LiteralPath $stagedPath -Destination $finalPath -Force
         Write-Host ("Published " + $finalPath)
     }
-    $buildSucceeded = $true
 }
 finally {
     if ($null -ne $excel) {
@@ -1092,14 +1090,14 @@ finally {
     }
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
-}
 
-if (Test-Path -LiteralPath $stagingDir) {
-    try {
-        Remove-Item -LiteralPath $stagingDir -Recurse -Force
-    }
-    catch {
-        Write-Warning ("Could not remove staging directory " + $stagingDir + ": " + $_.Exception.Message)
+    if (Test-Path -LiteralPath $stagingDir) {
+        try {
+            Remove-Item -LiteralPath $stagingDir -Recurse -Force
+        }
+        catch {
+            Write-Warning ("Could not remove staging directory " + $stagingDir + ": " + $_.Exception.Message)
+        }
     }
 }
 

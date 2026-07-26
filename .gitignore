@@ -1,5 +1,10 @@
-# Build staging output created by tools/build-xlam.ps1
-deploy/current/.build-staging-*/
+# Only the seven canonical XLAMs directly under deploy/current are source-controlled.
+# Build, candidate, hotfix, validation, and local archive packages are disposable.
+deploy/**/.build-staging-*/
+deploy/candidate-*/
+deploy/hotfix-*/
+deploy/validation-*/
+deploy/archive/
 
 # Temporary Excel harness workbooks created by integration runners
 tests/fixtures/*_Harness_*.xlsm
