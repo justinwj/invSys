@@ -370,6 +370,15 @@ function Import-Forms {
 
     foreach ($formFile in $FormFiles) {
         $formName = [System.IO.Path]::GetFileNameWithoutExtension($formFile.Name)
+        $formSource = Get-Content -LiteralPath $formFile.FullName -Raw
+        if ($formSource -match "'@RuntimeStubUserFormCode") {
+            if (
+                $formSource -notmatch "EnableResizableUserForm" -or
+                $formSource -notmatch "True\s*,\s*True"
+            ) {
+                throw "$($formFile.FullName) violates the runtime UserForm window standard: Andy Pope/Windows API resize with minimize and maximize must be enabled."
+            }
+        }
         if (Test-FormRequiresStub -FormFile $formFile) {
             Add-StubUserForm -VBProject $VBProject -FormFile $formFile
         }

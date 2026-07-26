@@ -12,6 +12,40 @@ Public Sub Admin_ObsoleteDesignVersion_Click()
     frmAdminDesignLifecycle.Show vbModal
 End Sub
 
+Public Function DesignLifecycleFormLayoutSmokeForAutomation() As Long
+    On Error GoTo CleanExit
+    DesignLifecycleFormLayoutSmokeForAutomation = frmAdminDesignLifecycle.TestLayoutReady()
+CleanExit:
+    On Error Resume Next
+    Unload frmAdminDesignLifecycle
+    On Error GoTo 0
+End Function
+
+Public Function MigrateLegacyRecipesFromWorkbook(ByVal donorWb As Workbook, _
+                                                 Optional ByRef report As String = "") As Boolean
+    Dim migrationReport As String
+    Dim processorReport As String
+    Dim processedCount As Long
+
+    If donorWb Is Nothing Then
+        report = "No open legacy recipe workbook was found."
+        Exit Function
+    End If
+    If donorWb.IsAddin Then
+        report = "An operator/data workbook is required; an XLAM cannot be a migration donor."
+        Exit Function
+    End If
+    If Not modAdminDesignMigration.QueueLegacyRecipeDesignMigration(donorWb, "Recipes", migrationReport) Then
+        report = migrationReport
+        Exit Function
+    End If
+
+    processedCount = modProcessor.RunBatch("", 0, processorReport)
+    report = migrationReport & " Processor applied " & CStr(processedCount) & "."
+    If Trim$(processorReport) <> "" Then report = report & " " & processorReport
+    MigrateLegacyRecipesFromWorkbook = True
+End Function
+
 Public Function ReleaseDesignVersion(ByVal designId As String, _
                                      ByVal designVersion As String, _
                                      Optional ByVal noteVal As String = "", _

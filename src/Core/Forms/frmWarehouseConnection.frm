@@ -18,7 +18,7 @@ Option Explicit
 Private WithEvents mTxtRoot As MSForms.TextBox
 Private WithEvents mTxtUser As MSForms.TextBox
 Private WithEvents mTxtPassword As MSForms.TextBox
-Private WithEvents mTxtStation As MSForms.TextBox
+Private WithEvents mCboStation As MSForms.ComboBox
 Private WithEvents mChkRequireStation As MSForms.CheckBox
 Private WithEvents mBtnConnect As MSForms.CommandButton
 Private WithEvents mBtnScan As MSForms.CommandButton
@@ -29,6 +29,9 @@ Private WithEvents mLstTargets As MSForms.ListBox
 Private mLblStatus As MSForms.Label
 Private mWasAccepted As Boolean
 Private mReason As String
+Private mResizeInitialized As Boolean
+Private mRequireStationInboxForRole As Boolean
+Private mLblStationHelp As MSForms.Label
 
 Private Const COLOR_INFO As Long = 0
 Private Const COLOR_SUCCESS As Long = 32768
@@ -49,8 +52,23 @@ Private Sub UserForm_Initialize()
     End If
 End Sub
 
-Public Sub InitializeConnectionPrompt(Optional ByVal reason As String = "")
+Private Sub UserForm_Activate()
+    If mResizeInitialized Then Exit Sub
+    On Error Resume Next
+    modUserFormResizeWin.EnableResizableUserForm Me, True, True
+    On Error GoTo 0
+    mResizeInitialized = True
+End Sub
+
+Public Sub InitializeConnectionPrompt(Optional ByVal reason As String = "", _
+                                      Optional ByVal requireStationInbox As Boolean = False)
     mReason = Trim$(reason)
+    mRequireStationInboxForRole = requireStationInbox
+    If Not mChkRequireStation Is Nothing Then
+        mChkRequireStation.Value = requireStationInbox
+        mChkRequireStation.Enabled = Not requireStationInbox
+    End If
+    UpdateStationHelp
     If Not mLblStatus Is Nothing Then
         If mReason <> "" Then
             ShowStatus mReason, COLOR_INFO
@@ -80,8 +98,10 @@ Private Sub BuildConnectionLayout()
     Set mBtnConnect = AddButton("btnConnect", "Connect", 436, 117, 70, 24)
 
     AddLabel "lblStation", "Station", 18, 156, 84, 18, False
-    Set mTxtStation = AddTextBox("txtStation", 104, 152, 80, 22)
+    Set mCboStation = AddComboBox("cboStation", 104, 152, 80, 22)
     Set mChkRequireStation = AddCheckBox("chkRequireStation", "Require station inbox", 198, 154, 160, 18)
+    Set mLblStationHelp = AddLabel("lblStationHelp", "", 364, 153, 142, 32, False)
+    UpdateStationHelp
 
     AddLabel "lblTargets", "Warehouse runtimes", 18, 194, 130, 18, False
     Set mLstTargets = AddListBox("lstTargets", 18, 216, 488, 92)
@@ -106,6 +126,21 @@ Private Function AddLabel(ByVal controlName As String, _
         .Height = heightVal
         .WordWrap = True
         .Font.Bold = boldText
+    End With
+End Function
+
+Private Function AddComboBox(ByVal controlName As String, _
+                             ByVal leftPos As Single, _
+                             ByVal topPos As Single, _
+                             ByVal widthVal As Single, _
+                             ByVal heightVal As Single) As MSForms.ComboBox
+    Set AddComboBox = Me.Controls.Add("Forms.ComboBox.1", controlName, True)
+    With AddComboBox
+        .Left = leftPos
+        .Top = topPos
+        .Width = widthVal
+        .Height = heightVal
+        .Style = fmStyleDropDownList
     End With
 End Function
 
@@ -206,13 +241,17 @@ Private Sub mBtnOK_Click()
         ShowStatus "Select a warehouse runtime first.", COLOR_WARNING
         Exit Sub
     End If
+    If CBool(mChkRequireStation.Value) And SelectedStationValue() = "" Then
+        ShowStatus "Select a configured station. This role requires a station inbox.", COLOR_WARNING
+        Exit Sub
+    End If
 
     selectedPath = CStr(mLstTargets.Value)
     statusCode = modNasConnection.SelectWarehouseTarget( _
         Trim$(CStr(mTxtRoot.Value)), _
         selectedPath, _
         target, _
-        Trim$(CStr(mTxtStation.Value)), _
+        SelectedStationValue(), _
         CBool(mChkRequireStation.Value))
 
     If statusCode = NAS_OK Then
@@ -226,6 +265,14 @@ End Sub
 Private Sub mBtnCancel_Click()
     mWasAccepted = False
     Me.Hide
+End Sub
+
+Private Sub mLstTargets_Change()
+    RefreshStationsForSelectedTarget
+End Sub
+
+Private Sub mChkRequireStation_Click()
+    UpdateStationHelp
 End Sub
 
 Private Sub ScanRoot()
@@ -254,9 +301,65 @@ Private Sub ScanRoot()
 
     If mLstTargets.ListCount > 0 Then
         mLstTargets.ListIndex = 0
+        RefreshStationsForSelectedTarget
         ShowStatus "Found " & CStr(mLstTargets.ListCount) & " warehouse runtime(s). Select one and continue to invSys sign-in.", COLOR_SUCCESS
     Else
         ShowStatus "No warehouse runtime folders were found under this root.", COLOR_WARNING
+    End If
+End Sub
+
+Private Sub RefreshStationsForSelectedTarget()
+    Dim stations As Collection
+    Dim station As Variant
+    Dim priorStation As String
+
+    If mCboStation Is Nothing Then Exit Sub
+    priorStation = SelectedStationValue()
+    mCboStation.Clear
+    If mLstTargets Is Nothing Or mLstTargets.ListIndex < 0 Then Exit Sub
+
+    Set stations = modNasConnection.ListRuntimeStationsForConnection(CStr(mLstTargets.Value))
+    For Each station In stations
+        mCboStation.AddItem CStr(station)
+    Next station
+
+    If priorStation <> "" Then SelectStationIfListed priorStation
+    If mCboStation.ListIndex < 0 And mCboStation.ListCount = 1 Then mCboStation.ListIndex = 0
+
+    If CBool(mChkRequireStation.Value) And mCboStation.ListCount = 0 Then
+        ShowStatus "This role requires a station inbox, but the selected runtime has no configured station.", COLOR_ERROR
+    ElseIf CBool(mChkRequireStation.Value) And mCboStation.ListIndex < 0 Then
+        ShowStatus "Select the station where this Excel session is running.", COLOR_WARNING
+    End If
+End Sub
+
+Private Function SelectedStationValue() As String
+    On Error Resume Next
+    If Not mCboStation Is Nothing Then
+        If mCboStation.ListIndex >= 0 Then
+            SelectedStationValue = Trim$(CStr(mCboStation.List(mCboStation.ListIndex)))
+        End If
+    End If
+    On Error GoTo 0
+End Function
+
+Private Sub SelectStationIfListed(ByVal stationId As String)
+    Dim i As Long
+
+    For i = 0 To mCboStation.ListCount - 1
+        If StrComp(Trim$(CStr(mCboStation.List(i))), Trim$(stationId), vbTextCompare) = 0 Then
+            mCboStation.ListIndex = i
+            Exit Sub
+        End If
+    Next i
+End Sub
+
+Private Sub UpdateStationHelp()
+    If mLblStationHelp Is Nothing Or mChkRequireStation Is Nothing Then Exit Sub
+    If CBool(mChkRequireStation.Value) Then
+        mLblStationHelp.Caption = "Required for Production, Receiving, and Shipping."
+    Else
+        mLblStationHelp.Caption = "Optional for Admin/read-only access."
     End If
 End Sub
 

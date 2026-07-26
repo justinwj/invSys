@@ -26,6 +26,7 @@ Private mTarget As WarehouseTarget
 Private mRequiredCapability As String
 Private mResultStatus As AuthStatusCode
 Private mHadAttempt As Boolean
+Private mResizeInitialized As Boolean
 
 Private Const COLOR_INFO As Long = 0
 Private Const COLOR_SUCCESS As Long = 32768
@@ -39,6 +40,14 @@ Private Sub UserForm_Initialize()
     mResultStatus = AUTH_CANCELLED
     BuildSignInLayout
     RenderTarget
+End Sub
+
+Private Sub UserForm_Activate()
+    If mResizeInitialized Then Exit Sub
+    On Error Resume Next
+    modUserFormResizeWin.EnableResizableUserForm Me, True, True
+    On Error GoTo 0
+    mResizeInitialized = True
 End Sub
 
 Public Sub InitializeSignIn(ByVal target As WarehouseTarget, Optional ByVal requiredCapability As String = "")

@@ -322,7 +322,7 @@ Private Sub UserForm_Activate()
     mAllowUomPrompt = True
     If mAnchors Is Nothing Then InitializeAddInventoryAnchors
     If Not mResizeInitialized Then
-        modUserFormResizeWin.EnableResizableUserForm Me
+        modUserFormResizeWin.EnableResizableUserForm Me, True, True
         mResizeInitialized = True
     End If
     If Not mAnchors Is Nothing Then mAnchors.ResizeControls

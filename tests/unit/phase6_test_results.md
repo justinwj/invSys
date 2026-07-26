@@ -1,9 +1,9 @@
 # Phase 6 VBA Test Results
 
-- Date: 2026-07-25 00:55:43
-- Passed: 134
+- Date: 2026-07-25 14:06:51
+- Passed: 153
 - Failed: 0
-- Range: 1-251 of 251
+- Range: 1-261 of 261
 - Status: PARTIAL
 
 | Test | Result |
@@ -142,3 +142,22 @@
 | TestPhase6CoreSurfaces.TestShippingAdd_UsesDisplayedProjectedInventoryWhenVersionLedgerIsEmpty | PASS |
 | TestPhase6CoreSurfaces.TestShippingAdd_UsesDisplayedProjectedInventoryWhenTotalInvIsStaleZero | PASS |
 | TestPhase6CoreSurfaces.TestShippingAdd_RepairsMissingInvSysRowFromVisibleNas | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_LockedRowReleasesInventory | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_StaleLockedRowClearsWithoutInflatingInventory | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_RepairsMissingInvSysRowBeforeRelease | PASS |
+| TestPhase6CoreSurfaces.TestShippingRemove_ReleaseDeltaRepairsMissingLocalStage | PASS |
+| TestPhase6CoreSurfaces.TestShippingHold_PreservesReservationAndLocalDeduction | PASS |
+| TestPhase6CoreSurfaces.TestShippingToShipments_ReservedMultiSelectKeepsRowsAndProjection | PASS |
+| TestPhase6CoreSurfaces.TestShippingToShipments_LocalLockStaysVisible | PASS |
+| TestPhase6CoreSurfaces.TestShippingUpdate_PreservesExistingReservationWithoutDoubleDeducting | PASS |
+| TestPhase6CoreSurfaces.TestShippingUpdate_ReservedQtyChangeAppliesOnlyDeltaOverlay | PASS |
+| TestPhase6CoreSurfaces.TestShippingUpdate_RepairsMissingInvSysRowBeforeDelta | PASS |
+| TestPhase6CoreSurfaces.TestShippingQtyDelta_RepairsMissingInvSysRowFromSelectedDisplay | PASS |
+| TestPhase6CoreSurfaces.TestShippingAdd_NewReservedRowAppliesSingleProjectedDeduction | PASS |
+| TestPhase6CoreSurfaces.TestShippingAdd_NewReservedRowProjectsAfterPreviousCatchup | PASS |
+| TestPhase6CoreSurfaces.TestShippingAdd_MergingExistingReservedRowAppliesOnlyDelta | PASS |
+| TestPhase6CoreSurfaces.TestShippingAdd_MergingExistingReservedRowRepairsStaleProjectedDisplay | PASS |
+| TestPhase6CoreSurfaces.TestShippingAdd_ComposesActiveReservationWithPendingSentOverlay | PASS |
+| TestPhase6CoreSurfaces.TestShippingShippables_NasInvPrefersCurrentInvSysForSingleActiveVersion | PASS |
+| TestPhase6CoreSurfaces.TestBoxMakerShippables_MultiVersionUsesCanonicalInventoryLogFallback | PASS |
+| TestPhase6CoreSurfaces.TestBoxMakerShippables_VersionNasIgnoresReserveReleaseLogRows | PASS |

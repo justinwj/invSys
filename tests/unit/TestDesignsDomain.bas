@@ -147,6 +147,52 @@ Public Function TestDesignsDomain_DiagnosticDeclaresNoStartupMutation() As Long
     End If
 End Function
 
+Public Function TestDesignsRuntime_CanonicalAuthorityWindowStaysHidden() As Long
+    Dim operatorWb As Workbook
+    Dim designsWb As Workbook
+    Dim win As Window
+    Dim rootPath As String
+    Dim designsPath As String
+    Dim report As String
+    Dim allHidden As Boolean
+
+    rootPath = Environ$("TEMP") & "\invSys-designs-hidden-" & _
+               Format$(Now, "yyyymmddhhnnss") & "-" & CStr(CLng(Timer * 100)) & "\"
+    designsPath = rootPath & "WH-HIDDEN.invSys.Data.Designs.xlsb"
+
+    On Error GoTo CleanFail
+    MkDir Left$(rootPath, Len(rootPath) - 1)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+    Set operatorWb = Application.Workbooks.Add(xlWBATWorksheet)
+    operatorWb.Activate
+
+    Set designsWb = modDesignsRuntime.ResolveDesignsWorkbook("WH-HIDDEN", Nothing, report)
+    If designsWb Is Nothing Then GoTo CleanExit
+    If designsWb.Windows.Count = 0 Then GoTo CleanExit
+
+    allHidden = True
+    For Each win In designsWb.Windows
+        If win.Visible Then allHidden = False
+    Next win
+    If Not allHidden Then GoTo CleanExit
+    If Application.ActiveWorkbook Is Nothing Then GoTo CleanExit
+    If Not (Application.ActiveWorkbook Is operatorWb) Then GoTo CleanExit
+
+    TestDesignsRuntime_CanonicalAuthorityWindowStaysHidden = 1
+
+CleanExit:
+    On Error Resume Next
+    If Not designsWb Is Nothing Then designsWb.Close SaveChanges:=False
+    If Not operatorWb Is Nothing Then operatorWb.Close SaveChanges:=False
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    If Len(Dir$(designsPath, vbNormal)) > 0 Then Kill designsPath
+    RmDir Left$(rootPath, Len(rootPath) - 1)
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestDesignInboxSchema_CarriesDesignIdentity() As Long
     Dim wb As Workbook
     Dim lo As ListObject
@@ -493,7 +539,8 @@ Public Function TestInventoryQueries_PickerPublishesEverySkuLocation() As Long
     items = modInventoryBridgeApi.ListInventoryPickerItemsBridgeResult("Malawi", wb)
     If IsEmpty(items) Or Not IsArray(items) Then GoTo CleanExit
     For r = LBound(items, 1) To UBound(items, 1)
-        If CStr(items(r, 1)) = "96" And CDbl(items(r, 4)) = 3175 Then
+        If CStr(items(r, 1)) = "96" And CDbl(items(r, 4)) = 3175 _
+           And CStr(items(r, 7)) = "SKU-PICKER-1" Then
             If StrComp(CStr(items(r, 5)), "A1", vbTextCompare) = 0 Then foundA1 = True
             If StrComp(CStr(items(r, 5)), "CLEARVIEW", vbTextCompare) = 0 Then foundClearview = True
         End If

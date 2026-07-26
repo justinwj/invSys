@@ -31,7 +31,7 @@ End Sub
 
 Private Sub UserForm_Activate()
     If mResizeInitialized Then Exit Sub
-    modUserFormResizeWin.EnableResizableUserForm Me
+    modUserFormResizeWin.EnableResizableUserForm Me, True, True
     mResizeInitialized = True
 End Sub
 

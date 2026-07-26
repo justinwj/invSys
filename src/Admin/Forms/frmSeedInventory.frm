@@ -15,6 +15,8 @@ Attribute VB_Exposed = False
 '@RuntimeStubUserFormCode
 Option Explicit
 
+Private mResizeInitialized As Boolean
+
 Private WithEvents mCmbWarehouse As MSForms.ComboBox
 Attribute mCmbWarehouse.VB_VarHelpID = -1
 Private WithEvents mBtnOK As MSForms.CommandButton
@@ -99,6 +101,14 @@ End Sub
 
 Private Sub UserForm_Initialize()
     EnsureControls
+End Sub
+
+Private Sub UserForm_Activate()
+    If mResizeInitialized Then Exit Sub
+    On Error Resume Next
+    modUserFormResizeWin.EnableResizableUserForm Me, True, True
+    On Error GoTo 0
+    mResizeInitialized = True
 End Sub
 
 Private Sub EnsureControls()

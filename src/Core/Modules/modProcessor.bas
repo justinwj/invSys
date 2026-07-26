@@ -522,7 +522,9 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
     Dim startCell As Range
     Dim dataRange As Range
     Dim i As Long
+    Dim ensureStage As String
 
+    ensureStage = "resolve workbook"
     If targetWb Is Nothing Then
         Set wb = ResolveSingleInboxWorkbook(tableName)
     Else
@@ -533,18 +535,25 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
         Exit Function
     End If
 
+    ensureStage = "define schema"
     headers = Array("EventID", "ParentEventId", "UndoOfEventId", "EventType", "CreatedAtUTC", "WarehouseId", "StationId", _
                     "UserId", "MigrationSourceId", "SKU", "Qty", "Location", "DesignId", "DesignVersion", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
                     "ErrorMessage", "FailedAtUTC")
 
-    NormalizeWorkbookSheetsProcessor wb, Array(sheetName)
+    ' Schema repair must be additive. Runtime workbooks can carry other domain
+    ' surfaces, and deleting every non-target sheet mutates canonical/operator
+    ' workbooks outside this routine's authority.
+    ensureStage = "ensure worksheet"
     Set ws = EnsureWorksheetProcessor(wb, sheetName)
+    ensureStage = "unprotect worksheet"
     SetSheetProtectionProcessor ws, False
+    ensureStage = "resolve table"
     On Error Resume Next
     Set lo = ws.ListObjects(tableName)
     On Error GoTo 0
 
     If lo Is Nothing Then
+        ensureStage = "create table"
         Set startCell = GetNextTableStartCellProcessor(ws)
         For i = LBound(headers) To UBound(headers)
             startCell.Offset(0, i - LBound(headers)).Value = headers(i)
@@ -555,23 +564,35 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
         lo.Name = tableName
     End If
 
+    ensureStage = "ensure columns"
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnProcessor lo, CStr(headers(i))
     Next i
 
+    ensureStage = "normalize rows"
     RemoveBlankSeedRowProcessor lo
     EnsureInboxDefaultEventType lo, defaultEventType
+    ensureStage = "save workbook"
+    SaveWorkbookProcessor wb
+    ensureStage = "protect worksheet"
+    SetSheetProtectionProcessor ws, True
     report = "OK"
     EnsureInboxSchemaCore = True
-    SaveWorkbookProcessor wb
-    SetSheetProtectionProcessor ws, True
     Exit Function
 
 FailEnsure:
+    Dim failureNumber As Long
+    Dim failureSource As String
+    Dim failureDescription As String
+    failureNumber = Err.Number
+    failureSource = Err.Source
+    failureDescription = Err.Description
     On Error Resume Next
     If Not ws Is Nothing Then SetSheetProtectionProcessor ws, True
     On Error GoTo 0
-    report = "EnsureInboxSchema failed: " & Err.Description
+    report = "EnsureInboxSchema failed at " & ensureStage & _
+             ": " & CStr(failureNumber) & " - " & failureDescription
+    If failureSource <> "" Then report = report & " [" & failureSource & "]"
 End Function
 
 Private Sub EnsureInboxDefaultEventType(ByVal lo As ListObject, ByVal defaultEventType As String)
@@ -588,17 +609,27 @@ End Sub
 
 Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report As String) As Boolean
     Dim runtimeRoot As String
+    Dim explicitRoot As String
 
-    runtimeRoot = ResolveOpenRuntimeRootForWarehouseProcessor(warehouseId)
-    If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    explicitRoot = Trim$(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If explicitRoot = "" Then
+        runtimeRoot = ResolveOpenRuntimeRootForWarehouseProcessor(warehouseId)
+        If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    End If
 
     If Not modConfig.LoadConfig(warehouseId, "") Then
         report = "Config load failed: " & modConfig.Validate()
         Exit Function
     End If
 
-    runtimeRoot = Trim$(modConfig.GetString("PathDataRoot", ""))
-    If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    If explicitRoot <> "" Then
+        ' Workbook-open/config event handlers are not allowed to replace the
+        ' caller's explicit transaction root while context is being resolved.
+        modRuntimeWorkbooks.SetCoreDataRootOverride explicitRoot
+    Else
+        runtimeRoot = Trim$(modConfig.GetString("PathDataRoot", ""))
+        If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    End If
 
     If Not modAuth.LoadAuth(modConfig.GetString("WarehouseId", warehouseId)) Then
         report = "Auth load failed: " & modAuth.ValidateAuth()

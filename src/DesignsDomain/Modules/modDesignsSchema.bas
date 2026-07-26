@@ -120,6 +120,24 @@ Private Sub EnsureTable(ByVal wb As Workbook, ByVal sheetName As String, _
             End If
         Next i
     End If
+    FormatDesignIdentityColumns lo
+End Sub
+
+Private Sub FormatDesignIdentityColumns(ByVal lo As ListObject)
+    Dim columnName As String
+    Dim lc As ListColumn
+
+    If lo Is Nothing Then Exit Sub
+    For Each lc In lo.ListColumns
+        columnName = UCase$(Trim$(lc.Name))
+        Select Case columnName
+            Case "EVENTID", "UNDOOFEVENTID", "WAREHOUSEID", "STATIONID", "USERID", _
+                 "DESIGNID", "DESIGNVERSION", "COMPONENTSKU", "COMPONENTDESIGNID", _
+                 "COMPONENTDESIGNVERSION", "SOURCEEVENTID", "RUNID", "OWNERSTATIONID", _
+                 "OWNERUSERID"
+                lc.Range.NumberFormat = "@"
+        End Select
+    Next lc
 End Sub
 
 Private Function EnsureWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet

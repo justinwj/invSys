@@ -110,9 +110,9 @@ Public Function AdminSettingsFormInitializeSmokeForWorkbook(ByVal operatorWb As 
 
     Set frm = New frmAdminSettings
     detail = frm.TestInitializeConfigEditor()
-    If InStr(1, detail, "Rows=27", vbTextCompare) = 0 Then
+    If InStr(1, detail, "Rows=28", vbTextCompare) = 0 Then
         Err.Raise vbObjectError + 7320, "AdminSettingsFormInitializeSmokeForWorkbook", _
-                  "Admin config editor did not load all 27 config keys. " & detail
+                  "Admin config editor did not load all 28 config keys. " & detail
     End If
     AdminSettingsFormInitializeSmokeForWorkbook = "OK|" & detail
 

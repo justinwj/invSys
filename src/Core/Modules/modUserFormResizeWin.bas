@@ -12,11 +12,15 @@ End Enum
 #If Mac Then
 
 Public Function EnableResizableUserForm(ByVal uForm As Object, _
-                                        Optional ByVal allowMinimize As Boolean = False, _
-                                        Optional ByVal allowMaximize As Boolean = False) As Boolean
+                                        Optional ByVal allowMinimize As Boolean = True, _
+                                        Optional ByVal allowMaximize As Boolean = True) As Boolean
 End Function
 
 Public Function GetUserFormWindowHandle(ByVal uForm As Object) As Long
+End Function
+
+Public Function DiagnoseUserFormWindowStyle(ByVal uForm As Object) As String
+    DiagnoseUserFormWindowStyle = "Platform=Mac|Supported=False"
 End Function
 
 #Else
@@ -43,8 +47,8 @@ Private Const WS_MINIMIZEBOX As Long = &H20000
 Private Const WS_MAXIMIZEBOX As Long = &H10000
 
 Public Function EnableResizableUserForm(ByVal uForm As Object, _
-                                        Optional ByVal allowMinimize As Boolean = False, _
-                                        Optional ByVal allowMaximize As Boolean = False) As Boolean
+                                        Optional ByVal allowMinimize As Boolean = True, _
+                                        Optional ByVal allowMaximize As Boolean = True) As Boolean
     Dim hwnd As LongPtr
     Dim currentStyle As LongPtr
     Dim updatedStyle As LongPtr
@@ -73,6 +77,27 @@ End Function
 
 Public Function GetUserFormWindowHandle(ByVal uForm As Object) As LongPtr
     GetUserFormWindowHandle = ResolveUserFormWindowHandleLocal(uForm)
+End Function
+
+Public Function DiagnoseUserFormWindowStyle(ByVal uForm As Object) As String
+    Dim hwnd As LongPtr
+    Dim currentStyle As LongPtr
+
+    On Error GoTo FailDiagnostic
+    hwnd = ResolveUserFormWindowHandleLocal(uForm)
+    If hwnd = 0 Then
+        DiagnoseUserFormWindowStyle = "Handle=False|Resizable=False|Minimize=False|Maximize=False"
+        Exit Function
+    End If
+    currentStyle = GetWindowLongPtr(hwnd, GWL_STYLE)
+    DiagnoseUserFormWindowStyle = _
+        "Handle=True|Resizable=" & CStr((currentStyle And WS_THICKFRAME) <> 0) & _
+        "|Minimize=" & CStr((currentStyle And WS_MINIMIZEBOX) <> 0) & _
+        "|Maximize=" & CStr((currentStyle And WS_MAXIMIZEBOX) <> 0)
+    Exit Function
+
+FailDiagnostic:
+    DiagnoseUserFormWindowStyle = "Handle=False|Resizable=False|Minimize=False|Maximize=False|Error=" & Err.Description
 End Function
 
 Private Function ResolveUserFormWindowHandleLocal(ByVal uForm As Object) As LongPtr

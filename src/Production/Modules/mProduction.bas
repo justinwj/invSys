@@ -155,6 +155,7 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
     Dim frm As frmProduction
     Dim pageCount As Long
     Dim statusText As String
+    Dim windowStyle As String
 
     If operatorWb Is Nothing Then
         Err.Raise vbObjectError + 7310, "ProductionFormInitializeSmokeForWorkbook", _
@@ -168,10 +169,16 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
     Set frm = New frmProduction
     pageCount = frm.TestInitializeForWorkbook(operatorWb)
     statusText = frm.TestStatusText()
+    Call modUserFormResizeWin.EnableResizableUserForm(frm, True, True)
+    windowStyle = modUserFormResizeWin.DiagnoseUserFormWindowStyle(frm)
 
     If pageCount <> 4 Then
         Err.Raise vbObjectError + 7312, "ProductionFormInitializeSmokeForWorkbook", _
                   "Production form page count was " & CStr(pageCount) & "; expected 4."
+    End If
+    If frm.TestRecipeBuilderHasInstructionIo() <> 1 Then
+        Err.Raise vbObjectError + 7316, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Recipe Builder does not expose the INSTRUCTION line type."
     End If
     If InStr(1, statusText, "failed", vbTextCompare) > 0 Then
         Err.Raise vbObjectError + 7313, "ProductionFormInitializeSmokeForWorkbook", statusText
@@ -180,8 +187,15 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
         Err.Raise vbObjectError + 7314, "ProductionFormInitializeSmokeForWorkbook", _
                   "Production form did not report a healthy Inventory Domain. " & statusText
     End If
+    If InStr(1, windowStyle, "Resizable=True", vbTextCompare) = 0 _
+       Or InStr(1, windowStyle, "Minimize=True", vbTextCompare) = 0 _
+       Or InStr(1, windowStyle, "Maximize=True", vbTextCompare) = 0 Then
+        Err.Raise vbObjectError + 7315, "ProductionFormInitializeSmokeForWorkbook", _
+                  "Production form did not satisfy the standard window contract. " & windowStyle
+    End If
 
     ProductionFormInitializeSmokeForWorkbook = "OK|Pages=" & CStr(pageCount) & _
+                                                "|WindowStyle=" & windowStyle & _
                                                 "|Status=" & statusText
 
 CleanExit:
@@ -591,25 +605,170 @@ Private Sub MoveListObjectToRowCol(ByVal lo As ListObject, ByVal targetRow As Lo
 End Sub
 
 Public Function LoadRecipeList() As Variant
-    Dim designs As Variant
+    Dim canonicalRecipes As Variant
+    Dim pendingRecipes As Variant
+    Dim legacyRecipes As Variant
 
-    designs = LoadRecipeListFromDesigns("")
-    If IsUsableProductionArray(designs) Then
-        LoadRecipeList = designs
-    Else
-        LoadRecipeList = LoadLegacyRecipeList()
+    If ProductionDesignsEnabled() Then
+        canonicalRecipes = LoadRecipeListFromDesigns("")
+        pendingRecipes = LoadPendingStagedRecipeList()
     End If
+    legacyRecipes = LoadLegacyRuntimeRecipeList()
+    If Not IsUsableProductionArray(legacyRecipes) Then legacyRecipes = LoadLegacyRecipeList()
+
+    LoadRecipeList = BuildUnifiedRecipeList(canonicalRecipes, pendingRecipes, legacyRecipes)
 End Function
 
 Public Function LoadReleasedRecipeList() As Variant
     Dim designs As Variant
 
-    designs = LoadRecipeListFromDesigns("RELEASED")
-    If IsUsableProductionArray(designs) Then
+    If ProductionDesignsEnabled() Then
+        designs = LoadRecipeListFromDesigns("RELEASED")
         LoadReleasedRecipeList = designs
     Else
         LoadReleasedRecipeList = LoadLegacyRecipeList()
     End If
+End Function
+
+Public Function ReleaseRecipeForProduction(ByVal recipeId As String) As String
+    On Error GoTo FailRelease
+
+    Dim capabilityError As String
+    Dim designVersion As String
+    Dim eventId As String
+    Dim queueError As String
+    Dim processorReport As String
+    Dim appliedCount As Long
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
+    Dim stationId As String
+    Dim currentStatus As String
+
+    recipeId = CanonicalRecipeIdProduction(recipeId)
+    If recipeId = "" Then
+        ReleaseRecipeForProduction = "A Recipe ID is required."
+        Exit Function
+    End If
+    If Not ProductionDesignsEnabled() Then
+        ReleaseRecipeForProduction = "Designs Domain is disabled; legacy recipes do not require release."
+        Exit Function
+    End If
+    If Not modRoleUiAccess.CanCurrentUserPerformCapabilityCached("ADMIN_MAINT", capabilityError) Then
+        ReleaseRecipeForProduction = capabilityError
+        Exit Function
+    End If
+
+    designVersion = LatestRecipeVersionForReleaseProduction(recipeId)
+    If designVersion = "" Then
+        ReleaseRecipeForProduction = "No saved Designs version was found for Recipe ID " & recipeId & "."
+        Exit Function
+    End If
+    currentStatus = DesignStatusForVersionProduction(recipeId, designVersion)
+    If StrComp(currentStatus, "RELEASED", vbTextCompare) = 0 Then
+        ReleaseRecipeForProduction = "Recipe " & recipeId & " version " & designVersion & _
+                                     " is already released and available for Production Run."
+        Exit Function
+    End If
+
+    If Not modRoleEventWriter.QueueDesignEventCurrent( _
+        "DESIGN_RELEASE", recipeId, designVersion, "", _
+        "Recipe Builder release for production", "", _
+        eventId, queueError) Then
+        ReleaseRecipeForProduction = "Release was not queued: " & queueError
+        Exit Function
+    End If
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then
+        warehouseId = Trim$(target.WarehouseId)
+        stationId = Trim$(target.StationId)
+    End If
+    appliedCount = modProcessor.RunBatch(warehouseId, 0, processorReport)
+    If warehouseId <> "" Then Call modConfig.LoadConfig(warehouseId, stationId)
+    currentStatus = DesignStatusForVersionProduction(recipeId, designVersion)
+    If StrComp(currentStatus, "RELEASED", vbTextCompare) = 0 Then
+        ReleaseRecipeForProduction = "Released Recipe " & recipeId & " version " & designVersion & _
+                                     " for Production Run. EventID=" & eventId
+    Else
+        ReleaseRecipeForProduction = "Release queued but not yet applied for Recipe " & _
+                                     recipeId & " version " & designVersion & _
+                                     ". EventID=" & eventId & "; Processor applied=" & _
+                                     CStr(appliedCount)
+        If Trim$(processorReport) <> "" Then _
+            ReleaseRecipeForProduction = ReleaseRecipeForProduction & "; " & processorReport
+    End If
+    Exit Function
+
+FailRelease:
+    ReleaseRecipeForProduction = "Release for Production failed: " & Err.Description
+End Function
+
+Private Function LatestRecipeVersionForReleaseProduction(ByVal recipeId As String) As String
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim staged As Variant
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
+    Dim r As Long
+    Dim candidate As String
+    Dim bestNumeric As Long
+    Dim bestText As String
+
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
+    AccumulateLatestRecipeVersionProduction designs, recipeId, bestNumeric, bestText
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    staged = modRoleEventWriter.GetLocalStagedDesignIdentities(warehouseId)
+    AccumulateLatestRecipeVersionProduction staged, recipeId, bestNumeric, bestText
+
+    If bestNumeric > 0 Then
+        LatestRecipeVersionForReleaseProduction = CStr(bestNumeric)
+    Else
+        LatestRecipeVersionForReleaseProduction = bestText
+    End If
+CleanFail:
+End Function
+
+Private Sub AccumulateLatestRecipeVersionProduction(ByVal rows As Variant, _
+                                                     ByVal recipeId As String, _
+                                                     ByRef bestNumeric As Long, _
+                                                     ByRef bestText As String)
+    Dim r As Long
+    Dim candidate As String
+    Dim numericVersion As Long
+
+    If Not IsUsableProductionArray(rows) Then Exit Sub
+    For r = LBound(rows, 1) To UBound(rows, 1)
+        If RecipeIdsMatchProduction(rows(r, 1), recipeId) Then
+            candidate = Trim$(NzStr(rows(r, 2)))
+            If IsNumeric(candidate) Then
+                numericVersion = CLng(CDbl(candidate))
+                If numericVersion > bestNumeric Then bestNumeric = numericVersion
+            ElseIf candidate <> "" Then
+                bestText = candidate
+            End If
+        End If
+    Next r
+End Sub
+
+Private Function DesignStatusForVersionProduction(ByVal recipeId As String, _
+                                                   ByVal designVersion As String) As String
+    On Error GoTo CleanFail
+
+    Dim designs As Variant
+    Dim r As Long
+
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
+    If Not IsUsableProductionArray(designs) Then Exit Function
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        If RecipeIdsMatchProduction(designs(r, 1), recipeId) _
+           And StrComp(Trim$(NzStr(designs(r, 2))), Trim$(designVersion), vbTextCompare) = 0 Then
+            DesignStatusForVersionProduction = Trim$(NzStr(designs(r, 6)))
+        End If
+    Next r
+CleanFail:
 End Function
 
 Private Function LoadLegacyRecipeList() As Variant
@@ -663,42 +822,181 @@ NextRow:
     LoadLegacyRecipeList = result
 End Function
 
+Private Function LoadLegacyRuntimeRecipeList() As Variant
+    On Error GoTo CleanExit
+
+    Dim warehouseId As String
+    Dim rootPath As String
+    Dim report As String
+    Dim wbRuntime As Workbook
+    Dim wsRuntime As Worksheet
+    Dim loRuntime As ListObject
+    Dim openedTransient As Boolean
+    Dim cId As Long
+    Dim cName As Long
+    Dim cDesc As Long
+    Dim arr As Variant
+    Dim r As Long
+    Dim recipeId As String
+    Dim recipeName As String
+    Dim recipes As Object
+    Dim info As Variant
+    Dim result() As Variant
+    Dim key As Variant
+    Dim i As Long
+
+    If Not ResolveProductionRecipesStorageTarget(warehouseId, rootPath, report) Then Exit Function
+    Set wbRuntime = OpenProductionRecipesWorkbook(warehouseId, rootPath, False, openedTransient, report)
+    If wbRuntime Is Nothing Then Exit Function
+    Set wsRuntime = WorkbookSheetExists(wbRuntime, SHEET_RUNTIME_RECIPES)
+    If wsRuntime Is Nothing Then GoTo CleanExit
+    Set loRuntime = GetListObject(wsRuntime, TABLE_RUNTIME_RECIPES)
+    If loRuntime Is Nothing Or loRuntime.DataBodyRange Is Nothing Then GoTo CleanExit
+
+    cId = ColumnIndex(loRuntime, "RECIPE_ID")
+    cName = ColumnIndex(loRuntime, "RECIPE")
+    cDesc = ColumnIndex(loRuntime, "DESCRIPTION")
+    If cId = 0 Or cName = 0 Then GoTo CleanExit
+
+    Set recipes = CreateObject("Scripting.Dictionary")
+    recipes.CompareMode = vbTextCompare
+    arr = loRuntime.DataBodyRange.Value
+    For r = 1 To UBound(arr, 1)
+        recipeId = CanonicalRecipeIdProduction(arr(r, cId))
+        recipeName = Trim$(NzStr(arr(r, cName)))
+        If recipeId <> "" And recipeName <> "" Then
+            If cDesc > 0 Then
+                recipes(recipeId) = Array(recipeName, NzStr(arr(r, cDesc)))
+            Else
+                recipes(recipeId) = Array(recipeName, vbNullString)
+            End If
+        End If
+    Next r
+
+    If recipes.Count = 0 Then GoTo CleanExit
+    ReDim result(1 To recipes.Count, 1 To 3)
+    i = 1
+    For Each key In recipes.Keys
+        info = recipes(key)
+        result(i, 1) = CStr(key)
+        result(i, 2) = info(0)
+        result(i, 3) = info(1)
+        i = i + 1
+    Next key
+    LoadLegacyRuntimeRecipeList = result
+
+CleanExit:
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+End Function
+
+Private Function LoadPendingStagedRecipeList() As Variant
+    On Error GoTo CleanFail
+
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
+    Dim staged As Variant
+    Dim recipes As Object
+    Dim recipeId As String
+    Dim recipeName As String
+    Dim recipeDescription As String
+    Dim result() As Variant
+    Dim info As Variant
+    Dim key As Variant
+    Dim r As Long
+    Dim i As Long
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    staged = modRoleEventWriter.GetLocalStagedDesignIdentities(warehouseId)
+    If Not IsUsableProductionArray(staged) Then Exit Function
+
+    Set recipes = CreateObject("Scripting.Dictionary")
+    recipes.CompareMode = vbTextCompare
+    For r = LBound(staged, 1) To UBound(staged, 1)
+        recipeId = CanonicalRecipeIdProduction(staged(r, 1))
+        recipeName = vbNullString
+        recipeDescription = vbNullString
+        If UBound(staged, 2) >= 3 Then recipeName = Trim$(NzStr(staged(r, 3)))
+        If UBound(staged, 2) >= 4 Then recipeDescription = NzStr(staged(r, 4))
+        If recipeId <> "" And recipeName <> "" Then
+            recipes(recipeId) = Array(recipeName, recipeDescription)
+        End If
+    Next r
+
+    If recipes.Count = 0 Then Exit Function
+    ReDim result(1 To recipes.Count, 1 To 3)
+    i = 1
+    For Each key In recipes.Keys
+        info = recipes(key)
+        result(i, 1) = CStr(key)
+        result(i, 2) = info(0)
+        result(i, 3) = info(1)
+        i = i + 1
+    Next key
+    LoadPendingStagedRecipeList = result
+CleanFail:
+End Function
+
+Private Function BuildUnifiedRecipeList(ByVal canonicalRecipes As Variant, _
+                                        ByVal pendingRecipes As Variant, _
+                                        ByVal legacyRecipes As Variant) As Variant
+    Dim recipes As Object
+    Dim result() As Variant
+    Dim info As Variant
+    Dim key As Variant
+    Dim i As Long
+
+    Set recipes = CreateObject("Scripting.Dictionary")
+    recipes.CompareMode = vbTextCompare
+    MergeRecipeListRowsProduction recipes, canonicalRecipes
+    MergeRecipeListRowsProduction recipes, pendingRecipes
+    MergeRecipeListRowsProduction recipes, legacyRecipes
+
+    If recipes.Count = 0 Then Exit Function
+    ReDim result(1 To recipes.Count, 1 To 3)
+    i = 1
+    For Each key In recipes.Keys
+        info = recipes(key)
+        result(i, 1) = CStr(key)
+        result(i, 2) = info(0)
+        result(i, 3) = info(1)
+        i = i + 1
+    Next key
+    BuildUnifiedRecipeList = result
+End Function
+
+Private Sub MergeRecipeListRowsProduction(ByVal recipes As Object, ByVal sourceRows As Variant)
+    Dim r As Long
+    Dim recipeId As String
+    Dim recipeName As String
+    Dim recipeDescription As String
+
+    If recipes Is Nothing Then Exit Sub
+    If Not IsUsableProductionArray(sourceRows) Then Exit Sub
+    For r = LBound(sourceRows, 1) To UBound(sourceRows, 1)
+        recipeId = CanonicalRecipeIdProduction(sourceRows(r, 1))
+        recipeName = Trim$(NzStr(sourceRows(r, 2)))
+        recipeDescription = vbNullString
+        If UBound(sourceRows, 2) >= 3 Then recipeDescription = NzStr(sourceRows(r, 3))
+        If recipeId <> "" And recipeName <> "" Then
+            ' Sources are merged in authority order. The first identity wins.
+            If Not recipes.Exists(recipeId) Then _
+                recipes.Add recipeId, Array(recipeName, recipeDescription)
+        End If
+    Next r
+End Sub
+
+Public Function TestUnifiedRecipeList(ByVal canonicalRecipes As Variant, _
+                                      ByVal pendingRecipes As Variant, _
+                                      ByVal legacyRecipes As Variant) As Variant
+    TestUnifiedRecipeList = BuildUnifiedRecipeList(canonicalRecipes, pendingRecipes, legacyRecipes)
+End Function
+
 Public Function GenerateRecipeId(Optional ByVal preferredWb As Workbook = Nothing) As String
     Const MAX_BASE36_RECIPE_ID As Long = 46655 ' ZZZ
 
     Dim used As Object
-    Set used = CreateObject("Scripting.Dictionary")
-    Dim syncReport As String
-
-    RefreshProductionRecipesFromRuntime preferredWb, syncReport
-
-    Dim wsRec As Worksheet
-    If preferredWb Is Nothing Then
-        Set wsRec = SheetExists("Recipes")
-    Else
-        Set wsRec = WorkbookSheetExists(preferredWb, "Recipes")
-    End If
-
-    If Not wsRec Is Nothing Then
-        Dim lo As ListObject
-        Set lo = GetListObject(wsRec, "Recipes")
-        If Not lo Is Nothing Then
-            If Not lo.DataBodyRange Is Nothing Then
-                Dim cId As Long
-                cId = ColumnIndex(lo, "RECIPE_ID")
-                If cId > 0 Then
-                    Dim arr As Variant
-                    arr = lo.DataBodyRange.value
-                    Dim r As Long
-                    For r = 1 To UBound(arr, 1)
-                        Dim existingId As String
-                        existingId = UCase$(Trim$(NzStr(arr(r, cId))))
-                        If existingId <> "" Then used(existingId) = True
-                    Next r
-                End If
-            End If
-        End If
-    End If
+    Set used = CollectUsedRecipeIdsProduction(preferredWb)
 
     Dim candidateValue As Long
     For candidateValue = 1 To MAX_BASE36_RECIPE_ID
@@ -711,6 +1009,157 @@ Public Function GenerateRecipeId(Optional ByVal preferredWb As Workbook = Nothin
     Next candidateValue
 
     GenerateRecipeId = ToBase36RecipeId(CLng(Timer) Mod MAX_BASE36_RECIPE_ID)
+End Function
+
+Private Function CollectUsedRecipeIdsProduction(Optional ByVal preferredWb As Workbook = Nothing) As Object
+    Dim used As Object
+    Dim designs As Variant
+    Dim stagedDesigns As Variant
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
+    Dim wsRec As Worksheet
+    Dim lo As ListObject
+    Dim cId As Long
+    Dim arr As Variant
+    Dim r As Long
+    Dim existingId As String
+
+    Set used = CreateObject("Scripting.Dictionary")
+    used.CompareMode = vbTextCompare
+
+    If ProductionDesignsEnabled() Then
+        designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
+        AddUsedRecipeIdsFromDesignRows used, designs
+    End If
+    AddUsedRecipeIdsFromLegacyRuntime used
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    stagedDesigns = modRoleEventWriter.GetLocalStagedDesignIdentities(warehouseId)
+    AddUsedRecipeIdsFromDesignRows used, stagedDesigns
+
+    If preferredWb Is Nothing Then
+        Set wsRec = SheetExists("Recipes")
+    Else
+        Set wsRec = WorkbookSheetExists(preferredWb, "Recipes")
+    End If
+    If Not wsRec Is Nothing Then
+        Set lo = GetListObject(wsRec, "Recipes")
+        If Not lo Is Nothing Then
+            If Not lo.DataBodyRange Is Nothing Then
+                cId = ColumnIndex(lo, "RECIPE_ID")
+                If cId > 0 Then
+                    arr = lo.DataBodyRange.value
+                    For r = 1 To UBound(arr, 1)
+                        existingId = CanonicalRecipeIdProduction(arr(r, cId))
+                        If existingId <> "" Then used(existingId) = True
+                    Next r
+                End If
+            End If
+        End If
+    End If
+
+    Set CollectUsedRecipeIdsProduction = used
+End Function
+
+Private Sub AddUsedRecipeIdsFromLegacyRuntime(ByVal used As Object)
+    On Error GoTo CleanExit
+
+    Dim warehouseId As String
+    Dim rootPath As String
+    Dim report As String
+    Dim wbRuntime As Workbook
+    Dim wsRuntime As Worksheet
+    Dim loRuntime As ListObject
+    Dim openedTransient As Boolean
+    Dim cId As Long
+    Dim arr As Variant
+    Dim r As Long
+    Dim recipeId As String
+
+    If used Is Nothing Then Exit Sub
+    If Not ResolveProductionRecipesStorageTarget(warehouseId, rootPath, report) Then Exit Sub
+    Set wbRuntime = OpenProductionRecipesWorkbook(warehouseId, rootPath, False, openedTransient, report)
+    If wbRuntime Is Nothing Then Exit Sub
+    Set wsRuntime = WorkbookSheetExists(wbRuntime, SHEET_RUNTIME_RECIPES)
+    If wsRuntime Is Nothing Then GoTo CleanExit
+    Set loRuntime = GetListObject(wsRuntime, TABLE_RUNTIME_RECIPES)
+    If loRuntime Is Nothing Or loRuntime.DataBodyRange Is Nothing Then GoTo CleanExit
+    cId = ColumnIndex(loRuntime, "RECIPE_ID")
+    If cId <= 0 Then GoTo CleanExit
+    arr = loRuntime.DataBodyRange.Value
+    For r = 1 To UBound(arr, 1)
+        recipeId = CanonicalRecipeIdProduction(arr(r, cId))
+        If recipeId <> "" Then used(recipeId) = True
+    Next r
+
+CleanExit:
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+End Sub
+
+Private Sub AddUsedRecipeIdsFromDesignRows(ByVal used As Object, ByVal designs As Variant)
+    Dim r As Long
+    Dim recipeId As String
+
+    If used Is Nothing Then Exit Sub
+    If Not IsUsableProductionArray(designs) Then Exit Sub
+    For r = LBound(designs, 1) To UBound(designs, 1)
+        recipeId = CanonicalRecipeIdProduction(designs(r, 1))
+        If recipeId <> "" Then used(recipeId) = True
+    Next r
+End Sub
+
+Private Function CanonicalRecipeIdProduction(ByVal valueIn As Variant) As String
+    Dim textValue As String
+    Dim numericValue As Long
+
+    textValue = UCase$(Trim$(NzStr(valueIn)))
+    If textValue = "" Then Exit Function
+    If Len(textValue) <= 3 And IsNumeric(textValue) Then
+        numericValue = CLng(CDbl(textValue))
+        If numericValue >= 0 And numericValue <= 999 Then
+            CanonicalRecipeIdProduction = Right$("000" & CStr(numericValue), 3)
+            Exit Function
+        End If
+    End If
+    CanonicalRecipeIdProduction = textValue
+End Function
+
+Private Function RecipeIdsMatchProduction(ByVal leftId As Variant, ByVal rightId As Variant) As Boolean
+    RecipeIdsMatchProduction = (StrComp(CanonicalRecipeIdProduction(leftId), _
+                                        CanonicalRecipeIdProduction(rightId), vbTextCompare) = 0)
+End Function
+
+Private Function RecipeIdExistsProduction(ByVal recipeId As String, _
+                                          Optional ByVal preferredWb As Workbook = Nothing) As Boolean
+    Dim used As Object
+
+    recipeId = CanonicalRecipeIdProduction(recipeId)
+    If recipeId = "" Then Exit Function
+    Set used = CollectUsedRecipeIdsProduction(preferredWb)
+    If used Is Nothing Then Exit Function
+    RecipeIdExistsProduction = used.Exists(recipeId)
+End Function
+
+Public Function TestNextBase36RecipeId(ByVal usedIds As Variant) As String
+    Dim used As Object
+    Dim i As Long
+    Dim candidateValue As Long
+    Dim candidateId As String
+
+    Set used = CreateObject("Scripting.Dictionary")
+    If IsArray(usedIds) Then
+        For i = LBound(usedIds) To UBound(usedIds)
+            used(CanonicalRecipeIdProduction(usedIds(i))) = True
+        Next i
+    End If
+    For candidateValue = 1 To 46655
+        candidateId = ToBase36RecipeId(candidateValue)
+        If Not used.Exists(candidateId) Then
+            TestNextBase36RecipeId = candidateId
+            Exit Function
+        End If
+    Next candidateValue
 End Function
 
 Public Function GenerateRecipeIdForCurrentWorkbook() As String
@@ -757,6 +1206,25 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
     If ProductionDesignsEnabled() Then
         Set stagingWb = BuildReleasedDesignRecipeStagingWorkbook(recipeId, syncReport)
         If stagingWb Is Nothing Then
+            Dim unavailableVersion As String
+            Dim unavailableName As String
+            Dim unavailableDescription As String
+            Dim unavailableStatus As String
+            If FindLatestDesignSummaryProduction(recipeId, "", unavailableVersion, _
+                                                  unavailableName, unavailableDescription, _
+                                                  unavailableStatus) Then
+                syncReport = "Recipe " & ValueOrPlaceholderProduction(unavailableName, recipeId) & _
+                             " (Design ID " & recipeId & ", version " & unavailableVersion & _
+                             ") is " & ValueOrPlaceholderProduction(unavailableStatus, "not released") & _
+                             "." & vbCrLf & vbCrLf & _
+                             "Production can load only RELEASED Designs Domain versions. " & _
+                             "Use Admin > Release Design to release this version."
+            Else
+                syncReport = "Recipe Design ID " & recipeId & _
+                             " is not present in the Designs Domain." & vbCrLf & vbCrLf & _
+                             "For an existing legacy recipe, use Admin > Release Design > " & _
+                             "Import Legacy Recipes, then release the imported version."
+            End If
             MsgBox syncReport, vbExclamation, "Production Designs"
             Exit Sub
         End If
@@ -1763,6 +2231,16 @@ ErrHandler:
     report = "CheckInProductionRunWithUsedPayload failed: " & Err.Description
 End Function
 
+Public Function CheckInProductionRunWithUsedPayloadReportForAutomation(ByVal usedPayloadJson As String) As String
+    Dim report As String
+
+    If CheckInProductionRunWithUsedPayload(usedPayloadJson, report) Then
+        CheckInProductionRunWithUsedPayloadReportForAutomation = "OK|" & report
+    Else
+        CheckInProductionRunWithUsedPayloadReportForAutomation = "FAIL|" & report
+    End If
+End Function
+
 Public Function CompleteProductionRunAfterCheckIn(Optional ByRef report As String = "") As Boolean
     On Error GoTo ErrHandler
 
@@ -2493,6 +2971,25 @@ Public Function TestOutputIdentityFromPicker(ByVal pickerItems As Variant, ByVal
     TestOutputIdentityFromPicker = CStr(delta("ROW")) & "|" & NzStr(delta("ITEM_CODE")) & "|" & NzStr(delta("ITEM_NAME"))
 End Function
 
+Public Function TestSelectedMadeDeltaSkuIdentity(ByVal loOut As ListObject) As String
+    Dim notes As String
+    Dim deltas As Collection
+    Dim delta As Object
+
+    Set deltas = BuildMadeDeltasFromProductionOutputRow(loOut, Nothing, 1, notes)
+    If deltas Is Nothing Then
+        TestSelectedMadeDeltaSkuIdentity = "FAIL|" & notes
+        Exit Function
+    End If
+    If deltas.Count <> 1 Then
+        TestSelectedMadeDeltaSkuIdentity = "FAIL|Count=" & CStr(deltas.Count) & "|" & notes
+        Exit Function
+    End If
+    Set delta = deltas(1)
+    TestSelectedMadeDeltaSkuIdentity = "OK|" & CStr(NzLng(delta("ROW"))) & "|" & _
+        NzStr(delta("ITEM_CODE")) & "|" & Format$(NzDbl(delta("QTY")), "0.###")
+End Function
+
 Public Function TestLogProductionOutputRow(ByVal wsProd As Worksheet, ByVal loOut As ListObject, ByVal outputRowNumber As Long) As String
     Dim firstNotes As String
     Dim secondNotes As String
@@ -2665,6 +3162,7 @@ Private Sub SaveIngredientPalette()
     If cItem = 0 Then cItem = ColumnIndex(loItems, "ITEM")
     Dim cUom As Long: cUom = ColumnIndex(loItems, "UOM")
     Dim cRow As Long: cRow = ColumnIndex(loItems, "ROW")
+    Dim cItemCode As Long: cItemCode = ColumnIndex(loItems, "ITEM_CODE")
 
     Dim cOutRec As Long: cOutRec = ColumnIndex(loPal, "RECIPE_ID")
     Dim cOutIng As Long: cOutIng = ColumnIndex(loPal, "INGREDIENT_ID")
@@ -2674,6 +3172,7 @@ Private Sub SaveIngredientPalette()
     Dim cOutUom As Long: cOutUom = ColumnIndex(loPal, "UOM")
     Dim cOutAmt As Long: cOutAmt = ColumnIndex(loPal, "AMOUNT")
     Dim cOutRow As Long: cOutRow = ColumnIndex(loPal, "ROW")
+    Dim cOutItemCode As Long: cOutItemCode = ColumnIndex(loPal, "ITEM_CODE")
     Dim cOutGuid As Long: cOutGuid = ColumnIndex(loPal, "GUID")
 
     Dim added As Long
@@ -2701,6 +3200,8 @@ Private Sub SaveIngredientPalette()
         End If
         If cOutAmt > 0 Then lr.Range.Cells(1, cOutAmt).value = amtVal
         If cOutRow > 0 And cRow > 0 Then lr.Range.Cells(1, cOutRow).value = arr(i, cRow)
+        If cOutItemCode > 0 And cItemCode > 0 Then _
+            lr.Range.Cells(1, cOutItemCode).Value = arr(i, cItemCode)
         If cOutGuid > 0 Then lr.Range.Cells(1, cOutGuid).value = ProductionGuid()
         added = added + 1
 NextItem:
@@ -2901,6 +3402,7 @@ Private Sub PopulateChooseItemFromIngredientPalette(ByVal recipeId As String, By
     Dim cRow As Long: cRow = ColumnIndex(loPal, "ROW")
     Dim cItem As Long: cItem = ColumnIndex(loPal, "ITEM")
     Dim cUom As Long: cUom = ColumnIndex(loPal, "UOM")
+    Dim cItemCode As Long: cItemCode = ColumnIndex(loPal, "ITEM_CODE")
     If cRec = 0 Or cIng = 0 Then Exit Sub
 
     Dim oItem As Long: oItem = ColumnIndex(loItems, "ITEMS")
@@ -2910,6 +3412,7 @@ Private Sub PopulateChooseItemFromIngredientPalette(ByVal recipeId As String, By
     Dim oRow As Long: oRow = ColumnIndex(loItems, "ROW")
     Dim oRec As Long: oRec = ColumnIndex(loItems, "RECIPE_ID")
     Dim oIng As Long: oIng = ColumnIndex(loItems, "INGREDIENT_ID")
+    Dim oItemCode As Long: oItemCode = ColumnIndex(loItems, "ITEM_CODE")
 
     Dim wsInv As Worksheet: Set wsInv = SheetExists("InventoryManagement")
     Dim loInv As ListObject
@@ -2926,6 +3429,7 @@ Private Sub PopulateChooseItemFromIngredientPalette(ByVal recipeId As String, By
             Dim itemName As String: itemName = IIf(cItem > 0, NzStr(arr(r, cItem)), "")
             Dim uomVal As String: uomVal = IIf(cUom > 0, NzStr(arr(r, cUom)), "")
             Dim descVal As String: descVal = ""
+            Dim itemCode As String: itemCode = IIf(cItemCode > 0, NzStr(arr(r, cItemCode)), "")
 
             If rowVal > 0 And Not loInv Is Nothing Then
                 ResolveInvSysDetailsByRow loInv, rowVal, itemName, uomVal, descVal
@@ -2937,6 +3441,7 @@ Private Sub PopulateChooseItemFromIngredientPalette(ByVal recipeId As String, By
             If oUom > 0 Then loItems.DataBodyRange.Cells(writeRow, oUom).value = uomVal
             If oDesc > 0 Then loItems.DataBodyRange.Cells(writeRow, oDesc).value = descVal
             If oRow > 0 Then loItems.DataBodyRange.Cells(writeRow, oRow).value = rowVal
+            If oItemCode > 0 Then loItems.DataBodyRange.Cells(writeRow, oItemCode).Value = itemCode
             If oRec > 0 Then loItems.DataBodyRange.Cells(writeRow, oRec).value = recipeId
             If oIng > 0 Then loItems.DataBodyRange.Cells(writeRow, oIng).value = ingredientId
         End If
@@ -3271,6 +3776,9 @@ Private Function LoadLegacyIngredientListForRecipe(ByVal recipeId As String) As 
     Dim r As Long
     For r = 1 To UBound(arr, 1)
         If NzStr(arr(r, cRecId)) = recipeId Then
+            If cIO > 0 Then
+                If StrComp(Trim$(NzStr(arr(r, cIO))), "INSTRUCTION", vbTextCompare) = 0 Then GoTo NextLegacyIngredient
+            End If
             Dim key As String
             key = NzStr(arr(r, cIngId)) & "|" & NzStr(arr(r, cProc))
             If Not dict.Exists(key) Then
@@ -3285,6 +3793,7 @@ Private Function LoadLegacyIngredientListForRecipe(ByVal recipeId As String) As 
                 dict.Add key, info
             End If
         End If
+NextLegacyIngredient:
     Next r
 
     If dict.count = 0 Then Exit Function
@@ -3311,6 +3820,14 @@ Private Function LoadRecipeListFromDesigns(ByVal statusFilter As String) As Vari
     On Error GoTo CleanFail
 
     Dim designs As Variant
+    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, statusFilter)
+    LoadRecipeListFromDesigns = BuildRecipeListFromDesignRows(designs)
+CleanFail:
+End Function
+
+Private Function BuildRecipeListFromDesignRows(ByVal designs As Variant) As Variant
+    On Error GoTo CleanFail
+
     Dim latest As Object
     Dim info As Variant
     Dim result() As Variant
@@ -3321,26 +3838,24 @@ Private Function LoadRecipeListFromDesigns(ByVal statusFilter As String) As Vari
     Dim designType As String
     Dim key As Variant
 
-    If Not ProductionDesignsEnabled() Then Exit Function
-    designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, statusFilter)
     If Not IsUsableProductionArray(designs) Then Exit Function
 
     Set latest = CreateObject("Scripting.Dictionary")
     latest.CompareMode = vbTextCompare
     For r = LBound(designs, 1) To UBound(designs, 1)
-        designId = Trim$(NzStr(designs(r, 1)))
+        designId = CanonicalRecipeIdProduction(designs(r, 1))
         designVersion = Trim$(NzStr(designs(r, 2)))
         designType = UCase$(Trim$(NzStr(designs(r, 3))))
         If designId = "" Or designVersion = "" Then GoTo NextDesign
         If designType <> "" And designType <> "RECIPE" Then GoTo NextDesign
 
-        If Not latest.Exists(designId) Then
-            latest.Add designId, Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
+        ' Designs rows are returned in authoritative replay/apply order.
+        ' The last row for an ID is the latest immutable version; version text
+        ' itself is not an ordering contract (for example v1 versus timestamps).
+        If latest.Exists(designId) Then
+            latest(designId) = Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
         Else
-            info = latest(designId)
-            If IsNewerDesignVersionProduction(designVersion, NzStr(info(0))) Then
-                latest(designId) = Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
-            End If
+            latest.Add designId, Array(designVersion, NzStr(designs(r, 4)), NzStr(designs(r, 5)))
         End If
 NextDesign:
     Next r
@@ -3355,8 +3870,33 @@ NextDesign:
         result(i, 3) = info(2)
         i = i + 1
     Next key
-    LoadRecipeListFromDesigns = result
+    BuildRecipeListFromDesignRows = result
 CleanFail:
+End Function
+
+Public Function TestLatestRecipeNameFromDesignRows(ByVal designs As Variant, _
+                                                   ByVal recipeId As String) As String
+    Dim recipes As Variant
+    Dim r As Long
+
+    recipes = BuildRecipeListFromDesignRows(designs)
+    If Not IsUsableProductionArray(recipes) Then Exit Function
+    For r = LBound(recipes, 1) To UBound(recipes, 1)
+        If StrComp(Trim$(NzStr(recipes(r, 1))), Trim$(recipeId), vbTextCompare) = 0 Then
+            TestLatestRecipeNameFromDesignRows = NzStr(recipes(r, 2))
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function ValueOrPlaceholderProduction(ByVal preferredValue As String, _
+                                              ByVal fallbackValue As String) As String
+    preferredValue = Trim$(preferredValue)
+    If preferredValue <> "" Then
+        ValueOrPlaceholderProduction = preferredValue
+    Else
+        ValueOrPlaceholderProduction = Trim$(fallbackValue)
+    End If
 End Function
 
 Private Function LoadIngredientListFromDesigns(ByVal recipeId As String) As Variant
@@ -3371,6 +3911,9 @@ Private Function LoadIngredientListFromDesigns(ByVal recipeId As String) As Vari
     Dim r As Long
     Dim ingredientId As String
     Dim ingredientName As String
+    Dim outRow As Long
+    Dim trimmed() As Variant
+    Dim c As Long
 
     recipeId = Trim$(recipeId)
     If recipeId = "" Then Exit Function
@@ -3380,22 +3923,32 @@ Private Function LoadIngredientListFromDesigns(ByVal recipeId As String) As Vari
     bom = modDesignsDomainBridge.GetDesignBOMBridge(recipeId, designVersion, Nothing)
     If Not IsUsableProductionArray(bom) Then Exit Function
 
-    ReDim result(LBound(bom, 1) To UBound(bom, 1), 1 To 7)
+    ReDim result(1 To UBound(bom, 1) - LBound(bom, 1) + 1, 1 To 7)
     For r = LBound(bom, 1) To UBound(bom, 1)
+        If StrComp(Trim$(NzStr(bom(r, 3))), "INSTRUCTION", vbTextCompare) = 0 Then GoTo NextBomRow
+        outRow = outRow + 1
         ingredientId = Trim$(NzStr(bom(r, 5)))
         If ingredientId = "" Then ingredientId = Trim$(NzStr(bom(r, 4)))
         ingredientName = Trim$(NzStr(bom(r, 10)))
         If ingredientName = "" Then ingredientName = ingredientId
 
-        result(r, 1) = ingredientId
-        result(r, 2) = ingredientName
-        result(r, 3) = bom(r, 8)
-        result(r, 4) = bom(r, 2)
-        result(r, 5) = bom(r, 3)
-        result(r, 6) = bom(r, 7)
-        result(r, 7) = bom(r, 9)
+        result(outRow, 1) = ingredientId
+        result(outRow, 2) = ingredientName
+        result(outRow, 3) = bom(r, 8)
+        result(outRow, 4) = bom(r, 2)
+        result(outRow, 5) = bom(r, 3)
+        result(outRow, 6) = bom(r, 7)
+        result(outRow, 7) = bom(r, 9)
+NextBomRow:
     Next r
-    LoadIngredientListFromDesigns = result
+    If outRow = 0 Then Exit Function
+    ReDim trimmed(1 To outRow, 1 To 7)
+    For r = 1 To outRow
+        For c = 1 To 7
+            trimmed(r, c) = result(r, c)
+        Next c
+    Next r
+    LoadIngredientListFromDesigns = trimmed
 CleanFail:
 End Function
 
@@ -3409,37 +3962,20 @@ Private Function FindLatestDesignSummaryProduction(ByVal designId As String, _
 
     Dim designs As Variant
     Dim r As Long
-    Dim candidateVersion As String
 
     If Not ProductionDesignsEnabled() Then Exit Function
     designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, statusFilter)
     If Not IsUsableProductionArray(designs) Then Exit Function
     For r = LBound(designs, 1) To UBound(designs, 1)
-        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(designId), vbTextCompare) = 0 Then
-            candidateVersion = Trim$(NzStr(designs(r, 2)))
-            If designVersion = "" Or IsNewerDesignVersionProduction(candidateVersion, designVersion) Then
-                designVersion = candidateVersion
-                designName = NzStr(designs(r, 4))
-                designDescription = NzStr(designs(r, 5))
-                designStatus = NzStr(designs(r, 6))
-            End If
+        If RecipeIdsMatchProduction(designs(r, 1), designId) Then
+            designVersion = Trim$(NzStr(designs(r, 2)))
+            designName = NzStr(designs(r, 4))
+            designDescription = NzStr(designs(r, 5))
+            designStatus = NzStr(designs(r, 6))
         End If
     Next r
     FindLatestDesignSummaryProduction = (designVersion <> "")
 CleanFail:
-End Function
-
-Private Function IsNewerDesignVersionProduction(ByVal candidateVersion As String, _
-                                                ByVal currentVersion As String) As Boolean
-    candidateVersion = Trim$(candidateVersion)
-    currentVersion = Trim$(currentVersion)
-    If currentVersion = "" Then
-        IsNewerDesignVersionProduction = (candidateVersion <> "")
-    ElseIf IsNumeric(candidateVersion) And IsNumeric(currentVersion) Then
-        IsNewerDesignVersionProduction = (CDbl(candidateVersion) > CDbl(currentVersion))
-    Else
-        IsNewerDesignVersionProduction = (StrComp(candidateVersion, currentVersion, vbTextCompare) > 0)
-    End If
 End Function
 
 Private Function IsUsableProductionArray(ByVal values As Variant) As Boolean
@@ -3452,7 +3988,19 @@ End Function
 
 Private Function ProductionDesignsEnabled() As Boolean
     On Error GoTo CleanFail
-    If Not modConfig.IsLoaded() Then Exit Function
+    Dim target As WarehouseTarget
+    Dim targetWarehouseId As String
+    Dim targetStationId As String
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then
+        targetWarehouseId = Trim$(target.WarehouseId)
+        targetStationId = Trim$(target.StationId)
+    End If
+    If Not modConfig.IsLoaded() _
+       Or (targetWarehouseId <> "" And StrComp(modConfig.GetWarehouseId(), targetWarehouseId, vbTextCompare) <> 0) Then
+        If Not modConfig.LoadConfig(targetWarehouseId, targetStationId) Then Exit Function
+    End If
     ProductionDesignsEnabled = modConfig.GetBool("DesignsEnabled", False) _
                                Or modConfig.GetBool("FF_DesignsEnabled", False)
 CleanFail:
@@ -3504,6 +4052,9 @@ Private Function QueueSavedRecipeDesignCreate(ByVal loRecipes As ListObject, _
     Dim cPercent As Long
     Dim cLineNo As Long
     Dim lineNo As Long
+    Dim target As WarehouseTarget
+    Dim targetWarehouseId As String
+    Dim targetStationId As String
 
     If loRecipes Is Nothing Or loRecipes.DataBodyRange Is Nothing Then
         report = "No saved recipe rows were available for the Designs event."
@@ -3575,14 +4126,22 @@ Private Function QueueSavedRecipeDesignCreate(ByVal loRecipes As ListObject, _
         Exit Function
     End If
 
-    appliedCount = modProcessor.RunBatch("", 0, processorReport)
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then
+        targetWarehouseId = Trim$(target.WarehouseId)
+        targetStationId = Trim$(target.StationId)
+    End If
+    appliedCount = modProcessor.RunBatch(targetWarehouseId, 0, processorReport)
+    If targetWarehouseId <> "" Then
+        Call modConfig.LoadConfig(targetWarehouseId, targetStationId)
+    End If
     If DesignVersionExistsProduction(recipeId, designVersion) Then
         report = "applied; EventID=" & eventId
+        QueueSavedRecipeDesignCreate = True
     Else
-        report = "queued; EventID=" & eventId
+        report = "queued but not yet applied; EventID=" & eventId
         If Trim$(processorReport) <> "" Then report = report & "; Processor=" & processorReport
     End If
-    QueueSavedRecipeDesignCreate = True
     Exit Function
 
 FailQueue:
@@ -3597,22 +4156,39 @@ Private Function NextRecipeDesignVersionProduction(ByVal recipeId As String) As 
     Dim maxNumericVersion As Long
     Dim candidate As String
     Dim foundNonNumeric As Boolean
+    Dim stagedDesigns As Variant
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
 
     designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
-    If Not IsUsableProductionArray(designs) Then
-        NextRecipeDesignVersionProduction = "1"
-        Exit Function
-    End If
-    For r = LBound(designs, 1) To UBound(designs, 1)
-        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(recipeId), vbTextCompare) = 0 Then
-            candidate = Trim$(NzStr(designs(r, 2)))
-            If IsNumeric(candidate) Then
-                If CLng(CDbl(candidate)) > maxNumericVersion Then maxNumericVersion = CLng(CDbl(candidate))
-            ElseIf candidate <> "" Then
-                foundNonNumeric = True
+    If IsUsableProductionArray(designs) Then
+        For r = LBound(designs, 1) To UBound(designs, 1)
+            If RecipeIdsMatchProduction(designs(r, 1), recipeId) Then
+                candidate = Trim$(NzStr(designs(r, 2)))
+                If IsNumeric(candidate) Then
+                    If CLng(CDbl(candidate)) > maxNumericVersion Then maxNumericVersion = CLng(CDbl(candidate))
+                ElseIf candidate <> "" Then
+                    foundNonNumeric = True
+                End If
             End If
-        End If
-    Next r
+        Next r
+    End If
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    stagedDesigns = modRoleEventWriter.GetLocalStagedDesignIdentities(warehouseId)
+    If IsUsableProductionArray(stagedDesigns) Then
+        For r = LBound(stagedDesigns, 1) To UBound(stagedDesigns, 1)
+            If RecipeIdsMatchProduction(stagedDesigns(r, 1), recipeId) Then
+                candidate = Trim$(NzStr(stagedDesigns(r, 2)))
+                If IsNumeric(candidate) Then
+                    If CLng(CDbl(candidate)) > maxNumericVersion Then maxNumericVersion = CLng(CDbl(candidate))
+                ElseIf candidate <> "" Then
+                    foundNonNumeric = True
+                End If
+            End If
+        Next r
+    End If
 
     If foundNonNumeric And maxNumericVersion = 0 Then
         NextRecipeDesignVersionProduction = Format$(Now, "yyyymmddhhnnss")
@@ -3633,7 +4209,7 @@ Private Function DesignVersionExistsProduction(ByVal designId As String, ByVal d
     designs = modDesignsDomainBridge.ListDesignsBridge(Nothing, "")
     If Not IsUsableProductionArray(designs) Then Exit Function
     For r = LBound(designs, 1) To UBound(designs, 1)
-        If StrComp(Trim$(NzStr(designs(r, 1))), Trim$(designId), vbTextCompare) = 0 _
+        If RecipeIdsMatchProduction(designs(r, 1), designId) _
            And StrComp(Trim$(NzStr(designs(r, 2))), Trim$(designVersion), vbTextCompare) = 0 Then
             DesignVersionExistsProduction = True
             Exit Function
@@ -3681,6 +4257,123 @@ Private Function BuildDesignRecipeStagingWorkbook(ByVal recipeId As String, _
 
 FailBuild:
     report = "BuildDesignRecipeStagingWorkbook failed: " & Err.Description
+End Function
+
+Private Function BuildPendingDesignRecipeStagingWorkbook(ByVal recipeId As String, _
+                                                         ByRef report As String) As Workbook
+    On Error GoTo FailBuild
+
+    Dim target As WarehouseTarget
+    Dim warehouseId As String
+    Dim staged As Variant
+    Dim payloadJson As String
+    Dim recipeName As String
+    Dim recipeDescription As String
+    Dim rx As Object
+    Dim matches As Object
+    Dim matchItem As Object
+    Dim bom() As Variant
+    Dim objectText As String
+    Dim r As Long
+    Dim candidateId As String
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    staged = modRoleEventWriter.GetLocalStagedDesignIdentities(warehouseId)
+    If Not IsUsableProductionArray(staged) Then Exit Function
+
+    For r = LBound(staged, 1) To UBound(staged, 1)
+        candidateId = CanonicalRecipeIdProduction(staged(r, 1))
+        If StrComp(candidateId, CanonicalRecipeIdProduction(recipeId), vbTextCompare) = 0 Then
+            If UBound(staged, 2) >= 3 Then recipeName = NzStr(staged(r, 3))
+            If UBound(staged, 2) >= 4 Then recipeDescription = NzStr(staged(r, 4))
+            If UBound(staged, 2) >= 5 Then payloadJson = NzStr(staged(r, 5))
+        End If
+    Next r
+    If Trim$(payloadJson) = "" Then Exit Function
+
+    Set rx = CreateObject("VBScript.RegExp")
+    rx.Global = True
+    rx.IgnoreCase = True
+    rx.Pattern = "\{[^{}]*\}"
+    Set matches = rx.Execute(payloadJson)
+    If matches.Count = 0 Then Exit Function
+
+    ReDim bom(1 To matches.Count, 1 To 10)
+    r = 1
+    For Each matchItem In matches
+        objectText = CStr(matchItem.Value)
+        bom(r, 1) = JsonPayloadNumberField(objectText, "LineNo")
+        bom(r, 2) = JsonPayloadNumberField(objectText, "Process")
+        bom(r, 3) = JsonPayloadStringField(objectText, "IOType")
+        bom(r, 4) = JsonPayloadStringField(objectText, "ComponentDesignId")
+        bom(r, 5) = bom(r, 4)
+        bom(r, 7) = JsonPayloadNumberField(objectText, "Qty")
+        bom(r, 8) = JsonPayloadStringField(objectText, "UOM")
+        bom(r, 9) = JsonPayloadNumberField(objectText, "Percent")
+        bom(r, 10) = JsonPayloadStringField(objectText, "Instruction")
+        r = r + 1
+    Next matchItem
+
+    Set BuildPendingDesignRecipeStagingWorkbook = _
+        BuildDesignRecipeStagingWorkbookFromData( _
+            CanonicalRecipeIdProduction(recipeId), recipeName, recipeDescription, bom, report)
+    Exit Function
+
+FailBuild:
+    report = "BuildPendingDesignRecipeStagingWorkbook failed: " & Err.Description
+End Function
+
+Private Function BuildLegacyRuntimeRecipeStagingWorkbook(ByVal recipeId As String, _
+                                                         ByRef report As String) As Workbook
+    On Error GoTo FailBuild
+
+    Dim warehouseId As String
+    Dim rootPath As String
+    Dim wbRuntime As Workbook
+    Dim wsRuntime As Worksheet
+    Dim loRuntime As ListObject
+    Dim openedTransient As Boolean
+    Dim wbStaging As Workbook
+    Dim wsStaging As Worksheet
+    Dim loStaging As ListObject
+    Dim copied As Long
+
+    If Not ResolveProductionRecipesStorageTarget(warehouseId, rootPath, report) Then Exit Function
+    Set wbRuntime = OpenProductionRecipesWorkbook(warehouseId, rootPath, False, openedTransient, report)
+    If wbRuntime Is Nothing Then Exit Function
+    Set wsRuntime = WorkbookSheetExists(wbRuntime, SHEET_RUNTIME_RECIPES)
+    If wsRuntime Is Nothing Then GoTo CleanExit
+    Set loRuntime = GetListObject(wsRuntime, TABLE_RUNTIME_RECIPES)
+    If loRuntime Is Nothing Then GoTo CleanExit
+
+    Set wbStaging = CreateEmptyDesignRecipeStagingWorkbook(report)
+    If wbStaging Is Nothing Then GoTo CleanExit
+    Set wsStaging = WorkbookSheetExists(wbStaging, "Recipes")
+    If wsStaging Is Nothing Then GoTo CleanExit
+    Set loStaging = GetListObject(wsStaging, "Recipes")
+    If loStaging Is Nothing Then GoTo CleanExit
+    copied = CopyProductionRecipeRowsById( _
+        loRuntime, loStaging, CanonicalRecipeIdProduction(recipeId), False)
+    If copied = 0 Then
+        CloseWorkbookNoSaveProduction wbStaging
+        Set wbStaging = Nothing
+        GoTo CleanExit
+    End If
+
+    report = "Prepared transient legacy runtime staging for " & recipeId & "."
+    Set BuildLegacyRuntimeRecipeStagingWorkbook = wbStaging
+
+CleanExit:
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+    Exit Function
+
+FailBuild:
+    report = "BuildLegacyRuntimeRecipeStagingWorkbook failed: " & Err.Description
+    On Error Resume Next
+    If Not wbStaging Is Nothing Then wbStaging.Close SaveChanges:=False
+    If openedTransient Then CloseWorkbookNoSaveProduction wbRuntime
+    On Error GoTo 0
 End Function
 
 Public Function BuildDesignRecipeStagingWorkbookFromData(ByVal recipeId As String, _
@@ -3817,7 +4510,7 @@ Public Function LoadProductionRunIngredientChoices(Optional ByVal recipeId As St
     If IsEmpty(ingredients) Then Exit Function
     paletteRows = LoadIngredientPaletteRowsForRecipe(recipeId)
 
-    ReDim result(1 To 5000, 1 To 10)
+    ReDim result(1 To 5000, 1 To 11)
     For ingRow = LBound(ingredients, 1) To UBound(ingredients, 1)
         ingredientId = NzStr(ingredients(ingRow, 1))
         ingredientName = NzStr(ingredients(ingRow, 2))
@@ -3842,6 +4535,7 @@ Public Function LoadProductionRunIngredientChoices(Optional ByVal recipeId As St
                     result(outRow, 8) = IIf(NzStr(paletteRows(palRow, 6)) <> "", NzStr(paletteRows(palRow, 6)), uomVal)
                     result(outRow, 9) = ""
                     result(outRow, 10) = baseQty
+                    If UBound(paletteRows, 2) >= 7 Then result(outRow, 11) = NzStr(paletteRows(palRow, 7))
                     matched = True
                 End If
             Next palRow
@@ -3859,6 +4553,7 @@ Public Function LoadProductionRunIngredientChoices(Optional ByVal recipeId As St
             result(outRow, 8) = uomVal
             result(outRow, 9) = ""
             result(outRow, 10) = baseQty
+            result(outRow, 11) = ""
         End If
 NextIngredient:
     Next ingRow
@@ -3893,13 +4588,14 @@ Private Function LoadIngredientPaletteRowsForRecipe(ByVal recipeId As String) As
     Dim cItem As Long: cItem = ColumnIndex(loPal, "ITEM")
     Dim cRow As Long: cRow = ColumnIndex(loPal, "ROW")
     Dim cUom As Long: cUom = ColumnIndex(loPal, "UOM")
+    Dim cItemCode As Long: cItemCode = ColumnIndex(loPal, "ITEM_CODE")
     If cRecipe = 0 Or cIngredient = 0 Then Exit Function
 
     Dim arr As Variant: arr = loPal.DataBodyRange.Value
     Dim result() As Variant
     Dim r As Long
     Dim outRow As Long
-    ReDim result(1 To UBound(arr, 1), 1 To 6)
+    ReDim result(1 To UBound(arr, 1), 1 To 7)
     For r = 1 To UBound(arr, 1)
         If NormalizeIdFirst(NzStr(arr(r, cRecipe))) = NormalizeIdFirst(recipeId) Then
             outRow = outRow + 1
@@ -3909,20 +4605,74 @@ Private Function LoadIngredientPaletteRowsForRecipe(ByVal recipeId As String) As
             If cItem > 0 Then result(outRow, 4) = NzStr(arr(r, cItem))
             If cRow > 0 Then result(outRow, 5) = NzStr(arr(r, cRow))
             If cUom > 0 Then result(outRow, 6) = NzStr(arr(r, cUom))
+            If cItemCode > 0 Then result(outRow, 7) = NzStr(arr(r, cItemCode))
         End If
     Next r
 
     If outRow = 0 Then Exit Function
+    HydrateIngredientPaletteIdentityRowsProduction result, outRow
     LoadIngredientPaletteRowsForRecipe = TrimIngredientPaletteRows(result, outRow)
 End Function
+
+Private Sub HydrateIngredientPaletteIdentityRowsProduction(ByRef paletteRows() As Variant, _
+                                                           ByVal rowCount As Long)
+    Dim inventoryRows As Variant
+    Dim pr As Long
+    Dim ir As Long
+    Dim paletteItem As String
+    Dim paletteUom As String
+    Dim candidateItem As String
+    Dim candidateUom As String
+    Dim candidateCode As String
+    Dim matchedCode As String
+    Dim matchedRow As String
+    Dim ambiguous As Boolean
+
+    If rowCount <= 0 Then Exit Sub
+    inventoryRows = LoadProductionRunInventoryPickerItems("")
+    If Not IsUsableProductionArray(inventoryRows) Then Exit Sub
+    If UBound(inventoryRows, 2) < 7 Then Exit Sub
+
+    For pr = 1 To rowCount
+        If Trim$(NzStr(paletteRows(pr, 7))) <> "" Then GoTo NextPaletteRow
+        paletteItem = Trim$(NzStr(paletteRows(pr, 4)))
+        paletteUom = Trim$(NzStr(paletteRows(pr, 6)))
+        If paletteItem = "" Or paletteUom = "" Then GoTo NextPaletteRow
+
+        matchedCode = vbNullString
+        matchedRow = vbNullString
+        ambiguous = False
+        For ir = LBound(inventoryRows, 1) To UBound(inventoryRows, 1)
+            candidateItem = Trim$(NzStr(inventoryRows(ir, 2)))
+            candidateUom = Trim$(NzStr(inventoryRows(ir, 3)))
+            candidateCode = Trim$(NzStr(inventoryRows(ir, 7)))
+            If candidateCode <> "" _
+               And StrComp(candidateItem, paletteItem, vbTextCompare) = 0 _
+               And StrComp(candidateUom, paletteUom, vbTextCompare) = 0 Then
+                If matchedCode = "" Then
+                    matchedCode = candidateCode
+                    matchedRow = NzStr(inventoryRows(ir, 1))
+                ElseIf StrComp(matchedCode, candidateCode, vbTextCompare) <> 0 Then
+                    ambiguous = True
+                    Exit For
+                End If
+            End If
+        Next ir
+        If Not ambiguous And matchedCode <> "" Then
+            paletteRows(pr, 7) = matchedCode
+            If Trim$(NzStr(paletteRows(pr, 5))) = "" Then paletteRows(pr, 5) = matchedRow
+        End If
+NextPaletteRow:
+    Next pr
+End Sub
 
 Private Function TrimRunChoiceRows(ByVal result As Variant, ByVal rowCount As Long) As Variant
     Dim trimmed() As Variant
     Dim r As Long
     Dim c As Long
-    ReDim trimmed(1 To rowCount, 1 To 10)
+    ReDim trimmed(1 To rowCount, 1 To 11)
     For r = 1 To rowCount
-        For c = 1 To 10
+        For c = 1 To 11
             trimmed(r, c) = result(r, c)
         Next c
     Next r
@@ -3933,9 +4683,9 @@ Private Function TrimIngredientPaletteRows(ByVal result As Variant, ByVal rowCou
     Dim trimmed() As Variant
     Dim r As Long
     Dim c As Long
-    ReDim trimmed(1 To rowCount, 1 To 6)
+    ReDim trimmed(1 To rowCount, 1 To 7)
     For r = 1 To rowCount
-        For c = 1 To 6
+        For c = 1 To 7
             trimmed(r, c) = result(r, c)
         Next c
     Next r
@@ -5614,6 +6364,8 @@ Private Sub UpdateProductionOutputTable(ByVal loOut As ListObject, ByVal entries
 
     Dim cRow As Long
     cRow = EnsureProductionOutputRowColumn(loOut)
+    Dim cItemCode As Long
+    cItemCode = EnsureProductionOutputItemCodeColumn(loOut)
 
     Dim existing As Object: Set existing = CreateObject("Scripting.Dictionary")
     If Not loOut.DataBodyRange Is Nothing Then
@@ -5707,20 +6459,29 @@ Private Sub UpdateProductionOutputTable(ByVal loOut As ListObject, ByVal entries
 
         If cRow > 0 Then
             Dim rowVal As Long
+            Dim itemCodeVal As String
+            Dim resolvedItemName As String
             Dim recId As String
             Dim ingId As String
             If Not loOut.DataBodyRange Is Nothing Then
                 rowVal = NzLng(loOut.DataBodyRange.Cells(targetRow, cRow).value)
+                If cItemCode > 0 Then itemCodeVal = NzStr(loOut.DataBodyRange.Cells(targetRow, cItemCode).Value)
             End If
             recId = NzStr(entry("RECIPE_ID"))
             ingId = NzStr(entry("INGREDIENT_ID"))
-            rowVal = ResolveProductionOutputInventoryRow(invLo, outputLookup, rowVal, outputName, recId, ingId, errNotes)
+            ResolveProductionOutputIdentityFromPicker outputName, rowVal, itemCodeVal, resolvedItemName, errNotes
+            If rowVal = 0 And itemCodeVal = "" Then
+                rowVal = ResolveProductionOutputInventoryRow(invLo, outputLookup, rowVal, outputName, recId, ingId, errNotes)
+            End If
             If rowVal <> 0 Then
                 If Not loOut.DataBodyRange Is Nothing Then
                     loOut.DataBodyRange.Cells(targetRow, cRow).value = rowVal
                 End If
             ElseIf Not loOut.DataBodyRange Is Nothing Then
                 loOut.DataBodyRange.Cells(targetRow, cRow).value = vbNullString
+            End If
+            If cItemCode > 0 And Not loOut.DataBodyRange Is Nothing Then
+                loOut.DataBodyRange.Cells(targetRow, cItemCode).Value = itemCodeVal
             End If
         End If
 NextEntry:
@@ -5764,6 +6525,22 @@ Private Function EnsureProductionOutputRowColumn(ByVal loOut As ListObject) As L
         On Error GoTo 0
     End If
     EnsureProductionOutputRowColumn = cRow
+End Function
+
+Private Function EnsureProductionOutputItemCodeColumn(ByVal loOut As ListObject) As Long
+    If loOut Is Nothing Then Exit Function
+    Dim cItemCode As Long: cItemCode = ColumnIndex(loOut, "ITEM_CODE")
+    If cItemCode = 0 Then
+        On Error Resume Next
+        Dim newCol As ListColumn
+        Set newCol = loOut.ListColumns.Add
+        If Not newCol Is Nothing Then
+            newCol.Name = "ITEM_CODE"
+            cItemCode = newCol.Index
+        End If
+        On Error GoTo 0
+    End If
+    EnsureProductionOutputItemCodeColumn = cItemCode
 End Function
 
 Private Function BuildOutputKey(ByVal procName As String, ByVal outputName As String) As String
@@ -5914,6 +6691,88 @@ Private Function ResolveProductionOutputInventoryRow(ByVal invLo As ListObject, 
     Else
         AppendNote errNotes, "No inventory row was found for production output '" & outputName & "'."
     End If
+End Function
+
+Private Function ResolveProductionOutputIdentityFromPicker(ByVal outputName As String, _
+                                                           ByRef rowVal As Long, _
+                                                           ByRef itemCode As String, _
+                                                           ByRef itemName As String, _
+                                                           ByRef errNotes As String) As Boolean
+    Dim pickerItems As Variant
+
+    pickerItems = LoadProductionInventoryPickerItems("")
+    ResolveProductionOutputIdentityFromPicker = ResolveProductionOutputIdentityFromPickerRows( _
+        pickerItems, outputName, rowVal, itemCode, itemName, errNotes)
+End Function
+
+Private Function ResolveProductionOutputIdentityFromPickerRows(ByVal pickerItems As Variant, _
+                                                               ByVal outputName As String, _
+                                                               ByRef rowVal As Long, _
+                                                               ByRef itemCode As String, _
+                                                               ByRef itemName As String, _
+                                                               ByRef errNotes As String) As Boolean
+    Dim wantedTokens As Object
+    Dim identities As Object
+    Dim candidateData As Variant
+    Dim pass As Long
+    Dim r As Long
+    Dim candidateRow As Long
+    Dim candidateCode As String
+    Dim candidateName As String
+    Dim candidateText As String
+    Dim identityKey As String
+    Dim matched As Boolean
+    Dim key As Variant
+
+    outputName = Trim$(outputName)
+    If outputName = "" Then Exit Function
+    If IsEmpty(pickerItems) Or Not IsArray(pickerItems) Then Exit Function
+    If UBound(pickerItems, 2) < 7 Then Exit Function
+    Set wantedTokens = LookupTokens(outputName)
+
+    For pass = 1 To 2
+        Set identities = CreateObject("Scripting.Dictionary")
+        identities.CompareMode = vbTextCompare
+        For r = LBound(pickerItems, 1) To UBound(pickerItems, 1)
+            candidateRow = NzLng(pickerItems(r, 1))
+            candidateName = Trim$(NzStr(pickerItems(r, 2)))
+            candidateCode = Trim$(NzStr(pickerItems(r, 7)))
+            If candidateCode = "" And candidateRow = 0 Then GoTo NextPickerRow
+
+            If pass = 1 Then
+                matched = (StrComp(candidateName, outputName, vbTextCompare) = 0)
+            Else
+                candidateText = candidateName & " " & NzStr(pickerItems(r, 6)) & " " & candidateCode
+                matched = LookupCandidateMatchesTokens(candidateText, wantedTokens)
+            End If
+            If Not matched Then GoTo NextPickerRow
+
+            If candidateCode <> "" Then
+                identityKey = "SKU|" & candidateCode
+            Else
+                identityKey = "ROW|" & CStr(candidateRow)
+            End If
+            If Not identities.Exists(identityKey) Then
+                identities.Add identityKey, Array(candidateRow, candidateCode, candidateName)
+            End If
+NextPickerRow:
+        Next r
+
+        If identities.Count = 1 Then
+            For Each key In identities.Keys
+                candidateData = identities(key)
+                If rowVal = 0 Then rowVal = NzLng(candidateData(0))
+                If Trim$(itemCode) = "" Then itemCode = NzStr(candidateData(1))
+                If Trim$(itemName) = "" Then itemName = NzStr(candidateData(2))
+                ResolveProductionOutputIdentityFromPickerRows = True
+                Exit Function
+            Next key
+        ElseIf identities.Count > 1 Then
+            AppendNote errNotes, "Production output '" & outputName & _
+                "' matched more than one canonical SKU. Select a unique inventory output."
+            Exit Function
+        End If
+    Next pass
 End Function
 
 Private Function LookupOutputRowLooseFromPicker(ByVal pickerItems As Variant, ByVal outputName As String, ByRef errNotes As String) As Long
@@ -6196,17 +7055,19 @@ Private Function BuildUsedDeltaPacketFromCheck(ByVal loCheck As ListObject, ByVa
     For r = 1 To loCheck.ListRows.count
         Dim rowVal As Long
         rowVal = NzLng(loCheck.DataBodyRange.Cells(r, cRowChk).value)
+        Dim itemCodeVal As String
+        If cItemCodeChk > 0 Then itemCodeVal = Trim$(NzStr(loCheck.DataBodyRange.Cells(r, cItemCodeChk).Value))
         Dim qtyVal As Double
         qtyVal = NzDbl(loCheck.DataBodyRange.Cells(r, cUsedChk).value)
-        If rowVal <= 0 Or qtyVal <= 0 Then GoTo NextRow
+        If (rowVal <= 0 And itemCodeVal = "") Or qtyVal <= 0 Then GoTo NextRow
 
         Dim delta As Object
         Set delta = CreateObject("Scripting.Dictionary")
         delta("ROW") = rowVal
         delta("QTY") = qtyVal
-        If cItemCodeChk > 0 Then delta("ITEM_CODE") = NzStr(loCheck.DataBodyRange.Cells(r, cItemCodeChk).value)
+        delta("ITEM_CODE") = itemCodeVal
         If cItemNameChk > 0 Then delta("ITEM_NAME") = NzStr(loCheck.DataBodyRange.Cells(r, cItemNameChk).value)
-        If Not rowIndex Is Nothing Then
+        If rowVal > 0 And Not rowIndex Is Nothing Then
             If rowIndex.Exists(CStr(rowVal)) Then
                 Dim invIdx As Long
                 invIdx = CLng(rowIndex(CStr(rowVal)))
@@ -6324,13 +7185,14 @@ Private Function BuildMadeDeltasFromProductionOutput(ByVal loOut As ListObject, 
     Dim cOutput As Long: cOutput = ColumnIndex(loOut, "OUTPUT")
     Dim cRowOut As Long: cRowOut = ColumnIndex(loOut, "ROW")
     If cRowOut = 0 Then cRowOut = ColumnIndexLoose(loOut, "ROW", "ROWID", "ROW#")
+    Dim cItemCodeOut As Long: cItemCodeOut = ColumnIndex(loOut, "ITEM_CODE")
 
     If cReal = 0 Then
         errNotes = "ProductionOutput missing REAL OUTPUT column."
         Exit Function
     End If
-    If cRowOut = 0 And cOutput = 0 Then
-        errNotes = "ProductionOutput missing ROW/OUTPUT columns."
+    If cRowOut = 0 And cItemCodeOut = 0 And cOutput = 0 Then
+        errNotes = "ProductionOutput missing ROW/ITEM_CODE/OUTPUT columns."
         Exit Function
     End If
 
@@ -6415,13 +7277,14 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
     Dim cOutput As Long: cOutput = ColumnIndex(loOut, "OUTPUT")
     Dim cRowOut As Long: cRowOut = ColumnIndex(loOut, "ROW")
     If cRowOut = 0 Then cRowOut = ColumnIndexLoose(loOut, "ROW", "ROWID", "ROW#")
+    Dim cItemCodeOut As Long: cItemCodeOut = ColumnIndex(loOut, "ITEM_CODE")
 
     If cReal = 0 Then
         errNotes = "ProductionOutput missing REAL OUTPUT column."
         Exit Function
     End If
-    If cRowOut = 0 And cOutput = 0 Then
-        errNotes = "ProductionOutput missing ROW/OUTPUT columns."
+    If cRowOut = 0 And cItemCodeOut = 0 And cOutput = 0 Then
+        errNotes = "ProductionOutput missing ROW/ITEM_CODE/OUTPUT columns."
         Exit Function
     End If
 
@@ -6441,10 +7304,14 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
     If cOutput > 0 Then outputName = NzStr(loOut.DataBodyRange.Cells(outputRowNumber, cOutput).value)
 
     Dim rowVal As Long
+    Dim itemCodeVal As String
+    Dim resolvedItemName As String
     Dim outputLookup As Object
     If cRowOut > 0 Then rowVal = NzLng(loOut.DataBodyRange.Cells(outputRowNumber, cRowOut).value)
+    If cItemCodeOut > 0 Then itemCodeVal = Trim$(NzStr(loOut.DataBodyRange.Cells(outputRowNumber, cItemCodeOut).Value))
+    ResolveProductionOutputIdentityFromPicker outputName, rowVal, itemCodeVal, resolvedItemName, errNotes
     Dim mustResolveRow As Boolean
-    mustResolveRow = (rowVal = 0)
+    mustResolveRow = (rowVal = 0 And itemCodeVal = "")
     If Not rowIndex Is Nothing Then
         If rowVal > 0 Then mustResolveRow = Not rowIndex.Exists(CStr(rowVal))
     End If
@@ -6455,11 +7322,13 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
         rowVal = ResolveProductionOutputInventoryRow(invLo, outputLookup, rowVal, outputName, "", "", errNotes)
     End If
     If cRowOut > 0 And rowVal <> 0 Then loOut.DataBodyRange.Cells(outputRowNumber, cRowOut).value = rowVal
-    If rowVal = 0 Then
+    If cItemCodeOut > 0 And itemCodeVal <> "" Then _
+        loOut.DataBodyRange.Cells(outputRowNumber, cItemCodeOut).Value = itemCodeVal
+    If rowVal = 0 And itemCodeVal = "" Then
         If errNotes = "" Then
-            errNotes = "Selected Production Output is missing its inventory ROW identity: " & outputName
+            errNotes = "Selected Production Output is missing its inventory SKU/ROW identity: " & outputName
         Else
-            AppendNote errNotes, "Selected Production Output is missing its inventory ROW identity: " & outputName
+            AppendNote errNotes, "Selected Production Output is missing its inventory SKU/ROW identity: " & outputName
         End If
         Exit Function
     End If
@@ -6475,8 +7344,8 @@ Private Function BuildMadeDeltasFromProductionOutputRow(ByVal loOut As ListObjec
     Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
     delta("ROW") = rowVal
     delta("QTY") = qtyVal
-    delta("ITEM_CODE") = ""
-    delta("ITEM_NAME") = outputName
+    delta("ITEM_CODE") = itemCodeVal
+    delta("ITEM_NAME") = IIf(resolvedItemName <> "", resolvedItemName, outputName)
     If invIdx > 0 Then
         If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemCode).value)
         If cItemName > 0 Then delta("ITEM_NAME") = NzStr(invLo.DataBodyRange.Cells(invIdx, cItemName).value)
@@ -6493,6 +7362,7 @@ End Function
 
 Private Sub EnrichOutputDeltaFromPicker(ByVal delta As Object, ByVal pickerItems As Variant, ByVal rowVal As Long)
     If delta Is Nothing Then Exit Sub
+    If rowVal <= 0 Then Exit Sub
     If IsEmpty(pickerItems) Then Exit Sub
     If Not IsArray(pickerItems) Then Exit Sub
 
@@ -6913,7 +7783,7 @@ Private Function BuildRowKeySetFromDeltas(ByVal usedDeltas As Collection, ByVal 
     If Not usedDeltas Is Nothing Then
         For Each delta In usedDeltas
             On Error Resume Next
-            dict(CStr(delta("ROW"))) = True
+            If NzLng(delta("ROW")) > 0 Then dict(CStr(delta("ROW"))) = True
             On Error GoTo 0
         Next delta
     End If
@@ -6921,7 +7791,7 @@ Private Function BuildRowKeySetFromDeltas(ByVal usedDeltas As Collection, ByVal 
     If Not madeDeltas Is Nothing Then
         For Each delta In madeDeltas
             On Error Resume Next
-            dict(CStr(delta("ROW"))) = True
+            If NzLng(delta("ROW")) > 0 Then dict(CStr(delta("ROW"))) = True
             On Error GoTo 0
         Next delta
     End If
@@ -7855,6 +8725,7 @@ Private Function CaptureProductionOutputCompletionValues(ByVal loOut As ListObje
     Dim cBatch As Long
     Dim cRecall As Long
     Dim cRow As Long
+    Dim cItemCode As Long
     Dim cOutput As Long
     Dim r As Long
     Dim rowData As Object
@@ -7867,6 +8738,7 @@ Private Function CaptureProductionOutputCompletionValues(ByVal loOut As ListObje
     cBatch = ColumnIndex(loOut, "BATCH")
     cRecall = ColumnIndex(loOut, "RECALL CODE")
     cRow = ColumnIndex(loOut, "ROW")
+    cItemCode = ColumnIndex(loOut, "ITEM_CODE")
     cOutput = ColumnIndex(loOut, "OUTPUT")
 
     Set result = CreateObject("Scripting.Dictionary")
@@ -7883,6 +8755,7 @@ Private Function CaptureProductionOutputCompletionValues(ByVal loOut As ListObje
         If cBatch > 0 Then rowData("BATCH") = loOut.DataBodyRange.Cells(r, cBatch).value
         If cRecall > 0 Then rowData("RECALL CODE") = loOut.DataBodyRange.Cells(r, cRecall).value
         If cRow > 0 Then rowData("ROW") = loOut.DataBodyRange.Cells(r, cRow).value
+        If cItemCode > 0 Then rowData("ITEM_CODE") = loOut.DataBodyRange.Cells(r, cItemCode).Value
         If cOutput > 0 Then rowData("OUTPUT") = loOut.DataBodyRange.Cells(r, cOutput).value
         result.Add CStr(r), rowData
 NextRow:
@@ -7909,6 +8782,7 @@ Private Sub RestoreProductionOutputCompletionValues(ByVal loOut As ListObject, B
         RestoreProductionOutputCell loOut, r, "BATCH", rowData
         RestoreProductionOutputCell loOut, r, "RECALL CODE", rowData
         RestoreProductionOutputCell loOut, r, "ROW", rowData
+        RestoreProductionOutputCell loOut, r, "ITEM_CODE", rowData
         RestoreProductionOutputCell loOut, r, "OUTPUT", rowData
 NextKey:
     Next key
@@ -8005,6 +8879,7 @@ Private Function LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, B
     If cReal = 0 Then cReal = ColumnIndexLoose(loOut, "REALOUTPUT", "REAL_OUTPUT")
     Dim cBatch As Long: cBatch = ColumnIndex(loOut, "BATCH")
     Dim cRow As Long: cRow = ColumnIndex(loOut, "ROW")
+    Dim cOutputItemCode As Long: cOutputItemCode = ColumnIndex(loOut, "ITEM_CODE")
 
     If cReal = 0 Or cProc = 0 Then
         AppendNote errNotes, "ProductionOutput is missing PROCESS or REAL OUTPUT."
@@ -8051,16 +8926,18 @@ Private Function LogProductionOutputToProductionLog(ByVal wsProd As Worksheet, B
 
         Dim rowVal As Long
         If cRow > 0 Then rowVal = NzLng(loOut.DataBodyRange.Cells(r, cRow).value)
+        Dim itemCode As String
+        If cOutputItemCode > 0 Then itemCode = Trim$(NzStr(loOut.DataBodyRange.Cells(r, cOutputItemCode).Value))
         If rowVal = 0 Then
             If Not outputLookup Is Nothing And outputName <> "" Then
                 rowVal = LookupOutputRow(outputLookup, outputName)
             End If
         End If
-        If rowVal = 0 Then
-            AppendNote errNotes, "Output row missing ROW: " & outputName
+        If rowVal = 0 And itemCode = "" Then
+            Dim resolvedItemName As String
+            ResolveProductionOutputIdentityFromPicker outputName, rowVal, itemCode, resolvedItemName, errNotes
         End If
 
-        Dim itemCode As String
         Dim vendors As String
         Dim vendCode As String
         Dim itemName As String
@@ -8985,6 +9862,7 @@ Private Sub SaveRecipeToRecipes()
     Dim wsRec As Worksheet
     Dim stagingWb As Workbook
     Dim stagingReport As String
+    Dim designsEnabled As Boolean
 
     Dim loHeader As ListObject
     Dim loLines As ListObject
@@ -9042,7 +9920,39 @@ Private Sub SaveRecipeToRecipes()
     Dim recipeId As String: recipeId = NzStr(recipeIdCell.value)
     If recipeId = "" Then
         recipeId = GenerateRecipeId(wsProd.Parent)
-        recipeIdCell.value = recipeId
+        WriteProductionTextCell recipeIdCell, recipeId
+    End If
+    designsEnabled = ProductionDesignsEnabled()
+    If RecipeIdExistsProduction(recipeId, wsProd.Parent) Then
+        Dim collisionChoice As VbMsgBoxResult
+        Dim collisionMessage As String
+
+        collisionMessage = "Recipe ID '" & CanonicalRecipeIdProduction(recipeId) & "' is already in use." & vbCrLf & vbCrLf
+        If designsEnabled Then
+            collisionMessage = collisionMessage & _
+                "Yes: save a new immutable version under this existing Recipe ID." & vbCrLf
+        Else
+            collisionMessage = collisionMessage & _
+                "Yes: replace the existing legacy recipe under this Recipe ID." & vbCrLf
+        End If
+        collisionMessage = collisionMessage & _
+            "No: assign the next available unused Base-36 ID and save as a new recipe." & vbCrLf & _
+            "Cancel: do not save."
+        collisionChoice = MsgBox(collisionMessage, vbQuestion + vbYesNoCancel, "Recipe ID Already In Use")
+        If collisionChoice = vbCancel Then Exit Sub
+        If collisionChoice = vbNo Then
+            recipeId = GenerateRecipeId(wsProd.Parent)
+            If recipeId = "" Then
+                MsgBox "No unused Base-36 Recipe ID is available.", vbExclamation, "Save Recipe"
+                Exit Sub
+            End If
+            WriteProductionTextCell recipeIdCell, recipeId
+            If cGuid > 0 Then
+                Dim newRecipeGuidCell As Range
+                Set newRecipeGuidCell = GetHeaderDataCell(loHeader, "GUID")
+                If Not newRecipeGuidCell Is Nothing Then newRecipeGuidCell.ClearContents
+            End If
+        End If
     End If
     If cGuid > 0 Then
         Dim recipeGuidCell As Range: Set recipeGuidCell = GetHeaderDataCell(loHeader, "GUID")
@@ -9053,7 +9963,7 @@ Private Sub SaveRecipeToRecipes()
         End If
     End If
 
-    If ProductionDesignsEnabled() Then
+    If designsEnabled Then
         Set stagingWb = CreateEmptyDesignRecipeStagingWorkbook(stagingReport)
         If stagingWb Is Nothing Then
             MsgBox stagingReport, vbExclamation, "Production Designs"
@@ -9133,7 +10043,7 @@ Private Sub SaveRecipeToRecipes()
         Dim runtimeReport As String
         Dim runtimeSaved As Boolean
         Dim designVersion As String
-        If ProductionDesignsEnabled() Then
+        If designsEnabled Then
             runtimeSaved = QueueSavedRecipeDesignCreate(loRecipes, recipeId, recipeName, recipeDesc, designVersion, runtimeReport)
             If runtimeSaved Then
                 msg = msg & vbCrLf & "Designs Domain version " & designVersion & ": " & runtimeReport
@@ -9237,6 +10147,12 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     If ProductionDesignsEnabled() And recipeId <> "" Then
         Set stagingWb = BuildDesignRecipeStagingWorkbook(recipeId, "", syncReport)
         If stagingWb Is Nothing Then
+            Set stagingWb = BuildPendingDesignRecipeStagingWorkbook(recipeId, syncReport)
+        End If
+        If stagingWb Is Nothing Then
+            Set stagingWb = BuildLegacyRuntimeRecipeStagingWorkbook(recipeId, syncReport)
+        End If
+        If stagingWb Is Nothing Then
             MsgBox syncReport, vbExclamation, "Production Designs"
             Exit Sub
         End If
@@ -9310,7 +10226,7 @@ Public Sub LoadRecipeFromRecipes(Optional ByVal forceRecipeId As String = "")
     Dim hdrBudgetCell As Range: Set hdrBudgetCell = GetHeaderDataCell(loHeader, "ROW_BUDGET")
     Dim hdrGuidCell As Range: Set hdrGuidCell = GetHeaderDataCell(loHeader, "GUID")
     If Not hdrNameCell Is Nothing Then hdrNameCell.value = recipeName
-    If Not hdrIdCell Is Nothing Then hdrIdCell.value = recipeId
+    If Not hdrIdCell Is Nothing Then WriteProductionTextCell hdrIdCell, recipeId
     If Not hdrDescCell Is Nothing And cRecDesc > 0 Then
         hdrDescCell.value = NzStr(loRecipes.DataBodyRange.Cells(matches(1), cRecDesc).value)
     End If
@@ -9420,8 +10336,13 @@ Private Sub AppendRecipeRowsFromTable(ByVal loSource As ListObject, ByVal recipe
         If processVal = "" Then processVal = processFallback
 
         Dim ingId As String
+        Dim ioType As String
+        If cIO > 0 Then ioType = UCase$(Trim$(NzStr(lineArr(i, cIO))))
         If cIngId > 0 Then ingId = NzStr(lineArr(i, cIngId))
-        If ingId = "" Then
+        If ioType = "INSTRUCTION" Then
+            ingId = vbNullString
+            If cIngId > 0 Then loSource.DataBodyRange.Cells(i, cIngId).Value = vbNullString
+        ElseIf ingId = "" Then
             ingId = ProductionGuid()
             If cIngId > 0 Then loSource.DataBodyRange.Cells(i, cIngId).value = ingId
         End If
@@ -9441,7 +10362,7 @@ Private Sub AppendRecipeRowsFromTable(ByVal loSource As ListObject, ByVal recipe
         End If
 
         Dim lr As ListRow: Set lr = loRecipes.ListRows.Add
-        If cRecRecipeId > 0 Then lr.Range.Cells(1, cRecRecipeId).value = recipeId
+        If cRecRecipeId > 0 Then WriteProductionTextCell lr.Range.Cells(1, cRecRecipeId), recipeId
         If cRecRecipe > 0 Then lr.Range.Cells(1, cRecRecipe).value = recipeName
         If cRecDesc > 0 Then lr.Range.Cells(1, cRecDesc).value = recipeDesc
         If cRecBudget > 0 Then lr.Range.Cells(1, cRecBudget).value = rowBudget
@@ -10186,7 +11107,17 @@ Private Sub SetProductionTableCellByHeader(ByVal lo As ListObject, ByVal rowInde
     c = ColumnIndex(lo, columnName)
     If c = 0 Then Exit Sub
     If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Sub
-    lo.DataBodyRange.Cells(rowIndex, c).Value = value
+    If StrComp(columnName, "RECIPE_ID", vbTextCompare) = 0 Then
+        WriteProductionTextCell lo.DataBodyRange.Cells(rowIndex, c), CStr(value)
+    Else
+        lo.DataBodyRange.Cells(rowIndex, c).Value = value
+    End If
+End Sub
+
+Private Sub WriteProductionTextCell(ByVal targetCell As Range, ByVal textValue As String)
+    If targetCell Is Nothing Then Exit Sub
+    targetCell.NumberFormat = "@"
+    targetCell.Value2 = CStr(textValue)
 End Sub
 
 Private Function CurrentProductionUserId() As String
@@ -10478,11 +11409,11 @@ Private Function IngredientPaletteRowMatches(ByVal lo As ListObject, ByVal rowIn
 End Function
 
 Private Function IngredientPaletteLocalHeaders() As Variant
-    IngredientPaletteLocalHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID")
+    IngredientPaletteLocalHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "ITEM_CODE", "GUID")
 End Function
 
 Private Function IngredientPaletteRuntimeHeaders() As Variant
-    IngredientPaletteRuntimeHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID", "UPDATED_AT_UTC", "UPDATED_BY")
+    IngredientPaletteRuntimeHeaders = Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "ITEM_CODE", "GUID", "UPDATED_AT_UTC", "UPDATED_BY")
 End Function
 
 Public Function TestProductionIngredientPaletteRuntimeRoundTrip(ByVal runtimeRoot As String) As String
@@ -10498,6 +11429,7 @@ Public Function TestProductionIngredientPaletteRuntimeRoundTrip(ByVal runtimeRoo
     Dim cRecipeId As Long
     Dim cIngredientId As Long
     Dim cRow As Long
+    Dim cItemCode As Long
     Dim r As Long
     Dim found As Boolean
 
@@ -10524,6 +11456,7 @@ Public Function TestProductionIngredientPaletteRuntimeRoundTrip(ByVal runtimeRoo
     SetProductionTableCellByHeader loLocal, lr.Index, "UOM", "LB"
     SetProductionTableCellByHeader loLocal, lr.Index, "AMOUNT", 1
     SetProductionTableCellByHeader loLocal, lr.Index, "ROW", 95
+    SetProductionTableCellByHeader loLocal, lr.Index, "ITEM_CODE", "ITM-PAL-095"
     SetProductionTableCellByHeader loLocal, lr.Index, "GUID", "GUID-PAL"
 
     ok = PublishIngredientPaletteRowsToRuntime(wbOps, loLocal, "PAL", "ING-PAL", report)
@@ -10542,11 +11475,13 @@ Public Function TestProductionIngredientPaletteRuntimeRoundTrip(ByVal runtimeRoo
     cRecipeId = ColumnIndex(loLocal, "RECIPE_ID")
     cIngredientId = ColumnIndex(loLocal, "INGREDIENT_ID")
     cRow = ColumnIndex(loLocal, "ROW")
-    If Not loLocal.DataBodyRange Is Nothing And cRecipeId > 0 And cIngredientId > 0 And cRow > 0 Then
+    cItemCode = ColumnIndex(loLocal, "ITEM_CODE")
+    If Not loLocal.DataBodyRange Is Nothing And cRecipeId > 0 And cIngredientId > 0 And cRow > 0 And cItemCode > 0 Then
         For r = 1 To loLocal.DataBodyRange.Rows.Count
             If NormalizeIdFirst(NzStr(loLocal.DataBodyRange.Cells(r, cRecipeId).Value)) = NormalizeIdFirst("PAL") _
                And NormalizeIdLast(NzStr(loLocal.DataBodyRange.Cells(r, cIngredientId).Value)) = NormalizeIdLast("ING-PAL") _
-               And CLng(NzLng(loLocal.DataBodyRange.Cells(r, cRow).Value)) = 95 Then
+               And CLng(NzLng(loLocal.DataBodyRange.Cells(r, cRow).Value)) = 95 _
+               And StrComp(NzStr(loLocal.DataBodyRange.Cells(r, cItemCode).Value), "ITM-PAL-095", vbTextCompare) = 0 Then
                 found = True
                 Exit For
             End If
@@ -10581,6 +11516,7 @@ Public Function TestProductionInventoryPickerPrefersCanonicalRuntime(ByVal runti
     Dim wsBalance As Worksheet
     Dim inventoryPath As String
     Dim items As Variant
+    Dim paletteRows(1 To 1, 1 To 7) As Variant
 
     priorRoot = modRuntimeWorkbooks.GetCoreDataRootOverride()
     modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
@@ -10597,7 +11533,7 @@ Public Function TestProductionInventoryPickerPrefersCanonicalRuntime(ByVal runti
     Set wsCatalog = wbInv.Worksheets.Add(After:=wsLegacy)
     wsCatalog.Name = "SkuCatalog"
     wsCatalog.Range("A1:H1").Value = Array("SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "ITEM_KIND")
-    wsCatalog.Range("A2:H2").Value = Array("ITM-PICK-001", 95, "ITM-PICK-001", "Malawi Black Tea", "LB", "A1", "canonical catalog row", "INVENTORY")
+    wsCatalog.Range("A2:H2").Value = Array("ITM-PICK-001", "", "ITM-PICK-001", "Malawi Black Tea", "LB", "A1", "canonical catalog row", "INVENTORY")
     wsCatalog.ListObjects.Add(xlSrcRange, wsCatalog.Range("A1:H2"), , xlYes).Name = "tblSkuCatalog"
 
     Set wsBalance = wbInv.Worksheets.Add(After:=wsCatalog)
@@ -10615,13 +11551,26 @@ Public Function TestProductionInventoryPickerPrefersCanonicalRuntime(ByVal runti
         TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: picker returned no rows for canonical catalog item."
         GoTo CleanExit
     End If
-    If NzStr(items(1, 1)) <> "95" Or NzStr(items(1, 2)) <> "Malawi Black Tea" Then
+    If NzStr(items(1, 1)) <> "" Or NzStr(items(1, 2)) <> "Malawi Black Tea" Then
         TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: picker did not prefer canonical catalog row. Row=" & _
             NzStr(items(1, 1)) & "; Item=" & NzStr(items(1, 2))
         GoTo CleanExit
     End If
     If NzStr(items(1, 4)) <> "1" Then
         TestProductionInventoryPickerPrefersCanonicalRuntime = "FAILED: picker did not load canonical QtyOnHand. Qty=" & NzStr(items(1, 4))
+        GoTo CleanExit
+    End If
+    If UBound(items, 2) < 7 Or NzStr(items(1, 7)) <> "ITM-PICK-001" Then
+        TestProductionInventoryPickerPrefersCanonicalRuntime = _
+            "FAILED: picker did not return canonical ITEM_CODE/SKU identity."
+        GoTo CleanExit
+    End If
+    paletteRows(1, 4) = "Malawi Black Tea"
+    paletteRows(1, 6) = "LB"
+    HydrateIngredientPaletteIdentityRowsProduction paletteRows, 1
+    If NzStr(paletteRows(1, 5)) <> "" Or NzStr(paletteRows(1, 7)) <> "ITM-PICK-001" Then
+        TestProductionInventoryPickerPrefersCanonicalRuntime = _
+            "FAILED: blank-ROW palette assignment did not hydrate from canonical SKU identity."
         GoTo CleanExit
     End If
 

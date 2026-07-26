@@ -58,7 +58,7 @@ End Sub
 Private Sub UserForm_Activate()
     If Not mResizeInitialized Then
         On Error Resume Next
-        Application.Run "modUserFormResizeWin.EnableResizableUserForm", Me
+        Application.Run "modUserFormResizeWin.EnableResizableUserForm", Me, True, True
         On Error GoTo 0
         mResizeInitialized = True
     End If

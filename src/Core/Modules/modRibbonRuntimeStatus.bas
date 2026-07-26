@@ -303,6 +303,7 @@ Private Function ApplyRememberedWarehouseTargetStatus() As Boolean
     Dim targetWh As String
     Dim targetSt As String
     Dim targetRoot As String
+    Dim explicitRoot As String
     Dim nasTarget As WarehouseTarget
     Dim statusCode As Long
 
@@ -316,6 +317,15 @@ Private Function ApplyRememberedWarehouseTargetStatus() As Boolean
     targetSt = TargetPartStatus(targetText, 1)
     targetRoot = NormalizeFolderForStatus(TargetPartStatus(targetText, 2))
     If targetWh = "" Or targetRoot = "" Then Exit Function
+
+    ' A caller-supplied runtime override is the active transaction authority.
+    ' Remembered UI state may fill an unset context, but must never redirect an
+    ' already-bound processor/test/operator transaction to another runtime.
+    explicitRoot = NormalizeFolderForStatus(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If explicitRoot <> "" Then
+        If StrComp(explicitRoot, targetRoot, vbTextCompare) <> 0 Then Exit Function
+    End If
+
     If Not RuntimeArtifactsExistStatus(targetRoot, targetWh) Then Exit Function
     If Left$(targetRoot, 2) = "\\" Then
         If modNasConnection.TryRevalidateRememberedRoot(targetRoot) <> NAS_OK Then Exit Function

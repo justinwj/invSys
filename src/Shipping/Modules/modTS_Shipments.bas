@@ -9809,11 +9809,10 @@ NextSelectedRow:
         If locations.Exists(CStr(key)) Then delta("LOCATION") = NzStr(locations(CStr(key)))
         If refs.Exists(CStr(key)) Then delta("REF_NUMBER") = NzStr(refs(CStr(key)))
         If carriers.Exists(CStr(key)) Then delta("CARRIER") = NzStr(carriers(CStr(key)))
-        If names.Exists(CStr(key)) Then
-            If Trim$(NzStr(names(CStr(key)))) <> "" Then delta("ITEM_CODE") = Trim$(NzStr(names(CStr(key))))
-        End If
-        If Not delta.Exists("ITEM_CODE") Then
-            If colItemCode > 0 And Not invRow Is Nothing Then delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, colItemCode).Value)
+        ' Shipment ITEMS is a display name, not the canonical SKU.  Always take
+        ' ITEM_CODE from the matched inventory row when it is available.
+        If colItemCode > 0 And Not invRow Is Nothing Then
+            delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, colItemCode).Value)
         End If
         If colItemName > 0 And Not invRow Is Nothing Then
             delta("ITEM_NAME") = NzStr(invRow.Range.Cells(1, colItemName).Value)
@@ -11840,6 +11839,17 @@ Public Function ShipmentsFormRunAllShipmentsSentRowsReportForTest(ByVal carrierV
         ShipmentsFormRunAllShipmentsSentRowsReportForTest = "OK|" & report
     Else
         ShipmentsFormRunAllShipmentsSentRowsReportForTest = "FAIL|" & report
+    End If
+End Function
+
+Public Function ShipmentsFormRunAllShipmentsSentRowsReportForAutomation(ByVal carrierValue As String) As String
+    Dim report As String
+    Dim rowIndexes As Variant
+
+    If ShipmentsFormRunShipmentsSentRows(rowIndexes, carrierValue, report, False) Then
+        ShipmentsFormRunAllShipmentsSentRowsReportForAutomation = "OK|" & report
+    Else
+        ShipmentsFormRunAllShipmentsSentRowsReportForAutomation = "FAIL|" & report
     End If
 End Function
 

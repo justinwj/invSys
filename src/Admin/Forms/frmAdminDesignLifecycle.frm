@@ -17,16 +17,26 @@ Option Explicit
 
 Private WithEvents mLstDesigns As MSForms.ListBox
 Private WithEvents mBtnRefresh As MSForms.CommandButton
+Private WithEvents mBtnMigrate As MSForms.CommandButton
 Private WithEvents mBtnRelease As MSForms.CommandButton
 Private WithEvents mBtnObsolete As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
 Private mTxtNote As MSForms.TextBox
 Private mLblStatus As MSForms.Label
 Private mBuilt As Boolean
+Private mResizeInitialized As Boolean
 
 Private Sub UserForm_Initialize()
     BuildLayout
     RefreshDesigns
+End Sub
+
+Private Sub UserForm_Activate()
+    If mResizeInitialized Then Exit Sub
+    On Error Resume Next
+    modUserFormResizeWin.EnableResizableUserForm Me, True, True
+    On Error GoTo 0
+    mResizeInitialized = True
 End Sub
 
 Private Sub BuildLayout()
@@ -64,13 +74,14 @@ Private Sub BuildLayout()
 
     Set mBtnRelease = AddButton("btnRelease", "Release selected", 12, 370, 118, 28)
     Set mBtnObsolete = AddButton("btnObsolete", "Obsolete selected", 138, 370, 125, 28)
+    Set mBtnMigrate = AddButton("btnMigrate", "Import Legacy Recipes", 271, 370, 145, 28)
     Set mBtnClose = AddButton("btnClose", "Close", 642, 370, 88, 28)
 
     Set mLblStatus = Me.Controls.Add("Forms.Label.1", "lblStatus", True)
     With mLblStatus
-        .Left = 276
+        .Left = 426
         .Top = 374
-        .Width = 354
+        .Width = 204
         .Height = 32
         .WordWrap = True
         .Caption = ""
@@ -137,9 +148,64 @@ Private Sub mBtnRefresh_Click()
     RefreshDesigns
 End Sub
 
+Private Sub mBtnMigrate_Click()
+    Dim donorWb As Workbook
+    Dim report As String
+
+    Set donorWb = FindLegacyRecipeDonor()
+    If donorWb Is Nothing Then
+        ShowStatus "No open operator workbook with a Recipes table was found."
+        Exit Sub
+    End If
+    If modAdminDesignLifecycle.MigrateLegacyRecipesFromWorkbook(donorWb, report) Then
+        RefreshDesigns
+        ShowStatus report
+    Else
+        ShowStatus report
+    End If
+End Sub
+
 Private Sub mBtnRelease_Click()
     ExecuteSelected "DESIGN_RELEASE"
 End Sub
+
+Private Function FindLegacyRecipeDonor() As Workbook
+    Dim wb As Workbook
+
+    On Error Resume Next
+    Set wb = Application.ActiveWorkbook
+    On Error GoTo 0
+    If WorkbookHasLegacyRecipes(wb) Then
+        Set FindLegacyRecipeDonor = wb
+        Exit Function
+    End If
+
+    For Each wb In Application.Workbooks
+        If WorkbookHasLegacyRecipes(wb) Then
+            Set FindLegacyRecipeDonor = wb
+            Exit Function
+        End If
+    Next wb
+End Function
+
+Private Function WorkbookHasLegacyRecipes(ByVal wb As Workbook) As Boolean
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    If wb Is Nothing Then Exit Function
+    If wb.IsAddin Then Exit Function
+    If InStr(1, wb.Name, ".invSys.Data.Designs.", vbTextCompare) > 0 Then Exit Function
+    On Error Resume Next
+    For Each ws In wb.Worksheets
+        Set lo = Nothing
+        Set lo = ws.ListObjects("Recipes")
+        If Not lo Is Nothing Then
+            WorkbookHasLegacyRecipes = Not lo.DataBodyRange Is Nothing
+            If WorkbookHasLegacyRecipes Then Exit Function
+        End If
+    Next ws
+    On Error GoTo 0
+End Function
 
 Private Sub mBtnObsolete_Click()
     ExecuteSelected "DESIGN_OBSOLETE"
@@ -185,6 +251,7 @@ End Function
 Public Function TestLayoutReady() As Long
     If Not mBuilt Then BuildLayout
     If Not mLstDesigns Is Nothing _
+       And Not mBtnMigrate Is Nothing _
        And Not mBtnRelease Is Nothing _
        And Not mBtnObsolete Is Nothing _
        And mLstDesigns.ColumnCount = 6 Then TestLayoutReady = 1

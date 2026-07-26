@@ -95,10 +95,23 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
     Dim target As WarehouseTarget
     Dim statusCode As NasStatusCode
     Dim requireNasTarget As Boolean
+    Dim requireStationInbox As Boolean
 
     requireNasTarget = CapabilityRequiresNasTargetRole(requiredCapability)
+    requireStationInbox = CapabilityRequiresStationInboxRole(requiredCapability)
+    If modNasConnection.RequireManualServerCredentials() Then
+        statusText = "Manual server credential entry is enabled in Admin Settings for this Windows user."
+        If modNasConnection.ShowWarehouseConnectionPromptForTarget(ManualServerCredentialPromptRole(), requireStationInbox) Then
+            Set target = modNasConnection.GetCurrentTarget()
+            modRibbonRuntimeStatus.InvalidateWarehouseTargets
+            modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
+        End If
+        GoTo ConnectionFailed
+    End If
+
     If modNasConnection.ConnectKnownWarehouseServer(connectedRoot, statusText, True) Then
-        Set target = ResolveConnectedRoleWarehouseTarget(connectedRoot, requireNasTarget, statusCode)
+        Set target = ResolveConnectedRoleWarehouseTarget(connectedRoot, requireNasTarget, requireStationInbox, statusCode)
         modRibbonRuntimeStatus.InvalidateWarehouseTargets
         modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
         If target Is Nothing Then
@@ -112,14 +125,15 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
     End If
 
     If ShouldPromptForServerCredentialsRole(statusText) Then
-        If modNasConnection.ShowWarehouseConnectionPromptForTarget(ServerCredentialPromptRole(statusText)) Then
+        If modNasConnection.ShowWarehouseConnectionPromptForTarget(ServerCredentialPromptRole(statusText), requireStationInbox) Then
             Set target = modNasConnection.GetCurrentTarget()
             modRibbonRuntimeStatus.InvalidateWarehouseTargets
             modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
-            If modNasConnection.IsWarehouseTargetAllowed(target, requireNasTarget) Then Exit Sub
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
         End If
     End If
 
+ConnectionFailed:
     modRibbonRuntimeStatus.InvalidateWarehouseTargets
     modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
     MsgBox "Could not connect to the warehouse server." & vbCrLf & vbCrLf & _
@@ -128,6 +142,12 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
            "Use Admin/setup to add or repair the warehouse server root, then try Connect Server again.", _
            vbExclamation, "invSys Warehouse Storage"
 End Sub
+
+Private Function ManualServerCredentialPromptRole() As String
+    ManualServerCredentialPromptRole = _
+        "Manual server credential entry is enabled in Admin Settings for this Windows user." & vbCrLf & vbCrLf & _
+        "Enter the NAS/server account each time Connect Server is used. This setting does not replace the separate invSys user sign-in."
+End Function
 
 Private Function ShouldPromptForServerCredentialsRole(ByVal statusText As String) As Boolean
     statusText = LCase$(Trim$(statusText))
@@ -146,14 +166,16 @@ End Function
 
 Private Function ResolveConnectedRoleWarehouseTarget(ByVal connectedRoot As String, _
                                                      ByVal requireNasTarget As Boolean, _
+                                                     ByVal requireStationInbox As Boolean, _
                                                      ByRef statusCode As NasStatusCode) As WarehouseTarget
     Dim target As WarehouseTarget
     Dim runtimeRoots As Collection
     Dim runtimeRoot As Variant
+    Dim stations As Collection
 
     If modRibbonRuntimeStatus.TryApplyRememberedWarehouseTarget() Then
         Set target = modNasConnection.GetCurrentTarget()
-        If modNasConnection.IsWarehouseTargetAllowed(target, requireNasTarget) _
+        If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) _
            And WarehouseTargetMatchesConnectedRootRole(target, connectedRoot) Then
             statusCode = NAS_OK
             Set ResolveConnectedRoleWarehouseTarget = target
@@ -162,7 +184,7 @@ Private Function ResolveConnectedRoleWarehouseTarget(ByVal connectedRoot As Stri
     End If
 
     Set target = modNasConnection.GetCurrentTarget()
-    If modNasConnection.IsWarehouseTargetAllowed(target, requireNasTarget) _
+    If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) _
        And WarehouseTargetMatchesConnectedRootRole(target, connectedRoot) Then
         statusCode = NAS_OK
         Set ResolveConnectedRoleWarehouseTarget = target
@@ -171,9 +193,19 @@ Private Function ResolveConnectedRoleWarehouseTarget(ByVal connectedRoot As Stri
 
     Set runtimeRoots = modNasConnection.ScanNasRoot(connectedRoot)
     For Each runtimeRoot In runtimeRoots
-        statusCode = modNasConnection.SelectWarehouseTarget(connectedRoot, CStr(runtimeRoot), target)
+        If requireStationInbox Then
+            Set stations = modNasConnection.ListRuntimeStationsForConnection(CStr(runtimeRoot))
+            If stations.Count = 1 Then
+                statusCode = modNasConnection.SelectWarehouseTarget(connectedRoot, CStr(runtimeRoot), target, CStr(stations(1)), True)
+            Else
+                statusCode = WH_TARGET_INCOMPLETE
+                Set target = Nothing
+            End If
+        Else
+            statusCode = modNasConnection.SelectWarehouseTarget(connectedRoot, CStr(runtimeRoot), target)
+        End If
         If statusCode = NAS_OK Then
-            If modNasConnection.IsWarehouseTargetAllowed(target, requireNasTarget) Then
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then
                 Set ResolveConnectedRoleWarehouseTarget = target
                 Exit Function
             End If
@@ -256,6 +288,21 @@ Private Function CapabilityRequiresNasTargetRole(ByVal requiredCapability As Str
         Case "RECEIVE_POST", "SHIP_POST", "PROD_POST"
             CapabilityRequiresNasTargetRole = True
     End Select
+End Function
+
+Private Function CapabilityRequiresStationInboxRole(ByVal requiredCapability As String) As Boolean
+    CapabilityRequiresStationInboxRole = CapabilityRequiresNasTargetRole(requiredCapability)
+End Function
+
+Private Function RoleWarehouseTargetAllowed(ByVal target As WarehouseTarget, _
+                                            ByVal requireNasTarget As Boolean, _
+                                            ByVal requireStationInbox As Boolean) As Boolean
+    If Not modNasConnection.IsWarehouseTargetAllowed(target, requireNasTarget) Then Exit Function
+    If requireStationInbox Then
+        If Trim$(target.StationId) = "" Or Trim$(target.StationId) = "*" Then Exit Function
+        If Trim$(target.InboxRoot) = "" Then Exit Function
+    End If
+    RoleWarehouseTargetAllowed = True
 End Function
 
 Private Function CurrentInvSysUserDisplayRole() As String
@@ -1016,6 +1063,93 @@ NextFile:
 
 FailDescribe:
     errorMessage = "Local staging describe failed: " & Err.Description
+End Function
+
+Public Function GetLocalStagedDesignIdentities(Optional ByVal warehouseId As String = "") As Variant
+    On Error GoTo FailSoft
+
+    Dim target As WarehouseTarget
+    Dim searchRoot As String
+    Dim files As Collection
+    Dim filePath As Variant
+    Dim rows As Collection
+    Dim rowValues As Variant
+    Dim rowDict As Object
+    Dim identities As Object
+    Dim eventType As String
+    Dim designId As String
+    Dim designVersion As String
+    Dim identityKey As String
+    Dim payloadJson As String
+    Dim designName As String
+    Dim designDescription As String
+    Dim result() As Variant
+    Dim keys As Variant
+    Dim idx As Long
+    Dim identityInfo As Variant
+    Dim report As String
+
+    warehouseId = Trim$(warehouseId)
+    If warehouseId = "" Then
+        Set target = modNasConnection.GetCurrentTarget()
+        If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
+    End If
+
+    searchRoot = LocalStagingRootRole()
+    If warehouseId <> "" Then _
+        searchRoot = CombinePathRole(searchRoot, SafePathTokenRole(warehouseId))
+
+    Set identities = CreateObject("Scripting.Dictionary")
+    identities.CompareMode = vbTextCompare
+    Set files = New Collection
+    CollectLocalStagingFilesRole searchRoot, files
+    For Each filePath In files
+        report = vbNullString
+        Set rows = ReadStagedInboxRowsRole(CStr(filePath), report)
+        If rows Is Nothing Then GoTo NextFile
+        For Each rowValues In rows
+            Set rowDict = rowValues
+            eventType = UCase$(Trim$(CStr(rowDict("EventType"))))
+            If eventType = ROLE_EVENT_TYPE_DESIGN_CREATE _
+               Or eventType = ROLE_EVENT_TYPE_DESIGN_RELEASE _
+               Or eventType = ROLE_EVENT_TYPE_DESIGN_OBSOLETE Then
+                designId = Trim$(CStr(rowDict("DesignId")))
+                designVersion = Trim$(CStr(rowDict("DesignVersion")))
+                If designId <> "" Then
+                    identityKey = designId & vbTab & designVersion
+                    payloadJson = vbNullString
+                    designName = vbNullString
+                    designDescription = vbNullString
+                    If rowDict.Exists("PayloadJson") Then payloadJson = CStr(rowDict("PayloadJson"))
+                    If payloadJson <> "" Then
+                        designName = JsonObjectStringFieldRole(payloadJson, "DesignName")
+                        designDescription = JsonObjectStringFieldRole(payloadJson, "Description")
+                    End If
+                    ' Later staged rows for the same immutable identity carry the
+                    ' most recent local display metadata.
+                    identities(identityKey) = Array(designId, designVersion, designName, designDescription, payloadJson)
+                End If
+            End If
+        Next rowValues
+NextFile:
+    Next filePath
+
+    If identities.Count = 0 Then Exit Function
+    keys = identities.Keys
+    ReDim result(1 To identities.Count, 1 To 5)
+    For idx = 0 To identities.Count - 1
+        identityInfo = identities(CStr(keys(idx)))
+        result(idx + 1, 1) = identityInfo(0)
+        result(idx + 1, 2) = identityInfo(1)
+        result(idx + 1, 3) = identityInfo(2)
+        result(idx + 1, 4) = identityInfo(3)
+        result(idx + 1, 5) = identityInfo(4)
+    Next idx
+    GetLocalStagedDesignIdentities = result
+    Exit Function
+
+FailSoft:
+    GetLocalStagedDesignIdentities = Empty
 End Function
 
 Public Function GetLocalStagedBoxInventoryDeltas(Optional ByVal warehouseId As String = "", _

@@ -813,11 +813,14 @@ Private Sub ApplyCurrentTargetRootForAuth(ByVal warehouseId As String, ByVal sta
     Dim target As WarehouseTarget
     Dim resolvedWh As String
     Dim resolvedSt As String
+    Dim explicitRoot As String
+    Dim targetRoot As String
 
     On Error GoTo CleanExit
     Set target = modNasConnection.GetCurrentTarget()
     If target Is Nothing Then Exit Sub
-    If SafeTrim(target.RuntimeRoot) = "" Then Exit Sub
+    targetRoot = SafeTrim(target.RuntimeRoot)
+    If targetRoot = "" Then Exit Sub
 
     resolvedWh = SafeTrim(warehouseId)
     resolvedSt = SafeTrim(stationId)
@@ -828,7 +831,17 @@ Private Sub ApplyCurrentTargetRootForAuth(ByVal warehouseId As String, ByVal sta
         If StrComp(resolvedSt, SafeTrim(target.StationId), vbTextCompare) <> 0 Then Exit Sub
     End If
 
-    modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    ' An explicit runtime override is the active transaction boundary. A
+    ' remembered/current target must not silently replace it merely because the
+    ' warehouse and station labels happen to match.
+    explicitRoot = SafeTrim(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If explicitRoot <> "" Then
+        If StrComp(modConfig.NormalizeFolderPathForRuntime(explicitRoot, False), _
+                   modConfig.NormalizeFolderPathForRuntime(targetRoot, False), _
+                   vbTextCompare) <> 0 Then Exit Sub
+    End If
+
+    modRuntimeWorkbooks.SetCoreDataRootOverride targetRoot
 
 CleanExit:
 End Sub

@@ -423,7 +423,9 @@ try {
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "cInventoryAppEvents"; Exists = $false },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsApply"; Exists = $true },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsQueries"; Exists = $true },
-        @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true }
+        @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true },
+        @{ File = "invSys.Admin.xlam"; Component = "modAdminConsole"; Exists = $true },
+        @{ File = "invSys.Admin.xlam"; Component = "modAdminDesignLifecycle"; Exists = $true }
     )
     foreach ($componentSpec in $componentSpecs) {
         if (-not $workbookMap.ContainsKey($componentSpec.File)) {
@@ -521,6 +523,25 @@ try {
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).Surface" -Passed ($surfaceResult -eq "OK") -Detail $surfaceResult
     }
 
+    if ($workbookMap.ContainsKey("invSys.Admin.xlam")) {
+        try {
+            $adminMacro = "'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdminConsole.ReissuePoisonReceiveEventReportForAutomation"
+            $adminSmoke = [string]$excel.Run($adminMacro, "__PACKAGED_SMOKE_MISSING__.xlsb", "EVT-MISSING", "SKU-SMOKE", 1, "A1")
+            $adminSmokePassed = $adminSmoke.StartsWith("FAIL|Report=Source workbook not open:", [System.StringComparison]::Ordinal)
+            Add-ResultRow -Rows $resultRows -Check "Admin.PoisonReissue.PackagedSurface" -Passed $adminSmokePassed -Detail $adminSmoke
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.PoisonReissue.PackagedSurface" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
+            $designLifecycleLayout = [int]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdminDesignLifecycle.DesignLifecycleFormLayoutSmokeForAutomation")
+            Add-ResultRow -Rows $resultRows -Check "Admin.DesignLifecycle.LegacyMigrationControl" -Passed ($designLifecycleLayout -eq 1) -Detail "LayoutReady=$designLifecycleLayout"
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.DesignLifecycle.LegacyMigrationControl" -Passed $false -Detail $_.Exception.Message
+        }
+    }
+
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
         try {
             $workbookMap["invSys.Inventory.Domain.xlam"].Close($false)
@@ -553,6 +574,80 @@ try {
         }
         catch {
             Add-ResultRow -Rows $resultRows -Check "DesignsDomain.PeerAutoLoad" -Passed $false -Detail $_.Exception.Message
+        }
+    }
+
+    # Cross a real Excel process boundary, then reopen the full packaged set and
+    # every saved role/Admin workbook. This catches stale XLAM references,
+    # workbook identity drift, and startup mutation that an in-process reopen
+    # cannot expose.
+    foreach ($targetWb in $targetWorkbooks) {
+        try {
+            if (-not [string]::IsNullOrWhiteSpace([string]$targetWb.Path)) { $targetWb.Save() }
+        }
+        catch {}
+    }
+    foreach ($targetWb in $targetWorkbooks) {
+        try { $targetWb.Close($false) } catch {}
+        Release-ComObject $targetWb
+    }
+    foreach ($addinWb in $openedWorkbooks) {
+        try { $addinWb.Close($false) } catch {}
+        Release-ComObject $addinWb
+    }
+    try { $excel.Quit() } catch {}
+    Release-ComObject $excel
+    $excel = $null
+
+    $openedWorkbooks = New-Object 'System.Collections.Generic.List[object]'
+    $targetWorkbooks = New-Object 'System.Collections.Generic.List[object]'
+    $workbookMap = @{}
+    $excel = New-Object -ComObject Excel.Application
+    $excel.Visible = $false
+    $excel.DisplayAlerts = $false
+    $excel.EnableEvents = $true
+    $excel.AutomationSecurity = 1
+
+    foreach ($fileName in $openOrder) {
+        try {
+            $reopenPath = Join-Path $deployPath $fileName
+            $reopenedAddin = $excel.Workbooks.Open($reopenPath)
+            $openedWorkbooks.Add($reopenedAddin) | Out-Null
+            $workbookMap[$fileName] = $reopenedAddin
+            $sameIdentity = [string]::Equals([string]$reopenedAddin.FullName, [string](Resolve-Path $reopenPath).Path, [System.StringComparison]::OrdinalIgnoreCase)
+            Add-ResultRow -Rows $resultRows -Check "Restart.$fileName" -Passed ([bool]$reopenedAddin.IsAddin -and $sameIdentity) -Detail "IsAddin=$($reopenedAddin.IsAddin); FullName=$($reopenedAddin.FullName)"
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Restart.$fileName" -Passed $false -Detail $_.Exception.Message
+        }
+    }
+
+    foreach ($spec in $validationSpecs) {
+        try {
+            $operatorPath = Join-Path $targetRoot $spec.TargetFile
+            $reopenedOperator = $excel.Workbooks.Open($operatorPath)
+            $targetWorkbooks.Add($reopenedOperator) | Out-Null
+            $surfaceResult = Test-WorkbookSurface -Workbook $reopenedOperator -TableSpecs $spec.Tables
+            $identityOk = [string]::Equals([string]$reopenedOperator.FullName, [string](Resolve-Path $operatorPath).Path, [System.StringComparison]::OrdinalIgnoreCase)
+            Add-ResultRow -Rows $resultRows -Check "Restart.$($spec.Name).SavedWorkbook" -Passed ($identityOk -and $surfaceResult -eq "OK") -Detail "FullName=$($reopenedOperator.FullName); Surface=$surfaceResult"
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Restart.$($spec.Name).SavedWorkbook" -Passed $false -Detail $_.Exception.Message
+        }
+    }
+
+    if ($workbookMap.ContainsKey("invSys.Core.xlam")) {
+        try {
+            $inventoryDiagnostic = [string]$excel.Run("'$($workbookMap["invSys.Core.xlam"].Name)'!modInventoryDomainBridge.DiagnoseInventoryDomainBridge")
+            $designsDiagnostic = [string]$excel.Run("'$($workbookMap["invSys.Core.xlam"].Name)'!modDesignsDomainBridge.DiagnoseDesignsDomainBridge")
+            $domainRestartOk = -not [string]::IsNullOrWhiteSpace($inventoryDiagnostic) `
+                -and -not [string]::IsNullOrWhiteSpace($designsDiagnostic) `
+                -and -not $inventoryDiagnostic.StartsWith("Inventory Domain unavailable", [System.StringComparison]::OrdinalIgnoreCase) `
+                -and -not $designsDiagnostic.StartsWith("Designs Domain unavailable", [System.StringComparison]::OrdinalIgnoreCase)
+            Add-ResultRow -Rows $resultRows -Check "Restart.DomainBridges" -Passed $domainRestartOk -Detail "Inventory=$inventoryDiagnostic; Designs=$designsDiagnostic"
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Restart.DomainBridges" -Passed $false -Detail $_.Exception.Message
         }
     }
 }

@@ -8,12 +8,18 @@ Public Function ResolveDesignsWorkbook(Optional ByVal warehouseId As String = ""
 
     Dim targetPath As String
     Dim wb As Workbook
+    Dim priorWb As Workbook
+
+    On Error Resume Next
+    Set priorWb = Application.ActiveWorkbook
+    On Error GoTo FailResolve
 
     If Not designsWb Is Nothing Then
         If designsWb.IsAddin Then
             report = "An XLAM cannot be the authoritative Designs workbook."
             Exit Function
         End If
+        KeepCanonicalDesignsAuthorityInternal designsWb, priorWb
         Set ResolveDesignsWorkbook = designsWb
         Exit Function
     End If
@@ -31,13 +37,16 @@ Public Function ResolveDesignsWorkbook(Optional ByVal warehouseId As String = ""
 
     For Each wb In Application.Workbooks
         If StrComp(wb.FullName, targetPath, vbTextCompare) = 0 Then
+            KeepCanonicalDesignsAuthorityInternal wb, priorWb
             Set ResolveDesignsWorkbook = wb
+            report = "OK"
             Exit Function
         End If
     Next wb
 
     If Len(Dir$(targetPath)) > 0 Then
-        Set wb = Application.Workbooks.Open(targetPath)
+        Set wb = Application.Workbooks.Open(Filename:=targetPath, UpdateLinks:=0, ReadOnly:=False, _
+                                            IgnoreReadOnlyRecommended:=True, Notify:=False, AddToMru:=False)
     Else
         Set wb = Application.Workbooks.Add(xlWBATWorksheet)
         wb.SaveAs Filename:=targetPath, FileFormat:=50
@@ -48,6 +57,7 @@ Public Function ResolveDesignsWorkbook(Optional ByVal warehouseId As String = ""
     End If
     If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then Exit Function
     If Not wb.ReadOnly Then wb.Save
+    KeepCanonicalDesignsAuthorityInternal wb, priorWb
     Set ResolveDesignsWorkbook = wb
     report = "OK"
     Exit Function
@@ -75,3 +85,20 @@ Private Function ResolveDesignsWarehouseId(ByVal warehouseId As String) As Strin
     If warehouseId = "" And modConfig.IsLoaded() Then warehouseId = Trim$(modConfig.GetWarehouseId())
     ResolveDesignsWarehouseId = warehouseId
 End Function
+
+Private Sub KeepCanonicalDesignsAuthorityInternal(ByVal wb As Workbook, _
+                                                  Optional ByVal priorWb As Workbook = Nothing)
+    Dim windowIndex As Long
+
+    If wb Is Nothing Then Exit Sub
+    If InStr(1, wb.Name, ".invSys.Data.Designs.", vbTextCompare) = 0 Then Exit Sub
+
+    On Error Resume Next
+    For windowIndex = 1 To wb.Windows.Count
+        wb.Windows(windowIndex).Visible = False
+    Next windowIndex
+    If Not priorWb Is Nothing Then
+        If Not (priorWb Is wb) Then priorWb.Activate
+    End If
+    On Error GoTo 0
+End Sub

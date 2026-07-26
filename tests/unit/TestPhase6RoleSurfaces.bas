@@ -484,7 +484,10 @@ Public Function TestProductionForm_InitializeCreatesTabbedSurface() As Long
 
     pageCount = frmProduction.TestPageCount()
 
-    If pageCount = 4 Then
+    If pageCount = 4 _
+       And frmProduction.TestRunPaletteCanonicalItemCodeStorage() = 1 _
+       And frmProduction.TestAssignmentItemRowsGrowWithoutTableCollision(wb) = 1 _
+       And frmProduction.TestProductionCheckRowsRecognizeSkuIdentity(wb) = 1 Then
         TestProductionForm_InitializeCreatesTabbedSurface = 1
     End If
 
@@ -572,8 +575,18 @@ Public Function TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSy
     SetTableValueByColumn loCheck, lr.Index, "USED", 12
 
     result = mProduction.TestCompletionDeltasFromStagedRows(loOutput, loCheck)
-    If result = "OK|MadeRow=1202;MadeQty=8;UsedRow=1201;UsedQty=12" Then
+    If result <> "OK|MadeRow=1202;MadeQty=8;UsedRow=1201;UsedQty=12" Then
+        mLastTestFailure = result
+        GoTo CleanExit
+    End If
+
+    SetTableValueByColumn loOutput, 1, "ROW", ""
+    SetTableValueByColumn loOutput, 1, "ITEM_CODE", "SKU-PROD-OUT"
+    result = mProduction.TestSelectedMadeDeltaSkuIdentity(loOutput)
+    If Left$(result, Len("OK|0|SKU-PROD-OUT|8")) = "OK|0|SKU-PROD-OUT|8" Then
         TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData = 1
+    Else
+        mLastTestFailure = result
     End If
 
 CleanExit:
@@ -1106,19 +1119,33 @@ Public Function TestProductionForm_SaveRecipeAppliesSelectedBuilderLineEdit() As
     Set loLines = FindTable(wb, "RecipeBuilder")
     If loLines Is Nothing Then GoTo CleanExit
 
-    If loLines.DataBodyRange Is Nothing Then
-        Set lr = loLines.ListRows.Add
-    Else
-        Set lr = loLines.ListRows(1)
-    End If
+    If Not loLines.DataBodyRange Is Nothing Then loLines.DataBodyRange.ClearContents
+    ' Keep the surface's first physical staging row blank. Visible list indexes
+    ' must still map to the correct nonblank table rows.
+    Set lr = loLines.ListRows.Add(AlwaysInsert:=False)
     SetTableValueByColumn loLines, lr.Index, "PROCESS", "2"
     SetTableValueByColumn loLines, lr.Index, "INPUT/OUTPUT", "OUTPUT"
-    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "Brew Black Tea"
+    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "First Visible Line"
     SetTableValueByColumn loLines, lr.Index, "UOM", "LBS"
     SetTableValueByColumn loLines, lr.Index, "AMOUNT", 400
+
+    Set lr = loLines.ListRows.Add(AlwaysInsert:=False)
+    SetTableValueByColumn loLines, lr.Index, "PROCESS", "3"
+    SetTableValueByColumn loLines, lr.Index, "INPUT/OUTPUT", "OUTPUT"
+    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "Selected Second Line"
+    SetTableValueByColumn loLines, lr.Index, "UOM", "LBS"
+    SetTableValueByColumn loLines, lr.Index, "AMOUNT", 398
     wb.Activate
 
-    If frmProduction.TestRecipeBuilderSelectedLineProcessUpdate(wb, "1") = 1 Then
+    If frmProduction.TestRecipeBuilderSelectedLineProcessUpdate(wb, "9", 1) = 1 Then
+        If CStr(GetTableValueByColumn(loLines, 2, "PROCESS")) <> "2" Then
+            mLastTestFailure = "Update Line changed the first visible recipe line instead of the selected line."
+            GoTo CleanExit
+        End If
+        If CStr(GetTableValueByColumn(loLines, 3, "PROCESS")) <> "9" Then
+            mLastTestFailure = "Update Line did not change the selected second recipe line."
+            GoTo CleanExit
+        End If
         TestProductionForm_SaveRecipeAppliesSelectedBuilderLineEdit = 1
     End If
 
@@ -1129,6 +1156,182 @@ CleanExit:
     CloseNoSavePhase6 wb
     Exit Function
 CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_RecipeBuilderMovesLinesAndSupportsInstruction() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loLines As ListObject
+    Dim lr As ListRow
+    Dim moveResult As String
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loLines = FindTable(wb, "RecipeBuilder")
+    If loLines Is Nothing Then GoTo CleanExit
+    If Not loLines.DataBodyRange Is Nothing Then
+        loLines.DataBodyRange.ClearContents
+    End If
+
+    If loLines.ListRows.Count = 0 Then
+        Set lr = loLines.ListRows.Add(AlwaysInsert:=False)
+    Else
+        Set lr = loLines.ListRows(1)
+    End If
+    SetTableValueByColumn loLines, lr.Index, "PROCESS", "1"
+    SetTableValueByColumn loLines, lr.Index, "INPUT/OUTPUT", "INSTRUCTION"
+    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "Heat water"
+    SetTableValueByColumn loLines, lr.Index, "RECIPE_LIST_ROW", 1
+
+    Set lr = loLines.ListRows.Add(AlwaysInsert:=False)
+    SetTableValueByColumn loLines, lr.Index, "PROCESS", "1"
+    SetTableValueByColumn loLines, lr.Index, "INPUT/OUTPUT", "USED"
+    SetTableValueByColumn loLines, lr.Index, "INGREDIENT", "Black Tea"
+    SetTableValueByColumn loLines, lr.Index, "RECIPE_LIST_ROW", 2
+    wb.Activate
+
+    If frmProduction.TestRecipeBuilderHasInstructionIo() <> 1 Then
+        mLastTestFailure = "INSTRUCTION was not present in the Recipe Builder In/Out dropdown."
+        GoTo CleanExit
+    End If
+    If frmProduction.TestRecipeBuilderUomCatalogContains("EA") <> 1 Then
+        mLastTestFailure = "Recipe Builder UOM dropdown did not load the warehouse/default catalog."
+        GoTo CleanExit
+    End If
+    If modUomSettings.NormalizeConfiguredUomName("  To   Line  ") <> "TO LINE" Then
+        mLastTestFailure = "Spaced UOM names were not normalized while preserving meaningful spaces."
+        GoTo CleanExit
+    End If
+    If frmProduction.TestRecipeBuilderSelectUom("TO LINE") <> "TO LINE" Then
+        mLastTestFailure = "Recipe Builder could not safely select a newly added or legacy spaced UOM."
+        GoTo CleanExit
+    End If
+    If frmProduction.TestRecipeBuilderLineActionsFitLayout() <> 1 Then
+        mLastTestFailure = "Recipe Builder line action controls overlap or extend into the recipe command column."
+        GoTo CleanExit
+    End If
+    If frmProduction.TestRecipeBuilderLifecycleAndHeadersReady() <> 1 Then
+        mLastTestFailure = "Recipe Builder line headers or Release for Production control were not built."
+        GoTo CleanExit
+    End If
+    moveResult = frmProduction.TestRecipeBuilderLineMove(wb, 1, -1)
+    If moveResult = "Black Tea|Heat water|1|2" Then
+        TestProductionForm_RecipeBuilderMovesLinesAndSupportsInstruction = 1
+    Else
+        mLastTestFailure = "Unexpected move result: " & moveResult
+    End If
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    On Error GoTo 0
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestProductionRecipeIdentity_Base36LatestNameAndBoundWorkbook() As Long
+    Dim targetWb As Workbook
+    Dim distractorWb As Workbook
+    Dim targetHeader As ListObject
+    Dim distractorHeader As ListObject
+    Dim designs(1 To 2, 1 To 6) As Variant
+    Dim canonicalRecipes(1 To 1, 1 To 3) As Variant
+    Dim pendingRecipes(1 To 2, 1 To 3) As Variant
+    Dim legacyRecipes(1 To 2, 1 To 3) As Variant
+    Dim unifiedRecipes As Variant
+    Dim unifiedById As Object
+    Dim unifiedRow As Long
+    Dim report As String
+    Dim result As String
+
+    On Error GoTo CleanFail
+    If mProduction.TestNextBase36RecipeId(Array("1", "002")) <> "003" Then
+        mLastTestFailure = "Base-36 recipe ID allocation did not normalize legacy numeric 1 and advance to 003."
+        GoTo CleanExit
+    End If
+
+    designs(1, 1) = "001"
+    designs(1, 2) = "v1"
+    designs(1, 3) = "RECIPE"
+    designs(1, 4) = "Brewed Black Tea"
+    designs(1, 5) = "old name"
+    designs(1, 6) = "RELEASED"
+    designs(2, 1) = "001"
+    designs(2, 2) = "20260725180000"
+    designs(2, 3) = "RECIPE"
+    designs(2, 4) = "Malawi Brewed Black Slury"
+    designs(2, 5) = "new name"
+    designs(2, 6) = "DRAFT"
+    If mProduction.TestLatestRecipeNameFromDesignRows(designs, "001") <> "Malawi Brewed Black Slury" Then
+        mLastTestFailure = "Latest Designs replay row did not supply the current recipe name."
+        GoTo CleanExit
+    End If
+
+    canonicalRecipes(1, 1) = "001"
+    canonicalRecipes(1, 2) = "Canonical 001"
+    pendingRecipes(1, 1) = "1"
+    pendingRecipes(1, 2) = "Pending duplicate 001"
+    pendingRecipes(2, 1) = "002"
+    pendingRecipes(2, 2) = "Pending 002"
+    legacyRecipes(1, 1) = "002"
+    legacyRecipes(1, 2) = "Legacy duplicate 002"
+    legacyRecipes(2, 1) = "003"
+    legacyRecipes(2, 2) = "Legacy 003"
+    unifiedRecipes = mProduction.TestUnifiedRecipeList( _
+        canonicalRecipes, pendingRecipes, legacyRecipes)
+    Set unifiedById = CreateObject("Scripting.Dictionary")
+    unifiedById.CompareMode = vbTextCompare
+    For unifiedRow = LBound(unifiedRecipes, 1) To UBound(unifiedRecipes, 1)
+        unifiedById(CStr(unifiedRecipes(unifiedRow, 1))) = CStr(unifiedRecipes(unifiedRow, 2))
+    Next unifiedRow
+    If unifiedById.Count <> 3 _
+       Or unifiedById("001") <> "Canonical 001" _
+       Or unifiedById("002") <> "Pending 002" _
+       Or unifiedById("003") <> "Legacy 003" Then
+        mLastTestFailure = "Unified Saved Recipes list did not preserve canonical, pending, legacy authority order."
+        GoTo CleanExit
+    End If
+
+    Set targetWb = Application.Workbooks.Add
+    Set distractorWb = Application.Workbooks.Add
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(targetWb, report) Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(distractorWb, report) Then GoTo CleanExit
+    Set targetHeader = FindTable(targetWb, "RB_AddRecipeName")
+    Set distractorHeader = FindTable(distractorWb, "RB_AddRecipeName")
+    distractorWb.Activate
+
+    result = frmProduction.TestWriteRecipeHeaderToBoundWorkbook( _
+        targetWb, "Malawi Brewed Black Slury", "003")
+    If result <> "003|Malawi Brewed Black Slury" Then
+        mLastTestFailure = "Recipe header was not written to the form-bound operator workbook: " & result
+        GoTo CleanExit
+    End If
+    If Not distractorHeader Is Nothing Then
+        If Not distractorHeader.DataBodyRange Is Nothing Then
+            If CStr(distractorHeader.DataBodyRange.Cells(1, distractorHeader.ListColumns("RECIPE_NAME").Index).Value) <> "" Then
+                mLastTestFailure = "Recipe header leaked into the active distractor workbook."
+                GoTo CleanExit
+            End If
+        End If
+    End If
+
+    TestProductionRecipeIdentity_Base36LatestNameAndBoundWorkbook = 1
+
+CleanExit:
+    On Error Resume Next
+    Unload frmProduction
+    CloseNoSavePhase6 targetWb
+    CloseNoSavePhase6 distractorWb
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    mLastTestFailure = Err.Description
     Resume CleanExit
 End Function
 

@@ -162,6 +162,20 @@ Public Function RequireCurrentUserCapability(ByVal capability As String, _
     If deniedMessage <> "" Then MsgBox deniedMessage, vbExclamation
 End Function
 
+Public Function DiagnoseCurrentUserCapability(ByVal capability As String) As String
+    Dim errorMessage As String
+    Dim allowed As Boolean
+
+    allowed = CanCurrentUserPerformCapability(capability, "", "", "", errorMessage)
+    DiagnoseCurrentUserCapability = "Allowed=" & IIf(allowed, "True", "False") & _
+                                    "|SignedIn=" & IIf(modAuth.IsSignedIn(), "True", "False") & _
+                                    "|User=" & modAuth.GetCurrentUserId() & _
+                                    "|Warehouse=" & modConfig.GetWarehouseId() & _
+                                    "|Station=" & modConfig.GetStationId() & _
+                                    "|Auth=" & modAuth.GetResolvedAuthWorkbookName() & _
+                                    "|Error=" & Replace(Replace(errorMessage, vbCr, " "), vbLf, " ")
+End Function
+
 Public Function RequireCurrentUserCapabilityCached(ByVal capability As String, _
                                                    Optional ByVal deniedMessage As String = "", _
                                                    Optional ByRef errorMessage As String = "") As Boolean

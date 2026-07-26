@@ -55,6 +55,7 @@ Private Const SETTINGS_APP As String = "invSys"
 Private Const SETTINGS_SECTION_NAS As String = "NAS"
 Private Const SETTINGS_SECTION_RUNTIME As String = "Runtime"
 Private Const SETTINGS_REMEMBERED_ROOTS As String = "RememberedRoots"
+Private Const SETTINGS_REQUIRE_MANUAL_SERVER_CREDENTIALS As String = "RequireManualServerCredentials"
 Private Const SETTINGS_REMEMBERED_TARGET As String = "RememberedWarehouseTarget"
 Private Const SETTINGS_SELECTED_WAREHOUSE_TARGET As String = "SelectedWarehouseTarget"
 Private Const SETTINGS_DELIM As String = "|"
@@ -65,6 +66,34 @@ Private m_StaleTarget As WarehouseTarget
 Private m_SessionRoots As Object
 Private m_LastStatus As NasStatusCode
 Private m_LastStatusText As String
+
+Public Function RequireManualServerCredentials() As Boolean
+    Dim rawValue As String
+
+    On Error Resume Next
+    rawValue = UCase$(Trim$(GetSetting(SETTINGS_APP, SETTINGS_SECTION_NAS, _
+                                     SETTINGS_REQUIRE_MANUAL_SERVER_CREDENTIALS, "FALSE")))
+    On Error GoTo 0
+    RequireManualServerCredentials = _
+        (rawValue = "TRUE" Or rawValue = "YES" Or rawValue = "1" Or rawValue = "ON")
+End Function
+
+Public Sub SetRequireManualServerCredentials(ByVal requireManualEntry As Boolean)
+    SaveSetting SETTINGS_APP, SETTINGS_SECTION_NAS, _
+                SETTINGS_REQUIRE_MANUAL_SERVER_CREDENTIALS, _
+                IIf(requireManualEntry, "TRUE", "FALSE")
+End Sub
+
+Public Function SetRequireManualServerCredentialsForAutomation(ByVal requireManualEntry As Boolean) As String
+    On Error GoTo FailSet
+    SetRequireManualServerCredentials requireManualEntry
+    SetRequireManualServerCredentialsForAutomation = _
+        "OK|RequireManualServerCredentials=" & IIf(RequireManualServerCredentials(), "TRUE", "FALSE")
+    Exit Function
+
+FailSet:
+    SetRequireManualServerCredentialsForAutomation = "FAIL|" & Err.Description
+End Function
 
 Public Function ConnectNasRootWithCredentials(ByVal rootPath As String, _
                                               ByVal userName As String, _
@@ -148,14 +177,61 @@ Public Sub ShowWarehouseConnectionPrompt(Optional ByVal reason As String = "")
     Call ShowWarehouseConnectionPromptForTarget(reason)
 End Sub
 
-Public Function ShowWarehouseConnectionPromptForTarget(Optional ByVal reason As String = "") As Boolean
+Public Function ShowWarehouseConnectionPromptForTarget(Optional ByVal reason As String = "", _
+                                                       Optional ByVal requireStationInbox As Boolean = False) As Boolean
     Dim frm As frmWarehouseConnection
 
     Set frm = New frmWarehouseConnection
-    frm.InitializeConnectionPrompt reason
+    frm.InitializeConnectionPrompt reason, requireStationInbox
     frm.Show vbModal
     ShowWarehouseConnectionPromptForTarget = frm.WasAccepted
     Unload frm
+End Function
+
+Public Function ListRuntimeStationsForConnection(ByVal runtimeRoot As String) As Collection
+    Dim results As Collection
+    Dim configPath As String
+    Dim wb As Workbook
+    Dim openedTransient As Boolean
+    Dim loWh As ListObject
+    Dim loSt As ListObject
+    Dim warehouseId As String
+    Dim stationId As String
+    Dim rowIndex As Long
+
+    Set results = New Collection
+    On Error GoTo CleanExit
+
+    configPath = FindCompleteRuntimeConfigNas(runtimeRoot)
+    If configPath = "" Then GoTo CleanExit
+    Set wb = FindOpenWorkbookNas(configPath)
+    If wb Is Nothing Then
+        Set wb = OpenWorkbookReadOnlyNoPromptNas(configPath)
+        openedTransient = True
+    End If
+    If wb Is Nothing Then GoTo CleanExit
+
+    Set loWh = FindListObjectNas(wb, "tblWarehouseConfig")
+    Set loSt = FindListObjectNas(wb, "tblStationConfig")
+    If loWh Is Nothing Or loWh.DataBodyRange Is Nothing Then GoTo CleanExit
+    If loSt Is Nothing Or loSt.DataBodyRange Is Nothing Then GoTo CleanExit
+    warehouseId = TableValueNas(loWh, 1, "WarehouseId")
+
+    For rowIndex = 1 To loSt.ListRows.Count
+        If warehouseId = "" _
+           Or StrComp(TableValueNas(loSt, rowIndex, "WarehouseId"), warehouseId, vbTextCompare) = 0 Then
+            stationId = TableValueNas(loSt, rowIndex, "StationId")
+            If stationId <> "" And stationId <> "*" Then AddTextIfMissingNas results, stationId
+        End If
+    Next rowIndex
+
+CleanExit:
+    If openedTransient And Not wb Is Nothing Then
+        On Error Resume Next
+        wb.Close SaveChanges:=False
+        On Error GoTo 0
+    End If
+    Set ListRuntimeStationsForConnection = results
 End Function
 
 Public Sub DisconnectNasRoot(ByVal rootPath As String, Optional ByVal disconnectWindowsSession As Boolean = False)
@@ -267,7 +343,11 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
 
     statusCode = ReadConfigIdentityNas(configPath, stationId, whId, whName, resolvedStation)
     If statusCode <> NAS_OK Then
-        SetStatusNas statusCode, "Warehouse config workbook is invalid."
+        If statusCode = WH_TARGET_INCOMPLETE Then
+            SetStatusNas statusCode, "The requested StationId is not configured for this warehouse."
+        Else
+            SetStatusNas statusCode, "Warehouse config workbook is invalid."
+        End If
         SelectWarehouseTarget = statusCode
         Exit Function
     End If
@@ -342,12 +422,30 @@ Public Function ResolveWarehouseTarget(ByRef outTarget As WarehouseTarget, ByRef
     Dim targets As Collection
     Dim runtimeRoot As Variant
     Dim candidate As WarehouseTarget
+    Dim explicitRoot As String
 
     Set outTarget = Nothing
+    explicitRoot = NormalizeFolderNas(modRuntimeWorkbooks.GetCoreDataRootOverride())
     If Not m_CurrentTarget Is Nothing Then
-        Set outTarget = CloneTargetNas(m_CurrentTarget)
-        statusCode = NAS_OK
-        ResolveWarehouseTarget = True
+        If explicitRoot = "" Or SamePathNas(explicitRoot, m_CurrentTarget.RuntimeRoot) Then
+            Set outTarget = CloneTargetNas(m_CurrentTarget)
+            statusCode = NAS_OK
+            ResolveWarehouseTarget = True
+            Exit Function
+        End If
+    End If
+
+    ' When a transaction explicitly binds a runtime root, resolution is scoped
+    ' to that root. Falling through to remembered roots would silently redirect
+    ' processing into a prior warehouse/session.
+    If explicitRoot <> "" Then
+        statusCode = SelectWarehouseTarget(explicitRoot, explicitRoot, candidate, modConfig.GetStationId())
+        If statusCode = NAS_OK Then
+            candidate.SourceType = WH_SOURCE_LOCAL
+            Set m_CurrentTarget = CloneTargetNas(candidate)
+            Set outTarget = CloneTargetNas(candidate)
+            ResolveWarehouseTarget = True
+        End If
         Exit Function
     End If
 
@@ -463,7 +561,18 @@ Public Function IsTargetResolved() As Boolean
 End Function
 
 Public Function GetCurrentTarget() As WarehouseTarget
+    Dim explicitRoot As String
+
     If m_CurrentTarget Is Nothing Then Exit Function
+
+    ' The session override is the authoritative transaction boundary. Do not
+    ' expose a cached target from a prior operator/runtime selection when a
+    ' caller has explicitly bound the session to another root.
+    explicitRoot = NormalizeFolderNas(modRuntimeWorkbooks.GetCoreDataRootOverride())
+    If explicitRoot <> "" And NormalizeFolderNas(m_CurrentTarget.RuntimeRoot) <> "" Then
+        If Not SamePathNas(explicitRoot, m_CurrentTarget.RuntimeRoot) Then Exit Function
+    End If
+
     Set GetCurrentTarget = CloneTargetNas(m_CurrentTarget)
 End Function
 
@@ -721,12 +830,10 @@ Private Function ReadConfigIdentityNas(ByVal configPath As String, _
 
     stationId = Trim$(requestedStation)
     If stationId <> "" Then
-        If Not loSt Is Nothing Then
-            If Not loSt.DataBodyRange Is Nothing Then
-                rowIndex = FindStationRowNas(loSt, warehouseId, stationId)
-                If rowIndex > 0 Then stationId = TableValueNas(loSt, rowIndex, "StationId")
-            End If
-        End If
+        If loSt Is Nothing Or loSt.DataBodyRange Is Nothing Then GoTo InvalidStation
+        rowIndex = FindStationRowNas(loSt, warehouseId, stationId)
+        If rowIndex = 0 Then GoTo InvalidStation
+        stationId = TableValueNas(loSt, rowIndex, "StationId")
     End If
 
     ReadConfigIdentityNas = NAS_OK
@@ -734,6 +841,10 @@ Private Function ReadConfigIdentityNas(ByVal configPath As String, _
 
 InvalidConfig:
     ReadConfigIdentityNas = WH_CONFIG_INVALID
+    GoTo CleanExit
+
+InvalidStation:
+    ReadConfigIdentityNas = WH_TARGET_INCOMPLETE
     GoTo CleanExit
 
 FailRead:
@@ -1180,6 +1291,17 @@ Private Sub AddPathIfMissingNas(ByVal paths As Collection, ByVal pathText As Str
         If SamePathNas(CStr(item), pathText) Then Exit Sub
     Next item
     paths.Add pathText
+End Sub
+
+Private Sub AddTextIfMissingNas(ByVal values As Collection, ByVal valueText As String)
+    Dim item As Variant
+
+    valueText = Trim$(valueText)
+    If valueText = "" Then Exit Sub
+    For Each item In values
+        If StrComp(Trim$(CStr(item)), valueText, vbTextCompare) = 0 Then Exit Sub
+    Next item
+    values.Add valueText
 End Sub
 
 Private Sub EnsureSessionRootsNas()

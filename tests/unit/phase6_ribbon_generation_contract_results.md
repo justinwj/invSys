@@ -1,7 +1,7 @@
 # Phase 6 Ribbon Generation Contract Results
 
-- Date: 2026-07-25 13:05:34
-- Passed: 44
+- Date: 2026-07-25 16:52:23
+- Passed: 46
 - Failed: 0
 
 | Check | Result | Detail |
@@ -35,6 +35,8 @@
 | Core.ConnectServerRequiresNasRoot | PASS | Role Connect Server can reject remembered local roots. |
 | Core.ConnectServerReconnectsRememberedShare | PASS | Remembered NAS roots attempt Windows SMB reattach with current/stored credentials before failing. |
 | Core.ConnectServerPromptsForServerCredentials | PASS | Role Connect Server prompts for server credentials when stored SMB credentials fail. |
+| Core.RoleConnectRequiresStationInbox | PASS | Production, Receiving, and Shipping connections require a configured station inbox. |
+| Core.ManualServerCredentialsPreference | PASS | Connect Server honors the per-Windows-user manual credential preference before remembered-server connection. |
 | Core.RoleTargetsRejectLocalPaths | PASS | Role-required NAS targets reject stale local/temp targets and report NAS probe status. |
 | Core.SignOutClearsPersistedUser | PASS | Sign Out clears live auth and persisted current-user state. |
 | Core.AuthStoresDisplayName | PASS | Auth cache stores and exposes signed-in display name. |

@@ -68,7 +68,7 @@ Public Function GetBOM(ByVal designId As String, ByVal designVersion As String, 
     src = lo.DataBodyRange.Value
     ReDim result(1 To UBound(src, 1), 1 To 10)
     For r = 1 To UBound(src, 1)
-        If StrComp(ReadDesignCellQuery(lo, src, r, "DesignId"), Trim$(designId), vbTextCompare) = 0 _
+        If DesignIdsMatchQuery(ReadDesignCellQuery(lo, src, r, "DesignId"), designId) _
            And StrComp(ReadDesignCellQuery(lo, src, r, "DesignVersion"), Trim$(designVersion), vbTextCompare) = 0 Then
             outRow = outRow + 1
             result(outRow, 1) = ReadDesignCellQuery(lo, src, r, "LineNo")
@@ -84,6 +84,7 @@ Public Function GetBOM(ByVal designId As String, ByVal designVersion As String, 
         End If
     Next r
     If outRow = 0 Then Exit Function
+    SortBomRowsByLineNo result, outRow
     ReDim trimmed(1 To outRow, 1 To 10)
     For r = 1 To outRow
         For c = 1 To 10
@@ -95,6 +96,37 @@ Public Function GetBOM(ByVal designId As String, ByVal designVersion As String, 
 
 FailQuery:
     GetBOM = Empty
+End Function
+
+Private Sub SortBomRowsByLineNo(ByRef values As Variant, ByVal rowCount As Long)
+    Dim i As Long
+    Dim j As Long
+    Dim c As Long
+    Dim leftLine As Double
+    Dim rightLine As Double
+    Dim swapValue As Variant
+
+    For i = 1 To rowCount - 1
+        For j = i + 1 To rowCount
+            leftLine = DesignLineSortValueQuery(values(i, 1), i)
+            rightLine = DesignLineSortValueQuery(values(j, 1), j)
+            If rightLine < leftLine Then
+                For c = 1 To 10
+                    swapValue = values(i, c)
+                    values(i, c) = values(j, c)
+                    values(j, c) = swapValue
+                Next c
+            End If
+        Next j
+    Next i
+End Sub
+
+Private Function DesignLineSortValueQuery(ByVal lineValue As Variant, ByVal fallbackRow As Long) As Double
+    If IsNumeric(lineValue) Then
+        DesignLineSortValueQuery = CDbl(lineValue)
+    Else
+        DesignLineSortValueQuery = 1000000000# + fallbackRow
+    End If
 End Function
 
 Public Function GetBOMForStatus(ByVal designId As String, _
@@ -121,7 +153,7 @@ Public Function GetBOMForStatus(ByVal designId As String, _
 
     src = lo.DataBodyRange.Value
     For r = 1 To UBound(src, 1)
-        If StrComp(ReadDesignCellQuery(lo, src, r, "DesignId"), designId, vbTextCompare) = 0 _
+        If DesignIdsMatchQuery(ReadDesignCellQuery(lo, src, r, "DesignId"), designId) _
            And StrComp(ReadDesignCellQuery(lo, src, r, "DesignVersion"), designVersion, vbTextCompare) = 0 Then
             If StrComp(ReadDesignCellQuery(lo, src, r, "Status"), requiredStatus, vbTextCompare) <> 0 Then Exit Function
             GetBOMForStatus = GetBOM(designId, designVersion, wb)
@@ -132,6 +164,27 @@ Public Function GetBOMForStatus(ByVal designId As String, _
 
 FailQuery:
     GetBOMForStatus = Empty
+End Function
+
+Private Function DesignIdsMatchQuery(ByVal leftId As String, ByVal rightId As String) As Boolean
+    DesignIdsMatchQuery = (StrComp(CanonicalDesignIdQuery(leftId), _
+                                   CanonicalDesignIdQuery(rightId), vbTextCompare) = 0)
+End Function
+
+Private Function CanonicalDesignIdQuery(ByVal valueIn As String) As String
+    Dim textValue As String
+    Dim numericValue As Long
+
+    textValue = UCase$(Trim$(valueIn))
+    If textValue = "" Then Exit Function
+    If Len(textValue) <= 3 And IsNumeric(textValue) Then
+        numericValue = CLng(CDbl(textValue))
+        If numericValue >= 0 And numericValue <= 999 Then
+            CanonicalDesignIdQuery = Right$("000" & CStr(numericValue), 3)
+            Exit Function
+        End If
+    End If
+    CanonicalDesignIdQuery = textValue
 End Function
 
 Private Function FindDesignsTableQuery(ByVal wb As Workbook, ByVal tableName As String) As ListObject

@@ -614,6 +614,40 @@ FailReissue:
     report = "ReissuePoisonEvent failed: " & Err.Description
 End Function
 
+Public Function ReissuePoisonReceiveEventReportForAutomation(ByVal sourceWorkbookName As String, _
+                                                             ByVal sourceEventId As String, _
+                                                             ByVal correctedSku As String, _
+                                                             ByVal correctedQty As Double, _
+                                                             ByVal correctedLocation As String, _
+                                                             Optional ByVal reason As String = "", _
+                                                             Optional ByVal adminWb As Workbook = Nothing) As String
+    Dim corrections As Object
+    Dim newEventId As String
+    Dim report As String
+    Dim success As Boolean
+
+    Set corrections = CreateObject("Scripting.Dictionary")
+    corrections.CompareMode = vbTextCompare
+    corrections("SKU") = Trim$(correctedSku)
+    corrections("Qty") = correctedQty
+    corrections("Location") = Trim$(correctedLocation)
+
+    success = ReissuePoisonEvent(sourceWorkbookName, _
+                                 TABLE_INBOX_RECEIVE, _
+                                 sourceEventId, _
+                                 "", _
+                                 corrections, _
+                                 reason, _
+                                 adminWb, _
+                                 newEventId, _
+                                 report)
+    If success Then
+        ReissuePoisonReceiveEventReportForAutomation = "OK|NewEventID=" & newEventId & "; Report=" & report
+    Else
+        ReissuePoisonReceiveEventReportForAutomation = "FAIL|Report=" & report
+    End If
+End Function
+
 Public Function GenerateInventorySnapshot(Optional ByVal adminUserId As String = "", _
                                           Optional ByVal warehouseId As String = "", _
                                           Optional ByVal inventoryWb As Workbook = Nothing, _
@@ -1337,7 +1371,21 @@ Private Function RequireAdminMaintenance(ByVal adminUserId As String, _
     If modAuth.HasProvisionedCapabilityForSystem("ADMIN_MAINT", adminUserId, warehouseId, stationId) Then
         RequireAdminMaintenance = True
     Else
-        report = "User lacks ADMIN_MAINT capability."
+        report = "User lacks ADMIN_MAINT capability." & _
+                 " User=" & ValueOrPlaceholderAdmin(adminUserId) & _
+                 "; Warehouse=" & ValueOrPlaceholderAdmin(warehouseId) & _
+                 "; Station=" & ValueOrPlaceholderAdmin(stationId) & _
+                 "; Auth=" & ValueOrPlaceholderAdmin(modAuth.GetResolvedAuthWorkbookName()) & _
+                 "; Validation=" & ValueOrPlaceholderAdmin(modAuth.ValidateAuth())
+    End If
+End Function
+
+Private Function ValueOrPlaceholderAdmin(ByVal valueText As String) As String
+    valueText = Trim$(valueText)
+    If valueText = "" Then
+        ValueOrPlaceholderAdmin = "<blank>"
+    Else
+        ValueOrPlaceholderAdmin = valueText
     End If
 End Function
 

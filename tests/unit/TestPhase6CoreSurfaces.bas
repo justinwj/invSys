@@ -9480,6 +9480,23 @@ Public Function TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit() As L
     EnsureAuthCapabilityForTest "WH76", currentUser, "ADMIN_MAINT", "WH76", "*"
     EnsureAuthCapabilityForTest "WH76", currentUser, "RECEIVE_POST", "WH76", "*"
     EnsureAuthCapabilityForTest "WH76", "svc_processor", "INBOX_PROCESS", "WH76", "*"
+    If Not modAuth.ReloadAuth("WH76") Then
+        failureReason = "Auth did not reload after provisioning saved Admin capabilities: " & modAuth.ValidateAuth()
+        GoTo CleanExit
+    End If
+    If StrComp(NormalizeTestPath(modRuntimeWorkbooks.GetCoreDataRootOverride()), NormalizeTestPath(rootPath), vbTextCompare) <> 0 Then
+        failureReason = "Runtime root drifted before the initial ADMIN_MAINT check. Actual=" & modRuntimeWorkbooks.GetCoreDataRootOverride()
+        GoTo CleanExit
+    End If
+    If Not modAuth.HasProvisionedCapabilityForSystem("ADMIN_MAINT", currentUser, "WH76", "ADM1") Then
+        failureReason = "Saved Admin capability was not available immediately after provisioning. User=" & currentUser & _
+                        "; Auth=" & modAuth.GetResolvedAuthWorkbookName() & "; " & modAuth.ValidateAuth()
+        GoTo CleanExit
+    End If
+    If StrComp(NormalizeTestPath(modRuntimeWorkbooks.GetCoreDataRootOverride()), NormalizeTestPath(rootPath), vbTextCompare) <> 0 Then
+        failureReason = "Runtime root drifted during the initial ADMIN_MAINT check. Actual=" & modRuntimeWorkbooks.GetCoreDataRootOverride()
+        GoTo CleanExit
+    End If
 
     Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH76", Array("SKU-001"))
     If wbInv Is Nothing Then
@@ -9499,6 +9516,17 @@ Public Function TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit() As L
     End If
     If Not AssertInboxRowStatusForTest(wbInbox, "EVT-ADMIN-POISON-001", "POISON") Then
         failureReason = "Poison seed event was not left in POISON status."
+        GoTo CleanExit
+    End If
+    If StrComp(NormalizeTestPath(modRuntimeWorkbooks.GetCoreDataRootOverride()), NormalizeTestPath(rootPath), vbTextCompare) <> 0 Then
+        failureReason = "Runtime root drifted during the initial poison processor run. Actual=" & _
+                        modRuntimeWorkbooks.GetCoreDataRootOverride()
+        GoTo CleanExit
+    End If
+    If Not modAuth.ReloadAuth("WH76") Or _
+       Not modAuth.HasProvisionedCapabilityForSystem("ADMIN_MAINT", currentUser, "WH76", "ADM1") Then
+        failureReason = "ADMIN_MAINT was lost during the initial poison processor run. " & _
+                        DescribeAuthCapabilitiesForTest("WH76", currentUser)
         GoTo CleanExit
     End If
 
@@ -9541,6 +9569,11 @@ Public Function TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit() As L
         failureReason = "RefreshAdminConsole failed after reopen: " & report
         GoTo CleanExit
     End If
+    If Not modAuth.ReloadAuth("WH76") Or _
+       Not modAuth.HasProvisionedCapabilityForSystem("ADMIN_MAINT", currentUser, "WH76", "ADM1") Then
+        failureReason = "ADMIN_MAINT was lost while creating, reopening, or refreshing the saved Admin workbook."
+        GoTo CleanExit
+    End If
 
     Set loAudit = FindTableByName(wbAdmin, "tblAdminAudit")
     Set loPoison = FindTableByName(wbAdmin, "tblAdminPoisonQueue")
@@ -9579,6 +9612,15 @@ Public Function TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit() As L
     corrections.Add "SKU", "SKU-001"
     corrections.Add "Note", "fixed sku"
 
+    If Not modAuth.ReloadAuth("WH76") Then
+        failureReason = "Auth did not reload immediately before ReissuePoisonEvent: " & modAuth.ValidateAuth()
+        GoTo CleanExit
+    End If
+    If Not modAuth.HasProvisionedCapabilityForSystem("ADMIN_MAINT", currentUser, "WH76", "ADM1") Then
+        failureReason = "ADMIN_MAINT was lost before ReissuePoisonEvent. User=" & currentUser & _
+                        "; Auth=" & modAuth.GetResolvedAuthWorkbookName() & "; " & modAuth.ValidateAuth()
+        GoTo CleanExit
+    End If
     If Not modAdminConsole.ReissuePoisonEvent(wbInbox.Name, "tblInboxReceive", "EVT-ADMIN-POISON-001", currentUser, corrections, "fix sku", wbAdmin, newEventId, report) Then
         failureReason = "ReissuePoisonEvent failed from saved admin workbook: " & report
         GoTo CleanExit
@@ -9659,8 +9701,7 @@ CleanExit:
     CloseWorkbookIfOpen wbInv
     DeleteRuntimeRoot rootPath
     If failureReason <> "" Then
-        On Error GoTo 0
-        Err.Raise vbObjectError + 7105, "TestSavedAdminWorkbook_ReopenRefreshReissuePreservesAudit", failureReason
+        mLastTestFailure = failureReason
     End If
     Exit Function
 CleanFail:
@@ -10238,6 +10279,55 @@ CleanFail:
     CloseTransientWorkbookForTest wbAuth, openedTransient
     Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
+
+Private Function DescribeAuthCapabilitiesForTest(ByVal warehouseId As String, _
+                                                 ByVal userId As String) As String
+    Dim wbAuth As Workbook
+    Dim loUsers As ListObject
+    Dim loCaps As ListObject
+    Dim openedTransient As Boolean
+    Dim report As String
+    Dim rowIndex As Long
+    Dim part As String
+
+    Set wbAuth = FindWorkbookByName(warehouseId & ".invSys.Auth.xlsb")
+    If wbAuth Is Nothing Then
+        Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime(warehouseId, "svc_processor", "", report)
+        openedTransient = Not wbAuth Is Nothing
+    End If
+    If wbAuth Is Nothing Then
+        DescribeAuthCapabilitiesForTest = "Auth workbook unavailable: " & report
+        Exit Function
+    End If
+
+    Set loUsers = FindTableByName(wbAuth, "tblUsers")
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    DescribeAuthCapabilitiesForTest = "Workbook=" & wbAuth.FullName
+    If Not loUsers Is Nothing Then
+        rowIndex = FindRowByColumnValueInTable(loUsers, "UserId", userId)
+        If rowIndex > 0 Then
+            DescribeAuthCapabilitiesForTest = DescribeAuthCapabilitiesForTest & _
+                "; UserStatus=" & CStr(GetTableValue(loUsers, rowIndex, "Status"))
+        Else
+            DescribeAuthCapabilitiesForTest = DescribeAuthCapabilitiesForTest & "; UserStatus=<missing>"
+        End If
+    End If
+    If Not loCaps Is Nothing Then
+        DescribeAuthCapabilitiesForTest = DescribeAuthCapabilitiesForTest & _
+            "; CapabilityRows=" & CStr(loCaps.ListRows.Count)
+        For rowIndex = 1 To loCaps.ListRows.Count
+            If StrComp(CStr(GetTableValue(loCaps, rowIndex, "UserId")), userId, vbTextCompare) = 0 Then
+                part = CStr(GetTableValue(loCaps, rowIndex, "Capability")) & "@" & _
+                       CStr(GetTableValue(loCaps, rowIndex, "WarehouseId")) & "/" & _
+                       CStr(GetTableValue(loCaps, rowIndex, "StationId")) & "=" & _
+                       CStr(GetTableValue(loCaps, rowIndex, "Status"))
+                DescribeAuthCapabilitiesForTest = DescribeAuthCapabilitiesForTest & "; " & part
+            End If
+        Next rowIndex
+    End If
+
+    CloseTransientWorkbookForTest wbAuth, openedTransient
+End Function
 
 Private Function FindCapabilityRowForTest(ByVal lo As ListObject, _
                                           ByVal userId As String, _

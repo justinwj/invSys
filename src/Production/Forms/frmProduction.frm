@@ -32,9 +32,13 @@ Private WithEvents mBtnBuilderSave As MSForms.CommandButton
 Private WithEvents mBtnBuilderProcess As MSForms.CommandButton
 Private WithEvents mBtnBuilderFormulas As MSForms.CommandButton
 Private WithEvents mBtnBuilderClear As MSForms.CommandButton
+Private WithEvents mBtnBuilderRelease As MSForms.CommandButton
 Private WithEvents mBtnLineAdd As MSForms.CommandButton
 Private WithEvents mBtnLineUpdate As MSForms.CommandButton
 Private WithEvents mBtnLineRemove As MSForms.CommandButton
+Private WithEvents mBtnLineMoveUp As MSForms.CommandButton
+Private WithEvents mBtnLineMoveDown As MSForms.CommandButton
+Private WithEvents mBtnLineUomAdd As MSForms.CommandButton
 
 Private WithEvents mLstAssignRecipes As MSForms.ListBox
 Private WithEvents mLstAssignIngredients As MSForms.ListBox
@@ -86,7 +90,7 @@ Private mTxtRecipeRowBudget As MSForms.TextBox
 Private mTxtLineProcess As MSForms.TextBox
 Private mTxtLineIngredient As MSForms.TextBox
 Private mTxtLinePercent As MSForms.TextBox
-Private mTxtLineUom As MSForms.TextBox
+Private mTxtLineUom As MSForms.ComboBox
 Private mTxtLineAmount As MSForms.TextBox
 Private WithEvents mTxtPaletteSplit As MSForms.TextBox
 Private WithEvents mTxtPaletteQty As MSForms.TextBox
@@ -109,6 +113,9 @@ Private mRunBaseQtyByKey As Object
 Private mUpdatingPaletteInputs As Boolean
 Private mPaletteInputSource As String
 Private mRunProcessByKey As Object
+Private mRunItemCodeByKey As Object
+Private mBuilderLineTableRows() As Long
+Private mBuilderLineTableRowCount As Long
 
 Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
 Private Const PRODUCTION_BASE_WIDTH As Double = 1110
@@ -167,6 +174,7 @@ Private Sub UserForm_Terminate()
     Set mRunSplitOverrides = Nothing
     Set mRunBaseQtyByKey = Nothing
     Set mRunProcessByKey = Nothing
+    Set mRunItemCodeByKey = Nothing
 End Sub
 
 Public Sub SetOperatorWorkbook(ByVal wb As Workbook)
@@ -261,7 +269,102 @@ Public Function TestProductionRunLocationAllowed(ByVal runLocation As String, By
     TestProductionRunLocationAllowed = IIf(RunChoiceLocationAllowed(runLocation, inventoryLocation, qtyValue), 1, 0)
 End Function
 
-Public Function TestRecipeBuilderSelectedLineProcessUpdate(ByVal wb As Workbook, ByVal newProcess As String) As Long
+Public Function TestRunPaletteCanonicalItemCodeStorage() As Long
+    Dim values(1 To 1, 1 To 11) As Variant
+
+    If Not mBuilt Then BuildLayout
+    mLstRunPalette.Clear
+    mRunInventoryRows = Empty
+    mRunInventoryCacheLoaded = True
+    Set mRunItemCodeByKey = Nothing
+
+    values(1, 1) = "BREW"
+    values(1, 2) = "ING-WATER"
+    values(1, 3) = "Filtered Water"
+    values(1, 4) = ""
+    values(1, 5) = "Filtered Water"
+    values(1, 7) = 500
+    values(1, 8) = "LB"
+    values(1, 10) = 500
+    values(1, 11) = "ITEM-0061"
+    AddRunChoiceRows values
+
+    If mLstRunPalette.ColumnCount = 10 _
+       And mLstRunPalette.ListCount = 1 _
+       And StrComp(RunItemCodeFromList(mLstRunPalette, 0), "ITEM-0061", vbTextCompare) = 0 Then
+        TestRunPaletteCanonicalItemCodeStorage = 1
+    End If
+End Function
+
+Public Function TestAssignmentItemRowsGrowWithoutTableCollision(ByVal wb As Workbook) As Long
+    Dim lo As ListObject
+    Dim lr As ListRow
+    Dim i As Long
+
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    If Not wb Is Nothing Then wb.Activate
+    Set lo = ProductionTable(TABLE_ASSIGN_ITEM)
+    If lo Is Nothing Then Exit Function
+    ClearTableContentsKeepBlank lo
+
+    For i = 1 To 3
+        Set lr = WritableAssignmentItemRow(lo)
+        If lr Is Nothing Then Exit Function
+        SetRowValue lr, lo, "ITEMS", "Test acceptable " & CStr(i)
+        SetRowValue lr, lo, "ITEM_CODE", "TEST-SKU-" & CStr(i)
+    Next i
+
+    If lo.ListRows.Count >= 3 _
+       And StrComp(CellByHeader(lo, 3, "ITEM_CODE"), "TEST-SKU-3", vbTextCompare) = 0 Then
+        TestAssignmentItemRowsGrowWithoutTableCollision = 1
+    End If
+End Function
+
+Public Function TestProductionCheckRowsRecognizeSkuIdentity(ByVal wb As Workbook) As Long
+    Dim lo As ListObject
+
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    If Not wb Is Nothing Then wb.Activate
+    Set lo = ProductionTable(TABLE_MANAGER_CHECK)
+    If lo Is Nothing Then Exit Function
+    ClearTableContentsKeepBlank lo
+    SetCellByHeader lo, 1, "ROW", ""
+    SetCellByHeader lo, 1, "ITEM_CODE", "SKU-CHECK-ONLY"
+    SetCellByHeader lo, 1, "ITEM", "SKU-only checked input"
+    SetCellByHeader lo, 1, "USED", 12
+    If HasProductionCheckRows() Then TestProductionCheckRowsRecognizeSkuIdentity = 1
+End Function
+
+Public Function TestRecipeBuilderSelectedLineProcessUpdate(ByVal wb As Workbook, _
+                                                           ByVal newProcess As String, _
+                                                           Optional ByVal selectedIndex As Long = 0) As Long
+    Dim lo As ListObject
+    Dim tableRow As Long
+
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    If Not wb Is Nothing Then wb.Activate
+    RefreshBuilderLines
+    If mLstBuilderLines Is Nothing Then Exit Function
+    If selectedIndex < 0 Or selectedIndex >= mLstBuilderLines.ListCount Then Exit Function
+    mLstBuilderLines.ListIndex = selectedIndex
+    tableRow = BuilderTableRowForListIndex(selectedIndex)
+    If tableRow <= 0 Then Exit Function
+    LoadSelectedBuilderLine
+    mTxtLineProcess.Text = newProcess
+    If Not WriteSelectedRecipeBuilderLineFromForm(False) Then Exit Function
+    Set lo = ProductionTable(TABLE_BUILDER_LINES)
+    If Not lo Is Nothing Then
+        If StrComp(CellByHeader(lo, tableRow, "PROCESS"), newProcess, vbTextCompare) = 0 Then _
+            TestRecipeBuilderSelectedLineProcessUpdate = 1
+    End If
+End Function
+
+Public Function TestRecipeBuilderLineMove(ByVal wb As Workbook, _
+                                          ByVal selectedIndex As Long, _
+                                          ByVal moveDirection As Long) As String
     Dim lo As ListObject
 
     If Not mBuilt Then BuildLayout
@@ -269,15 +372,89 @@ Public Function TestRecipeBuilderSelectedLineProcessUpdate(ByVal wb As Workbook,
     If Not wb Is Nothing Then wb.Activate
     RefreshBuilderLines
     If mLstBuilderLines Is Nothing Then Exit Function
-    If mLstBuilderLines.ListCount = 0 Then Exit Function
-    mLstBuilderLines.ListIndex = 0
-    LoadSelectedBuilderLine
-    mTxtLineProcess.Text = newProcess
-    If Not WriteSelectedRecipeBuilderLineFromForm(False) Then Exit Function
+    If selectedIndex < 0 Or selectedIndex >= mLstBuilderLines.ListCount Then Exit Function
+    mLstBuilderLines.ListIndex = selectedIndex
+    If Not MoveSelectedRecipeBuilderLine(moveDirection, False) Then Exit Function
+
     Set lo = ProductionTable(TABLE_BUILDER_LINES)
-    If Not lo Is Nothing Then
-        If StrComp(CellByHeader(lo, 1, "PROCESS"), newProcess, vbTextCompare) = 0 Then TestRecipeBuilderSelectedLineProcessUpdate = 1
-    End If
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    TestRecipeBuilderLineMove = CellByHeader(lo, 1, "INGREDIENT") & "|" & _
+                                CellByHeader(lo, 2, "INGREDIENT") & "|" & _
+                                CellByHeader(lo, 1, "RECIPE_LIST_ROW") & "|" & _
+                                CellByHeader(lo, 2, "RECIPE_LIST_ROW")
+End Function
+
+Public Function TestRecipeBuilderHasInstructionIo() As Long
+    Dim i As Long
+
+    If Not mBuilt Then BuildLayout
+    For i = 0 To mCmbLineIo.ListCount - 1
+        If StrComp(NzStr(mCmbLineIo.List(i)), "INSTRUCTION", vbTextCompare) = 0 Then
+            TestRecipeBuilderHasInstructionIo = 1
+            Exit Function
+        End If
+    Next i
+End Function
+
+Public Function TestRecipeBuilderLineActionsFitLayout() As Long
+    If Not mBuilt Then BuildLayout
+
+    If mBtnLineAdd.Left + mBtnLineAdd.Width + 10 > mBtnLineUpdate.Left Then Exit Function
+    If mBtnLineUpdate.Left + mBtnLineUpdate.Width + 10 > mBtnLineRemove.Left Then Exit Function
+    If mBtnLineRemove.Left + mBtnLineRemove.Width + 10 > mBtnLineMoveUp.Left Then Exit Function
+    If mBtnLineMoveUp.Left + mBtnLineMoveUp.Width + 10 > mBtnLineMoveDown.Left Then Exit Function
+    If mBtnLineMoveDown.Left + mBtnLineMoveDown.Width + 10 > mBtnBuilderClear.Left Then Exit Function
+    If mBtnLineAdd.Top + mBtnLineAdd.Height + 10 > mLstBuilderLines.Top Then Exit Function
+
+    TestRecipeBuilderLineActionsFitLayout = 1
+End Function
+
+Public Function TestRecipeBuilderLifecycleAndHeadersReady() As Long
+    If Not mBuilt Then BuildLayout
+    If mBtnBuilderRelease Is Nothing Then Exit Function
+    If StrComp(mBtnBuilderRelease.Caption, "Release for Production", vbTextCompare) <> 0 Then Exit Function
+    If Not ControlExistsByName(mPages.Pages(0), "hdrBuilderLines1") Then Exit Function
+    If Not ControlExistsByName(mPages.Pages(0), "hdrBuilderLines8") Then Exit Function
+    TestRecipeBuilderLifecycleAndHeadersReady = 1
+End Function
+
+Public Function TestRecipeBuilderUomCatalogContains(ByVal uomName As String) As Long
+    Dim idx As Long
+
+    If Not mBuilt Then BuildLayout
+    RefreshRecipeUomCatalog
+    For idx = 0 To mTxtLineUom.ListCount - 1
+        If StrComp(CStr(mTxtLineUom.List(idx)), Trim$(uomName), vbTextCompare) = 0 Then
+            TestRecipeBuilderUomCatalogContains = 1
+            Exit Function
+        End If
+    Next idx
+End Function
+
+Public Function TestRecipeBuilderSelectUom(ByVal uomName As String) As String
+    If Not mBuilt Then BuildLayout
+    RefreshRecipeUomCatalog uomName
+    If mTxtLineUom.ListIndex >= 0 Then _
+        TestRecipeBuilderSelectUom = CStr(mTxtLineUom.List(mTxtLineUom.ListIndex))
+End Function
+
+Public Function TestWriteRecipeHeaderToBoundWorkbook(ByVal wb As Workbook, _
+                                                     ByVal recipeName As String, _
+                                                     ByVal recipeId As String) As String
+    Dim lo As ListObject
+
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook wb
+    mTxtRecipeName.Text = recipeName
+    mTxtRecipeId.Text = recipeId
+    mTxtRecipeDescription.Text = "bound workbook test"
+    mTxtRecipeRowBudget.Text = CStr(PRODUCTION_DEFAULT_ROW_BUDGET)
+    WriteRecipeHeaderFromForm
+
+    Set lo = ProductionTable(TABLE_BUILDER_HEADER)
+    If lo Is Nothing Then Exit Function
+    TestWriteRecipeHeaderToBoundWorkbook = FirstRowValue(lo, "RECIPE_ID") & "|" & _
+                                           FirstRowValue(lo, "RECIPE_NAME")
 End Function
 
 Public Function TestAssignmentIngredientProcessForRecipe(ByVal wb As Workbook, ByVal recipeId As String, ByVal ingredientName As String) As String
@@ -423,6 +600,7 @@ Private Sub BuildRecipeBuilderPage(ByVal pg As MSForms.Page)
     Set mBtnBuilderProcess = AddButton(pg, "btnBuilderProcess", "Add Process Table", 860, 160, 170, 24)
     Set mBtnBuilderFormulas = AddButton(pg, "btnBuilderFormulas", "Save Formulas", 860, 192, 170, 24)
     Set mBtnBuilderClear = AddButton(pg, "btnBuilderClear", "Clear Builder", 860, 224, 170, 24)
+    Set mBtnBuilderRelease = AddButton(pg, "btnBuilderRelease", "Release for Production", 860, 256, 170, 24)
 
     AddLabel pg, "Process", 350, 145, 70, 16
     Set mTxtLineProcess = AddText(pg, "txtLineProcess", 350, 165, 120, 22)
@@ -430,21 +608,29 @@ Private Sub BuildRecipeBuilderPage(ByVal pg As MSForms.Page)
     Set mCmbLineIo = AddCombo(pg, "cmbLineIo", 485, 165, 95, 22)
     mCmbLineIo.AddItem "USED"
     mCmbLineIo.AddItem "OUTPUT"
+    mCmbLineIo.AddItem "INSTRUCTION"
     mCmbLineIo.ListIndex = 0
-    AddLabel pg, "Ingredient / Output", 595, 145, 150, 16
+    AddLabel pg, "Ingredient / Output / Instruction", 595, 145, 220, 16
     Set mTxtLineIngredient = AddText(pg, "txtLineIngredient", 595, 165, 220, 22)
     AddLabel pg, "Percent", 350, 197, 70, 16
     Set mTxtLinePercent = AddText(pg, "txtLinePercent", 350, 217, 70, 22)
     AddLabel pg, "UOM", 435, 197, 55, 16
-    Set mTxtLineUom = AddText(pg, "txtLineUom", 435, 217, 70, 22)
-    AddLabel pg, "Amount", 520, 197, 70, 16
-    Set mTxtLineAmount = AddText(pg, "txtLineAmount", 520, 217, 80, 22)
-    Set mBtnLineAdd = AddButton(pg, "btnLineAdd", "Add Line", 620, 216, 95, 24)
-    Set mBtnLineUpdate = AddButton(pg, "btnLineUpdate", "Update Line", 725, 216, 100, 24)
-    Set mBtnLineRemove = AddButton(pg, "btnLineRemove", "Remove Line", 835, 256, 105, 24)
+    Set mTxtLineUom = AddCombo(pg, "cmbLineUom", 435, 217, 90, 22)
+    RefreshRecipeUomCatalog
+    Set mBtnLineUomAdd = AddButton(pg, "btnLineUomAdd", "Add UOM", 535, 216, 75, 24)
+    AddLabel pg, "Amount", 625, 197, 70, 16
+    Set mTxtLineAmount = AddText(pg, "txtLineAmount", 625, 217, 90, 22)
+    Set mBtnLineAdd = AddButton(pg, "btnLineAdd", "Add Line", 350, 252, 90, 24)
+    Set mBtnLineUpdate = AddButton(pg, "btnLineUpdate", "Update Line", 450, 252, 90, 24)
+    Set mBtnLineRemove = AddButton(pg, "btnLineRemove", "Remove Line", 550, 252, 90, 24)
+    Set mBtnLineMoveUp = AddButton(pg, "btnLineMoveUp", "Move Up", 650, 252, 90, 24)
+    Set mBtnLineMoveDown = AddButton(pg, "btnLineMoveDown", "Move Down", 750, 252, 90, 24)
 
-    AddLabel pg, "Recipe Builder Lines", 12, 280, 220, 16
-    Set mLstBuilderLines = AddList(pg, "lstBuilderLines", 12, 300, 1018, 220, 8, "90 pt;55 pt;70 pt;210 pt;55 pt;55 pt;55 pt;70 pt")
+    AddLabel pg, "Recipe Builder Lines", 12, 290, 220, 16
+    AddColumnHeaders pg, "BuilderLines", _
+        Array("Process", "", "I/O", "Ingredient / Output / Instruction", "%", "UOM", "Amount", "Ingredient ID"), _
+        12, 310, "90 pt;55 pt;70 pt;210 pt;55 pt;55 pt;55 pt;70 pt"
+    Set mLstBuilderLines = AddList(pg, "lstBuilderLines", 12, 328, 1018, 192, 8, "90 pt;55 pt;70 pt;210 pt;55 pt;55 pt;55 pt;70 pt")
 End Sub
 
 Private Sub BuildAssignmentPage(ByVal pg As MSForms.Page)
@@ -466,7 +652,7 @@ Private Sub BuildAssignmentPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Inventory", 12, 292, 120, 16
     Set mLstAssignInventory = AddList(pg, "lstAssignInventory", 12, 312, 510, 208, 7, "45 pt;145 pt;45 pt;58 pt;65 pt;130 pt;0 pt")
     AddLabel pg, "Acceptable Items", 540, 292, 150, 16
-    Set mLstAssignAllowed = AddList(pg, "lstAssignAllowed", 540, 312, 490, 208, 6, "45 pt;160 pt;45 pt;170 pt;0 pt;0 pt")
+    Set mLstAssignAllowed = AddList(pg, "lstAssignAllowed", 540, 312, 490, 208, 7, "45 pt;160 pt;45 pt;170 pt;0 pt;0 pt;0 pt")
 End Sub
 
 Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
@@ -500,7 +686,7 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 354, 1018, 56, 6, RUN_CHECK_WIDTHS)
 
     AddLabel pg, "Production Output", 12, 426, 170, 16
-    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last", "Batch", "Total", "Recall", "ROW"), 12, 446, RUN_OUTPUT_WIDTHS
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last", "Batch", "Total", "Recall", "Inventory ID"), 12, 446, RUN_OUTPUT_WIDTHS
     Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 464, 1018, 48, 8, RUN_OUTPUT_WIDTHS)
 
     AddLabel pg, "Real Output", 12, 526, 80, 16
@@ -526,7 +712,7 @@ Private Sub BuildRunTreePage(ByVal pg As MSForms.Page)
     Set mBtnRunTreeExpandAll = AddButton(pg, "btnRunTreeExpandAll", "Expand", 850, 528, 70, 24)
     Set mBtnRunTreeCollapseAll = AddButton(pg, "btnRunTreeCollapseAll", "Collapse", 930, 528, 80, 24)
     AddRunPaletteHeader pg, 12, 42
-    Set mLstRunTree = AddList(pg, "lstRunTree", 12, 60, 1018, 460, 11, "0 pt;0 pt;300 pt;42 pt;165 pt;58 pt;68 pt;48 pt;80 pt;110 pt;0 pt")
+    Set mLstRunTree = AddList(pg, "lstRunTree", 12, 60, 1018, 460, 10, "0 pt;0 pt;300 pt;42 pt;165 pt;58 pt;68 pt;48 pt;80 pt;110 pt")
     mLstRunTree.Font.Size = 11
 End Sub
 
@@ -658,7 +844,7 @@ Private Sub ResizeProductionPages()
     pageW = MaxDoubleForm(700, mPages.Width - 20)
     pageH = MaxDoubleForm(420, mPages.Height - 45)
 
-    If Not mLstBuilderRecipes Is Nothing Then mLstBuilderRecipes.Height = MaxDoubleForm(130, pageH - 290)
+    If Not mLstBuilderRecipes Is Nothing Then mLstBuilderRecipes.Height = MaxDoubleForm(130, pageH - 300)
     If Not mLstBuilderLines Is Nothing Then
         mLstBuilderLines.Width = MaxDoubleForm(520, pageW - 40)
         mLstBuilderLines.Height = MaxDoubleForm(120, pageH - mLstBuilderLines.Top - 18)
@@ -841,6 +1027,15 @@ Private Function CleanControlName(ByVal value As String) As String
     If CleanControlName = "" Then CleanControlName = "Control"
 End Function
 
+Private Function ControlExistsByName(ByVal parent As Object, ByVal controlName As String) As Boolean
+    Dim ctl As Object
+
+    On Error Resume Next
+    Set ctl = parent.Controls(controlName)
+    ControlExistsByName = Not ctl Is Nothing
+    On Error GoTo 0
+End Function
+
 Private Sub RefreshAllViews()
     RefreshRecipeLists
     RefreshBuilderHeader
@@ -870,13 +1065,75 @@ Private Sub RefreshBuilderHeader()
     mTxtRecipeDescription.Text = FirstRowValue(lo, "DESCRIPTION")
     mTxtRecipeRowBudget.Text = NormalizeRecipeRowBudgetText(FirstRowValue(lo, "ROW_BUDGET"))
     If Trim$(mTxtRecipeId.Text) = "" And Trim$(mTxtRecipeName.Text) = "" Then
-        mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
+        mTxtRecipeId.Text = GenerateRecipeIdForOperatorWorkbook()
     End If
 End Sub
 
 Private Sub RefreshBuilderLines()
-    FillListFromTable mLstBuilderLines, ProductionTable(TABLE_BUILDER_LINES), _
-        Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "INGREDIENT_ID")
+    Dim lo As ListObject
+    Dim headers As Variant
+    Dim arr As Variant
+    Dim r As Long
+    Dim c As Long
+    Dim colIdx As Long
+
+    headers = Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "INGREDIENT_ID")
+    mLstBuilderLines.Clear
+    mBuilderLineTableRowCount = 0
+    Erase mBuilderLineTableRows
+
+    Set lo = ProductionTable(TABLE_BUILDER_LINES)
+    If lo Is Nothing Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    arr = lo.DataBodyRange.Value
+    For r = 1 To UBound(arr, 1)
+        If Not TableArrayRowHasAnyValue(arr, r, lo, headers) Then GoTo NextBuilderTableRow
+        mLstBuilderLines.AddItem CellText(arr, r, lo, CStr(headers(LBound(headers))))
+        For c = LBound(headers) + 1 To UBound(headers)
+            colIdx = c - LBound(headers)
+            If colIdx < mLstBuilderLines.ColumnCount Then _
+                mLstBuilderLines.List(mLstBuilderLines.ListCount - 1, colIdx) = CellText(arr, r, lo, CStr(headers(c)))
+        Next c
+
+        mBuilderLineTableRowCount = mBuilderLineTableRowCount + 1
+        ReDim Preserve mBuilderLineTableRows(0 To mBuilderLineTableRowCount - 1)
+        mBuilderLineTableRows(mBuilderLineTableRowCount - 1) = r
+NextBuilderTableRow:
+    Next r
+End Sub
+
+Private Function BuilderTableRowForListIndex(ByVal listIndex As Long) As Long
+    If listIndex < 0 Then Exit Function
+    If listIndex >= mBuilderLineTableRowCount Then Exit Function
+    BuilderTableRowForListIndex = mBuilderLineTableRows(listIndex)
+End Function
+
+Private Sub RefreshRecipeUomCatalog(Optional ByVal selectedUom As String = "")
+    Dim uoms As Variant
+    Dim idx As Long
+
+    If mTxtLineUom Is Nothing Then Exit Sub
+    If selectedUom = "" Then selectedUom = Trim$(CStr(mTxtLineUom.Value))
+    selectedUom = Trim$(selectedUom)
+    mTxtLineUom.Clear
+    uoms = modUomSettings.GetConfiguredUoms()
+    If IsArray(uoms) Then
+        For idx = LBound(uoms) To UBound(uoms)
+            mTxtLineUom.AddItem CStr(uoms(idx))
+        Next idx
+    End If
+    If selectedUom = "" Then Exit Sub
+
+    For idx = 0 To mTxtLineUom.ListCount - 1
+        If StrComp(CStr(mTxtLineUom.List(idx)), selectedUom, vbTextCompare) = 0 Then
+            mTxtLineUom.ListIndex = idx
+            Exit Sub
+        End If
+    Next idx
+
+    ' Preserve older recipe UOMs without silently adding them to warehouse config.
+    mTxtLineUom.AddItem selectedUom
+    mTxtLineUom.ListIndex = mTxtLineUom.ListCount - 1
 End Sub
 
 Private Sub RefreshAssignmentState()
@@ -906,7 +1163,7 @@ End Sub
 
 Private Sub RefreshAllowedItems()
     FillListFromTable mLstAssignAllowed, ProductionTable(TABLE_ASSIGN_ITEM), _
-        Array("ROW", "ITEMS", "UOM", "DESCRIPTION", "RECIPE_ID", "INGREDIENT_ID")
+        Array("ROW", "ITEMS", "UOM", "DESCRIPTION", "RECIPE_ID", "INGREDIENT_ID", "ITEM_CODE")
 End Sub
 
 Private Sub RefreshLoaderState()
@@ -937,6 +1194,8 @@ Private Sub RefreshRunPaletteState()
     If mLstRunPalette Is Nothing Then Exit Sub
     mLstRunPalette.Clear
     If Not mLstRunTree Is Nothing Then mLstRunTree.Clear
+    EnsureRunItemCodeMap
+    mRunItemCodeByKey.RemoveAll
     GetSelectedRunIngredientFilter filterIngredientId, filterIngredientName
     filterProcess = ActiveRunProcess()
     EnsureRunInventoryCache
@@ -963,6 +1222,7 @@ Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngre
     Dim r As Long
     Dim listRow As Long
     Dim rowVal As String
+    Dim itemCode As String
     Dim itemVal As String
     Dim uomVal As String
     Dim locVal As String
@@ -985,7 +1245,9 @@ Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngre
         itemVal = NzStr(values(r, 5))
         uomVal = NzStr(values(r, 8))
         locVal = NzStr(values(r, 9))
-        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, invVal, locVal
+        itemCode = vbNullString
+        If UBound(values, 2) >= 11 Then itemCode = NzStr(values(r, 11))
+        HydrateRunInventoryDisplay rowVal, itemCode, itemVal, uomVal, invVal, locVal
 
         mLstRunPalette.AddItem processVal
         listRow = mLstRunPalette.ListCount - 1
@@ -1000,6 +1262,7 @@ Private Sub AddRunChoiceRows(ByVal values As Variant, Optional ByVal filterIngre
         mLstRunPalette.List(listRow, 9) = locVal
         StoreRunProcess mLstRunPalette, listRow, processVal
         StoreRunBaseQty mLstRunPalette, listRow, NzStr(values(r, 10))
+        StoreRunItemCode mLstRunPalette, listRow, itemCode
         ApplyRunAllocationOverride mLstRunPalette, listRow
 NextRow:
     Next r
@@ -1034,6 +1297,7 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
     Dim invVal As String
     Dim baseQty As String
     Dim ioVal As String
+    Dim itemCode As String
 
     If lo Is Nothing Then Exit Sub
     If lo.DataBodyRange Is Nothing Then Exit Sub
@@ -1055,7 +1319,8 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
         uomVal = CellText(arr, r, lo, "UOM")
         locVal = CellText(arr, r, lo, "LOCATION")
         baseQty = CellText(arr, r, lo, "BASE QUANTITY")
-        HydrateRunInventoryDisplay rowVal, itemVal, uomVal, invVal, locVal
+        itemCode = CellText(arr, r, lo, "ITEM_CODE")
+        HydrateRunInventoryDisplay rowVal, itemCode, itemVal, uomVal, invVal, locVal
 
         mLstRunPalette.AddItem lo.Name
         listRow = mLstRunPalette.ListCount - 1
@@ -1070,6 +1335,7 @@ Private Sub AddRunPaletteRows(ByVal lo As ListObject, Optional ByVal filterIngre
         mLstRunPalette.List(listRow, 9) = locVal
         StoreRunProcess mLstRunPalette, listRow, processVal
         StoreRunBaseQty mLstRunPalette, listRow, baseQty
+        StoreRunItemCode mLstRunPalette, listRow, itemCode
         ApplyRunAllocationOverride mLstRunPalette, listRow
 NextRow:
     Next r
@@ -1087,6 +1353,10 @@ Private Sub EnsureRunProcessMap()
     If mRunProcessByKey Is Nothing Then Set mRunProcessByKey = CreateObject("Scripting.Dictionary")
 End Sub
 
+Private Sub EnsureRunItemCodeMap()
+    If mRunItemCodeByKey Is Nothing Then Set mRunItemCodeByKey = CreateObject("Scripting.Dictionary")
+End Sub
+
 Private Function RunAllocationKeyFromList(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As String
     If lst Is Nothing Then Exit Function
     If rowIndex < 0 Then Exit Function
@@ -1094,7 +1364,28 @@ Private Function RunAllocationKeyFromList(ByVal lst As MSForms.ListBox, ByVal ro
     RunAllocationKeyFromList = Trim$(NzStr(lst.List(rowIndex, 0))) & "|" & _
                                Trim$(NzStr(lst.List(rowIndex, 1))) & "|" & _
                                Trim$(NzStr(lst.List(rowIndex, 3))) & "|" & _
-                               Trim$(NzStr(lst.List(rowIndex, 4)))
+                               Trim$(NzStr(lst.List(rowIndex, 4))) & "|" & _
+                               Trim$(NzStr(lst.List(rowIndex, 7))) & "|" & _
+                               Trim$(NzStr(lst.List(rowIndex, 9)))
+End Function
+
+Private Sub StoreRunItemCode(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long, ByVal itemCode As String)
+    Dim key As String
+
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    itemCode = Trim$(itemCode)
+    If key = "" Or itemCode = "" Then Exit Sub
+    EnsureRunItemCodeMap
+    mRunItemCodeByKey(key) = itemCode
+End Sub
+
+Private Function RunItemCodeFromList(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long) As String
+    Dim key As String
+
+    If mRunItemCodeByKey Is Nothing Then Exit Function
+    key = RunAllocationKeyFromList(lst, rowIndex)
+    If key = "" Then Exit Function
+    If mRunItemCodeByKey.Exists(key) Then RunItemCodeFromList = NzStr(mRunItemCodeByKey(key))
 End Function
 
 Private Sub StoreRunProcess(ByVal lst As MSForms.ListBox, ByVal rowIndex As Long, ByVal processText As String)
@@ -1677,7 +1968,8 @@ Private Sub SyncRunProcessCombo(ByVal sourceCombo As MSForms.ComboBox, ByVal tar
     mLoading = wasLoading
 End Sub
 
-Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemVal As String, _
+Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemCode As String, _
+                                       ByRef itemVal As String, _
                                        ByRef uomVal As String, ByRef invVal As String, _
                                        ByRef locVal As String)
     Dim r As Long
@@ -1686,16 +1978,21 @@ Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemVal As 
     Dim totalVal As String
     Dim rawLoc As String
     Dim preferredLoc As String
+    Dim candidateCode As String
 
     If IsEmpty(mRunInventoryRows) Then Exit Sub
     If Not IsArray(mRunInventoryRows) Then Exit Sub
 
     rowKey = NormalizeRunRowKey(rowVal)
-    If rowKey = "" Then Exit Sub
+    itemCode = Trim$(itemCode)
+    If rowKey = "" And itemCode = "" Then Exit Sub
     selectedRow = -1
     preferredLoc = ActiveRunLocation()
     For r = LBound(mRunInventoryRows, 1) To UBound(mRunInventoryRows, 1)
-        If NormalizeRunRowKey(NzStr(mRunInventoryRows(r, 1))) = rowKey Then
+        candidateCode = vbNullString
+        If UBound(mRunInventoryRows, 2) >= 7 Then candidateCode = Trim$(NzStr(mRunInventoryRows(r, 7)))
+        If (rowKey <> "" And NormalizeRunRowKey(NzStr(mRunInventoryRows(r, 1))) = rowKey) _
+           Or (itemCode <> "" And StrComp(candidateCode, itemCode, vbTextCompare) = 0) Then
             rawLoc = NzStr(mRunInventoryRows(r, 5))
             If selectedRow < 0 Then selectedRow = r
             If Trim$(rawLoc) <> "" And Trim$(NzStr(mRunInventoryRows(selectedRow, 5))) = "" Then selectedRow = r
@@ -1711,6 +2008,8 @@ Private Sub HydrateRunInventoryDisplay(ByVal rowVal As String, ByRef itemVal As 
 
     If Trim$(itemVal) = "" Then itemVal = NzStr(mRunInventoryRows(selectedRow, 2))
     If Trim$(uomVal) = "" Then uomVal = NzStr(mRunInventoryRows(selectedRow, 3))
+    If itemCode = "" And UBound(mRunInventoryRows, 2) >= 7 Then _
+        itemCode = NzStr(mRunInventoryRows(selectedRow, 7))
     totalVal = NzStr(mRunInventoryRows(selectedRow, 4))
     rawLoc = NzStr(mRunInventoryRows(selectedRow, 5))
     invVal = RunInventoryAvailableDisplay(totalVal, uomVal)
@@ -1804,11 +2103,14 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
     Dim cUom As Long
     Dim cRecall As Long
     Dim cRow As Long
+    Dim cItemCode As Long
     Dim procVal As String
     Dim outputVal As String
     Dim uomVal As String
     Dim recallVal As String
     Dim rowVal As String
+    Dim itemCodeVal As String
+    Dim identityVal As String
     Dim lastQty As Double
     Dim totalQty As Double
     Dim maxBatch As Long
@@ -1825,6 +2127,7 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
     cUom = ProductionColumnIndex(lo, "UOM")
     cRecall = ProductionColumnIndex(lo, "RECALL CODE")
     cRow = ProductionColumnIndex(lo, "ROW")
+    cItemCode = ProductionColumnIndex(lo, "ITEM_CODE")
     If cProc = 0 Or cOutput = 0 Then Exit Sub
 
     arr = lo.DataBodyRange.Value
@@ -1835,8 +2138,14 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
         If cUom > 0 Then uomVal = NzStr(arr(r, cUom)) Else uomVal = ""
         If cRecall > 0 Then recallVal = NzStr(arr(r, cRecall)) Else recallVal = ""
         If cRow > 0 Then rowVal = NzStr(arr(r, cRow)) Else rowVal = ""
+        If cItemCode > 0 Then itemCodeVal = NzStr(arr(r, cItemCode)) Else itemCodeVal = ""
+        If Trim$(itemCodeVal) <> "" Then
+            identityVal = itemCodeVal
+        Else
+            identityVal = rowVal
+        End If
 
-        LoggedOutputStats rowVal, procVal, outputVal, lastQty, totalQty, maxBatch, loggedCount
+        LoggedOutputStats identityVal, procVal, outputVal, lastQty, totalQty, maxBatch, loggedCount
         lst.AddItem procVal
         listRow = lst.ListCount - 1
         lst.List(listRow, 1) = outputVal
@@ -1848,7 +2157,7 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
         lst.List(listRow, 4) = CStr(maxBatch)
         lst.List(listRow, 5) = IIf(loggedCount > 0, FormatRunNumber(totalQty), "0")
         lst.List(listRow, 6) = recallVal
-        lst.List(listRow, 7) = rowVal
+        lst.List(listRow, 7) = identityVal
 NextRow:
     Next r
 End Sub
@@ -1973,17 +2282,35 @@ Private Function CellText(ByVal arr As Variant, ByVal rowIndex As Long, ByVal lo
 End Function
 
 Private Function ProductionTable(ByVal tableName As String) As ListObject
+    Dim wb As Workbook
     Dim ws As Worksheet
-    Set ws = RunProductionObject0("GetProductionSheet")
+
+    Set wb = ResolveOperatorWorkbook()
+    If wb Is Nothing Then Exit Function
+    If Not WorkbookHasSheet(wb, "Production") Then Exit Function
+    Set ws = wb.Worksheets("Production")
     If ws Is Nothing Then Exit Function
     Set ProductionTable = RunProductionObject2("GetListObject", ws, tableName)
 End Function
 
 Private Function InventoryTable() As ListObject
+    Dim wb As Workbook
     Dim ws As Worksheet
-    Set ws = RunProductionObject1("SheetExists", "InventoryManagement")
+
+    Set wb = ResolveOperatorWorkbook()
+    If wb Is Nothing Then Exit Function
+    If Not WorkbookHasSheet(wb, "InventoryManagement") Then Exit Function
+    Set ws = wb.Worksheets("InventoryManagement")
     If ws Is Nothing Then Exit Function
     Set InventoryTable = RunProductionObject2("GetListObject", ws, "invSys")
+End Function
+
+Private Function GenerateRecipeIdForOperatorWorkbook() As String
+    Dim wb As Workbook
+
+    Set wb = ResolveOperatorWorkbook()
+    If wb Is Nothing Then Exit Function
+    GenerateRecipeIdForOperatorWorkbook = NzStr(RunProduction1("GenerateRecipeId", wb))
 End Function
 
 Private Function ResolveOperatorWorkbook() As Workbook
@@ -2061,7 +2388,7 @@ Private Sub WriteRecipeHeaderFromForm()
     Set lo = ProductionTable(TABLE_BUILDER_HEADER)
     If lo Is Nothing Then Exit Sub
     EnsureTableRow lo
-    If Trim$(mTxtRecipeId.Text) = "" Then mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
+    If Trim$(mTxtRecipeId.Text) = "" Then mTxtRecipeId.Text = GenerateRecipeIdForOperatorWorkbook()
     mTxtRecipeRowBudget.Text = NormalizeRecipeRowBudgetText(mTxtRecipeRowBudget.Text)
     SetFirstRowValue lo, "RECIPE_NAME", mTxtRecipeName.Text
     SetFirstRowValue lo, "RECIPE_ID", mTxtRecipeId.Text
@@ -2080,7 +2407,7 @@ Private Sub ClearRecipeBuilderForNew()
     End If
     If Not loLines Is Nothing Then ClearListRows loLines
     mTxtRecipeName.Text = ""
-    mTxtRecipeId.Text = NzStr(RunProduction0("GenerateRecipeIdForCurrentWorkbook"))
+    mTxtRecipeId.Text = GenerateRecipeIdForOperatorWorkbook()
     mTxtRecipeDescription.Text = ""
     mTxtRecipeRowBudget.Text = CStr(PRODUCTION_DEFAULT_ROW_BUDGET)
     ClearLineInputs
@@ -2093,8 +2420,9 @@ Private Sub ClearLineInputs()
     If Not mCmbLineIo Is Nothing Then mCmbLineIo.ListIndex = 0
     mTxtLineIngredient.Text = ""
     mTxtLinePercent.Text = ""
-    mTxtLineUom.Text = ""
+    mTxtLineUom.Value = ""
     mTxtLineAmount.Text = ""
+    ConfigureRecipeLineInputs
 End Sub
 
 Private Sub LoadSelectedBuilderLine()
@@ -2106,26 +2434,30 @@ Private Sub LoadSelectedBuilderLine()
     SetLineIo NzStr(mLstBuilderLines.List(idx, 2))
     mTxtLineIngredient.Text = NzStr(mLstBuilderLines.List(idx, 3))
     mTxtLinePercent.Text = NzStr(mLstBuilderLines.List(idx, 4))
-    mTxtLineUom.Text = NzStr(mLstBuilderLines.List(idx, 5))
+    RefreshRecipeUomCatalog NzStr(mLstBuilderLines.List(idx, 5))
     mTxtLineAmount.Text = NzStr(mLstBuilderLines.List(idx, 6))
 End Sub
 
 Private Sub SetLineIo(ByVal ioValue As String)
+    Dim i As Long
     Dim v As String
+
     v = UCase$(Trim$(ioValue))
-    If v = "OUTPUT" Or v = "MADE" Then
-        mCmbLineIo.ListIndex = 1
-    Else
-        mCmbLineIo.ListIndex = 0
-    End If
+    If v = "MADE" Then v = "OUTPUT"
+    For i = 0 To mCmbLineIo.ListCount - 1
+        If StrComp(NzStr(mCmbLineIo.List(i)), v, vbTextCompare) = 0 Then
+            mCmbLineIo.ListIndex = i
+            ConfigureRecipeLineInputs
+            Exit Sub
+        End If
+    Next i
+    mCmbLineIo.ListIndex = 0
+    ConfigureRecipeLineInputs
 End Sub
 
 Private Function LineIoValue() As String
-    If mCmbLineIo.ListIndex = 1 Then
-        LineIoValue = "OUTPUT"
-    Else
-        LineIoValue = "USED"
-    End If
+    If mCmbLineIo.ListIndex >= 0 Then LineIoValue = UCase$(Trim$(NzStr(mCmbLineIo.Value)))
+    If LineIoValue = "" Then LineIoValue = "USED"
 End Function
 
 Private Sub AddRecipeBuilderLine()
@@ -2143,6 +2475,7 @@ Private Sub AddRecipeBuilderLine()
     End If
     Set lr = lo.ListRows.Add(AlwaysInsert:=False)
     WriteRecipeLineToRow lo, lr.Index
+    ResequenceRecipeBuilderLines lo
     RefreshBuilderLines
     ClearLineInputs
     ShowStatus "Recipe line added."
@@ -2157,19 +2490,22 @@ End Sub
 Private Function WriteSelectedRecipeBuilderLineFromForm(Optional ByVal refreshList As Boolean = True) As Boolean
     Dim lo As ListObject
     Dim idx As Long
+    Dim tableRow As Long
 
     idx = mLstBuilderLines.ListIndex
     If idx < 0 Then
         If refreshList Then ShowStatus "Select a recipe line to update."
         Exit Function
     End If
+    tableRow = BuilderTableRowForListIndex(idx)
+    If tableRow <= 0 Then Exit Function
     Set lo = ProductionTable(TABLE_BUILDER_LINES)
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
-    If idx + 1 > lo.ListRows.Count Then Exit Function
-    WriteRecipeLineToRow lo, idx + 1
+    If tableRow > lo.ListRows.Count Then Exit Function
+    WriteRecipeLineToRow lo, tableRow
     If refreshList Then
         RefreshBuilderLines
-        mLstBuilderLines.ListIndex = idx
+        If idx < mLstBuilderLines.ListCount Then mLstBuilderLines.ListIndex = idx
     End If
     WriteSelectedRecipeBuilderLineFromForm = True
 End Function
@@ -2177,33 +2513,116 @@ End Function
 Private Sub RemoveSelectedRecipeBuilderLine()
     Dim lo As ListObject
     Dim idx As Long
+    Dim tableRow As Long
 
     idx = mLstBuilderLines.ListIndex
     If idx < 0 Then
         ShowStatus "Select a recipe line to remove."
         Exit Sub
     End If
+    tableRow = BuilderTableRowForListIndex(idx)
+    If tableRow <= 0 Then Exit Sub
     Set lo = ProductionTable(TABLE_BUILDER_LINES)
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
-    If idx + 1 <= lo.ListRows.Count Then lo.ListRows(idx + 1).Delete
+    If tableRow <= lo.ListRows.Count Then lo.ListRows(tableRow).Delete
+    ResequenceRecipeBuilderLines lo
     RefreshBuilderLines
     ClearLineInputs
     ShowStatus "Recipe line removed."
 End Sub
 
 Private Sub WriteRecipeLineToRow(ByVal lo As ListObject, ByVal rowIndex As Long)
+    Dim ioType As String
+
     If lo Is Nothing Then Exit Sub
     If rowIndex < 1 Then Exit Sub
     If Not EnsureTableRows(lo, rowIndex) Then Exit Sub
+    ioType = LineIoValue()
     SetCellByHeader lo, rowIndex, "PROCESS", mTxtLineProcess.Text
-    SetCellByHeader lo, rowIndex, "INPUT/OUTPUT", LineIoValue()
+    SetCellByHeader lo, rowIndex, "INPUT/OUTPUT", ioType
     SetCellByHeader lo, rowIndex, "INGREDIENT", mTxtLineIngredient.Text
-    SetCellByHeader lo, rowIndex, "PERCENT", mTxtLinePercent.Text
-    SetCellByHeader lo, rowIndex, "UOM", mTxtLineUom.Text
-    SetCellByHeader lo, rowIndex, "AMOUNT", mTxtLineAmount.Text
+    If ioType = "INSTRUCTION" Then
+        SetCellByHeader lo, rowIndex, "PERCENT", vbNullString
+        SetCellByHeader lo, rowIndex, "UOM", vbNullString
+        SetCellByHeader lo, rowIndex, "AMOUNT", vbNullString
+        SetCellByHeader lo, rowIndex, "INGREDIENT_ID", vbNullString
+    Else
+        SetCellByHeader lo, rowIndex, "PERCENT", mTxtLinePercent.Text
+        SetCellByHeader lo, rowIndex, "UOM", CStr(mTxtLineUom.Value)
+        SetCellByHeader lo, rowIndex, "AMOUNT", mTxtLineAmount.Text
+        If Trim$(CellByHeader(lo, rowIndex, "INGREDIENT_ID")) = "" Then SetCellByHeader lo, rowIndex, "INGREDIENT_ID", BuildFormGuid()
+    End If
     If Trim$(CellByHeader(lo, rowIndex, "RECIPE_LIST_ROW")) = "" Then SetCellByHeader lo, rowIndex, "RECIPE_LIST_ROW", rowIndex
-    If Trim$(CellByHeader(lo, rowIndex, "INGREDIENT_ID")) = "" Then SetCellByHeader lo, rowIndex, "INGREDIENT_ID", BuildFormGuid()
     If Trim$(CellByHeader(lo, rowIndex, "GUID")) = "" Then SetCellByHeader lo, rowIndex, "GUID", BuildFormGuid()
+End Sub
+
+Private Sub ConfigureRecipeLineInputs()
+    Dim acceptsQuantity As Boolean
+
+    acceptsQuantity = (LineIoValue() <> "INSTRUCTION")
+    If Not mTxtLinePercent Is Nothing Then mTxtLinePercent.Enabled = acceptsQuantity
+    If Not mTxtLineUom Is Nothing Then mTxtLineUom.Enabled = acceptsQuantity
+    If Not mBtnLineUomAdd Is Nothing Then mBtnLineUomAdd.Enabled = acceptsQuantity
+    If Not mTxtLineAmount Is Nothing Then mTxtLineAmount.Enabled = acceptsQuantity
+End Sub
+
+Private Function MoveSelectedRecipeBuilderLine(ByVal moveDirection As Long, _
+                                               Optional ByVal showMessages As Boolean = True) As Boolean
+    Dim lo As ListObject
+    Dim selectedRow As Long
+    Dim targetRow As Long
+    Dim selectedListIndex As Long
+    Dim targetListIndex As Long
+    Dim selectedValues() As Variant
+    Dim targetValues() As Variant
+    Dim columnIndex As Long
+    Dim columnCount As Long
+
+    If moveDirection <> -1 And moveDirection <> 1 Then Exit Function
+    If mLstBuilderLines Is Nothing Then Exit Function
+    If mLstBuilderLines.ListIndex < 0 Then
+        If showMessages Then ShowStatus "Select a recipe line to move."
+        Exit Function
+    End If
+
+    Set lo = ProductionTable(TABLE_BUILDER_LINES)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    selectedListIndex = mLstBuilderLines.ListIndex
+    targetListIndex = selectedListIndex + moveDirection
+    selectedRow = BuilderTableRowForListIndex(selectedListIndex)
+    targetRow = BuilderTableRowForListIndex(targetListIndex)
+    If selectedRow <= 0 Or targetRow <= 0 Then
+        If showMessages Then ShowStatus IIf(moveDirection < 0, "The selected line is already first.", "The selected line is already last.")
+        Exit Function
+    End If
+
+    columnCount = lo.ListColumns.Count
+    ReDim selectedValues(1 To columnCount)
+    ReDim targetValues(1 To columnCount)
+    For columnIndex = 1 To columnCount
+        selectedValues(columnIndex) = lo.DataBodyRange.Cells(selectedRow, columnIndex).Value2
+        targetValues(columnIndex) = lo.DataBodyRange.Cells(targetRow, columnIndex).Value2
+    Next columnIndex
+    For columnIndex = 1 To columnCount
+        lo.DataBodyRange.Cells(selectedRow, columnIndex).Value2 = targetValues(columnIndex)
+        lo.DataBodyRange.Cells(targetRow, columnIndex).Value2 = selectedValues(columnIndex)
+    Next columnIndex
+    ResequenceRecipeBuilderLines lo
+    RefreshBuilderLines
+    If targetListIndex >= 0 And targetListIndex < mLstBuilderLines.ListCount Then _
+        mLstBuilderLines.ListIndex = targetListIndex
+    LoadSelectedBuilderLine
+    If showMessages Then ShowStatus "Recipe line moved " & IIf(moveDirection < 0, "up.", "down.")
+    MoveSelectedRecipeBuilderLine = True
+End Function
+
+Private Sub ResequenceRecipeBuilderLines(ByVal lo As ListObject)
+    Dim rowIndex As Long
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    For rowIndex = 1 To lo.ListRows.Count
+        SetCellByHeader lo, rowIndex, "RECIPE_LIST_ROW", rowIndex
+    Next rowIndex
 End Sub
 
 Private Sub SelectAssignmentRecipeFromList()
@@ -2275,6 +2694,8 @@ Private Sub SelectAssignmentIngredientFromList()
 End Sub
 
 Private Sub AddSelectedInventoryToAllowed()
+    On Error GoTo FailAdd
+
     Dim idx As Long
     Dim lo As ListObject
     Dim lr As ListRow
@@ -2302,8 +2723,13 @@ Private Sub AddSelectedInventoryToAllowed()
         ShowStatus "IP_ChooseItem table is missing."
         Exit Sub
     End If
-    Set lr = lo.ListRows.Add
+    Set lr = WritableAssignmentItemRow(lo)
+    If lr Is Nothing Then
+        ShowStatus "Acceptable inventory could not be staged because the operator table has no available row."
+        Exit Sub
+    End If
     SetRowValue lr, lo, "ROW", NzStr(mLstAssignInventory.List(idx, 0))
+    SetRowValue lr, lo, "ITEM_CODE", NzStr(mLstAssignInventory.List(idx, 6))
     SetRowValue lr, lo, "ITEMS", NzStr(mLstAssignInventory.List(idx, 1))
     SetRowValue lr, lo, "UOM", NzStr(mLstAssignInventory.List(idx, 2))
     SetRowValue lr, lo, "DESCRIPTION", NzStr(mLstAssignInventory.List(idx, 5))
@@ -2311,7 +2737,55 @@ Private Sub AddSelectedInventoryToAllowed()
     SetRowValue lr, lo, "INGREDIENT_ID", ingredientId
     RefreshAllowedItems
     ShowStatus "Added acceptable ingredient row " & NzStr(mLstAssignInventory.List(idx, 0)) & "."
+    Exit Sub
+
+FailAdd:
+    ShowStatus "Add Acceptable failed: " & Err.Description
 End Sub
+
+Private Function WritableAssignmentItemRow(ByVal lo As ListObject) As ListRow
+    Dim r As Long
+    Dim priorCount As Long
+    Dim insertRow As Long
+
+    If lo Is Nothing Then Exit Function
+    If Not lo.DataBodyRange Is Nothing Then
+        For r = 1 To lo.ListRows.Count
+            If AssignmentItemRowIsBlank(lo, r) Then
+                Set WritableAssignmentItemRow = lo.ListRows(r)
+                Exit Function
+            End If
+        Next r
+    End If
+
+    On Error Resume Next
+    Set WritableAssignmentItemRow = lo.ListRows.Add(AlwaysInsert:=False)
+    On Error GoTo 0
+    If Not WritableAssignmentItemRow Is Nothing Then Exit Function
+
+    On Error GoTo FailAcquire
+    priorCount = lo.ListRows.Count
+    insertRow = lo.Range.Row + lo.Range.Rows.Count
+    lo.Parent.Rows(insertRow).Insert Shift:=xlDown
+    If lo.ListRows.Count > priorCount Then
+        Set WritableAssignmentItemRow = lo.ListRows(lo.ListRows.Count)
+    Else
+        Set WritableAssignmentItemRow = lo.ListRows.Add(AlwaysInsert:=False)
+    End If
+    Exit Function
+
+FailAcquire:
+    Set WritableAssignmentItemRow = Nothing
+End Function
+
+Private Function AssignmentItemRowIsBlank(ByVal lo As ListObject, ByVal rowIndex As Long) As Boolean
+    AssignmentItemRowIsBlank = _
+        Trim$(CellByHeader(lo, rowIndex, "ROW")) = "" _
+        And Trim$(CellByHeader(lo, rowIndex, "ITEM_CODE")) = "" _
+        And Trim$(CellByHeader(lo, rowIndex, "ITEMS")) = "" _
+        And Trim$(CellByHeader(lo, rowIndex, "RECIPE_ID")) = "" _
+        And Trim$(CellByHeader(lo, rowIndex, "INGREDIENT_ID")) = ""
+End Function
 
 Private Sub ClearAssignmentIngredientSelection()
     Dim loIng As ListObject
@@ -2764,15 +3238,20 @@ End Sub
 Private Function FirstNonBlankCheckRow(ByVal lo As ListObject) As String
     Dim r As Long
     Dim cRow As Long
+    Dim cItemCode As Long
     Dim cUsed As Long
+    Dim rowIdentity As String
 
     cRow = ProductionColumnIndex(lo, "ROW")
+    cItemCode = ProductionColumnIndex(lo, "ITEM_CODE")
     cUsed = ProductionColumnIndex(lo, "USED")
-    If cRow = 0 Or cUsed = 0 Then Exit Function
+    If (cRow = 0 And cItemCode = 0) Or cUsed = 0 Then Exit Function
     For r = 1 To lo.ListRows.Count
-        If Trim$(NzStr(lo.DataBodyRange.Cells(r, cRow).Value)) <> "" _
-           And NzDblLocal(lo.DataBodyRange.Cells(r, cUsed).Value) > 0 Then
-            FirstNonBlankCheckRow = NzStr(lo.DataBodyRange.Cells(r, cRow).Value)
+        rowIdentity = ""
+        If cItemCode > 0 Then rowIdentity = Trim$(NzStr(lo.DataBodyRange.Cells(r, cItemCode).Value))
+        If rowIdentity = "" And cRow > 0 Then rowIdentity = Trim$(NzStr(lo.DataBodyRange.Cells(r, cRow).Value))
+        If rowIdentity <> "" And NzDblLocal(lo.DataBodyRange.Cells(r, cUsed).Value) > 0 Then
+            FirstNonBlankCheckRow = rowIdentity
             Exit Function
         End If
     Next r
@@ -2935,6 +3414,8 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
     Dim agg As Object
     Dim i As Long
     Dim rowVal As String
+    Dim itemCode As String
+    Dim identityKey As String
     Dim qtyVal As Double
     Dim locVal As String
     Dim key As Variant
@@ -2945,21 +3426,30 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
     Set agg = CreateObject("Scripting.Dictionary")
     For i = 0 To mLstRunPalette.ListCount - 1
         rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
-        If rowVal = "" Then GoTo NextChoice
+        itemCode = Trim$(RunItemCodeFromList(mLstRunPalette, i))
+        If rowVal <> "" Then
+            identityKey = "ROW|" & rowVal
+        ElseIf itemCode <> "" Then
+            identityKey = "SKU|" & itemCode
+        Else
+            GoTo NextChoice
+        End If
         If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
         qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
         If qtyVal <= 0 Then GoTo NextChoice
         If RunChoiceWouldExceedInventory(i, qtyVal) Then
-            ShowStatus "Cannot complete run. ROW " & rowVal & " requires " & FormatRunNumber(qtyVal) & " but only " & NzStr(mLstRunPalette.List(i, 8)) & " is available."
+            ShowStatus "Cannot complete run. Inventory " & IIf(rowVal <> "", "ROW " & rowVal, itemCode) & _
+                       " requires " & FormatRunNumber(qtyVal) & " but only " & _
+                       NzStr(mLstRunPalette.List(i, 8)) & " is available."
             Exit Function
         End If
         locVal = NzStr(mLstRunPalette.List(i, 9))
-        If agg.Exists(rowVal) Then
+        If agg.Exists(identityKey) Then
             Dim existingAgg As Variant
-            existingAgg = agg(rowVal)
-            agg(rowVal) = Array(CDbl(existingAgg(0)) + qtyVal, locVal)
+            existingAgg = agg(identityKey)
+            agg(identityKey) = Array(CDbl(existingAgg(0)) + qtyVal, locVal, rowVal, itemCode)
         Else
-            agg.Add rowVal, Array(qtyVal, locVal)
+            agg.Add identityKey, Array(qtyVal, locVal, rowVal, itemCode)
         End If
 NextChoice:
     Next i
@@ -2971,8 +3461,8 @@ NextChoice:
         locVal = NzStr(agg(key)(1))
         Set payloadItem = CreateObject("Scripting.Dictionary")
         payloadItem.CompareMode = vbTextCompare
-        payloadItem("Row") = CLng(Val(CStr(key)))
-        payloadItem("SKU") = ""
+        payloadItem("Row") = CLng(Val(NzStr(agg(key)(2))))
+        payloadItem("SKU") = NzStr(agg(key)(3))
         payloadItem("Qty") = qtyVal
         payloadItem("Location") = locVal
         payloadItem("IoType") = "USED"
@@ -2988,6 +3478,8 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
     Dim agg As Object
     Dim i As Long
     Dim rowVal As String
+    Dim itemCode As String
+    Dim identityKey As String
     Dim qtyVal As Double
     Dim entry As Variant
     Dim key As Variant
@@ -2999,16 +3491,25 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
 
     For i = 0 To mLstRunPalette.ListCount - 1
         rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
-        If rowVal = "" Then GoTo NextChoice
+        itemCode = Trim$(RunItemCodeFromList(mLstRunPalette, i))
+        If rowVal <> "" Then
+            identityKey = "ROW|" & rowVal
+        ElseIf itemCode <> "" Then
+            identityKey = "SKU|" & itemCode
+        Else
+            GoTo NextChoice
+        End If
         If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
         qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
         If qtyVal <= 0 Then GoTo NextChoice
-        If agg.Exists(rowVal) Then
-            entry = agg(rowVal)
-            entry(3) = CDbl(entry(3)) + qtyVal
-            agg(rowVal) = entry
+        If agg.Exists(identityKey) Then
+            entry = agg(identityKey)
+            entry(5) = CDbl(entry(5)) + qtyVal
+            agg(identityKey) = entry
         Else
-            agg.Add rowVal, Array( _
+            agg.Add identityKey, Array( _
+                rowVal, _
+                itemCode, _
                 NzStr(mLstRunPalette.List(i, 4)), _
                 NzStr(mLstRunPalette.List(i, 7)), _
                 NzStr(mLstRunPalette.List(i, 8)), _
@@ -3023,12 +3524,12 @@ NextChoice:
     For Each key In agg.Keys
         outRow = outRow + 1
         entry = agg(key)
-        SetCellByHeader lo, outRow, "ROW", CStr(key)
-        SetCellByHeader lo, outRow, "ITEM_CODE", ""
-        SetCellByHeader lo, outRow, "ITEM", NzStr(entry(0))
-        SetCellByHeader lo, outRow, "UOM", NzStr(entry(1))
-        SetCellByHeader lo, outRow, "USED", CDbl(entry(3))
-        SetCellByHeader lo, outRow, "TOTAL INV", NzStr(entry(2))
+        SetCellByHeader lo, outRow, "ROW", NzStr(entry(0))
+        SetCellByHeader lo, outRow, "ITEM_CODE", NzStr(entry(1))
+        SetCellByHeader lo, outRow, "ITEM", NzStr(entry(2))
+        SetCellByHeader lo, outRow, "UOM", NzStr(entry(3))
+        SetCellByHeader lo, outRow, "USED", CDbl(entry(5))
+        SetCellByHeader lo, outRow, "TOTAL INV", NzStr(entry(4))
     Next key
     WriteProductionCheckRowsFromRunPalette = True
 End Function
@@ -3415,7 +3916,12 @@ Private Sub SetFirstRowValue(ByVal lo As ListObject, ByVal headerName As String,
     EnsureTableRow lo
     colIndex = ProductionColumnIndex(lo, headerName)
     If colIndex <= 0 Then Exit Sub
-    lo.DataBodyRange.Cells(1, colIndex).Value = value
+    If StrComp(headerName, "RECIPE_ID", vbTextCompare) = 0 Then
+        lo.DataBodyRange.Cells(1, colIndex).NumberFormat = "@"
+        lo.DataBodyRange.Cells(1, colIndex).Value2 = CStr(value)
+    Else
+        lo.DataBodyRange.Cells(1, colIndex).Value = value
+    End If
 End Sub
 
 Private Sub SetRowValue(ByVal lr As ListRow, ByVal lo As ListObject, ByVal headerName As String, ByVal value As Variant)
@@ -3423,7 +3929,12 @@ Private Sub SetRowValue(ByVal lr As ListRow, ByVal lo As ListObject, ByVal heade
     If lr Is Nothing Or lo Is Nothing Then Exit Sub
     colIndex = ProductionColumnIndex(lo, headerName)
     If colIndex <= 0 Then Exit Sub
-    lr.Range.Cells(1, colIndex).Value = value
+    If StrComp(headerName, "RECIPE_ID", vbTextCompare) = 0 Then
+        lr.Range.Cells(1, colIndex).NumberFormat = "@"
+        lr.Range.Cells(1, colIndex).Value2 = CStr(value)
+    Else
+        lr.Range.Cells(1, colIndex).Value = value
+    End If
 End Sub
 
 Private Sub ClearTableContentsKeepBlank(ByVal lo As ListObject)
@@ -3440,40 +3951,59 @@ Private Function ProductionColumnIndex(ByVal lo As ListObject, ByVal headerName 
 End Function
 
 Private Function RunProduction0(ByVal procName As String) As Variant
+    ActivateOperatorWorkbookForRun
     RunProduction0 = Application.Run("mProduction." & procName)
 End Function
 
 Private Function RunProduction1(ByVal procName As String, ByVal arg1 As Variant) As Variant
+    ActivateOperatorWorkbookForRun
     RunProduction1 = Application.Run("mProduction." & procName, arg1)
 End Function
 
 Private Function RunProduction2(ByVal procName As String, ByVal arg1 As Variant, ByVal arg2 As Variant) As Variant
+    ActivateOperatorWorkbookForRun
     RunProduction2 = Application.Run("mProduction." & procName, arg1, arg2)
 End Function
 
 Private Sub RunProductionSub0(ByVal procName As String)
+    ActivateOperatorWorkbookForRun
     Application.Run "mProduction." & procName
 End Sub
 
 Private Sub RunProductionSub1(ByVal procName As String, ByVal arg1 As Variant)
+    ActivateOperatorWorkbookForRun
     Application.Run "mProduction." & procName, arg1
 End Sub
 
 Private Sub RunProductionSub2(ByVal procName As String, ByVal arg1 As Variant, ByVal arg2 As Variant)
+    ActivateOperatorWorkbookForRun
     Application.Run "mProduction." & procName, arg1, arg2
 End Sub
 
 Private Function RunProductionObject0(ByVal procName As String) As Object
+    ActivateOperatorWorkbookForRun
     Set RunProductionObject0 = Application.Run("mProduction." & procName)
 End Function
 
 Private Function RunProductionObject1(ByVal procName As String, ByVal arg1 As Variant) As Object
+    ActivateOperatorWorkbookForRun
     Set RunProductionObject1 = Application.Run("mProduction." & procName, arg1)
 End Function
 
 Private Function RunProductionObject2(ByVal procName As String, ByVal arg1 As Variant, ByVal arg2 As Variant) As Object
+    ActivateOperatorWorkbookForRun
     Set RunProductionObject2 = Application.Run("mProduction." & procName, arg1, arg2)
 End Function
+
+Private Sub ActivateOperatorWorkbookForRun()
+    Dim wb As Workbook
+
+    Set wb = ResolveOperatorWorkbook()
+    If wb Is Nothing Then Exit Sub
+    On Error Resume Next
+    wb.Activate
+    On Error GoTo 0
+End Sub
 
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub
@@ -3498,6 +4028,10 @@ End Sub
 Private Sub mLstBuilderLines_Click()
     If mLoading Then Exit Sub
     LoadSelectedBuilderLine
+End Sub
+
+Private Sub mCmbLineIo_Change()
+    ConfigureRecipeLineInputs
 End Sub
 
 Private Sub mBtnBuilderRefresh_Click()
@@ -3547,6 +4081,28 @@ Private Sub mBtnBuilderClear_Click()
     ShowStatus "Recipe Builder cleared."
 End Sub
 
+Private Sub mBtnBuilderRelease_Click()
+    Dim recipeId As String
+    Dim recipeName As String
+    Dim releaseReport As String
+
+    recipeId = Trim$(mTxtRecipeId.Text)
+    recipeName = Trim$(mTxtRecipeName.Text)
+    If recipeId = "" Then
+        ShowStatus "Select or load a saved recipe before releasing it."
+        Exit Sub
+    End If
+    If MsgBox("Release " & IIf(recipeName = "", recipeId, recipeName) & _
+              " for production runs?" & vbCrLf & vbCrLf & _
+              "This publishes the latest immutable recipe version.", _
+              vbQuestion Or vbYesNo Or vbDefaultButton2, _
+              "Production Designs") <> vbYes Then Exit Sub
+
+    releaseReport = NzStr(RunProduction1("ReleaseRecipeForProduction", recipeId))
+    RefreshRecipeLists
+    ShowStatus releaseReport
+End Sub
+
 Private Sub mBtnLineAdd_Click()
     AddRecipeBuilderLine
 End Sub
@@ -3557,6 +4113,35 @@ End Sub
 
 Private Sub mBtnLineRemove_Click()
     RemoveSelectedRecipeBuilderLine
+End Sub
+
+Private Sub mBtnLineMoveUp_Click()
+    MoveSelectedRecipeBuilderLine -1
+End Sub
+
+Private Sub mBtnLineMoveDown_Click()
+    MoveSelectedRecipeBuilderLine 1
+End Sub
+
+Private Sub mBtnLineUomAdd_Click()
+    Dim uomName As String
+    Dim report As String
+
+    If Not modRoleUiAccess.CanCurrentUserPerformCapabilityCached("PROD_POST", report) Then
+        ShowStatus report
+        Exit Sub
+    End If
+    uomName = InputBox("Enter the UOM to add to this warehouse catalog:", _
+                       "Recipe Builder - Add UOM", CStr(mTxtLineUom.Value))
+    uomName = modUomSettings.NormalizeConfiguredUomName(uomName)
+    If uomName = "" Then Exit Sub
+
+    If modUomSettings.AddConfiguredUom(uomName, report) Then
+        RefreshRecipeUomCatalog uomName
+        ShowStatus report
+    Else
+        ShowStatus report
+    End If
 End Sub
 
 Private Sub mLstAssignRecipes_Click()
@@ -3765,6 +4350,18 @@ Private Sub mBtnRunTreeCollapseAll_Click()
 End Sub
 
 Private Sub mBtnRunApplyPalette_Click()
+    If mLstRunPalette.ListCount = 0 Then
+        ResetInventoryCache
+        RefreshRunPaletteState
+        If mLstRunPalette.ListCount = 0 Then
+            ShowStatus "No acceptable inventory assignments were found for this recipe. Use Ingredients Assignment to select each USED ingredient, add acceptable inventory, and Save Assignment."
+            Exit Sub
+        End If
+    End If
+    If mLstRunPalette.ListIndex < 0 And mLstRunPalette.ListCount = 1 Then
+        mLstRunPalette.ListIndex = 0
+        LoadSelectedRunPaletteRow
+    End If
     ApplySelectedRunPaletteSplit
 End Sub
 

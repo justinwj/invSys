@@ -64,7 +64,7 @@ End Sub
 Private Sub UserForm_Activate()
     modTS_Shipments.RegisterBoxMakerFormAutoSync Me
     If Not mResizeInitialized Then
-        modUserFormResizeWin.EnableResizableUserForm Me
+        modUserFormResizeWin.EnableResizableUserForm Me, True, True
         mResizeInitialized = True
     End If
     If Not mAnchors Is Nothing Then mAnchors.ResizeControls
