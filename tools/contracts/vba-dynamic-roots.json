@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0.0",
+  "reportType": "vba-dynamic-root-registry",
+  "roots": [
+    {
+      "id": "convention.ribbon",
+      "rootKind": "RIBBON_CALLBACK",
+      "matchType": "REGEX",
+      "componentPattern": ".*",
+      "procedurePattern": "^Ribbon[A-Za-z0-9_]+$",
+      "sourcePathPattern": null,
+      "reason": "RibbonX callback names are invoked by Office rather than direct VBA calls."
+    },
+    {
+      "id": "convention.auto-open",
+      "rootKind": "AUTO_OPEN",
+      "matchType": "EXACT",
+      "componentPattern": ".*",
+      "procedurePattern": "Auto_Open",
+      "sourcePathPattern": null,
+      "reason": "Excel invokes Auto_Open by convention."
+    },
+    {
+      "id": "convention.workbook-event",
+      "rootKind": "WORKBOOK_EVENT",
+      "matchType": "REGEX",
+      "componentPattern": "^ThisWorkbook$",
+      "procedurePattern": "^Workbook_",
+      "sourcePathPattern": null,
+      "reason": "Workbook event procedures are invoked by Excel."
+    },
+    {
+      "id": "convention.userform-event",
+      "rootKind": "USERFORM_EVENT",
+      "matchType": "REGEX",
+      "componentPattern": ".*",
+      "procedurePattern": "^(UserForm_|[A-Za-z0-9_]+_(Click|Change|Enter|Exit|Initialize|Terminate|QueryClose))",
+      "sourcePathPattern": ".*\\.frm$",
+      "reason": "UserForm and control events are convention-dispatched."
+    },
+    {
+      "id": "convention.worksheet-event",
+      "rootKind": "WORKSHEET_EVENT",
+      "matchType": "REGEX",
+      "componentPattern": ".*",
+      "procedurePattern": "^Worksheet_",
+      "sourcePathPattern": null,
+      "reason": "Worksheet event procedures are invoked by Excel."
+    },
+    {
+      "id": "fixture.processor-handler",
+      "rootKind": "PROCESSOR_HANDLER",
+      "matchType": "EXACT",
+      "componentPattern": "modSyntheticSurface",
+      "procedurePattern": "SyntheticProcessorHandler",
+      "sourcePathPattern": "tests/tooling/fixtures/static/.*",
+      "reason": "Synthetic fixture proving processor-handler registry support."
+    },
+    {
+      "id": "fixture.string-dispatch",
+      "rootKind": "STRING_DISPATCH",
+      "matchType": "EXACT",
+      "componentPattern": "modSyntheticSurface",
+      "procedurePattern": "StringDispatchedTarget",
+      "sourcePathPattern": "tests/tooling/fixtures/static/.*",
+      "reason": "Synthetic fixture proving string-dispatched macro retention."
+    },
+    {
+      "id": "fixture.cross-xlam",
+      "rootKind": "CROSS_XLAM_BRIDGE",
+      "matchType": "EXACT",
+      "componentPattern": "modSyntheticBridge",
+      "procedurePattern": "SyntheticBridge",
+      "sourcePathPattern": "tests/tooling/fixtures/static/.*",
+      "reason": "Synthetic cross-XLAM primitive bridge contract."
+    },
+    {
+      "id": "fixture.test-entry",
+      "rootKind": "TEST_ENTRY",
+      "matchType": "EXACT",
+      "componentPattern": "TestSyntheticSurface",
+      "procedurePattern": "RunSyntheticSurfaceTests",
+      "sourcePathPattern": "tests/tooling/fixtures/static/tests/.*",
+      "reason": "Synthetic harness entry point."
+    },
+    {
+      "id": "fixture.windows-callback",
+      "rootKind": "WINDOWS_CALLBACK",
+      "matchType": "EXACT",
+      "componentPattern": "modSyntheticSurface",
+      "procedurePattern": "SyntheticWindowProc",
+      "sourcePathPattern": "tests/tooling/fixtures/static/.*",
+      "reason": "Synthetic Windows callback root."
+    },
+    {
+      "id": "fixture.compatibility-shim",
+      "rootKind": "COMPATIBILITY_SHIM",
+      "matchType": "EXACT",
+      "componentPattern": "modSyntheticSurface",
+      "procedurePattern": "RetainedCompatibilityShim",
+      "sourcePathPattern": "tests/tooling/fixtures/static/.*",
+      "reason": "Synthetic explicitly retained compatibility shim."
+    }
+  ],
+  "exceptions": []
+}

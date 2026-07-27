@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "1.0.0",
+  "reportType": "runtime-state",
+  "capturedAtUtc": "2026-07-27T00:00:00Z",
+  "toolVersion": "1.0.0",
+  "session": {
+    "machineIdentityHash": "SYNTHETIC-MACHINE-HASH",
+    "sessionIdentityHash": "SYNTHETIC-SESSION-HASH",
+    "excelProcessCount": 1
+  },
+  "loadedAddins": [
+    {
+      "name": "invSys.Core.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Core.xlam",
+      "sha256": "CORE0001",
+      "projectVersion": "4.11.0",
+      "contractVersion": "1.0.0",
+      "isAddin": true,
+      "packageRole": "CORE",
+      "isLegacyRolePackage": false
+    },
+    {
+      "name": "invSys.Receiving.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Receiving.xlam",
+      "sha256": "RECV0001",
+      "projectVersion": "4.10.0",
+      "contractVersion": "0.9.0",
+      "isAddin": true,
+      "packageRole": "RECEIVING",
+      "isLegacyRolePackage": true
+    }
+  ],
+  "openWorkbooks": [
+    {
+      "name": "WHX_Receiving_Operator.xlsb",
+      "path": "C:\\Synthetic\\Operators\\WHX_Receiving_Operator.xlsb",
+      "readOnly": false,
+      "visible": true,
+      "authorityClass": "OPERATOR",
+      "worksheets": [
+        {
+          "name": "InventoryManagement",
+          "tables": [
+            {
+              "name": "tblInventoryEntities",
+              "headers": [
+                "System_Key",
+                "SKU",
+                "QtyOnHand",
+                "Location",
+                "Condition",
+                "Custom_Color"
+              ],
+              "rowCount": 2,
+              "rangeAddress": "$A$1:$F$3"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "runtimeResolution": {
+    "warehouseId": "WHX",
+    "stationId": "SX",
+    "runtimeRoot": "C:\\Synthetic\\Runtime\\WHX",
+    "resolutionSource": "REMEMBERED_TARGET",
+    "connectionStatus": "CONNECTED"
+  },
+  "config": [
+    {
+      "key": "AutoRefreshIntervalSeconds",
+      "value": 300,
+      "sourceScope": "WAREHOUSE",
+      "isSensitive": false
+    },
+    {
+      "key": "NasPassword",
+      "value": "[REDACTED]",
+      "sourceScope": "SYNTHETIC_SECRET",
+      "isSensitive": true
+    },
+    {
+      "key": "PinHash",
+      "value": "[REDACTED]",
+      "sourceScope": "SYNTHETIC_SECRET",
+      "isSensitive": true
+    },
+    {
+      "key": "AccessToken",
+      "value": "[REDACTED]",
+      "sourceScope": "SYNTHETIC_SECRET",
+      "isSensitive": true
+    }
+  ],
+  "currentUser": {
+    "userId": "synthetic.operator",
+    "capabilities": [
+      "RECEIVE_POST"
+    ],
+    "signedIn": true
+  },
+  "domainBridges": [
+    {
+      "name": "InventoryDomain",
+      "contractVersion": "1.0.0",
+      "status": "READY"
+    }
+  ],
+  "inboxSummary": [
+    {
+      "eventType": "RECEIVE",
+      "status": "NEW",
+      "rowCount": 1
+    }
+  ],
+  "processor": {
+    "lockStatus": "FREE",
+    "backlogCount": 1,
+    "lastRunAtUtc": "2026-07-26T23:55:00Z",
+    "lastRunStatus": "COMPLETE"
+  },
+  "snapshotReadModels": [
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "tableName": "tblInventoryEntities",
+      "snapshotId": "SYNTHETIC-SNAPSHOT-1",
+      "lastRefreshUtc": "2026-07-26T23:00:00Z",
+      "sourceType": "CACHED",
+      "isStale": true,
+      "rowCount": 2
+    }
+  ],
+  "operatorStaging": [
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "tableName": "ReceivedTally",
+      "rowCount": 1
+    }
+  ],
+  "forms": [
+    {
+      "name": "frmSyntheticSurface",
+      "visible": true,
+      "controlCount": 2
+    }
+  ],
+  "redaction": {
+    "policyVersion": "1.0.0",
+    "rowValuesIncluded": false,
+    "redactedFieldCount": 3,
+    "redactedFields": [
+      "AccessToken",
+      "NasPassword",
+      "PinHash"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "LEGACY_ROLE_ADDINS_LOADED",
+      "severity": "WARNING",
+      "message": "Standalone role add-ins are loaded in the synthetic pre-D12 fixture.",
+      "context": "Excel add-ins"
+    },
+    {
+      "code": "RETIRED_ROW_HEADER",
+      "severity": "ERROR",
+      "message": "tblLegacyViolation contains retired managed header ROW.",
+      "context": "WHX_Receiving_Operator.xlsb/LegacyNegativeFixture/tblLegacyViolation"
+    },
+    {
+      "code": "STALE_READ_MODEL",
+      "severity": "WARNING",
+      "message": "Synthetic operator read model is stale.",
+      "context": "WHX_Receiving_Operator.xlsb/tblInventoryEntities"
+    }
+  ]
+}

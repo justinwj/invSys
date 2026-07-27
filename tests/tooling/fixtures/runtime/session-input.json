@@ -1,0 +1,193 @@
+{
+  "fixtureVersion": "1.0.0",
+  "machineName": "SYNTHETIC-WAREHOUSE-PC",
+  "sessionIdentity": "SYNTHETIC-EXCEL-SESSION",
+  "excelProcessCount": 1,
+  "loadedAddins": [
+    {
+      "name": "invSys.Core.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Core.xlam",
+      "sha256": "CORE0001",
+      "projectVersion": "4.11.0",
+      "contractVersion": "1.0.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Inventory.Domain.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Inventory.Domain.xlam",
+      "sha256": "INVDOM0001",
+      "projectVersion": "4.11.0",
+      "contractVersion": "1.0.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Designs.Domain.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Designs.Domain.xlam",
+      "sha256": "DESDOM0001",
+      "projectVersion": "4.11.0",
+      "contractVersion": "1.0.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Receiving.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Receiving.xlam",
+      "sha256": "RECV0001",
+      "projectVersion": "4.10.0",
+      "contractVersion": "0.9.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Production.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Production.xlam",
+      "sha256": "PROD0001",
+      "projectVersion": "4.10.0",
+      "contractVersion": "0.9.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Shipping.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Shipping.xlam",
+      "sha256": "SHIP0001",
+      "projectVersion": "4.10.0",
+      "contractVersion": "0.9.0",
+      "isAddin": true
+    },
+    {
+      "name": "invSys.Admin.xlam",
+      "path": "C:\\Synthetic\\Addins\\invSys.Admin.xlam",
+      "sha256": "ADMIN0001",
+      "projectVersion": "4.11.0",
+      "contractVersion": "1.0.0",
+      "isAddin": true
+    }
+  ],
+  "workbooks": [
+    {
+      "name": "WHX_Receiving_Operator.xlsb",
+      "path": "C:\\Synthetic\\Operators\\WHX_Receiving_Operator.xlsb",
+      "readOnly": false,
+      "visible": true,
+      "authorityClass": "OPERATOR"
+    }
+  ],
+  "tables": [
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "worksheetName": "InventoryManagement",
+      "name": "tblInventoryEntities",
+      "headers": [
+        "System_Key",
+        "SKU",
+        "QtyOnHand",
+        "Location",
+        "Condition",
+        "Custom_Color"
+      ],
+      "rowCount": 2,
+      "rangeAddress": "$A$1:$F$3"
+    },
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "worksheetName": "LegacyNegativeFixture",
+      "name": "tblLegacyViolation",
+      "headers": [
+        "ROW",
+        "ITEM_CODE",
+        "Location"
+      ],
+      "rowCount": 1,
+      "rangeAddress": "$A$1:$C$2"
+    },
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "worksheetName": "Receiving",
+      "name": "ReceivedTally",
+      "headers": [
+        "System_Key",
+        "SKU",
+        "Qty"
+      ],
+      "rowCount": 1,
+      "rangeAddress": "$A$1:$C$2"
+    }
+  ],
+  "runtimeResolution": {
+    "warehouseId": "WHX",
+    "stationId": "SX",
+    "runtimeRoot": "C:\\Synthetic\\Runtime\\WHX",
+    "resolutionSource": "REMEMBERED_TARGET",
+    "connectionStatus": "CONNECTED"
+  },
+  "config": [
+    {
+      "key": "AutoRefreshIntervalSeconds",
+      "value": 300,
+      "sourceScope": "WAREHOUSE"
+    },
+    {
+      "key": "NasPassword",
+      "value": "REDACTION_SENTINEL_ALPHA",
+      "sourceScope": "SYNTHETIC_SECRET"
+    },
+    {
+      "key": "PinHash",
+      "value": "REDACTION_SENTINEL_BETA",
+      "sourceScope": "SYNTHETIC_SECRET"
+    },
+    {
+      "key": "AccessToken",
+      "value": "REDACTION_SENTINEL_GAMMA",
+      "sourceScope": "SYNTHETIC_SECRET"
+    }
+  ],
+  "currentUser": {
+    "userId": "synthetic.operator",
+    "capabilities": [
+      "RECEIVE_POST"
+    ],
+    "signedIn": true
+  },
+  "domainBridges": [
+    {
+      "name": "InventoryDomain",
+      "contractVersion": "1.0.0",
+      "status": "READY"
+    },
+    {
+      "name": "DesignsDomain",
+      "contractVersion": "1.0.0",
+      "status": "READY"
+    }
+  ],
+  "inboxSummary": [
+    {
+      "eventType": "RECEIVE",
+      "status": "NEW",
+      "rowCount": 1
+    }
+  ],
+  "processor": {
+    "lockStatus": "FREE",
+    "backlogCount": 1,
+    "lastRunAtUtc": "2026-07-26T23:55:00Z",
+    "lastRunStatus": "COMPLETE"
+  },
+  "snapshotReadModels": [
+    {
+      "workbookName": "WHX_Receiving_Operator.xlsb",
+      "tableName": "tblInventoryEntities",
+      "snapshotId": "SYNTHETIC-SNAPSHOT-1",
+      "lastRefreshUtc": "2026-07-26T23:00:00Z",
+      "sourceType": "CACHED",
+      "isStale": true,
+      "rowCount": 2
+    }
+  ],
+  "forms": [
+    {
+      "name": "frmSyntheticSurface",
+      "visible": true,
+      "controlCount": 2
+    }
+  ]
+}

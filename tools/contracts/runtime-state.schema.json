@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://invsys.local/schemas/runtime-state-1.0.0.json",
+  "title": "invSys Read-Only Runtime State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reportType",
+    "capturedAtUtc",
+    "toolVersion",
+    "session",
+    "loadedAddins",
+    "openWorkbooks",
+    "runtimeResolution",
+    "config",
+    "currentUser",
+    "domainBridges",
+    "inboxSummary",
+    "processor",
+    "snapshotReadModels",
+    "operatorStaging",
+    "forms",
+    "redaction",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "reportType": { "const": "runtime-state" },
+    "capturedAtUtc": { "type": "string", "format": "date-time" },
+    "toolVersion": { "type": "string" },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["machineIdentityHash", "sessionIdentityHash", "excelProcessCount"],
+      "properties": {
+        "machineIdentityHash": { "type": "string" },
+        "sessionIdentityHash": { "type": "string" },
+        "excelProcessCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "loadedAddins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "path",
+          "sha256",
+          "projectVersion",
+          "contractVersion",
+          "isAddin",
+          "packageRole",
+          "isLegacyRolePackage"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "sha256": { "type": "string" },
+          "projectVersion": { "type": "string" },
+          "contractVersion": { "type": "string" },
+          "isAddin": { "type": "boolean" },
+          "packageRole": { "type": "string" },
+          "isLegacyRolePackage": { "type": "boolean" }
+        }
+      }
+    },
+    "openWorkbooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "path",
+          "readOnly",
+          "visible",
+          "authorityClass",
+          "worksheets"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "readOnly": { "type": "boolean" },
+          "visible": { "type": "boolean" },
+          "authorityClass": {
+            "enum": [
+              "CANONICAL_DOMAIN",
+              "CONFIG",
+              "AUTH",
+              "INBOX",
+              "OUTBOX",
+              "SNAPSHOT",
+              "OPERATOR",
+              "ADDIN",
+              "UNKNOWN"
+            ]
+          },
+          "worksheets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "tables"],
+              "properties": {
+                "name": { "type": "string" },
+                "tables": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "headers", "rowCount", "rangeAddress"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "headers": { "type": "array", "items": { "type": "string" } },
+                      "rowCount": { "type": "integer", "minimum": 0 },
+                      "rangeAddress": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "runtimeResolution": {
+      "type": "object",
+      "required": [
+        "warehouseId",
+        "stationId",
+        "runtimeRoot",
+        "resolutionSource",
+        "connectionStatus"
+      ],
+      "properties": {
+        "warehouseId": { "type": "string" },
+        "stationId": { "type": "string" },
+        "runtimeRoot": { "type": "string" },
+        "resolutionSource": { "type": "string" },
+        "connectionStatus": { "type": "string" }
+      }
+    },
+    "config": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "value", "sourceScope", "isSensitive"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": {},
+          "sourceScope": { "type": "string" },
+          "isSensitive": { "type": "boolean" }
+        }
+      }
+    },
+    "currentUser": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["userId", "capabilities", "signedIn"],
+      "properties": {
+        "userId": { "type": "string" },
+        "capabilities": { "type": "array", "items": { "type": "string" } },
+        "signedIn": { "type": "boolean" }
+      }
+    },
+    "domainBridges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "contractVersion", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "contractVersion": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "inboxSummary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["eventType", "status", "rowCount"],
+        "properties": {
+          "eventType": { "type": "string" },
+          "status": { "type": "string" },
+          "rowCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "processor": {
+      "type": "object",
+      "required": ["lockStatus", "backlogCount", "lastRunAtUtc", "lastRunStatus"],
+      "properties": {
+        "lockStatus": { "type": "string" },
+        "backlogCount": { "type": "integer", "minimum": 0 },
+        "lastRunAtUtc": { "type": ["string", "null"], "format": "date-time" },
+        "lastRunStatus": { "type": "string" }
+      }
+    },
+    "snapshotReadModels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "workbookName",
+          "tableName",
+          "snapshotId",
+          "lastRefreshUtc",
+          "sourceType",
+          "isStale",
+          "rowCount"
+        ],
+        "properties": {
+          "workbookName": { "type": "string" },
+          "tableName": { "type": "string" },
+          "snapshotId": { "type": "string" },
+          "lastRefreshUtc": { "type": "string", "format": "date-time" },
+          "sourceType": { "enum": ["LOCAL", "SHAREPOINT", "CACHED"] },
+          "isStale": { "type": "boolean" },
+          "rowCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "operatorStaging": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["workbookName", "tableName", "rowCount"],
+        "properties": {
+          "workbookName": { "type": "string" },
+          "tableName": { "type": "string" },
+          "rowCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "forms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "visible", "controlCount"],
+        "properties": {
+          "name": { "type": "string" },
+          "visible": { "type": "boolean" },
+          "controlCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyVersion", "rowValuesIncluded", "redactedFieldCount", "redactedFields"],
+      "properties": {
+        "policyVersion": { "type": "string" },
+        "rowValuesIncluded": { "const": false },
+        "redactedFieldCount": { "type": "integer", "minimum": 0 },
+        "redactedFields": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "message", "context"],
+        "properties": {
+          "code": { "type": "string" },
+          "severity": { "enum": ["INFO", "WARNING", "ERROR"] },
+          "message": { "type": "string" },
+          "context": { "type": "string" }
+        }
+      }
+    }
+  }
+}

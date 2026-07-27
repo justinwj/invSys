@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "projects": [
+    {
+      "key": "Core",
+      "projectName": "invSys_Core",
+      "outputFile": "invSys.Core.xlam",
+      "sourcePaths": [
+        "src/Core"
+      ]
+    },
+    {
+      "key": "Operations",
+      "projectName": "invSys_Operations",
+      "outputFile": "invSys.Operations.xlam",
+      "sourcePaths": [
+        "src/Operations"
+      ]
+    }
+  ]
+}

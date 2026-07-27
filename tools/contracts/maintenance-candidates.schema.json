@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://invsys.local/schemas/maintenance-candidates-1.0.0.json",
+  "title": "invSys VBA Maintenance Candidates",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reportType",
+    "generatedAtUtc",
+    "baseline",
+    "candidates",
+    "ratchets",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "reportType": { "const": "maintenance-candidates" },
+    "generatedAtUtc": { "type": "string", "format": "date-time" },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "componentCount",
+        "procedureCount",
+        "lineCount",
+        "literalApplicationRunCount",
+        "unresolvedApplicationRunCount",
+        "duplicateBodyCandidateCount"
+      ],
+      "properties": {
+        "componentCount": { "type": "integer", "minimum": 0 },
+        "procedureCount": { "type": "integer", "minimum": 0 },
+        "lineCount": { "type": "integer", "minimum": 0 },
+        "literalApplicationRunCount": { "type": "integer", "minimum": 0 },
+        "unresolvedApplicationRunCount": { "type": "integer", "minimum": 0 },
+        "duplicateBodyCandidateCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "candidateType",
+          "confidence",
+          "componentName",
+          "procedureNames",
+          "sourcePaths",
+          "reason",
+          "protectingTests",
+          "reviewRequired"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "candidateType": {
+            "enum": [
+              "REMOVE",
+              "MOVE_TO_TESTS",
+              "SPLIT_MODULE",
+              "REPLACE_DUPLICATE",
+              "REPLACE_SAME_PROJECT_LATE_BINDING",
+              "RETAIN_DYNAMIC_ROOT",
+              "ISOLATE_LEGACY_IMPORT",
+              "UNRESOLVED"
+            ]
+          },
+          "confidence": { "enum": ["HIGH", "MEDIUM", "LOW"] },
+          "componentName": { "type": "string" },
+          "procedureNames": { "type": "array", "items": { "type": "string" } },
+          "sourcePaths": { "type": "array", "items": { "type": "string" } },
+          "reason": { "type": "string" },
+          "protectingTests": { "type": "array", "items": { "type": "string" } },
+          "reviewRequired": { "const": true }
+        }
+      }
+    },
+    "ratchets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxNewModuleLines",
+        "maxNewProcedureLines",
+        "allowSameProjectApplicationRunGrowth",
+        "allowUnresolvedDynamicCallGrowth",
+        "allowDuplicateBodyGrowth"
+      ],
+      "properties": {
+        "maxNewModuleLines": { "type": "integer", "minimum": 1 },
+        "maxNewProcedureLines": { "type": "integer", "minimum": 1 },
+        "allowSameProjectApplicationRunGrowth": { "const": false },
+        "allowUnresolvedDynamicCallGrowth": { "const": false },
+        "allowDuplicateBodyGrowth": { "const": false }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

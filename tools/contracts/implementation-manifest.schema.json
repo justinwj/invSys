@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://invsys.local/schemas/implementation-manifest-1.0.0.json",
+  "title": "invSys Static Implementation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reportType",
+    "generatedAtUtc",
+    "sourceRoot",
+    "packages",
+    "components",
+    "procedures",
+    "ribbons",
+    "tables",
+    "configKeys",
+    "eventTypes",
+    "capabilities",
+    "bridgeContracts",
+    "forms",
+    "testReferences",
+    "dynamicRoots",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "reportType": { "const": "implementation-manifest" },
+    "generatedAtUtc": { "type": "string", "format": "date-time" },
+    "sourceRoot": { "type": "string" },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "projectName", "outputFile", "sourcePaths", "componentNames"],
+        "properties": {
+          "key": { "type": "string" },
+          "projectName": { "type": "string" },
+          "outputFile": { "type": "string" },
+          "sourcePaths": { "type": "array", "items": { "type": "string" } },
+          "componentNames": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "sourcePath", "lineCount", "procedureNames"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "enum": ["STANDARD_MODULE", "CLASS_MODULE", "FORM", "FORM_BINARY"] },
+          "sourcePath": { "type": "string" },
+          "lineCount": { "type": "integer", "minimum": 0 },
+          "procedureNames": { "type": "array", "items": { "type": "string" } },
+          "metadata": { "type": "object" }
+        }
+      }
+    },
+    "procedures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "componentName",
+          "name",
+          "visibility",
+          "kind",
+          "startLine",
+          "endLine",
+          "lineCount",
+          "directCalls",
+          "literalApplicationRunTargets",
+          "unresolvedApplicationRunExpressions",
+          "rootIds"
+        ],
+        "properties": {
+          "componentName": { "type": "string" },
+          "name": { "type": "string" },
+          "visibility": { "enum": ["PUBLIC", "PRIVATE", "FRIEND", "DEFAULT"] },
+          "kind": { "enum": ["SUB", "FUNCTION", "PROPERTY_GET", "PROPERTY_LET", "PROPERTY_SET"] },
+          "startLine": { "type": "integer", "minimum": 1 },
+          "endLine": { "type": "integer", "minimum": 1 },
+          "lineCount": { "type": "integer", "minimum": 1 },
+          "directCalls": { "type": "array", "items": { "type": "string" } },
+          "literalApplicationRunTargets": { "type": "array", "items": { "type": "string" } },
+          "unresolvedApplicationRunExpressions": { "type": "array", "items": { "type": "string" } },
+          "rootIds": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "ribbons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourcePath", "tabs"],
+        "properties": {
+          "sourcePath": { "type": "string" },
+          "tabs": { "type": "array", "items": { "$ref": "#/$defs/ribbonNode" } }
+        }
+      }
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "managedHeaders", "unknownHeadersPolicy", "locations"],
+        "properties": {
+          "name": { "type": "string" },
+          "managedHeaders": { "type": "array", "items": { "type": "string" } },
+          "unknownHeadersPolicy": { "enum": ["PRESERVE", "NOT_DECLARED"] },
+          "locations": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "configKeys": { "type": "array", "items": { "type": "string" } },
+    "eventTypes": { "type": "array", "items": { "type": "string" } },
+    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "bridgeContracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "sourcePath"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "sourcePath": { "type": "string" }
+        }
+      }
+    },
+    "forms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "sourcePath", "controls"],
+        "properties": {
+          "name": { "type": "string" },
+          "sourcePath": { "type": "string" },
+          "controls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "controlType", "owner", "left", "top", "width", "height"],
+              "properties": {
+                "name": { "type": "string" },
+                "controlType": { "type": "string" },
+                "owner": { "type": "string" },
+                "left": { "type": "number" },
+                "top": { "type": "number" },
+                "width": { "type": "number" },
+                "height": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "testReferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entryPoint", "testPaths"],
+        "properties": {
+          "entryPoint": { "type": "string" },
+          "testPaths": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "dynamicRoots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "procedure", "rootKind", "reason", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "procedure": { "type": "string" },
+          "rootKind": { "type": "string" },
+          "reason": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "$ref": "#/$defs/warning" } }
+  },
+  "$defs": {
+    "ribbonNode": {
+      "type": "object",
+      "required": ["id", "nodeType", "label", "callbacks", "capabilityGate", "children"],
+      "properties": {
+        "id": { "type": "string" },
+        "nodeType": { "type": "string" },
+        "label": { "type": "string" },
+        "callbacks": { "type": "array", "items": { "type": "string" } },
+        "capabilityGate": { "type": ["string", "null"] },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/ribbonNode" } }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "required": ["code", "severity", "message", "sourcePath"],
+      "properties": {
+        "code": { "type": "string" },
+        "severity": { "enum": ["INFO", "WARNING", "ERROR"] },
+        "message": { "type": "string" },
+        "sourcePath": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
