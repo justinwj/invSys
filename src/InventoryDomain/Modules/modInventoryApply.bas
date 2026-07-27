@@ -15,6 +15,7 @@ Public Const EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Public Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Public Const EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 Public Const EVENT_TYPE_MIGRATION_SEED As String = "MIGRATION_SEED"
+Public Const EVENT_TYPE_INVENTORY_CREATE As String = "INVENTORY_CREATE"
 
 Private mSourceSyncStampCache As Object
 
@@ -134,9 +135,12 @@ Public Function ApplyEvent(ByVal evt As Object, _
         SetTableRowValue loLog, r.Index, "StationId", stationId
         SetTableRowValue loLog, r.Index, "UserId", userId
         SetTableRowValue loLog, r.Index, "MigrationSourceId", migrationSourceId
+        SetTableRowValue loLog, r.Index, "System_Key", CStr(lineItem("System_Key"))
         SetTableRowValue loLog, r.Index, "SKU", CStr(lineItem("SKU"))
         SetTableRowValue loLog, r.Index, "QtyDelta", CDbl(lineItem("QtyDelta"))
         SetTableRowValue loLog, r.Index, "Location", CStr(lineItem("Location"))
+        SetTableRowValue loLog, r.Index, "Condition", CStr(lineItem("Condition"))
+        SetTableRowValue loLog, r.Index, "AttributesJson", CStr(lineItem("AttributesJson"))
         SetTableRowValue loLog, r.Index, "Note", CStr(lineItem("Note"))
     Next lineItem
 
@@ -435,7 +439,7 @@ Private Function BuildApplyLines(ByVal evt As Object, _
     Select Case eventType
         Case EVENT_TYPE_RECEIVE
             Set BuildApplyLines = BuildReceiveLines(evt, wb, errorCode, errorMessage)
-        Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_ADMIN_INVENTORY_ADJUST, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED
+        Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_ADMIN_INVENTORY_ADJUST, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED, EVENT_TYPE_INVENTORY_CREATE
             Set BuildApplyLines = BuildPayloadLines(evt, wb, eventType, errorCode, errorMessage)
         Case Else
             errorCode = "INVALID_EVENT_TYPE"
@@ -448,10 +452,14 @@ Private Function BuildReceiveLines(ByVal evt As Object, _
                                    ByRef errorCode As String, _
                                    ByRef errorMessage As String) As Collection
     Dim sku As String
+    Dim systemKey As String
+    Dim conditionValue As String
     Dim qty As Double
     Dim lineItem As Object
 
     sku = GetEventString(evt, "SKU")
+    systemKey = GetEventString(evt, "System_Key")
+    conditionValue = UCase$(GetEventString(evt, "Condition"))
     If sku = "" Then
         errorCode = "INVALID_SKU"
         errorMessage = "SKU is required."
@@ -472,13 +480,27 @@ Private Function BuildReceiveLines(ByVal evt As Object, _
         errorMessage = "SKU not found in inventory catalog."
         Exit Function
     End If
+    If systemKey = "" Then
+        errorCode = "INVALID_SYSTEM_KEY"
+        errorMessage = "RECEIVE requires a nonblank System_Key generated at the receiving creation boundary."
+        Exit Function
+    End If
+    If InventorySystemKeyExistsApply(wb, systemKey) Then
+        errorCode = "DUPLICATE_SYSTEM_KEY"
+        errorMessage = "System_Key '" & systemKey & "' already exists."
+        Exit Function
+    End If
+    If conditionValue = "" Then conditionValue = "GOOD"
 
     Set BuildReceiveLines = New Collection
     Set lineItem = CreateObject("Scripting.Dictionary")
     lineItem.CompareMode = vbTextCompare
     lineItem("SKU") = sku
+    lineItem("System_Key") = systemKey
     lineItem("QtyDelta") = qty
     lineItem("Location") = GetEventString(evt, "Location")
+    lineItem("Condition") = conditionValue
+    lineItem("AttributesJson") = GetEventString(evt, "AttributesJson")
     lineItem("Note") = GetEventString(evt, "Note")
     BuildReceiveLines.Add lineItem
 End Function
@@ -498,6 +520,10 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
     Dim locationVal As String
     Dim noteVal As String
     Dim ioType As String
+    Dim systemKey As String
+    Dim conditionValue As String
+    Dim attributesJson As String
+    Dim seenSystemKeys As Object
 
     payloadJson = GetEventString(evt, "PayloadJson")
     If payloadJson = "" Then
@@ -519,6 +545,8 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
     End If
 
     Set BuildPayloadLines = New Collection
+    Set seenSystemKeys = CreateObject("Scripting.Dictionary")
+    seenSystemKeys.CompareMode = vbTextCompare
     For Each rawItem In parsedItems
         sku = ResolvePayloadSkuApply(wb, rawItem)
         If eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
@@ -563,7 +591,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         End If
 QtyAccepted:
         rawItem("SKU") = sku
-        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
+        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_INVENTORY_CREATE Or eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
             EnsureSkuCatalogFromPayloadLineApply wb, rawItem
         End If
         If Not ValidateSkuExists(wb, sku) Then
@@ -588,12 +616,34 @@ QtyAccepted:
         If locationVal = "" Then locationVal = GetEventString(evt, "Location")
 
         noteVal = ComposeLineNote(eventType, rawItem, GetEventString(evt, "Note"))
+        systemKey = SafeTrimApply(GetDictionaryValue(rawItem, "System_Key"))
+        conditionValue = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "Condition")))
+        attributesJson = SafeTrimApply(GetDictionaryValue(rawItem, "AttributesJson"))
+        If eventType = EVENT_TYPE_INVENTORY_CREATE Then
+            If systemKey = "" Then
+                errorCode = "INVALID_SYSTEM_KEY"
+                errorMessage = "INVENTORY_CREATE requires a nonblank System_Key for every durable entity."
+                Set BuildPayloadLines = Nothing
+                Exit Function
+            End If
+            If seenSystemKeys.Exists(systemKey) Or InventorySystemKeyExistsApply(wb, systemKey) Then
+                errorCode = "DUPLICATE_SYSTEM_KEY"
+                errorMessage = "System_Key '" & systemKey & "' already exists."
+                Set BuildPayloadLines = Nothing
+                Exit Function
+            End If
+            seenSystemKeys.Add systemKey, True
+            If conditionValue = "" Then conditionValue = "GOOD"
+        End If
 
         Set lineItem = CreateObject("Scripting.Dictionary")
         lineItem.CompareMode = vbTextCompare
+        lineItem("System_Key") = systemKey
         lineItem("SKU") = sku
         lineItem("QtyDelta") = qtyDelta
         lineItem("Location") = locationVal
+        lineItem("Condition") = conditionValue
+        lineItem("AttributesJson") = attributesJson
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
@@ -758,6 +808,24 @@ Private Function InventoryLogEventExistsApply(ByVal wb As Workbook, ByVal eventI
     Next rowIndex
 End Function
 
+Private Function InventorySystemKeyExistsApply(ByVal wb As Workbook, ByVal systemKey As String) As Boolean
+    Dim loLog As ListObject
+    Dim rowIndex As Long
+
+    systemKey = SafeTrimApply(systemKey)
+    If wb Is Nothing Or systemKey = "" Then Exit Function
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    If loLog Is Nothing Or loLog.DataBodyRange Is Nothing Then Exit Function
+
+    For rowIndex = 1 To loLog.ListRows.Count
+        If StrComp(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "System_Key")), _
+                   systemKey, vbTextCompare) = 0 Then
+            InventorySystemKeyExistsApply = True
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
 Private Function ResolvePayloadSkuApply(ByVal wb As Workbook, ByVal rawItem As Object) As String
     ResolvePayloadSkuApply = SafeTrimApply(GetDictionaryValue(rawItem, "SKU"))
     If ResolvePayloadSkuApply = "" Then ResolvePayloadSkuApply = SafeTrimApply(GetDictionaryValue(rawItem, "ITEM_CODE"))
@@ -847,6 +915,13 @@ Private Function ResolvePayloadQtyDelta(ByVal eventType As String, _
             If ioType <> "" And ioType <> "MADE" And ioType <> "SEED" And ioType <> "IMPORT" Then
                 errorCode = "INVALID_PAYLOAD"
                 errorMessage = "MIGRATION_SEED payload line items may only use IoType MADE, SEED, or IMPORT."
+            Else
+                ResolvePayloadQtyDelta = qty
+            End If
+        Case EVENT_TYPE_INVENTORY_CREATE
+            If ioType <> "" And ioType <> "CREATE" Then
+                errorCode = "INVALID_PAYLOAD"
+                errorMessage = "INVENTORY_CREATE payload line items may only use IoType CREATE."
             Else
                 ResolvePayloadQtyDelta = qty
             End If
@@ -1185,7 +1260,6 @@ Private Sub EnsureSkuCatalogFromPayloadLineApply(ByVal wb As Workbook, ByVal raw
     End If
     If rowIndex <= 0 Then GoTo CleanExit
 
-    SetTableRowValueIfNonBlankApply lo, rowIndex, "ROW", ResolvePayloadTextApply(rawItem, "ROW", ResolvePayloadTextApply(rawItem, "Row", ""))
     SetTableRowValueIfNonBlankApply lo, rowIndex, "ITEM_CODE", ResolvePayloadTextApply(rawItem, "ITEM_CODE", IIf(isNewRow, sku, ""))
     SetTableRowValueIfNonBlankApply lo, rowIndex, "ITEM", ResolvePayloadTextApply(rawItem, "ITEM", IIf(isNewRow, sku, ""))
     SetTableRowValueIfNonBlankApply lo, rowIndex, "UOM", ResolvePayloadTextApply(rawItem, "UOM", "")
@@ -1252,7 +1326,8 @@ End Function
 
 Private Function IsReservedPayloadCatalogKeyApply(ByVal columnName As String) As Boolean
     Select Case UCase$(SafeTrimApply(columnName))
-        Case "SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", _
+        Case "SYSTEM_KEY", "SYSTEMKEY", "CONDITION", "ATTRIBUTESJSON", _
+             "SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", _
              "VENDOR(S)", "VENDOR_CODE", "CATEGORY", "EXTERNAL_CODE", "IMAGE_PATH", _
              "QTY", "QTYDELTA", "QTYAVAILABLE", "TOTAL INV", "NOTE", "IOTYPE", _
              "VERSION", "BOMVERSIONLABEL", "CORRECTEDSHIPEVENTID", "REPAIRNARRATIVE", _
@@ -1980,28 +2055,38 @@ End Sub
 
 Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
     Dim loLog As ListObject
+    Dim loEntities As ListObject
     Dim loSku As ListObject
     Dim loLoc As ListObject
+    Dim entities As Object
     Dim skuQty As Object
     Dim skuLast As Object
     Dim locQty As Object
     Dim locLast As Object
     Dim rowIndex As Long
+    Dim systemKey As String
     Dim sku As String
     Dim locationVal As String
+    Dim conditionValue As String
+    Dim attributesJson As String
     Dim qtyDelta As Double
     Dim appliedAt As Variant
+    Dim entity As Object
 
     If wb Is Nothing Then Exit Sub
 
     Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    Set loEntities = FindListObjectByNameApply(wb, "tblInventoryEntities")
     Set loSku = FindListObjectByNameApply(wb, "tblSkuBalance")
     Set loLoc = FindListObjectByNameApply(wb, "tblLocationBalance")
-    If loLog Is Nothing Or loSku Is Nothing Or loLoc Is Nothing Then Exit Sub
+    If loLog Is Nothing Or loEntities Is Nothing Or loSku Is Nothing Or loLoc Is Nothing Then Exit Sub
 
+    SetSheetProtectionApply loEntities.Parent, False
     SetSheetProtectionApply loSku.Parent, False
     SetSheetProtectionApply loLoc.Parent, False
 
+    Set entities = CreateObject("Scripting.Dictionary")
+    entities.CompareMode = vbTextCompare
     Set skuQty = CreateObject("Scripting.Dictionary")
     skuQty.CompareMode = vbTextCompare
     Set skuLast = CreateObject("Scripting.Dictionary")
@@ -2013,25 +2098,73 @@ Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
 
     If Not loLog.DataBodyRange Is Nothing Then
         For rowIndex = 1 To loLog.ListRows.Count
+            systemKey = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "System_Key"))
             sku = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU"))
             If sku = "" Then GoTo ContinueLoop
 
             qtyDelta = 0#
             If IsNumeric(GetCellByColumnApply(loLog, rowIndex, "QtyDelta")) Then qtyDelta = CDbl(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
             locationVal = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location"))
+            conditionValue = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")))
+            attributesJson = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson"))
             appliedAt = GetCellByColumnApply(loLog, rowIndex, "AppliedAtUTC")
 
+            If systemKey <> "" Then
+                If entities.Exists(systemKey) Then
+                    Set entity = entities(systemKey)
+                Else
+                    Set entity = CreateObject("Scripting.Dictionary")
+                    entity.CompareMode = vbTextCompare
+                    entity("System_Key") = systemKey
+                    entity("QtyOnHand") = 0#
+                    entities.Add systemKey, entity
+                End If
+                entity("SKU") = sku
+                entity("QtyOnHand") = CDbl(entity("QtyOnHand")) + qtyDelta
+                If locationVal <> "" Then entity("Location") = locationVal
+                If conditionValue <> "" Then entity("Condition") = conditionValue
+                If attributesJson <> "" Then entity("AttributesJson") = attributesJson
+                If IsDate(appliedAt) Then entity("LastAppliedUTC") = CDate(appliedAt)
+            End If
+
             AccumulateProjectionScalars skuQty, skuLast, sku, qtyDelta, appliedAt
-            AccumulateProjectionScalars locQty, locLast, sku & "|" & locationVal, qtyDelta, appliedAt
+            AccumulateProjectionScalars locQty, locLast, sku & "|" & locationVal & "|" & conditionValue, qtyDelta, appliedAt
 ContinueLoop:
         Next rowIndex
     End If
 
+    RewriteEntityProjectionTable loEntities, entities
     RewriteSkuProjectionTable loSku, skuQty, skuLast
     RewriteLocationProjectionTable loLoc, locQty, locLast
 
+    SetSheetProtectionApply loEntities.Parent, True
     SetSheetProtectionApply loSku.Parent, True
     SetSheetProtectionApply loLoc.Parent, True
+End Sub
+
+Private Sub RewriteEntityProjectionTable(ByVal lo As ListObject, ByVal entities As Object)
+    Dim key As Variant
+    Dim entity As Object
+    Dim r As ListRow
+    Dim qtyOnHand As Double
+
+    If lo Is Nothing Then Exit Sub
+    ClearProjectionRows lo
+    If entities Is Nothing Then Exit Sub
+
+    For Each key In entities.Keys
+        Set entity = entities(key)
+        qtyOnHand = CDbl(entity("QtyOnHand"))
+        Set r = lo.ListRows.Add
+        SetTableRowValue lo, r.Index, "System_Key", CStr(key)
+        SetTableRowValue lo, r.Index, "SKU", CStr(entity("SKU"))
+        SetTableRowValue lo, r.Index, "QtyOnHand", qtyOnHand
+        If entity.Exists("Location") Then SetTableRowValue lo, r.Index, "Location", CStr(entity("Location"))
+        If entity.Exists("Condition") Then SetTableRowValue lo, r.Index, "Condition", CStr(entity("Condition"))
+        SetTableRowValue lo, r.Index, "InventoryState", IIf(qtyOnHand > 0, "ACTIVE", "DEPLETED")
+        If entity.Exists("AttributesJson") Then SetTableRowValue lo, r.Index, "AttributesJson", CStr(entity("AttributesJson"))
+        If entity.Exists("LastAppliedUTC") Then SetTableRowValue lo, r.Index, "LastAppliedUTC", entity("LastAppliedUTC")
+    Next key
 End Sub
 
 Private Sub RefreshLedgerStatus(ByVal wb As Workbook, _
@@ -2164,10 +2297,11 @@ Private Sub RewriteLocationProjectionTable(ByVal lo As ListObject, ByVal qtyDict
     If qtyDict Is Nothing Then Exit Sub
 
     For Each key In qtyDict.Keys
-        parts = Split(CStr(key), "|", 2)
+        parts = Split(CStr(key), "|", 3)
         Set r = lo.ListRows.Add
         SetTableRowValue lo, r.Index, "SKU", parts(0)
         If UBound(parts) >= 1 Then SetTableRowValue lo, r.Index, "Location", parts(1)
+        If UBound(parts) >= 2 Then SetTableRowValue lo, r.Index, "Condition", parts(2)
         SetTableRowValue lo, r.Index, "QtyOnHand", CDbl(qtyDict(key))
         If lastDict.Exists(CStr(key)) Then SetTableRowValue lo, r.Index, "LastAppliedUTC", CDate(lastDict(key))
     Next key

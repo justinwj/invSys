@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "68734aede560d266c5add0720bf18b63fab34d24b365c70693d16022dce0eed9",
-                          "maintenanceCandidatesSha256":  "7dd299d1e31edade13c8ec2cbd1f59c3577de473e019191f65a36f6e29dd5234"
+                          "implementationManifestSha256":  "2f36f1dfc5e159ea84f93c283050342fe1bf0ee7ee374b8ce4d75b65582f26f7",
+                          "maintenanceCandidatesSha256":  "0450471a09fa46962e5c569c9ac88a783f9aea00159e9f50bd90921411be39cd"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1038,
-                    "reviewedCandidateCount":  1040,
+                    "scannerCandidateCount":  1041,
+                    "reviewedCandidateCount":  1043,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -42,7 +42,7 @@
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  313,
+                            "candidateCount":  315,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -52,7 +52,7 @@
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  218,
+                            "candidateCount":  219,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -98,7 +98,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1700,
+                                                  "baselineLineCount":  1705,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -147,28 +147,28 @@
                                                   "sourcePath":  "src/Core/Modules/modOperatorReadModel.bas",
                                                   "componentName":  "modOperatorReadModel",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1902,
+                                                  "baselineLineCount":  1917,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modProcessor.bas",
                                                   "componentName":  "modProcessor",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1398,
+                                                  "baselineLineCount":  1417,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  2753,
+                                                  "baselineLineCount":  2843,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modWarehouseBootstrap.bas",
                                                   "componentName":  "modWarehouseBootstrap",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1066,
+                                                  "baselineLineCount":  1067,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -182,7 +182,7 @@
                                                   "sourcePath":  "src/Core/Modules/modWarehouseSync.bas",
                                                   "componentName":  "modWarehouseSync",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1577,
+                                                  "baselineLineCount":  1617,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -196,7 +196,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2183,
+                                                  "baselineLineCount":  2317,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -1749,6 +1749,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.NormalizeAdminDemoInventoryRow",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "NormalizeAdminDemoInventoryRow"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_LastTesterWorkbook",
@@ -9395,6 +9418,7 @@
                                                   "ExtractBatchMetricReadModel",
                                                   "FileExistsReadModel",
                                                   "FindInvSysRowBySku",
+                                                  "FindInvSysRowBySystemKeyReadModel",
                                                   "FindListObjectReadModel",
                                                   "FormatQuantityReadModel",
                                                   "FormatRuntimeTimingReadModel",
@@ -9404,7 +9428,6 @@
                                                   "HideWorkbookWindowsReadModel",
                                                   "InitializeAutoSnapshotForWorkbook",
                                                   "IsRefreshDueReadModel",
-                                                  "IsSnapshotRowIndexKeyReadModel",
                                                   "LogDiagnosticSafeReadModel",
                                                   "MarkReadModelState",
                                                   "MarkSegmentSafeReadModel",
@@ -9464,7 +9487,6 @@
                                                   "SeedInvSysRow",
                                                   "SetReadModelValue",
                                                   "ShouldAutoManageWorkbookReadModel",
-                                                  "SnapshotRowKeyReadModel",
                                                   "SyncDisplayAliases",
                                                   "UnregisterAutoSnapshotWorkbook",
                                                   "UpdateAutoRefreshConfigReadModel",
@@ -9547,6 +9569,7 @@
                                                   "PerfMarkSafeProcessor",
                                                   "ReactivateQuietOwnerSafeProcessor",
                                                   "RemoveBlankSeedRowProcessor",
+                                                  "RemoveExactListColumnProcessor",
                                                   "ResolveCurrentTargetRuntimeRootForWarehouseProcessor",
                                                   "ResolveCurrentTargetRuntimeRootProcessor",
                                                   "ResolveCurrentTargetWarehouseIdProcessor",
@@ -9610,7 +9633,9 @@
                                                   "ConnectWarehouseStorageForCapability",
                                                   "CreateEventIdRole",
                                                   "CreateGuidFallbackRole",
+                                                  "CreateInventoryEntityPayloadItem",
                                                   "CreatePayloadItem",
+                                                  "CreateSystemKey",
                                                   "CurrentInvSysUserDisplayRole",
                                                   "DescribeInboxPendingRows",
                                                   "DescribeLocalStagedInboxRows",
@@ -9653,6 +9678,7 @@
                                                   "MergeRowsIntoNasInboxRole",
                                                   "NormalizeFolderPathRole",
                                                   "NormalizeFolderRole",
+                                                  "NormalizeGuidRole",
                                                   "NormalizeVersionLabelRole",
                                                   "OpenInboxWorkbook",
                                                   "ParentFolderPathRole",
@@ -9669,6 +9695,7 @@
                                                   "QueueDesignEvent",
                                                   "QueueDesignEventCurrent",
                                                   "QueueEventCore",
+                                                  "QueueInventoryCreateEvent",
                                                   "QueueMigrationSeedEvent",
                                                   "QueuePayloadEvent",
                                                   "QueuePayloadEventCurrent",
@@ -9957,6 +9984,7 @@
                                                   "ReactivateQuietOwnerSafeSync",
                                                   "RecoverInterruptedPublishArtifactsSync",
                                                   "RemoveBlankSeedRowSync",
+                                                  "RemoveListColumnIfPresentSync",
                                                   "ResolveAppliedMeta",
                                                   "ResolveCatalogCellTextSync",
                                                   "ResolveNumberSync",
@@ -11503,6 +11531,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.FindInvSysRowBySku",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modOperatorReadModel",
+                           "procedureNames":  [
+                                                  "FindInvSysRowBySku"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperatorReadModel.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.RefreshCurrentWorkbookInventoryReadModel",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -12423,6 +12474,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modWarehouseSync",
+                           "procedureNames":  [
+                                                  "AppendLocationSummariesSync"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modWarehouseSync.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_MouseScroll.bas:MouseScroll.DisableMouseScroll",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -12555,6 +12629,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
@@ -12716,6 +12791,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
@@ -14342,6 +14418,7 @@
                                                   "HideWorkbookWindowsApply",
                                                   "InferWarehouseIdFromWorkbookNameApply",
                                                   "InventoryLogEventExistsApply",
+                                                  "InventorySystemKeyExistsApply",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
                                                   "IsWorkbookFileLockedApply",
@@ -14374,6 +14451,7 @@
                                                   "ResolvePrimaryLocationFromSummaryApply",
                                                   "ResolveWarehouseIdFromSnapshotIdApply",
                                                   "ResolveWarehouseIdFromSourceWorkbookApply",
+                                                  "RewriteEntityProjectionTable",
                                                   "RewriteLocationProjectionTable",
                                                   "RewriteSkuProjectionTable",
                                                   "SafeTrimApply",
@@ -15600,6 +15678,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
@@ -20027,6 +20106,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
@@ -21227,6 +21307,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
@@ -28042,6 +28123,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,

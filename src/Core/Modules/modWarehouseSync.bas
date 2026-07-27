@@ -317,8 +317,8 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     Dim startCell As Range
     Dim i As Long
 
-    headers = Array("WarehouseId", "SKU", "ROW", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
-                    "RECEIVED", "USED", "MADE", "SHIPMENTS", _
+    headers = Array("WarehouseId", "System_Key", "SKU", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
+                    "Condition", "InventoryState", "AttributesJson", "RECEIVED", "USED", "MADE", "SHIPMENTS", _
                     "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedAtUTC")
     NormalizeWorkbookSheetsSync wb, Array(SHEET_SNAPSHOT)
     Set ws = EnsureWorksheetSync(wb, SHEET_SNAPSHOT)
@@ -340,6 +340,7 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnSync lo, CStr(headers(i))
     Next i
+    RemoveListColumnIfPresentSync lo, "ROW"
     RemoveBlankSeedRowSync lo
     ApplySnapshotColumnFormatsSync lo
 
@@ -366,8 +367,8 @@ Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
         EnsureTableSheetEditableSync lo, TABLE_SNAPSHOT
         lo.ListRows.Add
         SetTableRowValueSync lo, 1, "WarehouseId", warehouseId
+        SetTableRowValueSync lo, 1, "System_Key", ""
         SetTableRowValueSync lo, 1, "SKU", ""
-        SetTableRowValueSync lo, 1, "ROW", ""
         SetTableRowValueSync lo, 1, "ITEM", ""
         SetTableRowValueSync lo, 1, "UOM", ""
         SetTableRowValueSync lo, 1, "LOCATION", ""
@@ -392,8 +393,8 @@ Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
         rowIndex = lo.ListRows.Count
         Set entry = snapshotRows(key)
         SetTableRowValueSync lo, rowIndex, "WarehouseId", ResolveStringSync(entry, "WarehouseId", warehouseId)
-        SetTableRowValueSync lo, rowIndex, "SKU", ResolveStringSync(entry, "SKU", CStr(key))
-        SetTableRowValueSync lo, rowIndex, "ROW", ResolveStringSync(entry, "ROW", "")
+        SetTableRowValueSync lo, rowIndex, "System_Key", ResolveStringSync(entry, "System_Key", CStr(key))
+        SetTableRowValueSync lo, rowIndex, "SKU", ResolveStringSync(entry, "SKU", "")
         SetTableRowValueSync lo, rowIndex, "ITEM", ResolveStringSync(entry, "ITEM", ResolveStringSync(entry, "ItemName", ResolveStringSync(entry, "SKU", CStr(key))))
         SetTableRowValueSync lo, rowIndex, "UOM", ResolveStringSync(entry, "UOM", "")
         SetTableRowValueSync lo, rowIndex, "LOCATION", ResolveStringSync(entry, "LOCATION", "")
@@ -401,6 +402,9 @@ Private Sub WriteSnapshotRows(ByVal wb As Workbook, _
         SetTableRowValueSync lo, rowIndex, "VENDOR(s)", ResolveStringSync(entry, "VENDOR(s)", ResolveStringSync(entry, "VENDORS", ""))
         SetTableRowValueSync lo, rowIndex, "VENDOR_CODE", ResolveStringSync(entry, "VENDOR_CODE", "")
         SetTableRowValueSync lo, rowIndex, "CATEGORY", ResolveStringSync(entry, "CATEGORY", "")
+        SetTableRowValueSync lo, rowIndex, "Condition", ResolveStringSync(entry, "Condition", "")
+        SetTableRowValueSync lo, rowIndex, "InventoryState", ResolveStringSync(entry, "InventoryState", "")
+        SetTableRowValueSync lo, rowIndex, "AttributesJson", ResolveStringSync(entry, "AttributesJson", "")
         SetTableRowValueSync lo, rowIndex, "RECEIVED", ResolveNumberSync(entry, "RECEIVED")
         SetTableRowValueSync lo, rowIndex, "USED", ResolveNumberSync(entry, "USED")
         SetTableRowValueSync lo, rowIndex, "MADE", ResolveNumberSync(entry, "MADE")
@@ -448,38 +452,52 @@ Private Function BuildSnapshotRowsSync(ByVal wbInv As Workbook, _
 End Function
 
 Private Function BuildSnapshotRowsFromProjectionsSync(ByVal wbInv As Workbook, ByVal warehouseId As String) As Object
-    Dim loSku As ListObject
-    Dim loLoc As ListObject
+    Dim loEntities As ListObject
     Dim rows As Object
     Dim rowIndex As Long
+    Dim systemKey As String
     Dim sku As String
     Dim entry As Object
     Dim qtyOnHand As Double
+    Dim locationValue As String
+    Dim conditionValue As String
+    Dim attributesJson As String
+    Dim inventoryState As String
+    Dim lastApplied As Variant
 
-    Set loSku = FindListObjectByNameSync(wbInv, "tblSkuBalance")
-    Set loLoc = FindListObjectByNameSync(wbInv, "tblLocationBalance")
-    If loSku Is Nothing Then Exit Function
+    Set loEntities = FindListObjectByNameSync(wbInv, "tblInventoryEntities")
+    If loEntities Is Nothing Then Exit Function
 
     Set rows = CreateObject("Scripting.Dictionary")
     rows.CompareMode = vbTextCompare
 
-    If Not loSku.DataBodyRange Is Nothing Then
-        For rowIndex = 1 To loSku.ListRows.Count
-            sku = SafeTrimSync(GetCellByColumnSync(loSku, rowIndex, "SKU"))
-            If sku = "" Then GoTo ContinueSkuLoop
+    If Not loEntities.DataBodyRange Is Nothing Then
+        For rowIndex = 1 To loEntities.ListRows.Count
+            systemKey = SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "System_Key"))
+            sku = SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "SKU"))
+            If systemKey = "" Or sku = "" Then GoTo ContinueEntityLoop
 
-            Set entry = EnsureSnapshotEntrySync(rows, sku, warehouseId)
-            qtyOnHand = NzDblSync(GetCellByColumnSync(loSku, rowIndex, "QtyOnHand"))
+            Set entry = EnsureSnapshotEntrySync(rows, systemKey, warehouseId)
+            entry("System_Key") = systemKey
+            entry("SKU") = sku
+            qtyOnHand = NzDblSync(GetCellByColumnSync(loEntities, rowIndex, "QtyOnHand"))
             entry("QtyOnHand") = qtyOnHand
             entry("QtyAvailable") = qtyOnHand
-            If IsDate(GetCellByColumnSync(loSku, rowIndex, "LastAppliedUTC")) Then
-                entry("LastAppliedAtUTC") = CDate(GetCellByColumnSync(loSku, rowIndex, "LastAppliedUTC"))
-            End If
-ContinueSkuLoop:
+            locationValue = SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "Location"))
+            conditionValue = UCase$(SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "Condition")))
+            attributesJson = SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "AttributesJson"))
+            inventoryState = SafeTrimSync(GetCellByColumnSync(loEntities, rowIndex, "InventoryState"))
+            entry("LOCATION") = locationValue
+            entry("LocationSummary") = NormalizeManagedLocationSummarySync(locationValue, qtyOnHand)
+            entry("Condition") = conditionValue
+            entry("AttributesJson") = attributesJson
+            entry("InventoryState") = inventoryState
+            lastApplied = GetCellByColumnSync(loEntities, rowIndex, "LastAppliedUTC")
+            If IsDate(lastApplied) Then entry("LastAppliedAtUTC") = CDate(lastApplied)
+ContinueEntityLoop:
         Next rowIndex
     End If
 
-    If Not loLoc Is Nothing Then AppendLocationSummariesSync rows, loLoc, warehouseId
     Set BuildSnapshotRowsFromProjectionsSync = rows
 End Function
 
@@ -584,9 +602,20 @@ Private Sub ApplyManagedSurfaceMetadataSync(ByVal entry As Object, ByVal loInv A
 End Sub
 
 Private Function NormalizeManagedLocationSummarySync(ByVal locationSummary As String, ByVal qtyOnHand As Double) As String
+    Dim lastEquals As Long
+    Dim suffixText As String
+
     locationSummary = SafeTrimSync(locationSummary)
     If locationSummary <> "" Then
-        NormalizeManagedLocationSummarySync = locationSummary
+        lastEquals = InStrRev(locationSummary, "=")
+        If lastEquals > 1 Then
+            suffixText = Replace$(SafeTrimSync(Mid$(locationSummary, lastEquals + 1)), ",", "")
+            If suffixText <> "" And IsNumeric(suffixText) Then
+                NormalizeManagedLocationSummarySync = locationSummary
+                Exit Function
+            End If
+        End If
+        NormalizeManagedLocationSummarySync = locationSummary & "=" & FormatQuantitySync(qtyOnHand)
         Exit Function
     End If
     If qtyOnHand = 0 Then Exit Function
@@ -626,28 +655,28 @@ ContinueLocLoop:
 End Sub
 
 Private Function EnsureSnapshotEntrySync(ByVal rows As Object, _
-                                         ByVal sku As String, _
+                                         ByVal entityKey As String, _
                                          ByVal warehouseId As String) As Object
     Dim entry As Object
     Dim locationTotals As Object
 
-    If rows.Exists(sku) Then
-        Set EnsureSnapshotEntrySync = rows(sku)
+    If rows.Exists(entityKey) Then
+        Set EnsureSnapshotEntrySync = rows(entityKey)
         Exit Function
     End If
 
     Set entry = CreateObject("Scripting.Dictionary")
     entry.CompareMode = vbTextCompare
     entry("WarehouseId") = warehouseId
-    entry("SKU") = sku
-    entry("ROW") = vbNullString
+    entry("System_Key") = entityKey
+    entry("SKU") = entityKey
     entry("QtyOnHand") = 0#
     entry("QtyAvailable") = 0#
     entry("LocationSummary") = vbNullString
     Set locationTotals = CreateObject("Scripting.Dictionary")
     locationTotals.CompareMode = vbTextCompare
     entry.Add "LocationTotals", locationTotals
-    rows.Add sku, entry
+    rows.Add entityKey, entry
     Set EnsureSnapshotEntrySync = entry
 End Function
 
@@ -672,6 +701,7 @@ Private Sub ApplyLatestMovementToSnapshotRowsSync(ByVal snapshotRows As Object, 
                                                   ByVal warehouseId As String)
     Dim loLog As ListObject
     Dim rowIndex As Long
+    Dim systemKey As String
     Dim sku As String
     Dim eventType As String
     Dim qty As Double
@@ -692,10 +722,12 @@ Private Sub ApplyLatestMovementToSnapshotRowsSync(ByVal snapshotRows As Object, 
     stampMap.CompareMode = vbTextCompare
 
     For rowIndex = 1 To loLog.ListRows.Count
+        systemKey = SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "System_Key"))
         sku = SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "SKU"))
-        If sku = "" Then GoTo ContinueLoop
+        If systemKey = "" Or sku = "" Then GoTo ContinueLoop
+        If Not snapshotRows.Exists(systemKey) Then GoTo ContinueLoop
 
-        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
+        Set entry = snapshotRows(systemKey)
         eventType = UCase$(SafeTrimSync(GetCellByColumnSync(loLog, rowIndex, "EventType")))
         qty = Abs(NzDblSync(GetCellByColumnSync(loLog, rowIndex, "QtyDelta")))
         rowDate = GetCellByColumnSync(loLog, rowIndex, "AppliedAtUTC")
@@ -705,9 +737,9 @@ Private Sub ApplyLatestMovementToSnapshotRowsSync(ByVal snapshotRows As Object, 
             eventStamp = CDbl(rowIndex)
         End If
 
-        If stampMap.Exists(sku) Then bestStamp = CDbl(stampMap(sku))
-        If (Not stampMap.Exists(sku)) Or eventStamp >= bestStamp Then
-            stampMap(sku) = eventStamp
+        If stampMap.Exists(systemKey) Then bestStamp = CDbl(stampMap(systemKey))
+        If (Not stampMap.Exists(systemKey)) Or eventStamp >= bestStamp Then
+            stampMap(systemKey) = eventStamp
             entry("RECEIVED") = 0#
             entry("USED") = 0#
             entry("MADE") = 0#
@@ -732,12 +764,12 @@ Private Sub ApplyCatalogTableToSnapshotRowsSync(ByVal snapshotRows As Object, _
                                                 ByVal warehouseId As String)
     Dim rowIndex As Long
     Dim sku As String
+    Dim entityKey As Variant
     Dim entry As Object
     Dim itemValue As String
     Dim uomValue As String
     Dim locationValue As String
     Dim descriptionValue As String
-    Dim rowValue As String
     Dim vendorValue As String
     Dim vendorCodeValue As String
     Dim categoryValue As String
@@ -751,15 +783,11 @@ Private Sub ApplyCatalogTableToSnapshotRowsSync(ByVal snapshotRows As Object, _
         If sku = "" Then sku = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
         If sku = "" Then GoTo ContinueLoop
 
-        Set entry = EnsureSnapshotEntrySync(snapshotRows, sku, warehouseId)
         itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM")
         If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ItemName")
         If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "NAME")
         If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "SKU")
         If itemValue = "" Then itemValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ITEM_CODE")
-
-        rowValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "ROW")
-        If rowValue = "" Then rowValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "Row")
 
         uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UOM")
         If uomValue = "" Then uomValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "UNITOFMEASURE")
@@ -782,14 +810,18 @@ Private Sub ApplyCatalogTableToSnapshotRowsSync(ByVal snapshotRows As Object, _
 
         categoryValue = ResolveCatalogCellTextSync(loCatalog, rowIndex, "CATEGORY")
 
-        ApplyCatalogValueIfPresentSync entry, "ITEM", itemValue
-        ApplyCatalogValueIfPresentSync entry, "ROW", rowValue
-        ApplyCatalogValueIfPresentSync entry, "UOM", uomValue
-        ApplyCatalogValueIfPresentSync entry, "LOCATION", locationValue
-        ApplyCatalogValueIfPresentSync entry, "DESCRIPTION", descriptionValue
-        ApplyCatalogValueIfPresentSync entry, "VENDOR(s)", vendorValue
-        ApplyCatalogValueIfPresentSync entry, "VENDOR_CODE", vendorCodeValue
-        ApplyCatalogValueIfPresentSync entry, "CATEGORY", categoryValue
+        For Each entityKey In snapshotRows.Keys
+            Set entry = snapshotRows(entityKey)
+            If StrComp(ResolveStringSync(entry, "SKU", ""), sku, vbTextCompare) = 0 Then
+                ApplyCatalogValueIfPresentSync entry, "ITEM", itemValue
+                ApplyCatalogValueIfPresentSync entry, "UOM", uomValue
+                ApplyCatalogValueIfPresentSync entry, "LOCATION", locationValue
+                ApplyCatalogValueIfPresentSync entry, "DESCRIPTION", descriptionValue
+                ApplyCatalogValueIfPresentSync entry, "VENDOR(s)", vendorValue
+                ApplyCatalogValueIfPresentSync entry, "VENDOR_CODE", vendorCodeValue
+                ApplyCatalogValueIfPresentSync entry, "CATEGORY", categoryValue
+            End If
+        Next entityKey
 ContinueLoop:
     Next rowIndex
 End Sub
@@ -1265,6 +1297,14 @@ Private Sub EnsureListColumnSync(ByVal lo As ListObject, ByVal columnName As Str
     If GetColumnIndexSync(lo, columnName) > 0 Then Exit Sub
     lo.ListColumns.Add lo.ListColumns.Count + 1
     lo.ListColumns(lo.ListColumns.Count).Name = columnName
+End Sub
+
+Private Sub RemoveListColumnIfPresentSync(ByVal lo As ListObject, ByVal columnName As String)
+    Dim columnIndex As Long
+
+    If lo Is Nothing Then Exit Sub
+    columnIndex = GetColumnIndexSync(lo, columnName)
+    If columnIndex > 0 Then lo.ListColumns(columnIndex).Delete
 End Sub
 
 Private Sub RemoveBlankSeedRowSync(ByVal lo As ListObject)

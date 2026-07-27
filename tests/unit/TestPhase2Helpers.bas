@@ -324,9 +324,12 @@ Public Sub AddInboxReceiveRow(ByVal wb As Workbook, _
     EnsureTableSheetEditable lo, "tblInboxReceive"
     Set r = lo.ListRows.Add
     SetInboxRowCommon lo, r.Index, eventId, EVENT_TYPE_RECEIVE, createdAtUtc, whId, stId, userId, noteVal
+    SetTableRowValue lo, r.Index, "System_Key", "SYS-" & eventId
     SetTableRowValue lo, r.Index, "SKU", sku
     SetTableRowValue lo, r.Index, "Qty", qty
     SetTableRowValue lo, r.Index, "Location", locationVal
+    SetTableRowValue lo, r.Index, "Condition", "GOOD"
+    SetTableRowValue lo, r.Index, "AttributesJson", ""
 End Sub
 
 Public Sub AddInboxShipRow(ByVal wb As Workbook, _

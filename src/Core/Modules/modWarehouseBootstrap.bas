@@ -825,8 +825,9 @@ Private Function SeedBootstrapDemoInventory(ByRef spec As WarehouseSpec, ByRef r
         GoTo FailSoft
     End If
 
-    If Not modRoleEventWriter.QueueMigrationSeedEvent(spec.WarehouseId, spec.StationId, spec.AdminUser, payloadJson, "", BOOTSTRAP_SEED_SOURCE_ID, 0, Nothing, eventIdOut, queueError, "") Then
-        report = "QueueMigrationSeedEvent failed: " & queueError
+    If Not modRoleEventWriter.QueueInventoryCreateEvent(spec.WarehouseId, spec.StationId, spec.AdminUser, payloadJson, _
+                                                        BOOTSTRAP_SEED_SOURCE_ID, 0, Nothing, eventIdOut, queueError, "") Then
+        report = "QueueInventoryCreateEvent failed: " & queueError
         GoTo FailSoft
     End If
 
@@ -861,14 +862,13 @@ Private Function BuildBootstrapDemoPayload() As Collection
     Dim items As Collection
 
     Set items = New Collection
-    items.Add BuildBootstrapDemoPayloadItem(9001, "DEMO-RAW-BLACK-TEA", "Black Tea", "lbs", "CLEARVIEW", "Loose black tea for receiving test.", "Tea Importers", "TEA-001", "raw", 500#)
-    items.Add BuildBootstrapDemoPayloadItem(9003, "DEMO-RAW-CARDAMOM", "Cardamom", "lbs", "CLEARVIEW", "Cardamom for receiving test.", "Spice House", "SPICE-001", "raw", 50#)
-    items.Add BuildBootstrapDemoPayloadItem(9016, "DEMO-FG-CLASSIC-CHAI", "Classic Chai Concentrate", "gal", "CLEARVIEW", "Finished good receiving test item.", "Internal", "FG-001", "shippable", 25#)
+    items.Add BuildBootstrapDemoPayloadItem("DEMO-RAW-BLACK-TEA", "Black Tea", "lbs", "CLEARVIEW", "Loose black tea for receiving test.", "Tea Importers", "TEA-001", "raw", 500#)
+    items.Add BuildBootstrapDemoPayloadItem("DEMO-RAW-CARDAMOM", "Cardamom", "lbs", "CLEARVIEW", "Cardamom for receiving test.", "Spice House", "SPICE-001", "raw", 50#)
+    items.Add BuildBootstrapDemoPayloadItem("DEMO-FG-CLASSIC-CHAI", "Classic Chai Concentrate", "gal", "CLEARVIEW", "Finished good receiving test item.", "Internal", "FG-001", "shippable", 25#)
     Set BuildBootstrapDemoPayload = items
 End Function
 
-Private Function BuildBootstrapDemoPayloadItem(ByVal rowVal As Long, _
-                                               ByVal sku As String, _
+Private Function BuildBootstrapDemoPayloadItem(ByVal sku As String, _
                                                ByVal itemName As String, _
                                                ByVal uom As String, _
                                                ByVal locationVal As String, _
@@ -879,7 +879,8 @@ Private Function BuildBootstrapDemoPayloadItem(ByVal rowVal As Long, _
                                                ByVal qty As Double) As Object
     Dim item As Object
 
-    Set item = modRoleEventWriter.CreatePayloadItem(rowVal, sku, qty, locationVal, BOOTSTRAP_SEED_SOURCE_ID, "IMPORT")
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        modRoleEventWriter.CreateSystemKey(), sku, qty, locationVal, "GOOD", "", BOOTSTRAP_SEED_SOURCE_ID)
     item("Description") = description
     item("ITEM_CODE") = sku
     item("Item") = itemName

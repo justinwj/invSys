@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  151,
-                     "procedureCount":  4441,
-                     "lineCount":  98836,
+                     "componentCount":  152,
+                     "procedureCount":  4455,
+                     "lineCount":  99346,
                      "literalApplicationRunCount":  14,
                      "unresolvedApplicationRunCount":  59,
                      "duplicateBodyCandidateCount":  193
@@ -35,6 +35,23 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "AddInventoryQuantityForWarehouse"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.NormalizeAdminDemoInventoryRow",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "NormalizeAdminDemoInventoryRow"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -437,6 +454,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.FindInvSysRowBySku",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modOperatorReadModel",
+                           "procedureNames":  [
+                                                  "FindInvSysRowBySku"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperatorReadModel.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.ResolveSnapshotPathReadModel",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
@@ -616,6 +650,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modWarehouseRetire.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modWarehouseSync",
+                           "procedureNames":  [
+                                                  "AppendLocationSummariesSync"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modWarehouseSync.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -8718,6 +8769,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -8837,6 +8889,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -9890,6 +9943,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -11124,6 +11178,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -11569,6 +11624,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -12832,6 +12888,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/integration/test_CreateWarehouse.bas",
                                                    "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
@@ -13820,6 +13877,7 @@
                                                   "ExtractBatchMetricReadModel",
                                                   "FileExistsReadModel",
                                                   "FindInvSysRowBySku",
+                                                  "FindInvSysRowBySystemKeyReadModel",
                                                   "FindListObjectReadModel",
                                                   "FormatQuantityReadModel",
                                                   "FormatRuntimeTimingReadModel",
@@ -13829,7 +13887,6 @@
                                                   "HideWorkbookWindowsReadModel",
                                                   "InitializeAutoSnapshotForWorkbook",
                                                   "IsRefreshDueReadModel",
-                                                  "IsSnapshotRowIndexKeyReadModel",
                                                   "LogDiagnosticSafeReadModel",
                                                   "MarkReadModelState",
                                                   "MarkSegmentSafeReadModel",
@@ -13889,7 +13946,6 @@
                                                   "SeedInvSysRow",
                                                   "SetReadModelValue",
                                                   "ShouldAutoManageWorkbookReadModel",
-                                                  "SnapshotRowKeyReadModel",
                                                   "SyncDisplayAliases",
                                                   "UnregisterAutoSnapshotWorkbook",
                                                   "UpdateAutoRefreshConfigReadModel",
@@ -13966,6 +14022,7 @@
                                                   "PerfMarkSafeProcessor",
                                                   "ReactivateQuietOwnerSafeProcessor",
                                                   "RemoveBlankSeedRowProcessor",
+                                                  "RemoveExactListColumnProcessor",
                                                   "ResolveCurrentTargetRuntimeRootForWarehouseProcessor",
                                                   "ResolveCurrentTargetRuntimeRootProcessor",
                                                   "ResolveCurrentTargetWarehouseIdProcessor",
@@ -14023,7 +14080,9 @@
                                                   "ConnectWarehouseStorageForCapability",
                                                   "CreateEventIdRole",
                                                   "CreateGuidFallbackRole",
+                                                  "CreateInventoryEntityPayloadItem",
                                                   "CreatePayloadItem",
+                                                  "CreateSystemKey",
                                                   "CurrentInvSysUserDisplayRole",
                                                   "DescribeInboxPendingRows",
                                                   "DescribeLocalStagedInboxRows",
@@ -14066,6 +14125,7 @@
                                                   "MergeRowsIntoNasInboxRole",
                                                   "NormalizeFolderPathRole",
                                                   "NormalizeFolderRole",
+                                                  "NormalizeGuidRole",
                                                   "NormalizeVersionLabelRole",
                                                   "OpenInboxWorkbook",
                                                   "ParentFolderPathRole",
@@ -14082,6 +14142,7 @@
                                                   "QueueDesignEvent",
                                                   "QueueDesignEventCurrent",
                                                   "QueueEventCore",
+                                                  "QueueInventoryCreateEvent",
                                                   "QueueMigrationSeedEvent",
                                                   "QueuePayloadEvent",
                                                   "QueuePayloadEventCurrent",
@@ -14352,6 +14413,7 @@
                                                   "ReactivateQuietOwnerSafeSync",
                                                   "RecoverInterruptedPublishArtifactsSync",
                                                   "RemoveBlankSeedRowSync",
+                                                  "RemoveListColumnIfPresentSync",
                                                   "ResolveAppliedMeta",
                                                   "ResolveCatalogCellTextSync",
                                                   "ResolveNumberSync",
@@ -14480,6 +14542,7 @@
                                                   "HideWorkbookWindowsApply",
                                                   "InferWarehouseIdFromWorkbookNameApply",
                                                   "InventoryLogEventExistsApply",
+                                                  "InventorySystemKeyExistsApply",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
                                                   "IsWorkbookFileLockedApply",
@@ -14512,6 +14575,7 @@
                                                   "ResolvePrimaryLocationFromSummaryApply",
                                                   "ResolveWarehouseIdFromSnapshotIdApply",
                                                   "ResolveWarehouseIdFromSourceWorkbookApply",
+                                                  "RewriteEntityProjectionTable",
                                                   "RewriteLocationProjectionTable",
                                                   "RewriteSkuProjectionTable",
                                                   "SafeTrimApply",

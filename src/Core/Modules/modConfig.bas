@@ -1395,7 +1395,7 @@ Private Function InboxWorkbookNameConfig(ByVal eventType As String, ByVal statio
             InboxWorkbookNameConfig = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case "SHIP"
             InboxWorkbookNameConfig = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case "PROD_CONSUME", "PROD_COMPLETE", "MIGRATION_SEED"
+        Case "PROD_CONSUME", "PROD_COMPLETE", "MIGRATION_SEED", "INVENTORY_CREATE"
             InboxWorkbookNameConfig = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function

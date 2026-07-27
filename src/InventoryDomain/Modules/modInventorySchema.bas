@@ -9,6 +9,8 @@ Private Const SHEET_LOCKS As String = "Locks"
 Private Const TABLE_LOCKS As String = "tblLocks"
 Private Const SHEET_SKU_BALANCE As String = "SkuBalance"
 Private Const TABLE_SKU_BALANCE As String = "tblSkuBalance"
+Private Const SHEET_INVENTORY_ENTITIES As String = "InventoryEntities"
+Private Const TABLE_INVENTORY_ENTITIES As String = "tblInventoryEntities"
 Private Const SHEET_LOCATION_BALANCE As String = "LocationBalance"
 Private Const TABLE_LOCATION_BALANCE As String = "tblLocationBalance"
 Private Const SHEET_LEDGER_STATUS As String = "LedgerStatus"
@@ -37,7 +39,8 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
 
     EnsureTableWithHeaders wb, SHEET_INVENTORY_LOG, TABLE_INVENTORY_LOG, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
-              "WarehouseId", "StationId", "UserId", "MigrationSourceId", "SKU", "QtyDelta", "Location", "Note"), issues
+              "WarehouseId", "StationId", "UserId", "MigrationSourceId", "System_Key", "SKU", "QtyDelta", _
+              "Location", "Condition", "AttributesJson", "Note"), issues
 
     EnsureTableWithHeaders wb, SHEET_APPLIED_EVENTS, TABLE_APPLIED_EVENTS, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
@@ -45,18 +48,24 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
     EnsureTableWithHeaders wb, SHEET_LOCKS, TABLE_LOCKS, _
         Array("LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", "ExpiresAtUTC", "HeartbeatAtUTC", "Status"), issues
 
+    EnsureTableWithHeaders wb, SHEET_INVENTORY_ENTITIES, TABLE_INVENTORY_ENTITIES, _
+        Array("System_Key", "SKU", "QtyOnHand", "Location", "Condition", "InventoryState", _
+              "AttributesJson", "LastAppliedUTC"), issues
+
     EnsureTableWithHeaders wb, SHEET_SKU_BALANCE, TABLE_SKU_BALANCE, _
         Array("SKU", "QtyOnHand", "LastAppliedUTC"), issues
 
     EnsureTableWithHeaders wb, SHEET_LOCATION_BALANCE, TABLE_LOCATION_BALANCE, _
-        Array("SKU", "Location", "QtyOnHand", "LastAppliedUTC"), issues
+        Array("SKU", "Location", "Condition", "QtyOnHand", "LastAppliedUTC"), issues
 
     EnsureTableWithHeaders wb, SHEET_LEDGER_STATUS, TABLE_LEDGER_STATUS, _
         Array("WarehouseId", "LastAppliedSeq", "LastEventId", "LastAppliedAtUTC", "TotalEventRows", _
               "TotalAppliedEvents", "DistinctSkuCount", "DistinctLocationCount", "ProjectionRebuiltAtUTC", "Notes"), issues
 
     EnsureTableWithHeaders wb, SHEET_SKU_CATALOG, TABLE_SKU_CATALOG, _
-        Array("SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+
+    RemoveProhibitedRowHeaders wb, issues
 
     report = JoinCollection(issues, "; ")
     EnsureInventorySchema = True
@@ -66,6 +75,27 @@ FailEnsure:
     report = "EnsureInventorySchema failed: " & Err.Description
     EnsureInventorySchema = False
 End Function
+
+Private Sub RemoveProhibitedRowHeaders(ByVal wb As Workbook, ByRef issues As Collection)
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim columnIndex As Long
+
+    If wb Is Nothing Then Exit Sub
+    For Each ws In wb.Worksheets
+        EnsureWorksheetEditableSchema ws
+        For Each lo In ws.ListObjects
+            columnIndex = GetColumnIndex(lo, "ROW")
+            If columnIndex > 0 Then
+                lo.ListColumns(columnIndex).Delete
+                issues.Add lo.Name & ".ROW removed"
+            End If
+        Next lo
+        On Error Resume Next
+        ws.Protect UserInterfaceOnly:=True
+        On Error GoTo 0
+    Next ws
+End Sub
 
 Private Sub EnsureTableWithHeaders(ByVal wb As Workbook, _
                                    ByVal sheetName As String, _

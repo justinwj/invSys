@@ -466,13 +466,23 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
     Set issues = New Collection
     EnsureTableWithHeadersLocal wb, "InventoryLog", "tblInventoryLog", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
-              "WarehouseId", "StationId", "UserId", "SKU", "QtyDelta", "Location", "Note"), issues
+              "WarehouseId", "StationId", "UserId", "System_Key", "SKU", "QtyDelta", "Location", _
+              "Condition", "AttributesJson", "Note"), issues
     EnsureTableWithHeadersLocal wb, "AppliedEvents", "tblAppliedEvents", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
     EnsureTableWithHeadersLocal wb, "Locks", "tblLocks", _
         Array("LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", "ExpiresAtUTC", "HeartbeatAtUTC", "Status"), issues
+    EnsureTableWithHeadersLocal wb, "InventoryEntities", "tblInventoryEntities", _
+        Array("System_Key", "SKU", "QtyOnHand", "Location", "Condition", "InventoryState", _
+              "AttributesJson", "LastAppliedUTC"), issues
+    EnsureTableWithHeadersLocal wb, "SkuBalance", "tblSkuBalance", _
+        Array("SKU", "QtyOnHand", "LastAppliedUTC"), issues
+    EnsureTableWithHeadersLocal wb, "LocationBalance", "tblLocationBalance", _
+        Array("SKU", "Location", "Condition", "QtyOnHand", "LastAppliedUTC"), issues
     EnsureTableWithHeadersLocal wb, "SkuCatalog", "tblSkuCatalog", _
-        Array("SKU", "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+
+    RemoveProhibitedRowHeadersLocal wb, issues
 
     report = JoinIssuesLocal(issues)
     EnsureInventorySchemaLocal = True
@@ -481,6 +491,24 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
 FailEnsure:
     report = "EnsureInventorySchemaLocal failed: " & Err.Description
 End Function
+
+Private Sub RemoveProhibitedRowHeadersLocal(ByVal wb As Workbook, ByVal issues As Collection)
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim columnIndex As Long
+
+    If wb Is Nothing Then Exit Sub
+    For Each ws In wb.Worksheets
+        EnsureWorksheetEditableLocal ws
+        For Each lo In ws.ListObjects
+            columnIndex = GetColumnIndexLocal(lo, "ROW")
+            If columnIndex > 0 Then
+                lo.ListColumns(columnIndex).Delete
+                issues.Add lo.Name & ".ROW removed"
+            End If
+        Next lo
+    Next ws
+End Sub
 
 Private Sub EnsureTableWithHeadersLocal(ByVal wb As Workbook, ByVal sheetName As String, ByVal tableName As String, ByVal headers As Variant, ByVal issues As Collection)
     Dim ws As Worksheet

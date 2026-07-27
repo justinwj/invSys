@@ -63,6 +63,8 @@ Public Function TestCreateWarehouse_EndToEndLifecycle() As Long
     RecordCreateWarehouseCheck "LocalStructure.Exists", _
         AssertLocalStructureCreateWarehouse(spec, detail), detail
 
+    If Not RunD14CreateWarehouseChecks(spec) Then GoTo CleanExit
+
     RecordCreateWarehouseCheck "ConfigSeeded.Correctly", _
         AssertConfigSeededCreateWarehouse(spec, detail), detail
 
@@ -109,6 +111,401 @@ FailTest:
     RecordCreateWarehouseCheck "TestHarness.Exception", False, Err.Description
     mSummary = "Create warehouse lifecycle raised an unexpected exception."
     Resume CleanExit
+End Function
+
+Private Function RunD14CreateWarehouseChecks(ByRef spec As modWarehouseBootstrap.WarehouseSpec) As Boolean
+    Dim wbInventory As Workbook
+    Dim wbSnapshot As Workbook
+    Dim wbOperator As Workbook
+    Dim loEntities As ListObject
+    Dim loSnapshot As ListObject
+    Dim loOperator As ListObject
+    Dim inventoryKeys As Object
+    Dim snapshotKeys As Object
+    Dim operatorKeys As Object
+    Dim detail As String
+    Dim headersOk As Boolean
+    Dim rowsOk As Boolean
+    Dim roundTripOk As Boolean
+    Dim customOk As Boolean
+    Dim operatorPath As String
+
+    On Error GoTo FailCheck
+
+    operatorPath = modWarehouseBootstrap.GetLastWarehouseOperatorWorkbookPath()
+    Set wbInventory = Application.Workbooks.Open( _
+        spec.PathLocal & "\" & spec.WarehouseId & ".invSys.Data.Inventory.xlsb")
+    Set wbSnapshot = Application.Workbooks.Open( _
+        spec.PathLocal & "\" & spec.WarehouseId & ".invSys.Snapshot.Inventory.xlsb")
+    Set wbOperator = Application.Workbooks.Open(operatorPath)
+
+    Set loEntities = FindTableCreateWarehouse(wbInventory, "tblInventoryEntities")
+    Set loSnapshot = FindTableCreateWarehouse(wbSnapshot, "tblInventorySnapshot")
+    Set loOperator = FindTableCreateWarehouse(wbOperator, "invSys")
+
+    headersOk = Not loEntities Is Nothing And Not loSnapshot Is Nothing And Not loOperator Is Nothing
+    If Not headersOk Then
+        detail = "Missing table(s): entities=" & CStr(Not loEntities Is Nothing) & _
+                 "; snapshot=" & CStr(Not loSnapshot Is Nothing) & _
+                 "; operator=" & CStr(Not loOperator Is Nothing)
+    ElseIf Not TableHasHeadersCreateWarehouse(loEntities, _
+        Array("System_Key", "SKU", "QtyOnHand", "Location", "Condition")) Then
+        headersOk = False
+        detail = "tblInventoryEntities is missing a required managed header."
+    ElseIf Not TableHasHeadersCreateWarehouse(loSnapshot, _
+        Array("System_Key", "SKU", "QtyOnHand", "Location", "Condition")) Then
+        headersOk = False
+        detail = "tblInventorySnapshot is missing a required managed header."
+    ElseIf Not TableHasHeadersCreateWarehouse(loOperator, _
+        Array("System_Key", "SKU", "QtyOnHand", "Location", "Condition", _
+              "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")) Then
+        headersOk = False
+        detail = "operator invSys is missing a required managed header."
+    ElseIf Not WorkbookTablesExcludeHeaderCreateWarehouse(wbInventory, "ROW") Then
+        headersOk = False
+        detail = "Inventory workbook still contains ROW in " & _
+                 FirstTableWithHeaderCreateWarehouse(wbInventory, "ROW") & "."
+    ElseIf Not WorkbookTablesExcludeHeaderCreateWarehouse(wbSnapshot, "ROW") Then
+        headersOk = False
+        detail = "Snapshot workbook still contains a ROW table header."
+    ElseIf Not WorkbookTablesExcludeHeaderCreateWarehouse(wbOperator, "ROW") Then
+        headersOk = False
+        detail = "Operator workbook still contains a ROW table header."
+    Else
+        detail = "Inventory, snapshot, and operator tables contain required managed headers and no ROW header."
+    End If
+    RecordCreateWarehouseCheck "D14.GeneratedSchemas.ManagedHeadersNoROW", headersOk, detail
+    If Not headersOk Then GoTo CleanExit
+
+    Set inventoryKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
+    rowsOk = Not inventoryKeys Is Nothing
+    If rowsOk Then rowsOk = inventoryKeys.Count > 0
+    RecordCreateWarehouseCheck "D14.Seed.UniqueKeysConditionGood", rowsOk, detail
+    If Not rowsOk Then GoTo CleanExit
+
+    Set snapshotKeys = CollectEntityKeysCreateWarehouse(loSnapshot, True, detail)
+    Set operatorKeys = CollectEntityKeysCreateWarehouse(loOperator, True, detail)
+    roundTripOk = DictionariesHaveSameKeysCreateWarehouse(inventoryKeys, snapshotKeys) _
+                  And DictionariesHaveSameKeysCreateWarehouse(inventoryKeys, operatorKeys)
+    detail = "Inventory entity keys must survive processor application, snapshot publication, and operator refresh."
+    RecordCreateWarehouseCheck "D14.RoundTrip.PreservesSystemKey", roundTripOk, detail
+    If Not roundTripOk Then GoTo CleanExit
+
+    rowsOk = AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse( _
+        spec, wbInventory, loEntities, detail)
+    RecordCreateWarehouseCheck "D14.AdminSeed.RepeatedCreatesUniqueKeysNoMigration", rowsOk, detail
+    If Not rowsOk Then GoTo CleanExit
+
+    customOk = AssertOperatorCustomColumnSurvivesRefreshCreateWarehouse( _
+        wbOperator, loOperator, spec.WarehouseId, inventoryKeys, detail)
+    RecordCreateWarehouseCheck "D14.OperatorRefresh.PreservesCustomColumn", customOk, detail
+    If Not customOk Then GoTo CleanExit
+
+    CloseCreateWarehouseWorkbook wbOperator
+    Set wbOperator = Application.Workbooks.Open(operatorPath)
+    Set loOperator = FindTableCreateWarehouse(wbOperator, "invSys")
+    customOk = OperatorCustomValuePresentCreateWarehouse( _
+        loOperator, FirstDictionaryKeyCreateWarehouse(inventoryKeys), _
+        "Custom_Local_Note", "PRESERVE-ME")
+    detail = "Custom_Local_Note remained associated with its System_Key after save and reopen."
+    RecordCreateWarehouseCheck "D14.OperatorReopen.PreservesCustomColumn", customOk, detail
+    If Not customOk Then GoTo CleanExit
+
+    RunD14CreateWarehouseChecks = True
+
+CleanExit:
+    CloseCreateWarehouseWorkbook wbOperator
+    CloseCreateWarehouseWorkbook wbSnapshot
+    CloseCreateWarehouseWorkbook wbInventory
+    Exit Function
+
+FailCheck:
+    detail = Err.Description
+    RecordCreateWarehouseCheck "D14.TestHarness.Exception", False, detail
+    Resume CleanExit
+End Function
+
+Private Function AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse( _
+    ByRef spec As modWarehouseBootstrap.WarehouseSpec, _
+    ByVal wbInventory As Workbook, _
+    ByRef loEntities As ListObject, _
+    ByRef detail As String) As Boolean
+
+    Dim beforeKeys As Object
+    Dim firstKeys As Object
+    Dim secondKeys As Object
+    Dim seedReport As String
+
+    Set beforeKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
+    If beforeKeys Is Nothing Then Exit Function
+
+    If Not modAdminInventorySeed.SeedDemoInventoryForWarehouse( _
+        spec.WarehouseId, spec.StationId, spec.AdminUser, seedReport) Then
+        detail = seedReport
+        Exit Function
+    End If
+    Set loEntities = FindTableCreateWarehouse(wbInventory, "tblInventoryEntities")
+    Set firstKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
+    If firstKeys Is Nothing Then Exit Function
+    If firstKeys.Count <> beforeKeys.Count + 3 Then
+        detail = "First Admin seed expected three newly keyed entities; before=" & _
+                 CStr(beforeKeys.Count) & "; after=" & CStr(firstKeys.Count) & "."
+        Exit Function
+    End If
+
+    If Not modAdminInventorySeed.SeedDemoInventoryForWarehouse( _
+        spec.WarehouseId, spec.StationId, spec.AdminUser, seedReport) Then
+        detail = seedReport
+        Exit Function
+    End If
+    Set loEntities = FindTableCreateWarehouse(wbInventory, "tblInventoryEntities")
+    Set secondKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
+    If secondKeys Is Nothing Then Exit Function
+    If secondKeys.Count <> firstKeys.Count + 3 Then
+        detail = "Second Admin seed expected three newly keyed entities; first=" & _
+                 CStr(firstKeys.Count) & "; second=" & CStr(secondKeys.Count) & "."
+        Exit Function
+    End If
+    If InventoryLogContainsEventTypeCreateWarehouse(wbInventory, "MIGRATION_SEED") Then
+        detail = "Supported bootstrap/Admin seed path called legacy MIGRATION_SEED."
+        Exit Function
+    End If
+
+    detail = "Repeated Admin seed created six new collision-free System_Key values with Condition=GOOD and no migration event."
+    AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse = True
+End Function
+
+Private Function InventoryLogContainsEventTypeCreateWarehouse(ByVal wb As Workbook, _
+                                                              ByVal eventType As String) As Boolean
+    Dim lo As ListObject
+    Dim rowIndex As Long
+
+    Set lo = FindTableCreateWarehouse(wb, "tblInventoryLog")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    For rowIndex = 1 To lo.ListRows.Count
+        If StrComp(Trim$(CStr(GetCreateWarehouseTableValue( _
+            lo, rowIndex, "EventType"))), eventType, vbTextCompare) = 0 Then
+            InventoryLogContainsEventTypeCreateWarehouse = True
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function FirstTableWithHeaderCreateWarehouse(ByVal wb As Workbook, _
+                                                     ByVal headerName As String) As String
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        For Each lo In ws.ListObjects
+            If TableColumnIndexCreateWarehouse(lo, headerName) > 0 Then
+                FirstTableWithHeaderCreateWarehouse = ws.Name & "!" & lo.Name
+                Exit Function
+            End If
+        Next lo
+    Next ws
+End Function
+
+Private Function FindTableCreateWarehouse(ByVal wb As Workbook, _
+                                          ByVal tableName As String) As ListObject
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
+    On Error Resume Next
+    For Each ws In wb.Worksheets
+        Set FindTableCreateWarehouse = ws.ListObjects(tableName)
+        If Not FindTableCreateWarehouse Is Nothing Then Exit Function
+    Next ws
+    On Error GoTo 0
+End Function
+
+Private Function TableHasHeadersCreateWarehouse(ByVal lo As ListObject, _
+                                                ByVal requiredHeaders As Variant) As Boolean
+    Dim header As Variant
+
+    If lo Is Nothing Then Exit Function
+    For Each header In requiredHeaders
+        If TableColumnIndexCreateWarehouse(lo, CStr(header)) = 0 Then Exit Function
+    Next header
+    TableHasHeadersCreateWarehouse = True
+End Function
+
+Private Function WorkbookTablesExcludeHeaderCreateWarehouse(ByVal wb As Workbook, _
+                                                            ByVal prohibitedHeader As String) As Boolean
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    If wb Is Nothing Then Exit Function
+    WorkbookTablesExcludeHeaderCreateWarehouse = True
+    For Each ws In wb.Worksheets
+        For Each lo In ws.ListObjects
+            If TableColumnIndexCreateWarehouse(lo, prohibitedHeader) > 0 Then
+                WorkbookTablesExcludeHeaderCreateWarehouse = False
+                Exit Function
+            End If
+        Next lo
+    Next ws
+End Function
+
+Private Function CollectEntityKeysCreateWarehouse(ByVal lo As ListObject, _
+                                                  ByVal requireGoodCondition As Boolean, _
+                                                  ByRef detail As String) As Object
+    Dim keys As Object
+    Dim rowIndex As Long
+    Dim systemKey As String
+    Dim conditionValue As String
+
+    If lo Is Nothing Then
+        detail = "Required entity table was not found."
+        Exit Function
+    End If
+    If lo.DataBodyRange Is Nothing Then
+        detail = lo.Name & " contained no seeded entity rows."
+        Exit Function
+    End If
+
+    Set keys = CreateObject("Scripting.Dictionary")
+    keys.CompareMode = vbTextCompare
+    For rowIndex = 1 To lo.ListRows.Count
+        systemKey = Trim$(CStr(GetCreateWarehouseTableValue(lo, rowIndex, "System_Key")))
+        If systemKey = "" Then
+            detail = lo.Name & " row " & CStr(rowIndex) & " has a blank System_Key."
+            Exit Function
+        End If
+        If keys.Exists(systemKey) Then
+            detail = lo.Name & " contains duplicate System_Key " & systemKey & "."
+            Exit Function
+        End If
+        If requireGoodCondition Then
+            conditionValue = UCase$(Trim$(CStr(GetCreateWarehouseTableValue(lo, rowIndex, "Condition"))))
+            If conditionValue <> "GOOD" Then
+                detail = lo.Name & " row " & CStr(rowIndex) & " Condition was not GOOD."
+                Exit Function
+            End If
+        End If
+        keys.Add systemKey, True
+    Next rowIndex
+
+    detail = lo.Name & " contains " & CStr(keys.Count) & " unique nonblank System_Key values with Condition=GOOD."
+    Set CollectEntityKeysCreateWarehouse = keys
+End Function
+
+Private Function DictionariesHaveSameKeysCreateWarehouse(ByVal expectedKeys As Object, _
+                                                         ByVal actualKeys As Object) As Boolean
+    Dim key As Variant
+
+    If expectedKeys Is Nothing Or actualKeys Is Nothing Then Exit Function
+    If expectedKeys.Count <> actualKeys.Count Then Exit Function
+    For Each key In expectedKeys.Keys
+        If Not actualKeys.Exists(CStr(key)) Then Exit Function
+    Next key
+    DictionariesHaveSameKeysCreateWarehouse = True
+End Function
+
+Private Function AssertOperatorCustomColumnSurvivesRefreshCreateWarehouse( _
+    ByVal wbOperator As Workbook, _
+    ByVal loOperator As ListObject, _
+    ByVal warehouseId As String, _
+    ByVal inventoryKeys As Object, _
+    ByRef detail As String) As Boolean
+
+    Dim systemKey As String
+    Dim rowIndex As Long
+    Dim refreshReport As String
+
+    If wbOperator Is Nothing Or loOperator Is Nothing Then Exit Function
+    If inventoryKeys Is Nothing Or inventoryKeys.Count = 0 Then Exit Function
+
+    systemKey = FirstDictionaryKeyCreateWarehouse(inventoryKeys)
+    If TableColumnIndexCreateWarehouse(loOperator, "Custom_Local_Note") = 0 Then
+        loOperator.ListColumns.Add loOperator.ListColumns.Count + 1
+        loOperator.ListColumns(loOperator.ListColumns.Count).Name = "Custom_Local_Note"
+    End If
+    rowIndex = FindTableRowCreateWarehouse(loOperator, "System_Key", systemKey)
+    If rowIndex = 0 Then
+        detail = "System_Key was not found in operator table before custom-column refresh."
+        Exit Function
+    End If
+    loOperator.DataBodyRange.Cells( _
+        rowIndex, TableColumnIndexCreateWarehouse(loOperator, "Custom_Local_Note")).Value = "PRESERVE-ME"
+
+    modRuntimeWorkbooks.SetCoreDataRootOverride mLocalRoot
+    If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook( _
+        wbOperator, warehouseId, "LOCAL", refreshReport) Then
+        detail = refreshReport
+        Exit Function
+    End If
+
+    Set loOperator = FindTableCreateWarehouse(wbOperator, "invSys")
+    AssertOperatorCustomColumnSurvivesRefreshCreateWarehouse = _
+        OperatorCustomValuePresentCreateWarehouse( _
+            loOperator, systemKey, "Custom_Local_Note", "PRESERVE-ME")
+    If AssertOperatorCustomColumnSurvivesRefreshCreateWarehouse Then
+        wbOperator.Save
+        detail = "Custom_Local_Note survived refresh for System_Key " & systemKey & "."
+    Else
+        detail = "Custom_Local_Note was lost or moved to a different System_Key during refresh."
+    End If
+End Function
+
+Private Function FirstDictionaryKeyCreateWarehouse(ByVal values As Object) As String
+    Dim keys As Variant
+
+    If values Is Nothing Then Exit Function
+    If values.Count = 0 Then Exit Function
+    keys = values.Keys
+    FirstDictionaryKeyCreateWarehouse = CStr(keys(LBound(keys)))
+End Function
+
+Private Function OperatorCustomValuePresentCreateWarehouse( _
+    ByVal lo As ListObject, _
+    ByVal systemKey As String, _
+    ByVal columnName As String, _
+    ByVal expectedValue As String) As Boolean
+
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    columnIndex = TableColumnIndexCreateWarehouse(lo, columnName)
+    If columnIndex = 0 Then Exit Function
+    rowIndex = FindTableRowCreateWarehouse(lo, "System_Key", systemKey)
+    If rowIndex = 0 Then Exit Function
+    OperatorCustomValuePresentCreateWarehouse = _
+        (StrComp(Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, columnIndex).Value)), _
+                 expectedValue, vbBinaryCompare) = 0)
+End Function
+
+Private Function FindTableRowCreateWarehouse(ByVal lo As ListObject, _
+                                             ByVal columnName As String, _
+                                             ByVal matchValue As String) As Long
+    Dim columnIndex As Long
+    Dim rowIndex As Long
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    columnIndex = TableColumnIndexCreateWarehouse(lo, columnName)
+    If columnIndex = 0 Then Exit Function
+    For rowIndex = 1 To lo.ListRows.Count
+        If StrComp(Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, columnIndex).Value)), _
+                   matchValue, vbTextCompare) = 0 Then
+            FindTableRowCreateWarehouse = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function TableColumnIndexCreateWarehouse(ByVal lo As ListObject, _
+                                                 ByVal columnName As String) As Long
+    Dim columnIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    For columnIndex = 1 To lo.ListColumns.Count
+        If StrComp(Trim$(lo.ListColumns(columnIndex).Name), Trim$(columnName), vbTextCompare) = 0 Then
+            TableColumnIndexCreateWarehouse = columnIndex
+            Exit Function
+        End If
+    Next columnIndex
 End Function
 
 Public Function GetCreateWarehouseContextPacked() As String

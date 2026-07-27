@@ -20,11 +20,11 @@ Public Function EnsureReceivingWorkbookSurface(Optional ByVal targetWb As Workbo
     Dim wb As Workbook
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
-    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "ROW"), True, "C3"
-    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW"), False, "J3"
+    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key"), True, "C3"
+    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key"), False, "J3"
     EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "V3"
     EnsureInventoryManagementSurface wb
-    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW"), False
+    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key"), False
     ArrangeReceivingTablesSurface wb
     EnsureReceivingButtonsSurface wb
     FormatWorkbookSurface wb
@@ -61,17 +61,17 @@ Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workboo
     MoveTableToSheetSurface wb, "AggregateBoxBOM_Log", SHIPPING_BACKEND_SHEET
     MoveTableToSheetSurface wb, "AggregatePackages_Log", SHIPPING_BACKEND_SHEET
 
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "ShipmentsTally", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "ROW", "UOM", "LOCATION", "DESCRIPTION", "AREA", "CARRIER"), True
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "NotShipped", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "ROW", "UOM", "LOCATION", "DESCRIPTION", "AREA", "CARRIER"), False
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregateBoxBOM", Array("ROW", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION"), False
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregatePackages", Array("ROW", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION"), False
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "ShipmentsTally", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "UOM", "LOCATION", "DESCRIPTION", "AREA", "CARRIER"), True
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "NotShipped", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "UOM", "LOCATION", "DESCRIPTION", "AREA", "CARRIER"), False
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregateBoxBOM", Array("System_Key", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION"), False
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregatePackages", Array("System_Key", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION"), False
     EnsureTableSurface wb, "ShipmentsTally", "BoxBuilder", Array("Box Name", "UOM", "LOCATION", "DESCRIPTION"), True
-    EnsureTableSurface wb, "ShipmentsTally", "BoxBOM", Array("ITEM", "ROW", "QUANTITY", "UOM", "LOCATION", "DESCRIPTION"), True
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "Check_invSys", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "USED", "MADE", "SHIPMENTS", "TOTAL INV"), False
+    EnsureTableSurface wb, "ShipmentsTally", "BoxBOM", Array("ITEM", "System_Key", "QUANTITY", "UOM", "LOCATION", "DESCRIPTION"), True
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "Check_invSys", Array("System_Key", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "USED", "MADE", "SHIPMENTS", "TOTAL INV"), False
     EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "invSysData_Shipping", InventoryManagementHeadersSurface(), False
     EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "ShippingBOMView", ShippingBomViewHeadersSurface(), False
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregateBoxBOM_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
-    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregatePackages_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregateBoxBOM_Log", Array("GUID", "USER", "ACTION", "System_Key", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
+    EnsureTableSurface wb, SHIPPING_BACKEND_SHEET, "AggregatePackages_Log", Array("GUID", "USER", "ACTION", "System_Key", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP"), False
     ArrangeShippingBackendTablesSurface wb
     ClearClipboardSurface
     EnsureInventoryManagementSurface wb, report, False
@@ -105,16 +105,16 @@ Public Function EnsureProductionWorkbookSurface(Optional ByVal targetWb As Workb
     EnsureTableSurface wb, "Production", "RecipeBuilder", Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "OOO", "INSTRUCTION", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID"), True
     EnsureTableSurface wb, "Production", "IP_ChooseRecipe", Array("RECIPE_NAME", "DESCRIPTION", "GUID", "RECIPE_ID"), True
     EnsureTableSurface wb, "Production", "IP_ChooseIngredient", Array("INGREDIENT", "UOM", "QUANTITY", "DESCRIPTION", "GUID", "RECIPE_ID", "INGREDIENT_ID", "PROCESS"), True
-    EnsureTableSurface wb, "Production", "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "ROW", "ITEM_CODE", "RECIPE_ID", "INGREDIENT_ID"), True
+    EnsureTableSurface wb, "Production", "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "System_Key", "ITEM_CODE", "RECIPE_ID", "INGREDIENT_ID"), True
     EnsureTableSurface wb, "Production", "RC_RecipeChoose", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "DEPARTMENT", "PROCESS"), True
     EnsureTableSurface wb, "Production", "RecipeChooser_generated", Array("PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT NEEDED", "INGREDIENT_ID", "RECIPE_LIST_ROW"), False
-    EnsureTableSurface wb, "Production", "InventoryPalette_generated", Array("INGREDIENT", "INGREDIENT_ID", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "PERCENT", "SPLIT %", "UOM", "QUANTITY", "BASE QUANTITY", "PROCESS", "LOCATION", "ROW", "INPUT/OUTPUT"), False
-    EnsureTableSurface wb, "Production", "ProductionOutput", Array("PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "ROW", "ITEM_CODE"), False
-    EnsureTableSurface wb, "Production", "Prod_invSys_Check", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "USED", "TOTAL INV"), False
+    EnsureTableSurface wb, "Production", "InventoryPalette_generated", Array("INGREDIENT", "INGREDIENT_ID", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "PERCENT", "SPLIT %", "UOM", "QUANTITY", "BASE QUANTITY", "PROCESS", "LOCATION", "System_Key", "INPUT/OUTPUT"), False
+    EnsureTableSurface wb, "Production", "ProductionOutput", Array("PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "System_Key", "ITEM_CODE"), False
+    EnsureTableSurface wb, "Production", "Prod_invSys_Check", Array("System_Key", "ITEM_CODE", "ITEM", "UOM", "USED", "TOTAL INV"), False
     EnsureTableSurface wb, "Recipes", "Recipes", Array("RECIPE", "RECIPE_ID", "DESCRIPTION", "ROW_BUDGET", "DEPARTMENT", "PROCESS", "DIAGRAM_ID", "INPUT/OUTPUT", "INGREDIENT", "PERCENT", "UOM", "AMOUNT", "RECIPE_LIST_ROW", "INGREDIENT_ID", "GUID"), False
-    EnsureTableSurface wb, ResolveIngredientPaletteSheetSurface(wb), "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "ITEM_CODE", "GUID"), False
+    EnsureTableSurface wb, ResolveIngredientPaletteSheetSurface(wb), "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "System_Key", "ITEM_CODE", "GUID"), False
     EnsureTableSurface wb, "TemplatesTable", "TemplatesTable", Array("TEMPLATE_SCOPE", "RECIPE_ID", "INGREDIENT_ID", "PROCESS", "TARGET_TABLE", "TARGET_COLUMN", "FORMULA", "GUID", "NOTES", "ACTIVE", "CREATED_AT", "UPDATED_AT"), False
-    EnsureTableSurface wb, "ProductionLog", "ProductionLog", Array("TIMESTAMP", "USER", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID"), False
+    EnsureTableSurface wb, "ProductionLog", "ProductionLog", Array("TIMESTAMP", "USER", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID"), False
     EnsureTableSurface wb, "BatchCodesLog", "BatchCodesLog", Array("RECIPE", "RECIPE_ID", "PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "TIMESTAMP", "LOCATION", "USER", "GUID"), False
     FormatProductionRecipeIdColumnsSurface wb
     EnsureInventoryManagementSurface wb
@@ -200,9 +200,9 @@ End Function
 
 Private Function InventoryManagementHeadersSurface() As Variant
     InventoryManagementHeadersSurface = Array( _
-        "ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
+        "System_Key", "SKU", "ITEM_CODE", "ItemName", "ITEM", "UOM", "LOCATION", "Condition", "InventoryState", "AttributesJson", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
         "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "LAST EDITED", "TOTAL INV LAST EDIT", _
-        "QtyAvailable", "LocationSummary", "LastRefreshUTC", _
+        "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedUTC", "LastRefreshUTC", _
         "SnapshotId", "SourceType", "IsStale")
 End Function
 
@@ -244,7 +244,7 @@ Private Sub ApplyInventoryManagementPresentationSurface(ByVal wb As Workbook)
     visibleCols = Array("ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "CATEGORY", _
                         "RECEIVED", "USED", "MADE", "SHIPMENTS", "TOTAL INV", "QtyAvailable", "LocationSummary", "LAST EDITED", _
                         "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")
-    hiddenCols = Array("ROW", "VENDOR_CODE", "TOTAL INV LAST EDIT")
+    hiddenCols = Array("System_Key", "VENDOR_CODE", "TOTAL INV LAST EDIT")
 
     For Each key In visibleCols
         SetTableColumnHiddenSurface lo, CStr(key), False
@@ -386,6 +386,7 @@ Private Sub EnsureTableSurface(ByVal wb As Workbook, _
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnSurface lo, CStr(headers(i))
     Next i
+    DeleteListColumnIfPresentSurface lo, "ROW"
     PruneInventoryAliasColumnsSurface lo
     RemoveAutogeneratedColumnsSurface lo
 
@@ -494,15 +495,32 @@ Private Sub ArrangeShippingBackendTablesSurface(ByVal wb As Workbook)
     ws.Visible = xlSheetVisible
 
     MoveTableTopLeftSurface ws, "ShipmentsTally", "A1"
-    MoveTableTopLeftSurface ws, "NotShipped", "M1"
-    MoveTableTopLeftSurface ws, "AggregateBoxBOM", "Y1"
-    MoveTableTopLeftSurface ws, "AggregatePackages", "AF1"
-    MoveTableTopLeftSurface ws, "Check_invSys", "AM1"
-    MoveTableTopLeftSurface ws, "invSysData_Shipping", "AW1"
-    MoveTableTopLeftSurface ws, "ShippingBOMView", "BT1"
-    MoveTableTopLeftSurface ws, "AggregateBoxBOM_Log", "CO1"
-    MoveTableTopLeftSurface ws, "AggregatePackages_Log", "CY1"
+    MoveTableAfterSurface ws, "NotShipped", "ShipmentsTally"
+    MoveTableAfterSurface ws, "AggregateBoxBOM", "NotShipped"
+    MoveTableAfterSurface ws, "AggregatePackages", "AggregateBoxBOM"
+    MoveTableAfterSurface ws, "Check_invSys", "AggregatePackages"
+    MoveTableAfterSurface ws, "invSysData_Shipping", "Check_invSys"
+    MoveTableAfterSurface ws, "ShippingBOMView", "invSysData_Shipping"
+    MoveTableAfterSurface ws, "AggregateBoxBOM_Log", "ShippingBOMView"
+    MoveTableAfterSurface ws, "AggregatePackages_Log", "AggregateBoxBOM_Log"
     ClearClipboardSurface
+End Sub
+
+Private Sub MoveTableAfterSurface(ByVal ws As Worksheet, _
+                                  ByVal tableName As String, _
+                                  ByVal previousTableName As String)
+    Dim previousTable As ListObject
+    Dim targetCell As Range
+
+    If ws Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set previousTable = ws.ListObjects(previousTableName)
+    On Error GoTo 0
+    If previousTable Is Nothing Then Exit Sub
+
+    Set targetCell = ws.Cells(1, _
+        previousTable.Range.Column + previousTable.Range.Columns.Count + 1)
+    MoveTableTopLeftSurface ws, tableName, targetCell.Address(False, False)
 End Sub
 
 Private Sub HideWorksheetSurface(ByVal wb As Workbook, ByVal sheetName As String)
@@ -596,10 +614,6 @@ Private Sub PruneInventoryAliasColumnsSurface(ByVal lo As ListObject)
 
     Select Case LCase$(Trim$(lo.Name))
         Case "invsys", "invsysdata_receiving", "invsysdata_shipping"
-            DeleteListColumnIfPresentSurface lo, "SKU"
-            DeleteListColumnIfPresentSurface lo, "ItemName"
-            DeleteListColumnIfPresentSurface lo, "QtyOnHand"
-            DeleteListColumnIfPresentSurface lo, "LastAppliedUTC"
             DeleteListColumnIfPresentSurface lo, "TIMESTAMP"
     End Select
 End Sub

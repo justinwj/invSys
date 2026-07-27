@@ -161,7 +161,7 @@ Sub Seed_DemoInventory()
         Exit Sub
     End If
 
-    If SeedDemoInventoryForWarehouse(warehouseId, stationId, userId, report) Then
+    If modAdminInventorySeed.SeedDemoInventoryForWarehouse(warehouseId, stationId, userId, report) Then
         MsgBox report, vbInformation, "invSys Admin"
     Else
         MsgBox report, vbExclamation, "invSys Admin"
@@ -1298,9 +1298,9 @@ Private Function SeedDemoInventoryForWarehouse(ByVal warehouseId As String, _
         Exit Function
     End If
 
-    If Not modRoleEventWriter.QueueMigrationSeedEvent(warehouseId, stationId, userId, payloadJson, _
-                                                      "ADMIN_DEMO_INVENTORY", "Admin demo inventory seed", _
-                                                      0, Nothing, eventIdOut, queueError, "") Then
+    If Not modRoleEventWriter.QueueInventoryCreateEvent(warehouseId, stationId, userId, payloadJson, _
+                                                        "Admin demo inventory seed", _
+                                                        0, Nothing, eventIdOut, queueError, "") Then
         report = "Seed event could not be queued: " & queueError & vbCrLf & _
                  "Use Users & Roles to grant ADMIN_MAINT to '" & userId & "' for " & warehouseId & " / " & stationId & "."
         Exit Function
@@ -1377,7 +1377,9 @@ Private Function BuildAdminDemoInventoryFallbackPayload() As Collection
 
     Set rows = New Collection
 
-    Set item = modRoleEventWriter.CreatePayloadItem(9001, "DEMO-RAW-BLACK-TEA", ADMIN_DEMO_INVENTORY_QTY, "NAS-A1", "Admin demo seed", "IMPORT")
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        modRoleEventWriter.CreateSystemKey(), "DEMO-RAW-BLACK-TEA", ADMIN_DEMO_INVENTORY_QTY, _
+        "NAS-A1", "GOOD", "", "Admin demo seed")
     item("ITEM_CODE") = "DEMO-RAW-BLACK-TEA"
     item("ITEM") = "Black Tea Base"
     item("UOM") = "LB"
@@ -1388,7 +1390,9 @@ Private Function BuildAdminDemoInventoryFallbackPayload() As Collection
     item("CATEGORY") = "Raw Material"
     rows.Add item
 
-    Set item = modRoleEventWriter.CreatePayloadItem(9003, "DEMO-SPICE-CARDAMOM", ADMIN_DEMO_INVENTORY_QTY, "NAS-A2", "Admin demo seed", "IMPORT")
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        modRoleEventWriter.CreateSystemKey(), "DEMO-SPICE-CARDAMOM", ADMIN_DEMO_INVENTORY_QTY, _
+        "NAS-A2", "GOOD", "", "Admin demo seed")
     item("ITEM_CODE") = "DEMO-SPICE-CARDAMOM"
     item("ITEM") = "Cardamom Pods"
     item("UOM") = "LB"
@@ -1399,7 +1403,9 @@ Private Function BuildAdminDemoInventoryFallbackPayload() As Collection
     item("CATEGORY") = "Spice"
     rows.Add item
 
-    Set item = modRoleEventWriter.CreatePayloadItem(9021, "DEMO-PKG-TIN", ADMIN_DEMO_INVENTORY_QTY, "NAS-P1", "Admin demo seed", "IMPORT")
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        modRoleEventWriter.CreateSystemKey(), "DEMO-PKG-TIN", ADMIN_DEMO_INVENTORY_QTY, _
+        "NAS-P1", "GOOD", "", "Admin demo seed")
     item("ITEM_CODE") = "DEMO-PKG-TIN"
     item("ITEM") = "Retail Tea Tin"
     item("UOM") = "EA"
@@ -1424,7 +1430,6 @@ Private Function BuildAdminDemoInventoryPayloadFromCsv(ByVal csvPath As String) 
     Dim rows As Collection
     Dim lineText As String
     Dim item As Object
-    Dim rowVal As Long
     Dim sku As String
     Dim itemName As String
     Dim uom As String
@@ -1452,15 +1457,15 @@ Private Function BuildAdminDemoInventoryPayloadFromCsv(ByVal csvPath As String) 
         If sku = "" And itemName = "" Then GoTo NextLine
         If sku = "" Then sku = itemName
 
-        rowVal = CLng(Val(CsvFieldAdmin(fields, headers, "ROW")))
-        rowVal = NormalizeAdminDemoInventoryRow(rowVal, sku, rows.Count + 1)
         uom = CsvFieldAdmin(fields, headers, "UOM")
         location = CsvFieldAdmin(fields, headers, "LOCATION")
         category = CsvFieldAdmin(fields, headers, "CATEGORY")
         qty = Val(CsvFieldAdmin(fields, headers, "QUANTITY"))
         If qty <= 0 Then qty = ResolveDemoSeedQuantityAdmin(category, CsvFieldAdmin(fields, headers, "PHASE"), uom)
 
-        Set item = modRoleEventWriter.CreatePayloadItem(rowVal, sku, qty, location, "Admin CSV demo inventory seed", "IMPORT")
+        Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+            modRoleEventWriter.CreateSystemKey(), sku, qty, location, "GOOD", "", _
+            "Admin CSV demo inventory seed")
         item("ITEM_CODE") = sku
         item("ITEM") = itemName
         item("UOM") = uom

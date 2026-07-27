@@ -2039,7 +2039,7 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_AddsRowsWhenInvSysStar
     If loInv.ListRows.Count = 1 _
        And StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), "SKU-RM-EMPTY", vbTextCompare) = 0 _
        And StrComp(CStr(GetTableValue(loInv, 1, "ITEM")), "SKU-RM-EMPTY", vbTextCompare) = 0 _
-       And CLng(GetTableValue(loInv, 1, "ROW")) = 1 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "System_Key")), "SYS-SKU-RM-EMPTY", vbTextCompare) = 0 _
        And CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 11 _
        And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 11 _
        And CBool(GetTableValue(loInv, 1, "IsStale")) = False _
@@ -2078,7 +2078,7 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_MatchesLocalRowWhenSku
     AddInvSysSeedRow loInv, 89, "T28", "T28", "ea", "CLEARVIEW", 0
 
     Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH68R", "T27", 18, CDate("2026-06-24 20:45:00"), _
-                                        18, "CLEARVIEW=18", "T28", "ea", "CLEARVIEW", "", "", "", "", "89")
+                                        18, "CLEARVIEW=18", "T28", "ea", "CLEARVIEW", "", "", "", "", "SYS-T28")
     If wbSnap Is Nothing Then GoTo CleanExit
 
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68R", "LOCAL", report) Then GoTo CleanExit
@@ -2086,7 +2086,7 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_MatchesLocalRowWhenSku
     If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 18 _
        And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 18 _
        And StrComp(CStr(GetTableValue(loInv, 1, "ITEM")), "T28", vbTextCompare) = 0 _
-       And StrComp(CStr(GetTableValue(loInv, 1, "ROW")), "89", vbTextCompare) = 0 Then
+       And StrComp(CStr(GetTableValue(loInv, 1, "System_Key")), "SYS-T28", vbTextCompare) = 0 Then
         TestRefreshInventoryReadModelFromSnapshot_MatchesLocalRowWhenSkuAliasDiffers = 1
     End If
 
@@ -2121,7 +2121,7 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadata
     If Not loInv.DataBodyRange Is Nothing Then GoTo CleanExit
 
     Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH68D", "SKU-RM-CAT", 0, CDate("2026-03-24 18:45:00"), _
-                                        0, "", "Catalog Item", "CS", "R9", "Catalog Desc", "Vendor C", "VC-9", "raw", "4321")
+                                        0, "", "Catalog Item", "CS", "R9", "Catalog Desc", "Vendor C", "VC-9", "raw", "SYS-SKU-RM-CAT")
     If wbSnap Is Nothing Then GoTo CleanExit
 
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH68D", "LOCAL", report) Then GoTo CleanExit
@@ -2135,7 +2135,7 @@ Public Function TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadata
        And StrComp(CStr(GetTableValue(loInv, 1, "VENDOR(s)")), "Vendor C", vbTextCompare) = 0 _
        And StrComp(CStr(GetTableValue(loInv, 1, "VENDOR_CODE")), "VC-9", vbTextCompare) = 0 _
        And StrComp(CStr(GetTableValue(loInv, 1, "CATEGORY")), "raw", vbTextCompare) = 0 _
-       And StrComp(CStr(GetTableValue(loInv, 1, "ROW")), "4321", vbTextCompare) = 0 _
+       And StrComp(CStr(GetTableValue(loInv, 1, "System_Key")), "SYS-SKU-RM-CAT", vbTextCompare) = 0 _
        And CDbl(GetTableValue(loInv, 1, "TOTAL INV")) = 0 _
        And CDbl(GetTableValue(loInv, 1, "QtyAvailable")) = 0 Then
         TestRefreshInventoryReadModelFromSnapshot_AppliesCatalogMetadataForZeroQtyRows = 1
@@ -2435,6 +2435,7 @@ Public Function TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRe
     Dim report As String
     Dim failureReason As String
     Dim eventIdOut As String
+    Dim systemKeyOut As String
     Dim processedCount As Long
     Dim loInv As ListObject
     Dim loRecv As ListObject
@@ -2503,12 +2504,16 @@ Public Function TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRe
         GoTo CleanExit
     End If
 
-    If Not modRoleEventWriter.QueueReceiveEvent("WH70", "S10", currentUser, "SKU-RM-QUEUE", 4, "A1", "stale-queue", "", "", Now, wbInbox, eventIdOut, report) Then
+    If Not modRoleEventWriter.QueueReceiveEvent("WH70", "S10", currentUser, "SKU-RM-QUEUE", 4, "A1", "stale-queue", "", "", Now, wbInbox, eventIdOut, report, "", systemKeyOut) Then
         failureReason = "QueueReceiveEvent failed while invSys was stale: " & report
         GoTo CleanExit
     End If
     If Trim$(eventIdOut) = "" Then
         failureReason = "QueueReceiveEvent did not return an EventID."
+        GoTo CleanExit
+    End If
+    If Trim$(systemKeyOut) = "" Then
+        failureReason = "QueueReceiveEvent did not return the creation-time System_Key."
         GoTo CleanExit
     End If
     If Not AssertInboxRowStatusForTest(wbInbox, eventIdOut, "NEW") Then
@@ -2537,6 +2542,10 @@ Public Function TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRe
         failureReason = "Canonical inventory log did not record the stale-workbook event."
         GoTo CleanExit
     End If
+    If StrComp(CStr(GetTableValue(loInventoryLog, logRow, "System_Key")), systemKeyOut, vbBinaryCompare) <> 0 Then
+        failureReason = "Canonical inventory log did not preserve the queued System_Key."
+        GoTo CleanExit
+    End If
 
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOps, "WH70", "LOCAL", report) Then
         failureReason = "RefreshInventoryReadModelForWorkbook failed after processor catch-up: " & report
@@ -2549,9 +2558,9 @@ Public Function TestSavedReceivingWorkbook_MissingSnapshotDoesNotBlockQueueAndRe
         failureReason = "Saved workbook tables were missing after processor catch-up refresh."
         GoTo CleanExit
     End If
-    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-QUEUE")
+    invRow = FindRowByColumnValueInTable(loInv, "System_Key", systemKeyOut)
     If invRow = 0 Then
-        failureReason = "invSys did not refresh the queued SKU after processor catch-up."
+        failureReason = "invSys did not refresh the queued System_Key after processor catch-up."
         GoTo CleanExit
     End If
     If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 4 Then
@@ -2601,6 +2610,8 @@ Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonica
     Dim failureReason As String
     Dim processedCount As Long
     Dim eventIdOut As String
+    Dim systemKeyOut As String
+    Dim seedSystemKey As String
     Dim wbOps As Workbook
     Dim wbInv As Workbook
     Dim wbInbox As Workbook
@@ -2614,6 +2625,7 @@ Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonica
     Dim logRow As Long
 
     rootPath = BuildRuntimeTestRoot("phase6_full_reopen_runtime")
+    seedSystemKey = "SYS-EVT-RESTART-001"
 
     On Error GoTo CleanFail
     modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
@@ -2736,9 +2748,9 @@ Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonica
         failureReason = "ReceivedTally REF_NUMBER was not preserved across full runtime close/reopen."
         GoTo CleanExit
     End If
-    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-RESTART")
+    invRow = FindRowByColumnValueInTable(loInv, "System_Key", seedSystemKey)
     If invRow = 0 Then
-        failureReason = "invSys did not refresh the canonical SKU after runtime reload."
+        failureReason = "invSys did not refresh the canonical System_Key after runtime reload."
         GoTo CleanExit
     End If
     If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 9 Then
@@ -2764,12 +2776,16 @@ Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonica
         GoTo CleanExit
     End If
 
-    If Not modRoleEventWriter.QueueReceiveEvent("WH78", "S18", currentUser, "SKU-RM-RESTART", 4, "A1", "restart-post", "", "", Now, wbInbox, eventIdOut, report) Then
+    If Not modRoleEventWriter.QueueReceiveEvent("WH78", "S18", currentUser, "SKU-RM-RESTART", 4, "A1", "restart-post", "", "", Now, wbInbox, eventIdOut, report, "", systemKeyOut) Then
         failureReason = "QueueReceiveEvent failed after runtime reload: " & report
         GoTo CleanExit
     End If
     If Trim$(eventIdOut) = "" Then
         failureReason = "QueueReceiveEvent did not return an EventID after runtime reload."
+        GoTo CleanExit
+    End If
+    If Trim$(systemKeyOut) = "" Then
+        failureReason = "QueueReceiveEvent did not return a System_Key after runtime reload."
         GoTo CleanExit
     End If
 
@@ -2817,13 +2833,22 @@ Public Function TestSavedReceivingWorkbook_FullRuntimeCloseReopenReloadsCanonica
         failureReason = "Saved receiving workbook surfaces were missing after post-restart refresh."
         GoTo CleanExit
     End If
-    invRow = FindRowByColumnValueInTable(loInv, "ITEM_CODE", "SKU-RM-RESTART")
+    invRow = FindRowByColumnValueInTable(loInv, "System_Key", seedSystemKey)
     If invRow = 0 Then
-        failureReason = "invSys lost the canonical SKU after post-restart refresh."
+        failureReason = "invSys lost the initial canonical System_Key after post-restart refresh."
         GoTo CleanExit
     End If
-    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 13 Then
-        failureReason = "invSys TOTAL INV did not include the post-restart receive event."
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 9 Then
+        failureReason = "The initial durable entity quantity changed after a second receive."
+        GoTo CleanExit
+    End If
+    invRow = FindRowByColumnValueInTable(loInv, "System_Key", systemKeyOut)
+    If invRow = 0 Then
+        failureReason = "invSys lost the post-restart System_Key after refresh."
+        GoTo CleanExit
+    End If
+    If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 4 Then
+        failureReason = "The post-restart durable entity quantity was not preserved."
         GoTo CleanExit
     End If
     If loRecv.ListRows.Count <> 1 Then
@@ -3459,12 +3484,14 @@ Public Function TestLanTwoStationProcessorRun_RespectsLockAndPreservesOperatorWo
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsA, "WH75", "LOCAL", report) Then GoTo CleanExit
     If Not modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wbOpsB, "WH75", "LOCAL", report) Then GoTo CleanExit
 
-    If Not AssertLanWorkbookState(wbOpsA, operatorPathA, "REF-LAN-OP-A", "SNAP-OLD-LAN-A", 10, "SKU-LAN-LOCK", "WH75.invSys.Snapshot.Inventory.xlsb|") Then
-        failureReason = "Station S11 operator workbook was contaminated by LAN refresh."
+    If Not AssertLanWorkbookState(wbOpsA, operatorPathA, "REF-LAN-OP-A", "SNAP-OLD-LAN-A", 10, "SKU-LAN-LOCK", _
+                                  "WH75.invSys.Snapshot.Inventory.xlsb|", "SYS-EVT-LAN-001", 4, "A1", "SYS-EVT-LAN-002", 6, "B1") Then
+        failureReason = "Station S11 did not preserve both canonical System_Key rows and its workbook-local receiving data."
         GoTo CleanExit
     End If
-    If Not AssertLanWorkbookState(wbOpsB, operatorPathB, "REF-LAN-OP-B", "SNAP-OLD-LAN-B", 10, "SKU-LAN-LOCK", "WH75.invSys.Snapshot.Inventory.xlsb|") Then
-        failureReason = "Station S12 operator workbook was contaminated by LAN refresh."
+    If Not AssertLanWorkbookState(wbOpsB, operatorPathB, "REF-LAN-OP-B", "SNAP-OLD-LAN-B", 10, "SKU-LAN-LOCK", _
+                                  "WH75.invSys.Snapshot.Inventory.xlsb|", "SYS-EVT-LAN-001", 4, "A1", "SYS-EVT-LAN-002", 6, "B1") Then
+        failureReason = "Station S12 did not preserve both canonical System_Key rows and its workbook-local receiving data."
         GoTo CleanExit
     End If
 
@@ -10179,10 +10206,19 @@ Private Function AssertLanWorkbookState(ByVal wbOps As Workbook, _
                                         ByVal expectedSnapshotLogId As String, _
                                         ByVal expectedTotalInv As Double, _
                                         ByVal expectedSku As String, _
-                                        ByVal expectedSnapshotPrefix As String) As Boolean
+                                        ByVal expectedSnapshotPrefix As String, _
+                                        Optional ByVal expectedSystemKeyA As String = "", _
+                                        Optional ByVal expectedQtyA As Double = -1, _
+                                        Optional ByVal expectedLocationA As String = "A1", _
+                                        Optional ByVal expectedSystemKeyB As String = "", _
+                                        Optional ByVal expectedQtyB As Double = 0, _
+                                        Optional ByVal expectedLocationB As String = "") As Boolean
     Dim loInv As ListObject
     Dim loRecv As ListObject
     Dim loLog As ListObject
+    Dim rowA As Long
+    Dim rowB As Long
+    Dim combinedQty As Double
 
     If wbOps Is Nothing Then Exit Function
     If StrComp(wbOps.FullName, expectedPath, vbTextCompare) <> 0 Then Exit Function
@@ -10198,15 +10234,37 @@ Private Function AssertLanWorkbookState(ByVal wbOps As Workbook, _
     If StrComp(CStr(GetTableValue(loLog, 1, "REF_NUMBER")), expectedRef, vbTextCompare) <> 0 Then Exit Function
     If StrComp(CStr(GetTableValue(loLog, 1, "SNAPSHOT_ID")), expectedSnapshotLogId, vbTextCompare) <> 0 Then Exit Function
 
-    If CDbl(GetTableValue(loInv, 1, "TOTAL INV")) <> expectedTotalInv Then Exit Function
-    If CDbl(GetTableValue(loInv, 1, "QtyAvailable")) <> expectedTotalInv Then Exit Function
-    If StrComp(CStr(GetTableValue(loInv, 1, "ITEM_CODE")), expectedSku, vbTextCompare) <> 0 Then Exit Function
-    If StrComp(CStr(GetTableValue(loInv, 1, "LOCATION")), "A1", vbTextCompare) <> 0 Then Exit Function
-    If InStr(1, CStr(GetTableValue(loInv, 1, "SnapshotId")), expectedSnapshotPrefix, vbTextCompare) <> 1 Then Exit Function
-    If CBool(GetTableValue(loInv, 1, "IsStale")) <> False Then Exit Function
-    If StrComp(CStr(GetTableValue(loInv, 1, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then Exit Function
-    If Not IsDate(GetTableValue(loInv, 1, "LastRefreshUTC")) Then Exit Function
-    If Not IsDate(GetTableValue(loInv, 1, "LAST EDITED")) Then Exit Function
+    If expectedSystemKeyA = "" Then expectedSystemKeyA = "SYS-" & expectedSku
+    If expectedQtyA < 0 Then expectedQtyA = expectedTotalInv
+    rowA = FindRowByColumnValueInTable(loInv, "System_Key", expectedSystemKeyA)
+    If rowA = 0 Then Exit Function
+    If CDbl(GetTableValue(loInv, rowA, "TOTAL INV")) <> expectedQtyA Then Exit Function
+    If CDbl(GetTableValue(loInv, rowA, "QtyAvailable")) <> expectedQtyA Then Exit Function
+    If StrComp(CStr(GetTableValue(loInv, rowA, "LOCATION")), expectedLocationA, vbTextCompare) <> 0 Then Exit Function
+    combinedQty = CDbl(GetTableValue(loInv, rowA, "TOTAL INV"))
+
+    If expectedSystemKeyB <> "" Then
+        rowB = FindRowByColumnValueInTable(loInv, "System_Key", expectedSystemKeyB)
+        If rowB = 0 Then Exit Function
+        If CDbl(GetTableValue(loInv, rowB, "TOTAL INV")) <> expectedQtyB Then Exit Function
+        If CDbl(GetTableValue(loInv, rowB, "QtyAvailable")) <> expectedQtyB Then Exit Function
+        If StrComp(CStr(GetTableValue(loInv, rowB, "LOCATION")), expectedLocationB, vbTextCompare) <> 0 Then Exit Function
+        combinedQty = combinedQty + CDbl(GetTableValue(loInv, rowB, "TOTAL INV"))
+    End If
+    If combinedQty <> expectedTotalInv Then Exit Function
+
+    If StrComp(CStr(GetTableValue(loInv, rowA, "ITEM_CODE")), expectedSku, vbTextCompare) <> 0 Then Exit Function
+    If InStr(1, CStr(GetTableValue(loInv, rowA, "SnapshotId")), expectedSnapshotPrefix, vbTextCompare) <> 1 Then Exit Function
+    If CBool(GetTableValue(loInv, rowA, "IsStale")) <> False Then Exit Function
+    If StrComp(CStr(GetTableValue(loInv, rowA, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then Exit Function
+    If Not IsDate(GetTableValue(loInv, rowA, "LastRefreshUTC")) Then Exit Function
+    If expectedSystemKeyB <> "" Then
+        If StrComp(CStr(GetTableValue(loInv, rowB, "ITEM_CODE")), expectedSku, vbTextCompare) <> 0 Then Exit Function
+        If InStr(1, CStr(GetTableValue(loInv, rowB, "SnapshotId")), expectedSnapshotPrefix, vbTextCompare) <> 1 Then Exit Function
+        If CBool(GetTableValue(loInv, rowB, "IsStale")) <> False Then Exit Function
+        If StrComp(CStr(GetTableValue(loInv, rowB, "SourceType")), "LOCAL", vbTextCompare) <> 0 Then Exit Function
+        If Not IsDate(GetTableValue(loInv, rowB, "LastRefreshUTC")) Then Exit Function
+    End If
 
     AssertLanWorkbookState = True
 End Function
@@ -10431,9 +10489,12 @@ Private Sub AddInboxReceiveEventRowForTest(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "WarehouseId", warehouseId
     SetTableCell lo, lr.Index, "StationId", stationId
     SetTableCell lo, lr.Index, "UserId", userId
+    SetTableCell lo, lr.Index, "System_Key", "SYS-" & eventId
     SetTableCell lo, lr.Index, "SKU", sku
     SetTableCell lo, lr.Index, "Qty", qty
     SetTableCell lo, lr.Index, "Location", locationVal
+    SetTableCell lo, lr.Index, "Condition", "GOOD"
+    SetTableCell lo, lr.Index, "AttributesJson", ""
     SetTableCell lo, lr.Index, "Note", noteVal
     SetTableCell lo, lr.Index, "Status", "NEW"
 CleanExit:
@@ -10631,7 +10692,8 @@ Private Sub AddInvSysSeedRow(ByVal lo As ListObject, ByVal rowValue As Long, ByV
 
     If lo Is Nothing Then Exit Sub
     Set lr = lo.ListRows.Add
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", "SYS-" & sku
+    SetTableCell lo, lr.Index, "SKU", sku
     SetTableCell lo, lr.Index, "ITEM_CODE", sku
     SetTableCell lo, lr.Index, "ITEM", itemName
     SetTableCell lo, lr.Index, "UOM", uom
@@ -10655,7 +10717,7 @@ Private Sub AddReceivedTallyRow(ByVal lo As ListObject, ByVal refNumber As Strin
     SetTableCell lo, lr.Index, "REF_NUMBER", refNumber
     SetTableCell lo, lr.Index, "ITEMS", itemName
     SetTableCell lo, lr.Index, "QUANTITY", qty
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", "SYS-LOCAL-" & CStr(rowValue)
 End Sub
 
 Private Sub AddReceivedLogRow(ByVal lo As ListObject, _
@@ -10690,7 +10752,7 @@ Private Sub AddReceivedLogRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "VENDOR", vendorName
     SetTableCell lo, lr.Index, "LOCATION", locationVal
     SetTableCell lo, lr.Index, "ITEM_CODE", sku
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", "SYS-" & sku
 End Sub
 
 Private Sub AddShippingTallyRow(ByVal lo As ListObject, _
@@ -12271,9 +12333,12 @@ Private Function CreateReceiveEventForTest(ByVal eventId As String, _
     evt("StationId") = stationId
     evt("UserId") = userId
     evt("SourceInbox") = "phase6-test-inbox"
+    evt("System_Key") = "SYS-" & eventId
     evt("SKU") = sku
     evt("Qty") = qty
     evt("Location") = locationVal
+    evt("Condition") = "GOOD"
+    evt("AttributesJson") = ""
     evt("Note") = noteVal
     Set CreateReceiveEventForTest = evt
 End Function
@@ -12363,7 +12428,7 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
                                         Optional ByVal vendorName As String = vbNullString, _
                                         Optional ByVal vendorCode As String = vbNullString, _
                                         Optional ByVal category As String = vbNullString, _
-                                        Optional ByVal rowKey As String = vbNullString) As Workbook
+                                        Optional ByVal systemKey As String = vbNullString) As Workbook
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim lo As ListObject
@@ -12376,8 +12441,8 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
     Set ws = wb.Worksheets(1)
     ws.Name = "InventorySnapshot"
     ws.Range("A1").Value = "WarehouseId"
-    ws.Range("B1").Value = "SKU"
-    ws.Range("C1").Value = "ROW"
+    ws.Range("B1").Value = "System_Key"
+    ws.Range("C1").Value = "SKU"
     ws.Range("D1").Value = "ITEM"
     ws.Range("E1").Value = "UOM"
     ws.Range("F1").Value = "LOCATION"
@@ -12390,8 +12455,9 @@ Private Function CreateSnapshotWorkbook(ByVal rootPath As String, _
     ws.Range("M1").Value = "LocationSummary"
     ws.Range("N1").Value = "LastAppliedAtUTC"
     ws.Range("A2").Value = warehouseId
-    ws.Range("B2").Value = sku
-    ws.Range("C2").Value = rowKey
+    If Trim$(systemKey) = "" Then systemKey = "SYS-" & sku
+    ws.Range("B2").Value = systemKey
+    ws.Range("C2").Value = sku
     If Trim$(itemName) = "" Then itemName = sku
     ws.Range("D2").Value = itemName
     ws.Range("E2").Value = uom

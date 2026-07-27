@@ -56,6 +56,26 @@ function Sanitize-MarkdownCell {
     return (($Text -replace '\|', ' ; ') -replace "`r|`n", ' ').Trim()
 }
 
+function ConvertTo-SafeEvidenceText {
+    param([AllowNull()][string]$Text)
+
+    if ($null -eq $Text) { return "" }
+    $safe = $Text
+    foreach ($sensitiveRoot in @(
+        $harnessPath,
+        $repo,
+        $contextMap["LocalRoot"],
+        $contextMap["SharePointRoot"],
+        $env:USERPROFILE
+    )) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$sensitiveRoot)) {
+            $safe = $safe.Replace([string]$sensitiveRoot, "<redacted-path>")
+        }
+    }
+    $safe = [regex]::Replace($safe, '<redacted-path>(?:\\[^ ;|]+)+', '<redacted-path>')
+    return $safe
+}
+
 $repo = (Resolve-Path $RepoRoot).Path
 $fixtures = Join-Path $repo "tests/fixtures"
 $harnessStamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
@@ -71,6 +91,8 @@ try {
     $excel.EnableEvents = $false
 
     $modulePaths = @(
+        (Join-Path $repo "src/Core/Modules/modNasConnection.bas"),
+        (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
         (Join-Path $repo "src/Core/Modules/modDeploymentPaths.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseBootstrap.bas"),
@@ -80,15 +102,30 @@ try {
         (Join-Path $repo "src/Core/Modules/modOperatorReadModel.bas"),
         (Join-Path $repo "src/Core/Modules/modPerfLog.bas"),
         (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
+        (Join-Path $repo "src/Core/Modules/modDesignsDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
+        (Join-Path $repo "src/Core/Modules/modRibbonRuntimeStatus.bas"),
+        (Join-Path $repo "src/Core/Modules/modRoleUiAccess.bas"),
+        (Join-Path $repo "src/Core/Modules/modUiQuiet.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryQueries.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsSchema.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsRuntime.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsInit.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsQueries.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsBridgeApi.bas"),
+        (Join-Path $repo "src/DesignsDomain/Modules/modDesignsApply.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modTS_Received.bas"),
+        (Join-Path $repo "src/Admin/Modules/modAdminInventorySeed.bas"),
         (Join-Path $repo "tests/integration/test_CreateWarehouse.bas")
     )
 
@@ -127,11 +164,11 @@ try {
     $lines += ""
     $lines += "- Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     $lines += "- Overall: $overall"
-    $lines += "- Harness: $harnessPath"
+    $lines += "- Harness: tests/fixtures/<generated-create-warehouse-harness>.xlsm"
     if ($contextMap.ContainsKey("WarehouseId")) { $lines += "- Warehouse: $($contextMap['WarehouseId'])" }
     if ($contextMap.ContainsKey("StationId")) { $lines += "- Station: $($contextMap['StationId'])" }
-    if ($contextMap.ContainsKey("LocalRoot")) { $lines += "- Local root: $($contextMap['LocalRoot'])" }
-    if ($contextMap.ContainsKey("SharePointRoot")) { $lines += "- SharePoint root: $($contextMap['SharePointRoot'])" }
+    if ($contextMap.ContainsKey("LocalRoot")) { $lines += "- Local root: <temporary-test-root>" }
+    if ($contextMap.ContainsKey("SharePointRoot")) { $lines += "- SharePoint root: <temporary-test-root>" }
     if ($contextMap.ContainsKey("Summary")) { $lines += "- Summary: $($contextMap['Summary'])" }
     $lines += "- Passed checks: $passCount"
     $lines += "- Failed checks: $failCount"
@@ -139,9 +176,11 @@ try {
     $lines += "| Check | Result | Detail |"
     $lines += "|---|---|---|"
     foreach ($row in $rows) {
-        $lines += "| $(Sanitize-MarkdownCell $row.Check) | $(Sanitize-MarkdownCell $row.Result) | $(Sanitize-MarkdownCell $row.Detail) |"
+        $safeDetail = ConvertTo-SafeEvidenceText ([string]$row.Detail)
+        $lines += "| $(Sanitize-MarkdownCell $row.Check) | $(Sanitize-MarkdownCell $row.Result) | $(Sanitize-MarkdownCell $safeDetail) |"
     }
-    [System.IO.File]::WriteAllLines($resultPath, $lines)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($resultPath, (($lines -join "`n") + "`n"), $utf8NoBom)
 
     Write-Output "CREATE_WAREHOUSE_INTEGRATION_OK"
     Write-Output "HARNESS=$harnessPath"

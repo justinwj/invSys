@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1038
-- Reviewed candidates: 1040
+- Scanner candidates: 1041
+- Reviewed candidates: 1043
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -15,9 +15,9 @@
 | PRODUCTION | 165 | Production-owned forms, services, and role package source. |
 | SHIPPING | 174 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 68 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 313 | Headless shared runtime and developer-support source in Core. |
+| CORE | 315 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 63 | Inventory and Designs Domain authority source. |
-| ADMIN | 218 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 0 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -33,21 +33,21 @@
 | src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1158 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 1700 |
+| src/Admin/Modules/modAdmin.bas | Admin | 1705 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 1985 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1845 |
 | src/Core/Modules/modAuth.bas | Core | 1627 |
 | src/Core/Modules/modConfig.bas | Core | 1662 |
 | src/Core/Modules/modNasConnection.bas | Core | 1379 |
-| src/Core/Modules/modOperatorReadModel.bas | Core | 1902 |
-| src/Core/Modules/modProcessor.bas | Core | 1398 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 2753 |
-| src/Core/Modules/modWarehouseBootstrap.bas | Core | 1066 |
+| src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
+| src/Core/Modules/modProcessor.bas | Core | 1417 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 2843 |
+| src/Core/Modules/modWarehouseBootstrap.bas | Core | 1067 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
-| src/Core/Modules/modWarehouseSync.bas | Core | 1577 |
+| src/Core/Modules/modWarehouseSync.bas | Core | 1617 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2183 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4452 |
 | src/Production/Modules/mProduction.bas | Production | 12927 |
@@ -102,6 +102,7 @@
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Admin_Click | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.AdminSettingsFormInitializeSmokeForWorkbook | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Export_LoadedPackageReport | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Admin_Modules_modAdmin.bas:modAdmin.NormalizeAdminDemoInventoryRow | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_LastTesterWorkbook | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_RetireMigrateWarehouse | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_SetupTesterStation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -474,6 +475,7 @@
 | reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.SelectWarehouseTargetForAutomation | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.SetRequireManualServerCredentialsForAutomation | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.DiagnoseCurrentWorkbookInventoryReadModelRefresh | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.FindInvSysRowBySku | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.RefreshCurrentWorkbookInventoryReadModel | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.RefreshInventoryReadModelFromLocalForWorkbook | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.ResolveSnapshotPathReadModel | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -514,6 +516,7 @@
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.RequireReAuth | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveCurrentAdminUserRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveRequiredRoleRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_MouseScroll.bas:MouseScroll.DisableMouseScroll | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.EmergencyEnableEvents | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.FullDiagnostic | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

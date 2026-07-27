@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 7
-- Components: 151
-- Procedures: 4441
+- Components: 152
+- Procedures: 4455
 - Literal Application.Run targets: 14
 - Unresolved dynamic calls: 59
 
@@ -12,7 +12,7 @@
 
 | Package | Project | Output | Components |
 |---|---|---|---:|
-| Admin | invSys_Admin | invSys.Admin.xlam | 28 |
+| Admin | invSys_Admin | invSys.Admin.xlam | 29 |
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
@@ -802,8 +802,8 @@
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Forms/frmItemSearch.frm]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modGlobals.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modInventoryDomainBridge.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modOperatorReadModel.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modPhase6DemoData.bas]
+- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modProcessor.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modRoleEventWriter.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modRoleWorkbookSurfaces.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modTestModule.bas]

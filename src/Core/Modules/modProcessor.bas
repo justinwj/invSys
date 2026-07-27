@@ -19,6 +19,7 @@ Private Const PROC_EVENT_TYPE_BOX_UNBOX As String = "BOX_UNBOX"
 Private Const PROC_EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Private Const PROC_EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 Private Const PROC_EVENT_TYPE_MIGRATION_SEED As String = "MIGRATION_SEED"
+Private Const PROC_EVENT_TYPE_INVENTORY_CREATE As String = "INVENTORY_CREATE"
 Private Const PROC_EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
 Private Const PROC_EVENT_TYPE_DESIGN_RELEASE As String = "DESIGN_RELEASE"
 Private Const PROC_EVENT_TYPE_DESIGN_OBSOLETE As String = "DESIGN_OBSOLETE"
@@ -48,6 +49,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim serviceUserId As String
     Dim skipDupCount As Long
     Dim poisonCount As Long
+    Dim lastPoisonDetail As String
     Dim heartbeatSeconds As Long
     Dim lastHeartbeat As Date
     Dim statusOut As String
@@ -146,6 +148,7 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
             capability = CapabilityForEventType(GetDictionaryString(evt, "EventType"))
             If capability = "" Then
                 UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType."
+                lastPoisonDetail = "INVALID_EVENT_TYPE: Unsupported EventType."
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
@@ -193,10 +196,12 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
                         skipDupCount = skipDupCount + 1
                     Case Else
                         UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "UNKNOWN_APPLY_STATUS", "Unknown apply status."
+                        lastPoisonDetail = "UNKNOWN_APPLY_STATUS: Unknown apply status."
                         poisonCount = poisonCount + 1
                 End Select
             Else
                 UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, errorCode, errorMessage
+                lastPoisonDetail = errorCode & ": " & errorMessage
                 poisonCount = poisonCount + 1
             End If
 
@@ -220,6 +225,7 @@ ContinueInbox:
     PerfMarkSafeProcessor runId, "Apply", CLng((Timer - phaseStart) * 1000)
     If PerfIsTransactionActiveSafeProcessor() Then MarkSegmentSafeProcessor "ProcessorApplyLoop"
     report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
+    If lastPoisonDetail <> "" Then report = report & "; LastPoison=" & lastPoisonDetail
     If localStagingReport <> "" And InStr(1, localStagingReport, "No local staged inbox rows", vbTextCompare) = 0 Then
         report = report & "; LocalStagingSync=" & IIf(localStagingOk, "OK", "WARN") & " (" & localStagingReport & ")"
     End If
@@ -537,7 +543,8 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
 
     ensureStage = "define schema"
     headers = Array("EventID", "ParentEventId", "UndoOfEventId", "EventType", "CreatedAtUTC", "WarehouseId", "StationId", _
-                    "UserId", "MigrationSourceId", "SKU", "Qty", "Location", "DesignId", "DesignVersion", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
+                    "UserId", "MigrationSourceId", "System_Key", "SKU", "Qty", "Location", "Condition", "AttributesJson", _
+                    "DesignId", "DesignVersion", "Note", "PayloadJson", "Status", "RetryCount", "ErrorCode", _
                     "ErrorMessage", "FailedAtUTC")
 
     ' Schema repair must be additive. Runtime workbooks can carry other domain
@@ -568,6 +575,7 @@ Private Function EnsureInboxSchemaCore(ByVal targetWb As Workbook, _
     For i = LBound(headers) To UBound(headers)
         EnsureListColumnProcessor lo, CStr(headers(i))
     Next i
+    RemoveExactListColumnProcessor lo, "ROW"
 
     ensureStage = "normalize rows"
     RemoveBlankSeedRowProcessor lo
@@ -605,6 +613,14 @@ Private Sub EnsureInboxDefaultEventType(ByVal lo As ListObject, ByVal defaultEve
         currentValue = SafeTrimProcessor(GetCellByColumnProcessor(lo, i, "EventType"))
         If currentValue = "" Then SetCellByColumnProcessor lo, i, "EventType", defaultEventType
     Next i
+End Sub
+
+Private Sub RemoveExactListColumnProcessor(ByVal lo As ListObject, ByVal columnName As String)
+    Dim columnIndex As Long
+
+    If lo Is Nothing Then Exit Sub
+    columnIndex = GetColumnIndexProcessor(lo, columnName)
+    If columnIndex > 0 Then lo.ListColumns(columnIndex).Delete
 End Sub
 
 Private Function EnsurePhase2Context(ByVal warehouseId As String, ByRef report As String) As Boolean
@@ -886,7 +902,7 @@ Private Function InboxWorkbookNameProcessor(ByVal eventType As String, ByVal sta
             InboxWorkbookNameProcessor = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameProcessor = "invSys.Inbox.Shipping." & stationId & ".xlsb"
-        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_INVENTORY_CREATE, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             InboxWorkbookNameProcessor = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function
@@ -1022,9 +1038,12 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, _
     evt("StationId") = GetCellByColumnProcessor(lo, rowIndex, "StationId")
     evt("UserId") = GetCellByColumnProcessor(lo, rowIndex, "UserId")
     evt("MigrationSourceId") = GetCellByColumnProcessor(lo, rowIndex, "MigrationSourceId")
+    evt("System_Key") = GetCellByColumnProcessor(lo, rowIndex, "System_Key")
     evt("SKU") = GetCellByColumnProcessor(lo, rowIndex, "SKU")
     evt("Qty") = GetCellByColumnProcessor(lo, rowIndex, "Qty")
     evt("Location") = GetCellByColumnProcessor(lo, rowIndex, "Location")
+    evt("Condition") = GetCellByColumnProcessor(lo, rowIndex, "Condition")
+    evt("AttributesJson") = GetCellByColumnProcessor(lo, rowIndex, "AttributesJson")
     evt("DesignId") = GetCellByColumnProcessor(lo, rowIndex, "DesignId")
     evt("DesignVersion") = GetCellByColumnProcessor(lo, rowIndex, "DesignVersion")
     evt("Note") = GetCellByColumnProcessor(lo, rowIndex, "Note")
@@ -1093,7 +1112,7 @@ Private Function CapabilityForEventType(ByVal eventType As String) As String
             CapabilityForEventType = "ADMIN_MAINT"
         Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_DESIGN_CREATE
             CapabilityForEventType = "PROD_POST"
-        Case PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
+        Case PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_INVENTORY_CREATE, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventType = "ADMIN_MAINT"
     End Select
 End Function

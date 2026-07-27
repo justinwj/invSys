@@ -890,8 +890,8 @@ End Function
 
 Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
     Dim dict As Object
+    Dim systemKeyIdx As Long
     Dim skuIdx As Long
-    Dim rowIdx As Long
     Dim itemIdx As Long
     Dim uomIdx As Long
     Dim locationIdx As Long
@@ -907,9 +907,12 @@ Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
     Dim qtyAvailableIdx As Long
     Dim locationSummaryIdx As Long
     Dim appliedIdx As Long
+    Dim conditionIdx As Long
+    Dim inventoryStateIdx As Long
+    Dim attributesJsonIdx As Long
     Dim i As Long
     Dim sku As String
-    Dim rowKey As String
+    Dim systemKey As String
     Dim payload As Object
 
     Set dict = CreateObject("Scripting.Dictionary")
@@ -923,8 +926,8 @@ Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
         Exit Function
     End If
 
+    systemKeyIdx = GetColumnIndexReadModel(loSnap, "System_Key")
     skuIdx = GetColumnIndexReadModel(loSnap, "SKU")
-    rowIdx = GetColumnIndexReadModel(loSnap, "ROW")
     itemIdx = GetColumnIndexReadModel(loSnap, "ITEM")
     uomIdx = GetColumnIndexReadModel(loSnap, "UOM")
     locationIdx = GetColumnIndexReadModel(loSnap, "LOCATION")
@@ -940,16 +943,22 @@ Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
     qtyAvailableIdx = GetColumnIndexReadModel(loSnap, "QtyAvailable")
     locationSummaryIdx = GetColumnIndexReadModel(loSnap, "LocationSummary")
     appliedIdx = GetColumnIndexReadModel(loSnap, "LastAppliedAtUTC")
-    If skuIdx = 0 Or qtyOnHandIdx = 0 Then
+    conditionIdx = GetColumnIndexReadModel(loSnap, "Condition")
+    inventoryStateIdx = GetColumnIndexReadModel(loSnap, "InventoryState")
+    attributesJsonIdx = GetColumnIndexReadModel(loSnap, "AttributesJson")
+    If systemKeyIdx = 0 Or skuIdx = 0 Or qtyOnHandIdx = 0 Then
         Set BuildSnapshotDictionary = dict
         Exit Function
     End If
 
     For i = 1 To loSnap.ListRows.Count
+        systemKey = Trim$(CStr(loSnap.DataBodyRange.Cells(i, systemKeyIdx).Value))
         sku = Trim$(CStr(loSnap.DataBodyRange.Cells(i, skuIdx).Value))
-        If sku = "" Then GoTo ContinueLoop
+        If systemKey = "" Or sku = "" Then GoTo ContinueLoop
         Set payload = CreateObject("Scripting.Dictionary")
         payload.CompareMode = vbTextCompare
+        payload("System_Key") = systemKey
+        payload("SKU") = sku
         payload("QtyOnHand") = NzDblReadModel(loSnap.DataBodyRange.Cells(i, qtyOnHandIdx).Value)
         payload("QtyAvailable") = ResolveSnapshotQtyAvailable(loSnap, i, qtyAvailableIdx, qtyOnHandIdx)
         payload("LocationSummary") = ResolveSnapshotLocationSummary(loSnap, i, locationSummaryIdx)
@@ -958,7 +967,9 @@ Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
         payload("USED") = ResolveSnapshotNumberFieldReadModel(loSnap, i, usedIdx)
         payload("MADE") = ResolveSnapshotNumberFieldReadModel(loSnap, i, madeIdx)
         payload("SHIPMENTS") = ResolveSnapshotNumberFieldReadModel(loSnap, i, shipmentsIdx)
-        AddSnapshotTextPayloadReadModel payload, "ROW", ResolveSnapshotTextReadModel(loSnap, i, rowIdx)
+        AddSnapshotTextPayloadReadModel payload, "Condition", ResolveSnapshotTextReadModel(loSnap, i, conditionIdx)
+        AddSnapshotTextPayloadReadModel payload, "InventoryState", ResolveSnapshotTextReadModel(loSnap, i, inventoryStateIdx)
+        AddSnapshotTextPayloadReadModel payload, "AttributesJson", ResolveSnapshotTextReadModel(loSnap, i, attributesJsonIdx)
         AddSnapshotTextPayloadReadModel payload, "ITEM", ResolveSnapshotTextReadModel(loSnap, i, itemIdx)
         AddSnapshotTextPayloadReadModel payload, "UOM", ResolveSnapshotTextReadModel(loSnap, i, uomIdx)
         AddSnapshotTextPayloadReadModel payload, "LOCATION", ResolveSnapshotTextReadModel(loSnap, i, locationIdx)
@@ -966,11 +977,7 @@ Private Function BuildSnapshotDictionary(ByVal loSnap As ListObject) As Object
         AddSnapshotTextPayloadReadModel payload, "VENDOR(s)", ResolveSnapshotTextReadModel(loSnap, i, vendorsIdx)
         AddSnapshotTextPayloadReadModel payload, "VENDOR_CODE", ResolveSnapshotTextReadModel(loSnap, i, vendorCodeIdx)
         AddSnapshotTextPayloadReadModel payload, "CATEGORY", ResolveSnapshotTextReadModel(loSnap, i, categoryIdx)
-        dict.Add sku, payload
-        rowKey = SnapshotRowKeyReadModel(ResolveSnapshotTextPayloadReadModel(payload, "ROW"))
-        If rowKey <> "" Then
-            If Not dict.Exists(rowKey) Then dict.Add rowKey, payload
-        End If
+        If Not dict.Exists(systemKey) Then dict.Add systemKey, payload
 ContinueLoop:
     Next i
 
@@ -985,7 +992,7 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
                                   ByVal isStale As Boolean)
     Dim rowIndex As Long
     Dim sku As String
-    Dim rowKey As String
+    Dim systemKey As String
     Dim payload As Object
     Dim qtyOnHand As Double
     Dim qtyAvailable As Double
@@ -1000,8 +1007,8 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
     For rowIndex = 1 To loInv.ListRows.Count
         sku = ResolveInvSysSku(loInv, rowIndex)
         SyncDisplayAliases loInv, rowIndex
-        rowKey = SnapshotRowKeyReadModel(CStr(GetReadModelValue(loInv, rowIndex, "ROW")))
-        Set payload = ResolveSnapshotPayloadForInvSysReadModel(snapshotRows, sku, rowKey)
+        systemKey = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "System_Key")))
+        Set payload = ResolveSnapshotPayloadForInvSysReadModel(snapshotRows, systemKey)
 
         If Not payload Is Nothing Then
             qtyOnHand = ResolveSnapshotNumberPayloadReadModel(payload, "QtyOnHand")
@@ -1030,14 +1037,15 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
     If snapshotRows Is Nothing Then Exit Sub
 
     For Each key In snapshotRows.Keys
-        If Trim$(CStr(key)) <> "" And Not IsSnapshotRowIndexKeyReadModel(CStr(key)) Then
-            rowIndex = FindInvSysRowBySku(loInv, CStr(key))
+        If Trim$(CStr(key)) <> "" Then
+            rowIndex = FindInvSysRowBySystemKeyReadModel(loInv, CStr(key))
             If rowIndex = 0 Then
                 rowIndex = AppendInvSysRow(loInv)
                 If rowIndex > 0 Then
-                    SeedInvSysRow loInv, rowIndex, CStr(key)
                     If snapshotRows.Exists(CStr(key)) Then
                         Set payload = snapshotRows(CStr(key))
+                        SeedInvSysRow loInv, rowIndex, CStr(key), _
+                            ResolveSnapshotTextPayloadReadModel(payload, "SKU")
                         ApplySnapshotMetadataToInvSys loInv, rowIndex, payload, ResolveSnapshotTextPayloadReadModel(payload, "LocationSummary")
                     End If
                 End If
@@ -1047,34 +1055,13 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
 End Sub
 
 Private Function ResolveSnapshotPayloadForInvSysReadModel(ByVal snapshotRows As Object, _
-                                                          ByVal sku As String, _
-                                                          ByVal rowKey As String) As Object
+                                                          ByVal systemKey As String) As Object
     If snapshotRows Is Nothing Then Exit Function
 
-    sku = Trim$(sku)
-    If sku <> "" Then
-        If snapshotRows.Exists(sku) Then
-            Set ResolveSnapshotPayloadForInvSysReadModel = snapshotRows(sku)
-            Exit Function
-        End If
+    systemKey = Trim$(systemKey)
+    If systemKey <> "" Then
+        If snapshotRows.Exists(systemKey) Then Set ResolveSnapshotPayloadForInvSysReadModel = snapshotRows(systemKey)
     End If
-
-    rowKey = Trim$(rowKey)
-    If rowKey <> "" Then
-        If snapshotRows.Exists(rowKey) Then Set ResolveSnapshotPayloadForInvSysReadModel = snapshotRows(rowKey)
-    End If
-End Function
-
-Private Function SnapshotRowKeyReadModel(ByVal rowValue As String) As String
-    rowValue = Trim$(rowValue)
-    If rowValue = "" Then Exit Function
-    If Not IsNumeric(rowValue) Then Exit Function
-    If CLng(Val(rowValue)) <= 0 Then Exit Function
-    SnapshotRowKeyReadModel = "__ROW__" & CStr(CLng(Val(rowValue)))
-End Function
-
-Private Function IsSnapshotRowIndexKeyReadModel(ByVal keyValue As String) As Boolean
-    IsSnapshotRowIndexKeyReadModel = (Left$(Trim$(keyValue), 7) = "__ROW__")
 End Function
 
 Private Function FindInvSysRowBySku(ByVal loInv As ListObject, ByVal sku As String) As Long
@@ -1091,17 +1078,38 @@ Private Function FindInvSysRowBySku(ByVal loInv As ListObject, ByVal sku As Stri
     Next rowIndex
 End Function
 
+Private Function FindInvSysRowBySystemKeyReadModel(ByVal loInv As ListObject, ByVal systemKey As String) As Long
+    Dim rowIndex As Long
+
+    If loInv Is Nothing Then Exit Function
+    If loInv.DataBodyRange Is Nothing Then Exit Function
+    systemKey = Trim$(systemKey)
+    If systemKey = "" Then Exit Function
+
+    For rowIndex = 1 To loInv.ListRows.Count
+        If StrComp(Trim$(CStr(GetReadModelValue(loInv, rowIndex, "System_Key"))), _
+                   systemKey, vbTextCompare) = 0 Then
+            FindInvSysRowBySystemKeyReadModel = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
 Private Function AppendInvSysRow(ByVal loInv As ListObject) As Long
     If loInv Is Nothing Then Exit Function
     loInv.ListRows.Add
     AppendInvSysRow = loInv.ListRows.Count
 End Function
 
-Private Sub SeedInvSysRow(ByVal loInv As ListObject, ByVal rowIndex As Long, ByVal sku As String)
+Private Sub SeedInvSysRow(ByVal loInv As ListObject, ByVal rowIndex As Long, _
+                          ByVal systemKey As String, ByVal sku As String)
     If loInv Is Nothing Then Exit Sub
     If rowIndex <= 0 Then Exit Sub
 
+    SetReadModelValue loInv, rowIndex, "System_Key", systemKey
+    SetReadModelValue loInv, rowIndex, "SKU", sku
     SetReadModelValue loInv, rowIndex, "ITEM_CODE", sku
+    SetReadModelValue loInv, rowIndex, "ItemName", sku
     SetReadModelValue loInv, rowIndex, "ITEM", sku
 End Sub
 
@@ -1116,6 +1124,7 @@ Private Sub ApplyReadModelValues(ByVal loInv As ListObject, _
                                  ByVal sourceType As String, _
                                  ByVal isStale As Boolean)
     locationSummary = NormalizeLocationSummaryReadModel(locationSummary)
+    SetReadModelValue loInv, rowIndex, "QtyOnHand", qtyOnHand
     SetReadModelValue loInv, rowIndex, "TOTAL INV", qtyOnHand
     SetReadModelValue loInv, rowIndex, "QtyAvailable", qtyAvailable
     SetReadModelValue loInv, rowIndex, "LocationSummary", locationSummary
@@ -1123,9 +1132,11 @@ Private Sub ApplyReadModelValues(ByVal loInv As ListObject, _
         SetReadModelValue loInv, rowIndex, "LOCATION", ResolvePrimaryLocationReadModel(locationSummary, GetReadModelValue(loInv, rowIndex, "LOCATION"))
     End If
     If Not IsEmpty(lastApplied) And Not IsNull(lastApplied) And CStr(lastApplied) <> "" Then
+        SetReadModelValue loInv, rowIndex, "LastAppliedUTC", lastApplied
         SetReadModelValue loInv, rowIndex, "LAST EDITED", lastApplied
         SetReadModelValue loInv, rowIndex, "TOTAL INV LAST EDIT", lastApplied
     Else
+        SetReadModelValue loInv, rowIndex, "LastAppliedUTC", vbNullString
         SetReadModelValue loInv, rowIndex, "LAST EDITED", vbNullString
         SetReadModelValue loInv, rowIndex, "TOTAL INV LAST EDIT", vbNullString
     End If
@@ -1149,12 +1160,16 @@ Private Sub ApplySnapshotMetadataToInvSys(ByVal loInv As ListObject, _
     sku = ResolveInvSysSku(loInv, rowIndex)
     existingItem = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "ITEM")))
 
-    valueText = ResolveSnapshotTextPayloadReadModel(payload, "ROW")
-    If valueText <> "" Then
-        SetReadModelValue loInv, rowIndex, "ROW", valueText
-    ElseIf NzDblReadModel(GetReadModelValue(loInv, rowIndex, "ROW")) <= 0 Then
-        SetReadModelValue loInv, rowIndex, "ROW", rowIndex
-    End If
+    SetReadModelValue loInv, rowIndex, "System_Key", _
+        ResolveSnapshotTextPayloadReadModel(payload, "System_Key")
+    SetReadModelValue loInv, rowIndex, "SKU", _
+        ResolveSnapshotTextPayloadReadModel(payload, "SKU")
+    SetReadModelValue loInv, rowIndex, "Condition", _
+        ResolveSnapshotTextPayloadReadModel(payload, "Condition")
+    SetReadModelValue loInv, rowIndex, "InventoryState", _
+        ResolveSnapshotTextPayloadReadModel(payload, "InventoryState")
+    SetReadModelValue loInv, rowIndex, "AttributesJson", _
+        ResolveSnapshotTextPayloadReadModel(payload, "AttributesJson")
 
     valueText = ResolveSnapshotTextPayloadReadModel(payload, "ITEM")
     If valueText <> "" Then

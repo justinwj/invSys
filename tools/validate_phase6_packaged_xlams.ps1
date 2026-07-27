@@ -194,6 +194,20 @@ $repo = (Resolve-Path $RepoRoot).Path
 $deployPath = Join-Path $repo $DeployRoot
 $resultPath = Join-Path $repo "tests/unit/phase6_packaged_xlam_results.md"
 
+function ConvertTo-SafePackagedEvidenceText {
+    param([AllowNull()][string]$Text)
+
+    if ($null -eq $Text) { return "" }
+    $safe = $Text
+    foreach ($sensitiveRoot in @($targetRoot, $repo, $env:USERPROFILE)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$sensitiveRoot)) {
+            $safe = $safe.Replace([string]$sensitiveRoot, "<redacted-path>")
+        }
+    }
+    $safe = [regex]::Replace($safe, '<redacted-path>(?:\\[^ ;|]+)+', '<redacted-path>')
+    return $safe
+}
+
 $openOrder = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -212,10 +226,10 @@ $validationSpecs = @(
         InitMacro = "modReceivingInit.InitReceivingAddin"
         SafeMacro = "modTS_Received.EnsureGeneratedButtons"
         Tables = @(
-            @{ Sheet = "ReceivedTally"; Table = "ReceivedTally"; Columns = @("REF_NUMBER", "ITEMS", "QUANTITY", "ROW") },
-            @{ Sheet = "ReceivedTally"; Table = "AggregateReceived"; Columns = @("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW") },
-            @{ Sheet = "ReceivedLog"; Table = "ReceivedLog"; Columns = @("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW") },
-            @{ Sheet = "InventoryManagement"; Table = "invSys"; Columns = @("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION") }
+            @{ Sheet = "ReceivedTally"; Table = "ReceivedTally"; Columns = @("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key") },
+            @{ Sheet = "ReceivedTally"; Table = "AggregateReceived"; Columns = @("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key") },
+            @{ Sheet = "ReceivedLog"; Table = "ReceivedLog"; Columns = @("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key") },
+            @{ Sheet = "InventoryManagement"; Table = "invSys"; Columns = @("System_Key", "SKU", "ITEM_CODE", "ITEM", "QtyOnHand", "LOCATION", "Condition", "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale") }
         )
     },
     @{
@@ -225,10 +239,10 @@ $validationSpecs = @(
         InitMacro = "modShippingInit.InitShippingAddin"
         SafeMacro = "modTS_Shipments.InitializeShipmentsUI"
         Tables = @(
-            @{ Sheet = "ShippingBackend"; Table = "ShipmentsTally"; Columns = @("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "ROW", "UOM", "LOCATION", "DESCRIPTION") },
-            @{ Sheet = "ShippingBackend"; Table = "AggregatePackages"; Columns = @("ROW", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION") },
-            @{ Sheet = "ShippingBackend"; Table = "AggregateBoxBOM_Log"; Columns = @("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP") },
-            @{ Sheet = "ShippingBackend"; Table = "AggregatePackages_Log"; Columns = @("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP") }
+            @{ Sheet = "ShippingBackend"; Table = "ShipmentsTally"; Columns = @("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "UOM", "LOCATION", "DESCRIPTION") },
+            @{ Sheet = "ShippingBackend"; Table = "AggregatePackages"; Columns = @("System_Key", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION") },
+            @{ Sheet = "ShippingBackend"; Table = "AggregateBoxBOM_Log"; Columns = @("GUID", "USER", "ACTION", "System_Key", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP") },
+            @{ Sheet = "ShippingBackend"; Table = "AggregatePackages_Log"; Columns = @("GUID", "USER", "ACTION", "System_Key", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP") }
         )
         FormCode = @(
             @{
@@ -247,7 +261,7 @@ $validationSpecs = @(
         FormSmokeMacro = "mProduction.ProductionFormInitializeSmokeForWorkbook"
         Tables = @(
             @{ Sheet = "TemplatesTable"; Table = "TemplatesTable"; Columns = @("TEMPLATE_SCOPE", "RECIPE_ID", "INGREDIENT_ID", "PROCESS", "TARGET_TABLE", "TARGET_COLUMN", "FORMULA", "GUID", "NOTES", "ACTIVE", "CREATED_AT", "UPDATED_AT") },
-            @{ Sheet = "ProductionLog"; Table = "ProductionLog"; Columns = @("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID") },
+            @{ Sheet = "ProductionLog"; Table = "ProductionLog"; Columns = @("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID") },
             @{ Sheet = "BatchCodesLog"; Table = "BatchCodesLog"; Columns = @("RECIPE", "RECIPE_ID", "PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "TIMESTAMP", "LOCATION", "USER", "GUID") }
         )
     },
@@ -659,7 +673,7 @@ finally {
     $lines += "# Phase 6 Packaged XLAM Validation Results"
     $lines += ""
     $lines += "- Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-    $lines += "- Deploy root: $deployPath"
+    $lines += "- Deploy root: deploy/current"
     $lines += "- Passed: $passedCount"
     $lines += "- Failed: $failedCount"
     $lines += ""
@@ -667,11 +681,12 @@ finally {
     $lines += "|---|---|---|"
     foreach ($row in $resultRows) {
         $result = if ($row.Passed) { "PASS" } else { "FAIL" }
-        $detail = [string]$row.Detail
+        $detail = ConvertTo-SafePackagedEvidenceText ([string]$row.Detail)
         $detail = $detail.Replace("|", "/")
         $lines += "| $($row.Check) | $result | $detail |"
     }
-    [System.IO.File]::WriteAllLines($resultPath, $lines)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($resultPath, (($lines -join "`n") + "`n"), $utf8NoBom)
 
     foreach ($wb in $openedWorkbooks) {
         try { $wb.Close($false) } catch {}
