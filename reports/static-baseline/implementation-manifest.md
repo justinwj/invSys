@@ -4,7 +4,7 @@
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 7
 - Components: 152
-- Procedures: 4455
+- Procedures: 4462
 - Literal Application.Run targets: 14
 - Unresolved dynamic calls: 59
 

@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1041
-- Reviewed candidates: 1043
+- Scanner candidates: 1043
+- Reviewed candidates: 1045
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,9 +11,9 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 39 | Receiving-owned forms, services, and role package source. |
+| RECEIVING | 40 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 165 | Production-owned forms, services, and role package source. |
-| SHIPPING | 174 | Shipping and Boxing forms, services, and role package source. |
+| SHIPPING | 175 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 68 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 315 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 63 | Inventory and Designs Domain authority source. |
@@ -49,12 +49,12 @@
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4452 |
-| src/Production/Modules/mProduction.bas | Production | 12927 |
-| src/Receiving/Modules/modTS_Received.bas | Receiving | 2144 |
-| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 1833 |
+| src/Production/Forms/frmProduction.frm | Production | 4537 |
+| src/Production/Modules/mProduction.bas | Production | 12944 |
+| src/Receiving/Modules/modTS_Received.bas | Receiving | 2154 |
+| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 1846 |
 | src/Shipping/Forms/frmShippingBoxMaker.frm | Shipping | 1564 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21625 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21636 |
 
 ## Reviewed candidates
 
@@ -693,7 +693,6 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeChooser | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnLoadRecipe | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnNextBatch | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrintRecallCodes | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -737,6 +736,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.PaletteIngredientIsOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProcessCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormInitializeSmokeForWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionUiAccess | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -838,6 +838,7 @@
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RecordInvDelta | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RemoveLegacyReceivingButtons | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ToggleLogColumn | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ValidateQueueReceiveEventsFromCurrentWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -1010,6 +1011,7 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ReconcileShippableTotalsFromVersionInventory | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RefreshShipmentsUiAccess | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormHydrateInvSysFromShippables | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormLoadReadiness | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

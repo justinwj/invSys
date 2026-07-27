@@ -1396,6 +1396,19 @@ Public Function TestPendingSyncCount(ByVal shippablesArray As Variant, _
     TestPendingSyncCount = PendingShipmentSyncCount()
 End Function
 
+Public Function TestRunShipmentsSentActionForWorkbook(ByVal operatorWb As Workbook, _
+                                                       ByVal carrierValue As String, _
+                                                       Optional ByVal activatedWb As Workbook = Nothing) As String
+    SetOperatorWorkbook operatorWb
+    InitializeFromShipping True
+    mTxtCarrier.Value = carrierValue
+    If Not activatedWb Is Nothing Then activatedWb.Activate
+    mBtnSend_Click
+    TestRunShipmentsSentActionForWorkbook = _
+        "Status=" & mTxtStatus.Text & _
+        "; BoundWorkbook=" & mOperatorWorkbook.Name
+End Function
+
 Private Sub EvictOrphanedActiveOverlays()
     Dim r As Long
     Dim packageRow As Long

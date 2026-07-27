@@ -99,7 +99,7 @@ Public Function TestEnsureShippingWorkbookSurface_CreatesExpectedTables() As Lon
        And HasTable(wb, "invSys") _
        And HasTable(wb, "ShippingBOMView") _
        And Not WorksheetExists(wb, "ShippingBOM") _
-       And TableHasColumns(wb, "ShipmentsTally", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "ROW", "UOM", "LOCATION", "DESCRIPTION")) _
+       And TableHasColumns(wb, "ShipmentsTally", Array("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "UOM", "LOCATION", "DESCRIPTION")) _
        And TableHasColumns(wb, "BoxBuilder", Array("Box Name", "UOM", "LOCATION", "DESCRIPTION")) _
        And Not TableHasColumns(wb, "BoxBuilder", Array("ROW")) _
        And TableHasColumns(wb, "BoxBOM", Array("ITEM", "ROW", "QUANTITY", "UOM", "LOCATION", "DESCRIPTION")) _
@@ -107,7 +107,7 @@ Public Function TestEnsureShippingWorkbookSurface_CreatesExpectedTables() As Lon
        And TableHasColumns(wb, "invSysData_Shipping", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION")) _
        And TableHasColumns(wb, "ShippingBOMView", Array("PackageRow", "PackageItem", "ComponentRow", "ComponentQty", "UpdatedAtUTC", "UpdatedBy")) _
        And TableHasColumns(wb, "AggregateBoxBOM_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP")) _
-       And TableHasColumns(wb, "AggregatePackages_Log", Array("GUID", "USER", "ACTION", "ROW", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP")) Then
+       And TableHasColumns(wb, "AggregatePackages_Log", Array("GUID", "USER", "ACTION", "System_Key", "ITEM_CODE", "ITEM", "QTY_DELTA", "NEW_VALUE", "TIMESTAMP")) Then
         TestEnsureShippingWorkbookSurface_CreatesExpectedTables = 1
     End If
 

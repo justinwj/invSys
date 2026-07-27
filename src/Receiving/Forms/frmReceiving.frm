@@ -122,6 +122,18 @@ Public Function TestReceiptIdSeparatedFromReference() As Long
     End If
 End Function
 
+Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbook, _
+                                                       Optional ByVal activatedWb As Workbook = Nothing) As String
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    If Not activatedWb Is Nothing Then activatedWb.Activate
+    mBtnConfirm_Click
+    TestRunConfirmWritesActionForWorkbook = _
+        "Succeeded=" & CStr(modTS_Received.LastConfirmWritesSucceeded()) & _
+        "; Status=" & modTS_Received.LastConfirmWritesStatus() & _
+        "; BoundWorkbook=" & mOperatorWorkbook.Name
+End Function
+
 Private Sub BuildLayout()
     If mBuilt Then Exit Sub
 

@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
                      "componentCount":  152,
-                     "procedureCount":  4455,
-                     "lineCount":  99346,
+                     "procedureCount":  4462,
+                     "lineCount":  99494,
                      "literalApplicationRunCount":  14,
                      "unresolvedApplicationRunCount":  59,
                      "duplicateBodyCandidateCount":  193
@@ -10530,7 +10530,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10547,7 +10547,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10581,7 +10581,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10683,7 +10683,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -11435,7 +11435,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -11983,7 +11983,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12000,7 +12000,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14819,6 +14819,7 @@
                                                   "PopulateRunProcessCombo",
                                                   "PositionColumnHeaders",
                                                   "PrepareProductionOutput",
+                                                  "PrepareRunChoiceForActionTest",
                                                   "ProcessCaption",
                                                   "ProcessKey",
                                                   "ProductionColumnIndex",
@@ -14912,6 +14913,7 @@
                                                   "TestRecipeBuilderSelectUom",
                                                   "TestRecipeBuilderUomCatalogContains",
                                                   "TestRunPaletteCanonicalItemCodeStorage",
+                                                  "TestRunTwoConsecutiveBatchesForWorkbook",
                                                   "TestSelectedProductionOutputTableRow",
                                                   "TestStatusText",
                                                   "TestWriteRecipeHeaderToBoundWorkbook",
@@ -15262,6 +15264,7 @@
                                                   "ProcessNameFromTable",
                                                   "ProductionDesignsEnabled",
                                                   "ProductionFormInitializeSmokeForWorkbook",
+                                                  "ProductionFormTwoBatchActionReportForTest",
                                                   "ProductionGuid",
                                                   "ProductionIngredientIdsMatch",
                                                   "ProductionInventoryItemIsNonCounted",
@@ -15450,6 +15453,7 @@
                                                   "ResolveReceivingWorkbook",
                                                   "ResolveShapeCaptionReceiving",
                                                   "RestoreTable",
+                                                  "RunReceivingConfirmWritesFormActionForTest",
                                                   "SetReceivedTallyRowForForm",
                                                   "SheetExists",
                                                   "ShowDynamicItemSearch",
@@ -15568,6 +15572,7 @@
                                                   "TestPendingSyncCount",
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
+                                                  "TestRunShipmentsSentActionForWorkbook",
                                                   "TimingStart",
                                                   "TimingSummary",
                                                   "TLap",
@@ -16191,6 +16196,7 @@
                                                   "RestoreShipmentStageColumns",
                                                   "RetireActiveShippingBomPackageRows",
                                                   "RollbackShipmentCommitRow",
+                                                  "RunShipmentsSentFormActionForTest",
                                                   "RunShippingRuntimeQueueRefresh",
                                                   "SafeFileTokenShipping",
                                                   "SafeTableName",
@@ -16539,6 +16545,7 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1",
                                                    "tests/unit/TestStub_modTS_Received.bas"
                                                ],
                            "reviewRequired":  true
@@ -20080,23 +20087,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnNextBatch",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnNextBatch"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20624,6 +20614,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ProductionFormTwoBatchActionReportForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20783,6 +20790,23 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "EnsureGeneratedButtons"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "RunReceivingConfirmWritesFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -21276,6 +21300,23 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "LoadShippingBomPackagePickerItems"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "RunShipmentsSentFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

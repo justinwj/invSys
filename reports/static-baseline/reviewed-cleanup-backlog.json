@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "2f36f1dfc5e159ea84f93c283050342fe1bf0ee7ee374b8ce4d75b65582f26f7",
-                          "maintenanceCandidatesSha256":  "0450471a09fa46962e5c569c9ac88a783f9aea00159e9f50bd90921411be39cd"
+                          "implementationManifestSha256":  "953c385be428698aa72518b2884a3e0af3c805e44e4c786b7081e40ae99ff21e",
+                          "maintenanceCandidatesSha256":  "5247ad373c43567848aa2235845f5a73125a4aea64c0ced9cbc682b20ab1805d"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1041,
-                    "reviewedCandidateCount":  1043,
+                    "scannerCandidateCount":  1043,
+                    "reviewedCandidateCount":  1045,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  39,
+                            "candidateCount":  40,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -32,7 +32,7 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  174,
+                            "candidateCount":  175,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -210,28 +210,28 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  4452,
+                                                  "baselineLineCount":  4537,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  12927,
+                                                  "baselineLineCount":  12944,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  2144,
+                                                  "baselineLineCount":  2154,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  1833,
+                                                  "baselineLineCount":  1846,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -245,7 +245,7 @@
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  21625,
+                                                  "baselineLineCount":  21636,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -16376,6 +16376,7 @@
                                                   "PopulateRunProcessCombo",
                                                   "PositionColumnHeaders",
                                                   "PrepareProductionOutput",
+                                                  "PrepareRunChoiceForActionTest",
                                                   "ProcessCaption",
                                                   "ProcessKey",
                                                   "ProductionColumnIndex",
@@ -16469,6 +16470,7 @@
                                                   "TestRecipeBuilderSelectUom",
                                                   "TestRecipeBuilderUomCatalogContains",
                                                   "TestRunPaletteCanonicalItemCodeStorage",
+                                                  "TestRunTwoConsecutiveBatchesForWorkbook",
                                                   "TestSelectedProductionOutputTableRow",
                                                   "TestStatusText",
                                                   "TestWriteRecipeHeaderToBoundWorkbook",
@@ -16825,6 +16827,7 @@
                                                   "ProcessNameFromTable",
                                                   "ProductionDesignsEnabled",
                                                   "ProductionFormInitializeSmokeForWorkbook",
+                                                  "ProductionFormTwoBatchActionReportForTest",
                                                   "ProductionGuid",
                                                   "ProductionIngredientIdsMatch",
                                                   "ProductionInventoryItemIsNonCounted",
@@ -17384,29 +17387,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnLoadRecipe"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnNextBatch",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnNextBatch"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -18408,6 +18388,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ProductionFormTwoBatchActionReportForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -19230,7 +19233,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -19253,7 +19256,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -19299,7 +19302,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -19437,7 +19440,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20477,6 +20480,7 @@
                                                   "ResolveReceivingWorkbook",
                                                   "ResolveShapeCaptionReceiving",
                                                   "RestoreTable",
+                                                  "RunReceivingConfirmWritesFormActionForTest",
                                                   "SetReceivedTallyRowForForm",
                                                   "SheetExists",
                                                   "ShowDynamicItemSearch",
@@ -20522,6 +20526,7 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1",
                                                    "tests/unit/TestStub_modTS_Received.bas"
                                                ],
                            "deletionApproved":  false,
@@ -20827,6 +20832,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "RunReceivingConfirmWritesFormActionForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ToggleLogColumn",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -21052,7 +21080,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -23739,6 +23767,7 @@
                                                   "TestPendingSyncCount",
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
+                                                  "TestRunShipmentsSentActionForWorkbook",
                                                   "TimingStart",
                                                   "TimingSummary",
                                                   "TLap",
@@ -24374,6 +24403,7 @@
                                                   "RestoreShipmentStageColumns",
                                                   "RetireActiveShippingBomPackageRows",
                                                   "RollbackShipmentCommitRow",
+                                                  "RunShipmentsSentFormActionForTest",
                                                   "RunShippingRuntimeQueueRefresh",
                                                   "SafeFileTokenShipping",
                                                   "SafeTableName",
@@ -25985,6 +26015,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "RunShipmentsSentFormActionForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -26900,7 +26953,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -26923,7 +26976,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

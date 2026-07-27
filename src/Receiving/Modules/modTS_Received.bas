@@ -128,6 +128,16 @@ Public Sub ShowReceivingForm()
     frm.Show vbModeless
 End Sub
 
+Public Function RunReceivingConfirmWritesFormActionForTest(ByVal operatorWb As Workbook, _
+                                                           Optional ByVal activatedWb As Workbook = Nothing) As String
+    Dim frm As frmReceiving
+
+    Set frm = New frmReceiving
+    RunReceivingConfirmWritesFormActionForTest = _
+        frm.TestRunConfirmWritesActionForWorkbook(operatorWb, activatedWb)
+    Unload frm
+End Function
+
 Public Sub EnforceReceivingSupportSheetsHidden(ByVal wb As Workbook)
     On Error GoTo CleanExit
 

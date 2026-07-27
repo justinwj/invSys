@@ -1,6 +1,6 @@
 # Phase 6 Packaged XLAM Validation Results
 
-- Date: 2026-07-27 14:38:33
+- Date: 2026-07-27 15:28:23
 - Deploy root: deploy/current
 - Passed: 59
 - Failed: 0
@@ -48,7 +48,7 @@
 | Production.FormInitialize | PASS | OK/Pages=4/WindowStyle=Handle=True/Resizable=True/Minimize=True/Maximize=True/Status=Production form loaded for WH1.Production.Operator.xlsx. Inventory: ContractVersion=R1-INVENTORY-1/Workbook=invSys.Inventory.Domain.xlam/IsAddin=True/StartupOperatorMutation=False/LegacyDirectWrites=False/UndoModel=CompensatingEvent/Authority=WHx.invSys.Data.Inventory.xlsb Designs: legacy recipe fallback (disabled in warehouse config). |
 | Production.Surface | PASS | OK |
 | Admin.Init | PASS | modAdminInit.InitAdminAddin |
-| Admin.FormInitialize | PASS | OK/Rows=28/Workbook=WH1.invSys.Config.xlsb/ManualServerCredentials=FALSE/Uoms=12 |
+| Admin.FormInitialize | PASS | OK/Rows=28/Workbook=WHL4BF29D.invSys.Config.xlsb/ManualServerCredentials=FALSE/Uoms=12 |
 | Admin.Surface | PASS | OK |
 | Admin.PoisonReissue.PackagedSurface | PASS | FAIL/Report=Source workbook not open: __PACKAGED_SMOKE_MISSING__.xlsb |
 | Admin.DesignLifecycle.LegacyMigrationControl | PASS | LayoutReady=1 |

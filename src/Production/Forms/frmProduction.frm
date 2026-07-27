@@ -226,6 +226,91 @@ Public Function TestStatusText() As String
     TestStatusText = mTxtStatus.Text
 End Function
 
+Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Workbook, _
+                                                        ByVal inputItemCode As String, _
+                                                        ByVal inputItemName As String, _
+                                                        ByVal inputQty As Double, _
+                                                        ByVal inputUom As String, _
+                                                        ByVal inputLocation As String, _
+                                                        ByVal outputQty As Double, _
+                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
+    Dim batchNumber As Long
+    Dim batchStatus As String
+
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+
+    For batchNumber = 1 To 2
+        If Not PrepareRunChoiceForActionTest(inputItemCode, inputItemName, inputQty, _
+                                             inputUom, inputLocation) Then
+            TestRunTwoConsecutiveBatchesForWorkbook = _
+                "FAIL|Batch=" & CStr(batchNumber) & "|Prepare|" & TestStatusText()
+            Exit Function
+        End If
+        If Not activatedWb Is Nothing Then activatedWb.Activate
+        mLstRunPalette_Click
+        mTxtPaletteSplit.Text = "100"
+        mTxtPaletteQty.Text = CStr(inputQty)
+        mBtnRunApplyPalette_Click
+        mBtnManagerCheckIn_Click
+        batchStatus = TestStatusText()
+        If InStr(1, batchStatus, "Checked in ", vbTextCompare) = 0 Then
+            TestRunTwoConsecutiveBatchesForWorkbook = _
+                "FAIL|Batch=" & CStr(batchNumber) & "|CheckIn|" & batchStatus
+            Exit Function
+        End If
+
+        RefreshManagerState
+        If mLstManagerOutput.ListCount = 0 Then
+            TestRunTwoConsecutiveBatchesForWorkbook = _
+                "FAIL|Batch=" & CStr(batchNumber) & "|OutputMissing|" & TestStatusText()
+            Exit Function
+        End If
+        mLstManagerOutput.ListIndex = 0
+        mLstManagerOutput_Click
+        mTxtOutputReal.Text = CStr(outputQty)
+        mBtnManagerApplyOutput_Click
+        batchStatus = TestStatusText()
+        If InStr(1, batchStatus, "Complete Run finished", vbTextCompare) = 0 Then
+            TestRunTwoConsecutiveBatchesForWorkbook = _
+                "FAIL|Batch=" & CStr(batchNumber) & "|Complete|" & batchStatus
+            Exit Function
+        End If
+        If batchNumber = 1 Then mBtnManagerNext_Click
+    Next batchNumber
+
+    TestRunTwoConsecutiveBatchesForWorkbook = _
+        "OK|Batches=2|BoundWorkbook=" & mOperatorWorkbook.Name
+End Function
+
+Private Function PrepareRunChoiceForActionTest(ByVal itemCode As String, _
+                                               ByVal itemName As String, _
+                                               ByVal qtyValue As Double, _
+                                               ByVal uomValue As String, _
+                                               ByVal locationValue As String) As Boolean
+    Dim values(1 To 1, 1 To 11) As Variant
+
+    mLstRunPalette.Clear
+    Set mRunItemCodeByKey = Nothing
+    Set mRunProcessByKey = Nothing
+    Set mRunBaseQtyByKey = Nothing
+    values(1, 1) = "TEST"
+    values(1, 2) = "TEST-INPUT"
+    values(1, 3) = "Test input"
+    values(1, 4) = ""
+    values(1, 5) = itemName
+    values(1, 6) = ""
+    values(1, 7) = ""
+    values(1, 8) = uomValue
+    values(1, 9) = locationValue
+    values(1, 10) = qtyValue
+    values(1, 11) = itemCode
+    AddRunChoiceRows values
+    If mLstRunPalette.ListCount <> 1 Then Exit Function
+    mLstRunPalette.ListIndex = 0
+    PrepareRunChoiceForActionTest = True
+End Function
+
 Public Function TestSelectedProductionOutputTableRow(ByVal wb As Workbook, ByVal listIndex As Long) As Long
     If Not mBuilt Then BuildLayout
     SetOperatorWorkbook wb

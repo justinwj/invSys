@@ -7099,8 +7099,19 @@ Public Function ShipmentsFormProjectedInventoryForTest(ByVal shippablesArray As 
 End Function
 
 Public Function ShipmentsFormPendingSyncCountForTest(ByVal shippablesArray As Variant, _
-                                                     ByVal shipmentsListData As Variant) As Long
+                                                      ByVal shipmentsListData As Variant) As Long
     ShipmentsFormPendingSyncCountForTest = frmShipmentsTally.TestPendingSyncCount(shippablesArray, shipmentsListData)
+End Function
+
+Public Function RunShipmentsSentFormActionForTest(ByVal operatorWb As Workbook, _
+                                                  ByVal carrierValue As String, _
+                                                  Optional ByVal activatedWb As Workbook = Nothing) As String
+    Dim frm As frmShipmentsTally
+
+    Set frm = New frmShipmentsTally
+    RunShipmentsSentFormActionForTest = _
+        frm.TestRunShipmentsSentActionForWorkbook(operatorWb, carrierValue, activatedWb)
+    Unload frm
 End Function
 
 Public Function ShipmentReserveWouldBreachFloorForTest(ByVal invLo As ListObject, _

@@ -3649,8 +3649,8 @@ Public Function TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs() As Lo
     If loInv Is Nothing Or loShip Is Nothing Or loShipLog Is Nothing Then GoTo CleanExit
 
     AddInvSysSeedRow loInv, 907, "SKU-SHIP-001", "Shipping Refresh Item", "EA", "D4", 5
-    AddShippingTallyRow loShip, "REF-SHIP-001", "Shipping Refresh Item", 6, 907, "EA", "D4", "ship note"
-    AddAggregatePackagesLogRow loShipLog, "GUID-SHIP-001", "user1", "ADD", 907, "SKU-SHIP-001", "Shipping Refresh Item", 6, "6"
+    AddShippingTallyRow loShip, "REF-SHIP-001", "Shipping Refresh Item", 6, 907, "EA", "D4", "ship note", "SYS-SKU-SHIP-001"
+    AddAggregatePackagesLogRow loShipLog, "GUID-SHIP-001", "user1", "ADD", "SYS-SKU-SHIP-001", "SKU-SHIP-001", "Shipping Refresh Item", 6, "6"
 
     wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
     wbOps.Close SaveChanges:=False
@@ -3717,6 +3717,7 @@ Public Function TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStag
     Dim invRow As Long
     Dim logRow As Long
     Dim evt As Object
+    Dim payloadItem As Object
     Dim statusOut As String
     Dim errorCode As String
     Dim errorMessage As String
@@ -3746,6 +3747,7 @@ Public Function TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStag
         failureReason = "Canonical shipping seed event failed: " & errorCode & "; " & errorMessage
         GoTo CleanExit
     End If
+    wbInv.Save
 
     Set wbSnap = CreateSnapshotWorkbook(rootPath, "WH79", "SKU-SHIP-POST", 10, CDate("2026-03-25 12:15:00"))
     If wbSnap Is Nothing Then GoTo CleanExit
@@ -3765,8 +3767,9 @@ Public Function TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStag
     End If
 
     AddInvSysSeedRow loInv, 912, "SKU-SHIP-POST", "Shipping Post Item", "EA", "D4", 1
-    AddShippingTallyRow loShip, "REF-SHIP-POST-001", "Shipping Post Item", 6, 912, "EA", "D4", "ship workflow"
-    AddAggregatePackagesLogRow loShipLog, "GUID-SHIP-POST-001", currentUser, "ADD", 912, "SKU-SHIP-POST", "Shipping Post Item", 6, "6"
+    SetTableCell loInv, 1, "System_Key", "SYS-EVT-SHIP-SEED-001"
+    AddShippingTallyRow loShip, "REF-SHIP-POST-001", "Shipping Post Item", 6, 912, "EA", "D4", "ship workflow", "SYS-EVT-SHIP-SEED-001"
+    AddAggregatePackagesLogRow loShipLog, "GUID-SHIP-POST-001", currentUser, "ADD", "SYS-EVT-SHIP-SEED-001", "SKU-SHIP-POST", "Shipping Post Item", 6, "6"
     wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
     wbOps.Close SaveChanges:=False
     Set wbOps = Nothing
@@ -3784,13 +3787,14 @@ Public Function TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStag
         GoTo CleanExit
     End If
 
-    payloadJson = modRoleEventWriter.BuildPayloadJson( _
-        modRoleEventWriter.CreatePayloadItem( _
-            CLng(GetTableValue(loShip, 1, "ROW")), _
-            CStr(GetTableValue(loInv, 1, "ITEM_CODE")), _
-            CDbl(GetTableValue(loShip, 1, "QUANTITY")), _
-            CStr(GetTableValue(loShip, 1, "LOCATION")), _
-            CStr(GetTableValue(loShip, 1, "DESCRIPTION"))))
+    Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+        0, _
+        CStr(GetTableValue(loInv, 1, "ITEM_CODE")), _
+        CDbl(GetTableValue(loShip, 1, "QUANTITY")), _
+        CStr(GetTableValue(loShip, 1, "LOCATION")), _
+        CStr(GetTableValue(loShip, 1, "DESCRIPTION")))
+    payloadItem("System_Key") = CStr(GetTableValue(loShip, 1, "System_Key"))
+    payloadJson = modRoleEventWriter.BuildPayloadJson(payloadItem)
 
     If Not modRoleEventWriter.QueuePayloadEvent(CORE_EVENT_TYPE_SHIP, "WH79", "S19", currentUser, payloadJson, "saved-shipping-post", "", "", Now, wbInbox, eventIdOut, report) Then
         failureReason = "QueuePayloadEvent failed from saved shipping workbook: " & report
@@ -3847,7 +3851,8 @@ Public Function TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStag
         GoTo CleanExit
     End If
     If CDbl(GetTableValue(loInv, invRow, "TOTAL INV")) <> 4 Then
-        failureReason = "invSys TOTAL INV did not reflect saved shipping processing."
+        failureReason = "invSys TOTAL INV did not reflect saved shipping processing. Actual=" & _
+                        CStr(GetTableValue(loInv, invRow, "TOTAL INV")) & "; ProcessorReport=" & report
         GoTo CleanExit
     End If
     If loShip.ListRows.Count <> 1 Or loShipLog.ListRows.Count <> 1 Then
@@ -10762,7 +10767,8 @@ Private Sub AddShippingTallyRow(ByVal lo As ListObject, _
                                 ByVal rowValue As Long, _
                                 ByVal uom As String, _
                                 ByVal locationVal As String, _
-                                ByVal descriptionVal As String)
+                                ByVal descriptionVal As String, _
+                                Optional ByVal systemKey As String = "")
     Dim lr As ListRow
 
     If lo Is Nothing Then Exit Sub
@@ -10778,7 +10784,8 @@ Private Sub AddShippingTallyRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "REF_NUMBER", refNumber
     SetTableCell lo, lr.Index, "ITEMS", itemName
     SetTableCell lo, lr.Index, "QUANTITY", qty
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    If Trim$(systemKey) = "" Then systemKey = "SYS-SHIP-" & CStr(rowValue)
+    SetTableCell lo, lr.Index, "System_Key", systemKey
     SetTableCell lo, lr.Index, "UOM", uom
     SetTableCell lo, lr.Index, "LOCATION", locationVal
     SetTableCell lo, lr.Index, "DESCRIPTION", descriptionVal
@@ -10951,7 +10958,7 @@ Private Sub AddAggregatePackagesLogRow(ByVal lo As ListObject, _
                                        ByVal guidVal As String, _
                                        ByVal userId As String, _
                                        ByVal actionVal As String, _
-                                       ByVal rowValue As Long, _
+                                       ByVal systemKey As String, _
                                        ByVal sku As String, _
                                        ByVal itemName As String, _
                                        ByVal qtyDelta As Double, _
@@ -10971,7 +10978,7 @@ Private Sub AddAggregatePackagesLogRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "GUID", guidVal
     SetTableCell lo, lr.Index, "USER", userId
     SetTableCell lo, lr.Index, "ACTION", actionVal
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", systemKey
     SetTableCell lo, lr.Index, "ITEM_CODE", sku
     SetTableCell lo, lr.Index, "ITEM", itemName
     SetTableCell lo, lr.Index, "QTY_DELTA", qtyDelta

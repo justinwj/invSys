@@ -210,6 +210,23 @@ ErrHandler:
     Resume CleanExit
 End Function
 
+Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Workbook, _
+                                                          ByVal inputItemCode As String, _
+                                                          ByVal inputItemName As String, _
+                                                          ByVal inputQty As Double, _
+                                                          ByVal inputUom As String, _
+                                                          ByVal inputLocation As String, _
+                                                          ByVal outputQty As Double, _
+                                                          Optional ByVal activatedWb As Workbook = Nothing) As String
+    Dim frm As frmProduction
+
+    Set frm = New frmProduction
+    ProductionFormTwoBatchActionReportForTest = _
+        frm.TestRunTwoConsecutiveBatchesForWorkbook(operatorWb, inputItemCode, _
+            inputItemName, inputQty, inputUom, inputLocation, outputQty, activatedWb)
+    Unload frm
+End Function
+
 ' ===== Worksheet event entry points =====
 Public Sub HandleProductionSelectionChange(ByVal target As Range)
     If target Is Nothing Then Exit Sub
