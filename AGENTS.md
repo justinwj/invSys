@@ -114,9 +114,27 @@ When a request arrives:
 
 ## Architectural invariants
 
-- Canonical inventory allocation identity uses `ITEM_CODE`/SKU and Location.
-- Worksheet `ROW` is migration or display metadata and is never sufficient
-  canonical identity.
+- The exact managed inventory identity header is `System_Key`.
+- `System_Key` is generated once at the owning creation/service boundary,
+  system-wide unique, immutable, and preserved through sorting, refresh,
+  save/reopen, movement, condition changes, snapshots, and projection rebuild.
+- `ITEM_CODE`/SKU identifies what an item is. It does not identify one durable
+  inventory entity.
+- Location, quantity, `Condition`, and custom fields are attributes, not
+  identity.
+- `ROW` is prohibited as a managed runtime header, migration key, display key,
+  compatibility field, or authority path.
+- This is a greenfield reset. Do not import, translate, reconcile, repair, or
+  map old business inventory into `System_Key`.
+- Supported test inventory begins with Admin Generate Warehouse/Create
+  Warehouse and optional bootstrap or Admin `Seed Demo Inventory`.
+- Managed tables define a required header subset and tolerate additional
+  end-user columns. Resolve managed columns by normalized header name, never
+  ordinal position, and preserve unknown columns through refresh/resize/rebuild.
+- Shared custom values persist by `System_Key`; workbook-only display columns
+  remain local.
+- `Condition` is a managed inventory header and seeded demo inventory defaults
+  it to `GOOD`.
 - When `DesignsEnabled=True`, Production reads released Designs Domain recipes
   and must not silently fall back to legacy recipe storage.
 - Within one VBA project, use direct typed procedure calls.
