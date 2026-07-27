@@ -236,6 +236,10 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
                                                         Optional ByVal activatedWb As Workbook = Nothing) As String
     Dim batchNumber As Long
     Dim batchStatus As String
+    Dim activeChoices As MSForms.ListBox
+    Dim splitInput As MSForms.TextBox
+    Dim qtyInput As MSForms.TextBox
+    Dim choiceIndex As Long
 
     If Not mBuilt Then BuildLayout
     SetOperatorWorkbook operatorWb
@@ -248,9 +252,25 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
             Exit Function
         End If
         If Not activatedWb Is Nothing Then activatedWb.Activate
-        mLstRunPalette_Click
-        mTxtPaletteSplit.Text = "100"
-        mTxtPaletteQty.Text = CStr(inputQty)
+        SetRunLocationForActionTest inputLocation
+        BuildRunTreeFromPaletteList
+        Set activeChoices = ActiveRunPaletteList()
+        choiceIndex = FirstSelectableRunChoice(activeChoices)
+        If choiceIndex < 0 Then
+            TestRunTwoConsecutiveBatchesForWorkbook = _
+                "FAIL|Batch=" & CStr(batchNumber) & "|Prepare|No selectable inventory choice."
+            Exit Function
+        End If
+        activeChoices.ListIndex = choiceIndex
+        If activeChoices Is mLstRunTree Then
+            mLstRunTree_Click
+        Else
+            mLstRunPalette_Click
+        End If
+        Set splitInput = ActiveRunSplitTextBox()
+        Set qtyInput = ActiveRunQtyTextBox()
+        splitInput.Text = "100"
+        qtyInput.Text = CStr(inputQty)
         mBtnRunApplyPalette_Click
         mBtnManagerCheckIn_Click
         batchStatus = TestStatusText()
@@ -271,7 +291,7 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
         mTxtOutputReal.Text = CStr(outputQty)
         mBtnManagerApplyOutput_Click
         batchStatus = TestStatusText()
-        If InStr(1, batchStatus, "Complete Run finished", vbTextCompare) = 0 Then
+        If InStr(1, batchStatus, "Production run completed.", vbTextCompare) = 0 Then
             TestRunTwoConsecutiveBatchesForWorkbook = _
                 "FAIL|Batch=" & CStr(batchNumber) & "|Complete|" & batchStatus
             Exit Function
@@ -281,6 +301,41 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
 
     TestRunTwoConsecutiveBatchesForWorkbook = _
         "OK|Batches=2|BoundWorkbook=" & mOperatorWorkbook.Name
+End Function
+
+Private Sub SetRunLocationForActionTest(ByVal locationValue As String)
+    locationValue = Trim$(locationValue)
+    If locationValue = "" Then Exit Sub
+    EnsureComboValueForActionTest mCmbRunLocation, locationValue
+    EnsureComboValueForActionTest mCmbTreeRunLocation, locationValue
+End Sub
+
+Private Sub EnsureComboValueForActionTest(ByVal combo As MSForms.ComboBox, ByVal valueText As String)
+    Dim i As Long
+    Dim found As Boolean
+
+    If combo Is Nothing Then Exit Sub
+    For i = 0 To combo.ListCount - 1
+        If StrComp(Trim$(NzStr(combo.List(i))), valueText, vbTextCompare) = 0 Then
+            found = True
+            Exit For
+        End If
+    Next i
+    If Not found Then combo.AddItem valueText
+    combo.Value = valueText
+End Sub
+
+Private Function FirstSelectableRunChoice(ByVal choices As MSForms.ListBox) As Long
+    Dim i As Long
+
+    FirstSelectableRunChoice = -1
+    If choices Is Nothing Then Exit Function
+    For i = 0 To choices.ListCount - 1
+        If Not IsRunTreeParentRow(choices, i) And Not IsRunTreeOutputRow(choices, i) Then
+            FirstSelectableRunChoice = i
+            Exit Function
+        End If
+    Next i
 End Function
 
 Private Function PrepareRunChoiceForActionTest(ByVal itemCode As String, _
@@ -2023,7 +2078,11 @@ Private Sub SyncRunLocationCombo(ByVal sourceCombo As MSForms.ComboBox, ByVal ta
     locVal = ComboText(sourceCombo)
     wasLoading = mLoading
     mLoading = True
-    targetCombo.ListIndex = 0
+    If targetCombo.ListCount > 0 Then
+        targetCombo.ListIndex = 0
+    Else
+        targetCombo.Value = ""
+    End If
     For i = 0 To targetCombo.ListCount - 1
         If StrComp(NzStr(targetCombo.List(i)), locVal, vbTextCompare) = 0 Then
             targetCombo.ListIndex = i
@@ -2043,7 +2102,11 @@ Private Sub SyncRunProcessCombo(ByVal sourceCombo As MSForms.ComboBox, ByVal tar
     procVal = ComboText(sourceCombo)
     wasLoading = mLoading
     mLoading = True
-    targetCombo.ListIndex = 0
+    If targetCombo.ListCount > 0 Then
+        targetCombo.ListIndex = 0
+    Else
+        targetCombo.Value = ""
+    End If
     For i = 0 To targetCombo.ListCount - 1
         If StrComp(NzStr(targetCombo.List(i)), procVal, vbTextCompare) = 0 Then
             targetCombo.ListIndex = i
@@ -3499,6 +3562,7 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
     Dim agg As Object
     Dim i As Long
     Dim rowVal As String
+    Dim systemKey As String
     Dim itemCode As String
     Dim identityKey As String
     Dim qtyVal As Double
@@ -3512,13 +3576,13 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
     For i = 0 To mLstRunPalette.ListCount - 1
         rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
         itemCode = Trim$(RunItemCodeFromList(mLstRunPalette, i))
-        If rowVal <> "" Then
-            identityKey = "ROW|" & rowVal
-        ElseIf itemCode <> "" Then
-            identityKey = "SKU|" & itemCode
-        Else
-            GoTo NextChoice
+        locVal = NzStr(mLstRunPalette.List(i, 9))
+        systemKey = ResolveRunSystemKey(itemCode, NzStr(mLstRunPalette.List(i, 4)), locVal)
+        If systemKey = "" Then
+            ShowStatus "Cannot complete run. The selected inventory row has no immutable System_Key."
+            Exit Function
         End If
+        identityKey = "SYS|" & systemKey
         If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
         qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
         If qtyVal <= 0 Then GoTo NextChoice
@@ -3528,13 +3592,12 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
                        NzStr(mLstRunPalette.List(i, 8)) & " is available."
             Exit Function
         End If
-        locVal = NzStr(mLstRunPalette.List(i, 9))
         If agg.Exists(identityKey) Then
             Dim existingAgg As Variant
             existingAgg = agg(identityKey)
-            agg(identityKey) = Array(CDbl(existingAgg(0)) + qtyVal, locVal, rowVal, itemCode)
+            agg(identityKey) = Array(CDbl(existingAgg(0)) + qtyVal, locVal, systemKey, itemCode)
         Else
-            agg.Add identityKey, Array(qtyVal, locVal, rowVal, itemCode)
+            agg.Add identityKey, Array(qtyVal, locVal, systemKey, itemCode)
         End If
 NextChoice:
     Next i
@@ -3546,7 +3609,7 @@ NextChoice:
         locVal = NzStr(agg(key)(1))
         Set payloadItem = CreateObject("Scripting.Dictionary")
         payloadItem.CompareMode = vbTextCompare
-        payloadItem("Row") = CLng(Val(NzStr(agg(key)(2))))
+        payloadItem("System_Key") = NzStr(agg(key)(2))
         payloadItem("SKU") = NzStr(agg(key)(3))
         payloadItem("Qty") = qtyVal
         payloadItem("Location") = locVal
@@ -3563,6 +3626,7 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
     Dim agg As Object
     Dim i As Long
     Dim rowVal As String
+    Dim systemKey As String
     Dim itemCode As String
     Dim identityKey As String
     Dim qtyVal As Double
@@ -3577,13 +3641,10 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
     For i = 0 To mLstRunPalette.ListCount - 1
         rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
         itemCode = Trim$(RunItemCodeFromList(mLstRunPalette, i))
-        If rowVal <> "" Then
-            identityKey = "ROW|" & rowVal
-        ElseIf itemCode <> "" Then
-            identityKey = "SKU|" & itemCode
-        Else
-            GoTo NextChoice
-        End If
+        systemKey = ResolveRunSystemKey(itemCode, NzStr(mLstRunPalette.List(i, 4)), _
+                                        NzStr(mLstRunPalette.List(i, 9)))
+        If systemKey = "" Then Exit Function
+        identityKey = "SYS|" & systemKey
         If Not IsNumeric(NzStr(mLstRunPalette.List(i, 6))) Then GoTo NextChoice
         qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
         If qtyVal <= 0 Then GoTo NextChoice
@@ -3593,7 +3654,7 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
             agg(identityKey) = entry
         Else
             agg.Add identityKey, Array( _
-                rowVal, _
+                systemKey, _
                 itemCode, _
                 NzStr(mLstRunPalette.List(i, 4)), _
                 NzStr(mLstRunPalette.List(i, 7)), _
@@ -3609,7 +3670,7 @@ NextChoice:
     For Each key In agg.Keys
         outRow = outRow + 1
         entry = agg(key)
-        SetCellByHeader lo, outRow, "ROW", NzStr(entry(0))
+        SetCellByHeader lo, outRow, "System_Key", NzStr(entry(0))
         SetCellByHeader lo, outRow, "ITEM_CODE", NzStr(entry(1))
         SetCellByHeader lo, outRow, "ITEM", NzStr(entry(2))
         SetCellByHeader lo, outRow, "UOM", NzStr(entry(3))
@@ -3617,6 +3678,46 @@ NextChoice:
         SetCellByHeader lo, outRow, "TOTAL INV", NzStr(entry(4))
     Next key
     WriteProductionCheckRowsFromRunPalette = True
+End Function
+
+Private Function ResolveRunSystemKey(ByVal itemCode As String, _
+                                     ByVal itemName As String, _
+                                     ByVal locationValue As String) As String
+    Dim lo As ListObject
+    Dim cSystemKey As Long
+    Dim cItemCode As Long
+    Dim cItem As Long
+    Dim cLocation As Long
+    Dim r As Long
+    Dim codeMatches As Boolean
+    Dim nameMatches As Boolean
+    Dim locationMatches As Boolean
+
+    Set lo = InventoryTable()
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    cSystemKey = ProductionColumnIndex(lo, "System_Key")
+    cItemCode = ProductionColumnIndex(lo, "ITEM_CODE")
+    If cItemCode = 0 Then cItemCode = ProductionColumnIndex(lo, "SKU")
+    cItem = ProductionColumnIndex(lo, "ITEM")
+    If cItem = 0 Then cItem = ProductionColumnIndex(lo, "ItemName")
+    cLocation = ProductionColumnIndex(lo, "LOCATION")
+    If cSystemKey = 0 Then Exit Function
+
+    For r = 1 To lo.ListRows.Count
+        codeMatches = (Trim$(itemCode) <> "" And cItemCode > 0 And _
+                       StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItemCode).Value)), _
+                               Trim$(itemCode), vbTextCompare) = 0)
+        nameMatches = (Trim$(itemName) <> "" And cItem > 0 And _
+                       StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItem).Value)), _
+                               Trim$(itemName), vbTextCompare) = 0)
+        locationMatches = (Trim$(locationValue) = "" Or cLocation = 0 Or _
+                           StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cLocation).Value)), _
+                                   Trim$(locationValue), vbTextCompare) = 0)
+        If (codeMatches Or nameMatches) And locationMatches Then
+            ResolveRunSystemKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cSystemKey).Value))
+            If ResolveRunSystemKey <> "" Then Exit Function
+        End If
+    Next r
 End Function
 
 Private Function RunChoiceWouldExceedInventory(ByVal listIndex As Long, ByVal qtyVal As Double) As Boolean

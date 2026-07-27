@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1047
-- Reviewed candidates: 1049
+- Scanner candidates: 1048
+- Reviewed candidates: 1050
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 41 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 165 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 166 | Production-owned forms, services, and role package source. |
 | SHIPPING | 176 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 68 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 315 | Headless shared runtime and developer-support source in Core. |
@@ -49,8 +49,8 @@
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4537 |
-| src/Production/Modules/mProduction.bas | Production | 12944 |
+| src/Production/Forms/frmProduction.frm | Production | 4638 |
+| src/Production/Modules/mProduction.bas | Production | 13082 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 2175 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 1855 |
 | src/Shipping/Forms/frmShippingBoxMaker.frm | Shipping | 1564 |
@@ -687,7 +687,7 @@
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookBeforeClose | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookOpen | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.ClearProductionCheckRows | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Production_Forms_frmProduction.frm:frmProduction.InventoryTable | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnBuildRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -749,6 +749,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelectedStage | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestProductionRecipesRuntimeRoundTrip | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ValidateQueueProductionCompleteEventFromCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| root:src_Production_ClassModules_cProductionRunSession.cls:cProductionRunSession.Class_Initialize | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignAdd_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignIngredient_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

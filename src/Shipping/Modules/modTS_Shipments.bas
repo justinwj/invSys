@@ -2310,7 +2310,7 @@ Public Sub HandleShippingSelectionChange(ByVal target As Range)
                 If target.Column <> targetCol.Range.Column Then Exit Sub
                 If target.Row <> lo.HeaderRowRange.Row Then Exit Sub
                 Set gSelectedCell = target
-                ShowDynamicItemSearch target
+                ShowShippingDynamicItemSearch target
                 SelectBoxBuilderDataCellForRepeatHeaderPicker lo
                 Exit Sub
             End If
@@ -2329,7 +2329,7 @@ Public Sub HandleShippingSelectionChange(ByVal target As Range)
     If target.Row <= lo.HeaderRowRange.Row Then Exit Sub
 
     Set gSelectedCell = target
-    ShowDynamicItemSearch target
+    ShowShippingDynamicItemSearch target
 End Sub
 
 Public Sub HandleShippingSheetChange(ByVal target As Range)

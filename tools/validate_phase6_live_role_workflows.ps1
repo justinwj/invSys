@@ -1633,6 +1633,7 @@ try {
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $resolvedUserId
+        "System_Key" = "SYS-LIVE-REC"
         "SKU" = "SKU-REC"
         "Qty" = 1
         "Location" = "A1"

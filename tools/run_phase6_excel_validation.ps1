@@ -417,6 +417,7 @@ try {
         (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
         (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
+        (Join-Path $repo "src/Production/Modules/modProductionCompletionService.bas"),
         (Join-Path $repo "src/Production/Modules/mProduction.bas"),
         (Join-Path $repo "src/Admin/Modules/modAddinsPublish.bas"),
         (Join-Path $repo "src/Admin/Modules/modAdminWorkbookTarget.bas"),
@@ -437,6 +438,7 @@ try {
         (Join-Path $repo "tests/unit/TestReceivingReadiness.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
         (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas"),
+        (Join-Path $repo "tests/unit/TestProductionSessionService.bas"),
         (Join-Path $repo "tests/unit/TestDesignsDomain.bas")
     )
 
@@ -453,7 +455,9 @@ try {
     $classPaths = @(
         (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
         (Join-Path $repo "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls"),
-        (Join-Path $repo "src/Receiving/ClassModules/cAppEvents.cls")
+        (Join-Path $repo "src/Receiving/ClassModules/cReceivingAppEvents.cls"),
+        (Join-Path $repo "src/Production/ClassModules/cProductionRunSession.cls"),
+        (Join-Path $repo "src/Production/ClassModules/cProductionCompletionResult.cls")
     )
 
     $allTests = @(
@@ -699,6 +703,15 @@ try {
         "TestPhase6RoleSurfaces.TestResolveAdminTargetWorkbook_ExplicitWorkbookWinsOverActiveWorkbook",
         "TestPhase6RoleSurfaces.TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook",
         "TestPhase6RoleSurfaces.TestOpenAdminConsole_WithoutRuntime_DoesNotCreateDefaultWarehouse",
+        "TestProductionSessionService.TestProductionSession_AllocatesImmutableSystemKeys",
+        "TestProductionSessionService.TestProductionSession_RejectsBlankAndDuplicateInputKeys",
+        "TestProductionSessionService.TestProductionSession_AssignsExplicitConsumeAndCompleteEventIds",
+        "TestProductionSessionService.TestProductionSession_BecomesReadyOnlyAfterProcessorAndRefresh",
+        "TestProductionSessionService.TestProductionSession_RecordsCompensationOnlyAfterConsumeApplied",
+        "TestProductionSessionService.TestProductionSession_RoundTripsRestartState",
+        "TestProductionSessionService.TestProductionCompletionResult_IsStructuredAndSerializable",
+        "TestProductionSessionService.TestProductionCheckIn_StagesBySystemKeyWithoutMutatingInventory",
+        "TestProductionSessionService.TestProductionSession_PersistsThroughWorkbookCloseReopen",
         "TestDesignsDomain.TestDesignsSchema_CreatesAndValidatesAuthoritativeTables",
         "TestDesignsDomain.TestDesignsSchema_IsIdempotent",
         "TestDesignsDomain.TestDesignsQueries_ListDesignsAndGetBOMAreReadOnly",

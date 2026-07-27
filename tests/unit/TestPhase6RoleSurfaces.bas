@@ -626,6 +626,8 @@ Public Function TestProductionRun_CheckInStagesOutsideInvSysReadModel() As Long
        And CDbl(GetTableValueByColumn(loInv, 1, "TOTAL INV")) = 3175 _
        And CDbl(GetTableValueByColumn(loCheck, 1, "USED")) = 32.5 Then
         TestProductionRun_CheckInStagesOutsideInvSysReadModel = 1
+    Else
+        mLastTestFailure = result
     End If
 
 CleanExit:

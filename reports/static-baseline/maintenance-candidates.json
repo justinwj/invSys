@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  156,
-                     "procedureCount":  4471,
-                     "lineCount":  99595,
+                     "componentCount":  159,
+                     "procedureCount":  4569,
+                     "lineCount":  101170,
                      "literalApplicationRunCount":  14,
                      "unresolvedApplicationRunCount":  59,
                      "duplicateBodyCandidateCount":  193
@@ -868,23 +868,6 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "ClearProductionCheckRows"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.InventoryTable",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "InventoryTable"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -10109,6 +10092,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Production_ClassModules_cProductionRunSession.cls:cProductionRunSession.Class_Initialize",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "cProductionRunSession",
+                           "procedureNames":  [
+                                                  "Class_Initialize"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/ClassModules/cProductionRunSession.cls"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignAdd_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -14725,6 +14725,7 @@
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
                                                   "CurrentRecipeRowBudget",
+                                                  "EnsureComboValueForActionTest",
                                                   "EnsureRunBaseQtyMap",
                                                   "EnsureRunInventoryCache",
                                                   "EnsureRunItemCodeMap",
@@ -14741,6 +14742,7 @@
                                                   "FindProductionOutputTableRow",
                                                   "FirstNonBlankCheckRow",
                                                   "FirstRowValue",
+                                                  "FirstSelectableRunChoice",
                                                   "FormatRunNumber",
                                                   "GenerateRecipeIdForOperatorWorkbook",
                                                   "GetSelectedRunIngredientFilter",
@@ -14864,6 +14866,7 @@
                                                   "ResizeProductionLayout",
                                                   "ResizeProductionPages",
                                                   "ResolveOperatorWorkbook",
+                                                  "ResolveRunSystemKey",
                                                   "RunAllocationGroupKeyFromList",
                                                   "RunAllocationKeyFromList",
                                                   "RunAllocationPercentForGroup",
@@ -14902,6 +14905,7 @@
                                                   "SetPaletteTextSilently",
                                                   "SetRowValue",
                                                   "SetRunAllocationVisualState",
+                                                  "SetRunLocationForActionTest",
                                                   "ShowStatus",
                                                   "StoreRunAllocationOverride",
                                                   "StoreRunBaseQty",
@@ -15008,6 +15012,7 @@
                                                   "BuildInvSysOutputLookup",
                                                   "BuildInvSysRowIndex",
                                                   "BuildInvSysRowMap",
+                                                  "BuildInvSysSystemKeyIndex",
                                                   "BuildLegacyRuntimeRecipeStagingWorkbook",
                                                   "BuildMadeDeltasFromProductionOutput",
                                                   "BuildMadeDeltasFromProductionOutputRow",
@@ -15329,6 +15334,7 @@
                                                   "ResolveProductionOutputInventoryRow",
                                                   "ResolveProductionRecipesStorageTarget",
                                                   "ResolveProductionWorkbook",
+                                                  "ResolveUsedInventoryIndex",
                                                   "RestoreMadeStageByItemCode",
                                                   "RestoreMadeStageColumns",
                                                   "RestoreProductionOutputCell",
@@ -15361,6 +15367,7 @@
                                                   "TestProductionRecipeBuilderSaveAfterLoadPersistsEditedLines",
                                                   "TestProductionRecipesLocalRowsWinOverStaleRuntime",
                                                   "TestProductionRecipesRuntimeRoundTrip",
+                                                  "TestProductionSystemKeyPayloadStagesWithoutInventoryMutation",
                                                   "TestProductionUsedStagingDoesNotMutateInvSys",
                                                   "TestSelectedMadeDeltaRow",
                                                   "TestSelectedMadeDeltaSkuIdentity",
@@ -15371,6 +15378,7 @@
                                                   "UniqueListObjectName",
                                                   "UniqueShapeName",
                                                   "UpdateProductionOutputTable",
+                                                  "UsedEntryQty",
                                                   "ValidateQueueProductionCompleteEventFromCurrentWorkbook",
                                                   "ValidateUsedStagingAgainstInvSys",
                                                   "ValueOrPlaceholderProduction",
@@ -19996,6 +20004,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modProductionCompletionService",
+                           "procedureNames":  [
+                                                  "ClearProductionSessionFromWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionCompletionService.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

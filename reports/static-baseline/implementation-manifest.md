@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 156
-- Procedures: 4471
+- Components: 159
+- Procedures: 4569
 - Literal Application.Run targets: 14
 - Unresolved dynamic calls: 59
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 34 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 37 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
@@ -71,6 +71,7 @@
 | chkPublishInitial_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkShippable_Click | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
 | class_initialize | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
+| Class_Initialize | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
 | Class_Terminate | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbSourceWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbTargetWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -503,12 +504,14 @@
 | TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestPrecedence_StationOverridesWarehouse | TEST_ENTRY | tests/unit/TestCoreConfig.bas |
 | TestProcessor_DiscoversClosedConfiguredStationInboxWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestProductionCheckIn_StagesBySystemKeyWithoutMutatingInventory | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestProductionCompleteRun_LogsOutputIdempotently | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ReResolvesStaleOutputRow | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestProductionCompletionResult_IsStructuredAndSerializable | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionDesignStaging_DoesNotMutateOperatorRecipes | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionEventCreator_QueuesSignedInCurrentTargetEvent | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestProductionForm_AssignmentIncludesOutputRecipeRows | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
@@ -529,6 +532,13 @@
 | TestProductionRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |
 | TestProductionRun_CheckInStagesOutsideInvSysReadModel | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionRunInventory_PrefersOperatorLocationRows | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestProductionSession_AllocatesImmutableSystemKeys | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_AssignsExplicitConsumeAndCompleteEventIds | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_BecomesReadyOnlyAfterProcessorAndRefresh | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_PersistsThroughWorkbookCloseReopen | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_RecordsCompensationOnlyAfterConsumeApplied | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_RejectsBlankAndDuplicateInputKeys | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
+| TestProductionSession_RoundTripsRestartState | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestPublishAddins_IdempotentRepublishWritesManifest | TEST_ENTRY | tests/unit/TestAddinsPublish.bas |
 | TestPublishInitialArtifacts_PublishSuccess | TEST_ENTRY | tests/unit/TestWarehouseBootstrap.bas |
 | TestPublishInitialArtifacts_RepeatedPublishIsIdempotent | TEST_ENTRY | tests/unit/TestWarehouseBootstrap.bas |

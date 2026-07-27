@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "1a9eca23cc54cc547a674c1602548517c204efbdc1a412d9066550e02cd3a1c3",
-                          "maintenanceCandidatesSha256":  "74e6224301a2ace865a530b5f36074c10226936e2a7725b85269b148e5d1b403"
+                          "implementationManifestSha256":  "f17a08e87358ee6c0d135caa6660c21b892089996fdf0476b4edbb2cd90c4124",
+                          "maintenanceCandidatesSha256":  "0d42d80dccba61f3640e60ac2e7d5a2bc53613026093b0c7f1ba1f3d827327a8"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1047,
-                    "reviewedCandidateCount":  1049,
+                    "scannerCandidateCount":  1048,
+                    "reviewedCandidateCount":  1050,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  165,
+                            "candidateCount":  166,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -210,14 +210,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  4537,
+                                                  "baselineLineCount":  4638,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  12944,
+                                                  "baselineLineCount":  13082,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16313,6 +16313,7 @@
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
                                                   "CurrentRecipeRowBudget",
+                                                  "EnsureComboValueForActionTest",
                                                   "EnsureRunBaseQtyMap",
                                                   "EnsureRunInventoryCache",
                                                   "EnsureRunItemCodeMap",
@@ -16329,6 +16330,7 @@
                                                   "FindProductionOutputTableRow",
                                                   "FirstNonBlankCheckRow",
                                                   "FirstRowValue",
+                                                  "FirstSelectableRunChoice",
                                                   "FormatRunNumber",
                                                   "GenerateRecipeIdForOperatorWorkbook",
                                                   "GetSelectedRunIngredientFilter",
@@ -16452,6 +16454,7 @@
                                                   "ResizeProductionLayout",
                                                   "ResizeProductionPages",
                                                   "ResolveOperatorWorkbook",
+                                                  "ResolveRunSystemKey",
                                                   "RunAllocationGroupKeyFromList",
                                                   "RunAllocationKeyFromList",
                                                   "RunAllocationPercentForGroup",
@@ -16490,6 +16493,7 @@
                                                   "SetPaletteTextSilently",
                                                   "SetRowValue",
                                                   "SetRunAllocationVisualState",
+                                                  "SetRunLocationForActionTest",
                                                   "ShowStatus",
                                                   "StoreRunAllocationOverride",
                                                   "StoreRunBaseQty",
@@ -16602,6 +16606,7 @@
                                                   "BuildInvSysOutputLookup",
                                                   "BuildInvSysRowIndex",
                                                   "BuildInvSysRowMap",
+                                                  "BuildInvSysSystemKeyIndex",
                                                   "BuildLegacyRuntimeRecipeStagingWorkbook",
                                                   "BuildMadeDeltasFromProductionOutput",
                                                   "BuildMadeDeltasFromProductionOutputRow",
@@ -16923,6 +16928,7 @@
                                                   "ResolveProductionOutputInventoryRow",
                                                   "ResolveProductionRecipesStorageTarget",
                                                   "ResolveProductionWorkbook",
+                                                  "ResolveUsedInventoryIndex",
                                                   "RestoreMadeStageByItemCode",
                                                   "RestoreMadeStageColumns",
                                                   "RestoreProductionOutputCell",
@@ -16955,6 +16961,7 @@
                                                   "TestProductionRecipeBuilderSaveAfterLoadPersistsEditedLines",
                                                   "TestProductionRecipesLocalRowsWinOverStaleRuntime",
                                                   "TestProductionRecipesRuntimeRoundTrip",
+                                                  "TestProductionSystemKeyPayloadStagesWithoutInventoryMutation",
                                                   "TestProductionUsedStagingDoesNotMutateInvSys",
                                                   "TestSelectedMadeDeltaRow",
                                                   "TestSelectedMadeDeltaSkuIdentity",
@@ -16965,6 +16972,7 @@
                                                   "UniqueListObjectName",
                                                   "UniqueShapeName",
                                                   "UpdateProductionOutputTable",
+                                                  "UsedEntryQty",
                                                   "ValidateQueueProductionCompleteEventFromCurrentWorkbook",
                                                   "ValidateUsedStagingAgainstInvSys",
                                                   "ValueOrPlaceholderProduction",
@@ -17262,27 +17270,27 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.InventoryTable",
+                           "id":  "reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
+                           "componentName":  "modProductionCompletionService",
                            "procedureNames":  [
-                                                  "InventoryTable"
+                                                  "ClearProductionSessionFromWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
+                                               "src/Production/Modules/modProductionCompletionService.bas"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin",
@@ -18686,6 +18694,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "root:src_Production_ClassModules_cProductionRunSession.cls:cProductionRunSession.Class_Initialize",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "cProductionRunSession",
+                           "procedureNames":  [
+                                                  "Class_Initialize"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/ClassModules/cProductionRunSession.cls"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignAdd_Click",

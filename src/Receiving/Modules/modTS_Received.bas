@@ -581,7 +581,7 @@ Public Sub HandleReceivingSelectionChange(ByVal target As Range)
     If target.Row <= lo.HeaderRowRange.Row Then Exit Sub
 
     Set gSelectedCell = target
-    ShowDynamicItemSearch target
+    ShowReceivingDynamicItemSearch target
 End Sub
 
 Public Sub HandleReceivingSheetChange(ByVal target As Range)
