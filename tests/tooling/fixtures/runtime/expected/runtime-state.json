@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "reportType": "runtime-state",
   "capturedAtUtc": "2026-07-27T00:00:00Z",
   "toolVersion": "1.0.0",
@@ -152,6 +152,26 @@
       "AccessToken",
       "NasPassword",
       "PinHash"
+    ]
+  },
+  "safety": {
+    "inspectionMode": "FIXTURE",
+    "excelStartedByTool": false,
+    "workbooksOpenedByTool": 0,
+    "workbooksClosedByTool": 0,
+    "workbooksSavedByTool": 0,
+    "refreshActionsInvoked": 0,
+    "processorActionsInvoked": 0,
+    "repairActionsInvoked": 0,
+    "mutatingActionsInvoked": 0,
+    "inspectedFiles": [
+      {
+        "path": "tests/tooling/fixtures/runtime/synthetic-inspected-workbook.dat",
+        "authorityClass": "OPERATOR",
+        "beforeSha256": "fixture-sha256",
+        "afterSha256": "fixture-sha256",
+        "unchanged": true
+      }
     ]
   },
   "warnings": [

@@ -3,6 +3,12 @@
   "machineName": "SYNTHETIC-WAREHOUSE-PC",
   "sessionIdentity": "SYNTHETIC-EXCEL-SESSION",
   "excelProcessCount": 1,
+  "inspectedFiles": [
+    {
+      "path": "synthetic-inspected-workbook.dat",
+      "authorityClass": "OPERATOR"
+    }
+  ],
   "loadedAddins": [
     {
       "name": "invSys.Core.xlam",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://invsys.local/schemas/runtime-state-1.0.0.json",
+  "$id": "https://invsys.local/schemas/runtime-state-1.1.0.json",
   "title": "invSys Read-Only Runtime State",
   "type": "object",
   "additionalProperties": false,
@@ -22,10 +22,11 @@
     "operatorStaging",
     "forms",
     "redaction",
+    "safety",
     "warnings"
   ],
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
+    "schemaVersion": { "const": "1.1.0" },
     "reportType": { "const": "runtime-state" },
     "capturedAtUtc": { "type": "string", "format": "date-time" },
     "toolVersion": { "type": "string" },
@@ -255,6 +256,56 @@
         "rowValuesIncluded": { "const": false },
         "redactedFieldCount": { "type": "integer", "minimum": 0 },
         "redactedFields": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inspectionMode",
+        "excelStartedByTool",
+        "workbooksOpenedByTool",
+        "workbooksClosedByTool",
+        "workbooksSavedByTool",
+        "refreshActionsInvoked",
+        "processorActionsInvoked",
+        "repairActionsInvoked",
+        "mutatingActionsInvoked",
+        "inspectedFiles"
+      ],
+      "properties": {
+        "inspectionMode": {
+          "enum": ["FIXTURE", "LIVE_ATTACHED", "NO_SESSION"]
+        },
+        "excelStartedByTool": { "const": false },
+        "workbooksOpenedByTool": { "const": 0 },
+        "workbooksClosedByTool": { "const": 0 },
+        "workbooksSavedByTool": { "const": 0 },
+        "refreshActionsInvoked": { "const": 0 },
+        "processorActionsInvoked": { "const": 0 },
+        "repairActionsInvoked": { "const": 0 },
+        "mutatingActionsInvoked": { "const": 0 },
+        "inspectedFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "authorityClass",
+              "beforeSha256",
+              "afterSha256",
+              "unchanged"
+            ],
+            "properties": {
+              "path": { "type": "string" },
+              "authorityClass": { "type": "string" },
+              "beforeSha256": { "type": "string" },
+              "afterSha256": { "type": "string" },
+              "unchanged": { "const": true }
+            }
+          }
+        }
       }
     },
     "warnings": {

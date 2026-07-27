@@ -9,4 +9,10 @@ Repository test assets for `invSys`.
   maintenance/runtime evidence tools. These tests do not require Excel or an
   operational workbook.
 
+Run all developer-tooling contracts with:
+
+```powershell
+.\tests\tooling\Test-Slice0ToolContracts.ps1 -Mode All
+```
+
 Note: this scaffold is intentionally non-destructive and does not alter existing VBA source.

@@ -63,6 +63,7 @@ function Assert-SchemaContract {
         [string]$Name,
         [string]$Path,
         [string]$ExpectedTitle,
+        [string]$ExpectedVersion = "1.0.0",
         [string[]]$RequiredProperties
     )
 
@@ -75,8 +76,8 @@ function Assert-SchemaContract {
             ($schema.'$schema' -eq "https://json-schema.org/draft/2020-12/schema") `
             "Schema must use JSON Schema draft 2020-12."
         Assert-True ($Name + ".Version") `
-            ($schema.properties.schemaVersion.const -eq "1.0.0") `
-            "Schema must freeze contract version 1.0.0."
+            ($schema.properties.schemaVersion.const -eq $ExpectedVersion) `
+            "Schema must freeze contract version $ExpectedVersion."
         Assert-True ($Name + ".Title") `
             ($schema.title -eq $ExpectedTitle) `
             "Schema title does not identify the expected evidence type."
@@ -113,12 +114,13 @@ function Assert-ContractFixtures {
         -Name "Schema.RuntimeState" `
         -Path (Join-Path $contractRoot "runtime-state.schema.json") `
         -ExpectedTitle "invSys Read-Only Runtime State" `
+        -ExpectedVersion "1.1.0" `
         -RequiredProperties @(
             "schemaVersion", "reportType", "capturedAtUtc", "session",
             "loadedAddins", "openWorkbooks", "runtimeResolution", "config",
             "currentUser", "domainBridges", "inboxSummary", "processor",
             "snapshotReadModels", "operatorStaging", "forms", "redaction",
-            "warnings"
+            "safety", "warnings"
         )
 
     Assert-SchemaContract `
@@ -243,6 +245,13 @@ function Assert-ContractFixtures {
         Assert-True "Expected.Runtime.RedactionAudit" `
             ($expectedRuntime.redaction.redactedFieldCount -eq 3) `
             "Expected runtime evidence must audit all three synthetic secret fields."
+        Assert-True "Expected.Runtime.SafetyProof" `
+            (-not $expectedRuntime.safety.excelStartedByTool -and
+             $expectedRuntime.safety.mutatingActionsInvoked -eq 0 -and
+             @($expectedRuntime.safety.inspectedFiles | Where-Object {
+                -not $_.unchanged -or $_.beforeSha256 -ne $_.afterSha256
+             }).Count -eq 0) `
+            "Expected runtime evidence must prove zero mutation and unchanged inspected files."
     }
     catch {
         Add-Failure "Expected.Runtime" $_.Exception.Message
@@ -364,9 +373,37 @@ function Invoke-RuntimeToolContract {
         return
     }
 
+    $toolText = Get-Content -Raw -LiteralPath $toolPath
+    $forbiddenMutationPatterns = @(
+        'Workbooks\s*\.\s*Open',
+        '\.\s*Save(?:As|CopyAs)?\s*\(',
+        '\.\s*Close\s*\(',
+        '\.\s*Refresh(?:All)?\s*\(',
+        'Application\s*\.\s*Run',
+        'CreateObject\s*\(\s*"Excel\.Application"',
+        'New-Object\s+-ComObject\s+Excel\.Application',
+        '\.\s*Quit\s*\('
+    )
+    $foundMutationPatterns = @(
+        $forbiddenMutationPatterns |
+            Where-Object { [regex]::IsMatch($toolText, $_, "IgnoreCase") }
+    )
+    Assert-True "ToolB.Safety.NoMutationApis" `
+        ($foundMutationPatterns.Count -eq 0) `
+        ("Runtime extractor contains forbidden Excel mutation APIs: " +
+         ($foundMutationPatterns -join ", "))
+    Assert-True "ToolB.Safety.AttachOnly" `
+        $toolText.Contains("GetActiveObject") `
+        "Live inspection must attach to an existing Excel session and never start Excel."
+
     $tempRoot = Join-Path ([IO.Path]::GetTempPath()) (
         "invsys-slice0-runtime-" + [Guid]::NewGuid().ToString("N")
     )
+    $inspectedFixturePath = Join-Path $fixtureRoot `
+        "runtime\synthetic-inspected-workbook.dat"
+    $fixtureHashBefore = (
+        Get-FileHash -LiteralPath $inspectedFixturePath -Algorithm SHA256
+    ).Hash
     try {
         $firstRoot = Join-Path $tempRoot "first"
         $secondRoot = Join-Path $tempRoot "second"
@@ -398,6 +435,9 @@ function Invoke-RuntimeToolContract {
         $runtimeJsonPath = Join-Path $firstRoot "runtime-state.json"
         $runtimeText = [IO.File]::ReadAllText($runtimeJsonPath)
         $runtime = $runtimeText | ConvertFrom-Json
+        $runtimeMarkdown = [IO.File]::ReadAllText(
+            (Join-Path $firstRoot "runtime-state.md")
+        )
         $warningCodes = @($runtime.warnings | ForEach-Object { $_.code })
         $secretMarkers = @(
             "REDACTION_SENTINEL_ALPHA",
@@ -418,11 +458,95 @@ function Invoke-RuntimeToolContract {
         Assert-True "ToolB.Semantics.RetiredRowWarning" `
             ("RETIRED_ROW_HEADER" -in $warningCodes) `
             "Runtime report did not flag ROW as a retired managed header."
+        $missingMarkdownFacts = @(
+            ("- Loaded invSys add-ins: " + @($runtime.loadedAddins).Count),
+            ("- Open workbooks: " + @($runtime.openWorkbooks).Count),
+            ("- Mutating actions invoked: " +
+             $runtime.safety.mutatingActionsInvoked)
+        ) | Where-Object { -not $runtimeMarkdown.Contains($_) }
+        $missingMarkdownWarnings = @(
+            $warningCodes | Where-Object { -not $runtimeMarkdown.Contains($_) }
+        )
+        Assert-True "ToolB.Semantics.MarkdownAgrees" `
+            (@($missingMarkdownFacts).Count -eq 0 -and
+             $missingMarkdownWarnings.Count -eq 0) `
+            "Markdown omits counts or warning codes present in canonical JSON."
+        Assert-True "ToolB.Safety.ZeroMutationCounters" `
+            (-not $runtime.safety.excelStartedByTool -and
+             $runtime.safety.workbooksOpenedByTool -eq 0 -and
+             $runtime.safety.workbooksClosedByTool -eq 0 -and
+             $runtime.safety.workbooksSavedByTool -eq 0 -and
+             $runtime.safety.refreshActionsInvoked -eq 0 -and
+             $runtime.safety.processorActionsInvoked -eq 0 -and
+             $runtime.safety.repairActionsInvoked -eq 0 -and
+             $runtime.safety.mutatingActionsInvoked -eq 0) `
+            "Runtime extractor reported a forbidden mutating action."
+        Assert-True "ToolB.Safety.ReportedHashesUnchanged" `
+            (@($runtime.safety.inspectedFiles | Where-Object {
+                -not $_.unchanged -or $_.beforeSha256 -ne $_.afterSha256
+            }).Count -eq 0) `
+            "Runtime report did not prove identical before/after inspected-file hashes."
+
+        $compareToolPath = Join-Path $repoRoot "tools\compare-invsys-reports.ps1"
+        if (-not (Test-Path -LiteralPath $compareToolPath -PathType Leaf)) {
+            Add-Failure "ToolB.Comparison.EntryPoint" `
+                "tools/compare-invsys-reports.ps1 is absent; reports cannot be compared offline."
+        }
+        else {
+            $comparisonPath = Join-Path $tempRoot "comparison.json"
+            & $compareToolPath `
+                -BeforePath (Join-Path $firstRoot "runtime-state.json") `
+                -AfterPath (Join-Path $secondRoot "runtime-state.json") `
+                -OutputPath $comparisonPath
+            if (-not $?) {
+                throw "Offline report comparison did not complete successfully."
+            }
+            $comparison = Read-JsonFile $comparisonPath
+            Assert-True "ToolB.Comparison.NoExcelDependency" `
+                (-not (
+                    (Get-Content -Raw -LiteralPath $compareToolPath) -match
+                    "(?i)Excel\.Application|GetActiveObject|Workbooks"
+                )) `
+                "Comparison command must not depend on reopening Excel."
+            Assert-True "ToolB.Comparison.IdenticalReports" `
+                ($comparison.identical -and @($comparison.differences).Count -eq 0) `
+                "Comparison command did not identify byte-equivalent semantic reports."
+
+            $changedReportPath = Join-Path $tempRoot "runtime-state-changed.json"
+            $changedReport = Read-JsonFile (Join-Path $secondRoot "runtime-state.json")
+            $changedReport.capturedAtUtc = "2026-07-27T00:00:01Z"
+            [IO.File]::WriteAllText(
+                $changedReportPath,
+                (($changedReport | ConvertTo-Json -Depth 100).TrimEnd() +
+                 [Environment]::NewLine),
+                (New-Object Text.UTF8Encoding($false))
+            )
+            $changedComparisonPath = Join-Path $tempRoot "comparison-changed.json"
+            & $compareToolPath `
+                -BeforePath (Join-Path $firstRoot "runtime-state.json") `
+                -AfterPath $changedReportPath `
+                -OutputPath $changedComparisonPath
+            if (-not $?) {
+                throw "Offline changed-report comparison did not complete successfully."
+            }
+            $changedComparison = Read-JsonFile $changedComparisonPath
+            Assert-True "ToolB.Comparison.DetectsChange" `
+                (-not $changedComparison.identical -and
+                 $changedComparison.differenceCount -eq 1 -and
+                 @($changedComparison.differences)[0].path -eq '$.capturedAtUtc') `
+                "Comparison command did not report the expected capturedAtUtc change."
+        }
     }
     catch {
         Add-Failure "ToolB.Execution" $_.Exception.Message
     }
     finally {
+        $fixtureHashAfter = (
+            Get-FileHash -LiteralPath $inspectedFixturePath -Algorithm SHA256
+        ).Hash
+        Assert-True "ToolB.Safety.IndependentFixtureHash" `
+            ($fixtureHashBefore -eq $fixtureHashAfter) `
+            "Independent hash proof shows the inspected fixture changed."
         if ((Test-Path -LiteralPath $tempRoot) -and
             $tempRoot.StartsWith([IO.Path]::GetTempPath(), [StringComparison]::OrdinalIgnoreCase) -and
             ([IO.Path]::GetFileName($tempRoot) -like "invsys-slice0-runtime-*")) {

@@ -1,6 +1,6 @@
 # Runtime evidence redaction policy
 
-Version: `1.0.0`
+Version: `1.1.0`
 
 The default runtime-state report contains schemas, counts, identifiers,
 statuses, versions, hashes, and freshness metadata. It never contains row-level

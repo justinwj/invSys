@@ -5,6 +5,9 @@
 - Signed-in invSys user: `synthetic.operator`
 - Row values included: `False`
 - Redacted fields: `3`
+- Excel started by tool: `False`
+- Mutating actions invoked: `0`
+- Inspected files unchanged: `1/1`
 
 ## Warnings
 
