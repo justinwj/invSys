@@ -294,8 +294,8 @@ function Invoke-StaticToolContract {
                 -RootRegistryPath (Join-Path $contractRoot "vba-dynamic-roots.json") `
                 -OutputDirectory $outputRoot `
                 -ReportTimestampUtc "2026-07-27T00:00:00Z"
-            if ($LASTEXITCODE -ne 0) {
-                throw "Static scanner returned exit code $LASTEXITCODE."
+            if (-not $?) {
+                throw "Static scanner did not complete successfully."
             }
         }
 
@@ -336,7 +336,7 @@ function Invoke-StaticToolContract {
             ("REPLACE_DUPLICATE" -in $candidateTypes) `
             "Static scanner did not report duplicate normalized procedure bodies."
         Assert-True "ToolA.Semantics.UnreachableReviewOnly" `
-            (($candidates.candidates | Where-Object {
+            (@($candidates.candidates | Where-Object {
                 $_.procedureNames -contains "UnreferencedCandidate" -and $_.reviewRequired
             }).Count -eq 1) `
             "Unreachable candidate must remain review-only."
@@ -378,8 +378,8 @@ function Invoke-RuntimeToolContract {
                 -FixturePath (Join-Path $fixtureRoot "runtime\session-input.json") `
                 -OutputDirectory $outputRoot `
                 -ReportTimestampUtc "2026-07-27T00:00:00Z"
-            if ($LASTEXITCODE -ne 0) {
-                throw "Runtime extractor returned exit code $LASTEXITCODE."
+            if (-not $?) {
+                throw "Runtime extractor did not complete successfully."
             }
         }
 

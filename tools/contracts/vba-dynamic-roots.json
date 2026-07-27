@@ -14,7 +14,7 @@
     {
       "id": "convention.auto-open",
       "rootKind": "AUTO_OPEN",
-      "matchType": "EXACT",
+      "matchType": "REGEX",
       "componentPattern": ".*",
       "procedurePattern": "Auto_Open",
       "sourcePathPattern": null,
@@ -24,17 +24,17 @@
       "id": "convention.workbook-event",
       "rootKind": "WORKBOOK_EVENT",
       "matchType": "REGEX",
-      "componentPattern": "^ThisWorkbook$",
+      "componentPattern": ".*",
       "procedurePattern": "^Workbook_",
       "sourcePathPattern": null,
-      "reason": "Workbook event procedures are invoked by Excel."
+      "reason": "Workbook event-named procedures may be invoked by Excel or retained as workbook bridges."
     },
     {
       "id": "convention.userform-event",
       "rootKind": "USERFORM_EVENT",
       "matchType": "REGEX",
       "componentPattern": ".*",
-      "procedurePattern": "^(UserForm_|[A-Za-z0-9_]+_(Click|Change|Enter|Exit|Initialize|Terminate|QueryClose))",
+      "procedurePattern": "^(UserForm_|[A-Za-z0-9_]+_(Activate|AddControl|AfterUpdate|BeforeDragOver|BeforeDropOrPaste|BeforeUpdate|Change|Click|DblClick|Deactivate|DropButtonClick|Enter|Error|Exit|Initialize|KeyDown|KeyPress|KeyUp|Layout|MouseDown|MouseMove|MouseUp|QueryClose|RemoveControl|Resize|Scroll|SpinDown|SpinUp|Terminate|Zoom))",
       "sourcePathPattern": ".*\\.frm$",
       "reason": "UserForm and control events are convention-dispatched."
     },
@@ -46,6 +46,15 @@
       "procedurePattern": "^Worksheet_",
       "sourcePathPattern": null,
       "reason": "Worksheet event procedures are invoked by Excel."
+    },
+    {
+      "id": "convention.processor-handler",
+      "rootKind": "PROCESSOR_HANDLER",
+      "matchType": "REGEX",
+      "componentPattern": "(Processor|Apply|EventHandler)",
+      "procedurePattern": "^(Apply|Process|Handle|Run)",
+      "sourcePathPattern": null,
+      "reason": "Processor and Domain apply handlers may be selected through event dispatch."
     },
     {
       "id": "fixture.processor-handler",
