@@ -134,7 +134,7 @@ function Assert-ContractFixtures {
         $rootKinds = @($rootRegistry.roots | ForEach-Object { $_.rootKind })
         $requiredKinds = @(
             "RIBBON_CALLBACK", "AUTO_OPEN", "WORKBOOK_EVENT",
-            "USERFORM_EVENT", "WORKSHEET_EVENT", "PROCESSOR_HANDLER",
+            "USERFORM_EVENT", "CLASS_EVENT", "WORKSHEET_EVENT", "PROCESSOR_HANDLER",
             "STRING_DISPATCH", "CROSS_XLAM_BRIDGE", "TEST_ENTRY",
             "WINDOWS_CALLBACK", "COMPATIBILITY_SHIM"
         )

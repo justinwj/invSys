@@ -48,6 +48,15 @@
       "reason": "Worksheet event procedures are invoked by Excel."
     },
     {
+      "id": "convention.class-event",
+      "rootKind": "CLASS_EVENT",
+      "matchType": "REGEX",
+      "componentPattern": ".*",
+      "procedurePattern": "^(Class_(Initialize|Terminate)|[A-Za-z0-9_]+_(Activate|AfterUpdate|BeforeUpdate|Change|Click|DblClick|Enter|Error|Exit|KeyDown|KeyPress|KeyUp|MouseDown|MouseMove|MouseUp|Scroll|Terminate))$",
+      "sourcePathPattern": ".*\\.cls$",
+      "reason": "Class lifecycle and WithEvents callback procedures are convention-dispatched."
+    },
+    {
       "id": "convention.processor-handler",
       "rootKind": "PROCESSOR_HANDLER",
       "matchType": "REGEX",

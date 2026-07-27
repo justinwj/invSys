@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://invsys.local/schemas/reviewed-cleanup-backlog-1.0.0.json",
+  "title": "invSys Reviewed Cleanup Backlog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reportType",
+    "generatedAtUtc",
+    "sourceReports",
+    "policy",
+    "summary",
+    "workstreams",
+    "ratchets",
+    "candidates"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "reportType": { "const": "reviewed-cleanup-backlog" },
+    "generatedAtUtc": { "type": "string", "format": "date-time" },
+    "sourceReports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationManifestSha256",
+        "maintenanceCandidatesSha256"
+      ],
+      "properties": {
+        "implementationManifestSha256": { "type": "string", "minLength": 64 },
+        "maintenanceCandidatesSha256": { "type": "string", "minLength": 64 }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automaticDeletionAllowed",
+        "compileRequiredBeforeDeletion",
+        "protectingRegressionRequiredBeforeDeletion",
+        "scannerConfidenceIsDeletionAuthority"
+      ],
+      "properties": {
+        "automaticDeletionAllowed": { "const": false },
+        "compileRequiredBeforeDeletion": { "const": true },
+        "protectingRegressionRequiredBeforeDeletion": { "const": true },
+        "scannerConfidenceIsDeletionAuthority": { "const": false }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scannerCandidateCount",
+        "reviewedCandidateCount",
+        "manualCandidateCount",
+        "approvedDeletionCount",
+        "highConfidenceDeletionCount"
+      ],
+      "properties": {
+        "scannerCandidateCount": { "type": "integer", "minimum": 0 },
+        "reviewedCandidateCount": { "type": "integer", "minimum": 0 },
+        "manualCandidateCount": { "type": "integer", "minimum": 0 },
+        "approvedDeletionCount": { "const": 0 },
+        "highConfidenceDeletionCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "workstreams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "candidateCount", "reason"],
+        "properties": {
+          "name": {
+            "enum": [
+              "RECEIVING",
+              "PRODUCTION",
+              "SHIPPING",
+              "SHARED_OPERATIONS",
+              "CORE",
+              "DOMAINS",
+              "ADMIN",
+              "DEVELOPER_TOOLING",
+              "TESTING"
+            ]
+          },
+          "candidateCount": { "type": "integer", "minimum": 0 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "ratchets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxNewModuleLines",
+        "maxNewProcedureLines",
+        "allowSameProjectApplicationRunGrowth",
+        "allowUnresolvedDynamicCallGrowth",
+        "allowDuplicateBodyGrowth",
+        "oversizedModules"
+      ],
+      "properties": {
+        "maxNewModuleLines": { "type": "integer", "minimum": 1 },
+        "maxNewProcedureLines": { "type": "integer", "minimum": 1 },
+        "allowSameProjectApplicationRunGrowth": { "const": false },
+        "allowUnresolvedDynamicCallGrowth": { "const": false },
+        "allowDuplicateBodyGrowth": { "const": false },
+        "oversizedModules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourcePath",
+              "componentName",
+              "packageKey",
+              "baselineLineCount",
+              "growthAllowedWithoutException"
+            ],
+            "properties": {
+              "sourcePath": { "type": "string", "minLength": 1 },
+              "componentName": { "type": "string", "minLength": 1 },
+              "packageKey": { "type": "string", "minLength": 1 },
+              "baselineLineCount": { "type": "integer", "minimum": 1001 },
+              "growthAllowedWithoutException": { "const": false }
+            }
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "origin",
+          "scannerCandidateType",
+          "disposition",
+          "scannerConfidence",
+          "reviewedConfidence",
+          "reviewStatus",
+          "workstream",
+          "componentName",
+          "procedureNames",
+          "sourcePaths",
+          "reason",
+          "protectingTests",
+          "deletionApproved",
+          "nextAction"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "origin": { "enum": ["SCANNER", "MANUAL"] },
+          "scannerCandidateType": {
+            "enum": [
+              "REMOVE",
+              "MOVE_TO_TESTS",
+              "SPLIT_MODULE",
+              "REPLACE_DUPLICATE",
+              "REPLACE_SAME_PROJECT_LATE_BINDING",
+              "RETAIN_DYNAMIC_ROOT",
+              "ISOLATE_LEGACY_IMPORT",
+              "UNRESOLVED",
+              "MANUAL"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "REMOVE",
+              "MOVE_TO_TESTS",
+              "SPLIT_MODULE",
+              "REPLACE_DUPLICATE",
+              "REPLACE_SAME_PROJECT_LATE_BINDING",
+              "RETAIN_DYNAMIC_ROOT",
+              "ISOLATE_LEGACY_IMPORT",
+              "UNRESOLVED"
+            ]
+          },
+          "scannerConfidence": {
+            "enum": ["HIGH", "MEDIUM", "LOW", "MANUAL"]
+          },
+          "reviewedConfidence": {
+            "enum": ["HIGH", "MEDIUM", "LOW"]
+          },
+          "reviewStatus": {
+            "enum": [
+              "RETAIN",
+              "PLANNED",
+              "REQUIRES_PROTECTING_TEST",
+              "MANUAL_INVESTIGATION"
+            ]
+          },
+          "workstream": {
+            "enum": [
+              "RECEIVING",
+              "PRODUCTION",
+              "SHIPPING",
+              "SHARED_OPERATIONS",
+              "CORE",
+              "DOMAINS",
+              "ADMIN",
+              "DEVELOPER_TOOLING",
+              "TESTING"
+            ]
+          },
+          "componentName": { "type": "string" },
+          "procedureNames": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "sourcePaths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "reason": { "type": "string", "minLength": 1 },
+          "protectingTests": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "deletionApproved": { "const": false },
+          "nextAction": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

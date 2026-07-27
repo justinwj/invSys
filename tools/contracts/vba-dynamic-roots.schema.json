@@ -29,6 +29,7 @@
               "AUTO_OPEN",
               "WORKBOOK_EVENT",
               "USERFORM_EVENT",
+              "CLASS_EVENT",
               "WORKSHEET_EVENT",
               "PROCESSOR_HANDLER",
               "STRING_DISPATCH",
