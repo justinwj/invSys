@@ -2,9 +2,9 @@
 
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
-- Packages: 7
-- Components: 152
-- Procedures: 4462
+- Packages: 8
+- Components: 156
+- Procedures: 4471
 - Literal Application.Run targets: 14
 - Unresolved dynamic calls: 59
 
@@ -16,9 +16,10 @@
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| Production | invSys_Production | invSys.Production.xlam | 11 |
-| Receiving | invSys_Receiving | invSys.Receiving.xlam | 11 |
-| Shipping | invSys_Shipping | invSys.Shipping.xlam | 14 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 34 |
+| Production | invSys_Production | invSys.Production.xlam | 0 |
+| Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
+| Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
 
 ## Dynamic roots
 
@@ -40,6 +41,7 @@
 | ApplyItemToBoxBuilder | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
 | ApplyLatestMovementToInvSysApply | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
 | ApplyReceiveEvent | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
+| Auto_Open | AUTO_OPEN | tools/contracts/vba-dynamic-roots.json |
 | Auto_Open | AUTO_OPEN | tools/contracts/vba-dynamic-roots.json |
 | Auto_Open | AUTO_OPEN | tools/contracts/vba-dynamic-roots.json |
 | Auto_Open | AUTO_OPEN | tools/contracts/vba-dynamic-roots.json |

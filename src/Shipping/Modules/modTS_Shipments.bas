@@ -1282,7 +1282,7 @@ ErrHandler:
     MsgBox "BTN_BOXES_MADE failed: " & Err.Description, vbCritical
 End Sub
 
-Public Sub BtnToTotalInv()
+Public Sub ShippingToTotalInv()
     On Error GoTo ErrHandler
     Dim invLo As ListObject: Set invLo = GetInvSysTable()
     If invLo Is Nothing Then
@@ -2228,7 +2228,7 @@ Private Function BuildQueueableShipmentsSentDeltas(ByVal invLo As ListObject, By
     BuildQueueableShipmentsSentDeltas = True
 End Function
 
-Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
+Public Sub ShowShippingDynamicItemSearch(ByVal targetCell As Range)
     On Error GoTo ErrHandler
     Dim refreshReport As String
 
@@ -7112,6 +7112,27 @@ Public Function RunShipmentsSentFormActionForTest(ByVal operatorWb As Workbook, 
     RunShipmentsSentFormActionForTest = _
         frm.TestRunShipmentsSentActionForWorkbook(operatorWb, carrierValue, activatedWb)
     Unload frm
+End Function
+
+Public Function ShippingFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
+    Dim frm As frmShipmentsTally
+
+    On Error GoTo Failed
+    Set frm = New frmShipmentsTally
+    ShippingFormInitializeSmokeForWorkbook = _
+        frm.TestInitializeForWorkbook(operatorWb)
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    ShippingFormInitializeSmokeForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
 End Function
 
 Public Function ShipmentReserveWouldBreachFloorForTest(ByVal invLo As ListObject, _
@@ -21434,7 +21455,7 @@ Private Function GetBomTableByRow(ByVal rowValue As Long) As ListObject
     On Error GoTo 0
 End Function
 
-Public Function NzStr(v As Variant) As String
+Private Function NzStr(v As Variant) As String
     If IsError(v) Then
         NzStr = ""
     ElseIf IsNull(v) Then
@@ -21446,7 +21467,7 @@ Public Function NzStr(v As Variant) As String
     End If
 End Function
 
-Public Function NzDbl(v As Variant) As Double
+Private Function NzDbl(v As Variant) As Double
     Dim textVal As String
 
     If IsError(v) Then
@@ -21467,7 +21488,7 @@ Public Function NzDbl(v As Variant) As Double
     End If
 End Function
 
-Public Function NzLng(v As Variant) As Long
+Private Function NzLng(v As Variant) As Long
     Dim textVal As String
 
     If IsError(v) Then
@@ -21593,7 +21614,7 @@ Public Sub ClearTableFilters()
     On Error GoTo 0
 End Sub
 
-Public Function LoadItemList() As Variant
+Private Function LoadItemList() As Variant
     On Error GoTo ErrorHandler
     Dim ws As Worksheet
     Dim tbl As ListObject

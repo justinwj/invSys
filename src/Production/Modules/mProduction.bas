@@ -2695,7 +2695,7 @@ ErrHandler:
     MsgBox "BTN_TO_MADE failed: " & Err.description, vbCritical
 End Sub
 
-Public Sub BtnToTotalInv()
+Public Sub ProductionToTotalInv()
     On Error GoTo ErrHandler
     If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
     Dim wsProd As Worksheet: Set wsProd = SheetExists(SHEET_PRODUCTION)

@@ -39,7 +39,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     ' Set the global selected cell
     Set gSelectedCell = Target
     ' Use dynamic search UI for ReceivedTally (bubble up any error now)
-    modTS_Received.ShowDynamicItemSearch Target
+    modTS_Received.ShowReceivingDynamicItemSearch Target
 End Sub
 
 ' Keep AggregateReceived in sync when REF_NUMBER/ITEMS/QUANTITY change

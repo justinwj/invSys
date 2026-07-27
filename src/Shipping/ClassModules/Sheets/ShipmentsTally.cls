@@ -42,7 +42,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             If Target.Column <> itemsCol.Range.Column Then Exit Sub
             If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
             Set gSelectedCell = Target
-            modTS_Shipments.ShowDynamicItemSearch Target
+            modTS_Shipments.ShowShippingDynamicItemSearch Target
         Case "boxbom"
             Dim bomItemsCol As ListColumn
             On Error Resume Next
@@ -52,7 +52,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             If Target.Column <> bomItemsCol.Range.Column Then Exit Sub
             If Target.Row <= lo.HeaderRowRange.Row Then Exit Sub
             Set gSelectedCell = Target
-            modTS_Shipments.ShowDynamicItemSearch Target
+            modTS_Shipments.ShowShippingDynamicItemSearch Target
         Case "boxbuilder"
             If modTS_Shipments.ShippingIsBoxMakerMode(Me) Then Exit Sub
             Dim boxNameCol As ListColumn
@@ -63,7 +63,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             If Target.Column <> boxNameCol.Range.Column Then Exit Sub
             If Target.Row <> lo.HeaderRowRange.Row Then Exit Sub
             Set gSelectedCell = Target
-            modTS_Shipments.ShowDynamicItemSearch Target
+            modTS_Shipments.ShowShippingDynamicItemSearch Target
             modTS_Shipments.ShippingSelectBoxBuilderDataCellForRepeatHeaderPicker lo
         Case "boxbomversions"
             modTS_Shipments.HandleBoxBomVersionSelection Target

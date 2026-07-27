@@ -1,7 +1,7 @@
 Attribute VB_Name = "modProductionInit"
 Option Explicit
 
-Private gAppEvents As cAppEvents
+Private gAppEvents As cProductionAppEvents
 
 Public Sub InitProductionAddin()
     Dim prevEvents As Boolean
@@ -18,7 +18,7 @@ Public Sub InitProductionAddin()
     Application.EnableEvents = prevEvents
 End Sub
 
-Public Sub Auto_Open()
+Public Sub ProductionPackageAutoOpen()
     ' Loading one role XLAM must not create or repair surfaces in whichever
     ' operator workbook happens to be active. Ribbon/form entry points call
     ' InitProductionAddin explicitly when Production is actually requested.
@@ -27,7 +27,7 @@ End Sub
 
 Private Sub InitializeProductionEventHooks()
     If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
+        Set gAppEvents = New cProductionAppEvents
         gAppEvents.Init
     End If
 End Sub

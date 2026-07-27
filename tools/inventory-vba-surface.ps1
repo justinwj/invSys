@@ -441,24 +441,33 @@ function Get-BuildDefinition {
     elseif ($extension -eq ".ps1") {
         $text = Get-Content -Raw -LiteralPath $Path
         $pattern = '(?ms)@\{\s*Key\s*=\s*"(?<key>[^"]+)"(?<body>.*?)' +
-            '(?=\r?\n\s*@\{\s*Key\s*=|\r?\n\)\s*\r?\n\s*Write-Host)'
+            '(?=\r?\n\s*@\{\s*Key\s*=|\r?\n\)\s*\r?\n\s*(?:' +
+            '\$availableProjects|Write-Host))'
         foreach ($match in [regex]::Matches($text, $pattern)) {
             $key = $match.Groups["key"].Value
             $body = $match.Groups["body"].Value
             $projectMatch = [regex]::Match($body, 'Project\s*=\s*"([^"]+)"')
             $outputMatch = [regex]::Match($body, 'OutputFile\s*=\s*"([^"]+)"')
-            $sourceMatch = [regex]::Match(
+            $sourceMatches = [regex]::Matches(
                 $body,
-                'SourceDirs\s*=\s*@\(\(Join-Path\s+\$repo\s+"([^"]+)"\)\)'
+                'Join-Path\s+\$repo\s+"(src[/\\][^"]+)"'
             )
-            if (-not ($projectMatch.Success -and $outputMatch.Success -and $sourceMatch.Success)) {
+            if (-not ($projectMatch.Success -and
+                      $outputMatch.Success -and
+                      $sourceMatches.Count -gt 0)) {
                 throw "Unable to parse build project '$key' from $Path."
             }
             $packages.Add([ordered]@{
                 key = $key
                 projectName = $projectMatch.Groups[1].Value
                 outputFile = $outputMatch.Groups[1].Value
-                sourcePaths = @((ConvertTo-NormalizedPath $sourceMatch.Groups[1].Value))
+                sourcePaths = @(
+                    $sourceMatches |
+                        ForEach-Object {
+                            ConvertTo-NormalizedPath $_.Groups[1].Value
+                        } |
+                        Sort-Object -Unique
+                )
                 componentNames = @()
             })
             $excludeMatch = [regex]::Match($body, 'ExcludeFiles\s*=\s*@\((?<values>[^)]*)\)')

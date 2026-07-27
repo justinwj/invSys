@@ -1419,7 +1419,7 @@ try {
 
     $currentStep = "Run Shipping BtnToTotalInv"
     $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShip -WorksheetName "ShipmentsTally"
-    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.BtnToTotalInv")
+    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.ShippingToTotalInv")
     $wsShipInv = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "InventoryManagement"
     $loShipInv = Get-ListObjectSafe -Worksheet $wsShipInv -TableName "invSys"
     $shipToTotalOk = ([double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 2 -ColumnName "MADE")) -eq 0 `

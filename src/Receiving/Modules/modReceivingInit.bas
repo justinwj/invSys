@@ -17,7 +17,7 @@ Public Type ReceivingReadinessResult
     Messages As String
 End Type
 
-Private gAppEvents As cAppEvents
+Private gAppEvents As cReceivingAppEvents
 
 Private Const READINESS_STATUS_OK As String = "OK"
 Private Const SNAPSHOT_STATUS_STALE As String = "STALE"
@@ -60,7 +60,7 @@ Public Sub InitReceivingAddin()
     Application.EnableEvents = prevEvents
 End Sub
 
-Public Sub Auto_Open()
+Public Sub ReceivingPackageAutoOpen()
     ' Startup is registration-only. Explicit Receiving UI entry points own
     ' any workbook surface creation or refresh.
     InitializeReceivingEventHooks
@@ -68,7 +68,7 @@ End Sub
 
 Private Sub InitializeReceivingEventHooks()
     If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
+        Set gAppEvents = New cReceivingAppEvents
         gAppEvents.Init
     End If
 End Sub

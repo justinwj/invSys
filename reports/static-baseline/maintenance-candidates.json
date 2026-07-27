@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  152,
-                     "procedureCount":  4462,
-                     "lineCount":  99494,
+                     "componentCount":  156,
+                     "procedureCount":  4471,
+                     "lineCount":  99595,
                      "literalApplicationRunCount":  14,
                      "unresolvedApplicationRunCount":  59,
                      "duplicateBodyCandidateCount":  193
@@ -743,15 +743,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_NewWorkbook",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -760,15 +760,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetBeforeDoubleClick",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetBeforeDoubleClick",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetBeforeDoubleClick"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -777,15 +777,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -794,15 +794,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetSelectionChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -811,15 +811,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookActivate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -828,15 +828,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookBeforeClose",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -845,15 +845,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookOpen",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1134,15 +1134,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1151,15 +1151,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1168,15 +1168,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetSelectionChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1185,15 +1185,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookActivate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1202,15 +1202,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookBeforeClose",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1219,15 +1219,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookOpen",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1321,15 +1321,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_NewWorkbook",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1338,15 +1338,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetActivate",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetActivate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1355,15 +1355,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1372,15 +1372,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetSelectionChange",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1389,15 +1389,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookActivate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1406,15 +1406,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookBeforeClose",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -1423,15 +1423,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookOpen",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -2485,16 +2485,16 @@
                            "id":  "duplicate:25e3a9272732ff3f:IsProductionRoleWorkbook+IsReceivingRoleWorkbook+IsShippingRoleWorkbook",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "IsProductionRoleWorkbook",
                                                   "IsReceivingRoleWorkbook",
                                                   "IsShippingRoleWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls",
-                                               "src/Receiving/ClassModules/cAppEvents.cls",
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls",
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls",
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2906,9 +2906,9 @@
                                               ],
                            "sourcePaths":  [
                                                "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls",
-                                               "src/Production/ClassModules/cAppEvents.cls",
-                                               "src/Receiving/ClassModules/cAppEvents.cls",
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls",
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls",
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3402,6 +3402,25 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "duplicate:54058255e099aa25:TestInitializeForWorkbook+TestInitializeForWorkbook",
+                           "candidateType":  "REPLACE_DUPLICATE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "TestInitializeForWorkbook",
+                                                  "TestInitializeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm",
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5820,27 +5839,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:fe3f818b656a5551:InitializeProductionEventHooks+InitializeReceivingEventHooks+InitializeShippingEventHooks",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modProductionInit",
-                           "procedureNames":  [
-                                                  "InitializeProductionEventHooks",
-                                                  "InitializeReceivingEventHooks",
-                                                  "InitializeShippingEventHooks"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionInit.bas",
-                                               "src/Receiving/Modules/modReceivingInit.bas",
-                                               "src/Shipping/Modules/modShippingInit.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -10093,6 +10091,24 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.Auto_Open",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "Auto_Open"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
+                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignAdd_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -11131,15 +11147,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Production_Modules_modProductionInit.bas:modProductionInit.Auto_Open",
+                           "id":  "root:src_Production_Modules_modProductionAutoOpen.bas:modProductionAutoOpen.Auto_Open",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
-                           "componentName":  "modProductionInit",
+                           "componentName":  "modProductionAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/Modules/modProductionInit.bas"
+                                               "src/Production/Modules/modProductionAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -11577,15 +11593,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.Auto_Open",
+                           "id":  "root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
-                           "componentName":  "modReceivingInit",
+                           "componentName":  "modReceivingAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/Modules/modReceivingInit.bas"
+                                               "src/Receiving/Modules/modReceivingAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -12756,15 +12772,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Shipping_Modules_modShippingInit.bas:modShippingInit.Auto_Open",
+                           "id":  "root:src_Shipping_Modules_modShippingAutoOpen.bas:modShippingAutoOpen.Auto_Open",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
-                           "componentName":  "modShippingInit",
+                           "componentName":  "modShippingAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/Modules/modShippingInit.bas"
+                                               "src/Shipping/Modules/modShippingAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -14986,7 +15002,6 @@
                                                   "BtnSaveRecipe",
                                                   "BtnShowSystem",
                                                   "BtnToMade",
-                                                  "BtnToTotalInv",
                                                   "BtnToUsed",
                                                   "BuildDesignRecipeStagingWorkbook",
                                                   "BuildDesignRecipeStagingWorkbookFromData",
@@ -15274,6 +15289,7 @@
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
                                                   "ProductionSurfaceRowBudget",
+                                                  "ProductionToTotalInv",
                                                   "PublishIngredientPaletteRowsToRuntime",
                                                   "PublishProductionRecipeRowsToRuntime",
                                                   "QueueProductionCompleteEvent",
@@ -15440,6 +15456,7 @@
                                                   "RebuildAggregation",
                                                   "RebuildAggregationForWorkbook",
                                                   "ReceivingDemoRowForSku",
+                                                  "ReceivingFormInitializeSmokeForWorkbook",
                                                   "ReceivingLegacyItemRowForSku",
                                                   "RecordInvDelta",
                                                   "RefListContainsReceiving",
@@ -15456,7 +15473,7 @@
                                                   "RunReceivingConfirmWritesFormActionForTest",
                                                   "SetReceivedTallyRowForForm",
                                                   "SheetExists",
-                                                  "ShowDynamicItemSearch",
+                                                  "ShowReceivingDynamicItemSearch",
                                                   "ShowReceivingForm",
                                                   "SnapshotTable",
                                                   "StageReceivingFormItemForWorkbook",
@@ -15569,6 +15586,7 @@
                                                   "ShouldShowShippingActionPopup",
                                                   "ShowStatus",
                                                   "SingleSelectedListTableRow",
+                                                  "TestInitializeForWorkbook",
                                                   "TestPendingSyncCount",
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
@@ -15808,7 +15826,6 @@
                                                   "BtnSwitchToBoxMaker",
                                                   "BtnToggleBuilder",
                                                   "BtnToShipments",
-                                                  "BtnToTotalInv",
                                                   "BtnUnship",
                                                   "BuildActiveShippingReservationTotalsFromTable",
                                                   "BuildBomSummary",
@@ -16311,6 +16328,7 @@
                                                   "ShippingDiagnosticVersionValueText",
                                                   "ShippingDiagnosticWorkbookReadOnlyText",
                                                   "ShippingDiagnosticWorkbookText",
+                                                  "ShippingFormInitializeSmokeForWorkbook",
                                                   "ShippingInventoryPickerTableHasRows",
                                                   "ShippingIsBoxMakerMode",
                                                   "ShippingNasInventoryOverride",
@@ -16325,10 +16343,11 @@
                                                   "ShippingSelectBoxBuilderDataCellForRepeatHeaderPicker",
                                                   "ShippingSystemInventorySourceDiagnostic",
                                                   "ShippingSystemOverlayDiagnostic",
+                                                  "ShippingToTotalInv",
                                                   "ShippingVersionAvailabilityOverride",
                                                   "ShouldIncludeBoxBuilderPackage",
                                                   "ShouldRefreshShippingBomBeforePicker",
-                                                  "ShowDynamicItemSearch",
+                                                  "ShowShippingDynamicItemSearch",
                                                   "ShowShippingStatus",
                                                   "SingleVersionFallbackAvailableQty",
                                                   "SingleVisibleBoxBomVersionLabel",
@@ -19968,6 +19987,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsShadowStartupForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "OperationsShadowStartupForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20212,23 +20248,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnToMade"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToTotalInv",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20631,6 +20650,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ProductionToTotalInv"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20790,6 +20826,23 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "EnsureGeneratedButtons"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "ReceivingFormInitializeSmokeForWorkbook"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -21141,23 +21194,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToTotalInv",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnToTotalInv"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnUnship",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -21464,6 +21500,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingFormInitializeSmokeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemInventorySourceDiagnostic",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -21487,6 +21540,23 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "ShippingSystemOverlayDiagnostic"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingToTotalInv",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0.0",
+  "shadowExcludedFileNames": [
+    "modReceivingAutoOpen.bas",
+    "modProductionAutoOpen.bas",
+    "modShippingAutoOpen.bas",
+    "ufDynItemSearchTemplate.frm"
+  ],
+  "resolutions": [
+    {
+      "collisionId": "COMPONENT:cAppEvents",
+      "disposition": "RENAMED_SOURCE",
+      "reason": "Role application-event classes retain independent state and now have role-qualified component names.",
+      "protectingTests": [
+        "tools/validate_phase6_packaged_xlams.ps1",
+        "tools/validate-operations-shadow.ps1"
+      ]
+    },
+    {
+      "collisionId": "COMPONENT:ufDynItemSearchTemplate",
+      "disposition": "EXCLUDED_UNUSED_TEMPLATE",
+      "reason": "The empty designer template has no runtime references; each role keeps its role-specific search form.",
+      "protectingTests": [
+        "tests/tooling/Test-Slice6ShadowOperations.ps1",
+        "tools/validate-operations-shadow.ps1"
+      ]
+    },
+    {
+      "collisionId": "PUBLIC_PROCEDURE:Auto_Open",
+      "disposition": "SINGLE_OPERATIONS_STARTUP",
+      "reason": "Standalone wrappers remain in legacy packages but are excluded from the shadow; modOperationsInit owns the only shadow Auto_Open.",
+      "protectingTests": [
+        "tools/validate_phase6_packaged_xlams.ps1",
+        "tools/validate-operations-shadow.ps1"
+      ]
+    },
+    {
+      "collisionId": "PUBLIC_PROCEDURE:role_helpers_and_actions",
+      "disposition": "ROLE_QUALIFIED_SOURCE",
+      "reason": "Colliding public helpers were made private or renamed with Receiving, Production, or Shipping prefixes.",
+      "protectingTests": [
+        "tests/tooling/Test-Slice5BehaviorLocks.ps1",
+        "tools/validate_phase6_packaged_xlams.ps1"
+      ]
+    }
+  ]
+}

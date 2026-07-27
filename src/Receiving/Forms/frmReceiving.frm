@@ -122,6 +122,15 @@ Public Function TestReceiptIdSeparatedFromReference() As Long
     End If
 End Function
 
+Public Function TestInitializeForWorkbook(ByVal operatorWb As Workbook) As String
+    If operatorWb Is Nothing Then Exit Function
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    TestInitializeForWorkbook = _
+        "OK|BoundWorkbook=" & mOperatorWorkbook.Name & _
+        "|Caption=" & Me.Caption
+End Function
+
 Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
     If Not mBuilt Then BuildLayout

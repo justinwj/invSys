@@ -7,6 +7,12 @@ param(
     [string]$OutputRoot = "deploy/current",
 
     [Parameter(Mandatory = $false)]
+    [string[]]$Projects = @(),
+
+    [Parameter(Mandatory = $false)]
+    [switch]$IncludeOperationsShadow,
+
+    [Parameter(Mandatory = $false)]
     [switch]$Apply
 )
 
@@ -695,7 +701,12 @@ function Remove-ExistingFile {
 }
 
 $repo = (Resolve-Path $RepoRoot).Path
-$outputDir = Join-Path $repo $OutputRoot
+if ([IO.Path]::IsPathRooted($OutputRoot)) {
+    $outputDir = [IO.Path]::GetFullPath($OutputRoot)
+}
+else {
+    $outputDir = Join-Path $repo $OutputRoot
+}
 
 $projectMap = @(
     @{
@@ -891,6 +902,36 @@ $projectMap = @(
         }
     }
     @{
+        Key        = "OperationsShadow"
+        Project    = "invSys_Operations_Shadow"
+        OutputFile = "invSys.Operations.xlam"
+        LegacyOutputFiles = @()
+        Deployable = $false
+        SourceDirs = @(
+            (Join-Path $repo "src/Operations"),
+            (Join-Path $repo "src/Receiving"),
+            (Join-Path $repo "src/Production"),
+            (Join-Path $repo "src/Shipping")
+        )
+        ExcludeFiles = @(
+            "modReceivingAutoOpen.bas",
+            "modProductionAutoOpen.bas",
+            "modShippingAutoOpen.bas",
+            "ufDynItemSearchTemplate.frm"
+        )
+        References = @("Core")
+        Sheets     = @(
+            "ReceivedTally",
+            "InventoryManagement",
+            "ReceivedLog",
+            "ShipmentsTally",
+            "Production",
+            "Recipes"
+        )
+        AddVbideReference = $false
+        Ribbon     = $null
+    }
+    @{
         Key        = "Admin"
         Project    = "invSys_Admin"
         OutputFile = "invSys.Admin.xlam"
@@ -936,6 +977,72 @@ $projectMap = @(
         }
     }
 )
+
+$availableProjects = @($projectMap)
+if (-not $IncludeOperationsShadow) {
+    $availableProjects = @(
+        $availableProjects |
+            Where-Object { $_.Key -ne "OperationsShadow" }
+    )
+}
+
+$requestedKeys = @($Projects | Where-Object {
+    -not [string]::IsNullOrWhiteSpace([string]$_)
+})
+if ($requestedKeys.Count -eq 0) {
+    $requestedKeys = @($availableProjects | ForEach-Object { $_.Key })
+}
+
+$availableByKey = @{}
+foreach ($availableProject in $availableProjects) {
+    $availableByKey[[string]$availableProject.Key] = $availableProject
+}
+foreach ($requestedKey in $requestedKeys) {
+    if (-not $availableByKey.ContainsKey([string]$requestedKey)) {
+        throw "Unknown or unavailable project '$requestedKey'."
+    }
+}
+
+$selectedKeys = @{}
+foreach ($requestedKey in $requestedKeys) {
+    $selectedKeys[[string]$requestedKey] = $true
+}
+$selectionChanged = $true
+while ($selectionChanged) {
+    $selectionChanged = $false
+    foreach ($selectedKey in @($selectedKeys.Keys)) {
+        $selectedProject = $availableByKey[$selectedKey]
+        foreach ($referenceKey in @($selectedProject.References)) {
+            if (-not $selectedKeys.ContainsKey([string]$referenceKey)) {
+                if (-not $availableByKey.ContainsKey([string]$referenceKey)) {
+                    throw "Dependency '$referenceKey' for '$selectedKey' is unavailable."
+                }
+                $selectedKeys[[string]$referenceKey] = $true
+                $selectionChanged = $true
+            }
+        }
+    }
+}
+$projectMap = @(
+    $availableProjects |
+        Where-Object { $selectedKeys.ContainsKey([string]$_.Key) }
+)
+
+$currentDeployRoot = [IO.Path]::GetFullPath(
+    (Join-Path $repo "deploy\current")
+).TrimEnd("\")
+$resolvedOutputRoot = [IO.Path]::GetFullPath($outputDir).TrimEnd("\")
+foreach ($project in $projectMap) {
+    if ($project.ContainsKey("Deployable") -and
+        -not [bool]$project.Deployable -and
+        [string]::Equals(
+            $currentDeployRoot,
+            $resolvedOutputRoot,
+            [StringComparison]::OrdinalIgnoreCase
+        )) {
+        throw "Non-deployable project '$($project.Key)' cannot target deploy/current."
+    }
+}
 
 Write-Host "invSys build-xlam.ps1"
 Write-Host "RepoRoot: $repo"

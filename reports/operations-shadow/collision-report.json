@@ -1,0 +1,44 @@
+{
+    "schemaVersion":  "1.0.0",
+    "reportType":  "operations-shadow-collisions",
+    "generatedAtUtc":  "2026-07-27T23:30:00Z",
+    "sourceRoots":  [
+                        "src/Operations",
+                        "src/Receiving",
+                        "src/Production",
+                        "src/Shipping"
+                    ],
+    "excludedFileNames":  [
+                              "modReceivingAutoOpen.bas",
+                              "modProductionAutoOpen.bas",
+                              "modShippingAutoOpen.bas",
+                              "ufDynItemSearchTemplate.frm"
+                          ],
+    "summary":  {
+                    "componentCount":  34,
+                    "publicProcedureCount":  304,
+                    "ribbonCallbackCount":  8,
+                    "componentCollisionCount":  0,
+                    "publicProcedureCollisionCount":  0,
+                    "ribbonCallbackCollisionCount":  0,
+                    "resolvedCollisionCount":  0,
+                    "unresolvedCollisionCount":  0
+                },
+    "collisions":  {
+                       "components":  [
+
+                                      ],
+                       "publicProcedures":  [
+
+                                            ],
+                       "ribbonCallbacks":  [
+
+                                           ]
+                   },
+    "resolvedCollisions":  [
+
+                           ],
+    "unresolvedCollisions":  [
+
+                             ]
+}

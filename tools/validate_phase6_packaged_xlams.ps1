@@ -344,9 +344,9 @@ try {
     $autoOpenMacros = @(
         @{ File = "invSys.Inventory.Domain.xlam"; Macro = "modInventoryInit.Auto_Open" },
         @{ File = "invSys.Designs.Domain.xlam"; Macro = "modDesignsInit.Auto_Open" },
-        @{ File = "invSys.Receiving.xlam"; Macro = "modReceivingInit.Auto_Open" },
-        @{ File = "invSys.Shipping.xlam"; Macro = "modShippingInit.Auto_Open" },
-        @{ File = "invSys.Production.xlam"; Macro = "modProductionInit.Auto_Open" },
+        @{ File = "invSys.Receiving.xlam"; Macro = "modReceivingAutoOpen.Auto_Open" },
+        @{ File = "invSys.Shipping.xlam"; Macro = "modShippingAutoOpen.Auto_Open" },
+        @{ File = "invSys.Production.xlam"; Macro = "modProductionAutoOpen.Auto_Open" },
         @{ File = "invSys.Admin.xlam"; Macro = "modAdminInit.Auto_Open" }
     )
     $autoOpenError = ""

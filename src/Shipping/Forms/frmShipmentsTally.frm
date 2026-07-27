@@ -1396,6 +1396,15 @@ Public Function TestPendingSyncCount(ByVal shippablesArray As Variant, _
     TestPendingSyncCount = PendingShipmentSyncCount()
 End Function
 
+Public Function TestInitializeForWorkbook(ByVal operatorWb As Workbook) As String
+    If operatorWb Is Nothing Then Exit Function
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    TestInitializeForWorkbook = _
+        "OK|BoundWorkbook=" & mOperatorWorkbook.Name & _
+        "|Caption=" & Me.Caption
+End Function
+
 Public Function TestRunShipmentsSentActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        ByVal carrierValue As String, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String

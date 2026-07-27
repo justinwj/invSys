@@ -138,6 +138,27 @@ Public Function RunReceivingConfirmWritesFormActionForTest(ByVal operatorWb As W
     Unload frm
 End Function
 
+Public Function ReceivingFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
+    Dim frm As frmReceiving
+
+    On Error GoTo Failed
+    Set frm = New frmReceiving
+    ReceivingFormInitializeSmokeForWorkbook = _
+        frm.TestInitializeForWorkbook(operatorWb)
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    ReceivingFormInitializeSmokeForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
+
 Public Sub EnforceReceivingSupportSheetsHidden(ByVal wb As Workbook)
     On Error GoTo CleanExit
 
@@ -495,7 +516,7 @@ Private Sub ClearExcelClipboardStateReceiving()
 End Sub
 
 ' ==== dynamic search form (ReceivedTally) =====
-Public Sub ShowDynamicItemSearch(ByVal targetCell As Range)
+Public Sub ShowReceivingDynamicItemSearch(ByVal targetCell As Range)
     Debug.Print "ShowDynamicItemSearch called, target:", targetCell.Address
     
     If targetCell Is Nothing Then
@@ -1742,7 +1763,7 @@ Private Function FindInColumn(rng As Range, value As String) As Range
     Next
 End Function
 
-Public Function NzStr(v As Variant) As String
+Private Function NzStr(v As Variant) As String
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Then
         NzStr = ""
     Else
@@ -1758,7 +1779,7 @@ Public Function NzDbl(v As Variant) As Double
     End If
 End Function
 
-Public Function NzLng(v As Variant) As Long
+Private Function NzLng(v As Variant) As Long
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
         NzLng = 0
     Else
@@ -2102,7 +2123,7 @@ End Sub
 
 ' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
 ' Returns a 2D array with columns: ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS
-Public Function LoadItemList(Optional ByVal includeCategory As Boolean = False) As Variant
+Private Function LoadItemList(Optional ByVal includeCategory As Boolean = False) As Variant
     Dim ws As Worksheet: Set ws = SheetExists("InventoryManagement")
     If ws Is Nothing Then Exit Function
     Dim lo As ListObject: Set lo = ws.ListObjects("invSys")

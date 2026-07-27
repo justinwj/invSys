@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "953c385be428698aa72518b2884a3e0af3c805e44e4c786b7081e40ae99ff21e",
-                          "maintenanceCandidatesSha256":  "5247ad373c43567848aa2235845f5a73125a4aea64c0ced9cbc682b20ab1805d"
+                          "implementationManifestSha256":  "1a9eca23cc54cc547a674c1602548517c204efbdc1a412d9066550e02cd3a1c3",
+                          "maintenanceCandidatesSha256":  "74e6224301a2ace865a530b5f36074c10226936e2a7725b85269b148e5d1b403"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1043,
-                    "reviewedCandidateCount":  1045,
+                    "scannerCandidateCount":  1047,
+                    "reviewedCandidateCount":  1049,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  40,
+                            "candidateCount":  41,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -32,7 +32,7 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  175,
+                            "candidateCount":  176,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -57,7 +57,7 @@
                         },
                         {
                             "name":  "DEVELOPER_TOOLING",
-                            "candidateCount":  0,
+                            "candidateCount":  2,
                             "reason":  "Build, scan, report, and other developer-only tooling."
                         },
                         {
@@ -224,14 +224,14 @@
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  2154,
+                                                  "baselineLineCount":  2175,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  1846,
+                                                  "baselineLineCount":  1855,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -245,7 +245,7 @@
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  21636,
+                                                  "baselineLineCount":  21657,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -14294,6 +14294,53 @@
                            "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsShadowStartupForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "OperationsShadowStartupForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "root:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.Auto_Open",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "Auto_Open"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
+                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "duplicate:84e2366b8ff1ffcf:FileExistsApply+FileExistsPublisher",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -16549,7 +16596,6 @@
                                                   "BtnSaveRecipe",
                                                   "BtnShowSystem",
                                                   "BtnToMade",
-                                                  "BtnToTotalInv",
                                                   "BtnToUsed",
                                                   "BuildDesignRecipeStagingWorkbook",
                                                   "BuildDesignRecipeStagingWorkbookFromData",
@@ -16837,6 +16883,7 @@
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
                                                   "ProductionSurfaceRowBudget",
+                                                  "ProductionToTotalInv",
                                                   "PublishIngredientPaletteRowsToRuntime",
                                                   "PublishProductionRecipeRowsToRuntime",
                                                   "QueueProductionCompleteEvent",
@@ -17031,7 +17078,7 @@
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_NewWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17039,12 +17086,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17054,7 +17101,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetBeforeDoubleClick",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetBeforeDoubleClick",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17062,12 +17109,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetBeforeDoubleClick"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17077,7 +17124,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17085,12 +17132,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17100,7 +17147,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_SheetSelectionChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17108,12 +17155,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17123,7 +17170,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookActivate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17131,12 +17178,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17146,7 +17193,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookBeforeClose",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17154,12 +17201,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17169,7 +17216,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookOpen",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -17177,12 +17224,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -17571,29 +17618,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnToMade"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToTotalInv",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -18399,6 +18423,29 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "ProductionFormTwoBatchActionReportForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ProductionToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20045,7 +20092,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Production_Modules_modProductionInit.bas:modProductionInit.Auto_Open",
+                           "id":  "root:src_Production_Modules_modProductionAutoOpen.bas:modProductionAutoOpen.Auto_Open",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -20053,12 +20100,12 @@
                            "reviewedConfidence":  "LOW",
                            "reviewStatus":  "RETAIN",
                            "workstream":  "PRODUCTION",
-                           "componentName":  "modProductionInit",
+                           "componentName":  "modProductionAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/Modules/modProductionInit.bas"
+                                               "src/Production/Modules/modProductionAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -20467,6 +20514,7 @@
                                                   "RebuildAggregation",
                                                   "RebuildAggregationForWorkbook",
                                                   "ReceivingDemoRowForSku",
+                                                  "ReceivingFormInitializeSmokeForWorkbook",
                                                   "ReceivingLegacyItemRowForSku",
                                                   "RecordInvDelta",
                                                   "RefListContainsReceiving",
@@ -20483,7 +20531,7 @@
                                                   "RunReceivingConfirmWritesFormActionForTest",
                                                   "SetReceivedTallyRowForForm",
                                                   "SheetExists",
-                                                  "ShowDynamicItemSearch",
+                                                  "ShowReceivingDynamicItemSearch",
                                                   "ShowReceivingForm",
                                                   "SnapshotTable",
                                                   "StageReceivingFormItemForWorkbook",
@@ -20533,7 +20581,7 @@
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20541,12 +20589,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20556,7 +20604,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20564,12 +20612,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20579,7 +20627,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetSelectionChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20587,12 +20635,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20602,7 +20650,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookActivate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20610,12 +20658,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20625,7 +20673,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookBeforeClose",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20633,12 +20681,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20648,7 +20696,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_WorkbookOpen",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -20656,12 +20704,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cReceivingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/ClassModules/cAppEvents.cls"
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20774,6 +20822,29 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "EnsureGeneratedButtons"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "ReceivingFormInitializeSmokeForWorkbook"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -21271,7 +21342,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.Auto_Open",
+                           "id":  "root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -21279,12 +21350,12 @@
                            "reviewedConfidence":  "LOW",
                            "reviewStatus":  "RETAIN",
                            "workstream":  "RECEIVING",
-                           "componentName":  "modReceivingInit",
+                           "componentName":  "modReceivingAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/Modules/modReceivingInit.bas"
+                                               "src/Receiving/Modules/modReceivingAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -21677,16 +21748,16 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cProductionAppEvents",
                            "procedureNames":  [
                                                   "IsProductionRoleWorkbook",
                                                   "IsReceivingRoleWorkbook",
                                                   "IsShippingRoleWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/ClassModules/cAppEvents.cls",
-                                               "src/Receiving/ClassModules/cAppEvents.cls",
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls",
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls",
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -21993,9 +22064,9 @@
                                               ],
                            "sourcePaths":  [
                                                "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls",
-                                               "src/Production/ClassModules/cAppEvents.cls",
-                                               "src/Receiving/ClassModules/cAppEvents.cls",
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Production/ClassModules/cProductionAppEvents.cls",
+                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls",
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22257,6 +22328,31 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
+                           "id":  "duplicate:54058255e099aa25:TestInitializeForWorkbook+TestInitializeForWorkbook",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHARED_OPERATIONS",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "TestInitializeForWorkbook",
+                                                  "TestInitializeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm",
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -23200,33 +23296,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:fe3f818b656a5551:InitializeProductionEventHooks+InitializeReceivingEventHooks+InitializeShippingEventHooks",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modProductionInit",
-                           "procedureNames":  [
-                                                  "InitializeProductionEventHooks",
-                                                  "InitializeReceivingEventHooks",
-                                                  "InitializeShippingEventHooks"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionInit.bas",
-                                               "src/Receiving/Modules/modReceivingInit.bas",
-                                               "src/Shipping/Modules/modShippingInit.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "manual:operations-shared-package-boundary",
                            "origin":  "MANUAL",
                            "scannerCandidateType":  "MANUAL",
@@ -23764,6 +23833,7 @@
                                                   "ShouldShowShippingActionPopup",
                                                   "ShowStatus",
                                                   "SingleSelectedListTableRow",
+                                                  "TestInitializeForWorkbook",
                                                   "TestPendingSyncCount",
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
@@ -24015,7 +24085,6 @@
                                                   "BtnSwitchToBoxMaker",
                                                   "BtnToggleBuilder",
                                                   "BtnToShipments",
-                                                  "BtnToTotalInv",
                                                   "BtnUnship",
                                                   "BuildActiveShippingReservationTotalsFromTable",
                                                   "BuildBomSummary",
@@ -24518,6 +24587,7 @@
                                                   "ShippingDiagnosticVersionValueText",
                                                   "ShippingDiagnosticWorkbookReadOnlyText",
                                                   "ShippingDiagnosticWorkbookText",
+                                                  "ShippingFormInitializeSmokeForWorkbook",
                                                   "ShippingInventoryPickerTableHasRows",
                                                   "ShippingIsBoxMakerMode",
                                                   "ShippingNasInventoryOverride",
@@ -24532,10 +24602,11 @@
                                                   "ShippingSelectBoxBuilderDataCellForRepeatHeaderPicker",
                                                   "ShippingSystemInventorySourceDiagnostic",
                                                   "ShippingSystemOverlayDiagnostic",
+                                                  "ShippingToTotalInv",
                                                   "ShippingVersionAvailabilityOverride",
                                                   "ShouldIncludeBoxBuilderPackage",
                                                   "ShouldRefreshShippingBomBeforePicker",
-                                                  "ShowDynamicItemSearch",
+                                                  "ShowShippingDynamicItemSearch",
                                                   "ShowShippingStatus",
                                                   "SingleVersionFallbackAvailableQty",
                                                   "SingleVisibleBoxBomVersionLabel",
@@ -24658,7 +24729,7 @@
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_NewWorkbook",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_NewWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24666,12 +24737,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_NewWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24681,7 +24752,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetActivate",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetActivate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24689,12 +24760,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24704,7 +24775,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetChange",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24712,12 +24783,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24727,7 +24798,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_SheetSelectionChange",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetSelectionChange",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24735,12 +24806,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_SheetSelectionChange"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24750,7 +24821,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookActivate",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookActivate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24758,12 +24829,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookActivate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24773,7 +24844,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookBeforeClose",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookBeforeClose",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24781,12 +24852,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookBeforeClose"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -24796,7 +24867,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_ClassModules_cAppEvents.cls:cAppEvents.App_WorkbookOpen",
+                           "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_WorkbookOpen",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24804,12 +24875,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHIPPING",
-                           "componentName":  "cAppEvents",
+                           "componentName":  "cShippingAppEvents",
                            "procedureNames":  [
                                                   "App_WorkbookOpen"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/ClassModules/cAppEvents.cls"
+                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -25382,29 +25453,6 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "BtnToShipments"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToTotalInv",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -26222,6 +26270,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingFormInitializeSmokeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemInventorySourceDiagnostic",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -26256,6 +26327,29 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "ShippingSystemOverlayDiagnostic"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingToTotalInv",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingToTotalInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -27997,7 +28091,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Shipping_Modules_modShippingInit.bas:modShippingInit.Auto_Open",
+                           "id":  "root:src_Shipping_Modules_modShippingAutoOpen.bas:modShippingAutoOpen.Auto_Open",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -28005,12 +28099,12 @@
                            "reviewedConfidence":  "LOW",
                            "reviewStatus":  "RETAIN",
                            "workstream":  "SHIPPING",
-                           "componentName":  "modShippingInit",
+                           "componentName":  "modShippingAutoOpen",
                            "procedureNames":  [
                                                   "Auto_Open"
                                               ],
                            "sourcePaths":  [
-                                               "src/Shipping/Modules/modShippingInit.bas"
+                                               "src/Shipping/Modules/modShippingAutoOpen.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [

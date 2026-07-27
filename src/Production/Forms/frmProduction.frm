@@ -4502,7 +4502,7 @@ End Sub
 
 Private Sub mBtnManagerTotal_Click()
     If mLstManagerOutput.ListIndex >= 0 Then ApplySelectedProductionOutput
-    RunProductionSub0 "BtnToTotalInv"
+    RunProductionSub0 "ProductionToTotalInv"
     RefreshManagerState
     ShowStatus "To TOTAL INV completed."
 End Sub

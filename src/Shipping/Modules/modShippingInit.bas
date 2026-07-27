@@ -1,7 +1,7 @@
 Attribute VB_Name = "modShippingInit"
 Option Explicit
 
-Private gAppEvents As cAppEvents
+Private gAppEvents As cShippingAppEvents
 
 Public Sub InitShippingAddin()
     Dim report As String
@@ -17,7 +17,7 @@ Public Sub InitShippingAddin()
     SyncLocalStagedInboxRowsForStartup
 End Sub
 
-Public Sub Auto_Open()
+Public Sub ShippingPackageAutoOpen()
     ' Do not synchronize inboxes or touch an active operator workbook merely
     ' because the Shipping XLAM was loaded.
     InitializeShippingEventHooks
@@ -25,7 +25,7 @@ End Sub
 
 Private Sub InitializeShippingEventHooks()
     If gAppEvents Is Nothing Then
-        Set gAppEvents = New cAppEvents
+        Set gAppEvents = New cShippingAppEvents
         gAppEvents.Init
     End If
 End Sub
