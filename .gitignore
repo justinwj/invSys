@@ -24,3 +24,11 @@ tikz_playground.aux
 tikz_playground.fdb_latexmk
 tikz_playground.fls
 tikz_playground.log
+tests/fixtures/invSys.Inbox.Production.S1.xlsb
+tests/fixtures/invSys.Inbox.Receiving.S1.xlsb
+tests/fixtures/invSys.Inbox.Shipping.S1.xlsb
+tests/fixtures/WH1.invSys.Auth.sample.xlsx
+tests/fixtures/WH1.invSys.Auth.xlsb
+tests/fixtures/WH1.invSys.Config.sample.xlsx
+tests/fixtures/WH1.invSys.Config.xlsb
+tests/fixtures/WH1.invSys.Data.Inventory.xlsb
