@@ -158,6 +158,35 @@ Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
         syncCompleted, Empty, operatorWb)
 End Function
 
+Public Function RunRelease1BoxingActionForTest(ByVal operatorWb As Workbook, _
+                                               ByVal componentSku As String, _
+                                               ByVal packageSku As String, _
+                                               ByVal versionLabel As String, _
+                                               ByVal boxQty As Double, _
+                                               ByVal componentQtyPerBox As Double) As String
+    Dim componentRows(1 To 1, 1 To 8) As Variant
+    Dim report As String
+    Dim succeeded As Boolean
+
+    componentRows(1, 2) = componentSku
+    componentRows(1, 3) = componentSku
+    componentRows(1, 4) = 1
+    componentRows(1, 5) = componentQtyPerBox
+    componentRows(1, 6) = "EA"
+    componentRows(1, 7) = "BIN-A"
+    componentRows(1, 8) = "Release 1 packaged component"
+
+    succeeded = PostBoxMakerAction(operatorWb, 1, packageSku, "EA", _
+        "BIN-B", "Release 1 versioned box", versionLabel, boxQty, _
+        componentRows, "MAKE", report)
+    If succeeded Then
+        RunRelease1BoxingActionForTest = "OK|BomVersion=" & _
+            versionLabel & "|" & report
+    Else
+        RunRelease1BoxingActionForTest = "FAIL|" & report
+    End If
+End Function
+
 Public Function NasInventoryIsReadOnly() As Boolean
     ' Boxing services consume NAS Inv as a read-only canonical input.
     NasInventoryIsReadOnly = True

@@ -325,6 +325,7 @@ function Get-LiveRawInput {
     }
 
     $loadedAddins = New-Object System.Collections.Generic.List[object]
+    $loadedAddinPaths = @{}
     $workbooks = New-Object System.Collections.Generic.List[object]
     $tables = New-Object System.Collections.Generic.List[object]
     $config = New-Object System.Collections.Generic.List[object]
@@ -390,7 +391,8 @@ function Get-LiveRawInput {
                     }
                 }
 
-                if ($name -match '(?i)\.xlam$') {
+                if ($name -match '(?i)^invSys\..*\.xlam$') {
+                    $loadedAddinPaths[$fullName.ToLowerInvariant()] = $true
                     $loadedAddins.Add([ordered]@{
                         name = $name
                         path = $fullName
@@ -547,6 +549,63 @@ function Get-LiveRawInput {
                     [Runtime.InteropServices.Marshal]::IsComObject($workbook)) {
                     [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($workbook)
                 }
+            }
+        }
+
+        # Excel excludes workbooks whose IsAddin property is true from the
+        # Workbooks collection. AddIns2 includes those open, unregistered XLAMs
+        # as well as installed add-ins, so inspect it without changing Installed
+        # state. Missing stale registrations are not loaded runtime packages.
+        $addins2 = $null
+        try {
+            $addins2 = $excel.AddIns2
+            $addinCount = [int]$addins2.Count
+            for ($addinIndex = 1; $addinIndex -le $addinCount; $addinIndex++) {
+                $addin = $null
+                try {
+                    $addin = $addins2.Item($addinIndex)
+                    $addinName = [string]$addin.Name
+                    $addinFullName = [string]$addin.FullName
+                    if ($addinName -notmatch '(?i)^invSys\..*\.xlam$' -or
+                        [string]::IsNullOrWhiteSpace($addinFullName) -or
+                        -not (Test-Path -LiteralPath $addinFullName -PathType Leaf)) {
+                        continue
+                    }
+
+                    $addinKey = $addinFullName.ToLowerInvariant()
+                    if ($loadedAddinPaths.ContainsKey($addinKey)) {
+                        continue
+                    }
+                    $loadedAddinPaths[$addinKey] = $true
+                    $addinHash = Get-SharedFileSha256 $addinFullName
+                    $loadedAddins.Add([ordered]@{
+                        name = $addinName
+                        path = $addinFullName
+                        sha256 = $addinHash
+                        projectVersion = "UNKNOWN"
+                        contractVersion = "UNKNOWN"
+                        isAddin = $true
+                    })
+                    if (-not [string]::IsNullOrWhiteSpace($addinHash)) {
+                        $inspectedFiles.Add([ordered]@{
+                            path = $addinFullName
+                            authorityClass = "ADDIN"
+                            precomputedBeforeSha256 = $addinHash
+                        })
+                    }
+                }
+                finally {
+                    if ($null -ne $addin -and
+                        [Runtime.InteropServices.Marshal]::IsComObject($addin)) {
+                        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($addin)
+                    }
+                }
+            }
+        }
+        finally {
+            if ($null -ne $addins2 -and
+                [Runtime.InteropServices.Marshal]::IsComObject($addins2)) {
+                [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($addins2)
             }
         }
 

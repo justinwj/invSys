@@ -6810,6 +6810,10 @@ Public Function TestShippingSentPayload_UsesVisibleShipmentItemWhenInvSysCodeSta
         failureReason = "Shipments Sent payload note did not preserve Ref/Carrier: " & payloadJson
         GoTo CleanExit
     End If
+    If InStr(1, payloadJson, """Location"":""CLEARVIEW""", vbTextCompare) = 0 Then
+        failureReason = "Shipments Sent payload did not preserve the staged inventory location: " & payloadJson
+        GoTo CleanExit
+    End If
 
     TestShippingSentPayload_UsesVisibleShipmentItemWhenInvSysCodeStale = 1
 

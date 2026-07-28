@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "65b9aa3140adcfd38f428c94b38e90317c089e94ff04ce3a4e991d42622b22bb",
-                          "maintenanceCandidatesSha256":  "449ed8c8d47b5f533afe9e9ce918639db1c28bbdcd1725bede50aac5489dbe01"
+                          "implementationManifestSha256":  "c5783b87a8f2c682fa1c840a86c3d6afd1a04817663941c02299cdd9989e725d",
+                          "maintenanceCandidatesSha256":  "9db668f4476840662883f6b96106fb935dff6a187c57c72743169187ecb5ff7f"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  965,
-                    "reviewedCandidateCount":  967,
+                    "scannerCandidateCount":  962,
+                    "reviewedCandidateCount":  964,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,17 +22,17 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  27,
+                            "candidateCount":  26,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  131,
+                            "candidateCount":  130,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  154,
+                            "candidateCount":  153,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -105,7 +105,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdminConsole.bas",
                                                   "componentName":  "modAdminConsole",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1985,
+                                                  "baselineLineCount":  1998,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +231,7 @@
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  21797,
+                                                  "baselineLineCount":  21874,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -1469,6 +1469,7 @@
                                                   "RunScheduledWarehousePublishForAutomation",
                                                   "SafeTrimAdmin",
                                                   "SanitizeAutomationTextAdmin",
+                                                  "SeedDemoInventoryForAutomation",
                                                   "SetTableRowValueAdmin",
                                                   "TargetHasUncPathAdmin",
                                                   "TryResolveExistingAdminRuntimeContext",
@@ -17651,29 +17652,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionFormTwoBatchActionReportForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -19734,29 +19712,6 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "ReceivingFormInitializeSmokeForWorkbook"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RunReceivingConfirmWritesFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -22261,6 +22216,7 @@
                                                   "ActiveShipmentLineIdsForCurrentOperatorWorkbook",
                                                   "AddBoxBuildComponentPayloadItems",
                                                   "AddBoxBuildPayloadItem",
+                                                  "AddBoxBuildSystemKeyPayloadItem",
                                                   "AddBoxUnboxComponentPayloadItems",
                                                   "AddBoxVersionInventoryFromLog",
                                                   "AddBoxVersionInventoryFromOpenInventoryLogs",
@@ -22738,6 +22694,7 @@
                                                   "ResolveBoxMakerPackageRow",
                                                   "ResolveBoxMakerUnboxAvailableQty",
                                                   "ResolveBoxPackageRowValue",
+                                                  "ResolveBoxPayloadSystemKeyShipping",
                                                   "ResolveCanonicalComponentInfoShipping",
                                                   "ResolveCurrentInventoryFromTable",
                                                   "ResolveCurrentInventoryValue",
@@ -24379,29 +24336,6 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "RegisterBoxMakerFormAutoSync"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "RunShipmentsSentFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

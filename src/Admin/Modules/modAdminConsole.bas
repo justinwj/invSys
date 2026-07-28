@@ -58,6 +58,19 @@ Public Function PublishInitialArtifactsAdmin(ByVal warehouseId As String, _
     PublishInitialArtifactsAdmin = modWarehouseBootstrap.PublishInitialArtifactsValues(warehouseId, warehouseName, stationId, adminUser, pathLocal, pathSharePoint)
 End Function
 
+Public Function SeedDemoInventoryForAutomation(ByVal warehouseId As String, _
+                                               ByVal stationId As String, _
+                                               ByVal userId As String) As String
+    Dim report As String
+
+    If modAdminInventorySeed.SeedDemoInventoryForWarehouse( _
+            warehouseId, stationId, userId, report) Then
+        SeedDemoInventoryForAutomation = "OK|" & report
+    Else
+        SeedDemoInventoryForAutomation = "FAIL|" & report
+    End If
+End Function
+
 Public Function ValidateRetireMigrateSpecAdmin(ByVal sourceWarehouseId As String, _
                                                ByVal targetWarehouseId As String, _
                                                ByVal operationMode As Long, _

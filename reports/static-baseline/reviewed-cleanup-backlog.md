@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 965
-- Reviewed candidates: 967
+- Scanner candidates: 962
+- Reviewed candidates: 964
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,9 +11,9 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 27 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 131 | Production-owned forms, services, and role package source. |
-| SHIPPING | 154 | Shipping and Boxing forms, services, and role package source. |
+| RECEIVING | 26 | Receiving-owned forms, services, and role package source. |
+| PRODUCTION | 130 | Production-owned forms, services, and role package source. |
+| SHIPPING | 153 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 308 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
@@ -34,7 +34,7 @@
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
 | src/Admin/Modules/modAdmin.bas | Admin | 1705 |
-| src/Admin/Modules/modAdminConsole.bas | Admin | 1985 |
+| src/Admin/Modules/modAdminConsole.bas | Admin | 1998 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1845 |
 | src/Core/Modules/modAuth.bas | Core | 1627 |
@@ -52,7 +52,7 @@
 | src/Production/Forms/frmProduction.frm | Production | 4788 |
 | src/Production/Modules/mProduction.bas | Production | 12850 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2525 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21797 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21874 |
 
 ## Reviewed candidates
 
@@ -701,7 +701,6 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.OutputCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProcessCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormInitializeSmokeForWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionUiAccess | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -792,7 +791,6 @@
 | reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.InitReceivingAddin | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_SelectionChange | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -947,7 +945,6 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadShippingBomPackagePickerItems | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormHydrateInvSysFromShippables | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormLoadReadiness | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

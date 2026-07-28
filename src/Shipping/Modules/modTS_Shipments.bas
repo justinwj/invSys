@@ -6734,7 +6734,9 @@ Private Function QueueBoxMakerFormPayload(ByVal isMakeAction As Boolean, _
                                           ByRef componentTotalOut As Double, _
                                           ByRef packageTotalOut As Double, _
                                           ByRef eventIdOut As String, _
-                                          ByRef errNotes As String) As Boolean
+                                          ByRef errNotes As String, _
+                                          Optional ByVal operatorWb As Workbook = Nothing, _
+                                          Optional ByRef packageSystemKeyOut As String = "") As Boolean
     On Error GoTo FailSoft
 
     Dim payloadItems As Collection
@@ -6752,6 +6754,9 @@ Private Function QueueBoxMakerFormPayload(ByVal isMakeAction As Boolean, _
     Dim uomVal As String
     Dim locationVal As String
     Dim descriptionVal As String
+    Dim componentSystemKey As String
+    Dim packageSystemKey As String
+    Dim invLo As ListObject
 
     errNotes = ""
     eventIdOut = ""
@@ -6789,6 +6794,15 @@ Private Function QueueBoxMakerFormPayload(ByVal isMakeAction As Boolean, _
         packageIoType = "UNMADE"
     End If
 
+    If operatorWb Is Nothing Then
+        Set operatorWb = ResolveShippingWorkbook(Nothing, SHEET_SHIPMENTS)
+    End If
+    Set invLo = GetInvSysTableFromWorkbook(operatorWb)
+    If invLo Is Nothing Then
+        errNotes = "Shipping inventory read model was not resolved for Box Maker."
+        Exit Function
+    End If
+
     Set payloadItems = New Collection
     For r = 1 To UBound(componentRows, 1)
         itemName = BoxBuilderFormBomText(componentRows, r, 2, "")
@@ -6809,8 +6823,17 @@ Private Function QueueBoxMakerFormPayload(ByVal isMakeAction As Boolean, _
         locationVal = BoxBuilderFormBomText(componentRows, r, 7, "")
         descriptionVal = BoxBuilderFormBomText(componentRows, r, 8, "")
         If itemCode = "" And itemName <> "" Then itemCode = itemName
+        componentSystemKey = ResolveBoxPayloadSystemKeyShipping( _
+            invLo, itemCode, itemName)
+        If componentSystemKey = "" Then
+            errNotes = "Component '" & itemCode & _
+                       "' is missing System_Key in the Shipping read model."
+            Exit Function
+        End If
 
-        AddBoxBuildPayloadItem payloadItems, rowVal, itemCode, itemName, qtyTotal, uomVal, locationVal, descriptionVal, componentIoType, versionLabel
+        AddBoxBuildSystemKeyPayloadItem payloadItems, componentSystemKey, _
+            itemCode, itemName, qtyTotal, uomVal, locationVal, _
+            descriptionVal, componentIoType, versionLabel
         componentTotalOut = componentTotalOut + qtyTotal
 NextComponent:
     Next r
@@ -6820,16 +6843,20 @@ NextComponent:
         Exit Function
     End If
 
-    AddBoxBuildPayloadItem payloadItems, _
-                           packageRow, _
-                           boxName, _
-                           boxName, _
-                           boxQty, _
-                           boxUom, _
-                           boxLocation, _
-                           boxDescription, _
-                           packageIoType, _
-                           versionLabel
+    packageSystemKey = ResolveBoxPayloadSystemKeyShipping( _
+        invLo, boxName, boxName)
+    If packageSystemKey = "" And isMakeAction Then
+        packageSystemKey = modRoleEventWriter.CreateSystemKey()
+    End If
+    If packageSystemKey = "" Then
+        errNotes = "Shippable '" & boxName & _
+                   "' is missing System_Key in the Shipping read model."
+        Exit Function
+    End If
+    packageSystemKeyOut = packageSystemKey
+    AddBoxBuildSystemKeyPayloadItem payloadItems, packageSystemKey, _
+        boxName, boxName, boxQty, boxUom, boxLocation, boxDescription, _
+        packageIoType, versionLabel
     packageTotalOut = boxQty
 
     payloadJson = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
@@ -6847,6 +6874,46 @@ NextComponent:
 
 FailSoft:
     errNotes = "QueueBoxMakerFormPayload failed: " & Err.Description
+End Function
+
+Private Sub AddBoxBuildSystemKeyPayloadItem(ByVal payloadItems As Collection, _
+                                            ByVal systemKey As String, _
+                                            ByVal itemCode As String, _
+                                            ByVal itemName As String, _
+                                            ByVal qtyVal As Double, _
+                                            ByVal uomVal As String, _
+                                            ByVal locationVal As String, _
+                                            ByVal descriptionVal As String, _
+                                            ByVal ioType As String, _
+                                            ByVal bomVersionLabel As String)
+    Dim payloadItem As Object
+
+    Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+        0, itemCode, qtyVal, locationVal, itemName, ioType)
+    If payloadItem.Exists("Row") Then payloadItem.Remove "Row"
+    payloadItem("System_Key") = Trim$(systemKey)
+    payloadItem("ITEM_CODE") = itemCode
+    payloadItem("ITEM") = itemName
+    payloadItem("UOM") = uomVal
+    payloadItem("DESCRIPTION") = descriptionVal
+    payloadItem("LOCATION") = locationVal
+    payloadItem("Condition") = "GOOD"
+    payloadItem("BomVersionLabel") = _
+        NormalizeBoxBomVersionLabelShipping(bomVersionLabel)
+    payloadItems.Add payloadItem
+End Sub
+
+Private Function ResolveBoxPayloadSystemKeyShipping(ByVal invLo As ListObject, _
+                                                     ByVal itemCode As String, _
+                                                     ByVal itemName As String) As String
+    Dim rowIndex As Long
+
+    If invLo Is Nothing Then Exit Function
+    rowIndex = FindInvRowIndexByItemCode(invLo, itemCode)
+    If rowIndex <= 0 Then rowIndex = FindInvRowIndexByItem(invLo, itemName)
+    If rowIndex <= 0 Then Exit Function
+    ResolveBoxPayloadSystemKeyShipping = _
+        Trim$(NzStr(GetInvSysValueByIndex(invLo, rowIndex, "System_Key")))
 End Function
 
 Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
@@ -6875,6 +6942,7 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
     Dim batchProcessed As Boolean
     Dim currentQty As Double
     Dim foundCurrentQty As Boolean
+    Dim packageSystemKey As String
 
     resultMessage = ""
     syncCompletedOut = False
@@ -6932,7 +7000,9 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
                                         componentsReturned, _
                                         packageReturned, _
                                         eventIdOut, _
-                                        errNotes) Then
+                                        errNotes, _
+                                        operatorWb, _
+                                        packageSystemKey) Then
             If errNotes = "" Then errNotes = "Box could not be unboxed."
             resultMessage = errNotes
             Exit Function
@@ -6955,7 +7025,9 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
                                         usedTotal, _
                                         madeTotal, _
                                         eventIdOut, _
-                                        errNotes) Then
+                                        errNotes, _
+                                        operatorWb, _
+                                        packageSystemKey) Then
             If errNotes = "" Then errNotes = "Box creation could not be posted."
             resultMessage = errNotes
             Exit Function
@@ -6977,6 +7049,8 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
     End If
     If runtimeReport <> "" Then AppendNote errNotes, runtimeReport
     If eventIdOut <> "" Then AppendNote errNotes, "Inbox EventID: " & eventIdOut
+    If packageSystemKey <> "" Then _
+        AppendNote errNotes, "OutputSystemKey: " & packageSystemKey
     If errNotes <> "" Then resultMessage = resultMessage & vbCrLf & vbCrLf & errNotes
     ShowShippingStatus resultMessage
     CommitBoxMakerFormAction = True
@@ -20271,14 +20345,17 @@ Private Function BuildPayloadJsonFromDeltas(ByVal deltas As Collection, Optional
     Dim payloadItems As New Collection
     Dim delta As Variant
     Dim payloadItem As Object
+    Dim payloadLocation As String
 
     If deltas Is Nothing Then Exit Function
     If deltas.Count = 0 Then Exit Function
 
     For Each delta In deltas
+        payloadLocation = ""
+        If delta.Exists("LOCATION") Then payloadLocation = NzStr(delta("LOCATION"))
         If delta.Exists("System_Key") Then
             Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
-                0, NzStr(delta("ITEM_CODE")), NzDbl(delta("QTY")), "", _
+                0, NzStr(delta("ITEM_CODE")), NzDbl(delta("QTY")), payloadLocation, _
                 NzStr(delta("ITEM_NAME")), ioType)
             payloadItem.Remove "Row"
             payloadItem("System_Key") = NzStr(delta("System_Key"))
@@ -20287,7 +20364,7 @@ Private Function BuildPayloadJsonFromDeltas(ByVal deltas As Collection, Optional
                 NzLng(delta("ROW")), _
                 NzStr(delta("ITEM_CODE")), _
                 NzDbl(delta("QTY")), _
-                "", _
+                payloadLocation, _
                 NzStr(delta("ITEM_NAME")), _
                 ioType)
         End If

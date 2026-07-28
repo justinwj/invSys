@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
                      "componentCount":  164,
-                     "procedureCount":  4531,
-                     "lineCount":  98620,
+                     "procedureCount":  4535,
+                     "lineCount":  98739,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  187
@@ -12193,6 +12193,7 @@
                                                   "RunScheduledWarehousePublishForAutomation",
                                                   "SafeTrimAdmin",
                                                   "SanitizeAutomationTextAdmin",
+                                                  "SeedDemoInventoryForAutomation",
                                                   "SetTableRowValueAdmin",
                                                   "TargetHasUncPathAdmin",
                                                   "TryResolveExistingAdminRuntimeContext",
@@ -14395,6 +14396,7 @@
                                                   "ActiveShipmentLineIdsForCurrentOperatorWorkbook",
                                                   "AddBoxBuildComponentPayloadItems",
                                                   "AddBoxBuildPayloadItem",
+                                                  "AddBoxBuildSystemKeyPayloadItem",
                                                   "AddBoxUnboxComponentPayloadItems",
                                                   "AddBoxVersionInventoryFromLog",
                                                   "AddBoxVersionInventoryFromOpenInventoryLogs",
@@ -14872,6 +14874,7 @@
                                                   "ResolveBoxMakerPackageRow",
                                                   "ResolveBoxMakerUnboxAvailableQty",
                                                   "ResolveBoxPackageRowValue",
+                                                  "ResolveBoxPayloadSystemKeyShipping",
                                                   "ResolveCanonicalComponentInfoShipping",
                                                   "ResolveCurrentInventoryFromTable",
                                                   "ResolveCurrentInventoryValue",
@@ -18694,23 +18697,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionFormTwoBatchActionReportForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -18904,23 +18890,6 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "ReceivingFormInitializeSmokeForWorkbook"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RunReceivingConfirmWritesFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -19703,23 +19672,6 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "RegisterBoxMakerFormAutoSync"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "RunShipmentsSentFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

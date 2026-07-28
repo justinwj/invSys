@@ -864,7 +864,8 @@ function New-InventoryWorkbook {
     $wsLog.Name = "InventoryLog"
     $loLog = Add-Table -Worksheet $wsLog -TableName "tblInventoryLog" -Headers @(
         "EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC",
-        "WarehouseId", "StationId", "UserId", "SKU", "QtyDelta", "Location", "Note"
+        "WarehouseId", "StationId", "UserId", "System_Key", "SKU", "QtyDelta", "Location",
+        "Condition", "AttributesJson", "Note"
     ) -Rows @()
     Clear-ListObjectRows $loLog
 
@@ -901,25 +902,34 @@ function New-InventoryWorkbook {
         "SKU-SUGAR" = "BIN-A"
         "SKU-COMP" = "LINE"
     }
+    $seedSystemKeys = @{
+        "SKU-SHIP" = "SYS-LIVE-SHIP"
+        "SKU-SUGAR" = "SYS-LIVE-SUGAR"
+        "SKU-COMP" = "SYS-LIVE-COMP"
+    }
     $seedSeq = 0
     foreach ($sku in $SkuRows) {
         $skuText = [string]$sku
         if (-not $seedQuantities.ContainsKey($skuText)) { continue }
         $seedSeq++
         $eventId = "EVT-LIVE-SEED-" + $skuText
+        $systemKey = [string]$seedSystemKeys[$skuText]
         Add-ListObjectRow -ListObject $loLog -Values @{
             "EventID" = $eventId
             "UndoOfEventId" = ""
             "AppliedSeq" = $seedSeq
-            "EventType" = "MIGRATION_SEED"
+            "EventType" = "INVENTORY_CREATE"
             "OccurredAtUTC" = [datetime]::UtcNow
             "AppliedAtUTC" = [datetime]::UtcNow
             "WarehouseId" = $WarehouseId
             "StationId" = "S1"
             "UserId" = "svc_processor"
+            "System_Key" = $systemKey
             "SKU" = $skuText
             "QtyDelta" = [double]$seedQuantities[$skuText]
             "Location" = [string]$seedLocations[$skuText]
+            "Condition" = "GOOD"
+            "AttributesJson" = "{}"
             "Note" = "isolated packaged workflow seed"
         }
         Add-ListObjectRow -ListObject $loApplied -Values @{
@@ -1178,6 +1188,9 @@ try {
     $openedWorkbooks.Add($wbProdOps) | Out-Null
     $wbProdOps = Activate-WorkbookSafe -Excel $excel -Workbook $wbProdOps
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Core.xlam"].Name -MacroName "modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface" -Arguments @($wbProdOps))
+    $wbReceiveOps.Save()
+    $wbShipOps.Save()
+    $wbProdOps.Save()
 
     $currentStep = "Stage Receiving workflow"
     $wbReceive = Activate-WorksheetSafe -Excel $excel -Workbook $wbReceiveOps -WorksheetName "ReceivedTally"
@@ -1320,7 +1333,7 @@ try {
 
     $shipInboxBefore = Get-RowCountSafe $loInboxShip
     $currentStep = "Run Shipping BtnShipmentsSent"
-    $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShip -WorksheetName "ShipmentsTally"
+    $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShipOps -WorksheetName "ShipmentsTally"
     Restore-LiveRuntimeContext -Excel $excel -WorkbookMap $workbookMap -RuntimeRoot $runtimeRoot -WarehouseId $warehouseId -StationId $stationId -UserId $resolvedUserId -Pin $testPin
     $shipCapabilityDiagnostic = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Core.xlam"].Name -MacroName "modRoleUiAccess.DiagnoseCurrentUserCapability" -Arguments @("SHIP_POST"))
     Add-ResultRow -Rows $resultRows -Check "Shipping.Capability.BeforeSent" -Passed $shipCapabilityDiagnostic.StartsWith("Allowed=True|") -Detail $shipCapabilityDiagnostic
@@ -1347,7 +1360,8 @@ try {
     $shipInboxAfter = Get-RowCountSafe $loInboxShip
     $shipQueuedRow = 0
     for ($i = 1; $i -le $shipInboxAfter; $i++) {
-        if (Build-PayloadContains -ListObject $loInboxShip -RowIndex $i -ExpectedText '"SKU":"SKU-SHIP"') {
+        $eventTypeVal = ([string](Get-RowValueSafe -ListObject $loInboxShip -RowIndex $i -ColumnName "EventType")).Trim().ToUpperInvariant()
+        if ($eventTypeVal -eq "SHIP" -and (Build-PayloadContains -ListObject $loInboxShip -RowIndex $i -ExpectedText '"SKU":"SKU-SHIP"')) {
             $shipQueuedRow = $i
             break
         }
@@ -1423,7 +1437,7 @@ try {
     Add-ResultRow -Rows $resultRows -Check "Shipping.Hold.Return" -Passed $returnHoldOk -Detail "Result=$returnHoldResult; ShipQty=$((Get-RowValueSafe -ListObject $loShipments -RowIndex $shipHoldRow -ColumnName 'QUANTITY')); HoldQty=$returnHoldQty"
 
     $currentStep = "Stage Shipping box-build workflow"
-    $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShip -WorksheetName "ShipmentsTally"
+    $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShipOps -WorksheetName "ShipmentsTally"
     $wsShip = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "ShipmentsTally"
     $wsShipBackend = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "ShippingBackend"
     $wsShipInv = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "InventoryManagement"
