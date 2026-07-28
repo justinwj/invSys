@@ -3,20 +3,20 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 159
-- Procedures: 4569
-- Literal Application.Run targets: 14
-- Unresolved dynamic calls: 59
+- Components: 162
+- Procedures: 4578
+- Literal Application.Run targets: 10
+- Unresolved dynamic calls: 48
 
 ## Packages
 
 | Package | Project | Output | Components |
 |---|---|---|---:|
 | Admin | invSys_Admin | invSys.Admin.xlam | 29 |
-| Core | invSys_Core | invSys.Core.xlam | 57 |
+| Core | invSys_Core | invSys.Core.xlam | 58 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 37 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 39 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
@@ -66,7 +66,6 @@
 | BtnOpenShipmentsForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | btnSend_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnUpdateUser_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| BuildPayloadJsonFromCollection | CROSS_XLAM_BRIDGE | src/Production/Forms/frmProduction.frm |
 | chkConfirmAction_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkPublishInitial_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkShippable_Click | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -75,10 +74,7 @@
 | Class_Terminate | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbSourceWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbTargetWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| ColumnIndex | CROSS_XLAM_BRIDGE | src/Production/Forms/frmProduction.frm |
-| CompleteProductionRunAfterCheckInForOutputResult | CROSS_XLAM_BRIDGE | src/Production/Forms/frmProduction.frm |
 | ConnectWarehouseStorageForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| EnableResizableUserForm | CROSS_XLAM_BRIDGE | src/Production/Forms/frmProduction.frm |
 | EnableResizableUserForm | CROSS_XLAM_BRIDGE | src/Receiving/Forms/frmReceiving.frm |
 | GetCallbackPtr | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | HandlePaletteIngredientSelected | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
@@ -508,7 +504,7 @@
 | TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestProductionCompleteRun_LogsOutputIdempotently | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
-| TestProductionCompleteRun_ReResolvesStaleOutputRow | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestProductionCompleteRun_PreservesImmutableOutputSystemKey | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompletionResult_IsStructuredAndSerializable | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
@@ -519,6 +515,7 @@
 | TestProductionForm_AssignmentOutputRejectsAcceptableInventory | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionForm_AssignmentReflectsSavedRecipeProcess | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionForm_BatchDisplaysCompletedCount | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestProductionForm_ClosedCapturedWorkbookDoesNotRebindToActiveWorkbook | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionForm_InitializeCreatesTabbedSurface | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionForm_OutputSelectionMapsPastBlankTableRows | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionForm_RecipeBuilderMovesLinesAndSupportsInstruction | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
@@ -531,7 +528,7 @@
 | TestProductionRecipes_LocalRowsWinOverStaleRuntime | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |
 | TestProductionRun_CheckInStagesOutsideInvSysReadModel | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
-| TestProductionRunInventory_PrefersOperatorLocationRows | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestProductionRunInventory_RejectsIdentitylessDomainRowsWithoutOperatorFallback | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionSession_AllocatesImmutableSystemKeys | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionSession_AssignsExplicitConsumeAndCompleteEventIds | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionSession_BecomesReadyOnlyAfterProcessorAndRefresh | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
@@ -822,12 +819,8 @@
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modWarehouseSync.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/ClassModules/Sheets/InventoryManagement.cls]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventoryApply.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventoryQueries.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventorySchema.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInvMan.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Production/Forms/frmProduction.frm]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Production/Modules/modProductionEventCreator.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Production/Modules/mProduction.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Forms/frmReceivedTally.frm]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Modules/modReceivingEventCreator.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Modules/modTS_Received.bas]
@@ -847,5 +840,3 @@
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modWarehouseBootstrap.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modWarehouseSync.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/InventoryDomain/Modules/modInventoryBridgeApi.bas]
-- UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Production/Forms/frmProduction.frm]
-- UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Production/Modules/mProduction.bas]

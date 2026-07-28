@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "f17a08e87358ee6c0d135caa6660c21b892089996fdf0476b4edbb2cd90c4124",
-                          "maintenanceCandidatesSha256":  "0d42d80dccba61f3640e60ac2e7d5a2bc53613026093b0c7f1ba1f3d827327a8"
+                          "implementationManifestSha256":  "757a6678bfcbdc8d1d5a29cbe9f69a1492a562d5fc037768c8a9fc49c0f6e2cb",
+                          "maintenanceCandidatesSha256":  "d4089d8ad3e6c58288bea32719be0f056229395b1c6e5d251ccf6a7e09badaa2"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1048,
-                    "reviewedCandidateCount":  1050,
+                    "scannerCandidateCount":  1002,
+                    "reviewedCandidateCount":  1004,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,32 +22,32 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  41,
+                            "candidateCount":  40,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  166,
+                            "candidateCount":  127,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  176,
+                            "candidateCount":  175,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
                             "name":  "SHARED_OPERATIONS",
-                            "candidateCount":  68,
+                            "candidateCount":  66,
                             "reason":  "Cross-role or future invSys.Operations packaging work."
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  315,
+                            "candidateCount":  313,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
                             "name":  "DOMAINS",
-                            "candidateCount":  63,
+                            "candidateCount":  62,
                             "reason":  "Inventory and Designs Domain authority source."
                         },
                         {
@@ -140,7 +140,7 @@
                                                   "sourcePath":  "src/Core/Modules/modNasConnection.bas",
                                                   "componentName":  "modNasConnection",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1379,
+                                                  "baselineLineCount":  1400,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -210,14 +210,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  4638,
+                                                  "baselineLineCount":  4606,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13082,
+                                                  "baselineLineCount":  12810,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -6673,8 +6673,8 @@
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "CORE",
                            "componentName":  "modAdmin",
@@ -6720,7 +6720,7 @@
                                                "src/InventoryDomain/Modules/modInventoryPublisher.bas",
                                                "src/InventoryDomain/Modules/modInventorySchema.bas"
                                            ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
 
                                                ],
@@ -9320,6 +9320,9 @@
                                                   "ForgetTarget",
                                                   "GetConnectionStatus",
                                                   "GetCurrentTarget",
+                                                  "GetCurrentTargetRuntimeRoot",
+                                                  "GetCurrentTargetStationId",
+                                                  "GetCurrentTargetWarehouseId",
                                                   "GetKnownWarehouseTargetRoots",
                                                   "GetPromptDefaultRoot",
                                                   "GetRememberedNasUser",
@@ -12359,6 +12362,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.DiagnoseUserFormWindowStyle",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modUserFormResizeWin",
+                           "procedureNames":  [
+                                                  "DiagnoseUserFormWindowStyle"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modUserFormResizeWin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.GetUserFormWindowHandle",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -12612,30 +12638,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "cDynItemSearch",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -12769,30 +12771,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Core_ClassModules_cTemplateApplier.cls:cTemplateApplier.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "cTemplateApplier",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cTemplateApplier.cls"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -13865,30 +13843,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.BuildPayloadJsonFromCollection",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "modRoleEventWriter",
-                           "procedureNames":  [
-                                                  "BuildPayloadJsonFromCollection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRoleEventWriter.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/unit/TestCoreRoleEventWriter.bas",
-                                                   "tests/unit/TestPhase6CoreSurfaces.bas"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -15708,30 +15662,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_DesignsDomain_Modules_modDesignsSchema.bas:modDesignsSchema.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "DOMAINS",
-                           "componentName":  "modDesignsSchema",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/DesignsDomain/Modules/modDesignsSchema.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_InventoryDomain_ClassModules_Sheets_InventoryManagement.cls:InventoryManagement.Worksheet_Change",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -15924,30 +15854,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "duplicate:0fc4b80400cc63aa:mBtnManagerMade_Click+mBtnManagerTotal_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerMade_Click",
-                                                  "mBtnManagerTotal_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:55a9c7cd01824ef3:IsInputIoValue+IsOutputIoValue",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -15996,259 +15902,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.BuildFormGuid:bba1461bf9b4",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "BuildFormGuid"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"modUR_Snapshot.GenerateGUID\"))",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction0:8ac82690856b",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction1:96f4dc213319",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction2:a4e27bfd9bc5",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject0:8ac82690856b",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject1:96f4dc213319",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject2:a4e27bfd9bc5",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2)",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub0:62d887b398f6",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub1:f1be77bbdf74",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub2:256b88ae8f9c",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Modules_mProduction.bas:mProduction.ProductionGuid:bba1461bf9b4",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionGuid"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"modUR_Snapshot.GenerateGUID\"))",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "module-size:src_Production_Forms_frmProduction.frm:frmProduction",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "SPLIT_MODULE",
@@ -16259,7 +15912,6 @@
                            "workstream":  "PRODUCTION",
                            "componentName":  "frmProduction",
                            "procedureNames":  [
-                                                  "ActivateOperatorWorkbookForRun",
                                                   "ActiveRunLocation",
                                                   "ActiveRunPaletteList",
                                                   "ActiveRunProcess",
@@ -16283,6 +15935,7 @@
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
                                                   "AssignmentItemRowIsBlank",
+                                                  "BindOperatorWorkbookForRun",
                                                   "BuildAssignmentPage",
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
@@ -16415,7 +16068,7 @@
                                                   "NextOutputBatchNumberForListIndex",
                                                   "NormalizeInventorySearch",
                                                   "NormalizeRecipeRowBudgetText",
-                                                  "NormalizeRunRowKey",
+                                                  "NormalizeRunSystemKey",
                                                   "NzDblLocal",
                                                   "NzStr",
                                                   "OrderedRunProcesses",
@@ -16468,15 +16121,6 @@
                                                   "RunLocationChoiceRequired",
                                                   "RunProcessFromPaletteList",
                                                   "RunProcessMatchesFilter",
-                                                  "RunProduction0",
-                                                  "RunProduction1",
-                                                  "RunProduction2",
-                                                  "RunProductionObject0",
-                                                  "RunProductionObject1",
-                                                  "RunProductionObject2",
-                                                  "RunProductionSub0",
-                                                  "RunProductionSub1",
-                                                  "RunProductionSub2",
                                                   "RunTreeGroupCollapsed",
                                                   "RunTreeGroupKey",
                                                   "RunTreeParentCaption",
@@ -16564,8 +16208,8 @@
                            "procedureNames":  [
                                                   "AccumulateBatchMaxFromLog",
                                                   "AccumulateLatestRecipeVersionProduction",
-                                                  "AddInventoryPickerRowsToRowMap",
-                                                  "AddInvSysTableRowsToRowMap",
+                                                  "AddInventoryPickerRowsToSystemKeyMap",
+                                                  "AddInvSysTableRowsToSystemKeyMap",
                                                   "AddPayloadItemsFromDeltas",
                                                   "AddProductionBalanceValue",
                                                   "AddTemplateRowsFromTable",
@@ -16574,16 +16218,14 @@
                                                   "AllowExcelRefreshToSettleProduction",
                                                   "AppendNote",
                                                   "AppendRecipeRowsFromTable",
-                                                  "ApplyMadeDeltasLocal",
-                                                  "ApplyMadeToInventoryDeltasLocal",
                                                   "ApplyProcessHeaderColor",
                                                   "ApplyProductionOutputTemplates",
                                                   "ApplyProductionTemplateFormulaToColumn",
                                                   "ApplyProductionTemplates",
                                                   "ApplyRecallCodesForOutput",
-                                                  "ApplyUsedDeltasLocal",
                                                   "ArrangeProductionSurface",
                                                   "BandKeyForProductionTable",
+                                                  "BindProductionOperatorWorkbook",
                                                   "BtnBuildRecipeProcessTables",
                                                   "BtnClearPaletteBuilder",
                                                   "BtnClearRecipeBuilder",
@@ -16603,10 +16245,9 @@
                                                   "BtnToUsed",
                                                   "BuildDesignRecipeStagingWorkbook",
                                                   "BuildDesignRecipeStagingWorkbookFromData",
-                                                  "BuildInvSysOutputLookup",
-                                                  "BuildInvSysRowIndex",
-                                                  "BuildInvSysRowMap",
+                                                  "BuildInventoryOutputIdentityLookup",
                                                   "BuildInvSysSystemKeyIndex",
+                                                  "BuildInvSysSystemKeyMap",
                                                   "BuildLegacyRuntimeRecipeStagingWorkbook",
                                                   "BuildMadeDeltasFromProductionOutput",
                                                   "BuildMadeDeltasFromProductionOutputRow",
@@ -16627,13 +16268,13 @@
                                                   "BuildRecipeProcessTablesFromLines",
                                                   "BuildRecipeSaveSourceTables",
                                                   "BuildReleasedDesignRecipeStagingWorkbook",
-                                                  "BuildRowKeySetFromDeltas",
+                                                  "BuildSystemKeySetFromDeltas",
                                                   "BuildUnifiedRecipeList",
                                                   "BuildUsedDeltaPacketFromCheck",
                                                   "BuildUsedDeltaPacketFromInvSys",
                                                   "BuildUsedDeltasFromPalette",
                                                   "BuildUsedDictFromPayloadJson",
-                                                  "BuildUsedSnapshotForRows",
+                                                  "BuildUsedSnapshotForSystemKeys",
                                                   "BuildUsedSnapshotFromCheck",
                                                   "CanonicalRecipeIdProduction",
                                                   "CaptureProductionOutputCompletionValues",
@@ -16648,6 +16289,7 @@
                                                   "ClearMadeStageColumns",
                                                   "ClearPaletteTableMeta",
                                                   "ClearPaletteTableSelection",
+                                                  "ClearProductionOperatorWorkbookBinding",
                                                   "ClearProductionOutputForNextBatch",
                                                   "ClearTemplatesForScope",
                                                   "ClearUsedStageByItemCode",
@@ -16664,8 +16306,10 @@
                                                   "CopyIngredientPaletteRowsByKey",
                                                   "CopyProductionRecipeRowsById",
                                                   "CreateEmptyDesignRecipeStagingWorkbook",
+                                                  "CreateProductionGuid",
                                                   "CreateRecipeProcessTable",
                                                   "CurrentProductionUserId",
+                                                  "CurrentProductionWarehouseId",
                                                   "DeleteCheckboxesByPrefix",
                                                   "DeleteIngredientPaletteRowsByKey",
                                                   "DeleteInventoryPaletteTables",
@@ -16677,7 +16321,7 @@
                                                   "DesignStatusForVersionProduction",
                                                   "DesignVersionExistsProduction",
                                                   "DiagnoseProductionInventoryReadModelForWorkbook",
-                                                  "EnrichOutputDeltaFromPicker",
+                                                  "EnrichOutputDeltaFromPickerBySystemKey",
                                                   "EnsureButtonCustom",
                                                   "EnsureCheckboxShape",
                                                   "EnsureFolderRecursiveProduction",
@@ -16694,7 +16338,7 @@
                                                   "EnsureProductionIngredientPaletteSchema",
                                                   "EnsureProductionOutputHeaderOrder",
                                                   "EnsureProductionOutputItemCodeColumn",
-                                                  "EnsureProductionOutputRowColumn",
+                                                  "EnsureProductionOutputSystemKeyColumn",
                                                   "EnsureProductionRecipesSchema",
                                                   "EnsureProductionReservedRows",
                                                   "EnsureRecallCodesReportSheet",
@@ -16732,7 +16376,7 @@
                                                   "GenerateRecipeId",
                                                   "GenerateRecipeIdForCurrentWorkbook",
                                                   "GenerateRecipeIdForWorkbookName",
-                                                  "GetAllowedInvRowsForIngredient",
+                                                  "GetAllowedInventorySystemKeysForIngredient",
                                                   "GetCheckboxCaption",
                                                   "GetColumnFormulaText",
                                                   "GetCurrentProductionRunRecipeId",
@@ -16788,7 +16432,7 @@
                                                   "InitializeProductionUI",
                                                   "InitializeProductionUiForWorkbook",
                                                   "InventoryPaletteHeaderList",
-                                                  "InventoryRowMatchesOutputName",
+                                                  "InventorySystemKeyMatchesOutputName",
                                                   "IsBandManagedTable",
                                                   "IsCheckboxShape",
                                                   "IsColorDark",
@@ -16830,9 +16474,9 @@
                                                   "LocalProductionRecipeRowsExist",
                                                   "LogProductionOutputToProductionLog",
                                                   "LookupCandidateMatchesTokens",
-                                                  "LookupOutputRow",
-                                                  "LookupOutputRowLoose",
-                                                  "LookupOutputRowLooseFromPicker",
+                                                  "LookupOutputSystemKey",
+                                                  "LookupOutputSystemKeyFromPicker",
+                                                  "LookupOutputSystemKeyLoose",
                                                   "LookupTokenExists",
                                                   "LookupTokens",
                                                   "MaxBatchFromOutput",
@@ -16856,7 +16500,7 @@
                                                   "NormalizeOutputKey",
                                                   "NormalizeProcessBandKey",
                                                   "NormalizeProductionRowBudget",
-                                                  "NormalizeRowKey",
+                                                  "NormalizeSystemKey",
                                                   "NormalizeTemplateFormulaColumn",
                                                   "NzDbl",
                                                   "NzLng",
@@ -16879,11 +16523,11 @@
                                                   "ProductionDesignsEnabled",
                                                   "ProductionFormInitializeSmokeForWorkbook",
                                                   "ProductionFormTwoBatchActionReportForTest",
-                                                  "ProductionGuid",
                                                   "ProductionIngredientIdsMatch",
                                                   "ProductionInventoryItemIsNonCounted",
                                                   "ProductionLocationForIdentity",
-                                                  "ProductionLogRowExists",
+                                                  "ProductionLogEntryExists",
+                                                  "ProductionPickerRowsHaveSystemKeys",
                                                   "ProductionRecipeLocalHeaders",
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
@@ -16920,13 +16564,15 @@
                                                   "RepairLastCompletedProductionRun",
                                                   "ResetPaletteTable",
                                                   "ResolveActiveRecipeId",
-                                                  "ResolveInvSysDetailsByRow",
-                                                  "ResolveInvSysLocationByRow",
+                                                  "ResolveBoundProductionWorkbook",
+                                                  "ResolveInvSysDetailsBySystemKey",
+                                                  "ResolveInvSysLocationBySystemKey",
                                                   "ResolveListObject",
-                                                  "ResolveProductionOutputIdentityFromPicker",
-                                                  "ResolveProductionOutputIdentityFromPickerRows",
-                                                  "ResolveProductionOutputInventoryRow",
+                                                  "ResolveProductionOutputIdentity",
+                                                  "ResolveProductionOutputIdentityFromRows",
+                                                  "ResolveProductionOutputSystemKey",
                                                   "ResolveProductionRecipesStorageTarget",
+                                                  "ResolveProductionTargetIdentity",
                                                   "ResolveProductionWorkbook",
                                                   "ResolveUsedInventoryIndex",
                                                   "RestoreMadeStageByItemCode",
@@ -16953,7 +16599,7 @@
                                                   "TestHandlePaletteRecipeSelectedStage",
                                                   "TestLatestRecipeNameFromDesignRows",
                                                   "TestLogProductionOutputRow",
-                                                  "TestLookupOutputRowLooseFromPicker",
+                                                  "TestLookupOutputSystemKeyFromPicker",
                                                   "TestNextBase36RecipeId",
                                                   "TestOutputIdentityFromPicker",
                                                   "TestProductionIngredientPaletteRuntimeRoundTrip",
@@ -16963,8 +16609,8 @@
                                                   "TestProductionRecipesRuntimeRoundTrip",
                                                   "TestProductionSystemKeyPayloadStagesWithoutInventoryMutation",
                                                   "TestProductionUsedStagingDoesNotMutateInvSys",
-                                                  "TestSelectedMadeDeltaRow",
                                                   "TestSelectedMadeDeltaSkuIdentity",
+                                                  "TestSelectedMadeDeltaSystemKey",
                                                   "TestUnifiedRecipeList",
                                                   "ToBase36RecipeId",
                                                   "TrimIngredientPaletteRows",
@@ -17316,98 +16962,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnBuildRecipeProcessTables",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnBuildRecipeProcessTables"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearPaletteBuilder"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeBuilder",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearRecipeBuilder"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeChooser",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearRecipeChooser"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -17477,29 +17031,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrintRecallCodes",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnPrintRecallCodes"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -17511,75 +17042,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnRemoveRecipeProcessTables"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveFormulas",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSaveFormulas"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSavePalette",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSavePalette"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveRecipe",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSaveRecipe"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -17615,50 +17077,27 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToMade",
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BuildInventoryOutputIdentityLookup",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "PRODUCTION",
                            "componentName":  "mProduction",
                            "procedureNames":  [
-                                                  "BtnToMade"
+                                                  "BuildInventoryOutputIdentityLookup"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToUsed",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnToUsed"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BuildUsedDeltaPacketFromInvSys",
@@ -18029,29 +17468,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteSaveDiagnostic",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetPaletteSaveDiagnostic"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteTableContextInfo",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -18096,121 +17512,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionDesignsModeStatus",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionDesignsModeStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionInventoryModeStatus",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionInventoryModeStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionRunDefaultLocation",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionRunDefaultLocation"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionSheet",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionSheet"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetRecallPrintDiagnostic",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetRecallPrintDiagnostic"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.HsvToRgb",
@@ -18259,75 +17560,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadProductionRunIngredientChoices",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadProductionRunIngredientChoices"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeList",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadRecipeList"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadReleasedRecipeList",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadReleasedRecipeList"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.OutputCheckboxChanged",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -18339,29 +17571,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "OutputCheckboxChanged"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.PaletteIngredientIsOutput",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "PaletteIngredientIsOutput"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -18443,52 +17652,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionToTotalInv"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "RefreshProductionInventoryReadModelForWorkbookResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -18535,29 +17698,6 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ReleaseRecipeForProduction",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ReleaseRecipeForProduction"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -18579,6 +17719,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ResolveProductionOutputSystemKey"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RestoreMadeStageColumns",
@@ -20170,53 +19333,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.CompleteProductionRunAfterCheckInForOutputResult",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "CompleteProductionRunAfterCheckInForOutputResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -20355,108 +19471,12 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.BuildRunUsedPayloadJson:BuildPayloadJsonFromCollection",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "BuildRunUsedPayloadJson",
-                                                  "BuildPayloadJsonFromCollection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.CompleteProductionRun:CompleteProductionRunAfterCheckInForOutputResult",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "CompleteProductionRun",
-                                                  "CompleteProductionRunAfterCheckInForOutputResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.ProductionColumnIndex:ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "ProductionColumnIndex",
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Activate:EnableResizableUserForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "UserForm_Activate",
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
                            "id":  "duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "RECEIVING",
                            "componentName":  "modTS_Received",
@@ -20467,7 +19487,7 @@
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
                                            ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
 
                                                ],
@@ -21420,30 +20440,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -21582,7 +20578,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexProd+ColumnIndexReceive+ColumnIndexShip",
+                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexReceive+ColumnIndexShip",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21590,14 +20586,12 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modProductionEventCreator",
+                           "componentName":  "modReceivingEventCreator",
                            "procedureNames":  [
-                                                  "ColumnIndexProd",
                                                   "ColumnIndexReceive",
                                                   "ColumnIndexShip"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
                                                "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
@@ -21823,7 +20817,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblProd+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
+                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21834,7 +20828,6 @@
                            "componentName":  "modOperatorReadModel",
                            "procedureNames":  [
                                                   "NzDblApply",
-                                                  "NzDblProd",
                                                   "NzDblReadModel",
                                                   "NzDblReceive",
                                                   "NzDblShip",
@@ -21844,7 +20837,6 @@
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modWarehouseSync.bas",
                                                "src/InventoryDomain/Modules/modInventoryApply.bas",
-                                               "src/Production/Modules/modProductionEventCreator.bas",
                                                "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
@@ -21993,7 +20985,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrProd+NzStrReceive+NzStrShip",
+                           "id":  "duplicate:30348d523aeda395:NzStrReceive+NzStrShip+TextValue",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -22003,9 +20995,9 @@
                            "workstream":  "SHARED_OPERATIONS",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
-                                                  "NzStrProd",
                                                   "NzStrReceive",
-                                                  "NzStrShip"
+                                                  "NzStrShip",
+                                                  "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
@@ -22524,31 +21516,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:7593f668273ef744:NzLngProd+NzLngShip",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modProductionEventCreator",
-                           "procedureNames":  [
-                                                  "NzLngProd",
-                                                  "NzLngShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:77c1bbac8c506d7f:AppendNote+AppendNote+AppendNoteShip",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22798,31 +21765,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:a11a422eae2ec210:GetInvSysTableProd+GetInvSysTableShip",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modProductionEventCreator",
-                           "procedureNames":  [
-                                                  "GetInvSysTableProd",
-                                                  "GetInvSysTableShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:a5c98baf2e424f1f:FlattenProductionStatusText+FlattenStatusText",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22852,8 +21794,8 @@
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHARED_OPERATIONS",
                            "componentName":  "cTemplateApplier",
@@ -22865,7 +21807,7 @@
                                                "src/Core/ClassModules/cTemplateApplier.cls",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
 
                                                ],
@@ -28279,30 +27221,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ColumnIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

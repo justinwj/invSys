@@ -36,7 +36,7 @@ Public Sub EnsureProductionSurfaceForWorkbook(ByVal wb As Workbook)
     Dim prevEvents As Boolean
 
     If wb Is Nothing Then Exit Sub
-    If Not modRoleWorkbookSurfaces.ShouldBootstrapRoleWorkbookSurface(wb) Then Exit Sub
+    If Not modOperationsPrimitiveBridge.ShouldBootstrapRoleWorkbookSurface(wb.Name) Then Exit Sub
     If Not IsLikelyProductionWorkbook(wb) Then Exit Sub
     prevEvents = Application.EnableEvents
     Application.EnableEvents = False

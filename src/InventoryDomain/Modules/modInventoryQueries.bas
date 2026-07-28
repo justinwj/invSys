@@ -79,7 +79,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     Dim outRow As Long
     Dim maxRows As Long
     Dim sku As String
-    Dim rowValue As String
+    Dim systemKey As String
     Dim itemCode As String
     Dim itemName As String
     Dim uom As String
@@ -111,7 +111,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
 
     For r = 1 To UBound(catalogRows, 1)
         sku = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "SKU"))
-        rowValue = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "ROW"))
+        systemKey = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "System_Key"))
         itemCode = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "ITEM_CODE"))
         itemName = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "ITEM"))
         uom = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "UOM"))
@@ -122,7 +122,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
         If sku = "" Then sku = itemCode
         If itemName = "" And itemCode = "" Then GoTo NextCatalogRow
 
-        haystack = LCase$(rowValue & " " & itemCode & " " & itemName & " " & uom & " " & _
+        haystack = LCase$(systemKey & " " & itemCode & " " & itemName & " " & uom & " " & _
                               catalogLocation & " " & description & " " & category)
         If filterText <> "" Then
             If InStr(1, haystack, filterText, vbTextCompare) = 0 Then GoTo NextCatalogRow
@@ -141,7 +141,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
                            sku, vbTextCompare) = 0 Then
                     locationValue = InventoryQueryText(locationRows, lr, InventoryQueryColumn(loLocation, "Location"))
                     If locationValue <> "" Then
-                        AddInventoryPickerResultRow result, outRow, rowValue, itemName, uom, qtyOnHand, _
+                        AddInventoryPickerResultRow result, outRow, systemKey, itemName, uom, qtyOnHand, _
                                                     locationValue, description, itemCode
                         matchedLocation = True
                     End If
@@ -149,7 +149,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
             Next lr
         End If
         If Not matchedLocation Then
-            AddInventoryPickerResultRow result, outRow, rowValue, itemName, uom, qtyOnHand, _
+            AddInventoryPickerResultRow result, outRow, systemKey, itemName, uom, qtyOnHand, _
                                         catalogLocation, description, itemCode
         End If
 NextCatalogRow:
@@ -167,12 +167,12 @@ CleanFail:
 End Function
 
 Private Sub AddInventoryPickerResultRow(ByRef result() As Variant, ByRef outRow As Long, _
-                                        ByVal rowValue As String, ByVal itemName As String, _
+                                        ByVal systemKey As String, ByVal itemName As String, _
                                         ByVal uom As String, ByVal qtyOnHand As Variant, _
                                         ByVal locationValue As String, ByVal description As String, _
                                         ByVal itemCode As String)
     outRow = outRow + 1
-    result(outRow, 1) = rowValue
+    result(outRow, 1) = systemKey
     result(outRow, 2) = itemName
     result(outRow, 3) = uom
     result(outRow, 4) = qtyOnHand

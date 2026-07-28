@@ -455,11 +455,11 @@ Public Function TestEnsureProductionWorkbookSurface_CreatesExpectedTables() As L
        And WorksheetExistsAny(wb, Array("IngredientPalette", "IngredientsPalette")) _
        And TableHasColumns(wb, "IP_ChooseRecipe", Array("RECIPE_NAME", "DESCRIPTION", "GUID", "RECIPE_ID")) _
        And TableHasColumns(wb, "IP_ChooseIngredient", Array("INGREDIENT", "UOM", "QUANTITY", "DESCRIPTION", "GUID", "RECIPE_ID", "INGREDIENT_ID", "PROCESS")) _
-       And TableHasColumns(wb, "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "ROW", "RECIPE_ID", "INGREDIENT_ID")) _
-       And TableHasColumns(wb, "InventoryPalette_generated", Array("INGREDIENT", "INGREDIENT_ID", "ITEM", "SPLIT %", "QUANTITY", "BASE QUANTITY", "PROCESS", "ROW")) _
-       And TableHasColumns(wb, "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "ROW", "GUID")) _
+       And TableHasColumns(wb, "IP_ChooseItem", Array("ITEMS", "UOM", "DESCRIPTION", "System_Key", "RECIPE_ID", "INGREDIENT_ID")) _
+       And TableHasColumns(wb, "InventoryPalette_generated", Array("INGREDIENT", "INGREDIENT_ID", "ITEM", "SPLIT %", "QUANTITY", "BASE QUANTITY", "PROCESS", "System_Key")) _
+       And TableHasColumns(wb, "IngredientPalette", Array("RECIPE_ID", "INGREDIENT_ID", "INPUT/OUTPUT", "ITEM", "PERCENT", "UOM", "AMOUNT", "System_Key", "GUID")) _
        And TableHasColumns(wb, "TemplatesTable", Array("TEMPLATE_SCOPE", "RECIPE_ID", "INGREDIENT_ID", "PROCESS", "TARGET_TABLE", "TARGET_COLUMN", "FORMULA", "GUID", "NOTES", "ACTIVE", "CREATED_AT", "UPDATED_AT")) _
-       And TableHasColumns(wb, "ProductionLog", Array("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID")) _
+       And TableHasColumns(wb, "ProductionLog", Array("TIMESTAMP", "RECIPE", "RECIPE_ID", "DEPARTMENT", "DESCRIPTION", "PROCESS", "OUTPUT", "PREDICTED OUTPUT", "REAL OUTPUT", "BATCH", "BATCH_ID", "RECALL CODE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "INPUT/OUTPUT", "INGREDIENT_ID", "GUID")) _
        And TableHasColumns(wb, "BatchCodesLog", Array("RECIPE", "RECIPE_ID", "PROCESS", "OUTPUT", "UOM", "REAL OUTPUT", "BATCH", "RECALL CODE", "TIMESTAMP", "LOCATION", "USER", "GUID")) Then
         TestEnsureProductionWorkbookSurface_CreatesExpectedTables = 1
     End If
@@ -522,7 +522,8 @@ Public Function TestProductionForm_OutputSelectionMapsPastBlankTableRows() As Lo
     Set lr = loOutput.ListRows.Add
     SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BLEND"
     SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Finished Tea"
-    SetTableValueByColumn loOutput, lr.Index, "ROW", 1202
+    SetTableValueByColumn loOutput, lr.Index, "ITEM_CODE", "SKU-PROD-OUT"
+    SetTableValueByColumn loOutput, lr.Index, "System_Key", "SYS-PROD-OUT-1202"
 
     wb.Activate
     If frmProduction.TestSelectedProductionOutputTableRow(wb, 0) = 2 Then
@@ -566,24 +567,27 @@ Public Function TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSy
     SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Finished Tea"
     SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 8
     SetTableValueByColumn loOutput, lr.Index, "BATCH", 1
-    SetTableValueByColumn loOutput, lr.Index, "ROW", 1202
+    SetTableValueByColumn loOutput, lr.Index, "System_Key", "SYS-PROD-OUT-1202"
+    SetTableValueByColumn loOutput, lr.Index, "ITEM_CODE", "SKU-PROD-OUT"
 
     Set lr = loCheck.ListRows.Add
-    SetTableValueByColumn loCheck, lr.Index, "ROW", 1201
+    SetTableValueByColumn loCheck, lr.Index, "System_Key", "SYS-PROD-IN-1201"
     SetTableValueByColumn loCheck, lr.Index, "ITEM_CODE", "SKU-TEA-IN"
     SetTableValueByColumn loCheck, lr.Index, "ITEM", "Tea Input"
     SetTableValueByColumn loCheck, lr.Index, "USED", 12
 
     result = mProduction.TestCompletionDeltasFromStagedRows(loOutput, loCheck)
-    If result <> "OK|MadeRow=1202;MadeQty=8;UsedRow=1201;UsedQty=12" Then
+    If result <> "OK|MadeSystemKey=SYS-PROD-OUT-1202;MadeQty=8;UsedSystemKey=SYS-PROD-IN-1201;UsedQty=12" Then
         mLastTestFailure = result
         GoTo CleanExit
     End If
 
-    SetTableValueByColumn loOutput, 1, "ROW", ""
+    SetTableValueByColumn loOutput, 1, "System_Key", ""
     SetTableValueByColumn loOutput, 1, "ITEM_CODE", "SKU-PROD-OUT"
     result = mProduction.TestSelectedMadeDeltaSkuIdentity(loOutput)
-    If Left$(result, Len("OK|0|SKU-PROD-OUT|8")) = "OK|0|SKU-PROD-OUT|8" Then
+    If Left$(result, 3) = "OK|" _
+       And InStr(1, result, "|SKU-PROD-OUT|8", vbTextCompare) > 0 _
+       And result <> "OK||SKU-PROD-OUT|8" Then
         TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData = 1
     Else
         mLastTestFailure = result
@@ -614,13 +618,13 @@ Public Function TestProductionRun_CheckInStagesOutsideInvSysReadModel() As Long
     If Not loCheck.DataBodyRange Is Nothing Then loCheck.DataBodyRange.Delete
 
     Set lr = loInv.ListRows.Add
-    SetTableValueByColumn loInv, lr.Index, "ROW", 96
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-MALAWI-96"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-MALAWI-FINE-CUT"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Malawi Fine Cut Black Tea"
     SetTableValueByColumn loInv, lr.Index, "USED", 0
     SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 3175
 
-    result = mProduction.TestProductionUsedStagingDoesNotMutateInvSys(loInv, loCheck, 96, 32.5)
+    result = mProduction.TestProductionUsedStagingDoesNotMutateInvSys(loInv, loCheck, "SYS-MALAWI-96", 32.5)
     If Left$(result, 3) = "OK|" _
        And CDbl(GetTableValueByColumn(loInv, 1, "USED")) = 0 _
        And CDbl(GetTableValueByColumn(loInv, 1, "TOTAL INV")) = 3175 _
@@ -642,18 +646,18 @@ Public Function TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPi
     Dim result As String
 
     On Error GoTo CleanFail
-    pickerItems(1, 1) = 1301
+    pickerItems(1, 1) = "SYS-BREWED-1301"
     pickerItems(1, 2) = "Brewed Black Tea"
     pickerItems(1, 3) = "LBS"
     pickerItems(1, 6) = "Finished concentrated black tea"
     pickerItems(1, 7) = "SKU-BREWED-BLACK-TEA"
-    pickerItems(2, 1) = 1302
+    pickerItems(2, 1) = "SYS-GREEN-1302"
     pickerItems(2, 2) = "Green Tea"
     pickerItems(2, 3) = "LBS"
     pickerItems(2, 7) = "SKU-GREEN-TEA"
 
-    result = mProduction.TestLookupOutputRowLooseFromPicker(pickerItems, "Brew Black Tea")
-    If Left$(result, 5) = "1301|" Then
+    result = mProduction.TestLookupOutputSystemKeyFromPicker(pickerItems, "Brew Black Tea")
+    If Left$(result, Len("SYS-BREWED-1301|")) = "SYS-BREWED-1301|" Then
         TestProductionCompleteRun_ResolvesLooseOutputNameFromCanonicalPicker = 1
     End If
     Exit Function
@@ -686,12 +690,12 @@ Public Function TestProductionCompleteRun_LogsOutputIdempotently() As Long
     SetTableValueByColumn loOutput, lr.Index, "UOM", "LBS"
     SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 400
     SetTableValueByColumn loOutput, lr.Index, "BATCH", 1
-    SetTableValueByColumn loOutput, lr.Index, "ROW", 1301
+    SetTableValueByColumn loOutput, lr.Index, "System_Key", "SYS-BREWED-1301"
 
     result = mProduction.TestLogProductionOutputRow(wb.Worksheets("Production"), loOutput, 1)
     If Left$(result, 3) = "OK|" And loLog.ListRows.Count = 1 Then
         If CDbl(GetTableValueByColumn(loLog, 1, "REAL OUTPUT")) = 400 _
-           And CLng(GetTableValueByColumn(loLog, 1, "ROW")) = 1301 Then
+           And CStr(GetTableValueByColumn(loLog, 1, "System_Key")) = "SYS-BREWED-1301" Then
             TestProductionCompleteRun_LogsOutputIdempotently = 1
         End If
     End If
@@ -703,7 +707,7 @@ CleanFail:
     Resume CleanExit
 End Function
 
-Public Function TestProductionCompleteRun_ReResolvesStaleOutputRow() As Long
+Public Function TestProductionCompleteRun_PreservesImmutableOutputSystemKey() As Long
     Dim wb As Workbook
     Dim report As String
     Dim loInv As ListObject
@@ -723,7 +727,7 @@ Public Function TestProductionCompleteRun_ReResolvesStaleOutputRow() As Long
     If Not loOutput.DataBodyRange Is Nothing Then loOutput.DataBodyRange.Delete
 
     Set lr = loInv.ListRows.Add
-    SetTableValueByColumn loInv, lr.Index, "ROW", 1301
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-BREWED-1301"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-BREWED-BLACK-TEA"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Brewed Black Tea"
     SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Finished concentrated black tea"
@@ -733,12 +737,13 @@ Public Function TestProductionCompleteRun_ReResolvesStaleOutputRow() As Long
     SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Brew Black Tea"
     SetTableValueByColumn loOutput, lr.Index, "REAL OUTPUT", 400
     SetTableValueByColumn loOutput, lr.Index, "BATCH", 2
-    SetTableValueByColumn loOutput, lr.Index, "ROW", 67
+    SetTableValueByColumn loOutput, lr.Index, "System_Key", "SYS-OUTPUT-67"
+    SetTableValueByColumn loOutput, lr.Index, "ITEM_CODE", "SKU-BREWED-BLACK-TEA"
 
-    result = mProduction.TestSelectedMadeDeltaRow(loOutput, loInv)
-    If Left$(result, 8) = "OK|1301|" Then
-        If CLng(GetTableValueByColumn(loOutput, 1, "ROW")) = 1301 Then
-            TestProductionCompleteRun_ReResolvesStaleOutputRow = 1
+    result = mProduction.TestSelectedMadeDeltaSystemKey(loOutput, loInv)
+    If Left$(result, Len("OK|SYS-OUTPUT-67|")) = "OK|SYS-OUTPUT-67|" Then
+        If CStr(GetTableValueByColumn(loOutput, 1, "System_Key")) = "SYS-OUTPUT-67" Then
+            TestProductionCompleteRun_PreservesImmutableOutputSystemKey = 1
         End If
     End If
 
@@ -754,18 +759,18 @@ Public Function TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjec
     Dim result As String
 
     On Error GoTo CleanFail
-    pickerItems(1, 1) = 67
+    pickerItems(1, 1) = "SYS-BREWED-67"
     pickerItems(1, 2) = "Brewed Black Tea"
     pickerItems(1, 3) = "LBS"
     pickerItems(1, 6) = "Finished concentrated black tea"
     pickerItems(1, 7) = "SKU-BREWED-BLACK-TEA"
-    pickerItems(2, 1) = 96
+    pickerItems(2, 1) = "SYS-MALAWI-96"
     pickerItems(2, 2) = "Malawi Fine Cut Black Tea"
     pickerItems(2, 3) = "LB"
     pickerItems(2, 7) = "SKU-MALAWI-FINE-CUT"
 
-    result = mProduction.TestOutputIdentityFromPicker(pickerItems, 67, "Brew Black Tea")
-    If result = "67|SKU-BREWED-BLACK-TEA|Brewed Black Tea" Then
+    result = mProduction.TestOutputIdentityFromPicker(pickerItems, "SYS-BREWED-67", "Brew Black Tea")
+    If result = "SYS-BREWED-67|SKU-BREWED-BLACK-TEA|Brewed Black Tea" Then
         TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjection = 1
     End If
     Exit Function
@@ -773,13 +778,12 @@ Public Function TestProductionCompleteRun_UsesCatalogIdentityOutsideInvSysProjec
 CleanFail:
 End Function
 
-Public Function TestProductionRunInventory_PrefersOperatorLocationRows() As Long
+Public Function TestProductionRunInventory_RejectsIdentitylessDomainRowsWithoutOperatorFallback() As Long
     Dim wb As Workbook
     Dim report As String
     Dim loInv As ListObject
     Dim lr As ListRow
     Dim items As Variant
-    Dim r As Long
 
     Set wb = Application.Workbooks.Add
 
@@ -790,7 +794,7 @@ Public Function TestProductionRunInventory_PrefersOperatorLocationRows() As Long
     If Not loInv.DataBodyRange Is Nothing Then loInv.DataBodyRange.Delete
 
     Set lr = loInv.ListRows.Add
-    SetTableValueByColumn loInv, lr.Index, "ROW", 96
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-MALAWI-96"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "SKU-MALAWI-FINE-CUT"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Malawi Fine Cut Black Tea"
     SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
@@ -799,20 +803,57 @@ Public Function TestProductionRunInventory_PrefersOperatorLocationRows() As Long
 
     wb.Activate
     items = mProduction.LoadProductionRunInventoryPickerItems("")
-    If IsEmpty(items) Or Not IsArray(items) Then GoTo CleanExit
-    For r = LBound(items, 1) To UBound(items, 1)
-        If CStr(items(r, 1)) = "96" Then
-            If CStr(items(r, 4)) = "3175" And CStr(items(r, 5)) = "CLEARVIEW" Then
-                TestProductionRunInventory_PrefersOperatorLocationRows = 1
-            End If
-            Exit For
-        End If
-    Next r
+    If IsEmpty(items) Then
+        TestProductionRunInventory_RejectsIdentitylessDomainRowsWithoutOperatorFallback = 1
+    Else
+        mLastTestFailure = "Production run inventory picker accepted an identityless Domain row or fell back to operator-workbook authority."
+    End If
 
 CleanExit:
     CloseNoSavePhase6 wb
     Exit Function
 CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProductionForm_ClosedCapturedWorkbookDoesNotRebindToActiveWorkbook() As Long
+    Dim capturedWb As Workbook
+    Dim decoyWb As Workbook
+    Dim productionForm As frmProduction
+    Dim report As String
+    Dim statusText As String
+
+    Set capturedWb = Application.Workbooks.Add
+    Set decoyWb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(capturedWb, report) Then GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(decoyWb, report) Then GoTo CleanExit
+
+    Set productionForm = New frmProduction
+    productionForm.SetOperatorWorkbook capturedWb
+    capturedWb.Close SaveChanges:=False
+    Set capturedWb = Nothing
+    decoyWb.Activate
+
+    productionForm.InitializeFromProduction
+    statusText = productionForm.TestStatusText()
+    If InStr(1, statusText, "captured", vbTextCompare) > 0 _
+       And InStr(1, statusText, decoyWb.Name, vbTextCompare) = 0 Then
+        TestProductionForm_ClosedCapturedWorkbookDoesNotRebindToActiveWorkbook = 1
+    Else
+        mLastTestFailure = "Production form silently rebound after its captured workbook closed. Status=" & statusText
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If Not productionForm Is Nothing Then Unload productionForm
+    CloseNoSavePhase6 capturedWb
+    CloseNoSavePhase6 decoyWb
+    On Error GoTo 0
+    Exit Function
+CleanFail:
+    mLastTestFailure = "Captured-workbook regression raised: " & Err.Description
     Resume CleanExit
 End Function
 
@@ -912,7 +953,7 @@ Public Function TestProductionForm_BatchDisplaysCompletedCount() As Long
     Set lr = loOutput.ListRows.Add
     SetTableValueByColumn loOutput, lr.Index, "PROCESS", "BREW"
     SetTableValueByColumn loOutput, lr.Index, "OUTPUT", "Brew Black Tea"
-    SetTableValueByColumn loOutput, lr.Index, "ROW", 1301
+    SetTableValueByColumn loOutput, lr.Index, "System_Key", "SYS-BREWED-1301"
 
     wb.Activate
     If frmProduction.TestProductionOutputDisplayedBatch(wb, 0) <> "0" Then GoTo CleanExit
@@ -923,7 +964,7 @@ Public Function TestProductionForm_BatchDisplaysCompletedCount() As Long
     SetTableValueByColumn loLog, lr.Index, "ITEM", "Brew Black Tea"
     SetTableValueByColumn loLog, lr.Index, "REAL OUTPUT", 400
     SetTableValueByColumn loLog, lr.Index, "BATCH", 1
-    SetTableValueByColumn loLog, lr.Index, "ROW", 1301
+    SetTableValueByColumn loLog, lr.Index, "System_Key", "SYS-BREWED-1301"
     SetTableValueByColumn loLog, lr.Index, "TIMESTAMP", Now
 
     If frmProduction.TestProductionOutputDisplayedBatch(wb, 0) = "1" Then

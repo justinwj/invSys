@@ -105,6 +105,33 @@ function Get-FormFiles {
     $CodeFiles | Where-Object { $_.Extension -eq ".frm" }
 }
 
+function Remove-VbaTestOnlyRegions {
+    param(
+        [string]$SourceText,
+        [string]$SourcePath
+    )
+
+    $beginMarker = "'@TestOnlyBegin"
+    $endMarker = "'@TestOnlyEnd"
+    $beginCount = ([regex]::Matches($SourceText, "(?im)^[ \t]*" + [regex]::Escape($beginMarker) + "[ \t]*$")).Count
+    $endCount = ([regex]::Matches($SourceText, "(?im)^[ \t]*" + [regex]::Escape($endMarker) + "[ \t]*$")).Count
+    if ($beginCount -ne $endCount) {
+        throw "Unbalanced VBA test-only markers in ${SourcePath}: begin=$beginCount end=$endCount"
+    }
+    if ($beginCount -eq 0) {
+        return $SourceText
+    }
+
+    $regionPattern = "(?ms)^[ \t]*" + [regex]::Escape($beginMarker) +
+        "[ \t]*\r?\n.*?^[ \t]*" + [regex]::Escape($endMarker) +
+        "[ \t]*(?:\r?\n|$)"
+    $stripped = [regex]::Replace($SourceText, $regionPattern, "")
+    if ($stripped -match "(?im)^[ \t]*(')?@TestOnly(Begin|End)[ \t]*$") {
+        throw "VBA test-only marker remained after stripping ${SourcePath}."
+    }
+    return $stripped
+}
+
 function New-NormalizedImportFile {
     param(
         [System.IO.FileInfo]$SourceFile
@@ -115,6 +142,7 @@ function New-NormalizedImportFile {
 
     $tempPath = Join-Path $tempDir $SourceFile.Name
     $raw = Get-Content -LiteralPath $SourceFile.FullName -Raw
+    $raw = Remove-VbaTestOnlyRegions -SourceText $raw -SourcePath $SourceFile.FullName
     $normalized = $raw -replace "`r?`n", "`r`n"
     [System.IO.File]::WriteAllText($tempPath, $normalized, [System.Text.Encoding]::ASCII)
 
@@ -131,6 +159,7 @@ function New-NormalizedFormImportFile {
 
     $tempFrmPath = Join-Path $tempDir $FormFile.Name
     $raw = Get-Content -LiteralPath $FormFile.FullName -Raw
+    $raw = Remove-VbaTestOnlyRegions -SourceText $raw -SourcePath $FormFile.FullName
     $normalized = $raw -replace "`r?`n", "`r`n"
     [System.IO.File]::WriteAllText($tempFrmPath, $normalized, [System.Text.Encoding]::ASCII)
 
@@ -286,7 +315,13 @@ function Import-Components {
 
         Remove-ExistingVBComponent -VBProject $VBProject -ComponentName (Get-VbComponentNameFromFile -SourceFile $file)
         Write-Host ("  Importing " + $file.FullName)
-        [void]$VBProject.VBComponents.Import($file.FullName)
+        $normalizedPath = New-NormalizedImportFile -SourceFile $file
+        try {
+            [void]$VBProject.VBComponents.Import($normalizedPath)
+        }
+        finally {
+            Remove-Item -LiteralPath (Split-Path $normalizedPath -Parent) -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -379,7 +414,7 @@ function Import-Forms {
         $formSource = Get-Content -LiteralPath $formFile.FullName -Raw
         if ($formSource -match "'@RuntimeStubUserFormCode") {
             if (
-                $formSource -notmatch "EnableResizableUserForm" -or
+                $formSource -notmatch "(EnableResizableUserForm|modProductionFormWindow\.EnableResizable)" -or
                 $formSource -notmatch "True\s*,\s*True"
             ) {
                 throw "$($formFile.FullName) violates the runtime UserForm window standard: Andy Pope/Windows API resize with minimize and maximize must be enabled."

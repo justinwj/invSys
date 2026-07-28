@@ -8974,8 +8974,8 @@ Public Function TestSavedProductionWorkbook_RefreshPreservesStagingAndLogs() As 
     If loInv Is Nothing Or loProd Is Nothing Or loProdLog Is Nothing Then GoTo CleanExit
 
     AddInvSysSeedRow loInv, 908, "SKU-PROD-001", "Production Refresh Item", "EA", "E5", 8
-    AddProductionOutputRow loProd, "Blend", "Production Refresh Item", "EA", 7, "BATCH-001", "RECALL-001", 908
-    AddProductionLogRow loProdLog, "Blend", "REC-001", "Production Refresh Item", "EA", 7, "E5", 908, "SKU-PROD-001", "GUID-PROD-001"
+    AddProductionOutputRow loProd, "Blend", "Production Refresh Item", "EA", 7, "BATCH-001", "RECALL-001", "SYS-SKU-PROD-001", "SKU-PROD-001"
+    AddProductionLogRow loProdLog, "Blend", "REC-001", "Production Refresh Item", "EA", 7, "E5", "SYS-SKU-PROD-001", "SKU-PROD-001", "GUID-PROD-001"
 
     wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
     wbOps.Close SaveChanges:=False
@@ -9030,6 +9030,7 @@ Public Function TestSavedProductionWorkbook_ReopenQueueProcessRefreshPreservesSt
     Dim failureReason As String
     Dim eventIdOut As String
     Dim payloadJson As String
+    Dim payloadItem As Object
     Dim processedCount As Long
     Dim wbOps As Workbook
     Dim wbSnap As Workbook
@@ -9080,8 +9081,8 @@ Public Function TestSavedProductionWorkbook_ReopenQueueProcessRefreshPreservesSt
     End If
 
     AddInvSysSeedRow loInv, 913, "SKU-PROD-POST", "Production Post Item", "EA", "E5", 0
-    AddProductionOutputRow loProd, "Blend", "Production Post Item", "EA", 7, "BATCH-POST-001", "RECALL-POST-001", 913
-    AddProductionLogRow loProdLog, "Blend", "REC-POST-001", "Production Post Item", "EA", 7, "E5", 913, "SKU-PROD-POST", "GUID-PROD-POST-001"
+    AddProductionOutputRow loProd, "Blend", "Production Post Item", "EA", 7, "BATCH-POST-001", "RECALL-POST-001", "SYS-SKU-PROD-POST", "SKU-PROD-POST"
+    AddProductionLogRow loProdLog, "Blend", "REC-POST-001", "Production Post Item", "EA", 7, "E5", "SYS-SKU-PROD-POST", "SKU-PROD-POST", "GUID-PROD-POST-001"
     wbOps.SaveAs Filename:=operatorPath, FileFormat:=50
     wbOps.Close SaveChanges:=False
     Set wbOps = Nothing
@@ -9099,14 +9100,16 @@ Public Function TestSavedProductionWorkbook_ReopenQueueProcessRefreshPreservesSt
         GoTo CleanExit
     End If
 
-    payloadJson = modRoleEventWriter.BuildPayloadJson( _
-        modRoleEventWriter.CreatePayloadItem( _
-            CLng(GetTableValue(loProd, 1, "ROW")), _
-            "SKU-PROD-POST", _
-            CDbl(GetTableValue(loProd, 1, "REAL OUTPUT")), _
-            "FG", _
-            CStr(GetTableValue(loProd, 1, "PROCESS")), _
-            "COMPLETE"))
+    Set payloadItem = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        CStr(GetTableValue(loProd, 1, "System_Key")), _
+        "SKU-PROD-POST", _
+        CDbl(GetTableValue(loProd, 1, "REAL OUTPUT")), _
+        "FG", _
+        "GOOD", _
+        "", _
+        CStr(GetTableValue(loProd, 1, "PROCESS")))
+    payloadItem("IoType") = "COMPLETE"
+    payloadJson = modRoleEventWriter.BuildPayloadJson(payloadItem)
 
     If Not modRoleEventWriter.QueuePayloadEvent(CORE_EVENT_TYPE_PROD_COMPLETE, "WH80", "S20", currentUser, payloadJson, "saved-production-post", "", "", Now, wbInbox, eventIdOut, report) Then
         failureReason = "QueuePayloadEvent failed from saved production workbook: " & report
@@ -9281,15 +9284,20 @@ Public Function TestProductionEventCreator_QueuesSignedInCurrentTargetEvent() As
         GoTo CleanExit
     End If
     AddInvSysSeedRow loInv, 963, "SKU-PROD-CREATOR", "Production Creator Item", "EA", "FG", 0
-    AddProductionOutputRow loProd, "Blend", "Production Creator Item", "EA", 5, "BATCH-CREATOR-001", "RECALL-CREATOR-001", 963
+    AddProductionOutputRow loProd, "Blend", "Production Creator Item", "EA", 5, "BATCH-CREATOR-001", "RECALL-CREATOR-001", "SYS-SKU-PROD-CREATOR", "SKU-PROD-CREATOR"
 
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH97") Then GoTo CleanExit
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", rootPath) Then GoTo CleanExit
+    If Not modNasConnection.SetCurrentTargetSourceTypeForTest(WH_SOURCE_NAS) Then GoTo CleanExit
     If Not modProductionEventCreator.QueueProductionCompleteEventFromWorkbook(wbOps, eventIdOut, report) Then
         failureReason = "QueueProductionCompleteEventFromWorkbook failed: " & report
         GoTo CleanExit
     End If
     If Not modNasConnection.SetCurrentTargetPathsForTest(rootPath, rootPath) Then
         failureReason = "Could not restore local processor target after NAS-gated production queue."
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetSourceTypeForTest(WH_SOURCE_LOCAL) Then
+        failureReason = "Could not restore local processor source type after NAS-gated production queue."
         GoTo CleanExit
     End If
     modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
@@ -9406,7 +9414,7 @@ Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput
         failureReason = "Inventory workbook could not be created."
         GoTo CleanExit
     End If
-    Set seedEvent = TestPhase2Helpers.CreateReceiveEvent( _
+    Set seedEvent = CreateReceiveEventForTest( _
         "EVT-PROD-COMPLETE-RUN-SEED", "WH122", "S37", "calvin", _
         "SKU-PROD-IN", 20, "MIX", "seed production input")
     If Not modInventoryApply.ApplyEvent(seedEvent, wbInv, "RUN-PROD-COMPLETE-RUN-SEED", statusOut, errorCode, errorMessage) Then
@@ -9415,10 +9423,15 @@ Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput
     End If
 
     Set consumeItems = New Collection
-    Set consumeItem = modRoleEventWriter.CreatePayloadItem(971, "", 12, "MIX", "checked into production", "USED")
-    consumeItem("ITEM_CODE") = "SKU-PROD-IN"
-    consumeItem("ITEM") = "Production Input Item"
-    consumeItem("ROW") = 971
+    Set consumeItem = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-EVT-PROD-COMPLETE-RUN-SEED", _
+        "SKU-PROD-IN", _
+        12, _
+        "MIX", _
+        "GOOD", _
+        "", _
+        "checked into production")
+    consumeItem("IoType") = "USED"
     consumeItems.Add consumeItem
     Set consumeEvent = TestPhase2Helpers.CreatePayloadEvent( _
         "EVT-PROD-COMPLETE-RUN-CONSUME", _
@@ -9429,10 +9442,15 @@ Public Function TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput
         modRoleEventWriter.BuildPayloadJsonFromCollection(consumeItems))
 
     Set completeItems = New Collection
-    Set completeItem = modRoleEventWriter.CreatePayloadItem(972, "", 8, "MIX", "real output", "MADE")
-    completeItem("ITEM_CODE") = "SKU-PROD-OUT"
-    completeItem("ITEM") = "Production Output Item"
-    completeItem("ROW") = 972
+    Set completeItem = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-PROD-COMPLETE-RUN-OUTPUT", _
+        "SKU-PROD-OUT", _
+        8, _
+        "MIX", _
+        "GOOD", _
+        "", _
+        "real output")
+    completeItem("IoType") = "MADE"
     completeItems.Add completeItem
     Set completeEvent = TestPhase2Helpers.CreatePayloadEvent( _
         "EVT-PROD-COMPLETE-RUN-MADE", _
@@ -11080,7 +11098,8 @@ Private Sub AddProductionOutputRow(ByVal lo As ListObject, _
                                    ByVal realOutput As Double, _
                                    ByVal batchVal As String, _
                                    ByVal recallCode As String, _
-                                   ByVal rowValue As Long)
+                                   ByVal systemKey As String, _
+                                   ByVal sku As String)
     Dim lr As ListRow
 
     If lo Is Nothing Then Exit Sub
@@ -11099,7 +11118,8 @@ Private Sub AddProductionOutputRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "REAL OUTPUT", realOutput
     SetTableCell lo, lr.Index, "BATCH", batchVal
     SetTableCell lo, lr.Index, "RECALL CODE", recallCode
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", systemKey
+    SetTableCell lo, lr.Index, "ITEM_CODE", sku
 End Sub
 
 Private Sub AddProductionLogRow(ByVal lo As ListObject, _
@@ -11109,7 +11129,7 @@ Private Sub AddProductionLogRow(ByVal lo As ListObject, _
                                 ByVal uom As String, _
                                 ByVal qty As Double, _
                                 ByVal locationVal As String, _
-                                ByVal rowValue As Long, _
+                                ByVal systemKey As String, _
                                 ByVal sku As String, _
                                 ByVal guidVal As String)
     Dim lr As ListRow
@@ -11135,7 +11155,7 @@ Private Sub AddProductionLogRow(ByVal lo As ListObject, _
     SetTableCell lo, lr.Index, "UOM", uom
     SetTableCell lo, lr.Index, "QUANTITY", qty
     SetTableCell lo, lr.Index, "LOCATION", locationVal
-    SetTableCell lo, lr.Index, "ROW", rowValue
+    SetTableCell lo, lr.Index, "System_Key", systemKey
     SetTableCell lo, lr.Index, "GUID", guidVal
 End Sub
 

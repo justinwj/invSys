@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1048
-- Reviewed candidates: 1050
+- Scanner candidates: 1002
+- Reviewed candidates: 1004
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,12 +11,12 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 41 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 166 | Production-owned forms, services, and role package source. |
-| SHIPPING | 176 | Shipping and Boxing forms, services, and role package source. |
-| SHARED_OPERATIONS | 68 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 315 | Headless shared runtime and developer-support source in Core. |
-| DOMAINS | 63 | Inventory and Designs Domain authority source. |
+| RECEIVING | 40 | Receiving-owned forms, services, and role package source. |
+| PRODUCTION | 127 | Production-owned forms, services, and role package source. |
+| SHIPPING | 175 | Shipping and Boxing forms, services, and role package source. |
+| SHARED_OPERATIONS | 66 | Cross-role or future invSys.Operations packaging work. |
+| CORE | 313 | Headless shared runtime and developer-support source in Core. |
+| DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 2 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
@@ -39,7 +39,7 @@
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1845 |
 | src/Core/Modules/modAuth.bas | Core | 1627 |
 | src/Core/Modules/modConfig.bas | Core | 1662 |
-| src/Core/Modules/modNasConnection.bas | Core | 1379 |
+| src/Core/Modules/modNasConnection.bas | Core | 1400 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
 | src/Core/Modules/modProcessor.bas | Core | 1417 |
 | src/Core/Modules/modRoleEventWriter.bas | Core | 2843 |
@@ -49,8 +49,8 @@
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4638 |
-| src/Production/Modules/mProduction.bas | Production | 13082 |
+| src/Production/Forms/frmProduction.frm | Production | 4606 |
+| src/Production/Modules/mProduction.bas | Production | 12810 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 2175 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 1855 |
 | src/Shipping/Forms/frmShippingBoxMaker.frm | Shipping | 1564 |
@@ -310,7 +310,7 @@
 | duplicate:595ccff130244e97:CombinePathConfig+CombinePathProcessor+CombinePathRole | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:5a8c39f14d6059fa:FormatAuthSurface+FormatConfigSurface | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:605a3623720b9790:FindOpenWorkbookByFullNameRetire+FindOpenWorkbookByPathBootstrap+FindOpenWorkbookByPathTesterSetup | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:621c8aa9943484bb:ColumnIndex+ColumnIndexAdminLocal+ColumnIndexDemo+GetColumnIndex+GetColumnIndex+GetColumnIndex+GetColumnIndexAdmin+GetColumnIndexApply+GetColumnIndexHq+GetColumnIndexLocal+GetColumnIndexLock+GetColumnIndexProcessor+GetColumnIndexPublisher+GetColumnIndexReadModel+GetColumnIndexReconcile+GetColumnIndexRole+GetColumnIndexSurface+GetColumnIndexSync+GetColumnIndexTesterSetup | CORE | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:621c8aa9943484bb:ColumnIndex+ColumnIndexAdminLocal+ColumnIndexDemo+GetColumnIndex+GetColumnIndex+GetColumnIndex+GetColumnIndexAdmin+GetColumnIndexApply+GetColumnIndexHq+GetColumnIndexLocal+GetColumnIndexLock+GetColumnIndexProcessor+GetColumnIndexPublisher+GetColumnIndexReadModel+GetColumnIndexReconcile+GetColumnIndexRole+GetColumnIndexSurface+GetColumnIndexSync+GetColumnIndexTesterSetup | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6adb5d5a3d1b9a71:FolderExistsBootstrap+FolderExistsLocal+FolderExistsStatus | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6cca2f2911b62968:WorksheetNameInSetProcessor+WorksheetNameInSetRuntime+WorksheetNameInSetSync | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:79b1213b8dc04586:RefreshInventoryReadModelFromCacheForWorkbook+RefreshInventoryReadModelFromLocalForWorkbook+RefreshInventoryReadModelFromSharePointForWorkbook | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -511,6 +511,7 @@
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.GetUndoStack | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.RedoLastAction | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.UndoLastAction | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.DiagnoseUserFormWindowStyle | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.GetUserFormWindowHandle | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUtils.bas:modUtils.ClearExcelClipboardState | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.RequireReAuth | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -522,14 +523,12 @@
 | reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.FullDiagnostic | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.TestManualSelection | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.chkShippable_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.ColumnIndex | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_DblClick | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_KeyDown | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.txtSearch_Change | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.txtSearch_KeyDown | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_clsBulkSnapshot.cls:clsBulkSnapshot.class_initialize | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_ClassModules_cTemplateApplier.cls:cTemplateApplier.ColumnIndex | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_MouseOverControl.cls:MouseOverControl.Class_Terminate | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_MouseOverControl.cls:MouseOverControl.m_CheckBox_MouseMove | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_MouseOverControl.cls:MouseOverControl.m_ComboBox_MouseMove | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -576,7 +575,6 @@
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatch | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatchForAutomation | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatchReportForAutomation | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.BuildPayloadJsonFromCollection | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ConnectWarehouseStorageForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.PromptSetCurrentUserForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.SignOutCurrentUser | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -650,7 +648,6 @@
 | root:src_DesignsDomain_ClassModules_Sheets_Production.cls:Production.Worksheet_SelectionChange | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_DesignsDomain_Modules_modDesignsApply.bas:modDesignsApply.ApplyDesignEvent | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_DesignsDomain_Modules_modDesignsInit.bas:modDesignsInit.Auto_Open | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_DesignsDomain_Modules_modDesignsSchema.bas:modDesignsSchema.ColumnIndex | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_InventoryDomain_ClassModules_Sheets_InventoryManagement.cls:InventoryManagement.Worksheet_Change | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_InventoryDomain_ClassModules_Sheets_InventoryManagement.cls:InventoryManagement.Worksheet_TableUpdate | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.ApplyCanonicalRuntimeRowApply | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -659,20 +656,8 @@
 | root:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.ApplyLatestMovementToInvSysApply | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.ApplyReceiveEvent | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_InventoryDomain_Modules_modInventoryInit.bas:modInventoryInit.Auto_Open | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| duplicate:0fc4b80400cc63aa:mBtnManagerMade_Click+mBtnManagerTotal_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:55a9c7cd01824ef3:IsInputIoValue+IsOutputIoValue | PRODUCTION | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:60ceced4bf495b7f:FindAvailablePaletteRange+FindAvailableRecipeChooserRange | PRODUCTION | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.BuildFormGuid:bba1461bf9b4 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction0:8ac82690856b | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction1:96f4dc213319 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction2:a4e27bfd9bc5 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject0:8ac82690856b | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject1:96f4dc213319 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject2:a4e27bfd9bc5 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub0:62d887b398f6 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub1:f1be77bbdf74 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub2:256b88ae8f9c | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Production_Modules_mProduction.bas:mProduction.ProductionGuid:bba1461bf9b4 | PRODUCTION | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | module-size:src_Production_Forms_frmProduction.frm:frmProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_mProduction.bas:mProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.BuildPaletteTablesForRecipeChooser | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -689,21 +674,12 @@
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.ClearProductionCheckRows | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnBuildRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeBuilder | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeChooser | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnLoadRecipe | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrintRecallCodes | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveFormulas | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSavePalette | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveRecipe | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnShowSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToMade | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToUsed | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.BuildInventoryOutputIdentityLookup | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BuildUsedDeltaPacketFromInvSys | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BuildUsedSnapshotFromCheck | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.CheckInProductionRunWithUsedPayloadReportForAutomation | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -720,30 +696,18 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ExpandSpanForTable | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GenerateRecipeIdForCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GenerateRecipeIdForWorkbookName | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteSaveDiagnostic | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteTableContextInfo | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionBandTables | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionDesignsModeStatus | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionInventoryModeStatus | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionRunDefaultLocation | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionSheet | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.GetRecallPrintDiagnostic | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.HsvToRgb | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.InitializeProductionUI | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.LoadProductionRunIngredientChoices | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeList | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.LoadReleasedRecipeList | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.OutputCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.PaletteIngredientIsOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProcessCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormInitializeSmokeForWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormTwoBatchActionReportForTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionUiAccess | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Production_Modules_mProduction.bas:mProduction.ReleaseRecipeForProduction | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RestoreMadeStageColumns | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelected | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelectedStage | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -813,19 +777,13 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Terminate | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_modProductionAutoOpen.bas:modProductionAutoOpen.Auto_Open | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Production_Modules_mProduction.bas:mProduction.ColumnIndex | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Production_Modules_mProduction.bas:mProduction.CompleteProductionRunAfterCheckInForOutputResult | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteRecipeSelected | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeChooser | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionIngredientPaletteRuntimeRoundTrip | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionInventoryPickerPrefersCanonicalRuntime | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.BuildRunUsedPayloadJson:BuildPayloadJsonFromCollection | PRODUCTION | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
-| same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.CompleteProductionRun:CompleteProductionRunAfterCheckInForOutputResult | PRODUCTION | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
-| same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.ProductionColumnIndex:ColumnIndex | PRODUCTION | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
-| same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Activate:EnableResizableUserForm | PRODUCTION | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex | RECEIVING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex | RECEIVING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received | RECEIVING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ConfirmWrites | RECEIVING | SPLIT_MODULE | MEDIUM | PLANNED |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -863,13 +821,12 @@
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Terminate | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.AddOrMergeFromSearch | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ColumnIndex | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | same-project-run:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Activate:EnableResizableUserForm | RECEIVING | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:001250ca4c3969cb:AddListBox+AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:0352bd7c18f22a6e:ShippingBomActiveValue+ShippingBomActiveValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:0711704cfb4c5043:ColumnIndexProd+ColumnIndexReceive+ColumnIndexShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:0711704cfb4c5043:ColumnIndexReceive+ColumnIndexShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:114ea90fb30a174f:NormalizeHeader+NormalizeHeaderKey+NormalizeHeaderKey | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:148f921b2c802fe4:AddButton+AddButton+AddButton | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -878,13 +835,13 @@
 | duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel+AddLabel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:25e3a9272732ff3f:IsProductionRoleWorkbook+IsReceivingRoleWorkbook+IsShippingRoleWorkbook | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:264a4885df3e9dde:AddCheckBox+AddCheckBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:28d9f2df337223a7:NzDblApply+NzDblProd+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:295ce507ab5ef7c8:HasActionableProductionWarning+HasActionableShippingWarning | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsReceiving+WorkbookSheetExistsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize+UserForm_Initialize | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:2fb6a140cb21ffb2:CloseWorkbookNoSaveProduction+CloseWorkbookQuietlyTester | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2fd6555d3906b37b:HideInventoryBridgeWorkbookWindows+HideWorkbookWindowsAuth+HideWorkbookWindowsConfig+HideWorkbookWindowsPublisher+HideWorkbookWindowsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:30348d523aeda395:NzStrProd+NzStrReceive+NzStrShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:30348d523aeda395:NzStrReceive+NzStrShip+TextValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:30d52035e2b7a1cb:EventTypeListedRole+HistoryEventTypeListedShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:356e460465775137:Init+Init+Init+Init | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -904,7 +861,6 @@
 | duplicate:67ea608098949139:CloseWorkbookNoSaveShipping+CloseWorkbookQuietlyPublisher+CloseWorkbookQuietlyRetire | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6afed6b73cd3dc9a:SafeTextForm+SafeTrimReadiness | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:70e81b56508b3d0a:RemoveAutoGeneratedColumnsShipping+RemoveAutogeneratedColumnsSurface | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:7593f668273ef744:NzLngProd+NzLngShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:77c1bbac8c506d7f:AppendNote+AppendNote+AppendNoteShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:7ad5016b8512a7eb:ShowStatus+ShowStatus | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -914,9 +870,8 @@
 | duplicate:8eccb2c78b3f8d20:DeleteShapeIfExists+DeleteShapeIfExists | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:9001cf0268a06207:NzDbl+NzDblInv | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:958efd9bdea90f68:RestoreCoreRootOverrideBootstrap+RestoreCoreRootOverrideRetire+RestoreCoreRootOverrideTesterSetup+RestoreRuntimeRootOverrideReadiness | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:a11a422eae2ec210:GetInvSysTableProd+GetInvSysTableShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:a5c98baf2e424f1f:FlattenProductionStatusText+FlattenStatusText | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:a66e81b15f7c084a:ColumnIndex+ColumnIndex | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:a66e81b15f7c084a:ColumnIndex+ColumnIndex | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:b6128e74972d9bee:FindDesignsApplyTable+FindDesignsTableQuery+FindInventoryQueryTable+FindListObjectByNameAdminLocal+FindListObjectByNamePublisher+FindListObjectByNameStatus+FindListObjectInWorkbook+FindListObjectNas+FindListObjectReadModel+FindProductionListObjectByName+FindTable+FindTableByName+FindTableByNameBootstrap+FindTableByNameReadiness+FindTableByNameShip+FindTableByNameSurface | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox+AddTextBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c30f7d79756508ef:NzStr+NzStr+NzStr+NzStrInv | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -1109,4 +1064,3 @@
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenBoxBuilder | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenBoxMaker | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenShipmentsForm | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ColumnIndex | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

@@ -163,8 +163,8 @@ Public Function ExecuteProductionSession(ByVal wb As Workbook, _
     End If
     SaveProductionSessionToWorkbook wb, session, persistenceReport
 
-    runtimeSucceeded = modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook( _
-        wb, "", "LOCAL", runtimeReport, True, queuedWorkHandled)
+    runtimeSucceeded = modOperationsPrimitiveBridge.RunBatchAndRefreshOperatorWorkbook( _
+        wb.Name, "", "LOCAL", runtimeReport, True, queuedWorkHandled)
     If runtimeSucceeded And queuedWorkHandled Then
         session.RecordProcessorResult True, True, True
         session.RecordRefreshResult True
@@ -213,7 +213,7 @@ Public Function BuildProductionConsumePayload(ByVal session As cProductionRunSes
         item("IoType") = "USED"
         items.Add item
     Next i
-    BuildProductionConsumePayload = modRoleEventWriter.BuildPayloadJsonFromCollection(items)
+    BuildProductionConsumePayload = modProductionJson.BuildJsonArray(items)
 End Function
 
 Public Function BuildProductionCompletePayload(ByVal session As cProductionRunSession) As String
@@ -232,7 +232,7 @@ Public Function BuildProductionCompletePayload(ByVal session As cProductionRunSe
     item("AttributesJson") = session.OutputAttributesJson
     item("IoType") = "MADE"
     items.Add item
-    BuildProductionCompletePayload = modRoleEventWriter.BuildPayloadJsonFromCollection(items)
+    BuildProductionCompletePayload = modProductionJson.BuildJsonArray(items)
 End Function
 
 Public Function QueueProductionSessionEvents(ByVal session As cProductionRunSession, _

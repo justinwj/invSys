@@ -3,12 +3,12 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  159,
-                     "procedureCount":  4569,
-                     "lineCount":  101170,
-                     "literalApplicationRunCount":  14,
-                     "unresolvedApplicationRunCount":  59,
-                     "duplicateBodyCandidateCount":  193
+                     "componentCount":  162,
+                     "procedureCount":  4578,
+                     "lineCount":  101077,
+                     "literalApplicationRunCount":  10,
+                     "unresolvedApplicationRunCount":  48,
+                     "duplicateBodyCandidateCount":  190
                  },
     "candidates":  [
                        {
@@ -879,6 +879,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BuildInventoryOutputIdentityLookup",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "BuildInventoryOutputIdentityLookup"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BuildUsedDeltaPacketFromInvSys",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
@@ -1089,6 +1106,23 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "RefreshProductionUiAccess"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ResolveProductionOutputSystemKey"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -2017,17 +2051,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexProd+ColumnIndexReceive+ColumnIndexShip",
+                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexReceive+ColumnIndexShip",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
-                           "componentName":  "modProductionEventCreator",
+                           "componentName":  "modReceivingEventCreator",
                            "procedureNames":  [
-                                                  "ColumnIndexProd",
                                                   "ColumnIndexReceive",
                                                   "ColumnIndexShip"
                                               ],
                            "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
                                                "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
@@ -2142,7 +2174,7 @@
                        {
                            "id":  "duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex",
                            "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
+                           "confidence":  "HIGH",
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "ColumnIndex",
@@ -2169,24 +2201,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateDeleteUser.frm",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:0fc4b80400cc63aa:mBtnManagerMade_Click+mBtnManagerTotal_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerMade_Click",
-                                                  "mBtnManagerTotal_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2556,13 +2570,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblProd+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
+                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modOperatorReadModel",
                            "procedureNames":  [
                                                   "NzDblApply",
-                                                  "NzDblProd",
                                                   "NzDblReadModel",
                                                   "NzDblReceive",
                                                   "NzDblShip",
@@ -2572,7 +2585,6 @@
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modWarehouseSync.bas",
                                                "src/InventoryDomain/Modules/modInventoryApply.bas",
-                                               "src/Production/Modules/modProductionEventCreator.bas",
                                                "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
@@ -2753,14 +2765,14 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrProd+NzStrReceive+NzStrShip",
+                           "id":  "duplicate:30348d523aeda395:NzStrReceive+NzStrShip+TextValue",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
-                                                  "NzStrProd",
                                                   "NzStrReceive",
-                                                  "NzStrShip"
+                                                  "NzStrShip",
+                                                  "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
@@ -3610,7 +3622,7 @@
                        {
                            "id":  "duplicate:621c8aa9943484bb:ColumnIndex+ColumnIndexAdminLocal+ColumnIndexDemo+GetColumnIndex+GetColumnIndex+GetColumnIndex+GetColumnIndexAdmin+GetColumnIndexApply+GetColumnIndexHq+GetColumnIndexLocal+GetColumnIndexLock+GetColumnIndexProcessor+GetColumnIndexPublisher+GetColumnIndexReadModel+GetColumnIndexReconcile+GetColumnIndexRole+GetColumnIndexSurface+GetColumnIndexSync+GetColumnIndexTesterSetup",
                            "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
+                           "confidence":  "HIGH",
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "ColumnIndex",
@@ -3891,25 +3903,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:7593f668273ef744:NzLngProd+NzLngShip",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modProductionEventCreator",
-                           "procedureNames":  [
-                                                  "NzLngProd",
-                                                  "NzLngShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4487,25 +4480,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:a11a422eae2ec210:GetInvSysTableProd+GetInvSysTableShip",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modProductionEventCreator",
-                           "procedureNames":  [
-                                                  "GetInvSysTableProd",
-                                                  "GetInvSysTableShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:a5c98baf2e424f1f:FlattenProductionStatusText+FlattenStatusText",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -4527,7 +4501,7 @@
                        {
                            "id":  "duplicate:a66e81b15f7c084a:ColumnIndex+ColumnIndex",
                            "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
+                           "confidence":  "HIGH",
                            "componentName":  "cTemplateApplier",
                            "procedureNames":  [
                                                   "ColumnIndex",
@@ -6045,78 +6019,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.BuildRunUsedPayloadJson:BuildPayloadJsonFromCollection",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "BuildRunUsedPayloadJson",
-                                                  "BuildPayloadJsonFromCollection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.CompleteProductionRun:CompleteProductionRunAfterCheckInForOutputResult",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "CompleteProductionRun",
-                                                  "CompleteProductionRunAfterCheckInForOutputResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.ProductionColumnIndex:ColumnIndex",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "ProductionColumnIndex",
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "same-project-run:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Activate:EnableResizableUserForm",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "UserForm_Activate",
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
                                            ],
                            "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
                            "protectingTests":  [
@@ -8738,24 +8640,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "cDynItemSearch",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -8854,24 +8738,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_ClassModules_cTemplateApplier.cls:cTemplateApplier.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "cTemplateApplier",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cTemplateApplier.cls"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
                        },
@@ -9672,24 +9538,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.BuildPayloadJsonFromCollection",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modRoleEventWriter",
-                           "procedureNames":  [
-                                                  "BuildPayloadJsonFromCollection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRoleEventWriter.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/unit/TestCoreRoleEventWriter.bas",
-                                                   "tests/unit/TestPhase6CoreSurfaces.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ConnectWarehouseStorageForCapability",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -9908,24 +9756,6 @@
                            "protectingTests":  [
                                                    "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
                                                    "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_DesignsDomain_Modules_modDesignsSchema.bas:modDesignsSchema.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modDesignsSchema",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/DesignsDomain/Modules/modDesignsSchema.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
                        },
@@ -11182,41 +11012,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.CompleteProductionRunAfterCheckInForOutputResult",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "CompleteProductionRunAfterCheckInForOutputResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -11624,24 +11419,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/integration/test_ConfirmWrites_Tester.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12892,24 +12669,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ColumnIndex",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ColumnIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_CreateWarehouse.bas",
-                                                   "tests/integration/test_RetireMigrate.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "module-size:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem",
                            "candidateType":  "SPLIT_MODULE",
                            "confidence":  "MEDIUM",
@@ -13801,6 +13560,9 @@
                                                   "ForgetTarget",
                                                   "GetConnectionStatus",
                                                   "GetCurrentTarget",
+                                                  "GetCurrentTargetRuntimeRoot",
+                                                  "GetCurrentTargetStationId",
+                                                  "GetCurrentTargetWarehouseId",
                                                   "GetKnownWarehouseTargetRoots",
                                                   "GetPromptDefaultRoot",
                                                   "GetRememberedNasUser",
@@ -14671,7 +14433,6 @@
                            "confidence":  "MEDIUM",
                            "componentName":  "frmProduction",
                            "procedureNames":  [
-                                                  "ActivateOperatorWorkbookForRun",
                                                   "ActiveRunLocation",
                                                   "ActiveRunPaletteList",
                                                   "ActiveRunProcess",
@@ -14695,6 +14456,7 @@
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
                                                   "AssignmentItemRowIsBlank",
+                                                  "BindOperatorWorkbookForRun",
                                                   "BuildAssignmentPage",
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
@@ -14827,7 +14589,7 @@
                                                   "NextOutputBatchNumberForListIndex",
                                                   "NormalizeInventorySearch",
                                                   "NormalizeRecipeRowBudgetText",
-                                                  "NormalizeRunRowKey",
+                                                  "NormalizeRunSystemKey",
                                                   "NzDblLocal",
                                                   "NzStr",
                                                   "OrderedRunProcesses",
@@ -14880,15 +14642,6 @@
                                                   "RunLocationChoiceRequired",
                                                   "RunProcessFromPaletteList",
                                                   "RunProcessMatchesFilter",
-                                                  "RunProduction0",
-                                                  "RunProduction1",
-                                                  "RunProduction2",
-                                                  "RunProductionObject0",
-                                                  "RunProductionObject1",
-                                                  "RunProductionObject2",
-                                                  "RunProductionSub0",
-                                                  "RunProductionSub1",
-                                                  "RunProductionSub2",
                                                   "RunTreeGroupCollapsed",
                                                   "RunTreeGroupKey",
                                                   "RunTreeParentCaption",
@@ -14970,8 +14723,8 @@
                            "procedureNames":  [
                                                   "AccumulateBatchMaxFromLog",
                                                   "AccumulateLatestRecipeVersionProduction",
-                                                  "AddInventoryPickerRowsToRowMap",
-                                                  "AddInvSysTableRowsToRowMap",
+                                                  "AddInventoryPickerRowsToSystemKeyMap",
+                                                  "AddInvSysTableRowsToSystemKeyMap",
                                                   "AddPayloadItemsFromDeltas",
                                                   "AddProductionBalanceValue",
                                                   "AddTemplateRowsFromTable",
@@ -14980,16 +14733,14 @@
                                                   "AllowExcelRefreshToSettleProduction",
                                                   "AppendNote",
                                                   "AppendRecipeRowsFromTable",
-                                                  "ApplyMadeDeltasLocal",
-                                                  "ApplyMadeToInventoryDeltasLocal",
                                                   "ApplyProcessHeaderColor",
                                                   "ApplyProductionOutputTemplates",
                                                   "ApplyProductionTemplateFormulaToColumn",
                                                   "ApplyProductionTemplates",
                                                   "ApplyRecallCodesForOutput",
-                                                  "ApplyUsedDeltasLocal",
                                                   "ArrangeProductionSurface",
                                                   "BandKeyForProductionTable",
+                                                  "BindProductionOperatorWorkbook",
                                                   "BtnBuildRecipeProcessTables",
                                                   "BtnClearPaletteBuilder",
                                                   "BtnClearRecipeBuilder",
@@ -15009,10 +14760,9 @@
                                                   "BtnToUsed",
                                                   "BuildDesignRecipeStagingWorkbook",
                                                   "BuildDesignRecipeStagingWorkbookFromData",
-                                                  "BuildInvSysOutputLookup",
-                                                  "BuildInvSysRowIndex",
-                                                  "BuildInvSysRowMap",
+                                                  "BuildInventoryOutputIdentityLookup",
                                                   "BuildInvSysSystemKeyIndex",
+                                                  "BuildInvSysSystemKeyMap",
                                                   "BuildLegacyRuntimeRecipeStagingWorkbook",
                                                   "BuildMadeDeltasFromProductionOutput",
                                                   "BuildMadeDeltasFromProductionOutputRow",
@@ -15033,13 +14783,13 @@
                                                   "BuildRecipeProcessTablesFromLines",
                                                   "BuildRecipeSaveSourceTables",
                                                   "BuildReleasedDesignRecipeStagingWorkbook",
-                                                  "BuildRowKeySetFromDeltas",
+                                                  "BuildSystemKeySetFromDeltas",
                                                   "BuildUnifiedRecipeList",
                                                   "BuildUsedDeltaPacketFromCheck",
                                                   "BuildUsedDeltaPacketFromInvSys",
                                                   "BuildUsedDeltasFromPalette",
                                                   "BuildUsedDictFromPayloadJson",
-                                                  "BuildUsedSnapshotForRows",
+                                                  "BuildUsedSnapshotForSystemKeys",
                                                   "BuildUsedSnapshotFromCheck",
                                                   "CanonicalRecipeIdProduction",
                                                   "CaptureProductionOutputCompletionValues",
@@ -15054,6 +14804,7 @@
                                                   "ClearMadeStageColumns",
                                                   "ClearPaletteTableMeta",
                                                   "ClearPaletteTableSelection",
+                                                  "ClearProductionOperatorWorkbookBinding",
                                                   "ClearProductionOutputForNextBatch",
                                                   "ClearTemplatesForScope",
                                                   "ClearUsedStageByItemCode",
@@ -15070,8 +14821,10 @@
                                                   "CopyIngredientPaletteRowsByKey",
                                                   "CopyProductionRecipeRowsById",
                                                   "CreateEmptyDesignRecipeStagingWorkbook",
+                                                  "CreateProductionGuid",
                                                   "CreateRecipeProcessTable",
                                                   "CurrentProductionUserId",
+                                                  "CurrentProductionWarehouseId",
                                                   "DeleteCheckboxesByPrefix",
                                                   "DeleteIngredientPaletteRowsByKey",
                                                   "DeleteInventoryPaletteTables",
@@ -15083,7 +14836,7 @@
                                                   "DesignStatusForVersionProduction",
                                                   "DesignVersionExistsProduction",
                                                   "DiagnoseProductionInventoryReadModelForWorkbook",
-                                                  "EnrichOutputDeltaFromPicker",
+                                                  "EnrichOutputDeltaFromPickerBySystemKey",
                                                   "EnsureButtonCustom",
                                                   "EnsureCheckboxShape",
                                                   "EnsureFolderRecursiveProduction",
@@ -15100,7 +14853,7 @@
                                                   "EnsureProductionIngredientPaletteSchema",
                                                   "EnsureProductionOutputHeaderOrder",
                                                   "EnsureProductionOutputItemCodeColumn",
-                                                  "EnsureProductionOutputRowColumn",
+                                                  "EnsureProductionOutputSystemKeyColumn",
                                                   "EnsureProductionRecipesSchema",
                                                   "EnsureProductionReservedRows",
                                                   "EnsureRecallCodesReportSheet",
@@ -15138,7 +14891,7 @@
                                                   "GenerateRecipeId",
                                                   "GenerateRecipeIdForCurrentWorkbook",
                                                   "GenerateRecipeIdForWorkbookName",
-                                                  "GetAllowedInvRowsForIngredient",
+                                                  "GetAllowedInventorySystemKeysForIngredient",
                                                   "GetCheckboxCaption",
                                                   "GetColumnFormulaText",
                                                   "GetCurrentProductionRunRecipeId",
@@ -15194,7 +14947,7 @@
                                                   "InitializeProductionUI",
                                                   "InitializeProductionUiForWorkbook",
                                                   "InventoryPaletteHeaderList",
-                                                  "InventoryRowMatchesOutputName",
+                                                  "InventorySystemKeyMatchesOutputName",
                                                   "IsBandManagedTable",
                                                   "IsCheckboxShape",
                                                   "IsColorDark",
@@ -15236,9 +14989,9 @@
                                                   "LocalProductionRecipeRowsExist",
                                                   "LogProductionOutputToProductionLog",
                                                   "LookupCandidateMatchesTokens",
-                                                  "LookupOutputRow",
-                                                  "LookupOutputRowLoose",
-                                                  "LookupOutputRowLooseFromPicker",
+                                                  "LookupOutputSystemKey",
+                                                  "LookupOutputSystemKeyFromPicker",
+                                                  "LookupOutputSystemKeyLoose",
                                                   "LookupTokenExists",
                                                   "LookupTokens",
                                                   "MaxBatchFromOutput",
@@ -15262,7 +15015,7 @@
                                                   "NormalizeOutputKey",
                                                   "NormalizeProcessBandKey",
                                                   "NormalizeProductionRowBudget",
-                                                  "NormalizeRowKey",
+                                                  "NormalizeSystemKey",
                                                   "NormalizeTemplateFormulaColumn",
                                                   "NzDbl",
                                                   "NzLng",
@@ -15285,11 +15038,11 @@
                                                   "ProductionDesignsEnabled",
                                                   "ProductionFormInitializeSmokeForWorkbook",
                                                   "ProductionFormTwoBatchActionReportForTest",
-                                                  "ProductionGuid",
                                                   "ProductionIngredientIdsMatch",
                                                   "ProductionInventoryItemIsNonCounted",
                                                   "ProductionLocationForIdentity",
-                                                  "ProductionLogRowExists",
+                                                  "ProductionLogEntryExists",
+                                                  "ProductionPickerRowsHaveSystemKeys",
                                                   "ProductionRecipeLocalHeaders",
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
@@ -15326,13 +15079,15 @@
                                                   "RepairLastCompletedProductionRun",
                                                   "ResetPaletteTable",
                                                   "ResolveActiveRecipeId",
-                                                  "ResolveInvSysDetailsByRow",
-                                                  "ResolveInvSysLocationByRow",
+                                                  "ResolveBoundProductionWorkbook",
+                                                  "ResolveInvSysDetailsBySystemKey",
+                                                  "ResolveInvSysLocationBySystemKey",
                                                   "ResolveListObject",
-                                                  "ResolveProductionOutputIdentityFromPicker",
-                                                  "ResolveProductionOutputIdentityFromPickerRows",
-                                                  "ResolveProductionOutputInventoryRow",
+                                                  "ResolveProductionOutputIdentity",
+                                                  "ResolveProductionOutputIdentityFromRows",
+                                                  "ResolveProductionOutputSystemKey",
                                                   "ResolveProductionRecipesStorageTarget",
+                                                  "ResolveProductionTargetIdentity",
                                                   "ResolveProductionWorkbook",
                                                   "ResolveUsedInventoryIndex",
                                                   "RestoreMadeStageByItemCode",
@@ -15359,7 +15114,7 @@
                                                   "TestHandlePaletteRecipeSelectedStage",
                                                   "TestLatestRecipeNameFromDesignRows",
                                                   "TestLogProductionOutputRow",
-                                                  "TestLookupOutputRowLooseFromPicker",
+                                                  "TestLookupOutputSystemKeyFromPicker",
                                                   "TestNextBase36RecipeId",
                                                   "TestOutputIdentityFromPicker",
                                                   "TestProductionIngredientPaletteRuntimeRoundTrip",
@@ -15369,8 +15124,8 @@
                                                   "TestProductionRecipesRuntimeRoundTrip",
                                                   "TestProductionSystemKeyPayloadStagesWithoutInventoryMutation",
                                                   "TestProductionUsedStagingDoesNotMutateInvSys",
-                                                  "TestSelectedMadeDeltaRow",
                                                   "TestSelectedMadeDeltaSkuIdentity",
+                                                  "TestSelectedMadeDeltaSystemKey",
                                                   "TestUnifiedRecipeList",
                                                   "ToBase36RecipeId",
                                                   "TrimIngredientPaletteRows",
@@ -17428,193 +17183,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.BuildFormGuid:bba1461bf9b4",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "BuildFormGuid"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"modUR_Snapshot.GenerateGUID\"))",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction0:8ac82690856b",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction1:96f4dc213319",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProduction2:a4e27bfd9bc5",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProduction2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject0:8ac82690856b",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject1:96f4dc213319",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionObject2:a4e27bfd9bc5",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionObject2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2)",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub0:62d887b398f6",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub0"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub1:f1be77bbdf74",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub1"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Forms_frmProduction.frm:frmProduction.RunProductionSub2:256b88ae8f9c",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "RunProductionSub2"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"mProduction.\" \u0026 procName, arg1, arg2",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "dynamic-call:src_Production_Modules_mProduction.bas:mProduction.ProductionGuid:bba1461bf9b4",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionGuid"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"modUR_Snapshot.GenerateGUID\"))",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Admin_Forms_frmReAuthGate.frm:frmReAuthGate.ShowGate",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -19196,6 +18764,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.DiagnoseUserFormWindowStyle",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modUserFormResizeWin",
+                           "procedureNames":  [
+                                                  "DiagnoseUserFormWindowStyle"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modUserFormResizeWin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.GetUserFormWindowHandle",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20046,74 +19631,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnBuildRecipeProcessTables",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnBuildRecipeProcessTables"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearPaletteBuilder"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeBuilder",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearRecipeBuilder"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearRecipeChooser",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnClearRecipeChooser"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20165,23 +19682,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrintRecallCodes",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnPrintRecallCodes"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20199,97 +19699,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveFormulas",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSaveFormulas"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSavePalette",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSavePalette"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSaveRecipe",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnSaveRecipe"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnShowSystem",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnShowSystem"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToMade",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnToMade"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToUsed",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnToUsed"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20403,114 +19818,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteSaveDiagnostic",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetPaletteSaveDiagnostic"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteTableContextInfo",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "GetPaletteTableContextInfo"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionDesignsModeStatus",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionDesignsModeStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionInventoryModeStatus",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionInventoryModeStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionRunDefaultLocation",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionRunDefaultLocation"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionSheet",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetProductionSheet"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.GetRecallPrintDiagnostic",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "GetRecallPrintDiagnostic"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20539,80 +19852,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadProductionRunIngredientChoices",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadProductionRunIngredientChoices"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeList",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadRecipeList"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.LoadReleasedRecipeList",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "LoadReleasedRecipeList"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.OutputCheckboxChanged",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "OutputCheckboxChanged"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.PaletteIngredientIsOutput",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "PaletteIngredientIsOutput"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20675,63 +19920,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ProductionToTotalInv"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionInventoryReadModelForWorkbookResult",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "RefreshProductionInventoryReadModelForWorkbookResult"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "RefreshProductionRecipesFromRuntimeForCurrentWorkbook"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ReleaseRecipeForProduction",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "ReleaseRecipeForProduction"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"

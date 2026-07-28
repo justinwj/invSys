@@ -576,6 +576,27 @@ Public Function GetCurrentTarget() As WarehouseTarget
     Set GetCurrentTarget = CloneTargetNas(m_CurrentTarget)
 End Function
 
+Public Function GetCurrentTargetWarehouseId() As String
+    Dim target As WarehouseTarget
+
+    Set target = GetCurrentTarget()
+    If Not target Is Nothing Then GetCurrentTargetWarehouseId = Trim$(target.WarehouseId)
+End Function
+
+Public Function GetCurrentTargetStationId() As String
+    Dim target As WarehouseTarget
+
+    Set target = GetCurrentTarget()
+    If Not target Is Nothing Then GetCurrentTargetStationId = Trim$(target.StationId)
+End Function
+
+Public Function GetCurrentTargetRuntimeRoot() As String
+    Dim target As WarehouseTarget
+
+    Set target = GetCurrentTarget()
+    If Not target Is Nothing Then GetCurrentTargetRuntimeRoot = Trim$(target.RuntimeRoot)
+End Function
+
 Public Function CurrentWarehouseTargetDiagnosticForAutomation() As String
     On Error GoTo FailDiagnostic
 
