@@ -1,4 +1,4 @@
-# Only the seven canonical XLAMs directly under deploy/current are source-controlled.
+# Only the five normative XLAMs directly under deploy/current are source-controlled.
 # Build, candidate, hotfix, validation, and local archive packages are disposable.
 deploy/**/.build-staging-*/
 deploy/candidate-*/
@@ -8,10 +8,11 @@ deploy/archive/
 
 # Temporary Excel harness workbooks created by integration runners
 tests/fixtures/*_Harness_*.xlsm
+tests/fixtures/Phase*_TestHarness_*.xlsm
 
 # Temporary validation roots and ad hoc slice result files
 tests/tmp/
-tests/unit/phase6_test_results_*.md
+tests/unit/phase*_test_results_*.md
 
 # Local machine/session artifacts
 build_xlam_run.log
