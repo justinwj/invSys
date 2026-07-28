@@ -3,10 +3,10 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  165,
-                     "procedureCount":  4611,
-                     "lineCount":  101552,
-                     "literalApplicationRunCount":  10,
+                     "componentCount":  166,
+                     "procedureCount":  4601,
+                     "lineCount":  100556,
+                     "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  190
                  },
@@ -1287,91 +1287,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.GetUOMFromDataTable",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "GetUOMFromDataTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.UpdateInventory",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "UpdateInventory"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.AppendLogRow",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AppendLogRow"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RecordInvDelta",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RecordInvDelta"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RemoveLegacyReceivingButtons",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RemoveLegacyReceivingButtons"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_NewWorkbook",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
@@ -2085,25 +2000,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexReceive+ColumnIndexShip",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modReceivingEventCreator",
-                           "procedureNames":  [
-                                                  "ColumnIndexReceive",
-                                                  "ColumnIndexShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:074e08084a5c49f0:IsAuthWorkbookName+IsConfigWorkbookName+IsConfigWorkbookNameAdmin+IsInventoryWorkbookName+IsProductionInboxWorkbookName+IsReceiveInboxWorkbookName+IsShipInboxWorkbookName",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -2142,6 +2038,24 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "duplicate:07c069e7c0322193:InitializeProductionAutoSnapshot+InitializeReceivingAutoSnapshot",
+                           "candidateType":  "REPLACE_DUPLICATE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "InitializeProductionAutoSnapshot",
+                                                  "InitializeReceivingAutoSnapshot"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2198,24 +2112,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modAuth.bas",
                                                "src/Core/Modules/modConfig.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ColumnIndex",
-                                                  "LogColIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2410,6 +2306,25 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "duplicate:162d045cebea9efe:Location+Location",
+                           "candidateType":  "REPLACE_DUPLICATE",
+                           "confidence":  "HIGH",
+                           "componentName":  "cProductionRunSession",
+                           "procedureNames":  [
+                                                  "Location",
+                                                  "Location"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/ClassModules/cProductionRunSession.cls",
+                                               "src/Receiving/ClassModules/cReceivingWorkflowState.cls"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "duplicate:16b24365d0cf0f01:PerfIsTransactionActiveSafeProcessor+PerfIsTransactionActiveSafeReadModel",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -2429,21 +2344,19 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetItemSearch+ResolveInventoryWorksheetReceived+ResolveInventoryWorksheetSnapshot",
+                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetItemSearch+ResolveInventoryWorksheetSnapshot",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmItemSearch",
                            "procedureNames":  [
                                                   "ResolveInventoryWorksheetInvMan",
                                                   "ResolveInventoryWorksheetItemSearch",
-                                                  "ResolveInventoryWorksheetReceived",
                                                   "ResolveInventoryWorksheetSnapshot"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmItemSearch.frm",
                                                "src/Core/Modules/modUR_Snapshot.bas",
-                                               "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
+                                               "src/InventoryDomain/Modules/modInvMan.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2604,14 +2517,13 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
+                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblShip+NzDblSync",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modOperatorReadModel",
                            "procedureNames":  [
                                                   "NzDblApply",
                                                   "NzDblReadModel",
-                                                  "NzDblReceive",
                                                   "NzDblShip",
                                                   "NzDblSync"
                                               ],
@@ -2619,7 +2531,6 @@
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modWarehouseSync.bas",
                                                "src/InventoryDomain/Modules/modInventoryApply.bas",
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -2667,18 +2578,16 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsReceiving+WorkbookSheetExistsShipping",
+                           "id":  "duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsShipping",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "WorkbookSheetExists",
-                                                  "WorkbookSheetExistsReceiving",
                                                   "WorkbookSheetExistsShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -2799,18 +2708,16 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrReceive+NzStrShip+TextValue",
+                           "id":  "duplicate:30348d523aeda395:NzStrShip+TextValue",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
-                                                  "NzStrReceive",
                                                   "NzStrShip",
                                                   "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -3024,6 +2931,25 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "duplicate:3be0eab87f1495ef:ApplyProductionWindowStyle+ApplyReceivingWindowStyle",
+                           "candidateType":  "REPLACE_DUPLICATE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modProductionFormWindow",
+                           "procedureNames":  [
+                                                  "ApplyProductionWindowStyle",
+                                                  "ApplyReceivingWindowStyle"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionFormWindow.bas",
+                                               "src/Receiving/Modules/modReceivingFormWindow.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "duplicate:3bedf7db9e6b745e:CountFatalIssues+CountFatalIssues",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -3114,25 +3040,6 @@
                                                "src/Admin/Forms/frmAddInventoryItem.frm",
                                                "src/Core/ClassModules/cFormAnchorItem.cls",
                                                "src/Production/Forms/frmProduction.frm",
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:44662b4f2fcefe02:ResolveOnActionMacroReceiving+ResolveOnActionMacroShipping",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ResolveOnActionMacroReceiving",
-                                                  "ResolveOnActionMacroShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -3945,6 +3852,24 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "duplicate:75f35dcb141830a8:UnregisterProductionAutoSnapshot+UnregisterReceivingAutoSnapshot",
+                           "candidateType":  "REPLACE_DUPLICATE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "UnregisterProductionAutoSnapshot",
+                                                  "UnregisterReceivingAutoSnapshot"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "duplicate:77c1bbac8c506d7f:AppendNote+AppendNote+AppendNoteShip",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -4092,20 +4017,18 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:834c0cd6cc85ba5c:ClearExcelClipboardState+ClearExcelClipboardStateProduction+ClearExcelClipboardStateReceiving+ClearExcelClipboardStateShipping",
+                           "id":  "duplicate:834c0cd6cc85ba5c:ClearExcelClipboardState+ClearExcelClipboardStateProduction+ClearExcelClipboardStateShipping",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modUtils",
                            "procedureNames":  [
                                                   "ClearExcelClipboardState",
                                                   "ClearExcelClipboardStateProduction",
-                                                  "ClearExcelClipboardStateReceiving",
                                                   "ClearExcelClipboardStateShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modUtils.bas",
                                                "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -4248,25 +4171,6 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:9001cf0268a06207:NzDbl+NzDblInv",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modInvMan",
-                           "procedureNames":  [
-                                                  "NzDbl",
-                                                  "NzDblInv"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4984,12 +4888,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c30f7d79756508ef:NzStr+NzStr+NzStr+NzStrInv",
+                           "id":  "duplicate:c30f7d79756508ef:NzStr+NzStr+NzStrInv",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "cPickerRouter",
                            "procedureNames":  [
-                                                  "NzStr",
                                                   "NzStr",
                                                   "NzStr",
                                                   "NzStrInv"
@@ -4997,8 +4900,7 @@
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cPickerRouter.cls",
                                                "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
+                                               "src/Production/Modules/mProduction.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5093,17 +4995,16 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c80c4674cbf9b47b:CanHideWorksheetReceiving+CanHideWorksheetShipping",
+                           "id":  "duplicate:c795f764e2b8c1e7:EnsureProductionWorkbookSurface+EnsureReceivingWorkbookSurface",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
-                           "componentName":  "modTS_Received",
+                           "componentName":  "modOperationsPrimitiveBridge",
                            "procedureNames":  [
-                                                  "CanHideWorksheetReceiving",
-                                                  "CanHideWorksheetShipping"
+                                                  "EnsureProductionWorkbookSurface",
+                                                  "EnsureReceivingWorkbookSurface"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas",
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5152,19 +5053,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c990451daf1a5c4e:ValueOrPlaceholderAdmin+ValueOrPlaceholderRole+ValueOrUnknownReceiving",
+                           "id":  "duplicate:c990451daf1a5c4e:ValueOrPlaceholderAdmin+ValueOrPlaceholderRole",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modAdminConsole",
                            "procedureNames":  [
                                                   "ValueOrPlaceholderAdmin",
-                                                  "ValueOrPlaceholderRole",
-                                                  "ValueOrUnknownReceiving"
+                                                  "ValueOrPlaceholderRole"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminConsole.bas",
-                                               "src/Core/Modules/modRoleEventWriter.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
+                                               "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5899,24 +5798,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:AddOrMergeFromSearch",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "cDynItemSearch",
-                           "procedureNames":  [
-                                                  "CommitSelection",
-                                                  "AddOrMergeFromSearch"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:ApplyItemSelection",
                            "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
                            "confidence":  "HIGH",
@@ -6053,24 +5934,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "same-project-run:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Activate:EnableResizableUserForm",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmReceiving",
-                           "procedureNames":  [
-                                                  "UserForm_Activate",
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceiving.frm"
                                            ],
                            "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
                            "protectingTests":  [
@@ -9657,23 +9520,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.EnableResizableUserForm",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modUserFormResizeWin",
-                           "procedureNames":  [
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modUserFormResizeWin.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_Modules_MouseScroll.bas:MouseScroll.GetCallbackPtr",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -11182,41 +11028,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.btnSend_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "btnSend_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.UserForm_Initialize",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnAdd_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -11280,24 +11091,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnRedo_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmReceiving",
-                           "procedureNames":  [
-                                                  "mBtnRedo_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceiving.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
                                                ],
                            "reviewRequired":  true
                        },
@@ -11319,12 +11114,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnUndo_Click",
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTabs_Change",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmReceiving",
                            "procedureNames":  [
-                                                  "mBtnUndo_Click"
+                                                  "mTabs_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Forms/frmReceiving.frm"
@@ -11436,23 +11231,6 @@
                            "protectingTests":  [
                                                    "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
                                                    "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.AddOrMergeFromSearch",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AddOrMergeFromSearch"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ConfirmWrites_Tester.bas"
                                                ],
                            "reviewRequired":  true
                        },
@@ -15208,112 +14986,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received",
-                           "candidateType":  "SPLIT_MODULE",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AddOrMergeFromSearch",
-                                                  "AggColMap",
-                                                  "AppendLogRow",
-                                                  "AppendLogRowFromRT",
-                                                  "AppendQueuedEventIdReceiving",
-                                                  "AppendRef",
-                                                  "ArrangeReceivingSurface",
-                                                  "BuildReceiveEventNote",
-                                                  "CanHideWorksheetReceiving",
-                                                  "CaptureUndoState",
-                                                  "ClearExcelClipboardStateReceiving",
-                                                  "ClearReceivingFormStaging",
-                                                  "ClearTable",
-                                                  "ColumnIndex",
-                                                  "ConfirmWrites",
-                                                  "CriticalLogCols",
-                                                  "DeleteAddedLogRows",
-                                                  "DeleteShapeIfExistsReceiving",
-                                                  "DeleteStaleReceivingButtons",
-                                                  "EnforceReceivingSupportSheetsHidden",
-                                                  "EnsureGeneratedButtons",
-                                                  "EnsureReceivingButton",
-                                                  "EnsureReceivingButtons",
-                                                  "EnsureRowMap",
-                                                  "FindAggregateMatch",
-                                                  "FindInColumn",
-                                                  "FindInvRowByItemCode",
-                                                  "FindInvRowByROW",
-                                                  "FirstBlankListRowReceiving",
-                                                  "HandleReceivingSelectionChange",
-                                                  "HandleReceivingSheetChange",
-                                                  "InitializeReceivingUiForWorkbook",
-                                                  "LastConfirmWritesStatus",
-                                                  "LastConfirmWritesSucceeded",
-                                                  "LoadItemList",
-                                                  "LoadReceivingFormInventory",
-                                                  "LoadReceivingFormTable",
-                                                  "LogColIndex",
-                                                  "LookupInvSys",
-                                                  "LookupInvSysByItemCode",
-                                                  "LookupInvSysByROW",
-                                                  "MacroRedo",
-                                                  "MacroUndo",
-                                                  "MergeIntoAggregate",
-                                                  "MergeIntoReceivedTally",
-                                                  "MoveListObjectToAddressReceiving",
-                                                  "MoveListObjectToRowColReceiving",
-                                                  "NewGuid",
-                                                  "NormalizeInventoryRowForWriteReceiving",
-                                                  "NormalizeReceivingInventoryRowDisplay",
-                                                  "NzDbl",
-                                                  "NzLng",
-                                                  "NzStr",
-                                                  "ProcessQueuedReceiveEventsRuntime",
-                                                  "QueueReceiveEventsFromAggregate",
-                                                  "QueueReceiveEventsFromCurrentWorkbook",
-                                                  "QuickSort",
-                                                  "RebuildAggregation",
-                                                  "RebuildAggregationForWorkbook",
-                                                  "ReceivingDemoRowForSku",
-                                                  "ReceivingFormInitializeSmokeForWorkbook",
-                                                  "ReceivingLegacyItemRowForSku",
-                                                  "RecordInvDelta",
-                                                  "RefListContainsReceiving",
-                                                  "RefreshReadModelForPicker",
-                                                  "RefreshReceivingUiAccess",
-                                                  "RefreshReceivingUiForWorkbook",
-                                                  "RemoveLegacyReceivingButtons",
-                                                  "ResolveDiagnosticValueReceiving",
-                                                  "ResolveInvRowForReceiveLog",
-                                                  "ResolveOnActionMacroReceiving",
-                                                  "ResolveReceivingWorkbook",
-                                                  "ResolveShapeCaptionReceiving",
-                                                  "RestoreTable",
-                                                  "RunReceivingConfirmWritesFormActionForTest",
-                                                  "SetReceivedTallyRowForForm",
-                                                  "SheetExists",
-                                                  "ShowReceivingDynamicItemSearch",
-                                                  "ShowReceivingForm",
-                                                  "SnapshotTable",
-                                                  "StageReceivingFormItemForWorkbook",
-                                                  "StageReceivingFormLine",
-                                                  "StageReceivingFormLineForWorkbook",
-                                                  "SyncQuantityFromStaging",
-                                                  "ToggleLogColumn",
-                                                  "TryClearTableReceiving",
-                                                  "UndoInvDeltas",
-                                                  "ValidateQueueReceiveEventsFromCurrentWorkbook",
-                                                  "ValueOrUnknownReceiving",
-                                                  "WorkbookSheetExistsReceiving"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "module-size:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally",
                            "candidateType":  "SPLIT_MODULE",
                            "confidence":  "MEDIUM",
@@ -16364,25 +16036,6 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
 
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "procedure-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ConfirmWrites",
-                           "candidateType":  "SPLIT_MODULE",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ConfirmWrites"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ConfirmWrites_Tester.bas",
-                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1",
-                                                   "tests/unit/TestStub_modTS_Received.bas"
                                                ],
                            "reviewRequired":  true
                        },
@@ -18427,6 +18080,57 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.EndTransaction",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "EndTransaction"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.IsTransactionActive",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "IsTransactionActive"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.MarkSegment",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "MarkSegment"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.PerfBegin",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20110,6 +19814,40 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingWorkflowState.cls:cReceivingWorkflowState.StateReady",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "cReceivingWorkflowState",
+                           "procedureNames":  [
+                                                  "StateReady"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/ClassModules/cReceivingWorkflowState.cls"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.ClearReceivingReadinessForWorkbook",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modReceivingInit",
+                           "procedureNames":  [
+                                                  "ClearReceivingReadinessForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modReceivingInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.InitReceivingAddin",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -20167,40 +19905,6 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "RunReceivingConfirmWritesFormActionForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ToggleLogColumn",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ToggleLogColumn"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ValidateQueueReceiveEventsFromCurrentWorkbook",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ValidateQueueReceiveEventsFromCurrentWorkbook"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"

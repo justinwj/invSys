@@ -19,11 +19,10 @@ Private WithEvents mTxtRef As MSForms.TextBox
 Private WithEvents mTxtReceiptId As MSForms.TextBox
 Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mTxtQty As MSForms.TextBox
+Private WithEvents mTabs As MSForms.TabStrip
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnAdd As MSForms.CommandButton
 Private WithEvents mBtnConfirm As MSForms.CommandButton
-Private WithEvents mBtnUndo As MSForms.CommandButton
-Private WithEvents mBtnRedo As MSForms.CommandButton
 Private WithEvents mBtnClear As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
 Private WithEvents mLstInventory As MSForms.ListBox
@@ -40,6 +39,7 @@ Private mLblStagedTitle As MSForms.Label
 Private mLblStagedHeader As MSForms.Label
 Private mLblAggregateTitle As MSForms.Label
 Private mLblAggregateHeader As MSForms.Label
+Private mLblPurchasingStub As MSForms.Label
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
 Private mInventoryRows As Variant
@@ -49,7 +49,7 @@ Private mResizeInitialized As Boolean
 Private mResizing As Boolean
 
 Private Const RECEIVING_BASE_WIDTH As Double = 1020
-Private Const RECEIVING_BASE_HEIGHT As Double = 650
+Private Const RECEIVING_BASE_HEIGHT As Double = 680
 
 Private Sub UserForm_Initialize()
     BuildLayout
@@ -57,9 +57,7 @@ End Sub
 
 Private Sub UserForm_Activate()
     If Not mResizeInitialized Then
-        On Error Resume Next
-        Application.Run "modUserFormResizeWin.EnableResizableUserForm", Me, True, True
-        On Error GoTo 0
+        modReceivingFormWindow.EnableReceivingResizable Me, True, True
         mResizeInitialized = True
     End If
     ResizeReceivingLayout
@@ -91,7 +89,6 @@ Public Sub InitializeFromReceiving()
     End If
 
     mLoading = True
-    ActivateOperatorWorkbook
     modTS_Received.InitializeReceivingUiForWorkbook wb
     If Trim$(CStr(mTxtReceiptId.Value)) = "" Then mTxtReceiptId.Value = DefaultReceiptId()
     mTxtRef.Value = ""
@@ -135,12 +132,23 @@ Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbo
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
     If Not mBuilt Then BuildLayout
     SetOperatorWorkbook operatorWb
-    If Not activatedWb Is Nothing Then activatedWb.Activate
     mBtnConfirm_Click
     TestRunConfirmWritesActionForWorkbook = _
         "Succeeded=" & CStr(modTS_Received.LastConfirmWritesSucceeded()) & _
         "; Status=" & modTS_Received.LastConfirmWritesStatus() & _
         "; BoundWorkbook=" & mOperatorWorkbook.Name
+End Function
+
+Public Function TestPurchasingTabContract(ByVal operatorWb As Workbook) As String
+    If operatorWb Is Nothing Then Exit Function
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    mTabs.Value = 1
+    ApplyReceivingTab
+    TestPurchasingTabContract = _
+        "OK|Selected=" & mTabs.SelectedItem.Caption & _
+        "|StubVisible=" & CStr(mLblPurchasingStub.Visible) & _
+        "|EnabledPurchasingActions=0|Writes=0|Events=0"
 End Function
 
 Private Sub BuildLayout()
@@ -154,39 +162,55 @@ Private Sub BuildLayout()
     Me.ScrollWidth = RECEIVING_BASE_WIDTH - 20
     Me.ScrollHeight = RECEIVING_BASE_HEIGHT - 35
 
-    Set mLblReceiptId = AddLabel("lblReceiptId", "Receipt ID", 18, 18, 70, 18, True)
-    Set mTxtReceiptId = AddTextBox("txtReceiptId", 90, 16, 150, 22)
+    Set mTabs = Me.Controls.Add("Forms.TabStrip.1", "tabsReceiving", True)
+    With mTabs
+        .Left = 18
+        .Top = 10
+        .Width = 964
+        .Height = 26
+        .Tabs.Clear
+        .Tabs.Add "tabReceiving", "Receiving"
+        .Tabs.Add "tabPurchasing", "Purchasing"
+        .Value = 0
+    End With
+
+    Set mLblReceiptId = AddLabel("lblReceiptId", "Receipt ID", 18, 48, 70, 18, True)
+    Set mTxtReceiptId = AddTextBox("txtReceiptId", 90, 46, 150, 22)
     mTxtReceiptId.Locked = True
     mTxtReceiptId.BackColor = &HEFEFEF
-    Set mLblRef = AddLabel("lblRef", "PO/BOL Ref", 258, 18, 78, 18, True)
-    Set mTxtRef = AddTextBox("txtRef", 338, 16, 150, 22)
-    Set mLblSearch = AddLabel("lblSearch", "Search inventory", 506, 18, 110, 18, True)
-    Set mTxtSearch = AddTextBox("txtSearch", 618, 16, 190, 22)
-    Set mLblQty = AddLabel("lblQty", "Qty", 826, 18, 34, 18, True)
-    Set mTxtQty = AddTextBox("txtQty", 862, 16, 80, 22)
+    Set mLblRef = AddLabel("lblRef", "PO/BOL Ref", 258, 48, 78, 18, True)
+    Set mTxtRef = AddTextBox("txtRef", 338, 46, 150, 22)
+    Set mLblSearch = AddLabel("lblSearch", "Search inventory", 506, 48, 110, 18, True)
+    Set mTxtSearch = AddTextBox("txtSearch", 618, 46, 190, 22)
+    Set mLblQty = AddLabel("lblQty", "Qty", 826, 48, 34, 18, True)
+    Set mTxtQty = AddTextBox("txtQty", 862, 46, 80, 22)
     mTxtQty.Value = "1"
 
-    Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 778, 48, 96, 28)
-    Set mBtnAdd = AddButton("btnAdd", "Add", 884, 48, 98, 28)
-    Set mBtnConfirm = AddButton("btnConfirm", "Confirm Writes", 18, 580, 110, 30)
-    Set mBtnUndo = AddButton("btnUndo", "Undo", 136, 580, 72, 30)
-    Set mBtnRedo = AddButton("btnRedo", "Redo", 216, 580, 72, 30)
-    Set mBtnClear = AddButton("btnClear", "Clear", 296, 580, 72, 30)
-    Set mBtnClose = AddButton("btnClose", "Close", 892, 580, 90, 30)
+    Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 778, 78, 96, 28)
+    Set mBtnAdd = AddButton("btnAdd", "Add", 884, 78, 98, 28)
+    Set mBtnConfirm = AddButton("btnConfirm", "Confirm Writes", 18, 610, 110, 30)
+    Set mBtnClear = AddButton("btnClear", "Clear", 136, 610, 72, 30)
+    Set mBtnClose = AddButton("btnClose", "Close", 892, 610, 90, 30)
 
-    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Inventory", 18, 56, 130, 18, True)
-    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "ROW     Code          Item                         UOM   Inv       Location      Description / Vendor", 18, 78, 930, 16, False)
-    Set mLstInventory = AddListBox("lstInventory", 18, 96, 964, 206, 9, "42 pt;82 pt;190 pt;42 pt;62 pt;80 pt;230 pt;120 pt;0 pt")
+    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Inventory", 18, 86, 130, 18, True)
+    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "System_Key                         Code          Item                         UOM   Inv       Location      Description / Vendor", 18, 108, 930, 16, False)
+    Set mLstInventory = AddListBox("lstInventory", 18, 126, 964, 206, 8, "210 pt;82 pt;190 pt;42 pt;62 pt;80 pt;230 pt;120 pt")
 
-    Set mLblStagedTitle = AddLabel("lblStagedTitle", "Received Tally", 18, 318, 150, 18, True)
-    Set mLblStagedHeader = AddLabel("lblStagedHeader", "Ref number             Item                                      Qty        ROW", 18, 340, 520, 16, False)
-    Set mLstStaged = AddListBox("lstStaged", 18, 358, 520, 190, 4, "130 pt;250 pt;70 pt;50 pt")
+    Set mLblStagedTitle = AddLabel("lblStagedTitle", "Received Tally", 18, 348, 150, 18, True)
+    Set mLblStagedHeader = AddLabel("lblStagedHeader", "Ref number             Item                                      Qty        System_Key", 18, 370, 520, 16, False)
+    Set mLstStaged = AddListBox("lstStaged", 18, 388, 520, 190, 4, "130 pt;250 pt;70 pt;210 pt")
 
-    Set mLblAggregateTitle = AddLabel("lblAggregateTitle", "Aggregate Received", 560, 318, 160, 18, True)
-    Set mLblAggregateHeader = AddLabel("lblAggregateHeader", "Code          Vendor        Vendor code   Description              Item                    UOM   Qty    Location   ROW   Ref", 560, 340, 420, 16, False)
-    Set mLstAggregate = AddListBox("lstAggregate", 560, 358, 422, 190, 10, "84 pt;88 pt;80 pt;150 pt;160 pt;42 pt;58 pt;75 pt;45 pt;90 pt")
+    Set mLblAggregateTitle = AddLabel("lblAggregateTitle", "Aggregate Received", 560, 348, 160, 18, True)
+    Set mLblAggregateHeader = AddLabel("lblAggregateHeader", "Ref        Code          Vendor        Vendor code   Description              Item                    UOM   Qty    Location   System_Key", 560, 370, 420, 16, False)
+    Set mLstAggregate = AddListBox("lstAggregate", 560, 388, 422, 190, 10, "90 pt;84 pt;88 pt;80 pt;150 pt;160 pt;42 pt;58 pt;75 pt;210 pt")
 
-    Set mTxtStatus = AddTextBox("txtStatus", 18, 620, 964, 34)
+    Set mLblPurchasingStub = AddLabel("lblPurchasingStub", _
+        "Purchasing is not yet operational. This tab is reserved for future work and contains no purchasing write actions.", _
+        36, 76, 900, 56, True)
+    mLblPurchasingStub.WordWrap = True
+    mLblPurchasingStub.Visible = False
+
+    Set mTxtStatus = AddTextBox("txtStatus", 18, 650, 964, 34)
     With mTxtStatus
         .Locked = True
         .MultiLine = True
@@ -197,6 +221,7 @@ Private Sub BuildLayout()
 
     mBuilt = True
     ResizeReceivingLayout
+    ApplyReceivingTab
 End Sub
 
 Private Function AddLabel(ByVal name As String, ByVal captionText As String, ByVal leftPos As Double, _
@@ -280,6 +305,8 @@ Private Sub ResizeReceivingLayout()
     layoutH = MaxDoubleReceiving(RECEIVING_BASE_HEIGHT - 35, Me.InsideHeight)
     Me.ScrollWidth = layoutW
     Me.ScrollHeight = layoutH
+    mTabs.Width = layoutW - (margin * 2)
+    mLblPurchasingStub.Width = layoutW - 72
 
     mTxtSearch.Width = MaxDoubleReceiving(160, layoutW - mTxtSearch.Left - 206)
     mLblQty.Left = mTxtSearch.Left + mTxtSearch.Width + 16
@@ -317,8 +344,6 @@ Private Sub ResizeReceivingLayout()
     buttonTop = layoutH - 72
     statusTop = layoutH - 38
     mBtnConfirm.Top = buttonTop
-    mBtnUndo.Top = buttonTop
-    mBtnRedo.Top = buttonTop
     mBtnClear.Top = buttonTop
     mBtnClose.Left = layoutW - mBtnClose.Width - margin
     mBtnClose.Top = buttonTop
@@ -331,24 +356,16 @@ Done:
 End Sub
 
 Private Function ResolveOperatorWorkbook() As Workbook
-    If Not mOperatorWorkbook Is Nothing Then
-        If Not mOperatorWorkbook.IsAddin Then
-            Set ResolveOperatorWorkbook = mOperatorWorkbook
+    Dim candidate As Workbook
+
+    If mOperatorWorkbook Is Nothing Then Exit Function
+    For Each candidate In Application.Workbooks
+        If candidate Is mOperatorWorkbook Then
+            If Not candidate.IsAddin Then Set ResolveOperatorWorkbook = candidate
             Exit Function
         End If
-    End If
-    If Not Application.ActiveWorkbook Is Nothing Then
-        If Not Application.ActiveWorkbook.IsAddin Then
-            Set ResolveOperatorWorkbook = Application.ActiveWorkbook
-        End If
-    End If
+    Next candidate
 End Function
-
-Private Sub ActivateOperatorWorkbook()
-    On Error Resume Next
-    If Not mOperatorWorkbook Is Nothing Then mOperatorWorkbook.Activate
-    On Error GoTo 0
-End Sub
 
 Private Sub RefreshAllViews()
     LoadInventoryCache
@@ -359,8 +376,9 @@ End Sub
 
 Private Sub LoadInventoryCache()
     On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    mInventoryRows = modTS_Received.LoadReceivingFormInventory("")
+    mInventoryRows = _
+        modTS_Received.LoadReceivingFormInventoryForWorkbook( _
+            ResolveOperatorWorkbook(), "")
     Exit Sub
 ErrHandler:
     Erase mInventoryRows
@@ -377,9 +395,12 @@ End Sub
 
 Private Sub RefreshStaging()
     On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    FillListBox mLstStaged, modTS_Received.LoadReceivingFormTable("ReceivedTally"), 4
-    FillListBox mLstAggregate, modTS_Received.LoadReceivingFormTable("AggregateReceived"), 10
+    FillListBox mLstStaged, _
+        modTS_Received.LoadReceivingFormTableForWorkbook( _
+            ResolveOperatorWorkbook(), "ReceivedTally"), 4
+    FillListBox mLstAggregate, _
+        modTS_Received.LoadReceivingFormTableForWorkbook( _
+            ResolveOperatorWorkbook(), "AggregateReceived"), 10
     Exit Sub
 ErrHandler:
     ShowStatus "Receiving staging refresh failed: " & Err.Description
@@ -489,53 +510,29 @@ End Sub
 
 Private Sub mBtnConfirm_Click()
     On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    modTS_Received.ConfirmWrites
-    If modTS_Received.LastConfirmWritesSucceeded() Then
-        modTS_Received.ClearReceivingFormStaging
+    Dim report As String
+    Dim succeeded As Boolean
+
+    succeeded = modReceivingPostingService.ExecuteConfirmWrites( _
+        mOperatorWorkbook, report)
+    modTS_Received.RecordConfirmWritesResult succeeded, report
+    If succeeded Then
         mTxtRef.Value = ""
         mTxtReceiptId.Value = DefaultReceiptId()
-        mLstStaged.Clear
-        mLstAggregate.Clear
         RefreshAllViews
-        mLstStaged.Clear
-        mLstAggregate.Clear
         ShowStatus "Confirm Writes finished; staged receiving rows cleared."
     Else
         RefreshAllViews
-        ShowStatus "Confirm Writes did not complete; staged receiving rows were kept. " & modTS_Received.LastConfirmWritesStatus()
+        ShowStatus "Confirm Writes did not complete; staged receiving rows were kept. " & report
     End If
     Exit Sub
 ErrHandler:
     ShowStatus "Confirm Writes failed: " & Err.Description
 End Sub
 
-Private Sub mBtnUndo_Click()
-    On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    modTS_Received.MacroUndo
-    RefreshAllViews
-    ShowStatus "Undo finished."
-    Exit Sub
-ErrHandler:
-    ShowStatus "Undo failed: " & Err.Description
-End Sub
-
-Private Sub mBtnRedo_Click()
-    On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    modTS_Received.MacroRedo
-    RefreshAllViews
-    ShowStatus "Redo finished."
-    Exit Sub
-ErrHandler:
-    ShowStatus "Redo failed: " & Err.Description
-End Sub
-
 Private Sub mBtnClear_Click()
     On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
-    modTS_Received.ClearReceivingFormStaging
+    modTS_Received.ClearReceivingFormStagingForWorkbook mOperatorWorkbook
     RefreshStaging
     ShowStatus "Receiving form staging cleared."
     Exit Sub
@@ -549,7 +546,6 @@ End Sub
 
 Private Sub RefreshClicked()
     On Error GoTo ErrHandler
-    ActivateOperatorWorkbook
     modTS_Received.RefreshReceivingUiForWorkbook ResolveOperatorWorkbook(), "LOCAL"
     RefreshAllViews
     ShowStatus "Receiving inventory and staging refreshed."
@@ -562,11 +558,11 @@ Private Sub AddSelectedInventory()
     On Error GoTo ErrHandler
 
     Dim idx As Long
-    Dim rowVal As Long
     Dim qtyVal As Double
     Dim refVal As String
     Dim report As String
     Dim itemCode As String
+    Dim sourceSystemKey As String
 
     idx = mLstInventory.ListIndex
     If idx < 0 Then
@@ -580,8 +576,7 @@ Private Sub AddSelectedInventory()
         Exit Sub
     End If
 
-    rowVal = CLng(Val(NzText(mLstInventory.List(idx, 8))))
-    If rowVal <= 0 Then rowVal = CLng(Val(NzText(mLstInventory.List(idx, 0))))
+    sourceSystemKey = NzText(mLstInventory.List(idx, 0))
     itemCode = NzText(mLstInventory.List(idx, 1))
     qtyVal = CDbl(Val(CStr(mTxtQty.Value)))
     If qtyVal <= 0 Then
@@ -589,8 +584,8 @@ Private Sub AddSelectedInventory()
         Exit Sub
     End If
 
-    ActivateOperatorWorkbook
-    If modTS_Received.StageReceivingFormItemForWorkbook(ResolveOperatorWorkbook(), refVal, rowVal, itemCode, qtyVal, report) Then
+    If modTS_Received.StageReceivingFormItemForWorkbook( _
+        ResolveOperatorWorkbook(), refVal, sourceSystemKey, itemCode, qtyVal, report) Then
         RefreshStaging
         ShowStatus report
     Else
@@ -600,6 +595,34 @@ Private Sub AddSelectedInventory()
 
 ErrHandler:
     ShowStatus "Add failed: " & Err.Description
+End Sub
+
+Private Sub mTabs_Change()
+    If mLoading Then Exit Sub
+    ApplyReceivingTab
+End Sub
+
+Private Sub ApplyReceivingTab()
+    Dim control As Object
+    Dim showReceiving As Boolean
+
+    If mTabs Is Nothing Then Exit Sub
+    showReceiving = (mTabs.Value = 0)
+    For Each control In Me.Controls
+        Select Case CStr(control.Name)
+            Case "tabsReceiving", "btnClose", "txtStatus"
+                control.Visible = True
+            Case "lblPurchasingStub"
+                control.Visible = Not showReceiving
+            Case Else
+                control.Visible = showReceiving
+        End Select
+    Next control
+    If showReceiving Then
+        ShowStatus "Receiving is ready."
+    Else
+        ShowStatus "Purchasing is not yet operational."
+    End If
 End Sub
 
 Private Sub ShowStatus(ByVal messageText As String)

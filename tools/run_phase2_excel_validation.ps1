@@ -1,5 +1,7 @@
 Param(
-    [string]$RepoRoot = "."
+    [string]$RepoRoot = ".",
+    [int]$StartAt = 1,
+    [int]$EndAt = 0
 )
 
 Set-StrictMode -Version Latest
@@ -200,13 +202,23 @@ try {
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modNasConnection.bas"),
+        (Join-Path $repo "src/Core/Modules/modUiQuiet.bas"),
+        (Join-Path $repo "src/Core/Modules/modPerfLog.bas"),
+        (Join-Path $repo "src/Core/Modules/modRoleUiAccess.bas"),
+        (Join-Path $repo "src/Core/Modules/modRibbonRuntimeStatus.bas"),
+        (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
         (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
+        (Join-Path $repo "src/Core/Modules/modDesignsDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryQueries.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "tests/unit/TestCoreConfig.bas"),
         (Join-Path $repo "tests/unit/TestCoreAuth.bas"),
         (Join-Path $repo "tests/unit/TestInventorySchema.bas"),
@@ -253,6 +265,18 @@ try {
         "TestCoreProcessor.TestRunBatch_ProcessesProdCompleteRow"
     )
 
+    $totalAvailableTests = $allTests.Count
+    if ($EndAt -le 0) {
+        $EndAt = $totalAvailableTests
+    }
+    if ($StartAt -lt 1 -or $EndAt -lt $StartAt -or $EndAt -gt $totalAvailableTests) {
+        throw "Invalid test range $StartAt-$EndAt. Available tests: 1-$totalAvailableTests."
+    }
+    $allTests = @($allTests[($StartAt - 1)..($EndAt - 1)])
+    if ($StartAt -ne 1 -or $EndAt -ne $totalAvailableTests) {
+        $resultPath = Join-Path $repo ("tests/unit/phase2_test_results_{0}_{1}.md" -f $StartAt, $EndAt)
+    }
+
     $harness = $excel.Workbooks.Add()
     $bootstrap = Add-BootstrapModule -Workbook $harness
     $vbProject = $harness.VBProject
@@ -260,8 +284,8 @@ try {
 
     foreach ($m in $modulePaths) {
         Import-BasModule -VbProject $vbProject -BasPath $m
-        [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
     }
+    [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
 
     Add-TestWrappers -BootstrapComponent $bootstrap -TargetFunctions $allTests
     [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
@@ -270,14 +294,27 @@ try {
     $testRows = @()
     foreach ($name in $allTests) {
         $wrapperName = "Run_" + ($name -replace "[^A-Za-z0-9_]", "_")
+        $moduleName = $name.Split(".")[0]
+        try {
+            [void]$excel.Run("'$($harness.Name)'!$moduleName.ClearLastTestFailure")
+        }
+        catch {}
         $passed = Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName $wrapperName
+        $failureDetail = ""
+        if ($passed -ne 1) {
+            try {
+                $failureDetail = [string]$excel.Run("'$($harness.Name)'!$moduleName.GetLastTestFailure")
+            }
+            catch {}
+        }
         $testRows += [pscustomobject]@{
             TestName = $name
             Passed   = ($passed -eq 1)
+            Error    = $failureDetail
         }
     }
 
-    $passedCount = ($testRows | Where-Object { $_.Passed }).Count
+    $passedCount = @($testRows | Where-Object { $_.Passed }).Count
     $failedCount = $testRows.Count - $passedCount
 
     $lines = @()
@@ -286,11 +323,13 @@ try {
     $lines += "- Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     $lines += "- Passed: $passedCount"
     $lines += "- Failed: $failedCount"
+    $lines += "- Range: $StartAt-$EndAt of $totalAvailableTests"
     $lines += ""
     $lines += "| Test | Result |"
     $lines += "|---|---|"
     foreach ($r in $testRows) {
-        $lines += "| $($r.TestName) | $([string]::Join('', $(if ($r.Passed) {'PASS'} else {'FAIL'}))) |"
+        $detail = if ($r.Passed) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($r.Error)) { "FAIL" } else { "FAIL - $($r.Error)" }
+        $lines += "| $($r.TestName) | $detail |"
     }
     [System.IO.File]::WriteAllLines($resultPath, $lines)
 
@@ -300,6 +339,7 @@ try {
     Write-Output "HARNESS=$harnessPath"
     Write-Output "RESULTS=$resultPath"
     Write-Output "PASSED=$passedCount FAILED=$failedCount TOTAL=$($testRows.Count)"
+    Write-Output "RANGE=$StartAt-$EndAt AVAILABLE=$totalAvailableTests"
 }
 finally {
     if ($null -ne $harness) {

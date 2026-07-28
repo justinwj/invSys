@@ -378,13 +378,18 @@ Public Function CreateReceiveEvent(ByVal eventId As String, _
                                    Optional ByVal locationVal As String = "", _
                                    Optional ByVal noteVal As String = "", _
                                    Optional ByVal createdAtUtc As Variant = Empty, _
-                                   Optional ByVal sourceInbox As String = "test-inbox") As Object
+                                   Optional ByVal sourceInbox As String = "test-inbox", _
+                                   Optional ByVal systemKey As String = "") As Object
     Dim evt As Object
 
     Set evt = CreateBaseEvent(eventId, EVENT_TYPE_RECEIVE, whId, stId, userId, createdAtUtc, sourceInbox)
+    If Trim$(systemKey) = "" Then systemKey = "SYS-" & eventId
+    evt("System_Key") = systemKey
     evt("SKU") = sku
     evt("Qty") = qty
     evt("Location") = locationVal
+    evt("Condition") = "GOOD"
+    evt("AttributesJson") = ""
     evt("Note") = noteVal
     Set CreateReceiveEvent = evt
 End Function

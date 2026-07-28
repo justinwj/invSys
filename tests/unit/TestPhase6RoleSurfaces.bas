@@ -24,11 +24,12 @@ Public Function TestEnsureReceivingWorkbookSurface_CreatesExpectedTables() As Lo
        And HasTable(wb, "invSysData_Receiving") _
        And HasTable(wb, "ReceivedLog") _
        And HasTable(wb, "invSys") _
-       And TableHasColumns(wb, "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "ROW")) _
-       And TableHasColumns(wb, "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW")) _
-       And TableHasColumns(wb, "invSysData_Receiving", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION")) _
-       And TableHasColumns(wb, "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW")) _
-       And TableHasColumns(wb, "invSys", Array("ROW", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "TOTAL INV", "QtyAvailable", "LocationSummary", "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")) Then
+       And TableHasColumns(wb, "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState")) _
+       And TableHasColumns(wb, "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "EventId", "WorkflowState")) _
+       And TableHasColumns(wb, "invSysData_Receiving", Array("System_Key", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION")) _
+       And TableHasColumns(wb, "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key", "EventId")) _
+       And TableHasColumns(wb, "invSys", Array("System_Key", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "TOTAL INV", "QtyAvailable", "LocationSummary", "LastRefreshUTC", "SnapshotId", "SourceType", "IsStale")) _
+       And Not TableHasColumns(wb, "invSys", Array("ROW")) Then
         TestEnsureReceivingWorkbookSurface_CreatesExpectedTables = 1
     End If
 
@@ -59,8 +60,7 @@ Public Function TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumn
 
     If Not modRoleWorkbookSurfaces.EnsureInventoryManagementSurface(wb, report) Then GoTo CleanExit
 
-    If TableColumnHidden(wb, "invSys", "ROW") _
-       And TableColumnHidden(wb, "invSys", "TOTAL INV LAST EDIT") _
+    If TableColumnHidden(wb, "invSys", "TOTAL INV LAST EDIT") _
        And Not TableColumnHidden(wb, "invSys", "ITEM_CODE") _
        And Not TableColumnHidden(wb, "invSys", "TOTAL INV") _
        And Not TableColumnHidden(wb, "invSys", "QtyAvailable") _
@@ -69,7 +69,7 @@ Public Function TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumn
        And Not TableColumnHidden(wb, "invSys", "SnapshotId") _
        And Not TableColumnHidden(wb, "invSys", "SourceType") _
        And Not TableColumnHidden(wb, "invSys", "IsStale") _
-       And Not TableHasColumns(wb, "invSys", Array("SKU", "ItemName", "QtyOnHand", "LastAppliedUTC", "TIMESTAMP")) Then
+       And Not TableHasColumns(wb, "invSys", Array("ROW", "SKU", "ItemName", "QtyOnHand", "LastAppliedUTC", "TIMESTAMP")) Then
         TestEnsureInventoryManagementSurface_RemovesDuplicateAliasColumns = 1
     End If
 
@@ -192,13 +192,12 @@ CleanFail:
     Resume CleanExit
 End Function
 
-Public Function TestReceivingForm_InventoryLoaderUsesRawRowValue() As Long
+Public Function TestReceivingForm_InventoryLoaderUsesSystemKey() As Long
     Dim wb As Workbook
     Dim report As String
     Dim loInv As ListObject
     Dim lr As ListRow
     Dim rowsOut As Variant
-    Dim rowCol As Long
 
     Set wb = Application.Workbooks.Add
 
@@ -212,24 +211,19 @@ Public Function TestReceivingForm_InventoryLoaderUsesRawRowValue() As Long
     Else
         Set lr = loInv.ListRows(1)
     End If
-    SetTableValueByColumn loInv, lr.Index, "ROW", 14
-    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-ROW-014"
-    SetTableValueByColumn loInv, lr.Index, "ITEM", "Row Format Test"
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-LOADER-014"
+    SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-KEY-014"
+    SetTableValueByColumn loInv, lr.Index, "ITEM", "Key Format Test"
     SetTableValueByColumn loInv, lr.Index, "UOM", "EA"
     SetTableValueByColumn loInv, lr.Index, "LOCATION", "A1"
-    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "Date formatted row"
+    SetTableValueByColumn loInv, lr.Index, "DESCRIPTION", "System key loader test"
     SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 5
     SetTableValueByColumn loInv, lr.Index, "QtyAvailable", 5
 
-    rowCol = TableColumnIndex(loInv, "ROW")
-    If rowCol = 0 Then GoTo CleanExit
-    loInv.ListColumns(rowCol).DataBodyRange.NumberFormat = "m/d/yyyy"
-    wb.Activate
-
-    rowsOut = modTS_Received.LoadReceivingFormInventory("")
+    rowsOut = modTS_Received.LoadReceivingFormInventoryForWorkbook(wb, "")
     If IsEmpty(rowsOut) Or Not IsArray(rowsOut) Then GoTo CleanExit
-    If CStr(rowsOut(1, 1)) = "14" Then
-        TestReceivingForm_InventoryLoaderUsesRawRowValue = 1
+    If CStr(rowsOut(1, 1)) = "SYS-LOADER-014" Then
+        TestReceivingForm_InventoryLoaderUsesSystemKey = 1
     End If
 
 CleanExit:
@@ -298,7 +292,7 @@ Public Function TestReceivingForm_AddStagesSelectedInventoryForConfirm() As Long
     Else
         Set lr = loInv.ListRows(1)
     End If
-    SetTableValueByColumn loInv, lr.Index, "ROW", 701
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-SOURCE-701"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-RECV-701"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Received Test Tea"
     SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
@@ -309,17 +303,21 @@ Public Function TestReceivingForm_AddStagesSelectedInventoryForConfirm() As Long
     SetTableValueByColumn loInv, lr.Index, "TOTAL INV", 0
     SetTableValueByColumn loInv, lr.Index, "QtyAvailable", 0
 
-    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-701", 701, 12, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "PO-701", "SYS-SOURCE-701", "ITM-RECV-701", 12, stageReport) Then GoTo CleanExit
     If loRt.DataBodyRange Is Nothing Or loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
 
     If CStr(GetTableValueByColumn(loRt, 1, "REF_NUMBER")) = "PO-701" _
        And CStr(GetTableValueByColumn(loRt, 1, "ITEMS")) = "Received Test Tea" _
        And CDbl(GetTableValueByColumn(loRt, 1, "QUANTITY")) = 12 _
-       And CLng(GetTableValueByColumn(loRt, 1, "ROW")) = 701 _
        And CStr(GetTableValueByColumn(loAgg, 1, "ITEM_CODE")) = "ITM-RECV-701" _
        And CStr(GetTableValueByColumn(loAgg, 1, "ITEM")) = "Received Test Tea" _
        And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 12 _
-       And CLng(GetTableValueByColumn(loAgg, 1, "ROW")) = 701 Then
+       And CStr(GetTableValueByColumn(loRt, 1, "System_Key")) <> "" _
+       And CStr(GetTableValueByColumn(loRt, 1, "System_Key")) <> "SYS-SOURCE-701" _
+       And CStr(GetTableValueByColumn(loRt, 1, "System_Key")) = CStr(GetTableValueByColumn(loAgg, 1, "System_Key")) _
+       And CStr(GetTableValueByColumn(loRt, 1, "EventId")) = CStr(GetTableValueByColumn(loAgg, 1, "EventId")) _
+       And CStr(GetTableValueByColumn(loAgg, 1, "WorkflowState")) = "STAGED" Then
         TestReceivingForm_AddStagesSelectedInventoryForConfirm = 1
     End If
 
@@ -353,7 +351,7 @@ Public Function TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef()
     Else
         Set lr = loInv.ListRows(1)
     End If
-    SetTableValueByColumn loInv, lr.Index, "ROW", 706
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-SOURCE-706"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITM-RECV-706"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Cardamom Pods"
     SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
@@ -362,9 +360,9 @@ Public Function TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef()
     SetTableValueByColumn loInv, lr.Index, "VENDOR(s)", "Test Vendor"
     SetTableValueByColumn loInv, lr.Index, "VENDOR_CODE", "TV-706"
 
-    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-706", 706, 500, stageReport) Then GoTo CleanExit
-    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-706", 706, 100, stageReport) Then GoTo CleanExit
-    If Not modTS_Received.StageReceivingFormLineForWorkbook(wb, "PO-707", 706, 25, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook(wb, "PO-706", "SYS-SOURCE-706", "ITM-RECV-706", 500, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook(wb, "PO-706", "SYS-SOURCE-706", "ITM-RECV-706", 100, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook(wb, "PO-707", "SYS-SOURCE-706", "ITM-RECV-706", 25, stageReport) Then GoTo CleanExit
     If loRt.DataBodyRange Is Nothing Or loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
 
     If loRt.ListRows.Count >= 2 _
@@ -372,8 +370,12 @@ Public Function TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef()
        And CDbl(GetTableValueByColumn(loRt, 1, "QUANTITY")) = 600 _
        And CStr(GetTableValueByColumn(loRt, 2, "REF_NUMBER")) = "PO-707" _
        And CDbl(GetTableValueByColumn(loRt, 2, "QUANTITY")) = 25 _
-       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 625 _
-       And CStr(GetTableValueByColumn(loAgg, 1, "REF_NUMBER")) = "PO-706,PO-707" Then
+       And loAgg.ListRows.Count = 2 _
+       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 600 _
+       And CDbl(GetTableValueByColumn(loAgg, 2, "QUANTITY")) = 25 _
+       And CStr(GetTableValueByColumn(loAgg, 1, "System_Key")) = CStr(GetTableValueByColumn(loRt, 1, "System_Key")) _
+       And CStr(GetTableValueByColumn(loAgg, 2, "System_Key")) = CStr(GetTableValueByColumn(loRt, 2, "System_Key")) _
+       And CStr(GetTableValueByColumn(loAgg, 1, "System_Key")) <> CStr(GetTableValueByColumn(loAgg, 2, "System_Key")) Then
         TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef = 1
     End If
 
@@ -401,25 +403,27 @@ Public Function TestReceivingForm_AddStagesByItemCodeWhenRowsCollide() As Long
     If loInv Is Nothing Or loAgg Is Nothing Then GoTo CleanExit
 
     Set lr = loInv.ListRows.Add
-    SetTableValueByColumn loInv, lr.Index, "ROW", 1
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-SOURCE-BLACK-TEA"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "DEMO-RAW-BLACK-TEA"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Demo Black Tea"
     SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
     SetTableValueByColumn loInv, lr.Index, "LOCATION", "NAS-A1"
 
     Set lr = loInv.ListRows.Add
-    SetTableValueByColumn loInv, lr.Index, "ROW", 1
+    SetTableValueByColumn loInv, lr.Index, "System_Key", "SYS-SOURCE-ITEM-0002"
     SetTableValueByColumn loInv, lr.Index, "ITEM_CODE", "ITEM-0002"
     SetTableValueByColumn loInv, lr.Index, "ITEM", "Black Tea Base"
     SetTableValueByColumn loInv, lr.Index, "UOM", "LB"
     SetTableValueByColumn loInv, lr.Index, "LOCATION", "CLEARVIEW"
 
-    If Not modTS_Received.StageReceivingFormItemForWorkbook(wb, "BOL-2", 1, "ITEM-0002", 7, stageReport) Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-2", "SYS-SOURCE-ITEM-0002", "ITEM-0002", 7, stageReport) Then GoTo CleanExit
     If loAgg.DataBodyRange Is Nothing Then GoTo CleanExit
 
     If CStr(GetTableValueByColumn(loAgg, 1, "ITEM_CODE")) = "ITEM-0002" _
        And CStr(GetTableValueByColumn(loAgg, 1, "ITEM")) = "Black Tea Base" _
-       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 7 Then
+       And CDbl(GetTableValueByColumn(loAgg, 1, "QUANTITY")) = 7 _
+       And CStr(GetTableValueByColumn(loAgg, 1, "System_Key")) <> "SYS-SOURCE-ITEM-0002" Then
         TestReceivingForm_AddStagesByItemCodeWhenRowsCollide = 1
     End If
 

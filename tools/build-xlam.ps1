@@ -414,7 +414,7 @@ function Import-Forms {
         $formSource = Get-Content -LiteralPath $formFile.FullName -Raw
         if ($formSource -match "'@RuntimeStubUserFormCode") {
             if (
-                $formSource -notmatch "(EnableResizableUserForm|modProductionFormWindow\.EnableResizable)" -or
+                $formSource -notmatch "(EnableResizableUserForm|modProductionFormWindow\.EnableResizable|modReceivingFormWindow\.EnableReceivingResizable)" -or
                 $formSource -notmatch "True\s*,\s*True"
             ) {
                 throw "$($formFile.FullName) violates the runtime UserForm window standard: Andy Pope/Windows API resize with minimize and maximize must be enabled."

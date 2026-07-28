@@ -3,9 +3,9 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 165
-- Procedures: 4611
-- Literal Application.Run targets: 10
+- Components: 166
+- Procedures: 4601
+- Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
 ## Packages
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 58 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 42 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 43 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
@@ -64,7 +64,6 @@
 | BtnOpenBoxMaker | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | BtnOpenProductionForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | BtnOpenShipmentsForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| btnSend_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnUpdateUser_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkConfirmAction_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkPublishInitial_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -75,7 +74,6 @@
 | cmbSourceWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbTargetWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | ConnectWarehouseStorageForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| EnableResizableUserForm | CROSS_XLAM_BRIDGE | src/Receiving/Forms/frmReceiving.frm |
 | GetCallbackPtr | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | HandlePaletteIngredientSelected | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
 | HandlePaletteRecipeSelected | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
@@ -193,7 +191,6 @@
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpen_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpenReceiving_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnRedo_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -224,7 +221,6 @@
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnStage_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnUndo_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUnmake_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -279,6 +275,7 @@
 | mOptArchiveRetire_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mOptArchiveRetireDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | MouseProc | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
+| mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtBoxPicker_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtConfirmPin_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Enter | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -552,11 +549,16 @@
 | TestReceivingForm_AddStagesByItemCodeWhenRowsCollide | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_AddStagesSelectedInventoryForConfirm | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_HidesSupportSheetsAfterFormRefresh | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
-| TestReceivingForm_InventoryLoaderUsesRawRowValue | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestReceivingForm_InventoryLoaderUsesSystemKey | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestReceivingPurchasingTab_IsVisibleAndReadOnly | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReadiness_StatusPanelRendersForKnownBadWorkbook | TEST_ENTRY | tests/integration/test_ReceivingReadiness.bas |
 | TestReceivingRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |
 | TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestReceivingStage_GeneratesStableDistinctSystemKeys | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingWorkflowState_PreservesEventIdentity | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingWorkflowState_RejectsMissingSystemKey | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingWorkflowState_UsesOrderedTransitions | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestRefreshInventoryReadModel_MissingSharePointSnapshotMarksCachedWithoutMutatingLocalTables | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRefreshInventoryReadModel_MissingSnapshotMarksStaleWithoutMutatingReceivingTally | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRefreshInventoryReadModelFromCache_PreservesLocalStagingAndLogs | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -755,7 +757,6 @@
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_KeyDown | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -821,9 +822,6 @@
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventoryApply.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventorySchema.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInvMan.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Forms/frmReceivedTally.frm]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Modules/modReceivingEventCreator.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Receiving/Modules/modTS_Received.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Forms/frmShipmentsTally.frm]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Forms/frmShippingBoxMaker.frm]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Modules/modShippingEventCreator.bas]

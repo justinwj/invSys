@@ -20,11 +20,11 @@ Public Function EnsureReceivingWorkbookSurface(Optional ByVal targetWb As Workbo
     Dim wb As Workbook
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
-    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key"), True, "C3"
-    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key"), False, "J3"
-    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "V3"
+    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState"), True, "C3"
+    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "EventId", "WorkflowState"), False, "M3"
+    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "AA3"
     EnsureInventoryManagementSurface wb
-    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key"), False
+    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key", "EventId"), False
     ArrangeReceivingTablesSurface wb
     EnsureReceivingButtonsSurface wb
     FormatWorkbookSurface wb
@@ -407,8 +407,8 @@ Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     If ws Is Nothing Then Exit Sub
 
     MoveTableTopLeftSurface ws, "ReceivedTally", "C3"
-    MoveTableTopLeftSurface ws, "AggregateReceived", "J3"
-    MoveTableTopLeftSurface ws, "invSysData_Receiving", "V3"
+    MoveTableTopLeftSurface ws, "AggregateReceived", "M3"
+    MoveTableTopLeftSurface ws, "invSysData_Receiving", "AA3"
 End Sub
 
 Private Sub MoveTableTopLeftSurface(ByVal ws As Worksheet, ByVal tableName As String, ByVal targetAddress As String)

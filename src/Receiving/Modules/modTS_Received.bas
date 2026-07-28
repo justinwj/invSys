@@ -1,101 +1,46 @@
 Attribute VB_Name = "modTS_Received"
 Option Explicit
 
-' =============================================================
-' Module: modTS_Received
-' Purpose: Consolidated receiving workflow
-'   Item Search -> ReceivedTally -> AggregateReceived -> Confirm -> invSys/ReceivedLog
-' Notes:
-'   - Replaces legacy Tally form/button and invSysData_Receiving table.
-'   - Buttons (Confirm, Undo, Redo) are generated once; recreate if missing, never duplicate.
-'   - ReceivedTally is minimal (REF_NUMBER, ITEMS, QUANTITY) for fast entry.
-'   - AggregateReceived holds detail: REF_NUMBER, ITEM_CODE, VENDORS, VENDOR_CODE, DESCRIPTION, ITEM, UOM, QUANTITY, LOCATION, ROW.
-'   - Confirm only adds QUANTITY to existing invSys rows (items must pre-exist).
-'   - ReceivedLog: USER, REF_NUMBER, ITEMS, QUANTITY, UOM, VENDOR, LOCATION, ITEM_CODE, ROW, SNAPSHOT_ID, ENTRY_DATE.
-'   - invSys table (InventoryManagement sheet): columns include ROW, ITEM_CODE, ITEM, UOM, LOCATION, RECEIVED, TOTAL INV, TIMESTAMP, etc.
-'   - Single-level undo/redo for last confirm.
-' =============================================================
+Private Const SHEET_RECEIVING As String = "ReceivedTally"
+Private Const TABLE_STAGING As String = "ReceivedTally"
+Private Const TABLE_AGGREGATE As String = "AggregateReceived"
+Private Const TABLE_INVENTORY As String = "invSys"
+Private Const SHEET_INVENTORY As String = "InventoryManagement"
+Private Const SHEET_LOG As String = "ReceivedLog"
 
-' ==== module-level undo/redo state ====
-Private mUndoInv As Collection
-Private mUndoLogRows As Collection
-Private mUndoRT As Variant
-Private mUndoAGG As Variant
-Private mRedoReady As Boolean
 Private mLastConfirmSucceeded As Boolean
 Private mLastConfirmStatus As String
-Private mDynSearch As Object
-Private mRowMap As Object ' maps staging row number -> Array(itemCode, invRow, refNumber)
 
-Private Const SHEET_RECEIVING As String = "ReceivedTally"
-Private Const TABLE_RECEIVING As String = "ReceivedTally"
-Private Const TABLE_AGG_RECEIVED As String = "AggregateReceived"
-Private Const TABLE_INV_RECEIVING As String = "invSysData_Receiving"
-Private Const EVENT_TYPE_RECEIVE As String = "RECEIVE"
-Private Const RECV_LAYOUT_TALLY_ADDR As String = "C3"
-Private Const RECV_LAYOUT_AGG_ADDR As String = "J3"
-Private Const RECV_LAYOUT_INV_ADDR As String = "V3"
-
-' ==== public entry points =====
 Public Sub EnsureGeneratedButtons()
-    Dim report As String
     Dim wb As Workbook
-    Dim diag As String
-    Dim snapshotRows As String
-    Dim invRows As String
-    Dim snapshotPath As String
+    Dim report As String
 
     Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
-    If Not RefreshReceivingUiForWorkbook(wb, report) Then
-        If wb Is Nothing Then
-            If Trim$(report) = "" Then report = "Activate a receiving operator workbook with the ReceivedTally sheet before running Receiving UI actions."
-        Else
-            diag = modOperatorReadModel.DiagnoseInventoryReadModelRefresh(wb, "", "LOCAL")
-            If Trim$(report) = "" Then
-                report = "Receiving UI refresh failed." & vbCrLf & vbCrLf & diag
-            ElseIf Trim$(diag) <> "" Then
-                report = report & vbCrLf & vbCrLf & diag
-            End If
-        End If
-        If Not modUiQuiet.QuietUiIsActive() Then MsgBox report, vbExclamation, "invSys Receiving"
+    If wb Is Nothing Then
+        ShowReceivingMessage "Activate a Receiving operator workbook before refreshing.", vbExclamation
         Exit Sub
     End If
-
-    diag = modOperatorReadModel.DiagnoseInventoryReadModelRefresh(wb, "", "LOCAL")
-    snapshotRows = ResolveDiagnosticValueReceiving(diag, "SnapshotTableRows")
-    invRows = ResolveDiagnosticValueReceiving(diag, "InvSysRowsAfter")
-    snapshotPath = ResolveDiagnosticValueReceiving(diag, "SnapshotPath")
-
-    If StrComp(Trim$(report), "OK", vbTextCompare) = 0 Then
-        If Not modUiQuiet.QuietUiIsActive() Then
-            MsgBox "invSys refreshed from shared snapshot." & vbCrLf & _
-                   "Snapshot rows: " & ValueOrUnknownReceiving(snapshotRows) & vbCrLf & _
-                   "invSys rows: " & ValueOrUnknownReceiving(invRows) & vbCrLf & _
-                   "Snapshot path: " & ValueOrUnknownReceiving(snapshotPath), _
-                   vbInformation, "invSys Receiving"
-        End If
-    Else
-        If Not modUiQuiet.QuietUiIsActive() Then MsgBox report & vbCrLf & vbCrLf & diag, vbInformation, "invSys Receiving"
+    If Not RefreshReceivingUiForWorkbook(wb, "LOCAL", report) Then
+        ShowReceivingMessage report, vbExclamation
     End If
 End Sub
 
 Public Sub InitializeReceivingUiForWorkbook(Optional ByVal targetWb As Workbook = Nothing)
-    Dim surfaceReport As String
     Dim wb As Workbook
+    Dim report As String
     Dim ws As Worksheet
 
     Set wb = ResolveReceivingWorkbook(targetWb)
     If wb Is Nothing Then Exit Sub
-
-    Call modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, surfaceReport)
-    ArrangeReceivingSurface wb
-
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
+    If Not modOperationsPrimitiveBridge.EnsureReceivingWorkbookSurface(wb.Name, report) Then
+        Err.Raise vbObjectError + 7680, "modTS_Received.InitializeReceivingUiForWorkbook", report
+    End If
+    Set ws = WorkbookSheet(wb, SHEET_RECEIVING)
     If ws Is Nothing Then Exit Sub
-
-    EnsureReceivingButtons wb
-    RefreshReceivingUiAccess ws
-    modOperatorReadModel.InitializeAutoSnapshotForWorkbook wb
+    EnsureReceivingButtons ws
+    modOperationsPrimitiveBridge.ApplyShapeCapability _
+        wb.Name, SHEET_RECEIVING, "btnConfirmWrites", "RECEIVE_POST"
+    modOperationsPrimitiveBridge.InitializeReceivingAutoSnapshot wb.Name
     EnforceReceivingSupportSheetsHidden wb
 End Sub
 
@@ -106,12 +51,13 @@ Public Function RefreshReceivingUiForWorkbook(Optional ByVal targetWb As Workboo
 
     Set wb = ResolveReceivingWorkbook(targetWb)
     If wb Is Nothing Then
-        report = "Activate a receiving operator workbook with the ReceivedTally sheet before running Receiving UI actions."
+        report = "Activate a Receiving operator workbook before refreshing."
         Exit Function
     End If
-
     InitializeReceivingUiForWorkbook wb
-    RefreshReceivingUiForWorkbook = modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wb, "", sourceType, report)
+    RefreshReceivingUiForWorkbook = _
+        modOperationsPrimitiveBridge.RefreshInventoryReadModel( _
+            wb.Name, "", sourceType, report)
     EnforceReceivingSupportSheetsHidden wb
 End Function
 
@@ -119,12 +65,15 @@ Public Sub ShowReceivingForm()
     Dim wb As Workbook
     Dim frm As frmReceiving
 
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
+    If wb Is Nothing Then
+        ShowReceivingMessage "Open a Receiving operator workbook before using the Receiving form.", vbExclamation
+        Exit Sub
+    End If
     Set frm = New frmReceiving
-    If Not wb Is Nothing Then frm.SetOperatorWorkbook wb
+    frm.SetOperatorWorkbook wb
     frm.InitializeFromReceiving
-    If Not wb Is Nothing Then EnforceReceivingSupportSheetsHidden wb
+    EnforceReceivingSupportSheetsHidden wb
     frm.Show vbModeless
 End Sub
 
@@ -133,8 +82,17 @@ Public Function RunReceivingConfirmWritesFormActionForTest(ByVal operatorWb As W
     Dim frm As frmReceiving
 
     Set frm = New frmReceiving
+    If Not activatedWb Is Nothing Then activatedWb.Activate
     RunReceivingConfirmWritesFormActionForTest = _
         frm.TestRunConfirmWritesActionForWorkbook(operatorWb, activatedWb)
+    Unload frm
+End Function
+
+Public Function RunReceivingPurchasingTabContractForTest(ByVal operatorWb As Workbook) As String
+    Dim frm As frmReceiving
+
+    Set frm = New frmReceiving
+    RunReceivingPurchasingTabContractForTest = frm.TestPurchasingTabContract(operatorWb)
     Unload frm
 End Function
 
@@ -143,16 +101,13 @@ Public Function ReceivingFormInitializeSmokeForWorkbook(ByVal operatorWb As Work
 
     On Error GoTo Failed
     Set frm = New frmReceiving
-    ReceivingFormInitializeSmokeForWorkbook = _
-        frm.TestInitializeForWorkbook(operatorWb)
-
+    ReceivingFormInitializeSmokeForWorkbook = frm.TestInitializeForWorkbook(operatorWb)
 CleanExit:
     On Error Resume Next
     If Not frm Is Nothing Then Unload frm
     Set frm = Nothing
     On Error GoTo 0
     Exit Function
-
 Failed:
     ReceivingFormInitializeSmokeForWorkbook = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
@@ -160,875 +115,313 @@ Failed:
 End Function
 
 Public Sub EnforceReceivingSupportSheetsHidden(ByVal wb As Workbook)
-    On Error GoTo CleanExit
-
-    Dim supportNames As Variant
-    Dim i As Long
+    Dim names As Variant
+    Dim nameValue As Variant
     Dim ws As Worksheet
 
     If wb Is Nothing Then Exit Sub
-    supportNames = Array(SHEET_RECEIVING, "InventoryManagement", "ReceivedLog")
-    For i = LBound(supportNames) To UBound(supportNames)
-        Set ws = Nothing
-        On Error Resume Next
-        Set ws = wb.Worksheets(CStr(supportNames(i)))
-        On Error GoTo CleanExit
+    names = Array(SHEET_RECEIVING, SHEET_INVENTORY, SHEET_LOG)
+    For Each nameValue In names
+        Set ws = WorkbookSheet(wb, CStr(nameValue))
         If Not ws Is Nothing Then
-            If ws.Visible <> xlSheetVeryHidden Then
-                If CanHideWorksheetReceiving(wb, ws) Then ws.Visible = xlSheetVeryHidden
-            End If
+            If CanHideWorksheet(wb, ws) Then ws.Visible = xlSheetVeryHidden
         End If
-    Next i
-
-CleanExit:
+    Next nameValue
 End Sub
 
-Private Function CanHideWorksheetReceiving(ByVal wb As Workbook, ByVal wsToHide As Worksheet) As Boolean
-    Dim ws As Worksheet
-    Dim visibleCount As Long
+Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbook, _
+                                                      Optional ByVal filterText As String = "") As Variant
+    Dim inventoryTable As ListObject
+    Dim sourceValues As Variant
+    Dim outputValues() As Variant
+    Dim trimmedValues() As Variant
+    Dim recordIndex As Long
+    Dim fieldIndex As Long
+    Dim outputIndex As Long
+    Dim searchText As String
+    Dim searchableText As String
+    Dim systemKey As String
+    Dim itemCode As String
+    Dim itemName As String
+    Dim uomValue As String
+    Dim qtyValue As String
+    Dim locationValue As String
+    Dim descriptionValue As String
+    Dim vendorValue As String
 
-    If wb Is Nothing Or wsToHide Is Nothing Then Exit Function
-    For Each ws In wb.Worksheets
-        If ws.Visible = xlSheetVisible Then visibleCount = visibleCount + 1
-    Next ws
-    CanHideWorksheetReceiving = (wsToHide.Visible <> xlSheetVisible Or visibleCount > 1)
+    Set inventoryTable = FindTable(operatorWb, TABLE_INVENTORY)
+    If inventoryTable Is Nothing Or inventoryTable.DataBodyRange Is Nothing Then Exit Function
+    If ColumnIndex(inventoryTable, "System_Key") = 0 _
+       Or ColumnIndex(inventoryTable, "ITEM_CODE") = 0 Then Exit Function
+
+    searchText = LCase$(Trim$(filterText))
+    sourceValues = inventoryTable.DataBodyRange.Value2
+    ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 8)
+    For recordIndex = 1 To UBound(sourceValues, 1)
+        systemKey = CellText(inventoryTable, recordIndex, "System_Key")
+        itemCode = CellText(inventoryTable, recordIndex, "ITEM_CODE")
+        itemName = CellText(inventoryTable, recordIndex, "ITEM")
+        If itemName = "" Then itemName = CellText(inventoryTable, recordIndex, "ItemName")
+        uomValue = CellText(inventoryTable, recordIndex, "UOM")
+        qtyValue = CellText(inventoryTable, recordIndex, "QtyAvailable")
+        If qtyValue = "" Then qtyValue = CellText(inventoryTable, recordIndex, "TOTAL INV")
+        locationValue = CellText(inventoryTable, recordIndex, "LOCATION")
+        descriptionValue = CellText(inventoryTable, recordIndex, "DESCRIPTION")
+        vendorValue = CellText(inventoryTable, recordIndex, "VENDOR(s)")
+        If systemKey = "" Or itemCode = "" Then GoTo NextInventoryRecord
+
+        searchableText = LCase$(systemKey & " " & itemCode & " " & itemName & " " & _
+                                    descriptionValue & " " & vendorValue & " " & locationValue)
+        If searchText <> "" Then
+            If InStr(1, searchableText, searchText, vbTextCompare) = 0 Then
+                GoTo NextInventoryRecord
+            End If
+        End If
+
+        outputIndex = outputIndex + 1
+        outputValues(outputIndex, 1) = systemKey
+        outputValues(outputIndex, 2) = itemCode
+        outputValues(outputIndex, 3) = itemName
+        outputValues(outputIndex, 4) = uomValue
+        outputValues(outputIndex, 5) = qtyValue
+        outputValues(outputIndex, 6) = locationValue
+        outputValues(outputIndex, 7) = descriptionValue
+        outputValues(outputIndex, 8) = vendorValue
+NextInventoryRecord:
+    Next recordIndex
+
+    If outputIndex = 0 Then Exit Function
+    ReDim trimmedValues(1 To outputIndex, 1 To 8)
+    For recordIndex = 1 To outputIndex
+        For fieldIndex = 1 To 8
+            trimmedValues(recordIndex, fieldIndex) = outputValues(recordIndex, fieldIndex)
+        Next fieldIndex
+    Next recordIndex
+    LoadReceivingFormInventoryForWorkbook = trimmedValues
 End Function
 
 Public Function LoadReceivingFormInventory(Optional ByVal filterText As String = "") As Variant
     Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim lo As ListObject
-    Dim arr As Variant
-    Dim result() As Variant
-    Dim trimmed() As Variant
-    Dim r As Long
-    Dim c As Long
-    Dim outRow As Long
-    Dim haystack As String
-    Dim actualRowVal As String
-    Dim rowVal As String
-    Dim itemCode As String
-    Dim itemName As String
-    Dim uomVal As String
-    Dim qtyVal As String
-    Dim locVal As String
-    Dim descVal As String
-    Dim vendorVal As String
 
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
     If wb Is Nothing Then Exit Function
-    Set ws = WorkbookSheetExistsReceiving(wb, "InventoryManagement")
-    If ws Is Nothing Then Set ws = WorkbookSheetExistsReceiving(wb, "Inventory Management")
-    If ws Is Nothing Then Exit Function
-    On Error Resume Next
-    Set lo = ws.ListObjects("invSys")
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Function
-    If lo.DataBodyRange Is Nothing Then Exit Function
+    LoadReceivingFormInventory = _
+        LoadReceivingFormInventoryForWorkbook(wb, filterText)
+End Function
 
-    Dim cRow As Long: cRow = ColumnIndex(lo, "ROW")
-    Dim cCode As Long: cCode = ColumnIndex(lo, "ITEM_CODE")
-    Dim cItem As Long: cItem = ColumnIndex(lo, "ITEM")
-    Dim cUom As Long: cUom = ColumnIndex(lo, "UOM")
-    Dim cQty As Long: cQty = ColumnIndex(lo, "QtyAvailable")
-    If cQty = 0 Then cQty = ColumnIndex(lo, "TOTAL INV")
-    Dim cLoc As Long: cLoc = ColumnIndex(lo, "LOCATION")
-    Dim cDesc As Long: cDesc = ColumnIndex(lo, "DESCRIPTION")
-    Dim cVendor As Long: cVendor = ColumnIndex(lo, "VENDOR(s)")
-    If cRow = 0 Or cItem = 0 Then Exit Function
+Public Function LoadReceivingFormTableForWorkbook(ByVal operatorWb As Workbook, _
+                                                  ByVal tableName As String) As Variant
+    Dim targetTable As ListObject
 
-    filterText = LCase$(Trim$(filterText))
-    arr = lo.DataBodyRange.Value2
-    ReDim result(1 To UBound(arr, 1), 1 To 9)
-    For r = 1 To UBound(arr, 1)
-        actualRowVal = NzStr(arr(r, cRow))
-        itemCode = ""
-        If cCode > 0 Then itemCode = NzStr(arr(r, cCode))
-        rowVal = NormalizeReceivingInventoryRowDisplay(actualRowVal, itemCode, r)
-        itemName = NzStr(arr(r, cItem))
-        uomVal = ""
-        If cUom > 0 Then uomVal = NzStr(arr(r, cUom))
-        qtyVal = ""
-        If cQty > 0 Then qtyVal = NzStr(arr(r, cQty))
-        locVal = ""
-        If cLoc > 0 Then locVal = NzStr(arr(r, cLoc))
-        descVal = ""
-        If cDesc > 0 Then descVal = NzStr(arr(r, cDesc))
-        vendorVal = ""
-        If cVendor > 0 Then vendorVal = NzStr(arr(r, cVendor))
-        If itemName = "" And itemCode = "" Then GoTo NextInventoryRow
-        haystack = LCase$(rowVal & " " & itemCode & " " & itemName & " " & descVal & " " & vendorVal & " " & locVal)
-        If filterText <> "" Then
-            If InStr(1, haystack, filterText, vbTextCompare) = 0 Then GoTo NextInventoryRow
-        End If
-
-        outRow = outRow + 1
-        result(outRow, 1) = rowVal
-        result(outRow, 2) = itemCode
-        result(outRow, 3) = itemName
-        result(outRow, 4) = uomVal
-        result(outRow, 5) = qtyVal
-        result(outRow, 6) = locVal
-        result(outRow, 7) = descVal
-        result(outRow, 8) = vendorVal
-        result(outRow, 9) = actualRowVal
-NextInventoryRow:
-    Next r
-
-    If outRow = 0 Then Exit Function
-    ReDim trimmed(1 To outRow, 1 To 9)
-    For r = 1 To outRow
-        For c = 1 To 9
-            trimmed(r, c) = result(r, c)
-        Next c
-    Next r
-    LoadReceivingFormInventory = trimmed
+    Set targetTable = FindTable(operatorWb, tableName)
+    If targetTable Is Nothing Or targetTable.DataBodyRange Is Nothing Then Exit Function
+    LoadReceivingFormTableForWorkbook = targetTable.DataBodyRange.Value2
 End Function
 
 Public Function LoadReceivingFormTable(ByVal tableName As String) As Variant
     Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim lo As ListObject
 
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
     If wb Is Nothing Then Exit Function
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If ws Is Nothing Then Exit Function
-    On Error Resume Next
-    Set lo = ws.ListObjects(tableName)
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Function
-    If lo.DataBodyRange Is Nothing Then Exit Function
-    LoadReceivingFormTable = lo.DataBodyRange.Value2
-End Function
-
-Public Function StageReceivingFormLine(ByVal refNumber As String, ByVal rowValue As Long, _
-                                       ByVal qty As Double, ByRef report As String) As Boolean
-    StageReceivingFormLine = StageReceivingFormLineForWorkbook(Application.ActiveWorkbook, refNumber, rowValue, qty, report)
-End Function
-
-Public Function StageReceivingFormLineForWorkbook(ByVal targetWb As Workbook, _
-                                                  ByVal refNumber As String, _
-                                                  ByVal rowValue As Long, _
-                                                  ByVal qty As Double, _
-                                                  ByRef report As String) As Boolean
-    StageReceivingFormLineForWorkbook = StageReceivingFormItemForWorkbook(targetWb, refNumber, rowValue, vbNullString, qty, report)
+    LoadReceivingFormTable = LoadReceivingFormTableForWorkbook(wb, tableName)
 End Function
 
 Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
                                                   ByVal refNumber As String, _
-                                                  ByVal rowValue As Long, _
+                                                  ByVal sourceSystemKey As String, _
                                                   ByVal itemCodeValue As String, _
                                                   ByVal qty As Double, _
                                                   ByRef report As String) As Boolean
-    Dim wb As Workbook
-    Dim wsInv As Worksheet
-    Dim wsRecv As Worksheet
-    Dim loInv As ListObject
-    Dim rt As ListObject
-    Dim agg As ListObject
+    On Error GoTo Failed
+
+    Dim inventoryTable As ListObject
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim inventoryIndex As Long
+    Dim stagingIndex As Long
+    Dim aggregateIndex As Long
+    Dim receivingSystemKey As String
+    Dim eventId As String
     Dim itemCode As String
-    Dim vendors As String
-    Dim vendorCode As String
-    Dim descr As String
     Dim itemName As String
-    Dim uomVal As String
-    Dim locVal As String
-    Dim actualRowValue As Long
-    Dim requestedItemCode As String
+    Dim uomValue As String
+    Dim locationValue As String
 
     refNumber = Trim$(refNumber)
-    requestedItemCode = Trim$(itemCodeValue)
+    sourceSystemKey = Trim$(sourceSystemKey)
+    itemCodeValue = Trim$(itemCodeValue)
+    If targetWb Is Nothing Then report = "Receiving workbook was not provided.": Exit Function
     If refNumber = "" Then report = "Ref number is required.": Exit Function
-    If rowValue <= 0 And requestedItemCode = "" Then report = "Select an inventory item first.": Exit Function
+    If sourceSystemKey = "" And itemCodeValue = "" Then report = "Select an inventory item first.": Exit Function
     If qty <= 0 Then report = "Quantity must be greater than zero.": Exit Function
 
-    Set wb = ResolveReceivingWorkbook(targetWb, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then report = "Open a receiving operator workbook first.": Exit Function
-
-    Set wsInv = WorkbookSheetExistsReceiving(wb, "InventoryManagement")
-    If wsInv Is Nothing Then report = "InventoryManagement sheet not found.": Exit Function
-    Set wsRecv = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If wsRecv Is Nothing Then report = "ReceivedTally sheet not found.": Exit Function
-    On Error Resume Next
-    Set loInv = wsInv.ListObjects("invSys")
-    Set rt = wsRecv.ListObjects(TABLE_RECEIVING)
-    Set agg = wsRecv.ListObjects(TABLE_AGG_RECEIVED)
-    On Error GoTo 0
-    If loInv Is Nothing Then report = "invSys table not found.": Exit Function
-    If rt Is Nothing Then report = TABLE_RECEIVING & " table not found.": Exit Function
-    If agg Is Nothing Then report = TABLE_AGG_RECEIVED & " table not found.": Exit Function
-
-    If requestedItemCode <> "" Then
-        LookupInvSysByItemCode loInv, requestedItemCode, actualRowValue, itemCode, vendors, vendorCode, descr, itemName, uomVal, locVal
-    End If
-    If itemName = "" And itemCode = "" And rowValue > 0 Then
-        LookupInvSysByROW loInv, rowValue, itemCode, vendors, vendorCode, descr, itemName, uomVal, locVal
-        actualRowValue = rowValue
-    End If
-    If itemName = "" And itemCode = "" Then
-        If requestedItemCode <> "" Then
-            report = "Inventory item " & requestedItemCode & " was not found."
-        Else
-            report = "Inventory row " & CStr(rowValue) & " was not found."
-        End If
+    Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
+    Set stagingTable = FindTable(targetWb, TABLE_STAGING)
+    Set aggregateTable = FindTable(targetWb, TABLE_AGGREGATE)
+    If inventoryTable Is Nothing Or stagingTable Is Nothing Or aggregateTable Is Nothing Then
+        report = "Receiving inventory or staging tables are missing."
         Exit Function
     End If
-    If actualRowValue <= 0 Then actualRowValue = rowValue
 
-    MergeIntoReceivedTally rt, refNumber, itemName, qty
-    SetReceivedTallyRowForForm rt, refNumber, itemName, actualRowValue
-    MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uomVal, qty, locVal, actualRowValue
-    report = "Staged " & CStr(qty) & " " & uomVal & " of " & itemName & "."
+    If sourceSystemKey <> "" Then
+        inventoryIndex = FindTableRecord(inventoryTable, "System_Key", sourceSystemKey)
+    End If
+    If inventoryIndex = 0 And itemCodeValue <> "" Then
+        inventoryIndex = FindTableRecord(inventoryTable, "ITEM_CODE", itemCodeValue)
+    End If
+    If inventoryIndex = 0 Then
+        report = "The selected inventory item was not found by System_Key or ITEM_CODE."
+        Exit Function
+    End If
+
+    sourceSystemKey = CellText(inventoryTable, inventoryIndex, "System_Key")
+    itemCode = CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
+    itemName = CellText(inventoryTable, inventoryIndex, "ITEM")
+    If itemName = "" Then itemName = CellText(inventoryTable, inventoryIndex, "ItemName")
+    uomValue = CellText(inventoryTable, inventoryIndex, "UOM")
+    locationValue = CellText(inventoryTable, inventoryIndex, "LOCATION")
+
+    stagingIndex = FindExistingStagingRecord(stagingTable, refNumber, sourceSystemKey)
+    If stagingIndex > 0 Then
+        receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
+        eventId = CellText(stagingTable, stagingIndex, "EventId")
+        SetCellValue stagingTable, stagingIndex, "QUANTITY", _
+                     CellNumber(stagingTable, stagingIndex, "QUANTITY") + qty
+    Else
+        receivingSystemKey = modRoleEventWriter.CreateSystemKey()
+        eventId = modRoleEventWriter.CreateSystemKey()
+        stagingIndex = FirstBlankOrNewRecord(stagingTable).Index
+        SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
+        SetCellText stagingTable, stagingIndex, "ITEMS", itemName
+        SetCellValue stagingTable, stagingIndex, "QUANTITY", qty
+        SetCellText stagingTable, stagingIndex, "System_Key", receivingSystemKey
+        SetCellText stagingTable, stagingIndex, "ITEM_CODE", itemCode
+        SetCellText stagingTable, stagingIndex, "Source_System_Key", sourceSystemKey
+        SetCellText stagingTable, stagingIndex, "EventId", eventId
+        SetCellText stagingTable, stagingIndex, "WorkflowState", "STAGED"
+    End If
+
+    aggregateIndex = FindTableRecord(aggregateTable, "System_Key", receivingSystemKey)
+    If aggregateIndex = 0 Then aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
+    PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
+                            refNumber, receivingSystemKey, eventId, _
+                            CellNumber(stagingTable, stagingIndex, "QUANTITY")
+
+    report = "Staged " & CStr(qty) & " " & uomValue & " of " & itemName & _
+             "; System_Key=" & receivingSystemKey
     StageReceivingFormItemForWorkbook = True
+    Exit Function
+Failed:
+    report = "Receiving staging failed: " & Err.Description
 End Function
+
+Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
+                                              Optional ByRef report As String = "") As Boolean
+    On Error GoTo Failed
+
+    Dim inventoryTable As ListObject
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim stagingIndex As Long
+    Dim inventoryIndex As Long
+    Dim aggregateIndex As Long
+    Dim sourceSystemKey As String
+    Dim receivingSystemKey As String
+
+    Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
+    Set stagingTable = FindTable(targetWb, TABLE_STAGING)
+    Set aggregateTable = FindTable(targetWb, TABLE_AGGREGATE)
+    If inventoryTable Is Nothing Or stagingTable Is Nothing Or aggregateTable Is Nothing Then
+        report = "Receiving inventory or staging tables are missing."
+        Exit Function
+    End If
+    If Not aggregateTable.DataBodyRange Is Nothing Then aggregateTable.DataBodyRange.Delete
+    If stagingTable.DataBodyRange Is Nothing Then
+        report = "OK|Rows=0"
+        RebuildAggregationForWorkbook = True
+        Exit Function
+    End If
+
+    For stagingIndex = 1 To stagingTable.ListRows.Count
+        receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
+        sourceSystemKey = CellText(stagingTable, stagingIndex, "Source_System_Key")
+        If receivingSystemKey = "" Then
+            report = "ReceivedTally contains a blank System_Key."
+            Exit Function
+        End If
+        inventoryIndex = FindTableRecord(inventoryTable, "System_Key", sourceSystemKey)
+        If inventoryIndex = 0 Then
+            inventoryIndex = FindTableRecord( _
+                inventoryTable, "ITEM_CODE", CellText(stagingTable, stagingIndex, "ITEM_CODE"))
+        End If
+        If inventoryIndex = 0 Then
+            report = "A staged source inventory item is no longer available."
+            Exit Function
+        End If
+        aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
+        PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
+                                CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
+                                receivingSystemKey, _
+                                CellText(stagingTable, stagingIndex, "EventId"), _
+                                CellNumber(stagingTable, stagingIndex, "QUANTITY")
+        SetCellText aggregateTable, aggregateIndex, "WorkflowState", _
+                    CellText(stagingTable, stagingIndex, "WorkflowState")
+    Next stagingIndex
+    report = "OK|Rows=" & CStr(stagingTable.ListRows.Count)
+    RebuildAggregationForWorkbook = True
+    Exit Function
+Failed:
+    report = "Receiving aggregation rebuild failed: " & Err.Description
+End Function
+
+Public Sub RebuildAggregation()
+    Dim wb As Workbook
+    Dim report As String
+
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
+    If wb Is Nothing Then Exit Sub
+    If Not RebuildAggregationForWorkbook(wb, report) Then
+        ShowReceivingMessage report, vbExclamation
+    End If
+End Sub
+
+Public Sub ClearReceivingFormStagingForWorkbook(ByVal operatorWb As Workbook)
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+
+    Set stagingTable = FindTable(operatorWb, TABLE_STAGING)
+    Set aggregateTable = FindTable(operatorWb, TABLE_AGGREGATE)
+    modReceivingPostingService.ClearReceivingStaging stagingTable, aggregateTable
+End Sub
 
 Public Sub ClearReceivingFormStaging()
     Dim wb As Workbook
-    Dim ws As Worksheet
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
+
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
     If wb Is Nothing Then Exit Sub
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If ws Is Nothing Then Exit Sub
-    On Error Resume Next
-    ClearTable ws.ListObjects(TABLE_RECEIVING)
-    ClearTable ws.ListObjects(TABLE_AGG_RECEIVED)
-    On Error GoTo 0
+    ClearReceivingFormStagingForWorkbook wb
 End Sub
-
-Private Function ResolveReceivingWorkbook(Optional ByVal preferredWb As Workbook = Nothing, Optional ByVal requiredSheet As String = "") As Workbook
-    If Not preferredWb Is Nothing Then
-        If Not preferredWb.IsAddin Then
-            If requiredSheet = "" Then
-                Set ResolveReceivingWorkbook = preferredWb
-                Exit Function
-            ElseIf Not WorkbookSheetExistsReceiving(preferredWb, requiredSheet) Is Nothing Then
-                Set ResolveReceivingWorkbook = preferredWb
-                Exit Function
-            End If
-        End If
-    End If
-
-    If Not Application.ActiveWorkbook Is Nothing Then
-        If Not Application.ActiveWorkbook.IsAddin Then
-            If requiredSheet = "" Then
-                Set ResolveReceivingWorkbook = Application.ActiveWorkbook
-                Exit Function
-            ElseIf Not WorkbookSheetExistsReceiving(Application.ActiveWorkbook, requiredSheet) Is Nothing Then
-                Set ResolveReceivingWorkbook = Application.ActiveWorkbook
-                Exit Function
-            End If
-        End If
-    End If
-End Function
-
-Private Function ResolveDiagnosticValueReceiving(ByVal diag As String, ByVal key As String) As String
-    Dim lines() As String
-    Dim i As Long
-    Dim prefix As String
-
-    prefix = key & "="
-    If Trim$(diag) = "" Then Exit Function
-
-    lines = Split(diag, vbCrLf)
-    For i = LBound(lines) To UBound(lines)
-        If StrComp(Left$(lines(i), Len(prefix)), prefix, vbTextCompare) = 0 Then
-            ResolveDiagnosticValueReceiving = Mid$(lines(i), Len(prefix) + 1)
-            Exit Function
-        End If
-    Next i
-End Function
-
-Private Function ValueOrUnknownReceiving(ByVal valueText As String) As String
-    valueText = Trim$(valueText)
-    If valueText = "" Then
-        ValueOrUnknownReceiving = "<unknown>"
-    Else
-        ValueOrUnknownReceiving = valueText
-    End If
-End Function
-
-Private Function WorkbookSheetExistsReceiving(ByVal wb As Workbook, ByVal nameOrCode As String) As Worksheet
-    Dim ws As Worksheet
-
-    If wb Is Nothing Then Exit Function
-    For Each ws In wb.Worksheets
-        If StrComp(ws.Name, nameOrCode, vbTextCompare) = 0 _
-           Or StrComp(ws.CodeName, nameOrCode, vbTextCompare) = 0 Then
-            Set WorkbookSheetExistsReceiving = ws
-            Exit Function
-        End If
-    Next ws
-End Function
-
-Private Sub ArrangeReceivingSurface(ByVal wb As Workbook)
-    Dim ws As Worksheet
-    Dim lo As ListObject
-
-    If wb Is Nothing Then Exit Sub
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If ws Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    Set lo = ws.ListObjects(TABLE_RECEIVING)
-    On Error GoTo 0
-    MoveListObjectToAddressReceiving lo, RECV_LAYOUT_TALLY_ADDR
-
-    On Error Resume Next
-    Set lo = ws.ListObjects(TABLE_AGG_RECEIVED)
-    On Error GoTo 0
-    MoveListObjectToAddressReceiving lo, RECV_LAYOUT_AGG_ADDR
-
-    On Error Resume Next
-    Set lo = ws.ListObjects(TABLE_INV_RECEIVING)
-    On Error GoTo 0
-    MoveListObjectToAddressReceiving lo, RECV_LAYOUT_INV_ADDR
-End Sub
-
-Private Sub MoveListObjectToAddressReceiving(ByVal lo As ListObject, ByVal addressText As String)
-    If lo Is Nothing Then Exit Sub
-    MoveListObjectToRowColReceiving lo, lo.Parent.Range(addressText).Row, lo.Parent.Range(addressText).Column
-End Sub
-
-Private Sub MoveListObjectToRowColReceiving(ByVal lo As ListObject, ByVal targetRow As Long, ByVal targetCol As Long)
-    Dim dest As Range
-
-    If lo Is Nothing Then Exit Sub
-    If targetRow < 1 Or targetCol < 1 Then Exit Sub
-    If lo.Range.Row = targetRow And lo.Range.Column = targetCol Then Exit Sub
-
-    Set dest = lo.Parent.Cells(targetRow, targetCol)
-
-    On Error Resume Next
-    lo.Range.Cut Destination:=dest
-    ClearExcelClipboardStateReceiving
-    Err.Clear
-    On Error GoTo 0
-End Sub
-
-Private Sub ClearExcelClipboardStateReceiving()
-    On Error Resume Next
-    If Application.CutCopyMode <> False Then Application.CutCopyMode = False
-    On Error GoTo 0
-End Sub
-
-' ==== dynamic search form (ReceivedTally) =====
-Public Sub ShowReceivingDynamicItemSearch(ByVal targetCell As Range)
-    Debug.Print "ShowDynamicItemSearch called, target:", targetCell.Address
-    
-    If targetCell Is Nothing Then
-        Debug.Print "  targetCell is Nothing, exiting"
-        Exit Sub
-    End If
-    RefreshReadModelForPicker targetCell.Worksheet.Parent
-
-    If mDynSearch Is Nothing Then
-        Debug.Print "  mDynSearch is Nothing, creating new cDynItemSearch"
-        On Error GoTo ErrHandler
-        Set mDynSearch = CreateDynItemSearch()
-        Debug.Print "  New cDynItemSearch succeeded"
-    Else
-        Debug.Print "  Reusing existing cDynItemSearch instance"
-    End If
-
-    mDynSearch.UseTemplateForm "ufReceivingItemSearch"
-    Debug.Print "  Calling mDynSearch.ShowForCell"
-    mDynSearch.ShowForCell targetCell
-    Debug.Print "  Returned from ShowForCell"
-    Exit Sub
-
-ErrHandler:
-    Debug.Print "  ERROR creating cDynItemSearch:", Err.Number, Err.Description
-    Debug.Print "  Dynamic receiving search unavailable"
-    MsgBox "Receiving item picker is unavailable: " & Err.Description, vbExclamation
-End Sub
-
-Private Sub RefreshReadModelForPicker(ByVal wb As Workbook)
-    Dim report As String
-
-    On Error Resume Next
-    If wb Is Nothing Then Exit Sub
-    If wb.IsAddin Then Exit Sub
-    Call modOperatorReadModel.RefreshInventoryReadModelForWorkbook(wb, "", "LOCAL", report)
-    On Error GoTo 0
-End Sub
-
-Public Sub HandleReceivingSelectionChange(ByVal target As Range)
-    If target Is Nothing Then Exit Sub
-    If target.Cells.CountLarge > 1 Then Exit Sub
-    If target.Worksheet Is Nothing Then Exit Sub
-    If target.Worksheet.Parent Is Nothing Then Exit Sub
-    If target.Worksheet.Parent.IsAddin Then Exit Sub
-    If StrComp(target.Worksheet.Name, SHEET_RECEIVING, vbTextCompare) <> 0 Then Exit Sub
-
-    Dim lo As ListObject
-    Dim itemsCol As ListColumn
-
-    On Error Resume Next
-    Set lo = target.ListObject
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Sub
-    If StrComp(lo.Name, TABLE_RECEIVING, vbTextCompare) <> 0 Then Exit Sub
-
-    On Error Resume Next
-    Set itemsCol = lo.ListColumns("ITEMS")
-    On Error GoTo 0
-    If itemsCol Is Nothing Then Exit Sub
-    If target.Column <> itemsCol.Range.Column Then Exit Sub
-    If target.Row <= lo.HeaderRowRange.Row Then Exit Sub
-
-    Set gSelectedCell = target
-    ShowReceivingDynamicItemSearch target
-End Sub
-
-Public Sub HandleReceivingSheetChange(ByVal target As Range)
-    On Error GoTo ExitHandler
-    If target Is Nothing Then Exit Sub
-    If target.Cells.CountLarge > 50 Then Exit Sub
-    If target.Worksheet Is Nothing Then Exit Sub
-    If target.Worksheet.Parent Is Nothing Then Exit Sub
-    If target.Worksheet.Parent.IsAddin Then Exit Sub
-    If StrComp(target.Worksheet.Name, SHEET_RECEIVING, vbTextCompare) <> 0 Then Exit Sub
-
-    Dim lo As ListObject
-    Dim qtyCol As ListColumn
-    Dim rngHit As Range
-    Dim cel As Range
-
-    On Error Resume Next
-    Set lo = target.Worksheet.ListObjects(TABLE_RECEIVING)
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    Set qtyCol = lo.ListColumns("QUANTITY")
-    On Error GoTo 0
-    If qtyCol Is Nothing Then Exit Sub
-
-    Set rngHit = Application.Intersect(target, qtyCol.DataBodyRange)
-    If rngHit Is Nothing Then Exit Sub
-
-    Application.EnableEvents = False
-    For Each cel In rngHit.Cells
-        Dim rowIdx As Long
-        rowIdx = cel.Row - lo.DataBodyRange.Row + 1
-        SyncQuantityFromStaging rowIdx, NzDbl(cel.Value)
-    Next cel
-ExitHandler:
-    Application.EnableEvents = True
-End Sub
-
-' =========================
-' Confirm Writes sub-system
-' -------------------------
-' - AggregateReceived already holds the summed QUANTITY per invSys ROW and concatenated REF_NUMBER for display.
-' - ConfirmWrites queues/applies receive events, then refreshes the operator invSys read model from snapshot.
-' - ReceivedLog is per REF: REF/ITEM/QUANTITY from staging; ROW/UOM/LOCATION from AggregateReceived; SNAPSHOT_ID/ENTRY_DATE generated.
-' - AggregateReceived is treated as read-only for the user; code clears it only after a successful Confirm.
-' =========================
-
-' Called by frmItemSearch after user picks an item
-Public Sub AddOrMergeFromSearch( _
-    ByVal refNumber As String, _
-    ByVal itemName As String, _
-    ByVal itemCode As String, _
-    ByVal qty As Double, _
-    ByVal vendors As String, _
-    ByVal vendorCode As String, _
-    ByVal descr As String, _
-    ByVal uom As String, _
-    ByVal location As String, _
-    ByVal invRow As Long, _
-    Optional ByVal stagingRow As Long = 0)
-
-    Dim ws As Worksheet: Set ws = SheetExists("ReceivedTally")
-    If ws Is Nothing Then Exit Sub
-
-    Dim rt As ListObject, agg As ListObject
-    Set rt = ws.ListObjects("ReceivedTally")
-    Set agg = ws.ListObjects("AggregateReceived")
-
-    ' Insert/merge into ReceivedTally (fast entry: ITEMS + QUANTITY + REF_NUMBER)
-    MergeIntoReceivedTally rt, refNumber, itemName, qty
-
-    ' Insert/merge into AggregateReceived (detailed)
-    MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
-
-    ' Track the invRow for this staging row so quantity edits can sync correctly
-    If stagingRow > 0 Then
-        EnsureRowMap
-        mRowMap(CStr(stagingRow)) = Array(itemCode, invRow, refNumber)
-    End If
-End Sub
-
-Public Sub RebuildAggregation()
-    Dim report As String
-    Call RebuildAggregationForWorkbook(Application.ActiveWorkbook, report)
-End Sub
-
-Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, Optional ByRef report As String = "") As Boolean
-    Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim rt As ListObject
-    Dim agg As ListObject
-    Dim catWs As Worksheet
-    Dim catLo As ListObject
-
-    Set wb = ResolveReceivingWorkbook(targetWb, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then report = "Receiving workbook not resolved.": Exit Function
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If ws Is Nothing Then report = "ReceivedTally sheet not found.": Exit Function
-    On Error Resume Next
-    Set rt = ws.ListObjects(TABLE_RECEIVING)
-    Set agg = ws.ListObjects(TABLE_AGG_RECEIVED)
-    On Error GoTo 0
-    If rt Is Nothing Or agg Is Nothing Then report = "Receiving staging tables not found.": Exit Function
-    ClearTable agg
-
-    If rt.DataBodyRange Is Nothing Then report = "ReceivedTally has no rows to rebuild.": RebuildAggregationForWorkbook = True: Exit Function
-    ' If staging has no ROW column, we cannot rebuild by ROW; skip quietly
-    Dim cRowRT As Long
-    cRowRT = ColumnIndex(rt, "ROW")
-    If cRowRT = 0 Then
-        report = "ReceivedTally is missing ROW; AggregateReceived could not be rebuilt."
-        Exit Function
-    End If
-    Set catWs = WorkbookSheetExistsReceiving(wb, "InventoryManagement")
-    If Not catWs Is Nothing Then
-        On Error Resume Next
-        Set catLo = catWs.ListObjects("invSys")
-        On Error GoTo 0
-    End If
-
-    Dim arr, r As Long
-    arr = rt.DataBodyRange.value
-    For r = 1 To UBound(arr, 1)
-        Dim itemName As String, qty As Double
-        itemName = NzStr(arr(r, ColumnIndex(rt, "ITEMS")))
-        qty = NzDbl(arr(r, ColumnIndex(rt, "QUANTITY")))
-        Dim refNumber As String
-        refNumber = NzStr(arr(r, ColumnIndex(rt, "REF_NUMBER")))
-
-        ' If the staging row has a ROW column, use that exact invSys row; otherwise skip
-        Dim invRow As Long
-        invRow = NzLng(arr(r, cRowRT))
-        If invRow > 0 Then
-            ' We still need catalog details to display; fetch strictly by ROW
-            Dim itemCode As String, vendors As String, vendorCode As String
-            Dim descr As String, uom As String, location As String
-            LookupInvSysByROW catLo, invRow, itemCode, vendors, vendorCode, descr, itemName, uom, location
-            MergeIntoAggregate agg, refNumber, itemCode, vendors, vendorCode, descr, itemName, uom, qty, location, invRow
-        End If
-    Next r
-    ' Ensure quantity shows as number, not date
-    On Error Resume Next
-    agg.ListColumns("QUANTITY").DataBodyRange.NumberFormat = "0.00"
-    rt.ListColumns("QUANTITY").DataBodyRange.NumberFormat = "0.00"
-    On Error GoTo 0
-    report = "OK"
-    RebuildAggregationForWorkbook = True
-End Function
 
 Public Sub ConfirmWrites()
-    On Error GoTo ErrHandler
     Dim wb As Workbook
-    Dim prevEvents As Boolean
-    Dim prevScreenUpdating As Boolean
-    Dim prevAlerts As Boolean
-    Dim prevDisplayStatusBar As Boolean
-    Dim prevCalculation As Variant
-    Dim uiSuppressed As Boolean
-    Dim queueRuntimeReport As String
-    Dim queuePendingReport As String
-    Dim queueInspectError As String
-    Dim queuePendingCount As Long
-    Dim queueMatchingPendingCount As Long
-    Dim queuedEventIdsCsv As String
-    Dim queuedToServer As Boolean
-    Dim runtimeCompleted As Boolean
-    Dim cleanupWarning As String
+    Dim report As String
 
     mLastConfirmSucceeded = False
     mLastConfirmStatus = "Confirm Writes did not complete."
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
+    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
     If wb Is Nothing Then
-        mLastConfirmStatus = "Activate a receiving operator workbook with the ReceivedTally sheet before confirming writes."
-        MsgBox "Activate a receiving operator workbook with the ReceivedTally sheet before confirming writes.", vbExclamation, "invSys Receiving"
+        mLastConfirmStatus = "Activate a Receiving operator workbook before confirming writes."
+        ShowReceivingMessage mLastConfirmStatus, vbExclamation
         Exit Sub
     End If
+    mLastConfirmSucceeded = modReceivingPostingService.ExecuteConfirmWrites(wb, report)
+    mLastConfirmStatus = report
+    If Not mLastConfirmSucceeded Then ShowReceivingMessage report, vbExclamation
+End Sub
 
-    If Not modRoleUiAccess.RequireCurrentUserCapability("RECEIVE_POST") Then
-        mLastConfirmStatus = "Current user is not permitted to confirm receiving writes."
-        Exit Sub
-    End If
-    mRedoReady = False
-    Dim wsRT As Worksheet: Set wsRT = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
-    Dim wsAgg As Worksheet: Set wsAgg = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
-    Dim wsInv As Worksheet: Set wsInv = WorkbookSheetExistsReceiving(wb, "InventoryManagement")
-    Dim wsLog As Worksheet: Set wsLog = WorkbookSheetExistsReceiving(wb, "ReceivedLog")
-    If wsRT Is Nothing Or wsAgg Is Nothing Or wsInv Is Nothing Or wsLog Is Nothing Then Exit Sub
-
-    Dim agg As ListObject: Set agg = wsAgg.ListObjects("AggregateReceived")
-    Dim inv As ListObject: Set inv = wsInv.ListObjects("invSys")
-    Dim logTbl As ListObject: Set logTbl = wsLog.ListObjects("ReceivedLog")
-    Dim rt As ListObject: Set rt = wsRT.ListObjects("ReceivedTally")
-    If agg Is Nothing Or inv Is Nothing Or logTbl Is Nothing Or rt Is Nothing Then Exit Sub
-    If agg.DataBodyRange Is Nothing And Not rt.DataBodyRange Is Nothing Then
-        If Not RebuildAggregationForWorkbook(wb, queueRuntimeReport) Then
-            mLastConfirmStatus = queueRuntimeReport
-            MsgBox "Cannot confirm:" & vbCrLf & queueRuntimeReport, vbExclamation, "invSys Receiving"
-            Exit Sub
-        End If
-    End If
-    If agg.DataBodyRange Is Nothing Then
-        mLastConfirmStatus = "AggregateReceived has no rows to confirm."
-        MsgBox "Cannot confirm:" & vbCrLf & mLastConfirmStatus, vbExclamation, "invSys Receiving"
-        Exit Sub
-    End If
-    modPerfLog.BeginTransaction "ConfirmWrites"
-
-    ' Validate and collect rows
-    Dim arr, r As Long, errs As String
-    arr = agg.DataBodyRange.value
-    Dim cols As Object: Set cols = AggColMap(agg)
-    Dim refNumRT As String
-    Dim itemRT As String
-    Dim qtyRT As Double
-
-    For r = 1 To UBound(arr, 1)
-        If NzStr(arr(r, cols("ITEM"))) = "" And NzStr(arr(r, cols("ITEM_CODE"))) = "" Then errs = errs & "Row " & r & ": ITEM/ITEM_CODE missing" & vbCrLf
-        If NzStr(arr(r, cols("UOM"))) = "" Then errs = errs & "Row " & r & ": UOM missing" & vbCrLf
-        If NzDbl(arr(r, cols("QUANTITY"))) <= 0 Then errs = errs & "Row " & r & ": QUANTITY <= 0" & vbCrLf
-        If NzStr(arr(r, cols("ITEM_CODE"))) = "" Then errs = errs & "Row " & r & ": ITEM_CODE missing" & vbCrLf
-    Next
-    If errs <> "" Then
-        mLastConfirmStatus = "Validation failed."
-        modPerfLog.EndTransaction "ValidationFailed"
-        MsgBox "Cannot confirm:" & vbCrLf & errs, vbExclamation
-        GoTo CleanExit
-    End If
-    modPerfLog.MarkSegment "Validation"
-
-    queuePendingReport = modRoleEventWriter.DescribeInboxPendingRows(EVENT_TYPE_RECEIVE, "", "", "", queuePendingCount, queueMatchingPendingCount, queueInspectError)
-    If queueInspectError <> "" Then
-        mLastConfirmStatus = "Receiving inbox could not be inspected."
-        modPerfLog.EndTransaction "InboxInspectFailed"
-        MsgBox "Cannot confirm because the receiving inbox could not be inspected." & vbCrLf & queueInspectError, vbCritical, "invSys Receiving"
-        GoTo CleanExit
-    End If
-    If queuePendingCount > 0 Then
-        Call ProcessQueuedReceiveEventsRuntime(wb, False, queueRuntimeReport)
-        queuePendingReport = modRoleEventWriter.DescribeInboxPendingRows(EVENT_TYPE_RECEIVE, "", "", "", queuePendingCount, queueMatchingPendingCount, queueInspectError)
-        If queueInspectError <> "" Then
-            mLastConfirmStatus = "Receiving inbox could not be inspected after runtime processing."
-            modPerfLog.EndTransaction "InboxInspectFailedAfterRuntime"
-            MsgBox "Cannot confirm because the receiving inbox could not be inspected after runtime processing." & vbCrLf & queueInspectError, vbCritical, "invSys Receiving"
-            GoTo CleanExit
-        End If
-    End If
-    If queuePendingCount > 0 Then
-        mLastConfirmStatus = "Receiving inbox still has pending rows."
-        modPerfLog.EndTransaction "PendingInboxBlocked"
-        MsgBox "Cannot confirm while the receiving inbox still has pending rows." & vbCrLf & _
-               "Run Connect Server/Confirm Writes again after the processor clears the station inbox. If this stays pending, use Admin or Runtime Context to inspect the inbox path below." & vbCrLf & vbCrLf & _
-               queuePendingReport, vbExclamation, "invSys Receiving"
-        GoTo CleanExit
-    End If
-
-    prevEvents = Application.EnableEvents
-    prevScreenUpdating = Application.ScreenUpdating
-    prevAlerts = Application.DisplayAlerts
-    prevDisplayStatusBar = Application.DisplayStatusBar
-    prevCalculation = Application.Calculation
-    modUiQuiet.BeginQuietUi wb
-    Application.EnableEvents = False
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.DisplayStatusBar = False
-    Application.Calculation = xlCalculationManual
-    uiSuppressed = True
-
-    If Not QueueReceiveEventsFromAggregate(agg, errs, queuedEventIdsCsv) Then
-        If uiSuppressed Then
-            If IsNumeric(prevCalculation) Then
-                Application.Calculation = CLng(prevCalculation)
-            End If
-            Application.EnableEvents = prevEvents
-            Application.ScreenUpdating = prevScreenUpdating
-            Application.DisplayAlerts = prevAlerts
-            Application.DisplayStatusBar = prevDisplayStatusBar
-            modUiQuiet.EndQuietUi
-            uiSuppressed = False
-        End If
-        mLastConfirmStatus = errs
-        modPerfLog.EndTransaction "QueueWriteFailed"
-        MsgBox "Cannot confirm:" & vbCrLf & errs, vbCritical
-        GoTo CleanExit
-    End If
-    modPerfLog.MarkSegment "QueueWrite"
-    queuedToServer = True
-
-    If Not ProcessQueuedReceiveEventsRuntime(wb, False, queueRuntimeReport) Then
-        mLastConfirmStatus = queueRuntimeReport
-        modPerfLog.LogDiagnostic "RECEIVE-RUNTIME", "Result=FAILED_AFTER_QUEUE|Workbook=" & wb.Name & "|Report=" & queueRuntimeReport
-        MsgBox "Receive rows were queued, but runtime processing or read-model refresh did not complete cleanly:" & vbCrLf & _
-               queueRuntimeReport, vbExclamation, "invSys Receiving"
-        GoTo CleanExit
-    End If
-    modPerfLog.MarkSegment "RuntimeProcess"
-    runtimeCompleted = True
-    mLastConfirmSucceeded = True
-    mLastConfirmStatus = "Confirm Writes succeeded."
-
-    ' Capture undo snapshot
-    CaptureUndoState rt, agg, inv, logTbl
-
-    Dim snapshotId As String: snapshotId = NewGuid()
-    Dim entryDate As Date: entryDate = Now
-
-    ' Build ref -> (ITEM_CODE, ROW, UOM, LOCATION, ITEM) map from AggregateReceived for accurate logging
-    Dim refMap As Object: Set refMap = CreateObject("Scripting.Dictionary")
-    For r = 1 To UBound(arr, 1)
-        Dim mapCode As String: mapCode = NzStr(arr(r, cols("ITEM_CODE")))
-        Dim mapRow As Long: mapRow = NzLng(arr(r, cols("ROW")))
-        If mapCode <> "" Or mapRow > 0 Then
-            Dim mapRefs As Variant
-            mapRefs = Split(NzStr(arr(r, cols("REF_NUMBER"))), ",")
-            Dim mapUOM As String: mapUOM = NzStr(arr(r, cols("UOM")))
-            Dim mapLoc As String: mapLoc = NzStr(arr(r, cols("LOCATION")))
-            Dim mapItem As String: mapItem = NzStr(arr(r, cols("ITEM")))
-            Dim rf As Variant
-            For Each rf In mapRefs
-                rf = Trim(CStr(rf))
-                If rf <> "" Then
-                    refMap(rf) = Array(mapCode, mapRow, mapUOM, mapLoc, mapItem)
-                End If
-            Next rf
-        End If
-    Next
-
-    ' Local logs are useful operator history, but the queued event is already authoritative.
-    ' Do not leave staging uncleared just because the optional local log path has a workbook-shape issue.
-    Dim localLogError As String
-    On Error Resume Next
-    If Not rt Is Nothing And Not rt.DataBodyRange Is Nothing Then
-        Dim rtArr As Variant: rtArr = rt.DataBodyRange.value
-        Dim rtCols As Object: Set rtCols = CreateObject("Scripting.Dictionary")
-        rtCols("REF_NUMBER") = ColumnIndex(rt, "REF_NUMBER")
-        rtCols("ITEMS") = ColumnIndex(rt, "ITEMS")
-        rtCols("QUANTITY") = ColumnIndex(rt, "QUANTITY")
-        Dim rrt As Long
-        For rrt = 1 To UBound(rtArr, 1)
-            refNumRT = Trim$(NzStr(rtArr(rrt, rtCols("REF_NUMBER"))))
-            itemRT = NzStr(rtArr(rrt, rtCols("ITEMS")))
-            qtyRT = NzDbl(rtArr(rrt, rtCols("QUANTITY")))
-            If refNumRT = "" And itemRT = "" And qtyRT = 0 Then GoTo NextRt
-
-            Dim logRow As Long, logUOM As String, logLoc As String, logItem As String
-            Dim logCode As String
-            If refMap.Exists(refNumRT) Then
-                Dim mArr As Variant: mArr = refMap(refNumRT)
-                logCode = NzStr(mArr(0))
-                logRow = NzLng(mArr(1))
-                logUOM = NzStr(mArr(2))
-                logLoc = NzStr(mArr(3))
-                logItem = NzStr(mArr(4))
-                If logItem = "" Then logItem = itemRT
-            Else
-                Dim tmpCode As String, tmpVend As String, tmpVCode As String, tmpDesc As String
-                LookupInvSys wsInv.ListObjects("invSys"), itemRT, tmpCode, tmpVend, tmpVCode, tmpDesc, logUOM, logLoc, logRow
-                logItem = itemRT
-                logCode = tmpCode
-            End If
-
-            logRow = ResolveInvRowForReceiveLog(inv, logCode, logItem, logRow)
-            AppendLogRowFromRT logTbl, refNumRT, logItem, qtyRT, logUOM, logLoc, logCode, logRow, snapshotId, entryDate
-NextRt:
-        Next rrt
-    End If
-    If Err.Number <> 0 Then
-        localLogError = Err.Description
-        Err.Clear
-    End If
-    On Error GoTo ErrHandler
-    If localLogError <> "" Then modPerfLog.LogDiagnostic "RECEIVE-LOCAL-LOG", "Result=SKIPPED|Workbook=" & wb.Name & "|Error=" & localLogError
-    modPerfLog.MarkSegment "LocalLogUpdate"
-
-    ' Clear staging after the authoritative receive was applied. Local cleanup is best-effort.
-    If Not TryClearTableReceiving(wsRT.ListObjects("ReceivedTally"), cleanupWarning) Then
-        modPerfLog.LogDiagnostic "RECEIVE-CLEANUP", "Result=RECEIVED_TALLY_CLEAR_SKIPPED|Workbook=" & wb.Name & "|Error=" & cleanupWarning
-    End If
-    If Not TryClearTableReceiving(agg, cleanupWarning) Then
-        modPerfLog.LogDiagnostic "RECEIVE-CLEANUP", "Result=AGGREGATE_CLEAR_SKIPPED|Workbook=" & wb.Name & "|Error=" & cleanupWarning
-    End If
-    modPerfLog.MarkSegment "ClearStaging"
-    On Error Resume Next
-    modReceivingInit.ClearReceivingReadinessForWorkbook wb
-    If Err.Number <> 0 Then
-        modPerfLog.LogDiagnostic "RECEIVE-READINESS", "Result=CLEAR_SKIPPED|Workbook=" & wb.Name & "|ErrorNumber=" & CStr(Err.Number) & "|Error=" & Err.Description
-        Err.Clear
-    End If
-    On Error GoTo ErrHandler
-    mRedoReady = True
-    GoTo CleanExit
-
-ErrHandler:
-    Dim errNumber As Long
-    Dim errDescription As String
-    Dim errSource As String
-
-    errNumber = Err.Number
-    errDescription = Err.Description
-    errSource = Err.Source
-    If errDescription = "" Then errDescription = "No VBA error description was provided."
-    mLastConfirmStatus = errDescription
-
-    On Error Resume Next
-    If uiSuppressed Then
-        Application.Calculation = prevCalculation
-        Application.EnableEvents = prevEvents
-        Application.ScreenUpdating = prevScreenUpdating
-        Application.DisplayAlerts = prevAlerts
-        Application.DisplayStatusBar = prevDisplayStatusBar
-        modUiQuiet.EndQuietUi
-        uiSuppressed = False
-    End If
-    On Error GoTo 0
-    On Error Resume Next
-    modPerfLog.EndTransaction "Error=" & CStr(errNumber) & "|" & errDescription
-    modPerfLog.LogDiagnostic "RECEIVE-CONFIRM", "Result=ERROR|Number=" & CStr(errNumber) & "|Source=" & errSource & "|Description=" & errDescription
-    If runtimeCompleted Then
-        On Error GoTo 0
-        GoTo CleanExit
-    End If
-    MsgBox "Error in ConfirmWrites:" & vbCrLf & _
-           "Number: " & CStr(errNumber) & vbCrLf & _
-           "Source: " & errSource & vbCrLf & _
-           "Description: " & errDescription, vbCritical
-    If Not queuedToServer Then
-        If Not wsInv Is Nothing Then UndoInvDeltas wsInv.ListObjects("invSys")
-        If Not wsLog Is Nothing Then DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
-    End If
-    On Error GoTo 0
-    Exit Sub
-
-CleanExit:
-    If uiSuppressed Then
-        If IsNumeric(prevCalculation) Then
-            Application.Calculation = CLng(prevCalculation)
-        End If
-        Application.EnableEvents = prevEvents
-        Application.ScreenUpdating = prevScreenUpdating
-        Application.DisplayAlerts = prevAlerts
-        Application.DisplayStatusBar = prevDisplayStatusBar
-        modUiQuiet.EndQuietUi
-    End If
-    If modPerfLog.IsTransactionActive() Then modPerfLog.EndTransaction "OK"
+Public Sub RecordConfirmWritesResult(ByVal succeeded As Boolean, ByVal statusText As String)
+    mLastConfirmSucceeded = succeeded
+    mLastConfirmStatus = statusText
 End Sub
 
 Public Function LastConfirmWritesSucceeded() As Boolean
@@ -1039,1137 +432,285 @@ Public Function LastConfirmWritesStatus() As String
     LastConfirmWritesStatus = mLastConfirmStatus
 End Function
 
-Public Function QueueReceiveEventsFromCurrentWorkbook(ByRef errorMessage As String) As Boolean
-    Dim wb As Workbook
-    Dim wsAgg As Worksheet
-    Dim agg As ListObject
-
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then
-        errorMessage = "Receiving workbook not resolved."
-        Exit Function
-    End If
-
-    If Not modRoleUiAccess.CanCurrentUserPerformCapability("RECEIVE_POST", "", "", "", errorMessage) Then Exit Function
-
-    Set wsAgg = WorkbookSheetExistsReceiving(wb, "ReceivedTally")
-    If wsAgg Is Nothing Then
-        errorMessage = "ReceivedTally sheet not found."
-        Exit Function
-    End If
-
-    On Error Resume Next
-    Set agg = wsAgg.ListObjects("AggregateReceived")
-    On Error GoTo 0
-    If agg Is Nothing Then
-        errorMessage = "AggregateReceived table not found."
-        Exit Function
-    End If
-
-    QueueReceiveEventsFromCurrentWorkbook = QueueReceiveEventsFromAggregate(agg, errorMessage)
-End Function
-
-Public Function ValidateQueueReceiveEventsFromCurrentWorkbook() As String
-    Dim errorMessage As String
-
-    If QueueReceiveEventsFromCurrentWorkbook(errorMessage) Then
-        ValidateQueueReceiveEventsFromCurrentWorkbook = "OK"
-    Else
-        ValidateQueueReceiveEventsFromCurrentWorkbook = errorMessage
-    End If
-End Function
-
-Private Function ProcessQueuedReceiveEventsRuntime(Optional ByVal operatorWb As Workbook = Nothing, _
-                                                   Optional ByVal showRuntimeMessages As Boolean = True, _
-                                                   Optional ByRef runtimeReportOut As String = "") As Boolean
-    Dim warehouseId As String
-    Dim runtimeReport As String
-    Dim wb As Workbook
-    Dim target As WarehouseTarget
-
-    Set target = modNasConnection.GetCurrentTarget()
-    If Not target Is Nothing Then warehouseId = Trim$(target.WarehouseId)
-    If warehouseId = "" Then warehouseId = modConfig.GetWarehouseId()
-    If warehouseId = "" Then
-        runtimeReportOut = "WarehouseId could not be resolved for runtime processing."
-        Exit Function
-    End If
-
-    Set wb = ResolveReceivingWorkbook(operatorWb, SHEET_RECEIVING)
-    If wb Is Nothing Then Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook, SHEET_RECEIVING)
-    If wb Is Nothing Then
-        runtimeReportOut = "Receiving operator workbook could not be resolved."
-        Exit Function
-    End If
-
-    If Not modOperatorReadModel.RunBatchAndRefreshOperatorWorkbook(wb, warehouseId, "LOCAL", runtimeReport) Then
-        runtimeReportOut = runtimeReport
-        modPerfLog.LogDiagnostic "RECEIVE-RUNTIME", "Result=FAIL|Workbook=" & wb.Name & "|WarehouseId=" & warehouseId & "|Report=" & runtimeReport
-        If showRuntimeMessages And Not modUiQuiet.QuietUiIsActive() Then
-            MsgBox "Local receive writes succeeded, but runtime processing or read-model refresh did not complete cleanly:" & vbCrLf & runtimeReport, vbExclamation
-        Else
-            Debug.Print "Receive runtime warning: " & runtimeReport
-        End If
-    ElseIf runtimeReport <> "" Then
-        runtimeReportOut = runtimeReport
-        modPerfLog.LogDiagnostic "RECEIVE-RUNTIME", "Result=OK|Workbook=" & wb.Name & "|WarehouseId=" & warehouseId & "|Report=" & runtimeReport
-        If showRuntimeMessages And Not modUiQuiet.QuietUiIsActive() Then
-            MsgBox runtimeReport, vbInformation
-        Else
-            Debug.Print "Receive runtime report: " & runtimeReport
-        End If
-        ProcessQueuedReceiveEventsRuntime = True
-    Else
-        ProcessQueuedReceiveEventsRuntime = True
-    End If
-End Function
-
-Private Sub RefreshReceivingUiAccess(ByVal ws As Worksheet)
-    If ws Is Nothing Then Exit Sub
-    modRoleUiAccess.ApplyShapeCapability ws, "btnConfirmWrites", "RECEIVE_POST"
+Public Sub ShowReceivingDynamicItemSearch(ByVal targetCell As Range)
+    ' The supported Receiving search is hosted by frmReceiving.
 End Sub
 
-Private Sub EnsureReceivingButtons(Optional ByVal targetWb As Workbook = Nothing)
-    Const BTN_TOP As Double = 6
-    Const BTN_HEIGHT As Double = 20
-    Const BTN_WIDTH As Double = 118
-    Const BTN_SPACING As Double = 8
-
-    Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim anchor As Range
-    Dim leftPos As Double
-
-    Set wb = ResolveReceivingWorkbook(targetWb, SHEET_RECEIVING)
-    If wb Is Nothing Then Exit Sub
-    Set ws = WorkbookSheetExistsReceiving(wb, SHEET_RECEIVING)
-    If ws Is Nothing Then Exit Sub
-
-    DeleteStaleReceivingButtons ws
-
-    Set anchor = ws.Range("C1")
-    leftPos = anchor.Left
-    EnsureReceivingButton ws, "btnConfirmWrites", "Confirm Writes", "modTS_Received.ConfirmWrites", leftPos, BTN_TOP, BTN_WIDTH, BTN_HEIGHT
-    leftPos = leftPos + BTN_WIDTH + BTN_SPACING
-    EnsureReceivingButton ws, "btnUndoMacro", "Undo", "modTS_Received.MacroUndo", leftPos, BTN_TOP, 82, BTN_HEIGHT
-    leftPos = leftPos + 82 + BTN_SPACING
-    EnsureReceivingButton ws, "btnRedoMacro", "Redo", "modTS_Received.MacroRedo", leftPos, BTN_TOP, 82, BTN_HEIGHT
+Public Sub HandleReceivingSelectionChange(ByVal target As Range)
+    ' Receiving support sheets are projections; operator selection has no write authority.
 End Sub
 
-Private Sub EnsureReceivingButton(ByVal ws As Worksheet, _
-                                  ByVal shapeName As String, _
-                                  ByVal caption As String, _
-                                  ByVal onActionMacro As String, _
-                                  ByVal leftPos As Double, _
-                                  ByVal topPos As Double, _
-                                  Optional ByVal widthPts As Double = 118, _
-                                  Optional ByVal heightPts As Double = 20)
-    Dim shp As Shape
-    Dim resolvedOnAction As String
+Public Sub HandleReceivingSheetChange(ByVal target As Range)
+    On Error GoTo CleanExit
 
-    If ws Is Nothing Then Exit Sub
-    If widthPts < 20 Then widthPts = 118
-    If heightPts < 16 Then heightPts = 20
-    resolvedOnAction = ResolveOnActionMacroReceiving(onActionMacro)
+    Dim stagingTable As ListObject
+    Dim qtyColumn As ListColumn
+    Dim changedCells As Range
+    Dim cell As Range
+    Dim recordIndex As Long
 
-    On Error Resume Next
-    Set shp = ws.Shapes(shapeName)
-    On Error GoTo 0
+    If target Is Nothing Then Exit Sub
+    Set stagingTable = target.ListObject
+    If stagingTable Is Nothing Then Exit Sub
+    If StrComp(stagingTable.Name, TABLE_STAGING, vbTextCompare) <> 0 Then Exit Sub
+    Set qtyColumn = stagingTable.ListColumns("QUANTITY")
+    If qtyColumn.DataBodyRange Is Nothing Then Exit Sub
+    Set changedCells = Application.Intersect(target, qtyColumn.DataBodyRange)
+    If changedCells Is Nothing Then Exit Sub
 
-    If shp Is Nothing Then
-        Set shp = ws.Shapes.AddFormControl(xlButtonControl, leftPos, topPos, widthPts, heightPts)
-        shp.Name = shapeName
-    Else
-        shp.Left = leftPos
-        shp.Top = topPos
-        shp.Width = widthPts
-        shp.Height = heightPts
-    End If
-
-    On Error Resume Next
-    shp.TextFrame.Characters.Text = caption
-    shp.OnAction = resolvedOnAction
-    On Error GoTo 0
+    For Each cell In changedCells.Cells
+        recordIndex = cell.Row - stagingTable.DataBodyRange.Row + 1
+        SyncQuantityFromStaging recordIndex, NzDbl(cell.Value)
+    Next cell
+CleanExit:
 End Sub
 
-Private Function ResolveOnActionMacroReceiving(ByVal onActionMacro As String) As String
-    onActionMacro = Trim$(onActionMacro)
-    If onActionMacro = "" Then Exit Function
-    If InStr(1, onActionMacro, "!", vbTextCompare) > 0 Then
-        ResolveOnActionMacroReceiving = onActionMacro
-    Else
-        ResolveOnActionMacroReceiving = "'" & ThisWorkbook.Name & "'!" & onActionMacro
-    End If
+Public Sub SyncQuantityFromStaging(ByVal stagingRecordIndex As Long, _
+                                   ByVal newQty As Double)
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim systemKey As String
+    Dim aggregateIndex As Long
+
+    If stagingRecordIndex <= 0 Then Exit Sub
+    Set stagingTable = FindTable(Application.ActiveWorkbook, TABLE_STAGING)
+    Set aggregateTable = FindTable(Application.ActiveWorkbook, TABLE_AGGREGATE)
+    If stagingTable Is Nothing Or aggregateTable Is Nothing Then Exit Sub
+    If stagingRecordIndex > stagingTable.ListRows.Count Then Exit Sub
+    systemKey = CellText(stagingTable, stagingRecordIndex, "System_Key")
+    If systemKey = "" Then Exit Sub
+    aggregateIndex = FindTableRecord(aggregateTable, "System_Key", systemKey)
+    If aggregateIndex = 0 Then Exit Sub
+    SetCellValue aggregateTable, aggregateIndex, "QUANTITY", newQty
+End Sub
+
+Public Function NzDbl(ByVal valueIn As Variant) As Double
+    If IsError(valueIn) Or IsNull(valueIn) Or IsEmpty(valueIn) Then Exit Function
+    If IsNumeric(valueIn) Then NzDbl = CDbl(valueIn)
 End Function
 
-Private Sub DeleteStaleReceivingButtons(ByVal ws As Worksheet)
-    Dim shp As Shape
-    Dim toDelete As Collection
-    Dim shpName As String
-    Dim actionText As String
-    Dim captionText As String
-    Dim item As Variant
-
-    If ws Is Nothing Then Exit Sub
-
-    Set toDelete = New Collection
-    For Each shp In ws.Shapes
-        shpName = LCase$(Trim$(shp.Name))
-        actionText = LCase$(Trim$(shp.OnAction))
-        captionText = ResolveShapeCaptionReceiving(shp)
-
-        If shpName = "btnconfirmwrites" Or shpName = "btnundomacro" Or shpName = "btnredomacro" Then
-            toDelete.Add shp.Name
-        ElseIf InStr(1, actionText, "confirmwrites", vbTextCompare) > 0 _
-            Or InStr(1, actionText, "macroundo", vbTextCompare) > 0 _
-            Or InStr(1, actionText, "macroredo", vbTextCompare) > 0 Then
-            toDelete.Add shp.Name
-        ElseIf captionText = "confirm writes" Or captionText = "undo" Or captionText = "redo" Then
-            toDelete.Add shp.Name
-        End If
-    Next shp
-
-    For Each item In toDelete
-        On Error Resume Next
-        ws.Shapes(CStr(item)).Delete
-        On Error GoTo 0
-    Next item
+Private Sub PopulateAggregateRecord(ByVal aggregateTable As ListObject, _
+                                    ByVal aggregateIndex As Long, _
+                                    ByVal inventoryTable As ListObject, _
+                                    ByVal inventoryIndex As Long, _
+                                    ByVal refNumber As String, _
+                                    ByVal receivingSystemKey As String, _
+                                    ByVal eventId As String, _
+                                    ByVal qty As Double)
+    SetCellText aggregateTable, aggregateIndex, "REF_NUMBER", refNumber
+    SetCellText aggregateTable, aggregateIndex, "ITEM_CODE", _
+                CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
+    SetCellText aggregateTable, aggregateIndex, "VENDORS", _
+                CellText(inventoryTable, inventoryIndex, "VENDOR(s)")
+    SetCellText aggregateTable, aggregateIndex, "VENDOR_CODE", _
+                CellText(inventoryTable, inventoryIndex, "VENDOR_CODE")
+    SetCellText aggregateTable, aggregateIndex, "DESCRIPTION", _
+                CellText(inventoryTable, inventoryIndex, "DESCRIPTION")
+    SetCellText aggregateTable, aggregateIndex, "ITEM", _
+                CellText(inventoryTable, inventoryIndex, "ITEM")
+    If CellText(aggregateTable, aggregateIndex, "ITEM") = "" Then
+        SetCellText aggregateTable, aggregateIndex, "ITEM", _
+                    CellText(inventoryTable, inventoryIndex, "ItemName")
+    End If
+    SetCellText aggregateTable, aggregateIndex, "UOM", _
+                CellText(inventoryTable, inventoryIndex, "UOM")
+    SetCellValue aggregateTable, aggregateIndex, "QUANTITY", qty
+    SetCellText aggregateTable, aggregateIndex, "LOCATION", _
+                CellText(inventoryTable, inventoryIndex, "LOCATION")
+    SetCellText aggregateTable, aggregateIndex, "System_Key", receivingSystemKey
+    SetCellText aggregateTable, aggregateIndex, "EventId", eventId
+    SetCellText aggregateTable, aggregateIndex, "WorkflowState", "STAGED"
 End Sub
 
-Private Function ResolveShapeCaptionReceiving(ByVal shp As Shape) As String
-    On Error Resume Next
-    ResolveShapeCaptionReceiving = LCase$(Trim$(shp.ControlFormat.Caption))
-    If ResolveShapeCaptionReceiving = "" Then ResolveShapeCaptionReceiving = LCase$(Trim$(shp.TextFrame.Characters.Text))
-    On Error GoTo 0
-End Function
+Private Function FindExistingStagingRecord(ByVal stagingTable As ListObject, _
+                                           ByVal refNumber As String, _
+                                           ByVal sourceSystemKey As String) As Long
+    Dim recordIndex As Long
 
-Private Function QueueReceiveEventsFromAggregate(ByVal agg As ListObject, ByRef errorMessage As String, Optional ByRef queuedEventIdsCsv As String = "") As Boolean
-    Dim cols As Object
-    Dim arr As Variant
-    Dim r As Long
-    Dim userId As String
-    Dim rowError As String
-    Dim queuedEventId As String
-
-    If agg Is Nothing Or agg.DataBodyRange Is Nothing Then
-        errorMessage = "AggregateReceived has no rows to confirm."
-        Exit Function
-    End If
-
-    Set cols = AggColMap(agg)
-    If cols Is Nothing Then
-        errorMessage = "AggregateReceived is missing required columns."
-        Exit Function
-    End If
-
-    userId = modRoleEventWriter.ResolveCurrentUserId()
-    If userId = "" Then
-        errorMessage = "Unable to resolve current user identity."
-        Exit Function
-    End If
-
-    arr = agg.DataBodyRange.Value
-    For r = 1 To UBound(arr, 1)
-        queuedEventId = ""
-        rowError = ""
-        If Not modRoleEventWriter.QueueReceiveEventServer( _
-            "", _
-            "", _
-            userId, _
-            NzStr(arr(r, cols("ITEM_CODE"))), _
-            NzDbl(arr(r, cols("QUANTITY"))), _
-            NzStr(arr(r, cols("LOCATION"))), _
-            BuildReceiveEventNote(arr, cols, r), _
-            queuedEventId, _
-            rowError) Then
-            errorMessage = "Inbox queue failed for row " & r & ": " & rowError
+    If stagingTable Is Nothing Or stagingTable.DataBodyRange Is Nothing Then Exit Function
+    For recordIndex = 1 To stagingTable.ListRows.Count
+        If StrComp(CellText(stagingTable, recordIndex, "REF_NUMBER"), _
+                   refNumber, vbTextCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "Source_System_Key"), _
+                       sourceSystemKey, vbBinaryCompare) = 0 Then
+            FindExistingStagingRecord = recordIndex
             Exit Function
         End If
-        If queuedEventId <> "" Then AppendQueuedEventIdReceiving queuedEventIdsCsv, queuedEventId
-    Next r
-
-    QueueReceiveEventsFromAggregate = True
+    Next recordIndex
 End Function
 
-Private Sub AppendQueuedEventIdReceiving(ByRef queuedEventIdsCsv As String, ByVal eventId As String)
-    eventId = Trim$(eventId)
-    If eventId = "" Then Exit Sub
-    If queuedEventIdsCsv = "" Then
-        queuedEventIdsCsv = eventId
-    Else
-        queuedEventIdsCsv = queuedEventIdsCsv & "," & eventId
-    End If
-End Sub
-
-Private Function BuildReceiveEventNote(ByVal arr As Variant, ByVal cols As Object, ByVal rowIndex As Long) As String
-    BuildReceiveEventNote = "REF_NUMBER=" & NzStr(arr(rowIndex, cols("REF_NUMBER")))
-    If NzStr(arr(rowIndex, cols("ITEM"))) <> "" Then
-        BuildReceiveEventNote = BuildReceiveEventNote & "; ITEM=" & NzStr(arr(rowIndex, cols("ITEM")))
-    End If
-    If NzStr(arr(rowIndex, cols("VENDORS"))) <> "" Then
-        BuildReceiveEventNote = BuildReceiveEventNote & "; VENDORS=" & NzStr(arr(rowIndex, cols("VENDORS")))
+Private Function ResolveReceivingWorkbook(Optional ByVal preferredWb As Workbook = Nothing) As Workbook
+    If Not preferredWb Is Nothing Then
+        If Not preferredWb.IsAddin Then
+            Set ResolveReceivingWorkbook = preferredWb
+            Exit Function
+        End If
     End If
 End Function
 
-Public Sub MacroUndo()
-    ' Undo last successful ConfirmWrites
-    Dim wsRT As Worksheet: Set wsRT = SheetExists("ReceivedTally")
-    Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
-    Dim wsInv As Worksheet: Set wsInv = SheetExists("InventoryManagement")
-    Dim wsLog As Worksheet: Set wsLog = SheetExists("ReceivedLog")
-    If wsRT Is Nothing Or wsAgg Is Nothing Or wsInv Is Nothing Or wsLog Is Nothing Then Exit Sub
-    ' Guard: do we have anything to undo?
-    Dim hasUndo As Boolean
-    hasUndo = Not IsEmpty(mUndoRT) Or Not IsEmpty(mUndoAGG)
-    If mUndoInv Is Nothing Then
-        hasUndo = hasUndo Or False
-    Else
-        hasUndo = hasUndo Or (mUndoInv.count > 0)
-    End If
-    If mUndoLogRows Is Nothing Then
-        hasUndo = hasUndo Or False
-    Else
-        hasUndo = hasUndo Or (mUndoLogRows.count > 0)
-    End If
-    If Not hasUndo Then
-        MsgBox "Nothing to undo (no confirm snapshot).", vbInformation
-        Exit Sub
-    End If
-
-    Application.EnableEvents = False
-    RestoreTable wsRT.ListObjects("ReceivedTally"), mUndoRT
-    RestoreTable wsAgg.ListObjects("AggregateReceived"), mUndoAGG
-    UndoInvDeltas wsInv.ListObjects("invSys")
-    DeleteAddedLogRows wsLog.ListObjects("ReceivedLog")
-    Application.EnableEvents = True
-    mRedoReady = True
-End Sub
-
-Public Sub MacroRedo()
-    If Not mRedoReady Then
-        MsgBox "Nothing to redo. Perform an undo first.", vbInformation
-        Exit Sub
-    End If
-    ConfirmWrites
-End Sub
-
-' ==== helpers ====
-Private Function SheetExists(nameOrCode As String) As Worksheet
-    Dim wb As Workbook
-    Dim ws As Worksheet
-
-    Set wb = ResolveReceivingWorkbook(, nameOrCode)
+Private Function WorkbookSheet(ByVal wb As Workbook, _
+                               ByVal sheetName As String) As Worksheet
     If wb Is Nothing Then Exit Function
+    On Error Resume Next
+    Set WorkbookSheet = wb.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
 
+Private Function FindTable(ByVal wb As Workbook, _
+                           ByVal tableName As String) As ListObject
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
     For Each ws In wb.Worksheets
-        If StrComp(ws.Name, nameOrCode, vbTextCompare) = 0 _
-           Or StrComp(ws.CodeName, nameOrCode, vbTextCompare) = 0 Then
-            Set SheetExists = ws
-            Exit Function
-        End If
+        On Error Resume Next
+        Set FindTable = ws.ListObjects(tableName)
+        On Error GoTo 0
+        If Not FindTable Is Nothing Then Exit Function
     Next ws
 End Function
 
-Private Sub RemoveLegacyReceivingButtons(ByVal ws As Worksheet)
-    DeleteShapeIfExistsReceiving ws, "btnConfirmWrites"
-    DeleteShapeIfExistsReceiving ws, "btnUndoMacro"
-    DeleteShapeIfExistsReceiving ws, "btnRedoMacro"
+Private Function FindTableRecord(ByVal targetTable As ListObject, _
+                                 ByVal columnName As String, _
+                                 ByVal matchValue As String) As Long
+    Dim recordIndex As Long
+    Dim columnNumber As Long
+
+    If targetTable Is Nothing Or targetTable.DataBodyRange Is Nothing Then Exit Function
+    columnNumber = ColumnIndex(targetTable, columnName)
+    If columnNumber = 0 Then Exit Function
+    For recordIndex = 1 To targetTable.ListRows.Count
+        If StrComp(Trim$(CStr(targetTable.DataBodyRange.Cells(recordIndex, columnNumber).Value)), _
+                   Trim$(matchValue), vbTextCompare) = 0 Then
+            FindTableRecord = recordIndex
+            Exit Function
+        End If
+    Next recordIndex
+End Function
+
+Private Function FirstBlankOrNewRecord(ByVal targetTable As ListObject) As ListRow
+    Dim candidate As ListRow
+    Dim column As ListColumn
+    Dim hasValue As Boolean
+
+    For Each candidate In targetTable.ListRows
+        hasValue = False
+        For Each column In targetTable.ListColumns
+            If Trim$(CStr(candidate.Range.Cells(1, column.Index).Value)) <> "" Then
+                hasValue = True
+                Exit For
+            End If
+        Next column
+        If Not hasValue Then
+            Set FirstBlankOrNewRecord = candidate
+            Exit Function
+        End If
+    Next candidate
+    Set FirstBlankOrNewRecord = targetTable.ListRows.Add
+End Function
+
+Private Function ColumnIndex(ByVal targetTable As ListObject, _
+                             ByVal columnName As String) As Long
+    Dim column As ListColumn
+
+    If targetTable Is Nothing Then Exit Function
+    For Each column In targetTable.ListColumns
+        If StrComp(Trim$(column.Name), Trim$(columnName), vbTextCompare) = 0 Then
+            ColumnIndex = column.Index
+            Exit Function
+        End If
+    Next column
+End Function
+
+Private Function CellText(ByVal targetTable As ListObject, _
+                          ByVal recordIndex As Long, _
+                          ByVal columnName As String) As String
+    Dim columnNumber As Long
+    Dim valueIn As Variant
+
+    columnNumber = ColumnIndex(targetTable, columnName)
+    If columnNumber = 0 Or targetTable.DataBodyRange Is Nothing Then Exit Function
+    valueIn = targetTable.DataBodyRange.Cells(recordIndex, columnNumber).Value
+    If IsError(valueIn) Or IsNull(valueIn) Or IsEmpty(valueIn) Then Exit Function
+    CellText = Trim$(CStr(valueIn))
+End Function
+
+Private Function CellNumber(ByVal targetTable As ListObject, _
+                            ByVal recordIndex As Long, _
+                            ByVal columnName As String) As Double
+    Dim valueIn As String
+
+    valueIn = CellText(targetTable, recordIndex, columnName)
+    If IsNumeric(valueIn) Then CellNumber = CDbl(valueIn)
+End Function
+
+Private Sub SetCellText(ByVal targetTable As ListObject, _
+                        ByVal recordIndex As Long, _
+                        ByVal columnName As String, _
+                        ByVal valueText As String)
+    SetCellValue targetTable, recordIndex, columnName, valueText
 End Sub
 
-Private Sub DeleteShapeIfExistsReceiving(ByVal ws As Worksheet, ByVal shapeName As String)
+Private Sub SetCellValue(ByVal targetTable As ListObject, _
+                         ByVal recordIndex As Long, _
+                         ByVal columnName As String, _
+                         ByVal valueIn As Variant)
+    Dim columnNumber As Long
+
+    columnNumber = ColumnIndex(targetTable, columnName)
+    If columnNumber = 0 Then
+        Err.Raise vbObjectError + 7681, "modTS_Received.SetCellValue", _
+                  "Receiving column is missing: " & columnName
+    End If
+    targetTable.DataBodyRange.Cells(recordIndex, columnNumber).Value = valueIn
+End Sub
+
+Private Function CanHideWorksheet(ByVal wb As Workbook, _
+                                  ByVal sheetToHide As Worksheet) As Boolean
+    Dim ws As Worksheet
+    Dim visibleCount As Long
+
+    For Each ws In wb.Worksheets
+        If ws.Visible = xlSheetVisible Then visibleCount = visibleCount + 1
+    Next ws
+    CanHideWorksheet = (sheetToHide.Visible <> xlSheetVisible Or visibleCount > 1)
+End Function
+
+Private Sub EnsureReceivingButtons(ByVal ws As Worksheet)
+    Dim button As Shape
+    Dim anchor As Range
+
     If ws Is Nothing Then Exit Sub
+    DeleteReceivingActionButton ws, "btnUndoMacro"
+    DeleteReceivingActionButton ws, "btnRedoMacro"
+    On Error Resume Next
+    Set button = ws.Shapes("btnConfirmWrites")
+    On Error GoTo 0
+    Set anchor = ws.Range("C1")
+    If button Is Nothing Then
+        Set button = ws.Shapes.AddFormControl( _
+            xlButtonControl, anchor.Left, 6, 118, 20)
+        button.Name = "btnConfirmWrites"
+    End If
+    button.Left = anchor.Left
+    button.Top = 6
+    button.Width = 118
+    button.Height = 20
+    button.TextFrame.Characters.Text = "Confirm Writes"
+    button.OnAction = "'" & ThisWorkbook.Name & "'!modTS_Received.ConfirmWrites"
+End Sub
+
+Private Sub DeleteReceivingActionButton(ByVal ws As Worksheet, _
+                                        ByVal shapeName As String)
     On Error Resume Next
     ws.Shapes(shapeName).Delete
     On Error GoTo 0
 End Sub
 
-Private Sub MergeIntoReceivedTally(rt As ListObject, refNumber As String, itemName As String, qty As Double)
-    If qty <= 0 Then Exit Sub
-    Dim colItem As Long: colItem = ColumnIndex(rt, "ITEMS")
-    Dim colQty As Long: colQty = ColumnIndex(rt, "QUANTITY")
-    Dim colRef As Long: colRef = ColumnIndex(rt, "REF_NUMBER")
-    If colItem = 0 Or colQty = 0 Or colRef = 0 Then Exit Sub
-
-    Dim foundRow As Long
-    Dim r As Long
-    Dim existingRef As String
-    If Not rt.DataBodyRange Is Nothing Then
-        For r = 1 To rt.DataBodyRange.rows.Count
-            If StrComp(NzStr(rt.DataBodyRange.Cells(r, colItem).value), itemName, vbTextCompare) = 0 Then
-                existingRef = NzStr(rt.DataBodyRange.Cells(r, colRef).value)
-                If RefListContainsReceiving(existingRef, refNumber) Then
-                    foundRow = r
-                    Exit For
-                End If
-            End If
-        Next r
-    End If
-
-    If foundRow = 0 Then
-        Dim lr As ListRow
-        Set lr = FirstBlankListRowReceiving(rt)
-        If lr Is Nothing Then Set lr = rt.ListRows.Add
-        lr.Range.Cells(1, colRef).value = refNumber
-        lr.Range.Cells(1, colItem).value = itemName
-        lr.Range.Cells(1, colQty).value = qty
+Private Sub ShowReceivingMessage(ByVal messageText As String, _
+                                 ByVal style As VbMsgBoxStyle)
+    If modUiQuiet.QuietUiIsActive() Then
+        Debug.Print "invSys Receiving: " & messageText
     Else
-        rt.DataBodyRange.Cells(foundRow, colQty).value = NzDbl(rt.DataBodyRange.Cells(foundRow, colQty).value) + qty
+        MsgBox messageText, style, "invSys Receiving"
     End If
 End Sub
-
-Private Sub SetReceivedTallyRowForForm(ByVal rt As ListObject, ByVal refNumber As String, _
-                                       ByVal itemName As String, ByVal invRow As Long)
-    Dim colItem As Long
-    Dim colRef As Long
-    Dim colRow As Long
-    Dim r As Long
-    Dim refs As String
-
-    If rt Is Nothing Then Exit Sub
-    If invRow <= 0 Then Exit Sub
-    If rt.DataBodyRange Is Nothing Then Exit Sub
-    colItem = ColumnIndex(rt, "ITEMS")
-    colRef = ColumnIndex(rt, "REF_NUMBER")
-    colRow = ColumnIndex(rt, "ROW")
-    If colItem = 0 Or colRef = 0 Or colRow = 0 Then Exit Sub
-
-    For r = 1 To rt.DataBodyRange.rows.Count
-        If StrComp(NzStr(rt.DataBodyRange.Cells(r, colItem).Value), itemName, vbTextCompare) = 0 Then
-            refs = NzStr(rt.DataBodyRange.Cells(r, colRef).Value)
-            If RefListContainsReceiving(refs, refNumber) Then
-                rt.DataBodyRange.Cells(r, colRow).Value = invRow
-                Exit Sub
-            End If
-        End If
-    Next r
-End Sub
-
-Private Sub MergeIntoAggregate(agg As ListObject, refNumber As String, itemCode As String, vendors As String, vendorCode As String, descr As String, itemName As String, uom As String, qty As Double, location As String, invRow As Long)
-    Dim c As Object: Set c = AggColMap(agg)
-    If c Is Nothing Then Exit Sub
-
-    Dim matchLR As ListRow
-    Set matchLR = FindAggregateMatch(agg, itemCode, invRow)
-
-    Dim lr As ListRow
-    If matchLR Is Nothing Then
-        Set lr = FirstBlankListRowReceiving(agg)
-        If lr Is Nothing Then Set lr = agg.ListRows.Add
-    Else
-        Set lr = matchLR
-    End If
-
-    With lr.Range
-        .Cells(1, c("REF_NUMBER")).value = AppendRef(NzStr(.Cells(1, c("REF_NUMBER")).value), refNumber)
-        .Cells(1, c("ITEM_CODE")).value = itemCode
-        .Cells(1, c("VENDORS")).value = vendors
-        .Cells(1, c("VENDOR_CODE")).value = vendorCode
-        .Cells(1, c("DESCRIPTION")).value = descr
-        .Cells(1, c("ITEM")).value = itemName
-        .Cells(1, c("UOM")).value = uom
-        .Cells(1, c("LOCATION")).value = location
-        If invRow > 0 Then .Cells(1, c("ROW")).value = invRow
-        If qty > 0 Then
-            .Cells(1, c("QUANTITY")).value = NzDbl(.Cells(1, c("QUANTITY")).value) + qty
-        End If
-    End With
-End Sub
-
-Private Function FirstBlankListRowReceiving(ByVal lo As ListObject) As ListRow
-    Dim lr As ListRow
-
-    If lo Is Nothing Then Exit Function
-    If lo.DataBodyRange Is Nothing Then Exit Function
-    For Each lr In lo.ListRows
-        If Application.WorksheetFunction.CountA(lr.Range) = 0 Then
-            Set FirstBlankListRowReceiving = lr
-            Exit Function
-        End If
-    Next lr
-End Function
-
-Private Function FindAggregateMatch(agg As ListObject, itemCode As String, invRow As Long) As ListRow
-    If agg Is Nothing Or agg.DataBodyRange Is Nothing Then Exit Function
-    Dim cRow As Long
-    Dim cCode As Long
-    cRow = ColumnIndex(agg, "ROW")
-    cCode = ColumnIndex(agg, "ITEM_CODE")
-
-    Dim lr As ListRow
-    If invRow > 0 And cRow > 0 Then
-        For Each lr In agg.ListRows
-            If NzLng(lr.Range.Cells(1, cRow).value) = invRow Then
-                Set FindAggregateMatch = lr
-                Exit Function
-            End If
-        Next lr
-    End If
-
-    If itemCode <> "" And cCode > 0 Then
-        For Each lr In agg.ListRows
-            If StrComp(NzStr(lr.Range.Cells(1, cCode).value), itemCode, vbTextCompare) = 0 Then
-                Set FindAggregateMatch = lr
-                Exit Function
-            End If
-        Next lr
-    End If
-End Function
-
-Private Function AggColMap(lo As ListObject) As Object
-    Dim d As Object: Set d = CreateObject("Scripting.Dictionary")
-    Dim names: names = Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "ROW")
-    Dim i As Long
-    For i = LBound(names) To UBound(names)
-        d(names(i)) = ColumnIndex(lo, CStr(names(i)))
-        If d(names(i)) = 0 Then Exit Function
-    Next
-    Set AggColMap = d
-End Function
-
-Private Sub AppendLogRow(logTbl As ListObject, cols As Object, arr As Variant, r As Long, snapshotId As String, entryDate As Date)
-    Dim newRow As ListRow: Set newRow = logTbl.ListRows.Add
-    ' Write only columns that exist in ReceivedLog.
-    Dim cRef As Long, cItems As Long, cQty As Long, cUOM As Long
-    Dim cRow As Long, cLoc As Long, cSnap As Long, cEntry As Long, cUser As Long
-    cRef = LogColIndex(logTbl, "REF_NUMBER")
-    cItems = LogColIndex(logTbl, "ITEMS")
-    cQty = LogColIndex(logTbl, "QUANTITY")
-    cUOM = LogColIndex(logTbl, "UOM")
-    cRow = LogColIndex(logTbl, "ROW")
-    cLoc = LogColIndex(logTbl, "LOCATION")
-    cSnap = LogColIndex(logTbl, "SNAPSHOT_ID")
-    cEntry = LogColIndex(logTbl, "ENTRY_DATE")
-    cUser = LogColIndex(logTbl, "USER")
-
-    With newRow.Range
-        If cUser > 0 Then .Cells(1, cUser).value = modRoleEventWriter.ResolveCurrentUserId()
-        If cRef > 0 Then .Cells(1, cRef).value = NzStr(arr(r, cols("REF_NUMBER")))
-        If cItems > 0 Then .Cells(1, cItems).value = NzStr(arr(r, cols("ITEM")))
-        If cQty > 0 Then .Cells(1, cQty).value = NzDbl(arr(r, cols("QUANTITY")))
-        If cUOM > 0 Then .Cells(1, cUOM).value = NzStr(arr(r, cols("UOM")))
-        If cRow > 0 Then .Cells(1, cRow).value = NzLng(arr(r, cols("ROW")))
-        If cLoc > 0 Then .Cells(1, cLoc).value = NzStr(arr(r, cols("LOCATION")))
-        If cSnap > 0 Then .Cells(1, cSnap).value = snapshotId
-        If cEntry > 0 Then .Cells(1, cEntry).value = entryDate
-    End With
-    If mUndoLogRows Is Nothing Then Set mUndoLogRows = New Collection
-    mUndoLogRows.Add newRow.Index
-End Sub
-
-Private Sub AppendLogRowFromRT(logTbl As ListObject, ByVal refNum As String, ByVal itemName As String, ByVal qty As Double, ByVal uom As String, ByVal location As String, ByVal itemCode As String, ByVal invRow As Long, ByVal snapshotId As String, ByVal entryDate As Date)
-    If logTbl Is Nothing Then Exit Sub
-    Dim newRow As ListRow: Set newRow = logTbl.ListRows.Add
-    Dim cRef As Long, cItems As Long, cQty As Long, cUOM As Long
-    Dim cRow As Long, cLoc As Long, cSnap As Long, cEntry As Long, cCode As Long, cUser As Long
-    cRef = LogColIndex(logTbl, "REF_NUMBER")
-    cItems = LogColIndex(logTbl, "ITEMS")
-    cQty = LogColIndex(logTbl, "QUANTITY")
-    cUOM = LogColIndex(logTbl, "UOM")
-    cRow = LogColIndex(logTbl, "ROW")
-    cLoc = LogColIndex(logTbl, "LOCATION")
-    cSnap = LogColIndex(logTbl, "SNAPSHOT_ID")
-    cEntry = LogColIndex(logTbl, "ENTRY_DATE")
-    cCode = LogColIndex(logTbl, "ITEM_CODE")
-    cUser = LogColIndex(logTbl, "USER")
-
-    With newRow.Range
-        If cUser > 0 Then .Cells(1, cUser).value = modRoleEventWriter.ResolveCurrentUserId()
-        If cRef > 0 Then .Cells(1, cRef).value = refNum
-        If cItems > 0 Then .Cells(1, cItems).value = itemName
-        If cQty > 0 Then .Cells(1, cQty).value = qty
-        If cUOM > 0 Then .Cells(1, cUOM).value = uom
-        If cCode > 0 Then .Cells(1, cCode).value = itemCode
-        If cRow > 0 Then .Cells(1, cRow).value = invRow
-        If cLoc > 0 Then .Cells(1, cLoc).value = location
-        If cSnap > 0 Then .Cells(1, cSnap).value = snapshotId
-        If cEntry > 0 Then .Cells(1, cEntry).value = entryDate
-    End With
-    If mUndoLogRows Is Nothing Then Set mUndoLogRows = New Collection
-    mUndoLogRows.Add newRow.Index
-End Sub
-
-Private Function FindInvRowByROW(inv As ListObject, rowValue As Long) As ListRow
-    Dim cRow As Long: cRow = ColumnIndex(inv, "ROW")
-    If cRow = 0 Or inv.DataBodyRange Is Nothing Then Exit Function
-    Dim cel As Range
-    For Each cel In inv.ListColumns(cRow).DataBodyRange.Cells
-        If NzLng(cel.value) = rowValue Then
-            Set FindInvRowByROW = inv.ListRows(cel.row - inv.DataBodyRange.row + 1)
-            Exit Function
-        End If
-    Next
-End Function
-
-Private Sub ClearTable(lo As ListObject)
-    If Not lo Is Nothing Then
-        If Not lo.DataBodyRange Is Nothing Then
-            lo.DataBodyRange.Delete
-        End If
-    End If
-    ' Clear row map if we clear staging
-    If lo Is Nothing Then Exit Sub
-    If StrComp(lo.name, "ReceivedTally", vbTextCompare) = 0 Then
-        If Not mRowMap Is Nothing Then mRowMap.RemoveAll
-    End If
-End Sub
-
-Private Function TryClearTableReceiving(ByVal lo As ListObject, ByRef errorMessage As String) As Boolean
-    On Error GoTo FailClear
-
-    errorMessage = ""
-    ClearTable lo
-    TryClearTableReceiving = True
-    Exit Function
-
-FailClear:
-    errorMessage = CStr(Err.Number) & " - " & Err.Description
-    If errorMessage = "0 - " Then errorMessage = "Unknown table clear failure."
-    Err.Clear
-End Function
-
-' ===== undo helpers =====
-Private Sub CaptureUndoState(rt As ListObject, agg As ListObject, inv As ListObject, logTbl As ListObject)
-    Set mUndoInv = New Collection
-    Set mUndoLogRows = New Collection
-    mUndoRT = SnapshotTable(rt)
-    mUndoAGG = SnapshotTable(agg)
-    ' log rows added will be captured as we append
-End Sub
-
-Private Function SnapshotTable(lo As ListObject) As Variant
-    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then
-        SnapshotTable = Empty
-    Else
-        SnapshotTable = lo.DataBodyRange.value
-    End If
-End Function
-
-Private Sub RestoreTable(lo As ListObject, snap As Variant)
-    ClearTable lo
-    If IsEmpty(snap) Then Exit Sub
-    Dim r As Long, c As Long
-    Dim rows As Long: rows = UBound(snap, 1)
-    Dim cols As Long: cols = UBound(snap, 2)
-    lo.Resize lo.Range.Resize(rows + 1, cols)
-    lo.DataBodyRange.value = snap
-End Sub
-
-Private Sub RecordInvDelta(rowIndex As Long, oldVal As Double)
-    ' Store simple variant array to avoid UDT/collection coercion issues
-    Dim arr(1 To 2) As Variant
-    arr(1) = rowIndex
-    arr(2) = oldVal
-    If mUndoInv Is Nothing Then Set mUndoInv = New Collection
-    mUndoInv.Add arr
-End Sub
-
-Private Sub UndoInvDeltas(inv As ListObject)
-    If mUndoInv Is Nothing Then Exit Sub
-    Dim v As Variant
-    Dim recvCol As Long: recvCol = ColumnIndex(inv, "RECEIVED")
-    For Each v In mUndoInv
-        inv.ListRows(CLng(v(1))).Range.Cells(1, recvCol).value = CDbl(v(2))
-    Next
-End Sub
-
-Private Sub DeleteAddedLogRows(logTbl As ListObject)
-    If mUndoLogRows Is Nothing Then Exit Sub
-    If mUndoLogRows.count = 0 Then Exit Sub
-    Dim idx As Variant
-    ' delete from bottom to top
-    Dim arr() As Long
-    ReDim arr(1 To mUndoLogRows.count)
-    Dim i As Long
-    For i = 1 To mUndoLogRows.count
-        arr(i) = CLng(mUndoLogRows(i))
-    Next
-    QuickSort arr, LBound(arr), UBound(arr)
-    For i = UBound(arr) To LBound(arr) Step -1
-        If arr(i) <= logTbl.ListRows.count Then logTbl.ListRows(arr(i)).Delete
-    Next
-End Sub
-
-Private Sub QuickSort(a() As Long, lo As Long, hi As Long)
-    Dim i As Long, j As Long, p As Long, tmp As Long
-    i = lo: j = hi: p = a((lo + hi) \ 2)
-    Do While i <= j
-        Do While a(i) < p: i = i + 1: Loop
-        Do While a(j) > p: j = j - 1: Loop
-        If i <= j Then
-            tmp = a(i): a(i) = a(j): a(j) = tmp
-            i = i + 1: j = j - 1
-        End If
-    Loop
-    If lo < j Then QuickSort a, lo, j
-    If i < hi Then QuickSort a, i, hi
-End Sub
-
-' ===== log column tools (optional columns in ReceivedLog) =====
-Private Function CriticalLogCols() As Object
-    Dim d As Object: Set d = CreateObject("Scripting.Dictionary")
-    d.CompareMode = vbTextCompare
-    Dim names
-    names = Array("USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "ROW", "SNAPSHOT_ID", "ENTRY_DATE")
-    Dim i As Long
-    For i = LBound(names) To UBound(names)
-        d.Add names(i), True
-    Next
-    Set CriticalLogCols = d
-End Function
-
-Public Sub ToggleLogColumn(ByVal colName As String, ByVal enable As Boolean)
-    colName = Trim$(colName)
-    If colName = "" Then Exit Sub
-
-    Dim ws As Worksheet
-    Set ws = SheetExists("ReceivedLog")
-    If ws Is Nothing Then Exit Sub
-
-    Dim lo As ListObject
-    On Error Resume Next
-    Set lo = ws.ListObjects("ReceivedLog")
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Sub
-
-    Dim crit As Object
-    Set crit = CriticalLogCols()
-
-    Dim idx As Long
-    idx = ColumnIndex(lo, colName)
-
-    If enable Then
-        If idx = 0 Then
-            Dim newCol As ListColumn
-            Set newCol = lo.ListColumns.Add
-            newCol.name = colName
-        End If
-    Else
-        If crit.Exists(colName) Then
-            MsgBox colName & " is critical and cannot be removed.", vbInformation
-            Exit Sub
-        End If
-        If idx > 0 Then lo.ListColumns(idx).Delete
-    End If
-End Sub
-
-' ===== misc helpers =====
-Private Function FindInColumn(rng As Range, value As String) As Range
-    Dim cel As Range
-    For Each cel In rng.Cells
-        If StrComp(NzStr(cel.value), value, vbTextCompare) = 0 Then
-            Set FindInColumn = cel
-            Exit Function
-        End If
-    Next
-End Function
-
-Private Function NzStr(v As Variant) As String
-    If IsError(v) Or IsNull(v) Or IsEmpty(v) Then
-        NzStr = ""
-    Else
-        NzStr = CStr(v)
-    End If
-End Function
-
-Public Function NzDbl(v As Variant) As Double
-    If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
-        NzDbl = 0#
-    Else
-        NzDbl = CDbl(v)
-    End If
-End Function
-
-Private Function NzLng(v As Variant) As Long
-    If IsError(v) Or IsNull(v) Or IsEmpty(v) Or v = "" Then
-        NzLng = 0
-    Else
-        NzLng = CLng(v)
-    End If
-End Function
-
-Private Function AppendRef(existingRef As String, newRef As String) As String
-    If existingRef = "" Then AppendRef = newRef: Exit Function
-    If RefListContainsReceiving(existingRef, newRef) Then
-        AppendRef = existingRef
-    Else
-        AppendRef = existingRef & "," & newRef
-    End If
-End Function
-
-Private Function RefListContainsReceiving(ByVal refList As String, ByVal refValue As String) As Boolean
-    Dim token As Variant
-
-    refValue = Trim$(refValue)
-    If refValue = "" Then Exit Function
-    For Each token In Split(refList, ",")
-        If StrComp(Trim$(CStr(token)), refValue, vbTextCompare) = 0 Then
-            RefListContainsReceiving = True
-            Exit Function
-        End If
-    Next token
-End Function
-
-Private Function LookupInvSys(catalog As ListObject, itemName As String, ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, ByRef descr As String, ByRef uom As String, ByRef location As String, ByRef invRow As Long)
-    ' NOTE: this lookup is used when we do not already have ROW.
-    ' defaults
-    itemCode = "": vendors = "": vendorCode = "": descr = "": uom = "": location = "": invRow = 0
-
-    Dim cItem As Long: cItem = ColumnIndex(catalog, "ITEM")
-    Dim cCode As Long: cCode = ColumnIndex(catalog, "ITEM_CODE")
-    Dim cVend As Long: cVend = ColumnIndex(catalog, "VENDOR(s)")
-    Dim cLoc As Long: cLoc = ColumnIndex(catalog, "LOCATION")
-    Dim cDesc As Long: cDesc = ColumnIndex(catalog, "DESCRIPTION")
-    Dim cUOM As Long: cUOM = ColumnIndex(catalog, "UOM")
-    Dim cRow As Long: cRow = ColumnIndex(catalog, "ROW")
-    If cItem = 0 Or cCode = 0 Then Exit Function
-
-    ' Try exact match by code first
-    If itemCode <> "" Then
-        Dim found As Range
-        Set found = FindInColumn(catalog.ListColumns(cCode).DataBodyRange, itemCode)
-        If Not found Is Nothing Then
-            invRow = NzLng(found.Offset(0, cRow - found.Column).value)
-            itemCode = NzStr(found.Offset(0, cCode - found.Column).value)
-            itemName = NzStr(found.Offset(0, cItem - found.Column).value)
-            vendors = NzStr(found.Offset(0, cVend - found.Column).value)
-            descr = NzStr(found.Offset(0, cDesc - found.Column).value)
-            uom = NzStr(found.Offset(0, cUOM - found.Column).value)
-            location = NzStr(found.Offset(0, cLoc - found.Column).value)
-            Exit Function
-        End If
-    End If
-
-    ' Then try exact match by name
-    If itemName <> "" Then
-        Dim found2 As Range
-        Set found2 = FindInColumn(catalog.ListColumns(cItem).DataBodyRange, itemName)
-        If Not found2 Is Nothing Then
-            invRow = NzLng(found2.Offset(0, cRow - found2.Column).value)
-            itemCode = NzStr(found2.Offset(0, cCode - found2.Column).value)
-            itemName = NzStr(found2.Offset(0, cItem - found2.Column).value)
-            vendors = NzStr(found2.Offset(0, cVend - found2.Column).value)
-            descr = NzStr(found2.Offset(0, cDesc - found2.Column).value)
-            uom = NzStr(found2.Offset(0, cUOM - found2.Column).value)
-            location = NzStr(found2.Offset(0, cLoc - found2.Column).value)
-            Exit Function
-        End If
-    End If
-End Function
-
-' Strict lookup by ROW when we already know the invSys ROW
-Private Sub LookupInvSysByROW(catalog As ListObject, ByVal invRow As Long, _
-    ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, _
-    ByRef descr As String, ByRef itemName As String, ByRef uom As String, ByRef location As String)
-
-    itemCode = "": vendors = "": vendorCode = "": descr = "": itemName = "": uom = "": location = ""
-    If catalog Is Nothing Or invRow <= 0 Then Exit Sub
-    If catalog.DataBodyRange Is Nothing Then Exit Sub
-
-    Dim cRow As Long: cRow = ColumnIndex(catalog, "ROW")
-    Dim cCode As Long: cCode = ColumnIndex(catalog, "ITEM_CODE")
-    Dim cItem As Long: cItem = ColumnIndex(catalog, "ITEM")
-    Dim cVend As Long: cVend = ColumnIndex(catalog, "VENDOR(s)")
-    Dim cVendorCode As Long: cVendorCode = ColumnIndex(catalog, "VENDOR_CODE")
-    Dim cDesc As Long: cDesc = ColumnIndex(catalog, "DESCRIPTION")
-    Dim cUOM As Long: cUOM = ColumnIndex(catalog, "UOM")
-    Dim cLoc As Long: cLoc = ColumnIndex(catalog, "LOCATION")
-    If cRow = 0 Then Exit Sub
-
-    Dim cel As Range
-    Dim rowIndex As Long
-    For Each cel In catalog.ListColumns(cRow).DataBodyRange.Cells
-        If NzLng(cel.value) = invRow Then
-            rowIndex = cel.row - catalog.DataBodyRange.rows(1).row + 1
-            If cCode > 0 Then itemCode = NzStr(catalog.DataBodyRange.Cells(rowIndex, cCode).value)
-            If cItem > 0 Then itemName = NzStr(catalog.DataBodyRange.Cells(rowIndex, cItem).value)
-            If cVend > 0 Then vendors = NzStr(catalog.DataBodyRange.Cells(rowIndex, cVend).value)
-            If cVendorCode > 0 Then vendorCode = NzStr(catalog.DataBodyRange.Cells(rowIndex, cVendorCode).value)
-            If cDesc > 0 Then descr = NzStr(catalog.DataBodyRange.Cells(rowIndex, cDesc).value)
-            If cUOM > 0 Then uom = NzStr(catalog.DataBodyRange.Cells(rowIndex, cUOM).value)
-            If cLoc > 0 Then location = NzStr(catalog.DataBodyRange.Cells(rowIndex, cLoc).value)
-            Exit Sub
-        End If
-    Next
-End Sub
-
-Private Sub LookupInvSysByItemCode(catalog As ListObject, ByVal requestedItemCode As String, _
-    ByRef invRow As Long, ByRef itemCode As String, ByRef vendors As String, ByRef vendorCode As String, _
-    ByRef descr As String, ByRef itemName As String, ByRef uom As String, ByRef location As String)
-
-    itemCode = "": vendors = "": vendorCode = "": descr = "": itemName = "": uom = "": location = ""
-    invRow = 0
-    requestedItemCode = Trim$(requestedItemCode)
-    If catalog Is Nothing Or requestedItemCode = "" Then Exit Sub
-    If catalog.DataBodyRange Is Nothing Then Exit Sub
-
-    Dim cRow As Long: cRow = ColumnIndex(catalog, "ROW")
-    Dim cCode As Long: cCode = ColumnIndex(catalog, "ITEM_CODE")
-    Dim cItem As Long: cItem = ColumnIndex(catalog, "ITEM")
-    Dim cVend As Long: cVend = ColumnIndex(catalog, "VENDOR(s)")
-    Dim cVendorCode As Long: cVendorCode = ColumnIndex(catalog, "VENDOR_CODE")
-    Dim cDesc As Long: cDesc = ColumnIndex(catalog, "DESCRIPTION")
-    Dim cUOM As Long: cUOM = ColumnIndex(catalog, "UOM")
-    Dim cLoc As Long: cLoc = ColumnIndex(catalog, "LOCATION")
-    If cCode = 0 Then Exit Sub
-
-    Dim rowIndex As Long
-    For rowIndex = 1 To catalog.ListRows.Count
-        If StrComp(Trim$(NzStr(catalog.DataBodyRange.Cells(rowIndex, cCode).value)), requestedItemCode, vbTextCompare) = 0 Then
-            If cRow > 0 Then invRow = NormalizeInventoryRowForWriteReceiving(catalog.DataBodyRange.Cells(rowIndex, cRow).value, requestedItemCode, rowIndex)
-            If cCode > 0 Then itemCode = NzStr(catalog.DataBodyRange.Cells(rowIndex, cCode).value)
-            If cItem > 0 Then itemName = NzStr(catalog.DataBodyRange.Cells(rowIndex, cItem).value)
-            If cVend > 0 Then vendors = NzStr(catalog.DataBodyRange.Cells(rowIndex, cVend).value)
-            If cVendorCode > 0 Then vendorCode = NzStr(catalog.DataBodyRange.Cells(rowIndex, cVendorCode).value)
-            If cDesc > 0 Then descr = NzStr(catalog.DataBodyRange.Cells(rowIndex, cDesc).value)
-            If cUOM > 0 Then uom = NzStr(catalog.DataBodyRange.Cells(rowIndex, cUOM).value)
-            If cLoc > 0 Then location = NzStr(catalog.DataBodyRange.Cells(rowIndex, cLoc).value)
-            Exit Sub
-        End If
-    Next rowIndex
-End Sub
-
-Private Function NormalizeReceivingInventoryRowDisplay(ByVal rawRowValue As Variant, ByVal itemCode As String, ByVal fallbackRow As Long) As String
-    Dim normalizedRow As Long
-
-    normalizedRow = NormalizeInventoryRowForWriteReceiving(rawRowValue, itemCode, fallbackRow)
-    If normalizedRow > 0 Then
-        NormalizeReceivingInventoryRowDisplay = CStr(normalizedRow)
-    Else
-        NormalizeReceivingInventoryRowDisplay = NzStr(rawRowValue)
-    End If
-End Function
-
-Private Function NormalizeInventoryRowForWriteReceiving(ByVal rawRowValue As Variant, ByVal itemCode As String, ByVal fallbackRow As Long) As Long
-    Dim demoRow As Long
-    Dim legacyRow As Long
-    Dim rawText As String
-
-    demoRow = ReceivingDemoRowForSku(itemCode)
-    If demoRow > 0 Then
-        NormalizeInventoryRowForWriteReceiving = demoRow
-        Exit Function
-    End If
-
-    legacyRow = ReceivingLegacyItemRowForSku(itemCode)
-    If legacyRow > 0 Then
-        NormalizeInventoryRowForWriteReceiving = legacyRow
-        Exit Function
-    End If
-
-    rawText = Trim$(NzStr(rawRowValue))
-    If rawText <> "" And IsNumeric(rawText) Then
-        NormalizeInventoryRowForWriteReceiving = CLng(Val(rawText))
-    ElseIf fallbackRow > 0 Then
-        NormalizeInventoryRowForWriteReceiving = fallbackRow
-    End If
-End Function
-
-Private Function ReceivingDemoRowForSku(ByVal itemCode As String) As Long
-    Select Case UCase$(Trim$(itemCode))
-        Case "DEMO-RAW-BLACK-TEA"
-            ReceivingDemoRowForSku = 9001
-        Case "DEMO-RAW-FILTERED-WATER"
-            ReceivingDemoRowForSku = 9002
-        Case "DEMO-RAW-CARDAMOM", "DEMO-SPICE-CARDAMOM"
-            ReceivingDemoRowForSku = 9003
-        Case "DEMO-FG-CLASSIC-CHAI"
-            ReceivingDemoRowForSku = 9016
-        Case "DEMO-PKG-TIN"
-            ReceivingDemoRowForSku = 9021
-    End Select
-End Function
-
-Private Function ReceivingLegacyItemRowForSku(ByVal itemCode As String) As Long
-    Dim digits As String
-
-    itemCode = UCase$(Trim$(itemCode))
-    If Len(itemCode) <> 9 Then Exit Function
-    If Left$(itemCode, 5) <> "ITEM-" Then Exit Function
-
-    digits = Mid$(itemCode, 6)
-    If IsNumeric(digits) Then ReceivingLegacyItemRowForSku = CLng(Val(digits))
-End Function
-
-Private Function NewGuid() As String
-    NewGuid = CreateObject("Scriptlet.TypeLib").GUID
-End Function
-
-' Column index helper for log tables (case-insensitive)
-Private Function LogColIndex(lo As ListObject, colName As String) As Long
-    Dim lc As ListColumn
-    For Each lc In lo.ListColumns
-        If StrComp(lc.name, colName, vbTextCompare) = 0 Then
-            LogColIndex = lc.Index
-            Exit Function
-        End If
-    Next
-    LogColIndex = 0
-End Function
-
-' Column index helper (case-insensitive) on a ListObject
-Private Function ColumnIndex(lo As ListObject, colName As String) As Long
-    Dim lc As ListColumn
-    For Each lc In lo.ListColumns
-        If StrComp(lc.name, colName, vbTextCompare) = 0 Then
-            ColumnIndex = lc.Index
-            Exit Function
-        End If
-    Next
-    ColumnIndex = 0
-End Function
-
-' Maintain quantity sync from staging (ReceivedTally) to AggregateReceived
-Public Sub SyncQuantityFromStaging(ByVal stagingRowIdx As Long, ByVal newQty As Double)
-    If stagingRowIdx <= 0 Then Exit Sub
-    If mRowMap Is Nothing Then Exit Sub
-    If Not mRowMap.Exists(CStr(stagingRowIdx)) Then Exit Sub
-
-    ' Identify invSys ROW for this staging row
-    Dim info As Variant
-    info = mRowMap(CStr(stagingRowIdx)) ' Array(itemCode, invRow, refNumber)
-    Dim itemCode As String: itemCode = NzStr(info(0))
-    Dim invRow As Long: invRow = CLng(info(1))
-
-    ' Sum all staging quantities that map to the same invSys ROW
-    Dim wsRT As Worksheet: Set wsRT = SheetExists("ReceivedTally")
-    If wsRT Is Nothing Then Exit Sub
-    Dim rt As ListObject: Set rt = wsRT.ListObjects("ReceivedTally")
-    If rt Is Nothing Or rt.DataBodyRange Is Nothing Then Exit Sub
-    Dim colQtyRT As Long: colQtyRT = ColumnIndex(rt, "QUANTITY")
-    If colQtyRT = 0 Then Exit Sub
-
-    Dim totalQty As Double: totalQty = 0
-    Dim k As Variant
-    For Each k In mRowMap.Keys
-        Dim arr As Variant
-        arr = mRowMap(k) ' itemCode, invRow, refNumber
-        If (invRow > 0 And CLng(arr(1)) = invRow) _
-           Or (invRow <= 0 And itemCode <> "" And StrComp(NzStr(arr(0)), itemCode, vbTextCompare) = 0) Then
-            Dim sr As Long
-            sr = CLng(k)
-            If sr >= 1 And sr <= rt.DataBodyRange.rows.count Then
-                totalQty = totalQty + NzDbl(rt.DataBodyRange.Cells(sr, colQtyRT).value)
-            End If
-        End If
-    Next k
-
-    ' Update the single aggregate row for this invRow
-    Dim wsAgg As Worksheet: Set wsAgg = SheetExists("ReceivedTally")
-    If wsAgg Is Nothing Then Exit Sub
-    Dim agg As ListObject: Set agg = wsAgg.ListObjects("AggregateReceived")
-    If agg Is Nothing Or agg.DataBodyRange Is Nothing Then Exit Sub
-
-    Dim cRowAgg As Long: cRowAgg = ColumnIndex(agg, "ROW")
-    Dim cCodeAgg As Long: cCodeAgg = ColumnIndex(agg, "ITEM_CODE")
-    Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(agg, "QUANTITY")
-    If cQtyAgg = 0 Then Exit Sub
-
-    Dim lr As ListRow
-    For Each lr In agg.ListRows
-        If (invRow > 0 And cRowAgg > 0 And NzLng(lr.Range.Cells(1, cRowAgg).value) = invRow) _
-           Or (invRow <= 0 And itemCode <> "" And cCodeAgg > 0 And StrComp(NzStr(lr.Range.Cells(1, cCodeAgg).value), itemCode, vbTextCompare) = 0) Then
-            lr.Range.Cells(1, cQtyAgg).value = totalQty
-            Exit For
-        End If
-    Next lr
-End Sub
-
-Private Function ResolveInvRowForReceiveLog(ByVal inv As ListObject, ByVal itemCode As String, ByVal itemName As String, ByVal preferredRow As Long) As Long
-    Dim lr As ListRow
-
-    If preferredRow > 0 Then
-        Set lr = FindInvRowByROW(inv, preferredRow)
-        If Not lr Is Nothing Then
-            ResolveInvRowForReceiveLog = preferredRow
-            Exit Function
-        End If
-    End If
-
-    If itemCode <> "" Then
-        Set lr = FindInvRowByItemCode(inv, itemCode)
-        If Not lr Is Nothing Then
-            Dim cRow As Long
-            cRow = ColumnIndex(inv, "ROW")
-            If cRow > 0 Then ResolveInvRowForReceiveLog = NzLng(lr.Range.Cells(1, cRow).value)
-            Exit Function
-        End If
-    End If
-
-    If itemName <> "" Then
-        Dim tmpCode As String, tmpVend As String, tmpVCode As String, tmpDesc As String, tmpUom As String, tmpLoc As String
-        LookupInvSys inv, itemName, tmpCode, tmpVend, tmpVCode, tmpDesc, tmpUom, tmpLoc, ResolveInvRowForReceiveLog
-    End If
-End Function
-
-Private Function FindInvRowByItemCode(inv As ListObject, itemCode As String) As ListRow
-    Dim cCode As Long
-    Dim cel As Range
-
-    If inv Is Nothing Or itemCode = "" Then Exit Function
-    cCode = ColumnIndex(inv, "ITEM_CODE")
-    If cCode = 0 Or inv.DataBodyRange Is Nothing Then Exit Function
-
-    For Each cel In inv.ListColumns(cCode).DataBodyRange.Cells
-        If StrComp(NzStr(cel.value), itemCode, vbTextCompare) = 0 Then
-            Set FindInvRowByItemCode = inv.ListRows(cel.row - inv.DataBodyRange.row + 1)
-            Exit Function
-        End If
-    Next
-End Function
-
-Private Sub EnsureRowMap()
-    If mRowMap Is Nothing Then Set mRowMap = CreateObject("Scripting.Dictionary")
-End Sub
-
-' Load item list for frmItemSearch from invSys (InventoryManagement!invSys)
-' Returns a 2D array with columns: ROW, ITEM_CODE, ITEM, UOM, LOCATION, DESCRIPTION, VENDORS
-Private Function LoadItemList(Optional ByVal includeCategory As Boolean = False) As Variant
-    Dim ws As Worksheet: Set ws = SheetExists("InventoryManagement")
-    If ws Is Nothing Then Exit Function
-    Dim lo As ListObject: Set lo = ws.ListObjects("invSys")
-    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
-
-    Dim cRow As Long, cCode As Long, cItem As Long, cUOM As Long, cLoc As Long, cDesc As Long, cVend As Long, cCat As Long
-    cRow = ColumnIndex(lo, "ROW")
-    cCode = ColumnIndex(lo, "ITEM_CODE")
-    cItem = ColumnIndex(lo, "ITEM")
-    cUOM = ColumnIndex(lo, "UOM")
-    cLoc = ColumnIndex(lo, "LOCATION")
-    cDesc = ColumnIndex(lo, "DESCRIPTION")
-    cVend = ColumnIndex(lo, "VENDOR(s)")
-    If includeCategory Then cCat = ColumnIndex(lo, "CATEGORY")
-    If cCode * cItem = 0 Or cRow = 0 Then Exit Function
-
-    Dim src As Variant: src = lo.DataBodyRange.value
-    Dim r As Long, n As Long: n = UBound(src, 1)
-    Dim outArr() As Variant
-    Dim colCount As Long: colCount = IIf(includeCategory, 8, 7)
-    ReDim outArr(1 To n, 1 To colCount)
-    Dim outRow As Long: outRow = 0
-
-    For r = 1 To n
-        Dim itm As String: itm = NzStr(src(r, cItem))
-        If itm <> "" Then
-            outRow = outRow + 1
-            outArr(outRow, 1) = NzStr(src(r, cRow))   ' ROW
-            outArr(outRow, 2) = NzStr(src(r, cCode))  ' ITEM_CODE
-            outArr(outRow, 3) = itm                   ' ITEM
-            outArr(outRow, 4) = NzStr(src(r, cUOM))   ' UOM
-            outArr(outRow, 5) = NzStr(src(r, cLoc))   ' LOCATION
-            outArr(outRow, 6) = NzStr(src(r, cDesc))  ' DESCRIPTION
-            outArr(outRow, 7) = NzStr(src(r, cVend))  ' VENDORS
-            If includeCategory Then
-                If cCat > 0 Then
-                    outArr(outRow, 8) = NzStr(src(r, cCat))  ' CATEGORY
-                Else
-                    outArr(outRow, 8) = ""
-                End If
-            End If
-        End If
-    Next
-
-    If outRow = 0 Then Exit Function
-    ' Trim to actual count
-    ReDim Preserve outArr(1 To outRow, 1 To colCount)
-    LoadItemList = outArr
-End Function

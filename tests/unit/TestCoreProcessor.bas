@@ -1,6 +1,16 @@
 Attribute VB_Name = "TestCoreProcessor"
 Option Explicit
 
+Private mLastTestFailure As String
+
+Public Sub ClearLastTestFailure()
+    mLastTestFailure = vbNullString
+End Sub
+
+Public Function GetLastTestFailure() As String
+    GetLastTestFailure = mLastTestFailure
+End Function
+
 Public Sub RunProcessorTests()
     Dim passed As Long
     Dim failed As Long
@@ -63,35 +73,62 @@ Public Function TestRunBatch_DuplicateMarkedSkipDup() As Long
     Dim report As String
     Dim loInbox As ListObject
     Dim loLog As ListObject
+    Dim processed As Long
+    Dim firstStatus As String
+    Dim secondStatus As String
+    Dim rootPath As String
 
     On Error GoTo CleanFail
-    Set wbCfg = TestPhase2Helpers.BuildPhase2ConfigWorkbook("WH1", "S1")
-    Set wbAuth = TestPhase2Helpers.BuildPhase2AuthWorkbook("WH1")
-    Set wbInv = TestPhase2Helpers.BuildPhase2InventoryWorkbook("WH1", Array("SKU-001"))
-    Set wbInbox = TestPhase2Helpers.BuildPhase2InboxWorkbook("S1")
+    mLastTestFailure = vbNullString
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("phase2_processor_duplicate")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHPDUP", "S1", rootPath)
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHPDUP", rootPath)
+    Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHPDUP", rootPath, Array("SKU-001"))
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("S1", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
 
-    TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WH1", "S1", "ACTIVE"
-    TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WH1", "*", "ACTIVE"
-    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-PROC-002", Now, "WH1", "S1", "user1", "SKU-001", 2
-    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-PROC-002", DateAdd("s", 1, Now), "WH1", "S1", "user1", "SKU-001", 2
-    Call modProcessor.RunBatch("WH1", 500, report)
+    TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WHPDUP", "S1", "ACTIVE"
+    TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WHPDUP", "*", "ACTIVE"
+    wbAuth.Save
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-PROC-002", Now, "WHPDUP", "S1", "user1", "SKU-001", 2
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-PROC-002", DateAdd("s", 1, Now), "WHPDUP", "S1", "user1", "SKU-001", 2
+    processed = modProcessor.RunBatch("WHPDUP", 500, report)
 
     Set loInbox = wbInbox.Worksheets("InboxReceive").ListObjects("tblInboxReceive")
     Set loLog = wbInv.Worksheets("InventoryLog").ListObjects("tblInventoryLog")
 
-    If CStr(TestPhase2Helpers.GetRowValue(loInbox, 1, "Status")) <> "PROCESSED" Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(loInbox, 2, "Status")) <> "SKIP_DUP" Then GoTo CleanExit
-    If loLog.ListRows.Count <> 2 Then GoTo CleanExit
+    firstStatus = CStr(TestPhase2Helpers.GetRowValue(loInbox, 1, "Status"))
+    secondStatus = CStr(TestPhase2Helpers.GetRowValue(loInbox, 2, "Status"))
+    If firstStatus <> "PROCESSED" Then
+        mLastTestFailure = "FirstStatus=" & firstStatus & _
+            "; ErrorCode=" & CStr(TestPhase2Helpers.GetRowValue(loInbox, 1, "ErrorCode")) & _
+            "; ErrorMessage=" & CStr(TestPhase2Helpers.GetRowValue(loInbox, 1, "ErrorMessage")) & _
+            "; Processed=" & CStr(processed) & "; Report=" & report
+        GoTo CleanExit
+    End If
+    If secondStatus <> "SKIP_DUP" Then
+        mLastTestFailure = "SecondStatus=" & secondStatus & "; Processed=" & CStr(processed) & "; Report=" & report
+        GoTo CleanExit
+    End If
+    If loLog.ListRows.Count <> 1 Then
+        mLastTestFailure = "InventoryLogRows=" & CStr(loLog.ListRows.Count) & "; Processed=" & CStr(processed) & "; Report=" & report
+        GoTo CleanExit
+    End If
 
     TestRunBatch_DuplicateMarkedSkipDup = 1
 
 CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
     TestPhase2Helpers.CloseNoSave wbInbox
     TestPhase2Helpers.CloseNoSave wbInv
     TestPhase2Helpers.CloseNoSave wbAuth
     TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
     Exit Function
 CleanFail:
+    mLastTestFailure = CStr(Err.Number) & ": " & Err.Description
     Resume CleanExit
 End Function
 

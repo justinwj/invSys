@@ -14,6 +14,19 @@ Public Function EnsureProductionWorkbookSurface(ByVal workbookName As String, _
         modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report)
 End Function
 
+Public Function EnsureReceivingWorkbookSurface(ByVal workbookName As String, _
+                                               ByRef report As String) As Boolean
+    Dim wb As Workbook
+
+    Set wb = ResolveOpenWorkbook(workbookName)
+    If wb Is Nothing Then
+        report = "Receiving operator workbook is not open: " & Trim$(workbookName)
+        Exit Function
+    End If
+    EnsureReceivingWorkbookSurface = _
+        modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report)
+End Function
+
 Public Function ShouldBootstrapRoleWorkbookSurface(ByVal workbookName As String) As Boolean
     Dim wb As Workbook
 
@@ -41,7 +54,24 @@ Public Function InitializeProductionAutoSnapshot(ByVal workbookName As String) A
     InitializeProductionAutoSnapshot = True
 End Function
 
+Public Function InitializeReceivingAutoSnapshot(ByVal workbookName As String) As Boolean
+    Dim wb As Workbook
+
+    Set wb = ResolveOpenWorkbook(workbookName)
+    If wb Is Nothing Then Exit Function
+    modOperatorReadModel.InitializeAutoSnapshotForWorkbook wb
+    InitializeReceivingAutoSnapshot = True
+End Function
+
 Public Sub UnregisterProductionAutoSnapshot(ByVal workbookName As String)
+    Dim wb As Workbook
+
+    Set wb = ResolveOpenWorkbook(workbookName)
+    If wb Is Nothing Then Exit Sub
+    modOperatorReadModel.UnregisterAutoSnapshotWorkbook wb
+End Sub
+
+Public Sub UnregisterReceivingAutoSnapshot(ByVal workbookName As String)
     Dim wb As Workbook
 
     Set wb = ResolveOpenWorkbook(workbookName)

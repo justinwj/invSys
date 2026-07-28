@@ -31,32 +31,45 @@ Public Function TestQueueReceiveEvent_WritesInboxRow() As Long
     Dim lo As ListObject
     Dim eventIdOut As String
     Dim errorMessage As String
+    Dim rootPath As String
 
-    Set wbCfg = TestPhase2Helpers.BuildPhase2ConfigWorkbook("WHR1", "R1", "RECEIVE")
-    Set wbAuth = TestPhase2Helpers.BuildPhase2AuthWorkbook("WHR1")
-    Set wbInbox = TestPhase2Helpers.BuildReceiveInboxWorkbook("R1")
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("role_writer_receive")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHR1", "R1", rootPath, "RECEIVE")
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHR1", rootPath)
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("R1", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
     TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WHR1", "R1", "ACTIVE"
+    wbAuth.Save
 
     On Error GoTo CleanFail
-    If Not modRoleEventWriter.QueueReceiveEvent("WHR1", "R1", "user1", "SKU-001", 4, "A1", "receive test", "", "", Now, wbInbox, eventIdOut, errorMessage) Then GoTo CleanExit
+    If Not modRoleEventWriter.QueueReceiveEvent("WHR1", "R1", "user1", "SKU-001", 4, "A1", "receive test", "", "", Now, wbInbox, eventIdOut, errorMessage) Then
+        mLastTestFailure = errorMessage
+        GoTo CleanExit
+    End If
 
     Set lo = wbInbox.Worksheets("InboxReceive").ListObjects("tblInboxReceive")
-    If lo.ListRows.Count <> 2 Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(lo, 2, "EventID")) <> eventIdOut Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(lo, 2, "EventType")) <> EVENT_TYPE_RECEIVE Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(lo, 2, "UserId")) <> "user1" Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(lo, 2, "SKU")) <> "SKU-001" Then GoTo CleanExit
-    If CDbl(TestPhase2Helpers.GetRowValue(lo, 2, "Qty")) <> 4 Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(lo, 2, "Status")) <> "NEW" Then GoTo CleanExit
+    If lo.ListRows.Count <> 1 Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "EventID")) <> eventIdOut Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "EventType")) <> EVENT_TYPE_RECEIVE Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "UserId")) <> "user1" Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "System_Key")) = "" Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "SKU")) <> "SKU-001" Then GoTo CleanExit
+    If CDbl(TestPhase2Helpers.GetRowValue(lo, 1, "Qty")) <> 4 Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(lo, 1, "Status")) <> "NEW" Then GoTo CleanExit
 
     TestQueueReceiveEvent_WritesInboxRow = 1
 
 CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
     TestPhase2Helpers.CloseNoSave wbInbox
     TestPhase2Helpers.CloseNoSave wbAuth
     TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
     Exit Function
 CleanFail:
+    mLastTestFailure = Err.Description
     Resume CleanExit
 End Function
 

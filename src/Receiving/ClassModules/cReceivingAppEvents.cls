@@ -29,7 +29,7 @@ End Sub
 
 Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
     If Not IsReceivingRoleWorkbook(Wb) Then Exit Sub
-    modOperatorReadModel.UnregisterAutoSnapshotWorkbook Wb
+    modOperationsPrimitiveBridge.UnregisterReceivingAutoSnapshot Wb.Name
 End Sub
 
 Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)

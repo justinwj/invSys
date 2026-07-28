@@ -81,23 +81,34 @@ try {
     $excel.EnableEvents = $false
 
     $modulePaths = @(
+        (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
+        (Join-Path $repo "src/Core/Modules/modDeploymentPaths.bas"),
         (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
+        (Join-Path $repo "src/Core/Modules/modNasConnection.bas"),
+        (Join-Path $repo "src/Core/Modules/modUiQuiet.bas"),
+        (Join-Path $repo "src/Core/Modules/modPerfLog.bas"),
+        (Join-Path $repo "src/Core/Modules/modRibbonRuntimeStatus.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleWorkbookSurfaces.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modItemSearch.bas"),
         (Join-Path $repo "src/Core/Modules/modInventoryDomainBridge.bas"),
+        (Join-Path $repo "src/Core/Modules/modDesignsDomainBridge.bas"),
         (Join-Path $repo "src/Core/Modules/modWarehouseSync.bas"),
         (Join-Path $repo "src/Core/Modules/modOperatorReadModel.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleEventWriter.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleUiAccess.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryApply.bas"),
-        (Join-Path $repo "src/Receiving/Modules/modReceivingEventCreator.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryQueries.bas"),
+        (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
         (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
+        (Join-Path $repo "src/Production/Modules/modProductionJson.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
         (Join-Path $repo "tests/unit/TestCoreItemSearch.bas"),
@@ -134,8 +145,8 @@ try {
 
     foreach ($m in $modulePaths) {
         Import-BasModule -VbProject $vbProject -BasPath $m
-        [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
     }
+    [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")
 
     $wrapperNames = Add-TestWrappers -BootstrapComponent $bootstrap -TargetFunctions $allTests
     [void](Run-TestFunction -Excel $excel -WorkbookName $harness.Name -FunctionName "HarnessPing")

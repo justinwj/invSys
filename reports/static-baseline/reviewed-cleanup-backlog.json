@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "bcbe772d4e2978614d89430e0365d01ec59d21538f67727e059adac072826466",
-                          "maintenanceCandidatesSha256":  "3608aa1a294180513d1d36e6e24516bc2f1de52e5d717b7a1caa45a09c4145b3"
+                          "implementationManifestSha256":  "298eedcec0f736a2e9719ea960ced5e8fc8d1fb9200e3e412a837212766b5f58",
+                          "maintenanceCandidatesSha256":  "c50e89454ca9bba070bfba074716eff7b8e23ddcd56991944e571a9b517ca008"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1006,
-                    "reviewedCandidateCount":  1008,
+                    "scannerCandidateCount":  995,
+                    "reviewedCandidateCount":  997,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  40,
+                            "candidateCount":  27,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -37,12 +37,12 @@
                         },
                         {
                             "name":  "SHARED_OPERATIONS",
-                            "candidateCount":  66,
+                            "candidateCount":  62,
                             "reason":  "Cross-role or future invSys.Operations packaging work."
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  313,
+                            "candidateCount":  319,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -218,13 +218,6 @@
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
                                                   "baselineLineCount":  12850,
-                                                  "growthAllowedWithoutException":  false
-                                              },
-                                              {
-                                                  "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
-                                                  "componentName":  "modTS_Received",
-                                                  "packageKey":  "Receiving",
-                                                  "baselineLineCount":  2175,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -5921,6 +5914,30 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:07c069e7c0322193:InitializeProductionAutoSnapshot+InitializeReceivingAutoSnapshot",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "InitializeProductionAutoSnapshot",
+                                                  "InitializeReceivingAutoSnapshot"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:0b89ce508cc3d657:RunRoleMacro1+RunRoleMacro1",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -6098,6 +6115,33 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modProcessor.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
+                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetItemSearch+ResolveInventoryWorksheetSnapshot",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "frmItemSearch",
+                           "procedureNames":  [
+                                                  "ResolveInventoryWorksheetInvMan",
+                                                  "ResolveInventoryWorksheetItemSearch",
+                                                  "ResolveInventoryWorksheetSnapshot"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Forms/frmItemSearch.frm",
+                                               "src/Core/Modules/modUR_Snapshot.bas",
+                                               "src/InventoryDomain/Modules/modInvMan.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -6773,6 +6817,30 @@
                                                "src/Core/Modules/modProcessor.bas",
                                                "src/Core/Modules/modRuntimeWorkbooks.bas",
                                                "src/Core/Modules/modWarehouseSync.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
+                           "id":  "duplicate:75f35dcb141830a8:UnregisterProductionAutoSnapshot+UnregisterReceivingAutoSnapshot",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "UnregisterProductionAutoSnapshot",
+                                                  "UnregisterReceivingAutoSnapshot"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -7530,6 +7598,30 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:c795f764e2b8c1e7:EnsureProductionWorkbookSurface+EnsureReceivingWorkbookSurface",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "EnsureProductionWorkbookSurface",
+                                                  "EnsureReceivingWorkbookSurface"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:c8d15999fefdb529:NzStr+NzStr",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -7546,6 +7638,31 @@
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cDynItemSearch.cls",
                                                "src/Core/ClassModules/cTemplateApplier.cls"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
+                           "id":  "duplicate:c990451daf1a5c4e:ValueOrPlaceholderAdmin+ValueOrPlaceholderRole",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modAdminConsole",
+                           "procedureNames":  [
+                                                  "ValueOrPlaceholderAdmin",
+                                                  "ValueOrPlaceholderRole"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdminConsole.bas",
+                                               "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -11649,6 +11766,75 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.EndTransaction",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "EndTransaction"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.IsTransactionActive",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "IsTransactionActive"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.MarkSegment",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modPerfLog",
+                           "procedureNames":  [
+                                                  "MarkSegment"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modPerfLog.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modPerfLog.bas:modPerfLog.PerfBegin",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -13963,29 +14149,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.EnableResizableUserForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "modUserFormResizeWin",
-                           "procedureNames":  [
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modUserFormResizeWin.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Core_Modules_MouseScroll.bas:MouseScroll.GetCallbackPtr",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -14030,30 +14193,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:AddOrMergeFromSearch",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "cDynItemSearch",
-                           "procedureNames":  [
-                                                  "CommitSelection",
-                                                  "AddOrMergeFromSearch"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
                        },
                        {
                            "id":  "same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:ApplyItemSelection",
@@ -19583,167 +19722,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "duplicate:0c765264e8499c0e:ColumnIndex+LogColIndex",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ColumnIndex",
-                                                  "LogColIndex"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "SPLIT_MODULE",
-                           "disposition":  "SPLIT_MODULE",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AddOrMergeFromSearch",
-                                                  "AggColMap",
-                                                  "AppendLogRow",
-                                                  "AppendLogRowFromRT",
-                                                  "AppendQueuedEventIdReceiving",
-                                                  "AppendRef",
-                                                  "ArrangeReceivingSurface",
-                                                  "BuildReceiveEventNote",
-                                                  "CanHideWorksheetReceiving",
-                                                  "CaptureUndoState",
-                                                  "ClearExcelClipboardStateReceiving",
-                                                  "ClearReceivingFormStaging",
-                                                  "ClearTable",
-                                                  "ColumnIndex",
-                                                  "ConfirmWrites",
-                                                  "CriticalLogCols",
-                                                  "DeleteAddedLogRows",
-                                                  "DeleteShapeIfExistsReceiving",
-                                                  "DeleteStaleReceivingButtons",
-                                                  "EnforceReceivingSupportSheetsHidden",
-                                                  "EnsureGeneratedButtons",
-                                                  "EnsureReceivingButton",
-                                                  "EnsureReceivingButtons",
-                                                  "EnsureRowMap",
-                                                  "FindAggregateMatch",
-                                                  "FindInColumn",
-                                                  "FindInvRowByItemCode",
-                                                  "FindInvRowByROW",
-                                                  "FirstBlankListRowReceiving",
-                                                  "HandleReceivingSelectionChange",
-                                                  "HandleReceivingSheetChange",
-                                                  "InitializeReceivingUiForWorkbook",
-                                                  "LastConfirmWritesStatus",
-                                                  "LastConfirmWritesSucceeded",
-                                                  "LoadItemList",
-                                                  "LoadReceivingFormInventory",
-                                                  "LoadReceivingFormTable",
-                                                  "LogColIndex",
-                                                  "LookupInvSys",
-                                                  "LookupInvSysByItemCode",
-                                                  "LookupInvSysByROW",
-                                                  "MacroRedo",
-                                                  "MacroUndo",
-                                                  "MergeIntoAggregate",
-                                                  "MergeIntoReceivedTally",
-                                                  "MoveListObjectToAddressReceiving",
-                                                  "MoveListObjectToRowColReceiving",
-                                                  "NewGuid",
-                                                  "NormalizeInventoryRowForWriteReceiving",
-                                                  "NormalizeReceivingInventoryRowDisplay",
-                                                  "NzDbl",
-                                                  "NzLng",
-                                                  "NzStr",
-                                                  "ProcessQueuedReceiveEventsRuntime",
-                                                  "QueueReceiveEventsFromAggregate",
-                                                  "QueueReceiveEventsFromCurrentWorkbook",
-                                                  "QuickSort",
-                                                  "RebuildAggregation",
-                                                  "RebuildAggregationForWorkbook",
-                                                  "ReceivingDemoRowForSku",
-                                                  "ReceivingFormInitializeSmokeForWorkbook",
-                                                  "ReceivingLegacyItemRowForSku",
-                                                  "RecordInvDelta",
-                                                  "RefListContainsReceiving",
-                                                  "RefreshReadModelForPicker",
-                                                  "RefreshReceivingUiAccess",
-                                                  "RefreshReceivingUiForWorkbook",
-                                                  "RemoveLegacyReceivingButtons",
-                                                  "ResolveDiagnosticValueReceiving",
-                                                  "ResolveInvRowForReceiveLog",
-                                                  "ResolveOnActionMacroReceiving",
-                                                  "ResolveReceivingWorkbook",
-                                                  "ResolveShapeCaptionReceiving",
-                                                  "RestoreTable",
-                                                  "RunReceivingConfirmWritesFormActionForTest",
-                                                  "SetReceivedTallyRowForForm",
-                                                  "SheetExists",
-                                                  "ShowReceivingDynamicItemSearch",
-                                                  "ShowReceivingForm",
-                                                  "SnapshotTable",
-                                                  "StageReceivingFormItemForWorkbook",
-                                                  "StageReceivingFormLine",
-                                                  "StageReceivingFormLineForWorkbook",
-                                                  "SyncQuantityFromStaging",
-                                                  "ToggleLogColumn",
-                                                  "TryClearTableReceiving",
-                                                  "UndoInvDeltas",
-                                                  "ValidateQueueReceiveEventsFromCurrentWorkbook",
-                                                  "ValueOrUnknownReceiving",
-                                                  "WorkbookSheetExistsReceiving"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
-                       },
-                       {
-                           "id":  "procedure-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ConfirmWrites",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "SPLIT_MODULE",
-                           "disposition":  "SPLIT_MODULE",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "PLANNED",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ConfirmWrites"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ConfirmWrites_Tester.bas",
-                                                   "tests/tooling/Test-Slice5BehaviorLocks.ps1",
-                                                   "tests/unit/TestStub_modTS_Received.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
-                       },
-                       {
                            "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
@@ -19882,50 +19860,50 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.GetUOMFromDataTable",
+                           "id":  "reachability:src_Receiving_ClassModules_cReceivingWorkflowState.cls:cReceivingWorkflowState.StateReady",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
                            "workstream":  "RECEIVING",
-                           "componentName":  "frmReceivedTally",
+                           "componentName":  "cReceivingWorkflowState",
                            "procedureNames":  [
-                                                  "GetUOMFromDataTable"
+                                                  "StateReady"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
+                                               "src/Receiving/ClassModules/cReceivingWorkflowState.cls"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.UpdateInventory",
+                           "id":  "reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.ClearReceivingReadinessForWorkbook",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
                            "workstream":  "RECEIVING",
-                           "componentName":  "frmReceivedTally",
+                           "componentName":  "modReceivingInit",
                            "procedureNames":  [
-                                                  "UpdateInventory"
+                                                  "ClearReceivingReadinessForWorkbook"
                                               ],
                            "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
+                                               "src/Receiving/Modules/modReceivingInit.bas"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.InitReceivingAddin",
@@ -19949,29 +19927,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.AppendLogRow",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AppendLogRow"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons",
@@ -20020,52 +19975,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RecordInvDelta",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RecordInvDelta"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RemoveLegacyReceivingButtons",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "RemoveLegacyReceivingButtons"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
                            "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -20077,52 +19986,6 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "RunReceivingConfirmWritesFormActionForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ToggleLogColumn",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ToggleLogColumn"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ValidateQueueReceiveEventsFromCurrentWorkbook",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ValidateQueueReceiveEventsFromCurrentWorkbook"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"
@@ -20176,53 +20039,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.btnSend_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "btnSend_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Receiving_Forms_frmReceivedTally.frm:frmReceivedTally.UserForm_Initialize",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "frmReceivedTally",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20314,30 +20130,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnRedo_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "frmReceiving",
-                           "procedureNames":  [
-                                                  "mBtnRedo_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceiving.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20366,7 +20160,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnUndo_Click",
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTabs_Change",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -20376,7 +20170,7 @@
                            "workstream":  "RECEIVING",
                            "componentName":  "frmReceiving",
                            "procedureNames":  [
-                                                  "mBtnUndo_Click"
+                                                  "mTabs_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Forms/frmReceiving.frm"
@@ -20529,29 +20323,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.AddOrMergeFromSearch",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "AddOrMergeFromSearch"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ConfirmWrites_Tester.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -20573,30 +20344,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "same-project-run:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Activate:EnableResizableUserForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "frmReceiving",
-                           "procedureNames":  [
-                                                  "UserForm_Activate",
-                                                  "EnableResizableUserForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Forms/frmReceiving.frm"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
                        },
                        {
                            "id":  "duplicate:001250ca4c3969cb:AddListBox+AddListBox+AddListBox",
@@ -20681,31 +20428,6 @@
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cDynItemSearch.cls",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:0711704cfb4c5043:ColumnIndexReceive+ColumnIndexShip",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modReceivingEventCreator",
-                           "procedureNames":  [
-                                                  "ColumnIndexReceive",
-                                                  "ColumnIndexShip"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
-                                               "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20819,7 +20541,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetItemSearch+ResolveInventoryWorksheetReceived+ResolveInventoryWorksheetSnapshot",
+                           "id":  "duplicate:162d045cebea9efe:Location+Location",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20827,18 +20549,14 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "frmItemSearch",
+                           "componentName":  "cProductionRunSession",
                            "procedureNames":  [
-                                                  "ResolveInventoryWorksheetInvMan",
-                                                  "ResolveInventoryWorksheetItemSearch",
-                                                  "ResolveInventoryWorksheetReceived",
-                                                  "ResolveInventoryWorksheetSnapshot"
+                                                  "Location",
+                                                  "Location"
                                               ],
                            "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm",
-                                               "src/Core/Modules/modUR_Snapshot.bas",
-                                               "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Receiving/Forms/frmReceivedTally.frm"
+                                               "src/Production/ClassModules/cProductionRunSession.cls",
+                                               "src/Receiving/ClassModules/cReceivingWorkflowState.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20929,7 +20647,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblReceive+NzDblShip+NzDblSync",
+                           "id":  "duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblShip+NzDblSync",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20941,7 +20659,6 @@
                            "procedureNames":  [
                                                   "NzDblApply",
                                                   "NzDblReadModel",
-                                                  "NzDblReceive",
                                                   "NzDblShip",
                                                   "NzDblSync"
                                               ],
@@ -20949,7 +20666,6 @@
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modWarehouseSync.bas",
                                                "src/InventoryDomain/Modules/modInventoryApply.bas",
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -20985,7 +20701,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsReceiving+WorkbookSheetExistsShipping",
+                           "id":  "duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsShipping",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20996,12 +20712,10 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "WorkbookSheetExists",
-                                                  "WorkbookSheetExistsReceiving",
                                                   "WorkbookSheetExistsShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -21097,7 +20811,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrReceive+NzStrShip+TextValue",
+                           "id":  "duplicate:30348d523aeda395:NzStrShip+TextValue",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21107,13 +20821,11 @@
                            "workstream":  "SHARED_OPERATIONS",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
-                                                  "NzStrReceive",
                                                   "NzStrShip",
                                                   "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
-                                               "src/Receiving/Modules/modReceivingEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -21236,6 +20948,31 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:3be0eab87f1495ef:ApplyProductionWindowStyle+ApplyReceivingWindowStyle",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHARED_OPERATIONS",
+                           "componentName":  "modProductionFormWindow",
+                           "procedureNames":  [
+                                                  "ApplyProductionWindowStyle",
+                                                  "ApplyReceivingWindowStyle"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionFormWindow.bas",
+                                               "src/Receiving/Modules/modReceivingFormWindow.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:426875543f50711f:MaxDoubleForm+MaxDoubleLocal+MaxLongAdminForm+MaxLongLocal+MaxLongShipping",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -21256,31 +20993,6 @@
                                                "src/Admin/Forms/frmAddInventoryItem.frm",
                                                "src/Core/ClassModules/cFormAnchorItem.cls",
                                                "src/Production/Forms/frmProduction.frm",
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:44662b4f2fcefe02:ResolveOnActionMacroReceiving+ResolveOnActionMacroShipping",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ResolveOnActionMacroReceiving",
-                                                  "ResolveOnActionMacroShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -21715,7 +21427,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:834c0cd6cc85ba5c:ClearExcelClipboardState+ClearExcelClipboardStateProduction+ClearExcelClipboardStateReceiving+ClearExcelClipboardStateShipping",
+                           "id":  "duplicate:834c0cd6cc85ba5c:ClearExcelClipboardState+ClearExcelClipboardStateProduction+ClearExcelClipboardStateShipping",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21727,13 +21439,11 @@
                            "procedureNames":  [
                                                   "ClearExcelClipboardState",
                                                   "ClearExcelClipboardStateProduction",
-                                                  "ClearExcelClipboardStateReceiving",
                                                   "ClearExcelClipboardStateShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modUtils.bas",
                                                "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -21814,31 +21524,6 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:9001cf0268a06207:NzDbl+NzDblInv",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modInvMan",
-                           "procedureNames":  [
-                                                  "NzDbl",
-                                                  "NzDblInv"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22007,7 +21692,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:c30f7d79756508ef:NzStr+NzStr+NzStr+NzStrInv",
+                           "id":  "duplicate:c30f7d79756508ef:NzStr+NzStr+NzStrInv",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -22019,14 +21704,12 @@
                            "procedureNames":  [
                                                   "NzStr",
                                                   "NzStr",
-                                                  "NzStr",
                                                   "NzStrInv"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cPickerRouter.cls",
                                                "src/InventoryDomain/Modules/modInvMan.bas",
-                                               "src/Production/Modules/mProduction.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
+                                               "src/Production/Modules/mProduction.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22071,31 +21754,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:c80c4674cbf9b47b:CanHideWorksheetReceiving+CanHideWorksheetShipping",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "CanHideWorksheetReceiving",
-                                                  "CanHideWorksheetShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas",
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:c92c185be4fadc97:AddLabel+AddLabel+AddLabel",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22114,33 +21772,6 @@
                                                "src/Admin/Forms/frmAdminSettings.frm",
                                                "src/Shipping/Forms/frmShipmentsTally.frm",
                                                "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:c990451daf1a5c4e:ValueOrPlaceholderAdmin+ValueOrPlaceholderRole+ValueOrUnknownReceiving",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "modAdminConsole",
-                           "procedureNames":  [
-                                                  "ValueOrPlaceholderAdmin",
-                                                  "ValueOrPlaceholderRole",
-                                                  "ValueOrUnknownReceiving"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Modules/modAdminConsole.bas",
-                                               "src/Core/Modules/modRoleEventWriter.bas",
-                                               "src/Receiving/Modules/modTS_Received.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [

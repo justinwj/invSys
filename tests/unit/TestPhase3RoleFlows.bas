@@ -23,41 +23,52 @@ Public Function TestReceivingRoleFlow_QueuesAndProcessesEvent() As Long
     Dim currentUserId As String
     Dim loInbox As ListObject
     Dim loLog As ListObject
-    Dim wbRole As Workbook
     Dim inboxRow As Long
+    Dim logRow As Long
+    Dim eventIdOut As String
+    Dim systemKeyOut As String
 
     On Error GoTo CleanFail
     currentUserId = modRoleEventWriter.ResolveCurrentUserId()
     tempRoot = TestPhase2Helpers.BuildUniqueTestFolder("Phase3Receive")
-    Set wbCfg = TestPhase2Helpers.BuildPhase2ConfigWorkbook("WHR3", "S1", "RECEIVE")
-    TestPhase2Helpers.SetWarehouseConfigValue wbCfg, "PathDataRoot", tempRoot
-    Set wbAuth = TestPhase2Helpers.BuildPhase2AuthWorkbook("WHR3")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHR3", "S1", tempRoot, "RECEIVE")
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHR3", tempRoot)
+    modRuntimeWorkbooks.SetCoreDataRootOverride tempRoot
     TestPhase2Helpers.AddCapability wbAuth, currentUserId, "RECEIVE_POST", "WHR3", "S1", "ACTIVE"
     TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WHR3", "*", "ACTIVE"
+    wbAuth.Save
     Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHR3", tempRoot, Array("SKU-001"))
     Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("S1", tempRoot)
 
-    Set wbRole = Application.Workbooks.Add
-    SetupReceivingRoleScaffold wbRole
-    If Not modReceivingEventCreator.QueueReceiveEventsFromWorkbook(wbRole, errorMessage) Then GoTo CleanExit
+    systemKeyOut = modRoleEventWriter.CreateSystemKey()
+    If Not modRoleEventWriter.QueueReceiveEventServer( _
+        "WHR3", "S1", currentUserId, "SKU-001", 7, "A1", _
+        "Phase 3 Receiving role flow", eventIdOut, errorMessage, "", _
+        systemKeyOut) Then GoTo CleanExit
     If modProcessor.RunBatch("WHR3", 500, report) <> 1 Then GoTo CleanExit
 
     Set loInbox = wbInbox.Worksheets("InboxReceive").ListObjects("tblInboxReceive")
     Set loLog = wbInv.Worksheets("InventoryLog").ListObjects("tblInventoryLog")
     inboxRow = FindRowByColumnValue(loInbox, "SKU", "SKU-001")
+    logRow = FindRowByColumnValue(loLog, "EventID", eventIdOut)
     If inboxRow = 0 Then GoTo CleanExit
+    If logRow = 0 Then GoTo CleanExit
     If CStr(TestPhase2Helpers.GetRowValue(loInbox, inboxRow, "Status")) <> "PROCESSED" Then GoTo CleanExit
-    If CStr(TestPhase2Helpers.GetRowValue(loLog, 2, "EventType")) <> EVENT_TYPE_RECEIVE Then GoTo CleanExit
-    If CDbl(TestPhase2Helpers.GetRowValue(loLog, 2, "QtyDelta")) <> 7 Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(loLog, logRow, "EventType")) <> EVENT_TYPE_RECEIVE Then GoTo CleanExit
+    If CStr(TestPhase2Helpers.GetRowValue(loLog, logRow, "System_Key")) <> systemKeyOut Then GoTo CleanExit
+    If CDbl(TestPhase2Helpers.GetRowValue(loLog, logRow, "QtyDelta")) <> 7 Then GoTo CleanExit
 
     TestReceivingRoleFlow_QueuesAndProcessesEvent = 1
 
 CleanExit:
-    TestPhase2Helpers.CloseNoSave wbRole
-    TestPhase2Helpers.CloseAndDeleteWorkbook wbInbox
-    TestPhase2Helpers.CloseAndDeleteWorkbook wbInv
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInbox
+    TestPhase2Helpers.CloseNoSave wbInv
     TestPhase2Helpers.CloseNoSave wbAuth
     TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If tempRoot <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder tempRoot, True
+    On Error GoTo 0
     Exit Function
 CleanFail:
     Resume CleanExit

@@ -416,6 +416,9 @@ try {
         (Join-Path $repo "src/DesignsDomain/Modules/modDesignsQueries.bas"),
         (Join-Path $repo "src/DesignsDomain/Modules/modDesignsBridgeApi.bas"),
         (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modReceivingFormWindow.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modReceivingPostingService.bas"),
+        (Join-Path $repo "src/Receiving/Modules/modTS_Received.bas"),
         (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
         (Join-Path $repo "src/Operations/Modules/modOperationsLayout.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
@@ -431,7 +434,6 @@ try {
         (Join-Path $repo "src/Admin/Modules/modAdminDesignLifecycle.bas"),
         (Join-Path $repo "tests/unit/TestPhase2Helpers.bas"),
         (Join-Path $repo "tests/unit/TestCoreRoleEventWriter.bas"),
-        (Join-Path $repo "tests/unit/TestStub_modTS_Received.bas"),
         (Join-Path $repo "tests/unit/TestAddinsPublish.bas"),
         (Join-Path $repo "tests/unit/TestWarehouseBootstrap.bas"),
         (Join-Path $repo "tests/unit/test_RetireMigrateSpec.bas"),
@@ -442,6 +444,7 @@ try {
         (Join-Path $repo "tests/unit/TestReceivingReadiness.bas"),
         (Join-Path $repo "tests/unit/TestPhase6CoreSurfaces.bas"),
         (Join-Path $repo "tests/unit/TestPhase6RoleSurfaces.bas"),
+        (Join-Path $repo "tests/unit/TestReceivingStabilization.bas"),
         (Join-Path $repo "tests/unit/TestProductionSessionService.bas"),
         (Join-Path $repo "tests/unit/TestDesignsDomain.bas")
     )
@@ -460,6 +463,7 @@ try {
         (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
         (Join-Path $repo "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls"),
         (Join-Path $repo "src/Receiving/ClassModules/cReceivingAppEvents.cls"),
+        (Join-Path $repo "src/Receiving/ClassModules/cReceivingWorkflowState.cls"),
         (Join-Path $repo "src/Operations/ClassModules/cOperationsAnchorItem.cls"),
         (Join-Path $repo "src/Operations/ClassModules/cOperationsAnchorManager.cls"),
         (Join-Path $repo "src/Production/ClassModules/cProductionRunSession.cls"),
@@ -670,7 +674,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_CreatesExpectedTables",
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal",
-        "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderUsesRawRowValue",
+        "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderUsesSystemKey",
         "TestPhase6RoleSurfaces.TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddStagesSelectedInventoryForConfirm",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef",
@@ -740,7 +744,12 @@ try {
         "TestDesignsDomain.TestInventoryQueries_ReadRebuiltEventLogProjection",
         "TestDesignsDomain.TestInventoryQueries_PickerPublishesEverySkuLocation",
         "TestDesignsDomain.TestInventoryApply_ShipRejectsNegativeInventory",
-        "TestDesignsDomain.TestInventoryApply_ProductionConsumeRejectsNegativeInventory"
+        "TestDesignsDomain.TestInventoryApply_ProductionConsumeRejectsNegativeInventory",
+        "TestReceivingStabilization.TestReceivingWorkflowState_UsesOrderedTransitions",
+        "TestReceivingStabilization.TestReceivingWorkflowState_PreservesEventIdentity",
+        "TestReceivingStabilization.TestReceivingWorkflowState_RejectsMissingSystemKey",
+        "TestReceivingStabilization.TestReceivingStage_GeneratesStableDistinctSystemKeys",
+        "TestReceivingStabilization.TestReceivingPurchasingTab_IsVisibleAndReadOnly"
     )
 
     $totalAvailableTests = $allTests.Count

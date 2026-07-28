@@ -1162,15 +1162,18 @@ try {
     Clear-ListObjectRows $loReceiveLog
     Clear-ListObjectRows $loReceiveInv
     Add-ListObjectRow -ListObject $loReceiveInv -Values @{
-        "System_Key" = "SYS-LIVE-REC"; "ITEM_CODE" = "SKU-REC"; "ITEM" = "Receive Widget"; "UOM" = "EA"; "LOCATION" = "A1";
+        "System_Key" = "SYS-LIVE-REC-SOURCE"; "ITEM_CODE" = "SKU-REC"; "ITEM" = "Receive Widget"; "UOM" = "EA"; "LOCATION" = "A1";
         "DESCRIPTION" = "Receive Widget"; "RECEIVED" = 0; "TOTAL INV" = 10; "LAST EDITED" = ""; "TOTAL INV LAST EDIT" = ""; "TIMESTAMP" = ""
     }
     Add-ListObjectRow -ListObject $loReceivedTally -Values @{
-        "REF_NUMBER" = "REF-LIVE-001"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7; "System_Key" = "SYS-LIVE-REC"
+        "REF_NUMBER" = "REF-LIVE-001"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7;
+        "System_Key" = "SYS-LIVE-REC-NEW"; "ITEM_CODE" = "SKU-REC"; "Source_System_Key" = "SYS-LIVE-REC-SOURCE";
+        "EventId" = "EVT-LIVE-REC-001"; "WorkflowState" = "STAGED"
     }
     Add-ListObjectRow -ListObject $loAggReceived -Values @{
         "REF_NUMBER" = "REF-LIVE-001"; "ITEM_CODE" = "SKU-REC"; "ITEM" = "Receive Widget"; "UOM" = "EA";
-        "QUANTITY" = 7; "LOCATION" = "A1"; "System_Key" = "SYS-LIVE-REC"
+        "QUANTITY" = 7; "LOCATION" = "A1"; "System_Key" = "SYS-LIVE-REC-NEW";
+        "EventId" = "EVT-LIVE-REC-001"; "WorkflowState" = "STAGED"
     }
     $receivingStageOk = ((Get-RowCountSafe $loReceivedTally) -eq 1) -and ((Get-RowCountSafe $loAggReceived) -eq 1)
     Add-ResultRow -Rows $resultRows -Check "Receiving.Form.Stage" -Passed ($receivingStageOk -and (Get-RowCountSafe $loReceivedTally) -eq 1 -and (Get-RowCountSafe $loAggReceived) -eq 1) -Detail "StageResult=$receivingStageOk; ReceivedTallyRows=$(Get-RowCountSafe $loReceivedTally); AggregateReceivedRows=$(Get-RowCountSafe $loAggReceived)"
@@ -1206,6 +1209,15 @@ try {
         -and (([double](Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName "RECEIVED")) -eq 0)
     $receiveBoundOk = $receiveFormActionReport.Contains("BoundWorkbook=$([string]$wbReceive.Name)")
     Add-ResultRow -Rows $resultRows -Check "Receiving.FormAction.ConfirmWrites.CapturedWorkbook" -Passed ($receiveConfirmSucceeded -and $receiveLocalOk -and $receiveBoundOk) -Detail "Action=$receiveFormActionReport; CapabilityAfter=$receiveCapabilityAfter; ReceivedTallyRows=$receivedTallyRowsAfter; AggregateReceivedRows=$aggReceivedRowsAfter; RECEIVED=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'RECEIVED')); TOTAL_INV=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'TOTAL INV')); QtyOnHand=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'QtyOnHand')); SourceType=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'SourceType')); IsStale=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'IsStale')); LogRows=$(Get-RowCountSafe $loReceiveLog)"
+
+    $purchasingStagingBefore = Get-RowCountSafe $loReceivedTally
+    $purchasingAggregateBefore = Get-RowCountSafe $loAggReceived
+    $purchasingInboxBefore = Get-RowCountSafe $loInboxReceive
+    $purchasingReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modTS_Received.RunReceivingPurchasingTabContractForTest" -Arguments @($wbReceive))
+    $purchasingNoWrites = ($purchasingStagingBefore -eq (Get-RowCountSafe $loReceivedTally)) `
+        -and ($purchasingAggregateBefore -eq (Get-RowCountSafe $loAggReceived)) `
+        -and ($purchasingInboxBefore -eq (Get-RowCountSafe $loInboxReceive))
+    Add-ResultRow -Rows $resultRows -Check "Receiving.Form.PurchasingStub.ReadOnly" -Passed ($purchasingReport.StartsWith("OK|") -and $purchasingReport.Contains("Selected=Purchasing") -and $purchasingReport.Contains("EnabledPurchasingActions=0") -and $purchasingNoWrites) -Detail "Report=$purchasingReport; NoWrites=$purchasingNoWrites"
 
     $receiveInboxAfter = Get-RowCountSafe $loInboxReceive
     $receiveQueuedRow = 0
