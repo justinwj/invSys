@@ -1,7 +1,7 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "operations-shadow-collisions",
-    "generatedAtUtc":  "2026-07-27T23:30:00Z",
+    "generatedAtUtc":  "2026-07-27T23:20:00Z",
     "sourceRoots":  [
                         "src/Operations",
                         "src/Receiving",
@@ -16,8 +16,8 @@
                           ],
     "summary":  {
                     "componentCount":  44,
-                    "publicProcedureCount":  360,
-                    "ribbonCallbackCount":  8,
+                    "publicProcedureCount":  362,
+                    "ribbonCallbackCount":  4,
                     "componentCollisionCount":  0,
                     "publicProcedureCollisionCount":  0,
                     "ribbonCallbackCollisionCount":  0,

@@ -643,7 +643,9 @@ End Function
 Private Function GetRequiredAddinsTester() As Variant
     GetRequiredAddinsTester = Array( _
         "invSys.Core.xlam", _
-        "invSys.Receiving.xlam", _
+        "invSys.Inventory.Domain.xlam", _
+        "invSys.Designs.Domain.xlam", _
+        "invSys.Operations.xlam", _
         "invSys.Admin.xlam")
 End Function
 

@@ -1,9 +1,9 @@
 # Operations Shadow Collision Report
 
-- Generated: 2026-07-27T23:30:00Z
+- Generated: 2026-07-27T23:20:00Z
 - Components: 44
-- Public standard-module procedures: 360
-- Ribbon callbacks inspected: 8
+- Public standard-module procedures: 362
+- Ribbon callbacks inspected: 4
 - Component collision groups: 0
 - Public-procedure collision groups: 0
 - Ribbon callback collision groups: 0

@@ -13,5 +13,5 @@
 | Shadow.CollisionHarness | PASS | A deterministic harness must report component, public-procedure, and Ribbon callback collisions. |
 | Shadow.CollisionResolutions | PASS | Every accepted shadow collision must have a reviewed machine-readable resolution. |
 | Shadow.PackagedValidator | PASS | Packaged validation must compile/load the shadow and initialize each role form in isolation. |
-| Shadow.NotDeployed | PASS | Slice 6 must not publish invSys.Operations.xlam to deploy/current. |
-| Shadow.LegacyPackagesRemainActive | PASS | The three standalone role XLAMs must remain the active deploy/current packages during Slice 6. |
+| Shadow.DeployedCutoverPackage | PASS | After Slice 13, the reviewed shadow source set must also be the deployed Operations package. |
+| Shadow.LegacyPackagesRetired | PASS | After Slice 13, the standalone role XLAMs must remain absent from deploy/current. |

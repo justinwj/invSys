@@ -15,17 +15,15 @@ $deployPath = Join-Path $repoPath $DeployRoot
 
 $installOrder = @(
     "invSys.Core.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Inventory.Domain.xlam",
+    "invSys.Designs.Domain.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 $uninstallOrder = @($installOrder.Clone())
 [array]::Reverse($uninstallOrder)
 $startupOrder = @(
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 
@@ -90,7 +88,7 @@ if (Get-Process EXCEL -ErrorAction SilentlyContinue) {
 }
 
 Write-Output "Using registry-only leaf XLAM startup registration..."
-Write-Output "- Core and Domain XLAMs are not explicitly opened; role/Admin XLAMs use bridge calls instead of domain references"
+Write-Output "- Core and Domain XLAMs are not explicitly opened; Operations/Admin use bridge calls instead of domain references"
 
 Write-Output "Pruning Add-in Manager entries..."
 Remove-InvSysAddinManagerEntries -RegistryPath $addinManagerKey

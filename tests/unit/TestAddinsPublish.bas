@@ -126,7 +126,8 @@ Private Sub CreateRequiredAddinsSet(ByVal folderPath As String, ByVal zeroByte A
     EnsureFolderRecursiveAddinsTest folderPath
     WriteTextFileAddinsTest folderPath & "\invSys.Core.xlam", IIf(zeroByte, vbNullString, "core-addin")
     WriteTextFileAddinsTest folderPath & "\invSys.Inventory.Domain.xlam", IIf(zeroByte, vbNullString, "inventory-domain-addin")
-    WriteTextFileAddinsTest folderPath & "\invSys.Receiving.xlam", IIf(zeroByte, vbNullString, "receiving-addin")
+    WriteTextFileAddinsTest folderPath & "\invSys.Designs.Domain.xlam", IIf(zeroByte, vbNullString, "designs-domain-addin")
+    WriteTextFileAddinsTest folderPath & "\invSys.Operations.xlam", IIf(zeroByte, vbNullString, "operations-addin")
     WriteTextFileAddinsTest folderPath & "\invSys.Admin.xlam", IIf(zeroByte, vbNullString, "admin-addin")
 End Sub
 

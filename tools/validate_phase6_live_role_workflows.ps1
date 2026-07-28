@@ -1043,9 +1043,7 @@ $openOrder = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
     "invSys.Designs.Domain.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam"
+    "invSys.Operations.xlam"
 )
 
 $resultRows = New-Object 'System.Collections.Generic.List[object]'
@@ -1114,9 +1112,7 @@ try {
     Add-ResultRow -Rows $resultRows -Check "Core.AuthDiagnostic.ProdCapability" -Passed $prodAllowed -Detail ("User=" + $resolvedUserId + "; WarehouseId=" + $warehouseId + "; StationId=" + $stationId)
 
     $currentStep = "Init role add-ins"
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modReceivingInit.InitReceivingAddin")
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modShippingInit.InitShippingAddin")
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "modProductionInit.InitProductionAddin")
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modOperationsInit.Auto_Open")
 
     $currentStep = "Validate clean config bootstrap under live add-ins"
     $bootstrapRoot = Join-Path $env:TEMP ("phase6_cfg_live_" + [guid]::NewGuid().ToString("N"))
@@ -1222,9 +1218,9 @@ try {
     Restore-LiveRuntimeContext -Excel $excel -WorkbookMap $workbookMap -RuntimeRoot $runtimeRoot -WarehouseId $warehouseId -StationId $stationId -UserId $resolvedUserId -Pin $testPin
     $receiveCapabilityDiagnostic = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Core.xlam"].Name -MacroName "modRoleUiAccess.DiagnoseCurrentUserCapability" -Arguments @("RECEIVE_POST"))
     Add-ResultRow -Rows $resultRows -Check "Receiving.Capability.BeforeConfirm" -Passed $receiveCapabilityDiagnostic.StartsWith("Allowed=True|") -Detail $receiveCapabilityDiagnostic
-    $receiveFormActionReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modTS_Received.RunReceivingConfirmWritesFormActionForTest" -Arguments @($wbReceive, $wbShipOps))
-    $receiveConfirmSucceeded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modTS_Received.LastConfirmWritesSucceeded")
-    $receiveConfirmStatus = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modTS_Received.LastConfirmWritesStatus")
+    $receiveFormActionReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Received.RunReceivingConfirmWritesFormActionForTest" -Arguments @($wbReceive, $wbShipOps))
+    $receiveConfirmSucceeded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Received.LastConfirmWritesSucceeded")
+    $receiveConfirmStatus = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Received.LastConfirmWritesStatus")
     $receiveCapabilityAfter = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Core.xlam"].Name -MacroName "modRoleUiAccess.DiagnoseCurrentUserCapability" -Arguments @("RECEIVE_POST"))
 
     $wbReceive = Resolve-WorkbookSafe -Excel $excel -WorkbookName $wbReceive.Name
@@ -1251,7 +1247,7 @@ try {
     $purchasingStagingBefore = Get-RowCountSafe $loReceivedTally
     $purchasingAggregateBefore = Get-RowCountSafe $loAggReceived
     $purchasingInboxBefore = Get-RowCountSafe $loInboxReceive
-    $purchasingReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Receiving.xlam"].Name -MacroName "modTS_Received.RunReceivingPurchasingTabContractForTest" -Arguments @($wbReceive))
+    $purchasingReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Received.RunReceivingPurchasingTabContractForTest" -Arguments @($wbReceive))
     $purchasingNoWrites = ($purchasingStagingBefore -eq (Get-RowCountSafe $loReceivedTally)) `
         -and ($purchasingAggregateBefore -eq (Get-RowCountSafe $loAggReceived)) `
         -and ($purchasingInboxBefore -eq (Get-RowCountSafe $loInboxReceive))
@@ -1329,7 +1325,7 @@ try {
     $shipCapabilityDiagnostic = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Core.xlam"].Name -MacroName "modRoleUiAccess.DiagnoseCurrentUserCapability" -Arguments @("SHIP_POST"))
     Add-ResultRow -Rows $resultRows -Check "Shipping.Capability.BeforeSent" -Passed $shipCapabilityDiagnostic.StartsWith("Allowed=True|") -Detail $shipCapabilityDiagnostic
     $shipWorkbookName = [string]$wbShip.Name
-    $shipSentReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.RunShipmentsSentFormActionForTest" -Arguments @($wbShip, "UPS", $wbReceive))
+    $shipSentReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.RunShipmentsSentFormActionForTest" -Arguments @($wbShip, "UPS", $wbReceive))
 
     $wbShip = Resolve-WorkbookSafe -Excel $excel -WorkbookName $shipWorkbookName
     $wbShipInboxRuntime = Resolve-WorkbookSafe -Excel $excel -WorkbookName ("invSys.Inbox.Shipping." + $stationId + ".xlsb")
@@ -1398,14 +1394,14 @@ try {
     }
 
     $initialHoldHidden = [bool]$loNotShipped.Range.EntireColumn.Hidden
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.BtnUnship")
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.BtnUnship")
     $afterFirstToggleHidden = [bool]$loNotShipped.Range.EntireColumn.Hidden
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.BtnUnship")
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.BtnUnship")
     $afterSecondToggleHidden = [bool]$loNotShipped.Range.EntireColumn.Hidden
     $holdToggleOk = ($afterFirstToggleHidden -ne $initialHoldHidden) -and ($afterSecondToggleHidden -eq $initialHoldHidden)
     Add-ResultRow -Rows $resultRows -Check "Shipping.Hold.ToggleNotShipped" -Passed $holdToggleOk -Detail "InitialHidden=$initialHoldHidden; AfterFirst=$afterFirstToggleHidden; AfterSecond=$afterSecondToggleHidden"
 
-    $holdToResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.MoveShipmentHoldForAutomation" -Arguments @("REF-HOLD-001", "Hold Widget", 4, $true))
+    $holdToResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.MoveShipmentHoldForAutomation" -Arguments @("REF-HOLD-001", "Hold Widget", 4, $true))
     $shipHoldRow = Find-RowIndexByTwoValues -ListObject $loShipments -ColumnName1 "REF_NUMBER" -ExpectedValue1 "REF-HOLD-001" -ColumnName2 "ITEMS" -ExpectedValue2 "Hold Widget"
     $notShippedRow = Find-RowIndexByTwoValues -ListObject $loNotShipped -ColumnName1 "REF_NUMBER" -ExpectedValue1 "REF-HOLD-001" -ColumnName2 "ITEMS" -ExpectedValue2 "Hold Widget"
     $holdToOk = $holdToResult.StartsWith("OK|") `
@@ -1416,7 +1412,7 @@ try {
         -and ([string](Get-RowValueSafe -ListObject $loNotShipped -RowIndex $notShippedRow -ColumnName "System_Key") -eq "SYS-LIVE-HOLD")
     Add-ResultRow -Rows $resultRows -Check "Shipping.Hold.Send" -Passed $holdToOk -Detail "Result=$holdToResult; ShipQty=$((Get-RowValueSafe -ListObject $loShipments -RowIndex $shipHoldRow -ColumnName 'QUANTITY')); HoldQty=$((Get-RowValueSafe -ListObject $loNotShipped -RowIndex $notShippedRow -ColumnName 'QUANTITY')); HoldSystemKey=$((Get-RowValueSafe -ListObject $loNotShipped -RowIndex $notShippedRow -ColumnName 'System_Key'))"
 
-    $returnHoldResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.MoveShipmentHoldForAutomation" -Arguments @("REF-HOLD-001", "Hold Widget", 4, $false))
+    $returnHoldResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.MoveShipmentHoldForAutomation" -Arguments @("REF-HOLD-001", "Hold Widget", 4, $false))
     $shipHoldRow = Find-RowIndexByTwoValues -ListObject $loShipments -ColumnName1 "REF_NUMBER" -ExpectedValue1 "REF-HOLD-001" -ColumnName2 "ITEMS" -ExpectedValue2 "Hold Widget"
     $notShippedRow = Find-RowIndexByTwoValues -ListObject $loNotShipped -ColumnName1 "REF_NUMBER" -ExpectedValue1 "REF-HOLD-001" -ColumnName2 "ITEMS" -ExpectedValue2 "Hold Widget"
     $returnHoldQty = if ($notShippedRow -gt 0) { [double](Get-RowValueSafe -ListObject $loNotShipped -RowIndex $notShippedRow -ColumnName "QUANTITY") } else { 0 }
@@ -1456,7 +1452,7 @@ try {
     $currentStep = "Run Shipping BtnBoxesMade"
     $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShip -WorksheetName "ShipmentsTally"
     Restore-LiveRuntimeContext -Excel $excel -WorkbookMap $workbookMap -RuntimeRoot $runtimeRoot -WarehouseId $warehouseId -StationId $stationId -UserId $resolvedUserId -Pin $testPin
-    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.BtnBoxesMade")
+    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.BtnBoxesMade")
     $wsShip = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "ShipmentsTally"
     $wsShipBackend = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "ShippingBackend"
     $wsShipInv = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "InventoryManagement"
@@ -1469,7 +1465,7 @@ try {
 
     $currentStep = "Run Shipping BtnToTotalInv"
     $wbShip = Activate-WorksheetSafe -Excel $excel -Workbook $wbShip -WorksheetName "ShipmentsTally"
-    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Shipping.xlam"].Name -MacroName "modTS_Shipments.ShippingToTotalInv")
+    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "modTS_Shipments.ShippingToTotalInv")
     $wsShipInv = Get-WorksheetSafe -Workbook $wbShip -WorksheetName "InventoryManagement"
     $loShipInv = Get-ListObjectSafe -Worksheet $wsShipInv -TableName "invSys"
     $shipToTotalOk = ([double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 2 -ColumnName "MADE")) -eq 0 `
@@ -1522,11 +1518,11 @@ try {
         "DESCRIPTION" = "Granulated"; "TOTAL INV" = 100; "USED" = 0; "MADE" = 0; "LAST EDITED" = ""; "TOTAL INV LAST EDIT" = ""; "TIMESTAMP" = ""
     }
 
-    $prodPaletteDiagBefore = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.GetPaletteSaveDiagnostic")
+    $prodPaletteDiagBefore = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.GetPaletteSaveDiagnostic")
     $currentStep = "Run Production BtnSavePalette"
     $wbProd = Activate-WorksheetSafe -Excel $excel -Workbook $wbProd -WorksheetName "Production"
-    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.BtnSavePalette")
-    $prodPaletteDiagAfter = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.GetPaletteSaveDiagnostic")
+    [void](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.BtnSavePalette")
+    $prodPaletteDiagAfter = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.GetPaletteSaveDiagnostic")
     $paletteRow = Find-RowIndexByValue -ListObject $loPalette -ColumnName "RECIPE_ID" -ExpectedValue "R-001"
     $paletteOk = ($paletteRow -gt 0) -and ([string](Get-RowValueSafe -ListObject $loPalette -RowIndex $paletteRow -ColumnName "INGREDIENT_ID") -eq "ING-001") -and ([string](Get-RowValueSafe -ListObject $loPalette -RowIndex $paletteRow -ColumnName "ITEM") -eq "Sugar Bin")
     Add-ResultRow -Rows $resultRows -Check "Production.BtnSavePalette" -Passed $paletteOk -Detail "PaletteRow=$paletteRow; Before=$prodPaletteDiagBefore; After=$prodPaletteDiagAfter"
@@ -1539,7 +1535,7 @@ try {
         "PROCESS" = "Mix"; "OUTPUT" = "Finished Good"; "UOM" = "EA"; "REAL OUTPUT" = 8; "BATCH" = "B-001"; "RECALL CODE" = "RC-001"; "System_Key" = "SYS-LIVE-FG"; "ITEM_CODE" = "SKU-FG"
     }
 
-    $prodRecallDiag = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.GetRecallPrintDiagnostic")
+    $prodRecallDiag = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.GetRecallPrintDiagnostic")
     $wsRecall = Get-WorksheetSafe -Workbook $wbProd -WorksheetName "RecallCodesPrint"
     $loRecall = $null
     if ($null -ne $wsRecall) {
@@ -1568,7 +1564,7 @@ try {
     Add-ResultRow -Rows $resultRows -Check "Production.Capability.BeforeComplete" -Passed $prodCapabilityDiagnostic.StartsWith("Allowed=True|") -Detail $prodCapabilityDiagnostic
     $prodWorkbookName = [string]$wbProd.Name
     $usedPayloadJson = '[{"System_Key":"SYS-LIVE-SUGAR","SKU":"SKU-SUGAR","Qty":2,"Location":"BIN-A","Note":"live production input","IoType":"USED"}]'
-    $prodCheckInReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.CheckInProductionRunWithUsedPayloadReportForAutomation" -Arguments @($usedPayloadJson))
+    $prodCheckInReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.CheckInProductionRunWithUsedPayloadReportForAutomation" -Arguments @($usedPayloadJson))
 
     $wbProd = Resolve-WorkbookSafe -Excel $excel -WorkbookName $prodWorkbookName
     $wbProdInboxRuntime = Resolve-WorkbookSafe -Excel $excel -WorkbookName ("invSys.Inbox.Production." + $stationId + ".xlsb")
@@ -1594,7 +1590,7 @@ try {
     $wbProd = Activate-WorksheetSafe -Excel $excel -Workbook $wbProd -WorksheetName "Production"
     Restore-LiveRuntimeContext -Excel $excel -WorkbookMap $workbookMap -RuntimeRoot $runtimeRoot -WarehouseId $warehouseId -StationId $stationId -UserId $resolvedUserId -Pin $testPin
     $prodWorkbookName = [string]$wbProd.Name
-    $prodCompleteReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.CompleteProductionRunAfterCheckInForOutputResult" -Arguments @(1))
+    $prodCompleteReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.CompleteProductionRunAfterCheckInForOutputResult" -Arguments @(1))
 
     $wbProd = Resolve-WorkbookSafe -Excel $excel -WorkbookName $prodWorkbookName
     $wbProdInboxRuntime = Resolve-WorkbookSafe -Excel $excel -WorkbookName ("invSys.Inbox.Production." + $stationId + ".xlsb")
@@ -1725,7 +1721,7 @@ try {
     $currentStep = "Run two consecutive Production batches through form actions"
     $wbProd = Resolve-WorkbookSafe -Excel $excel -WorkbookName $prodWorkbookName
     Restore-LiveRuntimeContext -Excel $excel -WorkbookMap $workbookMap -RuntimeRoot $runtimeRoot -WarehouseId $warehouseId -StationId $stationId -UserId $resolvedUserId -Pin $testPin
-    $productionFormActionReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Production.xlam"].Name -MacroName "mProduction.ProductionFormTwoBatchActionReportForTest" -Arguments @($wbProd, "SKU-SUGAR", "Sugar Bin", 2, "LB", "BIN-A", 8, $wbReceive) -DismissSeconds 60)
+    $productionFormActionReport = [string](Invoke-WorkbookMacroWithDismiss -Excel $excel -WorkbookName $workbookMap["invSys.Operations.xlam"].Name -MacroName "mProduction.ProductionFormTwoBatchActionReportForTest" -Arguments @($wbProd, "SKU-SUGAR", "Sugar Bin", 2, "LB", "BIN-A", 8, $wbReceive) -DismissSeconds 60)
     $productionFormActionOk = $productionFormActionReport.StartsWith("OK|Batches=2|") `
         -and $productionFormActionReport.Contains("BoundWorkbook=$([string]$wbProd.Name)")
     Add-ResultRow -Rows $resultRows -Check "Production.FormActions.TwoConsecutiveBatches.CapturedWorkbook" -Passed $productionFormActionOk -Detail $productionFormActionReport

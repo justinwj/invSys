@@ -2,9 +2,9 @@
 
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
-- Packages: 8
+- Packages: 6
 - Components: 164
-- Procedures: 4526
+- Procedures: 4531
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -16,10 +16,8 @@
 | Core | invSys_Core | invSys.Core.xlam | 55 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 44 |
-| Production | invSys_Production | invSys.Production.xlam | 0 |
-| Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
-| Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
+| Operations | invSys_Operations | invSys.Operations.xlam | 44 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 0 |
 
 ## Dynamic roots
 
@@ -60,8 +58,6 @@
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| BtnOpenProductionForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| BtnOpenShipmentsForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | btnUpdateUser_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkConfirmAction_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | chkPublishInitial_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -297,13 +293,9 @@
 | RibbonAccessStatusGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonCurrentUserGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonOnActionAdmin | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonOnActionProduction | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonOnActionReceiving | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonOnActionShipping | RIBBON_CALLBACK | tools/build-xlam.ps1 |
+| RibbonOnActionOperations | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonRequiredCapabilityGetEnabledAdmin | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonRequiredCapabilityGetEnabledProduction | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonRequiredCapabilityGetEnabledReceiving | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| RibbonRequiredCapabilityGetEnabledShipping | RIBBON_CALLBACK | tools/build-xlam.ps1 |
+| RibbonRequiredCapabilityGetEnabledOperations | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonServerStatusGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RunAdminConsoleTests | TEST_ENTRY | tests/unit/TestAdminConsole.bas |
 | RunAuthTests | TEST_ENTRY | tests/unit/TestCoreAuth.bas |
@@ -327,7 +319,6 @@
 | RunWanWh1SetupProof | TEST_ENTRY | tests/integration/TestWanWh1SetupEntry.bas |
 | RunWanWh2SetupProof | TEST_ENTRY | tests/integration/TestWanWh2SetupEntry.bas |
 | Seed_DemoInventory | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| ShowReceivingForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | SignOut | CROSS_XLAM_BRIDGE | src/Core/Modules/modNasConnection.bas |
 | SignOutCurrentUser | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | TestAcquireReleaseLock_Lifecycle | TEST_ENTRY | tests/unit/TestCoreLockManager.bas |

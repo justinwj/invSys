@@ -1112,7 +1112,7 @@ Private Function CandidateLooksLikeSharePointRootTesterSetup(ByVal rootPath As S
 
     If FolderExistsTesterSetup(rootPath & "\Addins") Then
         If FileExistsTesterSetup(rootPath & "\Addins\invSys.Core.xlam") _
-           And FileExistsTesterSetup(rootPath & "\Addins\invSys.Receiving.xlam") Then
+           And FileExistsTesterSetup(rootPath & "\Addins\invSys.Operations.xlam") Then
             CandidateLooksLikeSharePointRootTesterSetup = True
             Exit Function
         End If
@@ -1536,9 +1536,9 @@ End Function
 Private Function RequiredTesterAddinNamesTesterSetup() As Variant
     RequiredTesterAddinNamesTesterSetup = Array( _
         "invSys.Core.xlam", _
-        "invSys.Receiving.xlam", _
-        "invSys.Shipping.xlam", _
-        "invSys.Production.xlam", _
+        "invSys.Inventory.Domain.xlam", _
+        "invSys.Designs.Domain.xlam", _
+        "invSys.Operations.xlam", _
         "invSys.Admin.xlam")
 End Function
 

@@ -244,7 +244,7 @@ try {
 
     $wbCore = $excel.Workbooks.Open((Join-Path $deployPath "invSys.Core.xlam"))
     $wbInventoryDomain = $excel.Workbooks.Open((Join-Path $deployPath "invSys.Inventory.Domain.xlam"))
-    $wbReceiving = $excel.Workbooks.Open((Join-Path $deployPath "invSys.Receiving.xlam"))
+    $wbReceiving = $excel.Workbooks.Open((Join-Path $deployPath "invSys.Operations.xlam"))
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $wbCore.Name -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" -Arguments @($sharedRoot))
 
     $wbLocalConfig = $excel.Workbooks.Open((Join-Path $localConfigRoot ($warehouseId + ".invSys.Config.xlsb")))

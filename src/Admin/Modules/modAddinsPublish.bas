@@ -278,7 +278,8 @@ Private Function GetRequiredAddinNames() As Variant
     GetRequiredAddinNames = Array( _
         "invSys.Core.xlam", _
         "invSys.Inventory.Domain.xlam", _
-        "invSys.Receiving.xlam", _
+        "invSys.Designs.Domain.xlam", _
+        "invSys.Operations.xlam", _
         "invSys.Admin.xlam")
 End Function
 

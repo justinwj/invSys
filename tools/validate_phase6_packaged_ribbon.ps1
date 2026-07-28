@@ -197,65 +197,35 @@ $openOrder = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
     "invSys.Designs.Domain.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 
 $ribbonSpecs = @(
     @{
-        Name = "Receiving"
-        File = "invSys.Receiving.xlam"
-        Callback = "RibbonOnActionReceiving"
-        EnabledCallback = "RibbonRequiredCapabilityGetEnabledReceiving"
+        Name = "Operations"
+        File = "invSys.Operations.xlam"
+        Callback = "RibbonOnActionOperations"
+        EnabledCallback = "RibbonRequiredCapabilityGetEnabledOperations"
         StatusLabels = @(
-            @{ Id = "lblReceivingServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-            @{ Id = "lblReceivingAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+            @{ Id = "lblOperationsServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
+            @{ Id = "lblOperationsAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
         )
         Buttons = @(
-            @{ Id = "btnReceivingConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "RECEIVE_POST"'; Execute = $false },
-            @{ Id = "btnReceivingCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "RECEIVE_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnReceivingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnReceivingForm"; Label = "Receiving Form"; Macro = "modTS_Received.ShowReceivingForm"; Execute = $false; RequiredCapability = "RECEIVE_POST" }
-        )
-    }
-    @{
-        Name = "Shipping"
-        File = "invSys.Shipping.xlam"
-        Callback = "RibbonOnActionShipping"
-        EnabledCallback = "RibbonRequiredCapabilityGetEnabledShipping"
-        StatusLabels = @(
-            @{ Id = "lblShippingServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-            @{ Id = "lblShippingAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
-        )
-        Buttons = @(
-            @{ Id = "btnShippingConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "SHIP_POST"'; Execute = $false },
-            @{ Id = "btnShippingCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "SHIP_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnShippingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnShippingShipmentsForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" }
+            @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; Execute = $false },
+            @{ Id = "btnOperationsCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; Execute = $false; Screentip = "Sign in as an invSys user" },
+            @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
+            @{ Id = "btnOperationsReceivingForm"; Label = "Receiving"; Macro = "modTS_Received.ShowReceivingForm"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
+            @{ Id = "btnOperationsProductionForm"; Label = "Production"; Macro = "mProduction.BtnOpenProductionForm"; Execute = $false; RequiredCapability = "PROD_POST" },
+            @{ Id = "btnOperationsShippingForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" }
         )
         ForbiddenButtons = @(
+            "btnReceivingForm",
+            "btnProductionForm",
+            "btnShippingShipmentsForm",
+            "btnPurchasing",
             "btnShippingBoxBuilderForm",
-            "btnShippingBoxMakerForm"
-        )
-    }
-    @{
-        Name = "Production"
-        File = "invSys.Production.xlam"
-        Callback = "RibbonOnActionProduction"
-        EnabledCallback = "RibbonRequiredCapabilityGetEnabledProduction"
-        StatusLabels = @(
-            @{ Id = "lblProductionServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-            @{ Id = "lblProductionAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
-        )
-        Buttons = @(
-            @{ Id = "btnProductionConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "PROD_POST"'; Execute = $false },
-            @{ Id = "btnProductionCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "PROD_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnProductionSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnProductionForm"; Label = "Production Form"; Macro = "mProduction.BtnOpenProductionForm"; Execute = $false; RequiredCapability = "PROD_POST" }
-        )
-        ForbiddenButtons = @(
+            "btnShippingBoxMakerForm",
             "btnProductionSetup",
             "btnProductionHide",
             "btnProductionShow",

@@ -11990,7 +11990,7 @@ Private Function ShippingMacroNameForTest(ByVal procedureName As String) As Stri
     Dim wb As Workbook
 
     Set wb = EnsureShippingAddinForTest()
-    If wb Is Nothing Then Err.Raise vbObjectError + 7197, "ShippingMacroNameForTest", "Could not open deploy\current\invSys.Shipping.xlam for Shipping macro validation."
+    If wb Is Nothing Then Err.Raise vbObjectError + 7197, "ShippingMacroNameForTest", "Could not open deploy\current\invSys.Operations.xlam for Shipping macro validation."
     ShippingMacroNameForTest = "'" & wb.Name & "'!modTS_Shipments." & procedureName
 End Function
 
@@ -12000,14 +12000,14 @@ Private Function EnsureShippingAddinForTest() As Workbook
     Dim addinPath As String
 
     For Each wb In Application.Workbooks
-        If StrComp(wb.Name, "invSys.Shipping.xlam", vbTextCompare) = 0 Then
+        If StrComp(wb.Name, "invSys.Operations.xlam", vbTextCompare) = 0 Then
             Set EnsureShippingAddinForTest = wb
             Exit Function
         End If
     Next wb
 
     repoPath = ParentFolderPathForTest(ParentFolderPathForTest(ThisWorkbook.Path))
-    addinPath = repoPath & "\deploy\current\invSys.Shipping.xlam"
+    addinPath = repoPath & "\deploy\current\invSys.Operations.xlam"
     If Len(Dir$(addinPath, vbNormal)) = 0 Then Exit Function
     Set EnsureShippingAddinForTest = Application.Workbooks.Open(Filename:=addinPath, ReadOnly:=True)
 End Function

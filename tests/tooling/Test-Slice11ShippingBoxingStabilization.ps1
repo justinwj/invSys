@@ -97,13 +97,13 @@ Add-Check "Shipping.Form.ModelessCapturedContext" `
 
 $shippingProjectMatch = [regex]::Match(
     $buildText,
-    '(?is)Key\s*=\s*"Shipping".*?(?=\n\s*@\{\s*\n\s*Key\s*=|\n\)\s*$)'
+    '(?is)Key\s*=\s*"Operations".*?(?=\n\s*@\{\s*\n\s*Key\s*=|\n\)\s*$)'
 )
 $shippingProjectText = if ($shippingProjectMatch.Success) {
     $shippingProjectMatch.Value
 } else { "" }
 Add-Check "Shipping.Ribbon.SingleLauncher" `
-    (($shippingProjectText -match '(?i)btnShippingShipmentsForm') -and
+    (($shippingProjectText -match '(?i)btnOperationsShippingForm') -and
      ($shippingProjectText -notmatch '(?i)btnShippingBoxBuilderForm') -and
      ($shippingProjectText -notmatch '(?i)btnShippingBoxMakerForm') -and
      ($shippingProjectText -notmatch '(?i)BtnOpenBoxBuilder') -and

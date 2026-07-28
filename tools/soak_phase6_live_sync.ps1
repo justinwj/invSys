@@ -427,7 +427,7 @@ try {
     $excelOperator = New-ExcelApp
     $wbCoreOperator = $excelOperator.Workbooks.Open((Join-Path $deployPath "invSys.Core.xlam"))
     $wbInventoryDomainOperator = $excelOperator.Workbooks.Open((Join-Path $deployPath "invSys.Inventory.Domain.xlam"))
-    $wbReceivingOperator = $excelOperator.Workbooks.Open((Join-Path $deployPath "invSys.Receiving.xlam"))
+    $wbReceivingOperator = $excelOperator.Workbooks.Open((Join-Path $deployPath "invSys.Operations.xlam"))
     [void](Run-WorkbookMacro -Excel $excelOperator -WorkbookName $wbCoreOperator.Name -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" -Arguments @($canonicalRoot))
     $wbLocalConfig = $excelOperator.Workbooks.Open((Join-Path $stationConfigRoot ($warehouseId + ".invSys.Config.xlsb")))
     $wbOperator = $excelOperator.Workbooks.Open($operatorPath)

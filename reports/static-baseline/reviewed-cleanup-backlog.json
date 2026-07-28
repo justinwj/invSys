@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "4e3d45e188d3fe48993d40a2a93d1e9ecf2744709f9e919ea04f31527081abdd",
-                          "maintenanceCandidatesSha256":  "3b9375edfd68e64865e4b883c4b466aabdbd4db46007960c36584308a0b28be8"
+                          "implementationManifestSha256":  "65b9aa3140adcfd38f428c94b38e90317c089e94ff04ce3a4e991d42622b22bb",
+                          "maintenanceCandidatesSha256":  "449ed8c8d47b5f533afe9e9ce918639db1c28bbdcd1725bede50aac5489dbe01"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -32,7 +32,7 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  155,
+                            "candidateCount":  154,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -57,7 +57,7 @@
                         },
                         {
                             "name":  "DEVELOPER_TOOLING",
-                            "candidateCount":  2,
+                            "candidateCount":  3,
                             "reason":  "Build, scan, report, and other developer-only tooling."
                         },
                         {
@@ -238,7 +238,7 @@
                  },
     "candidates":  [
                        {
-                           "id":  "duplicate:00a1f3554ee6a565:RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup",
+                           "id":  "duplicate:00a1f3554ee6a565:GetRequiredAddinNames+GetRequiredAddinNamesPackageDiagnostic+GetRequiredAddinsTester+RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -246,13 +246,19 @@
                            "reviewedConfidence":  "MEDIUM",
                            "reviewStatus":  "REQUIRES_PROTECTING_TEST",
                            "workstream":  "ADMIN",
-                           "componentName":  "modLocalAddinsRegistration",
+                           "componentName":  "modAddinsPublish",
                            "procedureNames":  [
+                                                  "GetRequiredAddinNames",
+                                                  "GetRequiredAddinNamesPackageDiagnostic",
+                                                  "GetRequiredAddinsTester",
                                                   "RequiredInvSysAddinNamesLocal",
                                                   "RequiredTesterAddinNamesTesterSetup"
                                               ],
                            "sourcePaths":  [
+                                               "src/Admin/Modules/modAddinsPublish.bas",
                                                "src/Admin/Modules/modLocalAddinsRegistration.bas",
+                                               "src/Admin/Modules/modPackageDiagnostics.bas",
+                                               "src/Admin/Modules/modTesterBundle.bas",
                                                "src/Admin/Modules/modTesterSetup.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -14152,6 +14158,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsStartupReport",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "OperationsStartupReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "root:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.Auto_Open",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -16955,6 +16984,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "BtnOpenProductionForm"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -19303,29 +19355,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnOpenProductionForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -19740,6 +19769,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "ShowReceivingForm"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -20060,29 +20112,6 @@
                            "protectingTests":  [
                                                    "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
                                                    "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "RECEIVING",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ShowReceivingForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -26155,29 +26184,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenShipmentsForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnOpenShipmentsForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

@@ -127,12 +127,12 @@ function Get-RoleSetup {
         "RECEIVE" {
             return @{
                 RoleLabel = "Receiving"
-                Addins = @("invSys.Receiving.xlam")
+                Addins = @("invSys.Operations.xlam")
                 InitSteps = @(
-                    @{ Workbook = "invSys.Receiving.xlam"; Macro = "modReceivingInit.InitReceivingAddin" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modReceivingInit.InitReceivingAddin" }
                 )
                 EnsureSteps = @(
-                    @{ Workbook = "invSys.Receiving.xlam"; Macro = "modTS_Received.InitializeReceivingUiForWorkbook" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modTS_Received.InitializeReceivingUiForWorkbook" }
                 )
             }
         }
@@ -142,12 +142,12 @@ function Get-RoleSetup {
         "SHIP" {
             return @{
                 RoleLabel = "Shipping"
-                Addins = @("invSys.Shipping.xlam")
+                Addins = @("invSys.Operations.xlam")
                 InitSteps = @(
-                    @{ Workbook = "invSys.Shipping.xlam"; Macro = "modShippingInit.InitShippingAddin" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modShippingInit.InitShippingAddin" }
                 )
                 EnsureSteps = @(
-                    @{ Workbook = "invSys.Shipping.xlam"; Macro = "modShippingInit.EnsureShippingSurfaceForWorkbook" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modShippingInit.EnsureShippingSurfaceForWorkbook" }
                 )
             }
         }
@@ -157,12 +157,12 @@ function Get-RoleSetup {
         "PROD" {
             return @{
                 RoleLabel = "Production"
-                Addins = @("invSys.Production.xlam")
+                Addins = @("invSys.Operations.xlam")
                 InitSteps = @(
-                    @{ Workbook = "invSys.Production.xlam"; Macro = "modProductionInit.InitProductionAddin" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modProductionInit.InitProductionAddin" }
                 )
                 EnsureSteps = @(
-                    @{ Workbook = "invSys.Production.xlam"; Macro = "modProductionInit.EnsureProductionSurfaceForWorkbook" }
+                    @{ Workbook = "invSys.Operations.xlam"; Macro = "modProductionInit.EnsureProductionSurfaceForWorkbook" }
                 )
             }
         }

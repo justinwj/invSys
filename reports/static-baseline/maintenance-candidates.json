@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
                      "componentCount":  164,
-                     "procedureCount":  4526,
-                     "lineCount":  98538,
+                     "procedureCount":  4531,
+                     "lineCount":  98620,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  187
@@ -1596,16 +1596,22 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:00a1f3554ee6a565:RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup",
+                           "id":  "duplicate:00a1f3554ee6a565:GetRequiredAddinNames+GetRequiredAddinNamesPackageDiagnostic+GetRequiredAddinsTester+RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
-                           "componentName":  "modLocalAddinsRegistration",
+                           "componentName":  "modAddinsPublish",
                            "procedureNames":  [
+                                                  "GetRequiredAddinNames",
+                                                  "GetRequiredAddinNamesPackageDiagnostic",
+                                                  "GetRequiredAddinsTester",
                                                   "RequiredInvSysAddinNamesLocal",
                                                   "RequiredTesterAddinNamesTesterSetup"
                                               ],
                            "sourcePaths":  [
+                                               "src/Admin/Modules/modAddinsPublish.bas",
                                                "src/Admin/Modules/modLocalAddinsRegistration.bas",
+                                               "src/Admin/Modules/modPackageDiagnostics.bas",
+                                               "src/Admin/Modules/modTesterBundle.bas",
                                                "src/Admin/Modules/modTesterSetup.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -10477,23 +10483,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnOpenProductionForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -10833,23 +10822,6 @@
                            "protectingTests":  [
                                                    "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
                                                    "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ShowReceivingForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
                                                ],
                            "reviewRequired":  true
                        },
@@ -11755,23 +11727,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenShipmentsForm",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnOpenShipmentsForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -18382,6 +18337,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsStartupReport",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modOperationsInit",
+                           "procedureNames":  [
+                                                  "OperationsStartupReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modOperationsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -18439,6 +18411,23 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnLoadRecipe"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "BtnOpenProductionForm"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -18932,6 +18921,23 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "RunReceivingConfirmWritesFormActionForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "ShowReceivingForm"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"

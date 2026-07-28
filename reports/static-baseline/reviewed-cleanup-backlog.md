@@ -13,12 +13,12 @@
 |---|---:|---|
 | RECEIVING | 27 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 131 | Production-owned forms, services, and role package source. |
-| SHIPPING | 155 | Shipping and Boxing forms, services, and role package source. |
+| SHIPPING | 154 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 308 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
-| DEVELOPER_TOOLING | 2 | Build, scan, report, and other developer-only tooling. |
+| DEVELOPER_TOOLING | 3 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
 ## Module-growth ratchets
@@ -58,7 +58,7 @@
 
 | ID | Workstream | Disposition | Confidence | Status |
 |---|---|---|---|---|
-| duplicate:00a1f3554ee6a565:RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:00a1f3554ee6a565:GetRequiredAddinNames+GetRequiredAddinNamesPackageDiagnostic+GetRequiredAddinsTester+RequiredInvSysAddinNamesLocal+RequiredTesterAddinNamesTesterSetup | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0750ed4daf2a1490:txtAdminUser_Change+txtAdminUser_Change | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:1553b6a78b17ae63:AddLabel+AddLabel | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:1e1e5e314df30082:AddTextBox+AddTextBox | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -586,6 +586,7 @@
 | same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:LoadRecipeFromRecipes | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | same-project-run:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:SignOut | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsShadowStartupForTest | DEVELOPER_TOOLING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsStartupReport | DEVELOPER_TOOLING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.Auto_Open | DEVELOPER_TOOLING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | duplicate:84e2366b8ff1ffcf:FileExistsApply+FileExistsPublisher | DOMAINS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c708ab524ddb0c6a:ResolveWarehouseIdFromConfigWorkbookNamePublisher+ResolveWarehouseIdFromInventoryWorkbookNamePublisher | DOMAINS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -671,6 +672,7 @@
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnLoadRecipe | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnShowSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -773,7 +775,6 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Resize | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.UserForm_Terminate | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_modProductionAutoOpen.bas:modProductionAutoOpen.Auto_Open | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteIngredientSelected | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteRecipeSelected | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeChooser | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -792,6 +793,7 @@
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingConfirmWritesFormActionForTest | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_SelectionChange | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnAdd_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -806,7 +808,6 @@
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Resize | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Terminate | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | duplicate:001250ca4c3969cb:AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:0352bd7c18f22a6e:ShippingBomActiveValue+ShippingBomActiveValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -1024,4 +1025,3 @@
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyItemSelection | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyItemToBoxBOM | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyItemToBoxBuilder | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnOpenShipmentsForm | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

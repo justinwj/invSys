@@ -3,7 +3,7 @@
 - Result: PASS
 - Shadow packages built: 4
 - Unresolved collisions: 0
-- Active legacy role packages changed: 0
+- Active Operations package changed: 0
 - Operations packages published to deploy/current: 0
 
 The disposable shadow output contains Core, both Domain packages, and

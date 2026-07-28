@@ -15,7 +15,7 @@ if ([string]::IsNullOrWhiteSpace($ResultPath)) {
 }
 
 $corePath = Join-Path $repo "deploy/current/invSys.Core.xlam"
-$productionPath = Join-Path $repo "deploy/current/invSys.Production.xlam"
+$productionPath = Join-Path $repo "deploy/current/invSys.Operations.xlam"
 foreach ($required in @($corePath, $productionPath)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
         throw "Required packaged add-in is missing: $required"

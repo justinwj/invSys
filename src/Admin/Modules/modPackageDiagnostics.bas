@@ -243,9 +243,7 @@ Private Function GetRequiredAddinNamesPackageDiagnostic() As Variant
         "invSys.Core.xlam", _
         "invSys.Inventory.Domain.xlam", _
         "invSys.Designs.Domain.xlam", _
-        "invSys.Receiving.xlam", _
-        "invSys.Shipping.xlam", _
-        "invSys.Production.xlam", _
+        "invSys.Operations.xlam", _
         "invSys.Admin.xlam")
 End Function
 

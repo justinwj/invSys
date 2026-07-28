@@ -63,7 +63,7 @@ Add-Check "Operations.Package.Exists" $operationsPackage `
     "The build map must define invSys.Operations.xlam."
 
 $noSeparateShippingLaunchers = $operationsPackage -and
-                               ($buildScript -match 'Id\s*=\s*"btnShippingShipmentsForm"') -and
+                               ($buildScript -match 'Id\s*=\s*"btnOperationsShippingForm"') -and
                                ($buildScript -notmatch 'Id\s*=\s*"btnShippingBoxBuilderForm"') -and
                                ($buildScript -notmatch 'Id\s*=\s*"btnShippingBoxMakerForm"')
 Add-Check "Operations.Ribbon.SingleShippingLauncher" $noSeparateShippingLaunchers `

@@ -78,30 +78,28 @@ $openOrder = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
     "invSys.Designs.Domain.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 
 $visibleSpecs = @(
     @{
         Name = "Receiving"
-        File = "invSys.Receiving.xlam"
+        File = "invSys.Operations.xlam"
         SafeMacro = "modTS_Received.EnsureGeneratedButtons"
         RevealSheets = @("ReceivedTally", "ReceivedLog", "InventoryManagement")
         ActivateSheet = "ReceivedTally"
     }
     @{
         Name = "Shipping"
-        File = "invSys.Shipping.xlam"
+        File = "invSys.Operations.xlam"
         SafeMacro = "modTS_Shipments.InitializeShipmentsUI"
         RevealSheets = @("ShipmentsTally", "AggregateBoxBOM_Log", "AggregatePackages_Log")
         ActivateSheet = "ShipmentsTally"
     }
     @{
         Name = "Production"
-        File = "invSys.Production.xlam"
+        File = "invSys.Operations.xlam"
         SafeMacro = "mProduction.InitializeProductionUI"
         RevealSheets = @("Production", "Recipes", "TemplatesTable", "ProductionLog", "BatchCodesLog")
         ActivateSheet = "Production"

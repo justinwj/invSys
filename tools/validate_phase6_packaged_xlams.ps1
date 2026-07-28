@@ -212,16 +212,14 @@ $openOrder = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
     "invSys.Designs.Domain.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 
 $validationSpecs = @(
     @{
         Name = "Receiving"
-        File = "invSys.Receiving.xlam"
+        File = "invSys.Operations.xlam"
         TargetFile = "WH1.Receiving.Operator.xlsx"
         InitMacro = "modReceivingInit.InitReceivingAddin"
         SafeMacro = "modTS_Received.EnsureGeneratedButtons"
@@ -234,7 +232,7 @@ $validationSpecs = @(
     },
     @{
         Name = "Shipping"
-        File = "invSys.Shipping.xlam"
+        File = "invSys.Operations.xlam"
         TargetFile = "WH1.Shipping.Operator.xlsx"
         InitMacro = "modShippingInit.InitShippingAddin"
         SafeMacro = "modTS_Shipments.InitializeShipmentsUI"
@@ -255,7 +253,7 @@ $validationSpecs = @(
     },
     @{
         Name = "Production"
-        File = "invSys.Production.xlam"
+        File = "invSys.Operations.xlam"
         TargetFile = "WH1.Production.Operator.xlsx"
         InitMacro = "modProductionInit.InitProductionAddin"
         SafeMacro = "mProduction.InitializeProductionUI"
@@ -345,9 +343,7 @@ try {
     $autoOpenMacros = @(
         @{ File = "invSys.Inventory.Domain.xlam"; Macro = "modInventoryInit.Auto_Open" },
         @{ File = "invSys.Designs.Domain.xlam"; Macro = "modDesignsInit.Auto_Open" },
-        @{ File = "invSys.Receiving.xlam"; Macro = "modReceivingAutoOpen.Auto_Open" },
-        @{ File = "invSys.Shipping.xlam"; Macro = "modShippingAutoOpen.Auto_Open" },
-        @{ File = "invSys.Production.xlam"; Macro = "modProductionAutoOpen.Auto_Open" },
+        @{ File = "invSys.Operations.xlam"; Macro = "modOperationsInit.Auto_Open" },
         @{ File = "invSys.Admin.xlam"; Macro = "modAdminInit.Auto_Open" }
     )
     $autoOpenError = ""

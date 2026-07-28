@@ -476,7 +476,7 @@ function Add-RibbonCallbacksModule {
             if ($button.ContainsKey("DirectAction") -and -not [string]::IsNullOrWhiteSpace($button.DirectAction)) {
                 [void]$lines.Add(("            {0}" -f $button.DirectAction))
             } else {
-                [void]$lines.Add(("            Application.Run ""'"" & ThisWorkbook.Name & ""'!{0}""" -f $button.Macro))
+                [void]$lines.Add(("            {0}" -f $button.Macro))
             }
         }
     }
@@ -735,6 +735,53 @@ function Remove-ExistingFile {
     }
 }
 
+function Write-FivePackageManifest {
+    param([string]$OutputDir)
+
+    $expectedNames = @(
+        "invSys.Core.xlam",
+        "invSys.Inventory.Domain.xlam",
+        "invSys.Designs.Domain.xlam",
+        "invSys.Operations.xlam",
+        "invSys.Admin.xlam"
+    )
+    $actualNames = @(
+        Get-ChildItem -LiteralPath $OutputDir -Filter "*.xlam" -File |
+            Select-Object -ExpandProperty Name |
+            Sort-Object
+    )
+    $differences = @(Compare-Object ($expectedNames | Sort-Object) $actualNames)
+    if ($actualNames.Count -ne $expectedNames.Count -or $differences.Count -gt 0) {
+        throw "Cannot publish the R1-5 package manifest because the XLAM set is not exactly the normative five."
+    }
+
+    $packages = @()
+    foreach ($name in $expectedNames) {
+        $path = Join-Path $OutputDir $name
+        $item = Get-Item -LiteralPath $path
+        $packages += [ordered]@{
+            name = $name
+            packageSetVersion = "R1-5"
+            sizeBytes = [long]$item.Length
+            sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    }
+
+    $manifest = [ordered]@{
+        schemaVersion = "1.0.0"
+        packageSetVersion = "R1-5"
+        generatedUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        packages = $packages
+    }
+    $manifestPath = Join-Path $OutputDir "addins-manifest.json"
+    [IO.File]::WriteAllText(
+        $manifestPath,
+        (($manifest | ConvertTo-Json -Depth 5) + "`n"),
+        (New-Object Text.UTF8Encoding($false))
+    )
+    Write-Host ("Published " + $manifestPath)
+}
+
 $repo = (Resolve-Path $RepoRoot).Path
 if ([IO.Path]::IsPathRooted($OutputRoot)) {
     $outputDir = [IO.Path]::GetFullPath($OutputRoot)
@@ -779,141 +826,56 @@ $projectMap = @(
         Ribbon     = $null
     }
     @{
-        Key        = "Receiving"
-        Project    = "invSys_Receiving"
-        OutputFile = "invSys.Receiving.xlam"
-        LegacyOutputFiles = @("invSysReceiving.xlam")
-        SourceDirs = @((Join-Path $repo "src/Receiving"))
-        References = @("Core")
-        Sheets     = @("ReceivedTally", "InventoryManagement", "ReceivedLog")
-        AddVbideReference = $false
-        Ribbon     = @{
-            TabId  = "tabInvSysReceiving"
-            Label  = "invSys Receiving"
-            CallbackName = "RibbonOnActionReceiving"
-            EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledReceiving"
-            Groups = @(
-                @{
-                    Id      = "grpReceivingActions"
-                    Label   = "Actions"
-                    WarehouseSelector = @{
-                        Id = "ddReceivingWarehouseTarget"
-                        Label = "Send To"
-                    }
-                    StatusMenus = @(
-                        @{
-                            Id = "mnuReceivingRuntimeContext"
-                            Label = "Runtime Context"
-                            ImageMso = "Info"
-                            RefreshButtonId = "btnReceivingRuntimeRefresh"
-                            StatusButtons = @(
-                                @{ Id = "btnRuntimeWarehouse" },
-                                @{ Id = "btnRuntimeDataRoot" },
-                                @{ Id = "btnRuntimeInboxRoot" },
-                                @{ Id = "btnRuntimeUser" },
-                                @{ Id = "btnRuntimeProcessor" },
-                                @{ Id = "btnRuntimeHqAggregator" }
-                            )
-                        }
-                    )
-                    Buttons = @(
-                        @{ Id = "btnReceivingConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""RECEIVE_POST"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnReceivingCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""RECEIVE_POST"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnReceivingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
-                        @{ Id = "btnReceivingForm"; Label = "Receiving Form"; Macro = "modTS_Received.ShowReceivingForm"; ImageMso = "FormControlButton"; RequiredCapability = "RECEIVE_POST" }
-                    )
-                    StatusLabels = @(
-                        @{ Id = "lblReceivingServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-                        @{ Id = "lblReceivingAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
-                    )
-                }
-            )
-        }
-    }
-    @{
-        Key        = "Shipping"
-        Project    = "invSys_Shipping"
-        OutputFile = "invSys.Shipping.xlam"
-        LegacyOutputFiles = @()
-        SourceDirs = @((Join-Path $repo "src/Shipping"))
-        References = @("Core")
-        Sheets     = @("ShipmentsTally", "InventoryManagement")
-        AddVbideReference = $false
-        Ribbon     = @{
-            TabId  = "tabInvSysShipping"
-            Label  = "invSys Shipping"
-            CallbackName = "RibbonOnActionShipping"
-            EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledShipping"
-            Groups = @(
-                @{
-                    Id      = "grpShippingSetup"
-                    Label   = "Setup"
-                    WarehouseSelector = @{
-                        Id = "ddShippingWarehouseTarget"
-                        Label = "Send To"
-                    }
-                    StatusMenus = @(
-                        @{
-                            Id = "mnuShippingRuntimeContext"
-                            Label = "Runtime Context"
-                            ImageMso = "Info"
-                            RefreshButtonId = "btnShippingRuntimeRefresh"
-                            StatusButtons = @(
-                                @{ Id = "btnRuntimeWarehouse" },
-                                @{ Id = "btnRuntimeDataRoot" },
-                                @{ Id = "btnRuntimeInboxRoot" },
-                                @{ Id = "btnRuntimeUser" },
-                                @{ Id = "btnRuntimeProcessor" },
-                                @{ Id = "btnRuntimeHqAggregator" }
-                            )
-                        }
-                    )
-                    Buttons = @(
-                        @{ Id = "btnShippingConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""SHIP_POST"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnShippingCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""SHIP_POST"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnShippingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
-                        @{ Id = "btnShippingShipmentsForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; ImageMso = "FileSendAsAttachment"; RequiredCapability = "SHIP_POST" }
-                    )
-                    StatusLabels = @(
-                        @{ Id = "lblShippingServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-                        @{ Id = "lblShippingAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
-                    )
-                }
-            )
-        }
-    }
-    @{
-        Key        = "Production"
-        Project    = "invSys_Production"
-        OutputFile = "invSys.Production.xlam"
-        LegacyOutputFiles = @()
+        Key        = "Operations"
+        Project    = "invSys_Operations"
+        OutputFile = "invSys.Operations.xlam"
+        LegacyOutputFiles = @(
+            "invSysReceiving.xlam",
+            "invSys.Receiving.xlam",
+            "invSys.Production.xlam",
+            "invSys.Shipping.xlam"
+        )
         SourceDirs = @(
             (Join-Path $repo "src/Operations"),
-            (Join-Path $repo "src/Production")
+            (Join-Path $repo "src/Receiving"),
+            (Join-Path $repo "src/Production"),
+            (Join-Path $repo "src/Shipping")
         )
-        ExcludeFiles = @("modOperationsInit.bas")
+        ExcludeFiles = @(
+            "modReceivingAutoOpen.bas",
+            "modProductionAutoOpen.bas",
+            "modShippingAutoOpen.bas",
+            "ufDynItemSearchTemplate.frm"
+        )
         References = @("Core")
-        Sheets     = @("Production", "InventoryManagement", "Recipes")
+        Sheets     = @(
+            "ReceivedTally",
+            "InventoryManagement",
+            "ReceivedLog",
+            "ShipmentsTally",
+            "Production",
+            "Recipes"
+        )
         AddVbideReference = $false
         Ribbon     = @{
-            TabId  = "tabInvSysProduction"
-            Label  = "invSys Production"
-            CallbackName = "RibbonOnActionProduction"
-            EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledProduction"
+            TabId  = "tabInvSysOperations"
+            Label  = "Operations"
+            CallbackName = "RibbonOnActionOperations"
+            EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledOperations"
             Groups = @(
                 @{
-                    Id      = "grpProductionSetup"
-                    Label   = "Setup"
+                    Id      = "grpOperationsSession"
+                    Label   = "Session"
                     WarehouseSelector = @{
-                        Id = "ddProductionWarehouseTarget"
+                        Id = "ddOperationsWarehouseTarget"
                         Label = "Send To"
                     }
                     StatusMenus = @(
                         @{
-                            Id = "mnuProductionRuntimeContext"
+                            Id = "mnuOperationsRuntimeContext"
                             Label = "Runtime Context"
                             ImageMso = "Info"
-                            RefreshButtonId = "btnProductionRuntimeRefresh"
+                            RefreshButtonId = "btnOperationsRuntimeRefresh"
                             StatusButtons = @(
                                 @{ Id = "btnRuntimeWarehouse" },
                                 @{ Id = "btnRuntimeDataRoot" },
@@ -925,14 +887,34 @@ $projectMap = @(
                         }
                     )
                     Buttons = @(
-                        @{ Id = "btnProductionConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""PROD_POST"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnProductionCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""PROD_POST"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnProductionSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
-                        @{ Id = "btnProductionForm"; Label = "Production Form"; Macro = "mProduction.BtnOpenProductionForm"; ImageMso = "CreateForm"; RequiredCapability = "PROD_POST" }
+                        @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
+                        @{ Id = "btnOperationsCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
+                        @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" }
                     )
                     StatusLabels = @(
-                        @{ Id = "lblProductionServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-                        @{ Id = "lblProductionAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+                        @{ Id = "lblOperationsServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
+                        @{ Id = "lblOperationsAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+                    )
+                },
+                @{
+                    Id      = "grpOperationsReceiving"
+                    Label   = "Receiving"
+                    Buttons = @(
+                        @{ Id = "btnOperationsReceivingForm"; Label = "Receiving"; Macro = "modTS_Received.ShowReceivingForm"; ImageMso = "FormControlButton"; RequiredCapability = "RECEIVE_POST" }
+                    )
+                },
+                @{
+                    Id      = "grpOperationsProduction"
+                    Label   = "Production"
+                    Buttons = @(
+                        @{ Id = "btnOperationsProductionForm"; Label = "Production"; Macro = "mProduction.BtnOpenProductionForm"; ImageMso = "CreateForm"; RequiredCapability = "PROD_POST" }
+                    )
+                },
+                @{
+                    Id      = "grpOperationsShipping"
+                    Label   = "Shipping"
+                    Buttons = @(
+                        @{ Id = "btnOperationsShippingForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; ImageMso = "FileSendAsAttachment"; RequiredCapability = "SHIP_POST" }
                     )
                 }
             )
@@ -1243,6 +1225,14 @@ finally {
             Write-Warning ("Could not remove staging directory " + $stagingDir + ": " + $_.Exception.Message)
         }
     }
+}
+
+if ([string]::Equals(
+    $currentDeployRoot,
+    $resolvedOutputRoot,
+    [StringComparison]::OrdinalIgnoreCase
+)) {
+    Write-FivePackageManifest -OutputDir $outputDir
 }
 
 Write-Host "Build complete."

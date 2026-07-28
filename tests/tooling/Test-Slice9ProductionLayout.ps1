@@ -68,10 +68,10 @@ Add-Check "Production.Layout.NativeWindowBehavior" `
      ($windowText -match '(?i)DiagnoseWindowStyle')) `
     "The operator form must retain Windows resize, minimize, maximize, DPI-normalized layout, and diagnostic support."
 
-Add-Check "Production.Layout.LegacyAndShadowComposition" `
-    (($buildText -match '(?is)Key\s*=\s*"Production".*?SourceDirs\s*=\s*@\(.*?src/Operations.*?src/Production') -and
-     ($buildText -match '(?is)Key\s*=\s*"Production".*?ExcludeFiles\s*=\s*@\(.*?modOperationsInit\.bas')) `
-    "Until Slice 13 cutover, both the legacy Production package and Operations shadow must compile the shared Operations-local layout types."
+Add-Check "Production.Layout.OperationsComposition" `
+    (($buildText -match '(?is)Key\s*=\s*"Operations".*?SourceDirs\s*=\s*@\(.*?src/Operations.*?src/Production.*?src/Shipping') -and
+     ($buildText -match '(?is)Key\s*=\s*"Operations".*?OutputFile\s*=\s*"invSys\.Operations\.xlam"')) `
+    "After Slice 13, the complete Operations build must compile Production with its Operations-local layout types."
 
 Add-Check "Production.Layout.StaticManifestContract" `
     (($scannerText -match '(?i)FormLayout') -and

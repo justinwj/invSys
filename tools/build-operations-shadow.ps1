@@ -33,20 +33,12 @@ if ([string]::IsNullOrWhiteSpace($ReportTimestampUtc)) {
     $ReportTimestampUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
 }
 
-$legacyNames = @(
-    "invSys.Receiving.xlam",
-    "invSys.Production.xlam",
-    "invSys.Shipping.xlam"
-)
-$beforeHashes = @{}
-foreach ($legacyName in $legacyNames) {
-    $legacyPath = Join-Path $deployRoot $legacyName
-    if (-not (Test-Path -LiteralPath $legacyPath -PathType Leaf)) {
-        throw "Active legacy role package is missing: $legacyName"
-    }
-    $beforeHashes[$legacyName] = (
-        Get-FileHash -LiteralPath $legacyPath -Algorithm SHA256
-    ).Hash
+$activeOperationsPath = Join-Path $deployRoot "invSys.Operations.xlam"
+$activeOperationsHash = if (Test-Path -LiteralPath $activeOperationsPath -PathType Leaf) {
+    (Get-FileHash -LiteralPath $activeOperationsPath -Algorithm SHA256).Hash
+}
+else {
+    ""
 }
 
 & (Join-Path $repo "tools\inspect-operations-collisions.ps1") `
@@ -79,23 +71,16 @@ if ($missingShadowFiles.Count -gt 0) {
     throw "Shadow build omitted: $($missingShadowFiles -join ', ')"
 }
 
-$changedLegacyFiles = @()
-foreach ($legacyName in $legacyNames) {
-    $legacyPath = Join-Path $deployRoot $legacyName
-    $afterHash = (
-        Get-FileHash -LiteralPath $legacyPath -Algorithm SHA256
+if ($activeOperationsHash -ne "") {
+    $afterOperationsHash = (
+        Get-FileHash -LiteralPath $activeOperationsPath -Algorithm SHA256
     ).Hash
-    if ($afterHash -ne $beforeHashes[$legacyName]) {
-        $changedLegacyFiles += $legacyName
+    if ($afterOperationsHash -ne $activeOperationsHash) {
+        throw "Shadow build changed the deployed Operations package."
     }
 }
-if ($changedLegacyFiles.Count -gt 0) {
-    throw "Shadow build changed active legacy package(s): $($changedLegacyFiles -join ', ')"
-}
-if (Test-Path -LiteralPath (
-    Join-Path $deployRoot "invSys.Operations.xlam"
-) -PathType Leaf) {
-    throw "Shadow build incorrectly published invSys.Operations.xlam to deploy/current."
+elseif (Test-Path -LiteralPath $activeOperationsPath -PathType Leaf) {
+    throw "Shadow build incorrectly published Operations to deploy/current."
 }
 
 $resultPath = Join-Path $repo `
@@ -106,7 +91,7 @@ $lines = @(
     "- Result: PASS",
     "- Shadow packages built: $($expectedShadowFiles.Count)",
     "- Unresolved collisions: 0",
-    "- Active legacy role packages changed: 0",
+    "- Active Operations package changed: 0",
     "- Operations packages published to deploy/current: 0",
     "",
     "The disposable shadow output contains Core, both Domain packages, and",

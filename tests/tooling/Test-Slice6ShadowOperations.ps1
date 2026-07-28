@@ -73,21 +73,21 @@ Add-Check "Shadow.CollisionResolutions" `
 Add-Check "Shadow.PackagedValidator" `
     (Test-Path -LiteralPath $validatorPath -PathType Leaf) `
     "Packaged validation must compile/load the shadow and initialize each role form in isolation."
-Add-Check "Shadow.NotDeployed" `
-    (-not (Test-Path -LiteralPath `
-        (Join-Path $deployRoot "invSys.Operations.xlam") -PathType Leaf)) `
-    "Slice 6 must not publish invSys.Operations.xlam to deploy/current."
+Add-Check "Shadow.DeployedCutoverPackage" `
+    (Test-Path -LiteralPath `
+        (Join-Path $deployRoot "invSys.Operations.xlam") -PathType Leaf) `
+    "After Slice 13, the reviewed shadow source set must also be the deployed Operations package."
 
 $legacyRoleFiles = @(
     "invSys.Receiving.xlam",
     "invSys.Production.xlam",
     "invSys.Shipping.xlam"
 )
-$legacyPresent = @($legacyRoleFiles | Where-Object {
-    -not (Test-Path -LiteralPath (Join-Path $deployRoot $_) -PathType Leaf)
+$legacyAbsent = @($legacyRoleFiles | Where-Object {
+    Test-Path -LiteralPath (Join-Path $deployRoot $_) -PathType Leaf
 }).Count -eq 0
-Add-Check "Shadow.LegacyPackagesRemainActive" $legacyPresent `
-    "The three standalone role XLAMs must remain the active deploy/current packages during Slice 6."
+Add-Check "Shadow.LegacyPackagesRetired" $legacyAbsent `
+    "After Slice 13, the standalone role XLAMs must remain absent from deploy/current."
 
 $passed = @($rows | Where-Object Passed).Count
 $failed = $rows.Count - $passed

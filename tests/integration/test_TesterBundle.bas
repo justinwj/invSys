@@ -112,7 +112,8 @@ End Function
 Private Sub CreateRequiredAddinsForTesterBundle(ByVal addinsRoot As String)
     WriteTextTesterBundle addinsRoot & "\invSys.Core.xlam", "core"
     WriteTextTesterBundle addinsRoot & "\invSys.Inventory.Domain.xlam", "inventory"
-    WriteTextTesterBundle addinsRoot & "\invSys.Receiving.xlam", "receiving"
+    WriteTextTesterBundle addinsRoot & "\invSys.Designs.Domain.xlam", "designs"
+    WriteTextTesterBundle addinsRoot & "\invSys.Operations.xlam", "operations"
     WriteTextTesterBundle addinsRoot & "\invSys.Admin.xlam", "admin"
 End Sub
 

@@ -153,8 +153,8 @@
                                             ]
                      },
                      {
-                         "key":  "OperationsShadow",
-                         "projectName":  "invSys_Operations_Shadow",
+                         "key":  "Operations",
+                         "projectName":  "invSys_Operations",
                          "outputFile":  "invSys.Operations.xlam",
                          "sourcePaths":  [
                                              "src/Operations",
@@ -210,33 +210,13 @@
                                             ]
                      },
                      {
-                         "key":  "Production",
-                         "projectName":  "invSys_Production",
-                         "outputFile":  "invSys.Production.xlam",
+                         "key":  "OperationsShadow",
+                         "projectName":  "invSys_Operations_Shadow",
+                         "outputFile":  "invSys.Operations.xlam",
                          "sourcePaths":  [
                                              "src/Operations",
-                                             "src/Production"
-                                         ],
-                         "componentNames":  [
-
-                                            ]
-                     },
-                     {
-                         "key":  "Receiving",
-                         "projectName":  "invSys_Receiving",
-                         "outputFile":  "invSys.Receiving.xlam",
-                         "sourcePaths":  [
-                                             "src/Receiving"
-                                         ],
-                         "componentNames":  [
-
-                                            ]
-                     },
-                     {
-                         "key":  "Shipping",
-                         "projectName":  "invSys_Shipping",
-                         "outputFile":  "invSys.Shipping.xlam",
-                         "sourcePaths":  [
+                                             "src/Production",
+                                             "src/Receiving",
                                              "src/Shipping"
                                          ],
                          "componentNames":  [
@@ -886,7 +866,7 @@
                            "name":  "modAddinsPublish",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modAddinsPublish.bas",
-                           "lineCount":  476,
+                           "lineCount":  477,
                            "procedureNames":  [
                                                   "BuildTokenAddins",
                                                   "BuildWorkingFolderAddins",
@@ -1246,7 +1226,7 @@
                            "name":  "modPackageDiagnostics",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modPackageDiagnostics.bas",
-                           "lineCount":  453,
+                           "lineCount":  451,
                            "procedureNames":  [
                                                   "AddArtifactLinePackageDiagnostic",
                                                   "AddLinePackageDiagnostic",
@@ -1287,7 +1267,7 @@
                            "name":  "modTesterBundle",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modTesterBundle.bas",
-                           "lineCount":  897,
+                           "lineCount":  899,
                            "procedureNames":  [
                                                   "BuildAddinsManifestWithBundleTimestampTester",
                                                   "BuildAuthTemplateCsvTester",
@@ -4107,10 +4087,15 @@
                            "name":  "modOperationsInit",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Operations/Modules/modOperationsInit.bas",
-                           "lineCount":  23,
+                           "lineCount":  104,
                            "procedureNames":  [
                                                   "Auto_Open",
-                                                  "OperationsShadowStartupForTest"
+                                                  "InitializeProductionOperations",
+                                                  "InitializeReceivingOperations",
+                                                  "InitializeShippingOperations",
+                                                  "LegacyRoleAddinCoexistenceReport",
+                                                  "OperationsShadowStartupForTest",
+                                                  "OperationsStartupReport"
                                               ],
                            "metadata":  {
 
@@ -16144,8 +16129,8 @@
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  277,
-                           "endLine":  283,
-                           "lineCount":  7,
+                           "endLine":  284,
+                           "lineCount":  8,
                            "directCalls":  [
 
                                            ],
@@ -16164,8 +16149,8 @@
                            "name":  "ResolveAddinsRootPath",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  285,
-                           "endLine":  293,
+                           "startLine":  286,
+                           "endLine":  294,
                            "lineCount":  9,
                            "directCalls":  [
                                                "GetString",
@@ -16186,8 +16171,8 @@
                            "name":  "NormalizeFolderPathAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  295,
-                           "endLine":  300,
+                           "startLine":  296,
+                           "endLine":  301,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -16207,8 +16192,8 @@
                            "name":  "FileExistsAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  302,
-                           "endLine":  306,
+                           "startLine":  303,
+                           "endLine":  307,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -16228,8 +16213,8 @@
                            "name":  "FolderExistsAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  308,
-                           "endLine":  313,
+                           "startLine":  309,
+                           "endLine":  314,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -16249,8 +16234,8 @@
                            "name":  "SafeFileLenAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  315,
-                           "endLine":  319,
+                           "startLine":  316,
+                           "endLine":  320,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -16270,8 +16255,8 @@
                            "name":  "EnsureFolderRecursiveAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  321,
-                           "endLine":  343,
+                           "startLine":  322,
+                           "endLine":  344,
                            "lineCount":  23,
                            "directCalls":  [
                                                "NormalizeFolderPathAddins"
@@ -16291,8 +16276,8 @@
                            "name":  "DeleteFolderRecursiveAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  345,
-                           "endLine":  372,
+                           "startLine":  346,
+                           "endLine":  373,
                            "lineCount":  28,
                            "directCalls":  [
                                                "ItemName"
@@ -16312,8 +16297,8 @@
                            "name":  "DeleteFileIfPresentAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  374,
-                           "endLine":  378,
+                           "startLine":  375,
+                           "endLine":  379,
                            "lineCount":  5,
                            "directCalls":  [
                                                "FileExistsAddins"
@@ -16333,8 +16318,8 @@
                            "name":  "CopyFileVerifiedAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  380,
-                           "endLine":  387,
+                           "startLine":  381,
+                           "endLine":  388,
                            "lineCount":  8,
                            "directCalls":  [
                                                "DeleteFileIfPresentAddins",
@@ -16356,8 +16341,8 @@
                            "name":  "ParentFolderAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  389,
-                           "endLine":  396,
+                           "startLine":  390,
+                           "endLine":  397,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -16377,8 +16362,8 @@
                            "name":  "BuildTokenAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  398,
-                           "endLine":  401,
+                           "startLine":  399,
+                           "endLine":  402,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -16398,8 +16383,8 @@
                            "name":  "BuildWorkingFolderAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  403,
-                           "endLine":  409,
+                           "startLine":  404,
+                           "endLine":  410,
                            "lineCount":  7,
                            "directCalls":  [
                                                "BuildTokenAddins",
@@ -16420,8 +16405,8 @@
                            "name":  "RollBackPublishedAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  411,
-                           "endLine":  431,
+                           "startLine":  412,
+                           "endLine":  432,
                            "lineCount":  21,
                            "directCalls":  [
                                                "CopyFileVerifiedAddins",
@@ -16443,8 +16428,8 @@
                            "name":  "WriteTextFileAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  433,
-                           "endLine":  453,
+                           "startLine":  434,
+                           "endLine":  454,
                            "lineCount":  21,
                            "directCalls":  [
                                                "EnsureFolderRecursiveAddins",
@@ -16465,8 +16450,8 @@
                            "name":  "EscapeJsonAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  455,
-                           "endLine":  462,
+                           "startLine":  456,
+                           "endLine":  463,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -16486,8 +16471,8 @@
                            "name":  "JoinStringArrayAddins",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  464,
-                           "endLine":  476,
+                           "startLine":  465,
+                           "endLine":  477,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -22013,8 +21998,8 @@
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  241,
-                           "endLine":  250,
-                           "lineCount":  10,
+                           "endLine":  248,
+                           "lineCount":  8,
                            "directCalls":  [
 
                                            ],
@@ -22033,8 +22018,8 @@
                            "name":  "ShouldIncludeAddinPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  252,
-                           "endLine":  265,
+                           "startLine":  250,
+                           "endLine":  263,
                            "lineCount":  14,
                            "directCalls":  [
                                                "SafeTrimPackageDiagnostic"
@@ -22054,8 +22039,8 @@
                            "name":  "ShouldIncludeWorkbookPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  267,
-                           "endLine":  290,
+                           "startLine":  265,
+                           "endLine":  288,
                            "lineCount":  24,
                            "directCalls":  [
                                                "SafeTrimPackageDiagnostic"
@@ -22075,8 +22060,8 @@
                            "name":  "ResolveWarehouseIdFromWorkbookPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  292,
-                           "endLine":  320,
+                           "startLine":  290,
+                           "endLine":  318,
                            "lineCount":  29,
                            "directCalls":  [
                                                "SafeWorkbookNamePackageDiagnostic"
@@ -22096,8 +22081,8 @@
                            "name":  "ResolveStationIdFromWorkbookPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  322,
-                           "endLine":  336,
+                           "startLine":  320,
+                           "endLine":  334,
                            "lineCount":  15,
                            "directCalls":  [
                                                "SafeWorkbookNamePackageDiagnostic"
@@ -22117,8 +22102,8 @@
                            "name":  "FindOpenWorkbookByPathPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  338,
-                           "endLine":  350,
+                           "startLine":  336,
+                           "endLine":  348,
                            "lineCount":  13,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic",
@@ -22139,8 +22124,8 @@
                            "name":  "ResolveReportPathPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  352,
-                           "endLine":  359,
+                           "startLine":  350,
+                           "endLine":  357,
                            "lineCount":  8,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic",
@@ -22161,8 +22146,8 @@
                            "name":  "EnsureParentFolderPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  361,
-                           "endLine":  367,
+                           "startLine":  359,
+                           "endLine":  365,
                            "lineCount":  7,
                            "directCalls":  [
                                                "EnsureFolderRecursivePackageDiagnostic",
@@ -22183,8 +22168,8 @@
                            "name":  "EnsureFolderRecursivePackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  369,
-                           "endLine":  382,
+                           "startLine":  367,
+                           "endLine":  380,
                            "lineCount":  14,
                            "directCalls":  [
                                                "FolderExistsPackageDiagnostic",
@@ -22206,8 +22191,8 @@
                            "name":  "JoinLinesPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  384,
-                           "endLine":  392,
+                           "startLine":  382,
+                           "endLine":  390,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -22227,8 +22212,8 @@
                            "name":  "AddLinePackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  394,
-                           "endLine":  397,
+                           "startLine":  392,
+                           "endLine":  395,
                            "lineCount":  4,
                            "directCalls":  [
                                                "Add"
@@ -22248,8 +22233,8 @@
                            "name":  "GetParentFolderPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  399,
-                           "endLine":  406,
+                           "startLine":  397,
+                           "endLine":  404,
                            "lineCount":  8,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic"
@@ -22269,8 +22254,8 @@
                            "name":  "SafeWorkbookNamePackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  408,
-                           "endLine":  412,
+                           "startLine":  406,
+                           "endLine":  410,
                            "lineCount":  5,
                            "directCalls":  [
                                                "SafeTrimPackageDiagnostic"
@@ -22290,8 +22275,8 @@
                            "name":  "SafeWorkbookPathPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  414,
-                           "endLine":  418,
+                           "startLine":  412,
+                           "endLine":  416,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic"
@@ -22311,8 +22296,8 @@
                            "name":  "SafeAddinFullNamePackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  420,
-                           "endLine":  424,
+                           "startLine":  418,
+                           "endLine":  422,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic"
@@ -22332,8 +22317,8 @@
                            "name":  "NormalizeFolderPathPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  426,
-                           "endLine":  429,
+                           "startLine":  424,
+                           "endLine":  427,
                            "lineCount":  4,
                            "directCalls":  [
                                                "NormalizeFolderPathForRuntime"
@@ -22353,8 +22338,8 @@
                            "name":  "NormalizeFilePathPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  431,
-                           "endLine":  435,
+                           "startLine":  429,
+                           "endLine":  433,
                            "lineCount":  5,
                            "directCalls":  [
                                                "SafeTrimPackageDiagnostic"
@@ -22374,8 +22359,8 @@
                            "name":  "FolderExistsPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  437,
-                           "endLine":  441,
+                           "startLine":  435,
+                           "endLine":  439,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFolderPathPackageDiagnostic"
@@ -22395,8 +22380,8 @@
                            "name":  "FileExistsPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  443,
-                           "endLine":  447,
+                           "startLine":  441,
+                           "endLine":  445,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFilePathPackageDiagnostic"
@@ -22416,8 +22401,8 @@
                            "name":  "SafeTrimPackageDiagnostic",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  449,
-                           "endLine":  453,
+                           "startLine":  447,
+                           "endLine":  451,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23079,8 +23064,8 @@
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  643,
-                           "endLine":  648,
-                           "lineCount":  6,
+                           "endLine":  650,
+                           "lineCount":  8,
                            "directCalls":  [
 
                                            ],
@@ -23099,8 +23084,8 @@
                            "name":  "CommitFileAtomicallyTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  650,
-                           "endLine":  677,
+                           "startLine":  652,
+                           "endLine":  679,
                            "lineCount":  28,
                            "directCalls":  [
                                                "DeleteFileIfPresentTester",
@@ -23123,8 +23108,8 @@
                            "name":  "OpenWorkbookByPathTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  679,
-                           "endLine":  691,
+                           "startLine":  681,
+                           "endLine":  693,
                            "lineCount":  13,
                            "directCalls":  [
                                                "NormalizeFilePathTester"
@@ -23144,8 +23129,8 @@
                            "name":  "RunPowerShellCommandTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  693,
-                           "endLine":  716,
+                           "startLine":  695,
+                           "endLine":  718,
                            "lineCount":  24,
                            "directCalls":  [
                                                "QuoteForCmdTester"
@@ -23165,8 +23150,8 @@
                            "name":  "QuoteForPowerShellTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  718,
-                           "endLine":  720,
+                           "startLine":  720,
+                           "endLine":  722,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -23186,8 +23171,8 @@
                            "name":  "QuoteForCmdTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  722,
-                           "endLine":  724,
+                           "startLine":  724,
+                           "endLine":  726,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -23207,8 +23192,8 @@
                            "name":  "ResolveShellNamespaceTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  726,
-                           "endLine":  735,
+                           "startLine":  728,
+                           "endLine":  737,
                            "lineCount":  10,
                            "directCalls":  [
                                                "TimerElapsedTester"
@@ -23228,8 +23213,8 @@
                            "name":  "GetListObjectTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  737,
-                           "endLine":  741,
+                           "startLine":  739,
+                           "endLine":  743,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23249,8 +23234,8 @@
                            "name":  "GetTableValueTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  743,
-                           "endLine":  747,
+                           "startLine":  745,
+                           "endLine":  749,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23270,8 +23255,8 @@
                            "name":  "CloseWorkbookQuietlyTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  749,
-                           "endLine":  753,
+                           "startLine":  751,
+                           "endLine":  755,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23291,8 +23276,8 @@
                            "name":  "NormalizeFolderPathTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  755,
-                           "endLine":  760,
+                           "startLine":  757,
+                           "endLine":  762,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -23312,8 +23297,8 @@
                            "name":  "NormalizeFilePathTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  762,
-                           "endLine":  764,
+                           "startLine":  764,
+                           "endLine":  766,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -23333,8 +23318,8 @@
                            "name":  "FolderExistsTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  766,
-                           "endLine":  771,
+                           "startLine":  768,
+                           "endLine":  773,
                            "lineCount":  6,
                            "directCalls":  [
                                                "NormalizeFilePathTester"
@@ -23354,8 +23339,8 @@
                            "name":  "FileExistsTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  773,
-                           "endLine":  777,
+                           "startLine":  775,
+                           "endLine":  779,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFilePathTester"
@@ -23375,8 +23360,8 @@
                            "name":  "SafeFileLenTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  779,
-                           "endLine":  783,
+                           "startLine":  781,
+                           "endLine":  785,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23396,8 +23381,8 @@
                            "name":  "EnsureFolderRecursiveTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  785,
-                           "endLine":  805,
+                           "startLine":  787,
+                           "endLine":  807,
                            "lineCount":  21,
                            "directCalls":  [
                                                "NormalizeFolderPathTester"
@@ -23417,8 +23402,8 @@
                            "name":  "DeleteFolderRecursiveTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  807,
-                           "endLine":  821,
+                           "startLine":  809,
+                           "endLine":  823,
                            "lineCount":  15,
                            "directCalls":  [
                                                "NormalizeFolderPathTester"
@@ -23438,8 +23423,8 @@
                            "name":  "DeleteFileIfPresentTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  823,
-                           "endLine":  827,
+                           "startLine":  825,
+                           "endLine":  829,
                            "lineCount":  5,
                            "directCalls":  [
                                                "FileExistsTester"
@@ -23459,8 +23444,8 @@
                            "name":  "BuildWorkingFolderTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  829,
-                           "endLine":  833,
+                           "startLine":  831,
+                           "endLine":  835,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NormalizeFolderPathTester"
@@ -23480,8 +23465,8 @@
                            "name":  "CreateEmptyZipTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  835,
-                           "endLine":  844,
+                           "startLine":  837,
+                           "endLine":  846,
                            "lineCount":  10,
                            "directCalls":  [
                                                "DeleteFileIfPresentTester",
@@ -23503,8 +23488,8 @@
                            "name":  "ParentFolderTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  846,
-                           "endLine":  853,
+                           "startLine":  848,
+                           "endLine":  855,
                            "lineCount":  8,
                            "directCalls":  [
                                                "NormalizeFilePathTester"
@@ -23524,8 +23509,8 @@
                            "name":  "ReadAllTextTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  855,
-                           "endLine":  864,
+                           "startLine":  857,
+                           "endLine":  866,
                            "lineCount":  10,
                            "directCalls":  [
                                                "FileExistsTester"
@@ -23545,8 +23530,8 @@
                            "name":  "WriteTextFileTester",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  866,
-                           "endLine":  875,
+                           "startLine":  868,
+                           "endLine":  877,
                            "lineCount":  10,
                            "directCalls":  [
                                                "DeleteFileIfPresentTester",
@@ -23568,8 +23553,8 @@
                            "name":  "CsvValueTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  877,
-                           "endLine":  880,
+                           "startLine":  879,
+                           "endLine":  882,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -23589,8 +23574,8 @@
                            "name":  "EscapeJsonTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  882,
-                           "endLine":  889,
+                           "startLine":  884,
+                           "endLine":  891,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -23610,8 +23595,8 @@
                            "name":  "TimerElapsedTester",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  891,
-                           "endLine":  897,
+                           "startLine":  893,
+                           "endLine":  899,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -64637,13 +64622,14 @@
                            "name":  "Auto_Open",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  4,
-                           "endLine":  10,
-                           "lineCount":  7,
+                           "startLine":  6,
+                           "endLine":  37,
+                           "lineCount":  32,
                            "directCalls":  [
-                                               "ProductionPackageAutoOpen",
-                                               "ReceivingPackageAutoOpen",
-                                               "ShippingPackageAutoOpen"
+                                               "InitializeProductionOperations",
+                                               "InitializeReceivingOperations",
+                                               "InitializeShippingOperations",
+                                               "LegacyRoleAddinCoexistenceReport"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -64666,11 +64652,116 @@
                            "name":  "OperationsShadowStartupForTest",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  12,
-                           "endLine":  23,
-                           "lineCount":  12,
+                           "startLine":  39,
+                           "endLine":  42,
+                           "lineCount":  4,
                            "directCalls":  [
                                                "Auto_Open"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modOperationsInit",
+                           "name":  "OperationsStartupReport",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  44,
+                           "endLine":  46,
+                           "lineCount":  3,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modOperationsInit",
+                           "name":  "LegacyRoleAddinCoexistenceReport",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  48,
+                           "endLine":  74,
+                           "lineCount":  27,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modOperationsInit",
+                           "name":  "InitializeReceivingOperations",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  76,
+                           "endLine":  84,
+                           "lineCount":  9,
+                           "directCalls":  [
+                                               "ReceivingPackageAutoOpen"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modOperationsInit",
+                           "name":  "InitializeProductionOperations",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  86,
+                           "endLine":  94,
+                           "lineCount":  9,
+                           "directCalls":  [
+                                               "ProductionPackageAutoOpen"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modOperationsInit",
+                           "name":  "InitializeShippingOperations",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  96,
+                           "endLine":  104,
+                           "lineCount":  9,
+                           "directCalls":  [
+                                               "ShippingPackageAutoOpen"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -74442,7 +74533,7 @@
 
                                                                    ],
                            "rootIds":  [
-                                           "ribbon:btnProductionForm:BtnOpenProductionForm"
+
                                        ]
                        },
                        {
@@ -87934,7 +88025,7 @@
 
                                                                    ],
                            "rootIds":  [
-                                           "ribbon:btnReceivingForm:ShowReceivingForm"
+
                                        ]
                        },
                        {
@@ -94765,7 +94856,7 @@
 
                                                                    ],
                            "rootIds":  [
-                                           "ribbon:btnShippingShipmentsForm:BtnOpenShipmentsForm"
+
                                        ]
                        },
                        {
@@ -111369,17 +111460,17 @@
                         "sourcePath":  "tools/build-xlam.ps1",
                         "tabs":  [
                                      {
-                                         "id":  "tabInvSysProduction",
+                                         "id":  "tabInvSysOperations",
                                          "nodeType":  "tab",
-                                         "label":  "invSys Production",
+                                         "label":  "Operations",
                                          "callbacks":  [
-                                                           "RibbonOnActionProduction",
-                                                           "RibbonRequiredCapabilityGetEnabledProduction"
+                                                           "RibbonOnActionOperations",
+                                                           "RibbonRequiredCapabilityGetEnabledOperations"
                                                        ],
                                          "capabilityGate":  null,
                                          "children":  [
                                                           {
-                                                              "id":  "grpProductionSetup",
+                                                              "id":  "grpOperationsSession",
                                                               "nodeType":  "group",
                                                               "label":  "",
                                                               "callbacks":  [
@@ -111388,11 +111479,11 @@
                                                               "capabilityGate":  null,
                                                               "children":  [
                                                                                {
-                                                                                   "id":  "btnProductionConnectServer",
+                                                                                   "id":  "btnOperationsConnectServer",
                                                                                    "nodeType":  "button",
                                                                                    "label":  "Connect Server",
                                                                                    "callbacks":  [
-                                                                                                     "modRoleEventWriter.ConnectWarehouseStorageForCapability "
+                                                                                                     "modRoleEventWriter.ConnectWarehouseStorageForCapability"
                                                                                                  ],
                                                                                    "capabilityGate":  null,
                                                                                    "children":  [
@@ -111400,11 +111491,11 @@
                                                                                                 ]
                                                                                },
                                                                                {
-                                                                                   "id":  "btnProductionCurrentUser",
+                                                                                   "id":  "btnOperationsCurrentUser",
                                                                                    "nodeType":  "button",
                                                                                    "label":  "Sign In",
                                                                                    "callbacks":  [
-                                                                                                     "modRoleEventWriter.PromptSetCurrentUserForCapability ",
+                                                                                                     "modRoleEventWriter.PromptSetCurrentUserForCapability",
                                                                                                      "RibbonCurrentUserGetLabel"
                                                                                                  ],
                                                                                    "capabilityGate":  null,
@@ -111413,19 +111504,7 @@
                                                                                                 ]
                                                                                },
                                                                                {
-                                                                                   "id":  "btnProductionForm",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Production Form",
-                                                                                   "callbacks":  [
-                                                                                                     "mProduction.BtnOpenProductionForm"
-                                                                                                 ],
-                                                                                   "capabilityGate":  "PROD_POST",
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnProductionSignOut",
+                                                                                   "id":  "btnOperationsSignOut",
                                                                                    "nodeType":  "button",
                                                                                    "label":  "Sign Out",
                                                                                    "callbacks":  [
@@ -111497,7 +111576,7 @@
                                                                                                 ]
                                                                                },
                                                                                {
-                                                                                   "id":  "lblProductionAccessStatus",
+                                                                                   "id":  "lblOperationsAccessStatus",
                                                                                    "nodeType":  "label",
                                                                                    "label":  "RibbonAccessStatusGetLabel",
                                                                                    "callbacks":  [
@@ -111509,7 +111588,7 @@
                                                                                                 ]
                                                                                },
                                                                                {
-                                                                                   "id":  "lblProductionServerStatus",
+                                                                                   "id":  "lblOperationsServerStatus",
                                                                                    "nodeType":  "label",
                                                                                    "label":  "RibbonServerStatusGetLabel",
                                                                                    "callbacks":  [
@@ -111521,353 +111600,7 @@
                                                                                                 ]
                                                                                },
                                                                                {
-                                                                                   "id":  "mnuProductionRuntimeContext",
-                                                                                   "nodeType":  "menu",
-                                                                                   "label":  "Runtime Context",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               }
-                                                                           ]
-                                                          }
-                                                      ]
-                                     }
-                                 ]
-                    },
-                    {
-                        "sourcePath":  "tools/build-xlam.ps1",
-                        "tabs":  [
-                                     {
-                                         "id":  "tabInvSysReceiving",
-                                         "nodeType":  "tab",
-                                         "label":  "invSys Receiving",
-                                         "callbacks":  [
-                                                           "RibbonOnActionReceiving",
-                                                           "RibbonRequiredCapabilityGetEnabledReceiving"
-                                                       ],
-                                         "capabilityGate":  null,
-                                         "children":  [
-                                                          {
-                                                              "id":  "grpReceivingActions",
-                                                              "nodeType":  "group",
-                                                              "label":  "",
-                                                              "callbacks":  [
-
-                                                                            ],
-                                                              "capabilityGate":  null,
-                                                              "children":  [
-                                                                               {
-                                                                                   "id":  "btnReceivingConnectServer",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Connect Server",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.ConnectWarehouseStorageForCapability "
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnReceivingCurrentUser",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Sign In",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.PromptSetCurrentUserForCapability ",
-                                                                                                     "RibbonCurrentUserGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnReceivingForm",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Receiving Form",
-                                                                                   "callbacks":  [
-                                                                                                     "modTS_Received.ShowReceivingForm"
-                                                                                                 ],
-                                                                                   "capabilityGate":  "RECEIVE_POST",
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnReceivingSignOut",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Sign Out",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.SignOutCurrentUser"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeDataRoot",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeHqAggregator",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeInboxRoot",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeProcessor",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeUser",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "lblReceivingAccessStatus",
-                                                                                   "nodeType":  "label",
-                                                                                   "label":  "RibbonAccessStatusGetLabel",
-                                                                                   "callbacks":  [
-                                                                                                     "RibbonAccessStatusGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "lblReceivingServerStatus",
-                                                                                   "nodeType":  "label",
-                                                                                   "label":  "RibbonServerStatusGetLabel",
-                                                                                   "callbacks":  [
-                                                                                                     "RibbonServerStatusGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "mnuReceivingRuntimeContext",
-                                                                                   "nodeType":  "menu",
-                                                                                   "label":  "Runtime Context",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               }
-                                                                           ]
-                                                          }
-                                                      ]
-                                     }
-                                 ]
-                    },
-                    {
-                        "sourcePath":  "tools/build-xlam.ps1",
-                        "tabs":  [
-                                     {
-                                         "id":  "tabInvSysShipping",
-                                         "nodeType":  "tab",
-                                         "label":  "invSys Shipping",
-                                         "callbacks":  [
-                                                           "RibbonOnActionShipping",
-                                                           "RibbonRequiredCapabilityGetEnabledShipping"
-                                                       ],
-                                         "capabilityGate":  null,
-                                         "children":  [
-                                                          {
-                                                              "id":  "grpShippingSetup",
-                                                              "nodeType":  "group",
-                                                              "label":  "",
-                                                              "callbacks":  [
-
-                                                                            ],
-                                                              "capabilityGate":  null,
-                                                              "children":  [
-                                                                               {
-                                                                                   "id":  "btnRuntimeDataRoot",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeHqAggregator",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeInboxRoot",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeProcessor",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnRuntimeUser",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "",
-                                                                                   "callbacks":  [
-
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnShippingConnectServer",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Connect Server",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.ConnectWarehouseStorageForCapability "
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnShippingCurrentUser",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Sign In",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.PromptSetCurrentUserForCapability ",
-                                                                                                     "RibbonCurrentUserGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnShippingShipmentsForm",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Shipping",
-                                                                                   "callbacks":  [
-                                                                                                     "modTS_Shipments.BtnOpenShipmentsForm"
-                                                                                                 ],
-                                                                                   "capabilityGate":  "SHIP_POST",
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "btnShippingSignOut",
-                                                                                   "nodeType":  "button",
-                                                                                   "label":  "Sign Out",
-                                                                                   "callbacks":  [
-                                                                                                     "modRoleEventWriter.SignOutCurrentUser"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "lblShippingAccessStatus",
-                                                                                   "nodeType":  "label",
-                                                                                   "label":  "RibbonAccessStatusGetLabel",
-                                                                                   "callbacks":  [
-                                                                                                     "RibbonAccessStatusGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "lblShippingServerStatus",
-                                                                                   "nodeType":  "label",
-                                                                                   "label":  "RibbonServerStatusGetLabel",
-                                                                                   "callbacks":  [
-                                                                                                     "RibbonServerStatusGetLabel"
-                                                                                                 ],
-                                                                                   "capabilityGate":  null,
-                                                                                   "children":  [
-
-                                                                                                ]
-                                                                               },
-                                                                               {
-                                                                                   "id":  "mnuShippingRuntimeContext",
+                                                                                   "id":  "mnuOperationsRuntimeContext",
                                                                                    "nodeType":  "menu",
                                                                                    "label":  "Runtime Context",
                                                                                    "callbacks":  [
@@ -112946,6 +112679,7 @@
                                                  "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                  "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                  "tests/tooling/Test-Slice12ReviewedCleanup.ps1",
+                                                 "tests/tooling/Test-Slice13OperationsCutover.ps1",
                                                  "tests/tooling/Test-Slice3Baseline.ps1",
                                                  "tests/tooling/Test-Slice5BehaviorLocks.ps1",
                                                  "tests/tooling/Test-Slice6ShadowOperations.ps1",
@@ -113425,6 +113159,7 @@
                                "testPaths":  [
                                                  "tests/integration/test_ConfirmWrites_Tester.bas",
                                                  "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
+                                                 "tests/tooling/Test-Slice13OperationsCutover.ps1",
                                                  "tests/tooling/Test-Slice5BehaviorLocks.ps1",
                                                  "tests/unit/TestStub_modTS_Received.bas"
                                              ]
@@ -114240,6 +113975,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "LegacyRoleAddinCoexistenceReport",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Slice13OperationsCutover.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "ListDesigns",
                                "testPaths":  [
                                                  "tests/unit/TestDesignsDomain.bas"
@@ -114875,6 +114616,7 @@
                            {
                                "entryPoint":  "Require",
                                "testPaths":  [
+                                                 "tests/tooling/Test-Slice13OperationsCutover.ps1",
                                                  "tests/unit/TestCoreAuth.bas"
                                              ]
                            },
@@ -116148,20 +115890,6 @@
                              "rootKind":  "USERFORM_EVENT",
                              "reason":  "UserForm and control events are convention-dispatched.",
                              "source":  "tools/contracts/vba-dynamic-roots.json"
-                         },
-                         {
-                             "id":  "ribbon:btnProductionForm:BtnOpenProductionForm",
-                             "procedure":  "BtnOpenProductionForm",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node btnProductionForm.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:btnShippingShipmentsForm:BtnOpenShipmentsForm",
-                             "procedure":  "BtnOpenShipmentsForm",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node btnShippingShipmentsForm.",
-                             "source":  "tools/build-xlam.ps1"
                          },
                          {
                              "id":  "convention.userform-event:src_Admin_Forms_frmEditUser.frm:frmEditUser.btnUpdateUser_Click",
@@ -117809,24 +117537,10 @@
                              "source":  "tools/build-xlam.ps1"
                          },
                          {
-                             "id":  "ribbon:tabInvSysProduction:RibbonOnActionProduction",
-                             "procedure":  "RibbonOnActionProduction",
+                             "id":  "ribbon:tabInvSysOperations:RibbonOnActionOperations",
+                             "procedure":  "RibbonOnActionOperations",
                              "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysProduction.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:tabInvSysReceiving:RibbonOnActionReceiving",
-                             "procedure":  "RibbonOnActionReceiving",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysReceiving.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:tabInvSysShipping:RibbonOnActionShipping",
-                             "procedure":  "RibbonOnActionShipping",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysShipping.",
+                             "reason":  "Referenced by Ribbon definition node tabInvSysOperations.",
                              "source":  "tools/build-xlam.ps1"
                          },
                          {
@@ -117837,24 +117551,10 @@
                              "source":  "tools/build-xlam.ps1"
                          },
                          {
-                             "id":  "ribbon:tabInvSysProduction:RibbonRequiredCapabilityGetEnabledProduction",
-                             "procedure":  "RibbonRequiredCapabilityGetEnabledProduction",
+                             "id":  "ribbon:tabInvSysOperations:RibbonRequiredCapabilityGetEnabledOperations",
+                             "procedure":  "RibbonRequiredCapabilityGetEnabledOperations",
                              "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysProduction.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:tabInvSysReceiving:RibbonRequiredCapabilityGetEnabledReceiving",
-                             "procedure":  "RibbonRequiredCapabilityGetEnabledReceiving",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysReceiving.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:tabInvSysShipping:RibbonRequiredCapabilityGetEnabledShipping",
-                             "procedure":  "RibbonRequiredCapabilityGetEnabledShipping",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node tabInvSysShipping.",
+                             "reason":  "Referenced by Ribbon definition node tabInvSysOperations.",
                              "source":  "tools/build-xlam.ps1"
                          },
                          {
@@ -118016,13 +117716,6 @@
                              "procedure":  "Seed_DemoInventory",
                              "rootKind":  "RIBBON_CALLBACK",
                              "reason":  "Referenced by Ribbon definition node btnAdminSeedInventory.",
-                             "source":  "tools/build-xlam.ps1"
-                         },
-                         {
-                             "id":  "ribbon:btnReceivingForm:ShowReceivingForm",
-                             "procedure":  "ShowReceivingForm",
-                             "rootKind":  "RIBBON_CALLBACK",
-                             "reason":  "Referenced by Ribbon definition node btnReceivingForm.",
                              "source":  "tools/build-xlam.ps1"
                          },
                          {

@@ -551,11 +551,11 @@ Private Sub EnsureReceivingButtonsSurface(ByVal wb As Workbook)
     DeleteReceivingButtonsSurface ws
 
     leftPos = ws.Range("C1").Left
-    EnsureReceivingButtonSurface ws, "btnConfirmWrites", "Confirm Writes", "'invSys.Receiving.xlam'!modTS_Received.ConfirmWrites", leftPos, BTN_TOP, BTN_WIDTH, BTN_HEIGHT
+    EnsureReceivingButtonSurface ws, "btnConfirmWrites", "Confirm Writes", "'invSys.Operations.xlam'!modTS_Received.ConfirmWrites", leftPos, BTN_TOP, BTN_WIDTH, BTN_HEIGHT
     leftPos = leftPos + BTN_WIDTH + BTN_SPACING
-    EnsureReceivingButtonSurface ws, "btnUndoMacro", "Undo", "'invSys.Receiving.xlam'!modTS_Received.MacroUndo", leftPos, BTN_TOP, 82, BTN_HEIGHT
+    EnsureReceivingButtonSurface ws, "btnUndoMacro", "Undo", "'invSys.Operations.xlam'!modTS_Received.MacroUndo", leftPos, BTN_TOP, 82, BTN_HEIGHT
     leftPos = leftPos + 82 + BTN_SPACING
-    EnsureReceivingButtonSurface ws, "btnRedoMacro", "Redo", "'invSys.Receiving.xlam'!modTS_Received.MacroRedo", leftPos, BTN_TOP, 82, BTN_HEIGHT
+    EnsureReceivingButtonSurface ws, "btnRedoMacro", "Redo", "'invSys.Operations.xlam'!modTS_Received.MacroRedo", leftPos, BTN_TOP, 82, BTN_HEIGHT
 End Sub
 
 Private Sub EnsureReceivingButtonSurface(ByVal ws As Worksheet, _

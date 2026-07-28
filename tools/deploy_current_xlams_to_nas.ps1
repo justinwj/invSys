@@ -17,9 +17,7 @@ $requiredXlams = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
     "invSys.Designs.Domain.xlam",
-    "invSys.Receiving.xlam",
-    "invSys.Shipping.xlam",
-    "invSys.Production.xlam",
+    "invSys.Operations.xlam",
     "invSys.Admin.xlam"
 )
 
