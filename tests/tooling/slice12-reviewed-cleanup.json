@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewedAtUtc": "2026-07-27T20:00:00Z",
+  "before": {
+    "components": 169,
+    "procedures": 4690,
+    "maintenanceCandidates": 1033,
+    "duplicateBodyGroups": 199,
+    "literalApplicationRunTargets": 9,
+    "unresolvedDynamicCalls": 48,
+    "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
+  },
+  "protectingTests": [
+    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
+    "tests/tooling/Test-Slice5BehaviorLocks.ps1",
+    "tests/tooling/Test-Slice0ToolContracts.ps1",
+    "tests/unit/TestPhase6CoreSurfaces.bas:TestBoxBuilderArchive_HidesArchivedBoxesUnlessRequested",
+    "tests/unit/TestPhase6CoreSurfaces.bas:TestBoxBuilderForm_InitializesWithActiveArchiveFilters",
+    "tests/unit/TestPhase6CoreSurfaces.bas:TestBoxMakerProjectedComponentInventory_SubtractsRequirementFromNas",
+    "tools/validate_phase6_packaged_xlams.ps1",
+    "tools/validate_phase6_live_role_workflows.ps1",
+    "tools/validate-operations-shadow.ps1"
+  ],
+  "relocations": [
+    {
+      "source": "src/Core/Modules/modExportImportAll.bas",
+      "destination": "tools/vba/legacy-diagnostics/modExportImportAll.bas",
+      "disposition": "MOVE_TO_TESTS",
+      "scannerEvidence": [
+        "ExportAllCodeToSingleFiles",
+        "ExportAllModules",
+        "ExportTablesHeadersAndControls",
+        "ExportUserFormControls",
+        "ListSheetCodeNames",
+        "ReplaceAllCodeFromFiles",
+        "SyncSheetsCodeBehind_Diagnostics"
+      ]
+    },
+    {
+      "source": "src/Core/Modules/modTestModule.bas",
+      "destination": "tests/legacy-vba/modTestModule.bas",
+      "disposition": "MOVE_TO_TESTS",
+      "scannerEvidence": ["runtime test helper module"]
+    },
+    {
+      "source": "src/Core/Modules/RealDiagnostic.bas",
+      "destination": "tools/vba/legacy-diagnostics/RealDiagnostic.bas",
+      "disposition": "MOVE_TO_TESTS",
+      "scannerEvidence": ["obsolete interactive event diagnostic"]
+    }
+  ],
+  "retiredComponents": [
+    {
+      "source": "src/Shipping/Forms/frmShippingBoxBuilder.frm",
+      "replacement": "src/Shipping/Forms/frmShipmentsTally.frm:Box Builder tab",
+      "reviewEvidence": "Slice 11 retired the separate launcher and moved all operator actions into the main Shipping shell."
+    },
+    {
+      "source": "src/Shipping/Forms/frmShippingBoxMaker.frm",
+      "replacement": "src/Shipping/Forms/frmShipmentsTally.frm:Box Maker tab",
+      "reviewEvidence": "Slice 11 retired the separate launcher and moved all operator actions into the main Shipping shell."
+    }
+  ],
+  "highConfidenceDeletions": [
+    {
+      "component": "modTS_Shipments",
+      "source": "src/Shipping/Modules/modTS_Shipments.bas",
+      "scannerConfidence": "HIGH",
+      "procedures": [
+        "ApplyBoxCreatedFromAggregates",
+        "ApplyDirectShipmentsSentDeltas",
+        "BuildBoxMakerAggregateTables",
+        "BuildComponentDeltaPacketFromBoxBom",
+        "EnsureBomTable",
+        "EnsureButtonCustom",
+        "GetShipmentReleaseInvSysTable",
+        "GetWritableShippingInvSysTable",
+        "HideListColumnShipping",
+        "LoadPersistentActiveShipmentRowsLocal",
+        "MoveListObjectAndNextColumnShipping",
+        "MoveListObjectToAddressShipping",
+        "PersistentSentShipmentLineIdExists",
+        "PersistentSentShipmentRowExists",
+        "PersistentShipmentRowsFileIsEmpty",
+        "PropagateBomMetadata",
+        "ReconcileShippableTotalsFromVersionInventory",
+        "RefreshShipmentsUiAccess",
+        "ResolveRow",
+        "SingleVisibleBoxBomVersionLabel",
+        "WriteBomData"
+      ]
+    }
+  ]
+}

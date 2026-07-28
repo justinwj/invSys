@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "cc28e93fbfe9f9d4630551c7fbc1fabe67e794e66bc2fded5e604f9b02d483e4",
-                          "maintenanceCandidatesSha256":  "b747e68f6915e3d461a04ffe89a34eaa58250778d5bf3aeef132b095f3be41ea"
+                          "implementationManifestSha256":  "4e3d45e188d3fe48993d40a2a93d1e9ecf2744709f9e919ea04f31527081abdd",
+                          "maintenanceCandidatesSha256":  "3b9375edfd68e64865e4b883c4b466aabdbd4db46007960c36584308a0b28be8"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1033,
-                    "reviewedCandidateCount":  1035,
+                    "scannerCandidateCount":  965,
+                    "reviewedCandidateCount":  967,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -32,17 +32,17 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  208,
+                            "candidateCount":  155,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
                             "name":  "SHARED_OPERATIONS",
-                            "candidateCount":  67,
+                            "candidateCount":  63,
                             "reason":  "Cross-role or future invSys.Operations packaging work."
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  319,
+                            "candidateCount":  308,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -228,17 +228,10 @@
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
-                                                  "sourcePath":  "src/Shipping/Forms/frmShippingBoxMaker.frm",
-                                                  "componentName":  "frmShippingBoxMaker",
-                                                  "packageKey":  "Shipping",
-                                                  "baselineLineCount":  1564,
-                                                  "growthAllowedWithoutException":  false
-                                              },
-                                              {
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  22389,
+                                                  "baselineLineCount":  21797,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -6528,6 +6521,31 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:48d71c4368ac9033:AddTextBox+AddTextBox",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "frmSignIn",
+                           "procedureNames":  [
+                                                  "AddTextBox",
+                                                  "AddTextBox"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Forms/frmSignIn.frm",
+                                               "src/Core/Forms/frmWarehouseConnection.frm"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:495a365192112be9:ValueOrBlankRoleUi+ValueOrPlaceholderStatus",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -10984,167 +11002,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllCodeToSingleFiles",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportAllCodeToSingleFiles"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllModules",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportAllModules"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportTablesHeadersAndControls",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportTablesHeadersAndControls"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportUserFormControls",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportUserFormControls"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ListSheetCodeNames",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ListSheetCodeNames"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ReplaceAllCodeFromFiles",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ReplaceAllCodeFromFiles"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.SyncSheetsCodeBehind_Diagnostics",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "MOVE_TO_TESTS",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "SyncSheetsCodeBehind_Diagnostics"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review. This source is a developer export/import diagnostic embedded in a runtime package and must be isolated from the packaged product.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Move the diagnostic or fixture helper out of runtime packaging, then prove the packaged surface and developer test still pass."
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modGlobals.bas:modGlobals.CommitSelectionAndCloseWrapper",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -12341,52 +12198,6 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestBoundaryConditions",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modTestModule",
-                           "procedureNames":  [
-                                                  "TestBoundaryConditions"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modTestModule.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestDataIntegrity",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modTestModule",
-                           "procedureNames":  [
-                                                  "TestDataIntegrity"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modTestModule.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -12723,75 +12534,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/MouseScroll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.EmergencyEnableEvents",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "EmergencyEnableEvents"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.FullDiagnostic",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "FullDiagnostic"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.TestManualSelection",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "TestManualSelection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
@@ -20346,7 +20088,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "duplicate:001250ca4c3969cb:AddListBox+AddListBox+AddListBox",
+                           "id":  "duplicate:001250ca4c3969cb:AddListBox+AddListBox",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20357,13 +20099,11 @@
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddListBox",
-                                                  "AddListBox",
                                                   "AddListBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20373,7 +20113,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
+                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20389,8 +20129,6 @@
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
-                                                  "UserForm_Layout",
-                                                  "UserForm_Layout",
                                                   "UserForm_Layout"
                                               ],
                            "sourcePaths":  [
@@ -20400,9 +20138,7 @@
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
                                                "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -20514,7 +20250,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:148f921b2c802fe4:AddButton+AddButton+AddButton",
+                           "id":  "duplicate:148f921b2c802fe4:AddButton+AddButton",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20525,13 +20261,11 @@
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddButton",
-                                                  "AddButton",
                                                   "AddButton"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20591,7 +20325,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel+AddLabel",
+                           "id":  "duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20603,14 +20337,12 @@
                            "procedureNames":  [
                                                   "AddLabel",
                                                   "AddLabel",
-                                                  "AddLabel",
                                                   "AddLabel"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmSignIn.frm",
                                                "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -20751,7 +20483,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize+UserForm_Initialize",
+                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20762,15 +20494,11 @@
                            "componentName":  "frmReceiving",
                            "procedureNames":  [
                                                   "UserForm_Initialize",
-                                                  "UserForm_Initialize",
-                                                  "UserForm_Initialize",
                                                   "UserForm_Initialize"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Forms/frmReceiving.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -20886,7 +20614,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate",
+                           "id":  "duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -20900,7 +20628,6 @@
                                                   "UserForm_Activate",
                                                   "UserForm_Activate",
                                                   "UserForm_Activate",
-                                                  "UserForm_Activate",
                                                   "UserForm_Activate"
                                               ],
                            "sourcePaths":  [
@@ -20908,8 +20635,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -21082,33 +20808,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:48d71c4368ac9033:AddTextBox+AddTextBox+AddTextBox",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "frmSignIn",
-                           "procedureNames":  [
-                                                  "AddTextBox",
-                                                  "AddTextBox",
-                                                  "AddTextBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmSignIn.frm",
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:4c333631e854e020:ResolveCurrentShippingStationId+ResolveCurrentStationIdReadModel",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -21150,31 +20849,6 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:5159a53b5a190974:AddCheckBox+AddCheckBox",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "frmWarehouseConnection",
-                           "procedureNames":  [
-                                                  "AddCheckBox",
-                                                  "AddCheckBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -21259,7 +20933,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsForm+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping",
+                           "id":  "duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21270,14 +20944,12 @@
                            "componentName":  "modOperatorReadModel",
                            "procedureNames":  [
                                                   "ElapsedMilliseconds",
-                                                  "ElapsedMillisecondsForm",
                                                   "ElapsedMillisecondsReadModel",
                                                   "ElapsedMillisecondsShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
@@ -21417,7 +21089,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
+                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21432,7 +21104,6 @@
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
-                                                  "UserForm_Terminate",
                                                   "UserForm_Terminate"
                                               ],
                            "sourcePaths":  [
@@ -21441,35 +21112,9 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:7ad5016b8512a7eb:ShowStatus+ShowStatus",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "frmAdminSettings",
-                           "procedureNames":  [
-                                                  "ShowStatus",
-                                                  "ShowStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
 
                                                ],
@@ -21529,7 +21174,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:862c21be3babc752:mBtnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click",
+                           "id":  "duplicate:862c21be3babc752:mBtnClose_Click+mBtnClose_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21539,16 +21184,12 @@
                            "workstream":  "SHARED_OPERATIONS",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
-                                                  "mBtnCancel_Click",
-                                                  "mBtnClose_Click",
                                                   "mBtnClose_Click",
                                                   "mBtnClose_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -21765,7 +21406,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox+AddTextBox",
+                           "id":  "duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21776,13 +21417,11 @@
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddTextBox",
-                                                  "AddTextBox",
                                                   "AddTextBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -21854,7 +21493,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:c92c185be4fadc97:AddLabel+AddLabel+AddLabel",
+                           "id":  "duplicate:c92c185be4fadc97:AddLabel+AddLabel",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21865,13 +21504,11 @@
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddLabel",
-                                                  "AddLabel",
                                                   "AddLabel"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -21956,7 +21593,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:d4f832b1497319da:AddButton+AddButton+AddButton+AddButton",
+                           "id":  "duplicate:d4f832b1497319da:AddButton+AddButton+AddButton",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -21968,14 +21605,12 @@
                            "procedureNames":  [
                                                   "AddButton",
                                                   "AddButton",
-                                                  "AddButton",
                                                   "AddButton"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmSignIn.frm",
                                                "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22001,31 +21636,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas",
                                                "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:e6693a3bfaee5694:AddListBox+AddListBox",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "frmWarehouseConnection",
-                           "procedureNames":  [
-                                                  "AddListBox",
-                                                  "AddListBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22259,31 +21869,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:496cab3bb9c1904e:LockTextBox+LockTextBox",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "LockTextBox",
-                                                  "LockTextBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:5010b83d04f91baf:EnsureBoxMakerHistoryWorksheetShipping+EnsureShipmentHistoryWorksheetShipping",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22301,30 +21886,6 @@
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:59b7457404a74d4d:mBtnNewVersion_Click+mBtnSaveBox_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewVersion_Click",
-                                                  "mBtnSaveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
 
                                                ],
@@ -22356,30 +21917,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:699c1f7e08ec5455:mBtnMake_Click+mBtnUnmake_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnMake_Click",
-                                                  "mBtnUnmake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:6bf04a816000979b:BoxMakerFormAutoSyncProcedureName+ShipmentsFormAutoSyncProcedureName",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22395,31 +21932,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:972c88c40ec1c198:SelectedVersionLabel+SelectedVersionLabel",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "SelectedVersionLabel",
-                                                  "SelectedVersionLabel"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22453,56 +21965,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:af8651bb60f205c7:NzText+NzText",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "NzText",
-                                                  "NzText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:b3b68f53db2fe07e:mCboBoxes_Change+mCboBoxes_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change",
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:b3ca9d9e25ef9972:ShippingInventoryPickerTableHasRows+ShippingManagedInventoryTableHasRows",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22518,31 +21980,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:c0d46a6cbdd6c183:ArmAutoSync+ArmAutoSync",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "ArmAutoSync",
-                                                  "ArmAutoSync"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22576,30 +22013,6 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:d9a70f8a8d7d6db3:mChkShowActive_Click+mChkShowArchived_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowActive_Click",
-                                                  "mChkShowArchived_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:f0c18a7d8057ff17:PersistentActiveShipmentRowsPath+PersistentHoldRowsPath",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22624,7 +22037,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity+FormatQuantityText",
+                           "id":  "duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -22635,38 +22048,11 @@
                            "componentName":  "frmShipmentsTally",
                            "procedureNames":  [
                                                   "FormatBoxMakerQuantityText",
-                                                  "FormatQuantity",
-                                                  "FormatQuantityText"
+                                                  "FormatQuantity"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:f348192d4b56e3b3:AddHeaderLabel+AddHeaderLabel",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "AddHeaderLabel",
-                                                  "AddHeaderLabel"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -22831,103 +22217,6 @@
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
                        },
                        {
-                           "id":  "module-size:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "SPLIT_MODULE",
-                           "disposition":  "SPLIT_MODULE",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "AddButton",
-                                                  "AddComboBox",
-                                                  "AddComponentHeaders",
-                                                  "AddHeaderLabel",
-                                                  "AddLabel",
-                                                  "AddListBox",
-                                                  "AddShippableHeaders",
-                                                  "AddTextBox",
-                                                  "AppendCompletionTiming",
-                                                  "ArmAutoSync",
-                                                  "AutoSyncIfPending",
-                                                  "BoxPickerText",
-                                                  "BuildLayout",
-                                                  "CachedShippableInventoryText",
-                                                  "CachedShippableProjectedInventoryText",
-                                                  "CachedVersionComponents",
-                                                  "CancelAutoSync",
-                                                  "ClearBoxFields",
-                                                  "DisplayBoxVersionInventoryText",
-                                                  "DisplayComponentInventoryText",
-                                                  "DisplayShippableInventoryText",
-                                                  "ElapsedMillisecondsForm",
-                                                  "FormatQuantityText",
-                                                  "InitializeBoxMakerAnchors",
-                                                  "InitializeFromShipping",
-                                                  "IsBoxMakerOperatorWorkbook",
-                                                  "LoadSavedBoxes",
-                                                  "LoadSelectedBox",
-                                                  "LoadSelectedVersionComponents",
-                                                  "LoadVersionsForPackage",
-                                                  "LoadVersionsForPackageFromCache",
-                                                  "LockTextBox",
-                                                  "mBtnClose_Click",
-                                                  "mBtnHistorySheet_Click",
-                                                  "mBtnMake_Click",
-                                                  "mBtnRefresh_Click",
-                                                  "mBtnUnmake_Click",
-                                                  "mCboBoxes_Change",
-                                                  "mCboVersions_Change",
-                                                  "mLstShippables_Click",
-                                                  "mTxtBoxPicker_Change",
-                                                  "mTxtQty_Change",
-                                                  "NormalizeVersionText",
-                                                  "NzText",
-                                                  "ParseNumber",
-                                                  "PendingShippableInventoryCount",
-                                                  "PostBoxMakerAction",
-                                                  "ProjectedComponentInventoryText",
-                                                  "RecordPendingComponentInventory",
-                                                  "RecordPendingShippableInventory",
-                                                  "RecordPendingVersionInventory",
-                                                  "RefreshShippableInventoryCache",
-                                                  "RenderComponents",
-                                                  "RenderPackageInventory",
-                                                  "RenderPackageInventoryFromCache",
-                                                  "RenderShippableInventory",
-                                                  "RenderShippableInventoryFromCache",
-                                                  "ResolveOperatorWorkbook",
-                                                  "ScheduleAutoSync",
-                                                  "SelectBoxMakerVersion",
-                                                  "SelectedShippableVersionInventoryText",
-                                                  "SelectedVersionLabel",
-                                                  "SelectShippableInventoryRow",
-                                                  "SetPackageInventoryCaption",
-                                                  "ShippableRowMatchesPicker",
-                                                  "ShowStatus",
-                                                  "TestProjectedComponentInventoryText",
-                                                  "TestRenderedComponentInventoryAfterPendingAction",
-                                                  "TextContainsPicker",
-                                                  "UpdateSyncStateLabel",
-                                                  "UserForm_Activate",
-                                                  "UserForm_Initialize",
-                                                  "UserForm_Layout",
-                                                  "UserForm_Terminate",
-                                                  "VersionPendingKey"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
-                       },
-                       {
                            "id":  "module-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "SPLIT_MODULE",
@@ -22963,11 +22252,9 @@
                                                   "AppendSyncMessage",
                                                   "ApplyBoxBomReadOnlyColumnFormatting",
                                                   "ApplyBoxBomVersionStatusValidation",
-                                                  "ApplyBoxCreatedFromAggregates",
                                                   "ApplyBoxCreatedFromBuilder",
                                                   "ApplyBoxUnboxedFromBuilder",
                                                   "ApplyBoxUnboxExpectedCurrentInventoryDisplay",
-                                                  "ApplyDirectShipmentsSentDeltas",
                                                   "ApplyItemSelection",
                                                   "ApplyItemToBoxBOM",
                                                   "ApplyItemToBoxBuilder",
@@ -23062,11 +22349,9 @@
                                                   "BuildBomSummaryFromBomRows",
                                                   "BuildBoxBomVersionRows",
                                                   "BuildBoxBomVersionsByPackageCache",
-                                                  "BuildBoxMakerAggregateTables",
                                                   "BuildBoxVersionInventoryCache",
                                                   "BuildCanonicalRuntimeInventoryPickerItems",
                                                   "BuildComponentDeltaPacketFromAggregate",
-                                                  "BuildComponentDeltaPacketFromBoxBom",
                                                   "BuildDisplayedShipmentRowsDeltas",
                                                   "BuildInvSysCaches",
                                                   "BuildMadeDeltaPacket",
@@ -23168,14 +22453,12 @@
                                                   "ElapsedMillisecondsShipping",
                                                   "EndShippingTableMutation",
                                                   "EnforceShippingSupportSheetsHidden",
-                                                  "EnsureBomTable",
                                                   "EnsureBoxBomEntryColumns",
                                                   "EnsureBoxBomStarterRows",
                                                   "EnsureBoxBomVersionsTable",
                                                   "EnsureBoxMakerHistoryWorksheetShipping",
                                                   "EnsureBoxMakerInventoryColumns",
                                                   "EnsureBuilderTablesReady",
-                                                  "EnsureButtonCustom",
                                                   "EnsureCheckbox",
                                                   "EnsureColumnExists",
                                                   "EnsureFolderRecursiveShipping",
@@ -23245,12 +22528,10 @@
                                                   "GetListObject",
                                                   "GetMutableLocalShipmentStagingTable",
                                                   "GetParentFolderShipping",
-                                                  "GetShipmentReleaseInvSysTable",
                                                   "GetShipmentReleaseStagingTable",
                                                   "GetShipmentsTallyWorksheet",
                                                   "GetShippingBomViewTable",
                                                   "GetShippingInvSysReadModelForDisplay",
-                                                  "GetWritableShippingInvSysTable",
                                                   "HandleBoxBomVersionSelection",
                                                   "HandleHoldRow",
                                                   "HandleShippingSelectionChange",
@@ -23260,7 +22541,6 @@
                                                   "HasAnyShipmentStage",
                                                   "HasSentOverlayForRowVersion",
                                                   "HideBoxBomVersionIdentityColumns",
-                                                  "HideListColumnShipping",
                                                   "HideWorkbookWindowsShipping",
                                                   "HistoryEventTypeListedShipping",
                                                   "HistoryExportSourceSummaryShipping",
@@ -23292,7 +22572,6 @@
                                                   "LoadBoxMakerBomForPackage",
                                                   "LoadClosedShippingReservationTokens",
                                                   "LoadItemList",
-                                                  "LoadPersistentActiveShipmentRowsLocal",
                                                   "LoadPersistentHoldRowsLocal",
                                                   "LoadPersistentSentShipmentTokens",
                                                   "LoadPersistentShipmentRowsLocal",
@@ -23308,9 +22587,7 @@
                                                   "MaxLongShipping",
                                                   "MoveBoxBomAwayFromVersionResize",
                                                   "MoveHoldRowQuantity",
-                                                  "MoveListObjectAndNextColumnShipping",
                                                   "MoveListObjectColumnAddBlockersShipping",
-                                                  "MoveListObjectToAddressShipping",
                                                   "MoveListObjectToRowColShipping",
                                                   "MoveSelectionToHold",
                                                   "MoveShipmentHoldForAutomation",
@@ -23352,14 +22629,11 @@
                                                   "PersistentActiveShipmentRowsPath",
                                                   "PersistentHoldRowsPath",
                                                   "PersistentPendingBoxVersionInventoryOverlayPath",
-                                                  "PersistentSentShipmentLineIdExists",
                                                   "PersistentSentShipmentLineIdExistsForWarehouse",
-                                                  "PersistentSentShipmentRowExists",
                                                   "PersistentSentShipmentRowsPath",
                                                   "PersistentSentShipmentRowsPathForWarehouse",
                                                   "PersistentShipmentRowClosedByReservation",
                                                   "PersistentShipmentRowSent",
-                                                  "PersistentShipmentRowsFileIsEmpty",
                                                   "PersistHoldRowsLocal",
                                                   "PersistPendingBoxVersionInventoryOverlay",
                                                   "PersistShipmentRowsLocal",
@@ -23372,7 +22646,6 @@
                                                   "PrepareShippingRuntimeRefreshSessionForTest",
                                                   "PrepareTotalInventoryLogEntries",
                                                   "PromptBoxVersionSaveChoiceShipping",
-                                                  "PropagateBomMetadata",
                                                   "ProtectShippingWorksheetForReadOnlyColumns",
                                                   "QueueBoxBuildEventFromBuilder",
                                                   "QueueBoxMakerFormPayload",
@@ -23392,7 +22665,6 @@
                                                   "RecentShipmentInventoryLogTextShipping",
                                                   "ReconcileShipmentStagingBySystemKey",
                                                   "ReconcileShipmentStagingFromShipmentLines",
-                                                  "ReconcileShippableTotalsFromVersionInventory",
                                                   "RefreshBoxBomCurrentInventory",
                                                   "RefreshBoxBomVersionList",
                                                   "RefreshBoxBomVersionListForCurrentBuilder",
@@ -23401,7 +22673,6 @@
                                                   "RefreshBoxMakerBomVersionDisplay",
                                                   "RefreshBoxMakerCurrentInventory",
                                                   "RefreshOperatorInventoryLogForWorkbook",
-                                                  "RefreshShipmentsUiAccess",
                                                   "RefreshShippingBomViewForWorkbook",
                                                   "RefreshShippingBomViewForWorkbookForTest",
                                                   "RegisterBoxMakerFormAutoSync",
@@ -23446,7 +22717,6 @@
                                                   "ResolveInventoryWorkbookBridgeSoftShipping",
                                                   "ResolveItemCodeForBoxBuildPayload",
                                                   "ResolveOnActionMacroShipping",
-                                                  "ResolveRow",
                                                   "ResolveRowFromCaches",
                                                   "ResolveShippingInventoryWorkbookForLogRead",
                                                   "ResolveShippingWorkbook",
@@ -23594,7 +22864,6 @@
                                                   "ShowShippingDynamicItemSearch",
                                                   "ShowShippingStatus",
                                                   "SingleVersionFallbackAvailableQty",
-                                                  "SingleVisibleBoxBomVersionLabel",
                                                   "SortBoxBomByVersionShipping",
                                                   "SortedKeys",
                                                   "SortedTextKeysShipping",
@@ -23647,7 +22916,6 @@
                                                   "WriteAggregateBOM",
                                                   "WriteAggregatePackages",
                                                   "WriteArrayToTable",
-                                                  "WriteBomData",
                                                   "WriteBoxBomVersionRowsToTable",
                                                   "WriteCheckInv",
                                                   "WriteDisplayedBoxBomVersionRowsDirect",
@@ -24151,52 +23419,6 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.DisplayShippableInventoryText",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "DisplayShippableInventoryText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.RecordPendingShippableInventory",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "RecordPendingShippableInventory"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modBoxingService.bas:modBoxingService.NasInventoryIsReadOnly",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -24358,7 +23580,7 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyBoxCreatedFromAggregates",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.AppendAggregateRowFromInventory",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24368,7 +23590,7 @@
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "ApplyBoxCreatedFromAggregates"
+                                                  "AppendAggregateRowFromInventory"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -24381,27 +23603,165 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyDirectShipmentsSentDeltas",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormArchiveBox",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "ApplyDirectShipmentsSentDeltas"
+                                                  "BoxBuilderFormArchiveBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentComponents",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormCurrentComponents"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentMeta",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormCurrentMeta"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteBox",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormDeleteBox"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteVersion",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormDeleteVersion"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormAutoSyncProcedureName",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxMakerFormAutoSyncProcedureName"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventory",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxMakerFormCurrentInventory"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventoryDebugReport",
@@ -24749,7 +24109,7 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildBoxMakerAggregateTables",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromAggregate",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -24759,30 +24119,7 @@
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "BuildBoxMakerAggregateTables"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromBoxBom",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BuildComponentDeltaPacketFromBoxBom"
+                                                  "BuildComponentDeltaPacketFromAggregate"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -24864,52 +24201,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureBomTable",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "EnsureBomTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureButtonCustom",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "EnsureButtonCustom"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureShippingBomViewPopulated",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -24956,29 +24247,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetShipmentReleaseInvSysTable",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "GetShipmentReleaseInvSysTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetShipmentsTallyWorksheet",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -25000,52 +24268,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetWritableShippingInvSysTable",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "GetWritableShippingInvSysTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.HideListColumnShipping",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "HideListColumnShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.IsInItemsColumn",
@@ -25071,29 +24293,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadPersistentActiveShipmentRowsLocal",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "LoadPersistentActiveShipmentRowsLocal"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadShippingBomPackagePickerItems",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -25117,7 +24316,7 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectAndNextColumnShipping",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -25127,7 +24326,7 @@
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "MoveListObjectAndNextColumnShipping"
+                                                  "NextAvailableBomRow"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -25140,188 +24339,27 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectToAddressShipping",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync",
                            "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "MoveListObjectToAddressShipping"
+                                                  "RegisterBoxMakerFormAutoSync"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
 
                                                ],
                            "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentLineIdExists",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentSentShipmentLineIdExists"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentRowExists",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentSentShipmentRowExists"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentShipmentRowsFileIsEmpty",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentShipmentRowsFileIsEmpty"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PropagateBomMetadata",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PropagateBomMetadata"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ReconcileShippableTotalsFromVersionInventory",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ReconcileShippableTotalsFromVersionInventory"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RefreshShipmentsUiAccess",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "RefreshShipmentsUiAccess"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveRow",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ResolveRow"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
@@ -25531,6 +24569,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingComponentPickerLastStatus",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingComponentPickerLastStatus"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -25646,7 +24707,7 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SingleVisibleBoxBomVersionLabel",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SyncSavedBomRows",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
                            "disposition":  "REMOVE",
@@ -25656,7 +24717,7 @@
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "SingleVisibleBoxBomVersionLabel"
+                                                  "SyncSavedBomRows"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -25726,6 +24787,29 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "TriggerBoxMakerFormAutoSync"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.UnregisterBoxMakerFormAutoSync",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "UnregisterBoxMakerFormAutoSync"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -25851,29 +24935,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.WriteBomData",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REMOVE",
-                           "disposition":  "REMOVE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "WriteBomData"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "root:src_Shipping_ClassModules_Sheets_ShipmentsTally.cls:ShipmentsTally.Worksheet_Activate",
@@ -26997,790 +26058,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Forms/frmShipmentsTally.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnAdd_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnAdd_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnArchiveBox_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnArchiveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnCancel_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteBox_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnDeleteBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteVersion_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnDeleteVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewBox_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewVersion_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRefresh_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnRefresh_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRemove_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnRemove_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnSaveBox_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnSaveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnUpdateVersion_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnUpdateVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboBoxes_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboVersions_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboVersions_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowActive_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowActive_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowArchived_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowArchived_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mTxtSearch_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mTxtSearch_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Activate",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Activate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Initialize",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Layout",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Layout"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Terminate",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Terminate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnClose_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnClose_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnHistorySheet_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnHistorySheet_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnMake_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnMake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnRefresh_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnRefresh_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnUnmake_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnUnmake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboBoxes_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboVersions_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mCboVersions_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mLstShippables_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mLstShippables_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtBoxPicker_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mTxtBoxPicker_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtQty_Change",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mTxtQty_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Activate",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Activate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Initialize",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Layout",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Layout"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Terminate",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Terminate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [

@@ -168,3 +168,55 @@ Public Function ProjectedComponentInventory(ByVal nasInventory As Double, _
                                             ByVal pendingUnboxQty As Double) As Double
     ProjectedComponentInventory = nasInventory - pendingBuildQty + pendingUnboxQty
 End Function
+
+Public Function ProjectedComponentInventoryTextForTest(ByVal rowValue As Long, _
+                                                       ByVal backendText As String, _
+                                                       ByVal requiredQty As Double) As String
+    Dim projectedQty As Double
+
+    ProjectedComponentInventoryTextForTest = Trim$(backendText)
+    If rowValue <= 0 Or requiredQty <= 0 Then Exit Function
+    If Trim$(backendText) = "" Then Exit Function
+    If Not IsNumeric(Replace$(backendText, ",", "")) Then Exit Function
+
+    projectedQty = CDbl(Replace$(backendText, ",", "")) - requiredQty
+    If projectedQty < 0 Then projectedQty = 0
+    ProjectedComponentInventoryTextForTest = FormatBoxingQuantityText(projectedQty)
+End Function
+
+Public Function RenderedComponentInventoryAfterPendingActionForTest( _
+                                        ByVal backendText As String, _
+                                        ByVal perBoxQty As Double, _
+                                        ByVal qtyMade As Double, _
+                                        ByVal actionText As String) As String
+    Dim projectedQty As Double
+    Dim requiredQty As Double
+
+    If Trim$(backendText) = "" Or _
+       Not IsNumeric(Replace$(backendText, ",", "")) Then
+        RenderedComponentInventoryAfterPendingActionForTest = _
+            "NAS=unknown;PROJECTED=unknown"
+        Exit Function
+    End If
+
+    projectedQty = CDbl(Replace$(backendText, ",", ""))
+    requiredQty = perBoxQty * qtyMade
+    If UCase$(Trim$(actionText)) = "UNMAKE" Or _
+       UCase$(Trim$(actionText)) = "UNBOX" Then
+        projectedQty = projectedQty + requiredQty
+    Else
+        projectedQty = projectedQty - requiredQty
+        If projectedQty < 0 Then projectedQty = 0
+    End If
+    RenderedComponentInventoryAfterPendingActionForTest = _
+        "NAS=" & FormatBoxingQuantityText(projectedQty) & _
+        ";PROJECTED=" & FormatBoxingQuantityText(projectedQty)
+End Function
+
+Private Function FormatBoxingQuantityText(ByVal value As Double) As String
+    If Abs(value - Fix(value)) < 0.0000001 Then
+        FormatBoxingQuantityText = Format$(value, "0")
+    Else
+        FormatBoxingQuantityText = Format$(value, "0.###")
+    End If
+End Function

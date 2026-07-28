@@ -3,12 +3,12 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  169,
-                     "procedureCount":  4690,
-                     "lineCount":  102358,
+                     "componentCount":  164,
+                     "procedureCount":  4526,
+                     "lineCount":  98538,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
-                     "duplicateBodyCandidateCount":  199
+                     "duplicateBodyCandidateCount":  187
                  },
     "candidates":  [
                        {
@@ -1491,46 +1491,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.DisplayShippableInventoryText",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "DisplayShippableInventoryText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.RecordPendingShippableInventory",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "RecordPendingShippableInventory"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyBoxCreatedFromAggregates",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.AppendAggregateRowFromInventory",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "ApplyBoxCreatedFromAggregates"
+                                                  "AppendAggregateRowFromInventory"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -1542,12 +1508,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyDirectShipmentsSentDeltas",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromAggregate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "ApplyDirectShipmentsSentDeltas"
+                                                  "BuildComponentDeltaPacketFromAggregate"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -1559,12 +1525,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildBoxMakerAggregateTables",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "BuildBoxMakerAggregateTables"
+                                                  "NextAvailableBomRow"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -1576,12 +1542,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromBoxBom",
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SyncSavedBomRows",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
-                                                  "BuildComponentDeltaPacketFromBoxBom"
+                                                  "SyncSavedBomRows"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -1593,308 +1559,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureBomTable",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "EnsureBomTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureButtonCustom",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "EnsureButtonCustom"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetShipmentReleaseInvSysTable",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "GetShipmentReleaseInvSysTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetWritableShippingInvSysTable",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "GetWritableShippingInvSysTable"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.HideListColumnShipping",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "HideListColumnShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadPersistentActiveShipmentRowsLocal",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "LoadPersistentActiveShipmentRowsLocal"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectAndNextColumnShipping",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "MoveListObjectAndNextColumnShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectToAddressShipping",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "MoveListObjectToAddressShipping"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentLineIdExists",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentSentShipmentLineIdExists"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentRowExists",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentSentShipmentRowExists"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentShipmentRowsFileIsEmpty",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PersistentShipmentRowsFileIsEmpty"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PropagateBomMetadata",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "PropagateBomMetadata"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ReconcileShippableTotalsFromVersionInventory",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ReconcileShippableTotalsFromVersionInventory"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RefreshShipmentsUiAccess",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "RefreshShipmentsUiAccess"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveRow",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "ResolveRow"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SingleVisibleBoxBomVersionLabel",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "SingleVisibleBoxBomVersionLabel"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.WriteBomData",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "WriteBomData"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:001250ca4c3969cb:AddListBox+AddListBox+AddListBox",
+                           "id":  "duplicate:001250ca4c3969cb:AddListBox+AddListBox",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddListBox",
-                                                  "AddListBox",
                                                   "AddListBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -1940,13 +1615,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
+                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmAddInventoryItem",
                            "procedureNames":  [
-                                                  "UserForm_Layout",
-                                                  "UserForm_Layout",
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
@@ -1962,9 +1635,7 @@
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
                                                "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2282,19 +1953,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:148f921b2c802fe4:AddButton+AddButton+AddButton",
+                           "id":  "duplicate:148f921b2c802fe4:AddButton+AddButton",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddButton",
-                                                  "AddButton",
                                                   "AddButton"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2419,12 +2088,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel+AddLabel",
+                           "id":  "duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmSignIn",
                            "procedureNames":  [
-                                                  "AddLabel",
                                                   "AddLabel",
                                                   "AddLabel",
                                                   "AddLabel"
@@ -2432,8 +2100,7 @@
                            "sourcePaths":  [
                                                "src/Core/Forms/frmSignIn.frm",
                                                "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2713,21 +2380,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize+UserForm_Initialize",
+                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmReceiving",
                            "procedureNames":  [
                                                   "UserForm_Initialize",
-                                                  "UserForm_Initialize",
-                                                  "UserForm_Initialize",
                                                   "UserForm_Initialize"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Forms/frmReceiving.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -2875,12 +2538,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate",
+                           "id":  "duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmCreateDeleteUser",
                            "procedureNames":  [
-                                                  "UserForm_Activate",
                                                   "UserForm_Activate",
                                                   "UserForm_Activate",
                                                   "UserForm_Activate",
@@ -2892,8 +2554,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3227,19 +2888,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:48d71c4368ac9033:AddTextBox+AddTextBox+AddTextBox",
+                           "id":  "duplicate:48d71c4368ac9033:AddTextBox+AddTextBox",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmSignIn",
                            "procedureNames":  [
                                                   "AddTextBox",
-                                                  "AddTextBox",
                                                   "AddTextBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmSignIn.frm",
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Core/Forms/frmWarehouseConnection.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3259,25 +2918,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modRibbonRuntimeStatus.bas",
                                                "src/Core/Modules/modRoleUiAccess.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:496cab3bb9c1904e:LockTextBox+LockTextBox",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "LockTextBox",
-                                                  "LockTextBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3398,25 +3038,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:5159a53b5a190974:AddCheckBox+AddCheckBox",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmWarehouseConnection",
-                           "procedureNames":  [
-                                                  "AddCheckBox",
-                                                  "AddCheckBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:52fe4c4675373727:ForceCheckboxCaption+ForceCheckboxCaption",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -3511,24 +3132,6 @@
                                                "src/Core/Modules/modConfig.bas",
                                                "src/Core/Modules/modProcessor.bas",
                                                "src/Core/Modules/modRoleEventWriter.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:59b7457404a74d4d:mBtnNewVersion_Click+mBtnSaveBox_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewVersion_Click",
-                                                  "mBtnSaveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3704,20 +3307,18 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsForm+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping",
+                           "id":  "duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modOperatorReadModel",
                            "procedureNames":  [
                                                   "ElapsedMilliseconds",
-                                                  "ElapsedMillisecondsForm",
                                                   "ElapsedMillisecondsReadModel",
                                                   "ElapsedMillisecondsShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -3759,24 +3360,6 @@
                                                "src/Core/Modules/modWarehouseRetire.bas",
                                                "src/InventoryDomain/Modules/modInventoryPublisher.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:699c1f7e08ec5455:mBtnMake_Click+mBtnUnmake_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnMake_Click",
-                                                  "mBtnUnmake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4019,12 +3602,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
+                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmAddInventoryItem",
                            "procedureNames":  [
-                                                  "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
@@ -4038,27 +3620,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:7ad5016b8512a7eb:ShowStatus+ShowStatus",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmAdminSettings",
-                           "procedureNames":  [
-                                                  "ShowStatus",
-                                                  "ShowStatus"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4185,21 +3747,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:862c21be3babc752:mBtnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click",
+                           "id":  "duplicate:862c21be3babc752:mBtnClose_Click+mBtnClose_Click",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
-                                                  "mBtnCancel_Click",
-                                                  "mBtnClose_Click",
                                                   "mBtnClose_Click",
                                                   "mBtnClose_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4391,25 +3949,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modHqAggregator.bas",
                                                "src/DesignsDomain/Modules/modDesignsApply.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:972c88c40ec1c198:SelectedVersionLabel+SelectedVersionLabel",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "SelectedVersionLabel",
-                                                  "SelectedVersionLabel"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4702,25 +4241,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:af8651bb60f205c7:NzText+NzText",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "NzText",
-                                                  "NzText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:b25125fa96402437:NormalizePathAdmin+NormalizePathForm",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
@@ -4732,25 +4252,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Modules/modAdminConsole.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:b3b68f53db2fe07e:mCboBoxes_Change+mCboBoxes_Change",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change",
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4975,19 +4476,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox+AddTextBox",
+                           "id":  "duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddTextBox",
-                                                  "AddTextBox",
                                                   "AddTextBox"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5007,25 +4506,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Core/Modules/modRibbonRuntimeStatus.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:c0d46a6cbdd6c183:ArmAutoSync+ArmAutoSync",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "ArmAutoSync",
-                                                  "ArmAutoSync"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5197,19 +4677,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c92c185be4fadc97:AddLabel+AddLabel+AddLabel",
+                           "id":  "duplicate:c92c185be4fadc97:AddLabel+AddLabel",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmAdminSettings",
                            "procedureNames":  [
                                                   "AddLabel",
-                                                  "AddLabel",
                                                   "AddLabel"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmAdminSettings.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5469,12 +4947,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:d4f832b1497319da:AddButton+AddButton+AddButton+AddButton",
+                           "id":  "duplicate:d4f832b1497319da:AddButton+AddButton+AddButton",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmSignIn",
                            "procedureNames":  [
-                                                  "AddButton",
                                                   "AddButton",
                                                   "AddButton",
                                                   "AddButton"
@@ -5482,8 +4959,7 @@
                            "sourcePaths":  [
                                                "src/Core/Forms/frmSignIn.frm",
                                                "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5503,24 +4979,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modDiagnostics.bas",
                                                "src/Core/Modules/modProcessor.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:d9a70f8a8d7d6db3:mChkShowActive_Click+mChkShowArchived_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowActive_Click",
-                                                  "mChkShowArchived_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5559,25 +5017,6 @@
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas",
                                                "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:e6693a3bfaee5694:AddListBox+AddListBox",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmWarehouseConnection",
-                           "procedureNames":  [
-                                                  "AddListBox",
-                                                  "AddListBox"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmWarehouseConnection.frm",
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -5763,38 +5202,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity+FormatQuantityText",
+                           "id":  "duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmShipmentsTally",
                            "procedureNames":  [
                                                   "FormatBoxMakerQuantityText",
-                                                  "FormatQuantity",
-                                                  "FormatQuantityText"
+                                                  "FormatQuantity"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:f348192d4b56e3b3:AddHeaderLabel+AddHeaderLabel",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "AddHeaderLabel",
-                                                  "AddHeaderLabel"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm",
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -12272,586 +11690,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnAdd_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnAdd_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnArchiveBox_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnArchiveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnCancel_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteBox_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnDeleteBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteVersion_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnDeleteVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewBox_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewVersion_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnNewVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRefresh_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnRefresh_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRemove_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnRemove_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnSaveBox_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnSaveBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnUpdateVersion_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mBtnUpdateVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboBoxes_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboVersions_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mCboVersions_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowActive_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowActive_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowArchived_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mChkShowArchived_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mTxtSearch_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "mTxtSearch_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Activate",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Activate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Initialize",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Layout",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Layout"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Terminate",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxBuilder",
-                           "procedureNames":  [
-                                                  "UserForm_Terminate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxBuilder.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnClose_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnClose_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnHistorySheet_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnHistorySheet_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnMake_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnMake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnRefresh_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnRefresh_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnUnmake_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mBtnUnmake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboBoxes_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mCboBoxes_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboVersions_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mCboVersions_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mLstShippables_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mLstShippables_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtBoxPicker_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mTxtBoxPicker_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtQty_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "mTxtQty_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Activate",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Activate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Initialize",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Layout",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Layout"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Terminate",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "UserForm_Terminate"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Shipping_Modules_modShippingAutoOpen.bas:modShippingAutoOpen.Auto_Open",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -15592,97 +14430,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "module-size:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker",
-                           "candidateType":  "SPLIT_MODULE",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "frmShippingBoxMaker",
-                           "procedureNames":  [
-                                                  "AddButton",
-                                                  "AddComboBox",
-                                                  "AddComponentHeaders",
-                                                  "AddHeaderLabel",
-                                                  "AddLabel",
-                                                  "AddListBox",
-                                                  "AddShippableHeaders",
-                                                  "AddTextBox",
-                                                  "AppendCompletionTiming",
-                                                  "ArmAutoSync",
-                                                  "AutoSyncIfPending",
-                                                  "BoxPickerText",
-                                                  "BuildLayout",
-                                                  "CachedShippableInventoryText",
-                                                  "CachedShippableProjectedInventoryText",
-                                                  "CachedVersionComponents",
-                                                  "CancelAutoSync",
-                                                  "ClearBoxFields",
-                                                  "DisplayBoxVersionInventoryText",
-                                                  "DisplayComponentInventoryText",
-                                                  "DisplayShippableInventoryText",
-                                                  "ElapsedMillisecondsForm",
-                                                  "FormatQuantityText",
-                                                  "InitializeBoxMakerAnchors",
-                                                  "InitializeFromShipping",
-                                                  "IsBoxMakerOperatorWorkbook",
-                                                  "LoadSavedBoxes",
-                                                  "LoadSelectedBox",
-                                                  "LoadSelectedVersionComponents",
-                                                  "LoadVersionsForPackage",
-                                                  "LoadVersionsForPackageFromCache",
-                                                  "LockTextBox",
-                                                  "mBtnClose_Click",
-                                                  "mBtnHistorySheet_Click",
-                                                  "mBtnMake_Click",
-                                                  "mBtnRefresh_Click",
-                                                  "mBtnUnmake_Click",
-                                                  "mCboBoxes_Change",
-                                                  "mCboVersions_Change",
-                                                  "mLstShippables_Click",
-                                                  "mTxtBoxPicker_Change",
-                                                  "mTxtQty_Change",
-                                                  "NormalizeVersionText",
-                                                  "NzText",
-                                                  "ParseNumber",
-                                                  "PendingShippableInventoryCount",
-                                                  "PostBoxMakerAction",
-                                                  "ProjectedComponentInventoryText",
-                                                  "RecordPendingComponentInventory",
-                                                  "RecordPendingShippableInventory",
-                                                  "RecordPendingVersionInventory",
-                                                  "RefreshShippableInventoryCache",
-                                                  "RenderComponents",
-                                                  "RenderPackageInventory",
-                                                  "RenderPackageInventoryFromCache",
-                                                  "RenderShippableInventory",
-                                                  "RenderShippableInventoryFromCache",
-                                                  "ResolveOperatorWorkbook",
-                                                  "ScheduleAutoSync",
-                                                  "SelectBoxMakerVersion",
-                                                  "SelectedShippableVersionInventoryText",
-                                                  "SelectedVersionLabel",
-                                                  "SelectShippableInventoryRow",
-                                                  "SetPackageInventoryCaption",
-                                                  "ShippableRowMatchesPicker",
-                                                  "ShowStatus",
-                                                  "TestProjectedComponentInventoryText",
-                                                  "TestRenderedComponentInventoryAfterPendingAction",
-                                                  "TextContainsPicker",
-                                                  "UpdateSyncStateLabel",
-                                                  "UserForm_Activate",
-                                                  "UserForm_Initialize",
-                                                  "UserForm_Layout",
-                                                  "UserForm_Terminate",
-                                                  "VersionPendingKey"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShippingBoxMaker.frm"
-                                           ],
-                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "module-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments",
                            "candidateType":  "SPLIT_MODULE",
                            "confidence":  "MEDIUM",
@@ -15713,11 +14460,9 @@
                                                   "AppendSyncMessage",
                                                   "ApplyBoxBomReadOnlyColumnFormatting",
                                                   "ApplyBoxBomVersionStatusValidation",
-                                                  "ApplyBoxCreatedFromAggregates",
                                                   "ApplyBoxCreatedFromBuilder",
                                                   "ApplyBoxUnboxedFromBuilder",
                                                   "ApplyBoxUnboxExpectedCurrentInventoryDisplay",
-                                                  "ApplyDirectShipmentsSentDeltas",
                                                   "ApplyItemSelection",
                                                   "ApplyItemToBoxBOM",
                                                   "ApplyItemToBoxBuilder",
@@ -15812,11 +14557,9 @@
                                                   "BuildBomSummaryFromBomRows",
                                                   "BuildBoxBomVersionRows",
                                                   "BuildBoxBomVersionsByPackageCache",
-                                                  "BuildBoxMakerAggregateTables",
                                                   "BuildBoxVersionInventoryCache",
                                                   "BuildCanonicalRuntimeInventoryPickerItems",
                                                   "BuildComponentDeltaPacketFromAggregate",
-                                                  "BuildComponentDeltaPacketFromBoxBom",
                                                   "BuildDisplayedShipmentRowsDeltas",
                                                   "BuildInvSysCaches",
                                                   "BuildMadeDeltaPacket",
@@ -15918,14 +14661,12 @@
                                                   "ElapsedMillisecondsShipping",
                                                   "EndShippingTableMutation",
                                                   "EnforceShippingSupportSheetsHidden",
-                                                  "EnsureBomTable",
                                                   "EnsureBoxBomEntryColumns",
                                                   "EnsureBoxBomStarterRows",
                                                   "EnsureBoxBomVersionsTable",
                                                   "EnsureBoxMakerHistoryWorksheetShipping",
                                                   "EnsureBoxMakerInventoryColumns",
                                                   "EnsureBuilderTablesReady",
-                                                  "EnsureButtonCustom",
                                                   "EnsureCheckbox",
                                                   "EnsureColumnExists",
                                                   "EnsureFolderRecursiveShipping",
@@ -15995,12 +14736,10 @@
                                                   "GetListObject",
                                                   "GetMutableLocalShipmentStagingTable",
                                                   "GetParentFolderShipping",
-                                                  "GetShipmentReleaseInvSysTable",
                                                   "GetShipmentReleaseStagingTable",
                                                   "GetShipmentsTallyWorksheet",
                                                   "GetShippingBomViewTable",
                                                   "GetShippingInvSysReadModelForDisplay",
-                                                  "GetWritableShippingInvSysTable",
                                                   "HandleBoxBomVersionSelection",
                                                   "HandleHoldRow",
                                                   "HandleShippingSelectionChange",
@@ -16010,7 +14749,6 @@
                                                   "HasAnyShipmentStage",
                                                   "HasSentOverlayForRowVersion",
                                                   "HideBoxBomVersionIdentityColumns",
-                                                  "HideListColumnShipping",
                                                   "HideWorkbookWindowsShipping",
                                                   "HistoryEventTypeListedShipping",
                                                   "HistoryExportSourceSummaryShipping",
@@ -16042,7 +14780,6 @@
                                                   "LoadBoxMakerBomForPackage",
                                                   "LoadClosedShippingReservationTokens",
                                                   "LoadItemList",
-                                                  "LoadPersistentActiveShipmentRowsLocal",
                                                   "LoadPersistentHoldRowsLocal",
                                                   "LoadPersistentSentShipmentTokens",
                                                   "LoadPersistentShipmentRowsLocal",
@@ -16058,9 +14795,7 @@
                                                   "MaxLongShipping",
                                                   "MoveBoxBomAwayFromVersionResize",
                                                   "MoveHoldRowQuantity",
-                                                  "MoveListObjectAndNextColumnShipping",
                                                   "MoveListObjectColumnAddBlockersShipping",
-                                                  "MoveListObjectToAddressShipping",
                                                   "MoveListObjectToRowColShipping",
                                                   "MoveSelectionToHold",
                                                   "MoveShipmentHoldForAutomation",
@@ -16102,14 +14837,11 @@
                                                   "PersistentActiveShipmentRowsPath",
                                                   "PersistentHoldRowsPath",
                                                   "PersistentPendingBoxVersionInventoryOverlayPath",
-                                                  "PersistentSentShipmentLineIdExists",
                                                   "PersistentSentShipmentLineIdExistsForWarehouse",
-                                                  "PersistentSentShipmentRowExists",
                                                   "PersistentSentShipmentRowsPath",
                                                   "PersistentSentShipmentRowsPathForWarehouse",
                                                   "PersistentShipmentRowClosedByReservation",
                                                   "PersistentShipmentRowSent",
-                                                  "PersistentShipmentRowsFileIsEmpty",
                                                   "PersistHoldRowsLocal",
                                                   "PersistPendingBoxVersionInventoryOverlay",
                                                   "PersistShipmentRowsLocal",
@@ -16122,7 +14854,6 @@
                                                   "PrepareShippingRuntimeRefreshSessionForTest",
                                                   "PrepareTotalInventoryLogEntries",
                                                   "PromptBoxVersionSaveChoiceShipping",
-                                                  "PropagateBomMetadata",
                                                   "ProtectShippingWorksheetForReadOnlyColumns",
                                                   "QueueBoxBuildEventFromBuilder",
                                                   "QueueBoxMakerFormPayload",
@@ -16142,7 +14873,6 @@
                                                   "RecentShipmentInventoryLogTextShipping",
                                                   "ReconcileShipmentStagingBySystemKey",
                                                   "ReconcileShipmentStagingFromShipmentLines",
-                                                  "ReconcileShippableTotalsFromVersionInventory",
                                                   "RefreshBoxBomCurrentInventory",
                                                   "RefreshBoxBomVersionList",
                                                   "RefreshBoxBomVersionListForCurrentBuilder",
@@ -16151,7 +14881,6 @@
                                                   "RefreshBoxMakerBomVersionDisplay",
                                                   "RefreshBoxMakerCurrentInventory",
                                                   "RefreshOperatorInventoryLogForWorkbook",
-                                                  "RefreshShipmentsUiAccess",
                                                   "RefreshShippingBomViewForWorkbook",
                                                   "RefreshShippingBomViewForWorkbookForTest",
                                                   "RegisterBoxMakerFormAutoSync",
@@ -16196,7 +14925,6 @@
                                                   "ResolveInventoryWorkbookBridgeSoftShipping",
                                                   "ResolveItemCodeForBoxBuildPayload",
                                                   "ResolveOnActionMacroShipping",
-                                                  "ResolveRow",
                                                   "ResolveRowFromCaches",
                                                   "ResolveShippingInventoryWorkbookForLogRead",
                                                   "ResolveShippingWorkbook",
@@ -16344,7 +15072,6 @@
                                                   "ShowShippingDynamicItemSearch",
                                                   "ShowShippingStatus",
                                                   "SingleVersionFallbackAvailableQty",
-                                                  "SingleVisibleBoxBomVersionLabel",
                                                   "SortBoxBomByVersionShipping",
                                                   "SortedKeys",
                                                   "SortedTextKeysShipping",
@@ -16397,7 +15124,6 @@
                                                   "WriteAggregateBOM",
                                                   "WriteAggregatePackages",
                                                   "WriteArrayToTable",
-                                                  "WriteBomData",
                                                   "WriteBoxBomVersionRowsToTable",
                                                   "WriteCheckInv",
                                                   "WriteDisplayedBoxBomVersionRowsDirect",
@@ -18143,125 +16869,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllCodeToSingleFiles",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportAllCodeToSingleFiles"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllModules",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportAllModules"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportTablesHeadersAndControls",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportTablesHeadersAndControls"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportUserFormControls",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ExportUserFormControls"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ListSheetCodeNames",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ListSheetCodeNames"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ReplaceAllCodeFromFiles",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "ReplaceAllCodeFromFiles"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.SyncSheetsCodeBehind_Diagnostics",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modExportImportAll",
-                           "procedureNames":  [
-                                                  "SyncSheetsCodeBehind_Diagnostics"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modExportImportAll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modGlobals.bas:modGlobals.CommitSelectionAndCloseWrapper",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -18891,40 +17498,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestBoundaryConditions",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTestModule",
-                           "procedureNames":  [
-                                                  "TestBoundaryConditions"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modTestModule.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestDataIntegrity",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTestModule",
-                           "procedureNames":  [
-                                                  "TestDataIntegrity"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modTestModule.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -19104,57 +17677,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/MouseScroll.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.EmergencyEnableEvents",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "EmergencyEnableEvents"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.FullDiagnostic",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "FullDiagnostic"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.TestManualSelection",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "RealDiagnostic",
-                           "procedureNames":  [
-                                                  "TestManualSelection"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/RealDiagnostic.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
@@ -20659,6 +19181,125 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormArchiveBox",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormArchiveBox"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentComponents",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormCurrentComponents"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentMeta",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormCurrentMeta"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteBox",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormDeleteBox"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteVersion",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormDeleteVersion"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormAutoSyncProcedureName",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxMakerFormAutoSyncProcedureName"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventory",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxMakerFormCurrentInventory"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventoryDebugReport",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -21050,6 +19691,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "RegisterBoxMakerFormAutoSync"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -21203,6 +19861,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingComponentPickerLastStatus",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingComponentPickerLastStatus"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -21328,6 +20003,23 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "TriggerBoxMakerFormAutoSync"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.UnregisterBoxMakerFormAutoSync",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "UnregisterBoxMakerFormAutoSync"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

@@ -1,5 +1,7 @@
 Attribute VB_Name = "modTestModule"
 
+' Legacy VBA test helper retained outside runtime XLAM packaging.
+
 ' Module: TestModule
 ' Subroutine to test for data integrity in the invSys table
 Sub TestDataIntegrity()

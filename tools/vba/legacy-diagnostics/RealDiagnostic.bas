@@ -1,6 +1,8 @@
 Attribute VB_Name = "RealDiagnostic"
 Option Explicit
 
+' Developer-only legacy event diagnostic; excluded from runtime XLAM packaging.
+
 '===================================================================================
 ' Module: RealDiagnostic
 ' Purpose: Find why Worksheet_SelectionChange in ReceivedTally.cls isn't firing

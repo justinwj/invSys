@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1033
-- Reviewed candidates: 1035
+- Scanner candidates: 965
+- Reviewed candidates: 967
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -13,9 +13,9 @@
 |---|---:|---|
 | RECEIVING | 27 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 131 | Production-owned forms, services, and role package source. |
-| SHIPPING | 208 | Shipping and Boxing forms, services, and role package source. |
-| SHARED_OPERATIONS | 67 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 319 | Headless shared runtime and developer-support source in Core. |
+| SHIPPING | 155 | Shipping and Boxing forms, services, and role package source. |
+| SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
+| CORE | 308 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 2 | Build, scan, report, and other developer-only tooling. |
@@ -52,8 +52,7 @@
 | src/Production/Forms/frmProduction.frm | Production | 4788 |
 | src/Production/Modules/mProduction.bas | Production | 12850 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2525 |
-| src/Shipping/Forms/frmShippingBoxMaker.frm | Shipping | 1564 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22389 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21797 |
 
 ## Reviewed candidates
 
@@ -304,6 +303,7 @@
 | duplicate:413c2a2992184cf1:WorkbookHasListObject+WorkbookHasListObject | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:44d235aa494363f1:BuildQuietWorkbookKey+BuildSourceSyncCacheKeyApply+BuildWorkbookKeyReadModel | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:4834df1061924290:ReactivateQuietOwnerSafeProcessor+ReactivateQuietOwnerSafeReadModel+ReactivateQuietOwnerSafeRole+ReactivateQuietOwnerSafeSync+ScheduleSourceWorkbookSyncBridgeResult | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:48d71c4368ac9033:AddTextBox+AddTextBox | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:495a365192112be9:ValueOrBlankRoleUi+ValueOrPlaceholderStatus | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:50a294490c9c2f52:PerfEndSafeProcessor+PerfEndSafeRole | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:51518d823c818be9:NormalizeFolderPathRole+NormalizeFolderPathTesterSetup | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -450,13 +450,6 @@
 | reachability:src_Core_Modules_modErrorHandler.bas:modErrorHandler.HandleItemCodeOverflow | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modErrorHandler.bas:modErrorHandler.SafeExecute | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modErrorHandler.bas:modErrorHandler.ValidateAndProcessInput | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllCodeToSingleFiles | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportAllModules | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportTablesHeadersAndControls | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ExportUserFormControls | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ListSheetCodeNames | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.ReplaceAllCodeFromFiles | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modExportImportAll.bas:modExportImportAll.SyncSheetsCodeBehind_Diagnostics | CORE | MOVE_TO_TESTS | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modGlobals.bas:modGlobals.CommitSelectionAndCloseWrapper | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modGlobals.bas:modGlobals.GetItemUOMByRowNum | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modGlobals.bas:modGlobals.IsFormLoaded | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -509,8 +502,6 @@
 | reachability:src_Core_Modules_modRoleUiAccess.bas:modRoleUiAccess.DiagnoseCurrentUserCapability | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modRoleWorkbookSurfaces.bas:modRoleWorkbookSurfaces.EnsureInventoryDomainSupportSurface | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modRuntimeWorkbooks.bas:modRuntimeWorkbooks.WorksheetIsBlankRuntime | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestBoundaryConditions | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_modTestModule.bas:modTestModule.TestDataIntegrity | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.DisableEvents | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modUR_Transaction.bas:modUR_Transaction.GetCurrentTransactionID | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -526,9 +517,6 @@
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveRequiredRoleRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_MouseScroll.bas:MouseScroll.DisableMouseScroll | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.EmergencyEnableEvents | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.FullDiagnostic | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_RealDiagnostic.bas:RealDiagnostic.TestManualSelection | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.chkShippable_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.lst_DblClick | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -819,51 +807,48 @@
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Terminate | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| duplicate:001250ca4c3969cb:AddListBox+AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:001250ca4c3969cb:AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:0352bd7c18f22a6e:ShippingBomActiveValue+ShippingBomActiveValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:037587d479aa71ae:StateStaged+StateStaged | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:114ea90fb30a174f:NormalizeHeader+NormalizeHeaderKey+NormalizeHeaderKey | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:148f921b2c802fe4:AddButton+AddButton+AddButton | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:148f921b2c802fe4:AddButton+AddButton | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:15552355539c4c1f:ShowStatus+ShowStatus | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:162d045cebea9efe:Location+Location | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel+AddLabel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:1aed08997a62a835:AddLabel+AddLabel+AddLabel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:25e3a9272732ff3f:IsProductionRoleWorkbook+IsReceivingRoleWorkbook+IsShippingRoleWorkbook | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:264a4885df3e9dde:AddCheckBox+AddCheckBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:28d9f2df337223a7:NzDblApply+NzDblReadModel+NzDblShip+NzDblSync | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:295ce507ab5ef7c8:HasActionableProductionWarning+HasActionableShippingWarning | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2e3fdb55b8bf4ac8:WorkbookSheetExists+WorkbookSheetExistsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize+UserForm_Initialize | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:2fb6a140cb21ffb2:CloseWorkbookNoSaveProduction+CloseWorkbookQuietlyTester | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2fd6555d3906b37b:HideInventoryBridgeWorkbookWindows+HideWorkbookWindowsAuth+HideWorkbookWindowsConfig+HideWorkbookWindowsPublisher+HideWorkbookWindowsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:30348d523aeda395:NzStrShip+TextValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:30d52035e2b7a1cb:EventTypeListedRole+HistoryEventTypeListedShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:356e460465775137:Init+Init+Init+Init | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:377130229c7c42e9:ListObjectHasHeaders+ListObjectHasHeaders | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:3be0eab87f1495ef:ApplyProductionWindowStyle+ApplyReceivingWindowStyle | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:426875543f50711f:MaxDoubleForm+MaxDoubleLocal+MaxLongAdminForm+MaxLongLocal+MaxLongShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:44682bb551892d73:NormalizeBandKey+NormalizeProcessBandKey | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:484c22be6aea05af:EnsureTableHasDataRowSurface+EnsureTableHasRow+EnsureTableHasRow+EnsureTableHasRowProcessor | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:48d71c4368ac9033:AddTextBox+AddTextBox+AddTextBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:4c333631e854e020:ResolveCurrentShippingStationId+ResolveCurrentStationIdReadModel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:5150633582b0c6cc:AllowExcelRefreshToSettle+AllowExcelRefreshToSettleProduction | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:5159a53b5a190974:AddCheckBox+AddCheckBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:52fe4c4675373727:ForceCheckboxCaption+ForceCheckboxCaption | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:54058255e099aa25:TestInitializeForWorkbook+TestInitializeForWorkbook | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:5d6d7b8d984dd6d4:FindOpenWorkbookByFullNameShipping+FindOpenWorkbookByPathProcessor | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsForm+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:63f03ea72c9b72f1:ElapsedMilliseconds+ElapsedMillisecondsReadModel+ElapsedMillisecondsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6495d24f97dd8eb9:EventId+EventId | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:67ea608098949139:CloseWorkbookNoSaveShipping+CloseWorkbookQuietlyPublisher+CloseWorkbookQuietlyRetire | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6afed6b73cd3dc9a:SafeTextForm+SafeTrimReadiness | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:70e81b56508b3d0a:RemoveAutoGeneratedColumnsShipping+RemoveAutogeneratedColumnsSurface | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:77c1bbac8c506d7f:AppendNote+AppendNote+AppendNoteShip | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
-| duplicate:7ad5016b8512a7eb:ShowStatus+ShowStatus | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:834c0cd6cc85ba5c:ClearExcelClipboardState+ClearExcelClipboardStateProduction+ClearExcelClipboardStateShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:836394ed6c12f8fc:WorkbookTableExistsProductionInit+WorkbookTableExistsShippingInit | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:862c21be3babc752:mBtnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:862c21be3babc752:mBtnClose_Click+mBtnClose_Click | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:8eccb2c78b3f8d20:DeleteShapeIfExists+DeleteShapeIfExists | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:958efd9bdea90f68:RestoreCoreRootOverrideBootstrap+RestoreCoreRootOverrideRetire+RestoreCoreRootOverrideTesterSetup+RestoreRuntimeRootOverrideReadiness | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:9b4198fdcfe07fab:SystemKey+SystemKey | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -871,16 +856,15 @@
 | duplicate:a66e81b15f7c084a:ColumnIndex+ColumnIndex | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:a79324680d5b40fd:StateSubmitted+StateSubmitted | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:b6128e74972d9bee:FindDesignsApplyTable+FindDesignsTableQuery+FindInventoryQueryTable+FindListObjectByNameAdminLocal+FindListObjectByNamePublisher+FindListObjectByNameStatus+FindListObjectInWorkbook+FindListObjectNas+FindListObjectReadModel+FindProductionListObjectByName+FindTable+FindTableByName+FindTableByNameBootstrap+FindTableByNameReadiness+FindTableByNameShip+FindTableByNameSurface | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox+AddTextBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:c01c2d3bdf55ca03:AddTextBox+AddTextBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c30f7d79756508ef:NzStr+NzStr+NzStrInv | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c47acf96b3f0f5b1:btnCancel_Click+btnCancel_Click+btnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
-| duplicate:c92c185be4fadc97:AddLabel+AddLabel+AddLabel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:c92c185be4fadc97:AddLabel+AddLabel | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:cb1b5883fe27dc31:EnsureFolderRecursiveProduction+EnsureFolderRecursiveShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:d01218541cebf3d1:ClearClipboardSurface+ClearSystemClipboardShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:d3a27d2a3e35049c:NormalizeFolderPathProduction+NormalizeFolderPathShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:d4f832b1497319da:AddButton+AddButton+AddButton+AddButton | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:d4f832b1497319da:AddButton+AddButton+AddButton | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:e4c143d11569da45:JsonPayloadUnescape+JsonUnescapeRole | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:e6693a3bfaee5694:AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:e708fbe3ffbfa914:WorkbookHasSheet+WorkbookSheetExistsProductionInit+WorkbookSheetExistsShippingInit | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:efebe59a45862ef2:CurrentState+CurrentState | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:f454ecc20a559e2f:EnsureShippingWorksheetEditable+EnsureTableSheetEditableAdminSheet | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -890,25 +874,15 @@
 | duplicate:091b2fb3e91a896b:LoadShipmentLineState+LoadShipmentState | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:26919ed9f8a41c28:mBtnBoxBuilderNewVersion_Click+mBtnBoxBuilderUpdateVersion_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:38c53fac27e773fb:BtnOpenBoxBuilder+BtnOpenBoxMaker | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:496cab3bb9c1904e:LockTextBox+LockTextBox | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:5010b83d04f91baf:EnsureBoxMakerHistoryWorksheetShipping+EnsureShipmentHistoryWorksheetShipping | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:59b7457404a74d4d:mBtnNewVersion_Click+mBtnSaveBox_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:606aca1754beeea3:BoxMakerRuntimeReportMetric+ShippingRuntimeReportMetric | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:699c1f7e08ec5455:mBtnMake_Click+mBtnUnmake_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:6bf04a816000979b:BoxMakerFormAutoSyncProcedureName+ShipmentsFormAutoSyncProcedureName | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:972c88c40ec1c198:SelectedVersionLabel+SelectedVersionLabel | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:a803fe84139419ce:ShippingBomWorkbookPath+ShippingReservationsWorkbookPath | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:af8651bb60f205c7:NzText+NzText | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:b3b68f53db2fe07e:mCboBoxes_Change+mCboBoxes_Change | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:b3ca9d9e25ef9972:ShippingInventoryPickerTableHasRows+ShippingManagedInventoryTableHasRows | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:c0d46a6cbdd6c183:ArmAutoSync+ArmAutoSync | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:cb3f48556ae84c25:mBtnAdd_Click+mBtnUpdate_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
-| duplicate:d9a70f8a8d7d6db3:mChkShowActive_Click+mChkShowArchived_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:f0c18a7d8057ff17:PersistentActiveShipmentRowsPath+PersistentHoldRowsPath | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity+FormatQuantityText | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:f348192d4b56e3b3:AddHeaderLabel+AddHeaderLabel | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| module-size:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildSelectedShipmentRowsDeltas | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormCommitLine | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -931,8 +905,6 @@
 | reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.SelectedHoldTableRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.TestReadProjectedText | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UnreservedShipmentQtyForShippable | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.DisplayShippableInventoryText | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.RecordPendingShippableInventory | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modBoxingService.bas:modBoxingService.NasInventoryIsReadOnly | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modBoxingService.bas:modBoxingService.ProjectedComponentInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modShippingInit.bas:modShippingInit.EnsureShippingSurfaceForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -940,8 +912,14 @@
 | reachability:src_Shipping_Modules_modShippingPostingService.bas:modShippingPostingService.ClearCompletedStaging | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modShippingPostingService.bas:modShippingPostingService.IdempotentReplayAccepted | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modShippingPostingService.bas:modShippingPostingService.ProjectedInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyBoxCreatedFromAggregates | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyDirectShipmentsSentDeltas | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.AppendAggregateRowFromInventory | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormArchiveBox | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentComponents | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentMeta | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteBox | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormAutoSyncProcedureName | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventoryDebugReport | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormLoadShippableInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnBoxCreated | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -957,31 +935,17 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToggleBuilder | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToShipments | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnUnship | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildBoxMakerAggregateTables | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromBoxBom | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromAggregate | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearOrphanedSentOverlayForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearSentOverlayForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearShippingSystemOverlayForImmediate | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureBomTable | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureButtonCustom | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.EnsureShippingBomViewPopulated | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GenerateRowNumbers | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetShipmentReleaseInvSysTable | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetShipmentsTallyWorksheet | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.GetWritableShippingInvSysTable | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.HideListColumnShipping | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.IsInItemsColumn | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadPersistentActiveShipmentRowsLocal | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadShippingBomPackagePickerItems | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectAndNextColumnShipping | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.MoveListObjectToAddressShipping | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentLineIdExists | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentSentShipmentRowExists | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PersistentShipmentRowsFileIsEmpty | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.PropagateBomMetadata | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ReconcileShippableTotalsFromVersionInventory | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RefreshShipmentsUiAccess | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RunShipmentsSentFormActionForTest | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormHydrateInvSysFromShippables | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -991,21 +955,22 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormRunAllShipmentsSentRowsReportForAutomation | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormRunDirectShipmentsSent | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormRunStageAndShipmentsSent | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingComponentPickerLastStatus | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemInventorySourceDiagnostic | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemOverlayDiagnostic | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingTabbedNavigationSmokeForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingToTotalInv | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SingleVisibleBoxBomVersionLabel | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SyncSavedBomRows | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.TestAutoSyncTrigger | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ToggleUseExistingInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.TriggerBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.UnregisterBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ValidateBoxesMadeFromCurrentWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ValidateConfirmInventoryFromCurrentWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ValidateQueueShipmentsSentEventFromCurrentWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ValidateShipmentsSentStagingFromCurrentWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ValidateToShipmentsFromCurrentWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.WriteBomData | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | root:src_Shipping_ClassModules_Sheets_ShipmentsTally.cls:ShipmentsTally.Worksheet_Activate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_ClassModules_Sheets_ShipmentsTally.cls:ShipmentsTally.Worksheet_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_ClassModules_Sheets_ShipmentsTally.cls:ShipmentsTally.Worksheet_SelectionChange | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -1055,40 +1020,6 @@
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UserForm_Initialize | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UserForm_Layout | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UserForm_Terminate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnAdd_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnArchiveBox_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnCancel_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteBox_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnDeleteVersion_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewBox_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnNewVersion_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRefresh_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnRemove_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnSaveBox_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mBtnUpdateVersion_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboBoxes_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mCboVersions_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowActive_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mChkShowArchived_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.mTxtSearch_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Activate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Initialize | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Layout | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxBuilder.frm:frmShippingBoxBuilder.UserForm_Terminate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnClose_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnHistorySheet_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnMake_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnRefresh_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mBtnUnmake_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboBoxes_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mCboVersions_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mLstShippables_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtBoxPicker_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.mTxtQty_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Activate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Initialize | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Layout | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Shipping_Forms_frmShippingBoxMaker.frm:frmShippingBoxMaker.UserForm_Terminate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modShippingAutoOpen.bas:modShippingAutoOpen.Auto_Open | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyItemSelection | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ApplyItemToBoxBOM | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

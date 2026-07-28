@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 169
-- Procedures: 4690
+- Components: 164
+- Procedures: 4526
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -13,10 +13,10 @@
 | Package | Project | Output | Components |
 |---|---|---|---:|
 | Admin | invSys_Admin | invSys.Admin.xlam | 29 |
-| Core | invSys_Core | invSys.Core.xlam | 58 |
+| Core | invSys_Core | invSys.Core.xlam | 55 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 46 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 44 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
@@ -105,10 +105,8 @@
 | mBtnAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAddField_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAddMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnArchiveBox_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnArchiveDestBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -143,10 +141,8 @@
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnClose_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnClose_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnClose_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnClose_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -158,13 +154,10 @@
 | mBtnCopyPin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeactivate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnDeleteBox_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeleteGenerated_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnDeleteVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnEditMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnGeneratePin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHistory_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnHistorySheet_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHistorySheet_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHold_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHubPathHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -178,7 +171,6 @@
 | mBtnLoaderClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnLoaderLoad_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnLoaderRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnMake_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnManagerApplyOutput_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnManagerCheckIn_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnManagerMade_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -193,8 +185,6 @@
 | mBtnNasConnect_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnNasLogout_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnNew_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnNewBox_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnNewVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnObsolete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -205,12 +195,9 @@
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefreshUsers_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRelease_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnReloadConfig_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRemoveField_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -224,7 +211,6 @@
 | mBtnRunTreeCollapseAll_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRunTreeExpandAll_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnSaveBox_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSaveConfig_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSaveConnectionPolicy_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnScan_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -232,25 +218,17 @@
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnStage_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnUnmake_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomReset_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnUpdateVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxBuilderVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mCboBoxes_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mCboBoxes_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxMakerVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mCboVersions_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mCboVersions_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkRequireStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkRoamingStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mChkShowActive_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mChkShowArchived_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkUseExisting_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_AfterUpdate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -279,7 +257,6 @@
 | mLstRunTree_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstShipments_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstShippables_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mLstShippables_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstSourceWarehouses_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstTargets_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstUoms_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -292,7 +269,6 @@
 | MouseProc | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | mPages_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mTxtBoxPicker_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtConfirmPin_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Enter | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Exit | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -304,8 +280,6 @@
 | mTxtPaletteSplit_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtPicker_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtQty_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mTxtQty_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mTxtSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtTreePaletteQty_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtTreePaletteSplit_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -391,6 +365,7 @@
 | TestAuthValidateUserCredentialForTarget_SignsInAndStatusOk | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestBootstrapWarehouseLocal_CreatesBootableLocalRuntime | TEST_ENTRY | tests/unit/TestWarehouseBootstrap.bas |
 | TestBootstrapWarehouseLocal_FailureRollsBackPartialFolders | TEST_ENTRY | tests/unit/TestWarehouseBootstrap.bas |
+| TestBoundaryConditions | TEST_ENTRY | tests/legacy-vba/modTestModule.bas |
 | TestBoxBuilderArchive_HidesArchivedBoxesUnlessRequested | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestBoxBuilderForm_InitializesWithActiveArchiveFilters | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestBoxMakerHistoryExport_ReportsEmptySourceDiagnostics | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -425,6 +400,7 @@
 | TestCheckReceivingReadiness_SnapshotUnreadable_ReturnsUnreadable | TEST_ENTRY | tests/unit/TestReceivingReadiness.bas |
 | TestConfirmWrites_Tester_EndToEnd | TEST_ENTRY | tests/integration/test_ConfirmWrites_Tester.bas |
 | TestCreateWarehouse_EndToEndLifecycle | TEST_ENTRY | tests/integration/test_CreateWarehouse.bas |
+| TestDataIntegrity | TEST_ENTRY | tests/legacy-vba/modTestModule.bas |
 | TestDelayedPublicationRecovery_PreservesLocalOutboxAndGlobalCatchup | TEST_ENTRY | tests/unit/TestPhase5Sync.bas |
 | TestDeleteLocalRuntime_RejectsWithoutConfirmation | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestDeleteLocalRuntime_RejectsWithoutTombstone | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
@@ -752,10 +728,6 @@
 | UserForm_Activate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Activate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Activate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Activate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Activate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Initialize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -781,16 +753,12 @@
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_MouseScroll | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Resize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Resize | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Terminate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| UserForm_Terminate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Terminate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Terminate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Terminate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -832,14 +800,12 @@
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modProcessor.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modRoleEventWriter.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modRoleWorkbookSurfaces.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modTestModule.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Core/Modules/modWarehouseSync.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/ClassModules/Sheets/InventoryManagement.cls]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventoryApply.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventorySchema.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInvMan.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Forms/frmShipmentsTally.frm]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Forms/frmShippingBoxMaker.frm]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Modules/modShippingEventCreator.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Modules/modTS_Shipments.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/ClassModules/cDynItemSearch.cls]

@@ -1,4 +1,6 @@
 Attribute VB_Name = "modExportImportAll"
+
+' Developer-only legacy export/import support; excluded from runtime XLAM packaging.
 '------------------------------------------------------------
 ' Module: modExportImportAll
 ' ----put these in the immediate window to run:----
