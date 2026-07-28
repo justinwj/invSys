@@ -34,6 +34,24 @@ Private WithEvents mBtnReturn As MSForms.CommandButton
 Private WithEvents mBtnStage As MSForms.CommandButton
 Private WithEvents mBtnSend As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
+Private WithEvents mPages As MSForms.TabStrip
+Private WithEvents mBtnBoxBuilderRefresh As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderNew As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderAddComponent As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderRemoveComponent As MSForms.CommandButton
+Private WithEvents mBtnBoxMakerRefresh As MSForms.CommandButton
+Private WithEvents mLstBoxBuilderDesigns As MSForms.ListBox
+Private WithEvents mCboBoxBuilderVersion As MSForms.ComboBox
+Private WithEvents mBtnBoxBuilderSave As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderUpdateVersion As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderNewVersion As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderDeleteVersion As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderArchive As MSForms.CommandButton
+Private WithEvents mBtnBoxBuilderDelete As MSForms.CommandButton
+Private WithEvents mLstBoxMakerDesigns As MSForms.ListBox
+Private WithEvents mCboBoxMakerVersion As MSForms.ComboBox
+Private WithEvents mBtnBoxMakerMake As MSForms.CommandButton
+Private WithEvents mBtnBoxMakerUnmake As MSForms.CommandButton
 
 Private mTxtBox As MSForms.TextBox
 Private mTxtVersion As MSForms.TextBox
@@ -44,6 +62,18 @@ Private mTxtCarrier As MSForms.ComboBox
 Private mTxtStatus As MSForms.TextBox
 Private mLstReadiness As MSForms.ListBox
 Private mLblSyncState As MSForms.Label
+Private mLblBoxBuilderPage As MSForms.Label
+Private mLblBoxMakerPage As MSForms.Label
+Private mTxtBoxBuilderName As MSForms.TextBox
+Private mTxtBoxBuilderUom As MSForms.TextBox
+Private mTxtBoxBuilderLocation As MSForms.TextBox
+Private mTxtBoxBuilderDescription As MSForms.TextBox
+Private mCboBoxBuilderStatus As MSForms.ComboBox
+Private mLstBoxBuilderInventory As MSForms.ListBox
+Private mTxtBoxBuilderComponentQty As MSForms.TextBox
+Private mLstBoxBuilderComponents As MSForms.ListBox
+Private mTxtBoxMakerQty As MSForms.TextBox
+Private mLstBoxMakerComponents As MSForms.ListBox
 
 Private mShippables As Variant
 Private mNasReservationTotals As Object
@@ -59,6 +89,9 @@ Private mUseInjectedReservationTotalsForTest As Boolean
 Private mTimerLog() As String
 Private mTimerCount As Long
 Private mTimerStart As Single
+Private mSelectedBoxBuilderPackageRow As Long
+Private mSelectedBoxMakerPackageRow As Long
+Private mBoxBuilderInventoryRows As Variant
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -107,8 +140,11 @@ Public Sub InitializeFromShipping(Optional ByVal preserveActiveRows As Boolean =
     If Not mBuilt Then BuildLayout
     TLap "build layout"
     loadStep = "resolve operator workbook"
-    If mOperatorWorkbook Is Nothing And IsUsableOperatorWorkbook(ActiveWorkbook) Then Set mOperatorWorkbook = ActiveWorkbook
     Set operatorWb = ResolveOperatorWorkbook()
+    If operatorWb Is Nothing Then
+        Err.Raise vbObjectError + 7680, "frmShipmentsTally.InitializeFromShipping", _
+                  "The captured Shipping operator workbook is no longer available."
+    End If
     TLap "resolve operator workbook"
     loadStep = "begin quiet UI"
     previousPointer = Me.MousePointer
@@ -208,9 +244,6 @@ Private Function ResolveOperatorWorkbook() As Workbook
     On Error Resume Next
 
     Dim nameCheck As String
-    Dim wb As Workbook
-    Dim candidateWb As Workbook
-    Dim candidateCount As Long
 
     If Not mOperatorWorkbook Is Nothing Then
         nameCheck = mOperatorWorkbook.Name
@@ -220,28 +253,6 @@ Private Function ResolveOperatorWorkbook() As Workbook
         End If
         Err.Clear
         Set mOperatorWorkbook = Nothing
-    End If
-
-    If IsShipmentsOperatorWorkbook(ActiveWorkbook) Then
-        Set mOperatorWorkbook = ActiveWorkbook
-        Set ResolveOperatorWorkbook = mOperatorWorkbook
-        Exit Function
-    End If
-
-    For Each wb In Application.Workbooks
-        If Not wb.IsAddin Then
-            If IsShipmentsOperatorWorkbook(wb) Then
-                Set mOperatorWorkbook = wb
-                Set ResolveOperatorWorkbook = wb
-                Exit Function
-            End If
-            candidateCount = candidateCount + 1
-            Set candidateWb = wb
-        End If
-    Next wb
-    If candidateCount = 1 Then
-        Set mOperatorWorkbook = candidateWb
-        Set ResolveOperatorWorkbook = candidateWb
     End If
     On Error GoTo 0
 End Function
@@ -550,8 +561,622 @@ Private Sub BuildLayout()
     Set mBtnClose = AddButton("btnClose", "Close", 776, 590, 56, 30)
 
     MoveStatusToTop
+    BuildShippingPages
     InitializeAnchors
     LoadCarrierChoices
+End Sub
+
+Private Sub BuildShippingPages()
+    Dim ctl As MSForms.Control
+    Dim pageLabel As MSForms.Label
+
+    For Each ctl In Me.Controls
+        ctl.Top = ctl.Top + 30
+        ctl.Tag = "Shipping"
+    Next ctl
+
+    Set mPages = Me.Controls.Add("Forms.TabStrip.1", "tabsShippingRole", True)
+    With mPages
+        .Left = 12
+        .Top = 8
+        .Width = 820
+        .Height = 26
+        .Tabs.Clear
+        .Tabs.Add "tabShipping", "Shipping"
+        .Tabs.Add "tabBoxBuilder", "Box Builder"
+        .Tabs.Add "tabBoxMaker", "Box Maker"
+        .Value = 0
+        .Tag = "Shell"
+    End With
+
+    Set mLblBoxBuilderPage = AddLabel( _
+        "lblBoxBuilderPage", _
+        "Box Builder - design/version editor", _
+        18, 156, 280, 22, True)
+    mLblBoxBuilderPage.Tag = "Box Builder"
+    Set mBtnBoxBuilderNew = AddButton( _
+        "btnBoxBuilderNewPage", "New Box", 562, 152, 98, 28)
+    mBtnBoxBuilderNew.Tag = "Box Builder"
+    Set mBtnBoxBuilderRefresh = AddButton( _
+        "btnBoxBuilderRefreshPage", "Refresh Box Designs", 670, 152, 150, 28)
+    mBtnBoxBuilderRefresh.Tag = "Box Builder"
+    Set mLstBoxBuilderDesigns = AddListBox( _
+        "lstBoxBuilderDesignsPage", 18, 188, 260, 142)
+    With mLstBoxBuilderDesigns
+        .ColumnCount = 5
+        .ColumnWidths = "0 pt;130 pt;42 pt;72 pt;0 pt"
+        .Tag = "Box Builder"
+    End With
+    Set pageLabel = AddLabel( _
+        "lblBoxBuilderInventory", "Component inventory", 18, 340, 160, 18, True)
+    pageLabel.Tag = "Box Builder"
+    Set mLstBoxBuilderInventory = AddListBox( _
+        "lstBoxBuilderInventoryPage", 18, 362, 260, 146)
+    With mLstBoxBuilderInventory
+        .ColumnCount = 7
+        .ColumnWidths = "0 pt;72 pt;102 pt;38 pt;62 pt;0 pt;48 pt"
+        .Tag = "Box Builder"
+    End With
+    Set pageLabel = AddLabel("lblBoxBuilderComponentQty", "Qty", 18, 518, 28, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderComponentQty = AddTextBox( _
+        "txtBoxBuilderComponentQty", 48, 514, 46, 22)
+    mTxtBoxBuilderComponentQty.Value = "1"
+    mTxtBoxBuilderComponentQty.Tag = "Box Builder"
+    Set mBtnBoxBuilderAddComponent = AddButton( _
+        "btnBoxBuilderAddComponentPage", "Add", 102, 512, 76, 26)
+    mBtnBoxBuilderAddComponent.Tag = "Box Builder"
+    Set mBtnBoxBuilderRemoveComponent = AddButton( _
+        "btnBoxBuilderRemoveComponentPage", "Remove", 186, 512, 92, 26)
+    mBtnBoxBuilderRemoveComponent.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderName", "Box Name", 292, 188, 70, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderName = AddTextBox("txtBoxBuilderName", 366, 184, 190, 22)
+    mTxtBoxBuilderName.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderVersion", "Version", 570, 188, 54, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mCboBoxBuilderVersion = AddComboBox("cboBoxBuilderVersion", 630, 184, 86, 22)
+    mCboBoxBuilderVersion.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderStatus", "Status", 570, 218, 54, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mCboBoxBuilderStatus = AddComboBox("cboBoxBuilderStatus", 630, 214, 86, 22)
+    With mCboBoxBuilderStatus
+        .AddItem "Active"
+        .AddItem "Archived"
+        .Value = "Active"
+        .Tag = "Box Builder"
+    End With
+    Set pageLabel = AddLabel("lblBoxBuilderUom", "UOM", 292, 218, 40, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderUom = AddTextBox("txtBoxBuilderUom", 336, 214, 64, 22)
+    mTxtBoxBuilderUom.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderLocation", "Location", 410, 218, 56, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderLocation = AddTextBox("txtBoxBuilderLocation", 468, 214, 88, 22)
+    mTxtBoxBuilderLocation.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderDescription", "Description", 292, 248, 70, 18, False)
+    pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderDescription = AddTextBox("txtBoxBuilderDescription", 366, 244, 350, 22)
+    mTxtBoxBuilderDescription.Tag = "Box Builder"
+    Set pageLabel = AddLabel("lblBoxBuilderComponents", "Selected version components", 292, 278, 210, 18, True)
+    pageLabel.Tag = "Box Builder"
+    Set mLstBoxBuilderComponents = AddListBox( _
+        "lstBoxBuilderComponentsPage", 292, 300, 528, 208)
+    With mLstBoxBuilderComponents
+        .ColumnCount = 8
+        .ColumnWidths = "46 pt;115 pt;82 pt;0 pt;48 pt;42 pt;76 pt;100 pt"
+        .Tag = "Box Builder"
+    End With
+    Set mBtnBoxBuilderSave = AddButton( _
+        "btnBoxBuilderSavePage", "Save Box", 292, 520, 86, 28)
+    mBtnBoxBuilderSave.Tag = "Box Builder"
+    Set mBtnBoxBuilderUpdateVersion = AddButton( _
+        "btnBoxBuilderUpdateVersionPage", "Update Version", 386, 520, 104, 28)
+    mBtnBoxBuilderUpdateVersion.Tag = "Box Builder"
+    Set mBtnBoxBuilderNewVersion = AddButton( _
+        "btnBoxBuilderNewVersionPage", "New Version", 498, 520, 96, 28)
+    mBtnBoxBuilderNewVersion.Tag = "Box Builder"
+    Set mBtnBoxBuilderDeleteVersion = AddButton( _
+        "btnBoxBuilderDeleteVersionPage", "Delete Version", 602, 520, 104, 28)
+    mBtnBoxBuilderDeleteVersion.Tag = "Box Builder"
+    Set mBtnBoxBuilderArchive = AddButton( _
+        "btnBoxBuilderArchivePage", "Archive Box", 714, 520, 106, 28)
+    mBtnBoxBuilderArchive.Tag = "Box Builder"
+    Set mBtnBoxBuilderDelete = AddButton( _
+        "btnBoxBuilderDeletePage", "Delete Box", 714, 554, 106, 28)
+    mBtnBoxBuilderDelete.Tag = "Box Builder"
+
+    Set mLblBoxMakerPage = AddLabel( _
+        "lblBoxMakerPage", _
+        "Box Maker - released designs and inventory actions", _
+        18, 156, 360, 22, True)
+    mLblBoxMakerPage.Tag = "Box Maker"
+    Set mBtnBoxMakerRefresh = AddButton( _
+        "btnBoxMakerRefreshPage", "Refresh Box Maker", 670, 152, 150, 28)
+    mBtnBoxMakerRefresh.Tag = "Box Maker"
+    Set mLstBoxMakerDesigns = AddListBox( _
+        "lstBoxMakerDesignsPage", 18, 188, 300, 180)
+    With mLstBoxMakerDesigns
+        .ColumnCount = 7
+        .ColumnWidths = "0 pt;150 pt;0 pt;42 pt;72 pt;0 pt;0 pt"
+        .Tag = "Box Maker"
+    End With
+    Set pageLabel = AddLabel("lblBoxMakerVersion", "Version", 336, 188, 54, 18, False)
+    pageLabel.Tag = "Box Maker"
+    Set mCboBoxMakerVersion = AddComboBox("cboBoxMakerVersion", 396, 184, 92, 22)
+    mCboBoxMakerVersion.Tag = "Box Maker"
+    Set pageLabel = AddLabel("lblBoxMakerQty", "Qty", 508, 188, 32, 18, False)
+    pageLabel.Tag = "Box Maker"
+    Set mTxtBoxMakerQty = AddTextBox("txtBoxMakerQty", 544, 184, 64, 22)
+    mTxtBoxMakerQty.Value = "1"
+    mTxtBoxMakerQty.Tag = "Box Maker"
+    Set mBtnBoxMakerMake = AddButton( _
+        "btnBoxMakerMakePage", "Make Boxes", 624, 182, 94, 28)
+    mBtnBoxMakerMake.Tag = "Box Maker"
+    Set mBtnBoxMakerUnmake = AddButton( _
+        "btnBoxMakerUnmakePage", "Unbox", 726, 182, 80, 28)
+    mBtnBoxMakerUnmake.Tag = "Box Maker"
+    Set pageLabel = AddLabel("lblBoxMakerComponents", "Selected version components", 336, 226, 210, 18, True)
+    pageLabel.Tag = "Box Maker"
+    Set mLstBoxMakerComponents = AddListBox( _
+        "lstBoxMakerComponentsPage", 336, 248, 470, 272)
+    With mLstBoxMakerComponents
+        .ColumnCount = 9
+        .ColumnWidths = "46 pt;110 pt;76 pt;0 pt;48 pt;42 pt;68 pt;90 pt;54 pt"
+        .Tag = "Box Maker"
+    End With
+
+    mTxtStatus.Tag = "Shell"
+    mBtnClose.Tag = "Shell"
+    Me.ScrollHeight = Me.ScrollHeight + 30
+    ApplyShippingPage
+End Sub
+
+Private Sub mPages_Change()
+    ApplyShippingPage
+End Sub
+
+Private Sub ApplyShippingPage()
+    Dim ctl As MSForms.Control
+    Dim selectedPage As String
+
+    If mPages Is Nothing Then Exit Sub
+    selectedPage = mPages.SelectedItem.Caption
+    For Each ctl In Me.Controls
+        ctl.Visible = _
+            (StrComp(NzText(ctl.Tag), "Shell", vbTextCompare) = 0) _
+            Or (StrComp(NzText(ctl.Tag), selectedPage, vbTextCompare) = 0)
+    Next ctl
+    mPages.Visible = True
+
+    Select Case selectedPage
+        Case "Box Builder"
+            RefreshBoxBuilderPage
+        Case "Box Maker"
+            RefreshBoxMakerPage
+    End Select
+End Sub
+
+Public Function SelectShippingPageForTest(ByVal pageCaption As String) As String
+    Dim pageIndex As Long
+
+    If Not mBuilt Then BuildLayout
+    For pageIndex = 0 To mPages.Tabs.Count - 1
+        If StrComp(mPages.Tabs(pageIndex).Caption, Trim$(pageCaption), vbTextCompare) = 0 Then
+            mPages.Value = pageIndex
+            ApplyShippingPage
+            SelectShippingPageForTest = _
+                "OK|Selected=" & mPages.SelectedItem.Caption & _
+                "|BoxBuilderActionsReachable=" & _
+                    CStr(Not mBtnBoxBuilderNew Is Nothing And _
+                         Not mBtnBoxBuilderAddComponent Is Nothing And _
+                         Not mBtnBoxBuilderRemoveComponent Is Nothing And _
+                         Not mBtnBoxBuilderSave Is Nothing And _
+                         Not mBtnBoxBuilderUpdateVersion Is Nothing And _
+                         Not mBtnBoxBuilderNewVersion Is Nothing And _
+                         Not mBtnBoxBuilderDeleteVersion Is Nothing And _
+                         Not mBtnBoxBuilderArchive Is Nothing And _
+                         Not mBtnBoxBuilderDelete Is Nothing) & _
+                "|BoxMakerActionsReachable=" & _
+                    CStr(Not mBtnBoxMakerMake Is Nothing And _
+                         Not mBtnBoxMakerUnmake Is Nothing)
+            Exit Function
+        End If
+    Next pageIndex
+    SelectShippingPageForTest = "FAIL|UnknownPage=" & pageCaption
+End Function
+
+Private Sub mBtnBoxBuilderRefresh_Click()
+    RefreshBoxBuilderPage
+End Sub
+
+Private Sub mBtnBoxMakerRefresh_Click()
+    RefreshBoxMakerPage
+End Sub
+
+Private Sub RefreshBoxBuilderPage()
+    Dim rowsData As Variant
+
+    If mOperatorWorkbook Is Nothing Then Exit Sub
+    mLoading = True
+    rowsData = modBoxingService.LoadBoxDesigns(mOperatorWorkbook, True, True)
+    RenderPageRows mLstBoxBuilderDesigns, rowsData
+    mBoxBuilderInventoryRows = modBoxingService.LoadComponentChoices(mOperatorWorkbook)
+    RenderPageRows mLstBoxBuilderInventory, mBoxBuilderInventoryRows
+    ClearBoxBuilderSelection
+    If mLstBoxBuilderDesigns.ListCount > 0 Then mLstBoxBuilderDesigns.ListIndex = 0
+    mLoading = False
+    If mLstBoxBuilderDesigns.ListIndex >= 0 Then LoadSelectedBoxBuilderDesign
+End Sub
+
+Private Sub mBtnBoxBuilderNew_Click()
+    mLoading = True
+    ClearBoxBuilderSelection
+    mCboBoxBuilderVersion.AddItem "v1"
+    mCboBoxBuilderVersion.ListIndex = 0
+    mLoading = False
+    ShowStatus "New box design ready. Add components, then save the box."
+End Sub
+
+Private Sub mBtnBoxBuilderAddComponent_Click()
+    Dim componentIndex As Long
+    Dim targetIndex As Long
+    Dim quantityValue As Double
+    Dim versionLabel As String
+
+    componentIndex = mLstBoxBuilderInventory.ListIndex
+    If componentIndex < 0 Then
+        ShowStatus "Select a managed inventory component to add."
+        Exit Sub
+    End If
+    quantityValue = ParseNumber(NzText(mTxtBoxBuilderComponentQty.Value))
+    If quantityValue <= 0 Then
+        ShowStatus "Enter a positive component quantity."
+        Exit Sub
+    End If
+    versionLabel = NzText(mCboBoxBuilderVersion.Value)
+    If versionLabel = "" Then versionLabel = "v1"
+
+    mLstBoxBuilderComponents.AddItem versionLabel
+    targetIndex = mLstBoxBuilderComponents.ListCount - 1
+    mLstBoxBuilderComponents.List(targetIndex, 1) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 2))
+    mLstBoxBuilderComponents.List(targetIndex, 2) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 1))
+    mLstBoxBuilderComponents.List(targetIndex, 3) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 0))
+    mLstBoxBuilderComponents.List(targetIndex, 4) = CStr(quantityValue)
+    mLstBoxBuilderComponents.List(targetIndex, 5) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 3))
+    mLstBoxBuilderComponents.List(targetIndex, 6) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 4))
+    mLstBoxBuilderComponents.List(targetIndex, 7) = _
+        NzText(mLstBoxBuilderInventory.List(componentIndex, 5))
+    ShowStatus "Component added to the selected box version."
+End Sub
+
+Private Sub mBtnBoxBuilderRemoveComponent_Click()
+    If mLstBoxBuilderComponents.ListIndex < 0 Then
+        ShowStatus "Select a box component to remove."
+        Exit Sub
+    End If
+    mLstBoxBuilderComponents.RemoveItem mLstBoxBuilderComponents.ListIndex
+    ShowStatus "Component removed from the selected box version."
+End Sub
+
+Private Sub RefreshBoxMakerPage()
+    Dim rowsData As Variant
+    Dim report As String
+
+    If mOperatorWorkbook Is Nothing Then Exit Sub
+    mLoading = True
+    rowsData = modBoxingService.LoadBoxMakerChoices(mOperatorWorkbook, report)
+    RenderPageRows mLstBoxMakerDesigns, rowsData
+    mCboBoxMakerVersion.Clear
+    mLstBoxMakerComponents.Clear
+    mSelectedBoxMakerPackageRow = 0
+    If mLstBoxMakerDesigns.ListCount > 0 Then mLstBoxMakerDesigns.ListIndex = 0
+    mLoading = False
+    If mLstBoxMakerDesigns.ListIndex >= 0 Then LoadSelectedBoxMakerDesign
+    If report <> "" Then ShowStatus report
+End Sub
+
+Private Sub mLstBoxBuilderDesigns_Click()
+    If mLoading Then Exit Sub
+    LoadSelectedBoxBuilderDesign
+End Sub
+
+Private Sub mCboBoxBuilderVersion_Change()
+    If mLoading Then Exit Sub
+    LoadSelectedBoxBuilderComponents
+End Sub
+
+Private Sub LoadSelectedBoxBuilderDesign()
+    Dim versionRows As Variant
+    Dim rowIndex As Long
+    Dim listIndex As Long
+
+    If mLstBoxBuilderDesigns.ListIndex < 0 Then Exit Sub
+    mLoading = True
+    listIndex = mLstBoxBuilderDesigns.ListIndex
+    mSelectedBoxBuilderPackageRow = CLng(Val(NzText(mLstBoxBuilderDesigns.List(listIndex, 0))))
+    mTxtBoxBuilderName.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 1))
+    mTxtBoxBuilderUom.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 2))
+    mTxtBoxBuilderLocation.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 3))
+    mTxtBoxBuilderDescription.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 4))
+    If Trim$(NzText(mTxtBoxBuilderUom.Value)) = "" Then mTxtBoxBuilderUom.Value = "ea"
+
+    mCboBoxBuilderVersion.Clear
+    versionRows = modBoxingService.LoadBoxDesignVersions( _
+        mOperatorWorkbook, mSelectedBoxBuilderPackageRow)
+    If Not IsEmpty(versionRows) Then
+        mCboBoxBuilderVersion.ColumnCount = 2
+        For rowIndex = LBound(versionRows, 1) To UBound(versionRows, 1)
+            mCboBoxBuilderVersion.AddItem NzText(versionRows(rowIndex, 1))
+            If UBound(versionRows, 2) >= 2 Then
+                mCboBoxBuilderVersion.List(mCboBoxBuilderVersion.ListCount - 1, 1) = _
+                    NzText(versionRows(rowIndex, 2))
+            End If
+        Next rowIndex
+    End If
+    If mCboBoxBuilderVersion.ListCount = 0 Then mCboBoxBuilderVersion.AddItem "v1"
+    mCboBoxBuilderVersion.ListIndex = 0
+    mLoading = False
+    LoadSelectedBoxBuilderComponents
+End Sub
+
+Private Sub LoadSelectedBoxBuilderComponents()
+    Dim componentRows As Variant
+    Dim statusText As String
+
+    If mSelectedBoxBuilderPackageRow <= 0 Then Exit Sub
+    If mCboBoxBuilderVersion.ListIndex < 0 Then Exit Sub
+    If mCboBoxBuilderVersion.ColumnCount > 1 Then
+        statusText = NzText(mCboBoxBuilderVersion.List(mCboBoxBuilderVersion.ListIndex, 1))
+    End If
+    If statusText = "" Then statusText = "Active"
+    mCboBoxBuilderStatus.Value = statusText
+    componentRows = modBoxingService.LoadBoxDesignComponents( _
+        mOperatorWorkbook, mSelectedBoxBuilderPackageRow, _
+        NzText(mCboBoxBuilderVersion.Value))
+    RenderPageRows mLstBoxBuilderComponents, componentRows
+End Sub
+
+Private Sub ClearBoxBuilderSelection()
+    mSelectedBoxBuilderPackageRow = 0
+    mTxtBoxBuilderName.Value = ""
+    mTxtBoxBuilderUom.Value = "ea"
+    mTxtBoxBuilderLocation.Value = ""
+    mTxtBoxBuilderDescription.Value = ""
+    mCboBoxBuilderVersion.Clear
+    mCboBoxBuilderStatus.Value = "Active"
+    mLstBoxBuilderComponents.Clear
+End Sub
+
+Private Function BoxBuilderPageComponents() As Variant
+    Dim result() As Variant
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    If mLstBoxBuilderComponents.ListCount = 0 Then Exit Function
+    ReDim result(1 To mLstBoxBuilderComponents.ListCount, 1 To 8)
+    For rowIndex = 0 To mLstBoxBuilderComponents.ListCount - 1
+        For columnIndex = 0 To 7
+            result(rowIndex + 1, columnIndex + 1) = _
+                mLstBoxBuilderComponents.List(rowIndex, columnIndex)
+        Next columnIndex
+    Next rowIndex
+    BoxBuilderPageComponents = result
+End Function
+
+Private Sub mBtnBoxBuilderSave_Click()
+    Dim report As String
+    Dim succeeded As Boolean
+
+    succeeded = modBoxingService.SaveBoxDesign( _
+        mOperatorWorkbook, NzText(mTxtBoxBuilderName.Value), _
+        NzText(mTxtBoxBuilderUom.Value), NzText(mTxtBoxBuilderLocation.Value), _
+        NzText(mTxtBoxBuilderDescription.Value), BoxBuilderPageComponents(), _
+        "BOX", "v1", NzText(mCboBoxBuilderStatus.Value), report)
+    ShowStatus report
+    If succeeded Then RefreshBoxBuilderPage
+End Sub
+
+Private Sub mBtnBoxBuilderUpdateVersion_Click()
+    RunBoxBuilderVersionAction "UPDATE"
+End Sub
+
+Private Sub mBtnBoxBuilderNewVersion_Click()
+    RunBoxBuilderVersionAction "NEW"
+End Sub
+
+Private Sub mBtnBoxBuilderDeleteVersion_Click()
+    Dim report As String
+
+    If mSelectedBoxBuilderPackageRow <= 0 Or _
+       mCboBoxBuilderVersion.ListIndex < 0 Then
+        ShowStatus "Select a saved box version before deleting."
+        Exit Sub
+    End If
+    If MsgBox("Delete the selected box version?", _
+              vbQuestion + vbYesNo, "Delete Box Version") <> vbYes Then Exit Sub
+    If modBoxingService.DeleteBoxDesignVersion( _
+            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, _
+            NzText(mCboBoxBuilderVersion.Value), report) Then
+        RefreshBoxBuilderPage
+    End If
+    ShowStatus report
+End Sub
+
+Private Sub mBtnBoxBuilderArchive_Click()
+    Dim report As String
+
+    If mSelectedBoxBuilderPackageRow <= 0 Then
+        ShowStatus "Select a saved box before archiving."
+        Exit Sub
+    End If
+    If MsgBox("Archive the selected box design?", _
+              vbQuestion + vbYesNo, "Archive Box Design") <> vbYes Then Exit Sub
+    If modBoxingService.ArchiveBoxDesign( _
+            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, report) Then
+        RefreshBoxBuilderPage
+    End If
+    ShowStatus report
+End Sub
+
+Private Sub mBtnBoxBuilderDelete_Click()
+    Dim report As String
+
+    If mSelectedBoxBuilderPackageRow <= 0 Then
+        ShowStatus "Select a saved box before deleting."
+        Exit Sub
+    End If
+    If MsgBox("Delete the selected box design and all versions?", _
+              vbQuestion + vbYesNo, "Delete Box Design") <> vbYes Then Exit Sub
+    If modBoxingService.DeleteBoxDesign( _
+            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, report) Then
+        RefreshBoxBuilderPage
+    End If
+    ShowStatus report
+End Sub
+
+Private Sub RunBoxBuilderVersionAction(ByVal actionText As String)
+    Dim report As String
+    Dim succeeded As Boolean
+
+    succeeded = modBoxingService.SaveBoxDesign( _
+        mOperatorWorkbook, NzText(mTxtBoxBuilderName.Value), _
+        NzText(mTxtBoxBuilderUom.Value), NzText(mTxtBoxBuilderLocation.Value), _
+        NzText(mTxtBoxBuilderDescription.Value), BoxBuilderPageComponents(), _
+        actionText, NzText(mCboBoxBuilderVersion.Value), _
+        NzText(mCboBoxBuilderStatus.Value), report)
+    ShowStatus report
+    If succeeded Then RefreshBoxBuilderPage
+End Sub
+
+Private Sub mLstBoxMakerDesigns_Click()
+    If mLoading Then Exit Sub
+    LoadSelectedBoxMakerDesign
+End Sub
+
+Private Sub mCboBoxMakerVersion_Change()
+    If mLoading Then Exit Sub
+    LoadSelectedBoxMakerComponents
+End Sub
+
+Private Sub LoadSelectedBoxMakerDesign()
+    Dim versionRows As Variant
+    Dim rowIndex As Long
+
+    If mLstBoxMakerDesigns.ListIndex < 0 Then Exit Sub
+    mSelectedBoxMakerPackageRow = _
+        CLng(Val(NzText(mLstBoxMakerDesigns.List(mLstBoxMakerDesigns.ListIndex, 0))))
+    mLoading = True
+    mCboBoxMakerVersion.Clear
+    versionRows = modBoxingService.LoadBoxMakerVersions( _
+        mOperatorWorkbook, mSelectedBoxMakerPackageRow)
+    If Not IsEmpty(versionRows) Then
+        For rowIndex = LBound(versionRows, 1) To UBound(versionRows, 1)
+            If UBound(versionRows, 2) < 2 Or _
+               StrComp(NzText(versionRows(rowIndex, 2)), "Active", vbTextCompare) = 0 Then
+                mCboBoxMakerVersion.AddItem NzText(versionRows(rowIndex, 1))
+            End If
+        Next rowIndex
+    End If
+    If mCboBoxMakerVersion.ListCount > 0 Then mCboBoxMakerVersion.ListIndex = 0
+    mLoading = False
+    LoadSelectedBoxMakerComponents
+End Sub
+
+Private Sub LoadSelectedBoxMakerComponents()
+    Dim componentRows As Variant
+
+    If mSelectedBoxMakerPackageRow <= 0 Then Exit Sub
+    If mCboBoxMakerVersion.ListIndex < 0 Then Exit Sub
+    componentRows = modBoxingService.LoadBoxMakerComponents( _
+        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        NzText(mCboBoxMakerVersion.Value))
+    RenderPageRows mLstBoxMakerComponents, componentRows
+End Sub
+
+Private Function BoxMakerPageComponents() As Variant
+    Dim result() As Variant
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    If mLstBoxMakerComponents.ListCount = 0 Then Exit Function
+    ReDim result(1 To mLstBoxMakerComponents.ListCount, 1 To 9)
+    For rowIndex = 0 To mLstBoxMakerComponents.ListCount - 1
+        For columnIndex = 0 To 8
+            result(rowIndex + 1, columnIndex + 1) = _
+                mLstBoxMakerComponents.List(rowIndex, columnIndex)
+        Next columnIndex
+    Next rowIndex
+    BoxMakerPageComponents = result
+End Function
+
+Private Sub mBtnBoxMakerMake_Click()
+    Dim report As String
+    Dim succeeded As Boolean
+    Dim selectedIndex As Long
+
+    selectedIndex = mLstBoxMakerDesigns.ListIndex
+    If selectedIndex < 0 Then
+        ShowStatus "Select a released box design."
+        Exit Sub
+    End If
+    succeeded = modBoxingService.PostBoxMakerAction( _
+        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 1)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 3)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 4)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 5)), _
+        NzText(mCboBoxMakerVersion.Value), ParseNumber(NzText(mTxtBoxMakerQty.Value)), _
+        BoxMakerPageComponents(), "MAKE", report)
+    ShowStatus report
+    If succeeded Then RefreshBoxMakerPage
+End Sub
+
+Private Sub mBtnBoxMakerUnmake_Click()
+    Dim report As String
+    Dim succeeded As Boolean
+    Dim selectedIndex As Long
+
+    selectedIndex = mLstBoxMakerDesigns.ListIndex
+    If selectedIndex < 0 Then
+        ShowStatus "Select a released box design."
+        Exit Sub
+    End If
+    succeeded = modBoxingService.PostBoxMakerAction( _
+        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 1)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 3)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 4)), _
+        NzText(mLstBoxMakerDesigns.List(selectedIndex, 5)), _
+        NzText(mCboBoxMakerVersion.Value), ParseNumber(NzText(mTxtBoxMakerQty.Value)), _
+        BoxMakerPageComponents(), "UNMAKE", report)
+    ShowStatus report
+    If succeeded Then RefreshBoxMakerPage
+End Sub
+
+Private Sub RenderPageRows(ByVal targetList As MSForms.ListBox, ByVal rowsData As Variant)
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+    Dim targetIndex As Long
+
+    If targetList Is Nothing Then Exit Sub
+    targetList.Clear
+    If IsEmpty(rowsData) Then Exit Sub
+    For rowIndex = LBound(rowsData, 1) To UBound(rowsData, 1)
+        targetList.AddItem NzText(rowsData(rowIndex, 1))
+        targetIndex = targetList.ListCount - 1
+        For columnIndex = 2 To targetList.ColumnCount
+            If columnIndex <= UBound(rowsData, 2) Then
+                targetList.List(targetIndex, columnIndex - 1) = _
+                    NzText(rowsData(rowIndex, columnIndex))
+            End If
+        Next columnIndex
+    Next rowIndex
 End Sub
 
 Private Sub MoveStatusToTop()
@@ -1251,7 +1876,51 @@ Private Sub mBtnStage_Click()
 End Sub
 
 Private Sub mBtnSend_Click()
-    RunShippingAction False
+    On Error GoTo FailSoft
+
+    Dim previousPointer As Long
+    Dim quietStarted As Boolean
+    Dim startedAt As Single
+    Dim elapsedMs As Long
+    Dim report As String
+    Dim ok As Boolean
+    Dim selectedRows As Variant
+
+    TimingStart
+    TLap "Shipments Sent click start"
+    previousPointer = Me.MousePointer
+    Me.MousePointer = fmMousePointerHourGlass
+    modUiQuiet.BeginQuietUi mOperatorWorkbook
+    quietStarted = True
+    startedAt = Timer
+    ok = modShippingPostingService.ExecuteShipmentsSent( _
+        mOperatorWorkbook, selectedRows, NzText(mTxtCarrier.Value), report)
+    TLap "Shipments Sent backend call"
+    elapsedMs = ElapsedMilliseconds(startedAt)
+    Me.MousePointer = previousPointer
+    LoadShipmentState mOperatorWorkbook
+    TLap "Shipments Sent load shipment state"
+    If ok Then mTxtRef.Value = vbNullString
+    If ok Then RefreshProjectedShippableInventory
+    If ok Then TLap "Shipments Sent refresh projected"
+    If ok Then ArmAutoSync
+    If quietStarted Then
+        modUiQuiet.EndQuietUi
+        quietStarted = False
+    End If
+    report = AppendTiming(report, elapsedMs)
+    If TimingSummary() <> "" Then report = report & vbCrLf & TimingSummary()
+    ShowStatus report
+    If report <> "" And ShouldShowShippingActionPopup(report, ok) Then _
+        MsgBox report, IIf(ok, vbInformation, vbExclamation)
+    Exit Sub
+
+FailSoft:
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    Me.MousePointer = previousPointer
+    On Error GoTo 0
+    ShowStatus "Shipping action failed: " & Err.Description
 End Sub
 
 Private Sub RunShippingAction(ByVal stageOnly As Boolean)
@@ -1280,7 +1949,8 @@ Private Sub RunShippingAction(ByVal stageOnly As Boolean)
     If stageOnly Then
         ok = modTS_Shipments.ShipmentsFormRunToShipmentsRows(selectedRows, NzText(mTxtCarrier.Value), report)
     Else
-        ok = modTS_Shipments.ShipmentsFormRunShipmentsSentRows(selectedRows, NzText(mTxtCarrier.Value), report)
+        ok = modShippingPostingService.ExecuteShipmentsSent( _
+            mOperatorWorkbook, selectedRows, NzText(mTxtCarrier.Value), report)
     End If
     TLap IIf(stageOnly, "To Shipments", "Shipments Sent") & " backend call"
     elapsedMs = ElapsedMilliseconds(startedAt)

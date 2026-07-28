@@ -238,6 +238,7 @@ $validationSpecs = @(
         TargetFile = "WH1.Shipping.Operator.xlsx"
         InitMacro = "modShippingInit.InitShippingAddin"
         SafeMacro = "modTS_Shipments.InitializeShipmentsUI"
+        FormSmokeMacro = "modTS_Shipments.ShippingTabbedNavigationSmokeForWorkbook"
         Tables = @(
             @{ Sheet = "ShippingBackend"; Table = "ShipmentsTally"; Columns = @("LINE_ID", "SERVER_RESERVE_EVENT_ID", "REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "UOM", "LOCATION", "DESCRIPTION") },
             @{ Sheet = "ShippingBackend"; Table = "AggregatePackages"; Columns = @("System_Key", "ITEM_CODE", "ITEM", "QUANTITY", "UOM", "LOCATION") },

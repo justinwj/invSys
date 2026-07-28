@@ -185,10 +185,48 @@ function Start-ExcelEnterDismissal {
         param($durationSeconds, $excelProcessId)
         $shell = $null
         try {
+            Add-Type -AssemblyName UIAutomationClient
+            Add-Type -AssemblyName UIAutomationTypes
+            Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class InvSysLiveValidationDialog {
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(
+        IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
+}
+'@
             $shell = New-Object -ComObject WScript.Shell
             $stopAt = (Get-Date).AddSeconds($durationSeconds)
             while ((Get-Date) -lt $stopAt) {
                 Start-Sleep -Milliseconds 400
+                if ($excelProcessId -gt 0) {
+                    try {
+                        $excelProcess = Get-Process -Id $excelProcessId -ErrorAction Stop
+                        $root = [System.Windows.Automation.AutomationElement]::FromHandle(
+                            [intptr]$excelProcess.MainWindowHandle
+                        )
+                        if ($null -ne $root) {
+                            $okCondition = New-Object System.Windows.Automation.PropertyCondition(
+                                [System.Windows.Automation.AutomationElement]::NameProperty,
+                                "OK"
+                            )
+                            $okButtons = $root.FindAll(
+                                [System.Windows.Automation.TreeScope]::Descendants,
+                                $okCondition
+                            )
+                            foreach ($okButton in $okButtons) {
+                                $buttonHandle = [intptr]$okButton.Current.NativeWindowHandle
+                                if ($buttonHandle -ne [intptr]::Zero) {
+                                    [void][InvSysLiveValidationDialog]::SendMessage(
+                                        $buttonHandle, 0x00F5, [intptr]::Zero, [intptr]::Zero
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
                 $activated = $false
                 try {
                     if ($excelProcessId -gt 0) {

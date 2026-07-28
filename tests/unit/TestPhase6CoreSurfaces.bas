@@ -4184,7 +4184,7 @@ Public Function TestShippingState_SentRowTombstoneFiltersLegacyActiveCache() As 
 
     AddInvSysSeedRow loInv, 976, "SKU-LEGACY-TOMB", "Legacy Tombstone Package", "EA", "A1", 20
     SetTableCell loInv, 1, "SHIPMENTS", 1
-    AddShippingTallyRow loShip, "REF-LEGACY-TOMB-001", "Legacy Tombstone Package", 1, 976, "EA", "A1", "v1"
+    AddShippingTallyRow loShip, "REF-LEGACY-TOMB-001", "Legacy Tombstone Package", 1, 976, "EA", "A1", "v1", "SYS-SKU-LEGACY-TOMB"
     SetTableCell loShip, 1, "AREA", "Shipments"
     SetTableCell loShip, 1, "CARRIER", "UPS"
     SetTableCell loShip, 1, "LINE_ID", "SHIPLINE-LEGACY-TOMB-001"
@@ -5125,7 +5125,7 @@ Public Function TestShippingRemove_LockedRowReleasesInventory() As Long
     AddInvSysSeedRow loInv, 987, "SKU-REMOVE-LOCKED", "Remove Locked Item", "EA", "A1", 5
     AddShippingBomViewRow loBomView, 987, "Remove Locked Item", 987, "Remove Locked Item", 1, "EA"
     SetTableCell loInv, 1, "SHIPMENTS", 1
-    AddShippingTallyRow loShip, "REF-REMOVE-LOCKED", "Remove Locked Item", 1, 987, "EA", "A1", "v1"
+    AddShippingTallyRow loShip, "REF-REMOVE-LOCKED", "Remove Locked Item", 1, 987, "EA", "A1", "v1", "SYS-SKU-REMOVE-LOCKED"
     SetTableCell loShip, 1, "AREA", "Warehouse"
     SetTableCell loShip, 1, "CARRIER", "DHL"
     SetTableCell loShip, 1, "LINE_ID", "SHIPLINE-REMOVE-LOCKED-001"
@@ -5135,7 +5135,7 @@ Public Function TestShippingRemove_LockedRowReleasesInventory() As Long
     RunShippingClearProjectedOverlayForTest
     overlayPath = RunShippingProjectedOverlayPathForTest()
     If Trim$(overlayPath) <> "" Then DeleteFileIfExistsForTest overlayPath
-    RunShippingRegisterProjectedOverlayForTest 987, "v1", 4, 5
+    RunShippingRegisterSystemKeyProjectedOverlayForTest "SYS-SKU-REMOVE-LOCKED", "v1", 4, 5
     ok = RunShippingCommitLineForTest("SHIP", "DELETE", 1, "", "", 0, 0, "", "", "", "", report)
     If Not ok Then
         failureReason = "Remove locked row failed: " & report
@@ -5157,7 +5157,7 @@ Public Function TestShippingRemove_LockedRowReleasesInventory() As Long
             End If
         End If
     End If
-    projectedText = RunShippingProjectedOverlayTextForTest(987, "v1", "5")
+    projectedText = RunShippingSystemKeyProjectedOverlayTextForTest("SYS-SKU-REMOVE-LOCKED", "v1", "5")
     If CDbl(NzDblForTest(projectedText)) <> 5 Then
         failureReason = "Remove released inventory but left Projected Inv overlay deducted; expected 5 but found " & projectedText & "."
         GoTo CleanExit
@@ -7029,12 +7029,12 @@ Public Function TestShippingSentRows_EmptySelectionSendsAllShipmentAreaRows() As
     AddInvSysSeedRow loInv, 992, "SKU-SENT-ALL-002", "Sent All Item 2", "EA", "A1", 7
     SetTableCell loInv, 1, "SHIPMENTS", 1
     SetTableCell loInv, 2, "SHIPMENTS", 2
-    AddShippingTallyRow loShip, "REF-SENT-ALL-001", "Sent All Item 1", 1, 991, "EA", "A1", "v1"
+    AddShippingTallyRow loShip, "REF-SENT-ALL-001", "Sent All Item 1", 1, 991, "EA", "A1", "v1", "SYS-SKU-SENT-ALL-001"
     SetTableCell loShip, 1, "AREA", "Shipments"
     SetTableCell loShip, 1, "CARRIER", "UPS"
     SetTableCell loShip, 1, "LINE_ID", "SHIPLINE-SENT-ALL-001"
     SetTableCell loShip, 1, "SERVER_RESERVE_EVENT_ID", "RESERVE-SENT-ALL-001"
-    AddShippingTallyRow loShip, "REF-SENT-ALL-002", "Sent All Item 2", 2, 992, "EA", "A1", "v1"
+    AddShippingTallyRow loShip, "REF-SENT-ALL-002", "Sent All Item 2", 2, 992, "EA", "A1", "v1", "SYS-SKU-SENT-ALL-002"
     SetTableCell loShip, 2, "AREA", "Shipments"
     SetTableCell loShip, 2, "CARRIER", "UPS"
     SetTableCell loShip, 2, "LINE_ID", "SHIPLINE-SENT-ALL-002"
@@ -11726,6 +11726,24 @@ Private Sub RunShippingRegisterProjectedOverlayForTest(ByVal packageRow As Long,
     If Not targetWb Is Nothing Then targetWb.Activate
 End Sub
 
+Private Sub RunShippingRegisterSystemKeyProjectedOverlayForTest(ByVal systemKey As String, _
+                                                                ByVal versionLabel As String, _
+                                                                ByVal projectedQty As Double, _
+                                                                Optional ByVal baselineQty As Variant)
+    Dim targetWb As Workbook
+    Dim macroName As String
+
+    Set targetWb = ActiveWorkbook
+    macroName = ShippingMacroNameForTest("RegisterPendingSystemKeyInventoryOverlay")
+    If Not targetWb Is Nothing Then targetWb.Activate
+    If IsMissing(baselineQty) Then
+        Application.Run macroName, systemKey, versionLabel, projectedQty
+    Else
+        Application.Run macroName, systemKey, versionLabel, projectedQty, CDbl(baselineQty)
+    End If
+    If Not targetWb Is Nothing Then targetWb.Activate
+End Sub
+
 Private Sub RunShippingRegisterSentProjectedOverlayForTest(ByVal packageRow As Long, _
                                                            ByVal versionLabel As String, _
                                                            ByVal projectedQty As Double, _
@@ -11878,6 +11896,19 @@ Private Function RunShippingProjectedOverlayTextForTest(ByVal packageRow As Long
     macroName = ShippingMacroNameForTest("PendingBoxVersionInventoryOverlayText")
     If Not targetWb Is Nothing Then targetWb.Activate
     RunShippingProjectedOverlayTextForTest = CStr(Application.Run(macroName, packageRow, versionLabel, backendText))
+    If Not targetWb Is Nothing Then targetWb.Activate
+End Function
+
+Private Function RunShippingSystemKeyProjectedOverlayTextForTest(ByVal systemKey As String, _
+                                                                 ByVal versionLabel As String, _
+                                                                 ByVal backendText As String) As String
+    Dim targetWb As Workbook
+    Dim macroName As String
+
+    Set targetWb = ActiveWorkbook
+    macroName = ShippingMacroNameForTest("PendingSystemKeyInventoryOverlayText")
+    If Not targetWb Is Nothing Then targetWb.Activate
+    RunShippingSystemKeyProjectedOverlayTextForTest = CStr(Application.Run(macroName, systemKey, versionLabel, backendText))
     If Not targetWb Is Nothing Then targetWb.Activate
 End Function
 

@@ -23,7 +23,7 @@ function Add-Check {
 }
 
 Add-Check "Receiving.FormAction.ConfirmWrites.Handler" `
-    ($receivingForm -match '(?s)Private Sub mBtnConfirm_Click\(\).*?modTS_Received\.ConfirmWrites') `
+    ($receivingForm -match '(?s)Private Sub mBtnConfirm_Click\(\).*?modReceivingPostingService\.ExecuteConfirmWrites') `
     "The form button must call the operator Confirm Writes handler."
 Add-Check "Production.FormActions.RequiredHandlers" `
     (($productionForm -match '(?s)Private Sub mBtnRunApplyPalette_Click\(\).*?ApplySelectedRunPaletteSplit') -and
@@ -33,7 +33,7 @@ Add-Check "Production.FormActions.RequiredHandlers" `
     "Selection/Apply, Check In, Complete Run, and Next Batch must remain wired to the operator handlers."
 Add-Check "Shipping.FormActions.RequiredHandlers" `
     (($shippingForm -match '(?s)Private Sub mBtnStage_Click\(\).*?RunShippingAction True') -and
-     ($shippingForm -match '(?s)Private Sub mBtnSend_Click\(\).*?RunShippingAction False')) `
+     ($shippingForm -match '(?s)Private Sub mBtnSend_Click\(\).*?modShippingPostingService\.ExecuteShipmentsSent')) `
     "To Shipments and Shipments Sent must remain wired to the operator handlers."
 
 Add-Check "Receiving.Form.ModelessLauncher" `
@@ -43,18 +43,18 @@ Add-Check "Production.Form.ModelessLauncher" `
     ($productionModule -match 'frmProduction\.Show\s+vbModeless') `
     "Production launcher must open the main form modelessly."
 Add-Check "Shipping.Form.ModelessLauncher" `
-    ($shippingModule -match 'frmShipmentsTally\.Show\s+vbModeless') `
+    ($shippingModule -match 'frm\.Show\s+vbModeless') `
     "Shipping launcher must open the main form modelessly."
 
-$purchasingStubPresent = ($receivingForm -match 'Forms\.MultiPage\.1') -and
-                         ($receivingForm -match '(?i)Caption\s*=\s*"Purchasing"') -and
+$purchasingStubPresent = ($receivingForm -match 'Forms\.TabStrip\.1') -and
+                         ($receivingForm -match '(?i)\.Tabs\.Add\s+"tabPurchasing",\s*"Purchasing"') -and
                          ($receivingForm -match '(?i)not yet operational|not operational')
 Add-Check "Receiving.Navigation.PurchasingStub" $purchasingStubPresent `
     "Receiving must expose a selectable, visibly non-operational Purchasing tab."
 
-$shippingTabbedShell = ($shippingForm -match 'Forms\.MultiPage\.1') -and
-                       ($shippingForm -match '(?i)Caption\s*=\s*"Box Builder"') -and
-                       ($shippingForm -match '(?i)Caption\s*=\s*"Box Maker"')
+$shippingTabbedShell = ($shippingForm -match 'Forms\.TabStrip\.1') -and
+                       ($shippingForm -match '(?i)\.Tabs\.Add\s+"tabBoxBuilder",\s*"Box Builder"') -and
+                       ($shippingForm -match '(?i)\.Tabs\.Add\s+"tabBoxMaker",\s*"Box Maker"')
 Add-Check "Shipping.Navigation.SingleTabbedShell" $shippingTabbedShell `
     "The main Shipping form must contain Box Builder and Box Maker tabs."
 
@@ -63,10 +63,9 @@ Add-Check "Operations.Package.Exists" $operationsPackage `
     "The build map must define invSys.Operations.xlam."
 
 $noSeparateShippingLaunchers = $operationsPackage -and
-                               ($buildScript -match 'Label\s*=\s*"Operations"') -and
-                               ($buildScript -match 'Id\s*=\s*"btnOperationsShipping"') -and
-                               ($buildScript -notmatch 'Id\s*=\s*"btnOperationsBoxBuilder"') -and
-                               ($buildScript -notmatch 'Id\s*=\s*"btnOperationsBoxMaker"')
+                               ($buildScript -match 'Id\s*=\s*"btnShippingShipmentsForm"') -and
+                               ($buildScript -notmatch 'Id\s*=\s*"btnShippingBoxBuilderForm"') -and
+                               ($buildScript -notmatch 'Id\s*=\s*"btnShippingBoxMakerForm"')
 Add-Check "Operations.Ribbon.SingleShippingLauncher" $noSeparateShippingLaunchers `
     "Operations Ribbon must expose one Shipping launcher and no separate Box Builder or Box Maker buttons."
 

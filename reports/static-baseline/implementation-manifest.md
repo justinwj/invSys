@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 166
-- Procedures: 4601
+- Components: 169
+- Procedures: 4690
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 58 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 43 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 46 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |
@@ -60,8 +60,6 @@
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | btnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| BtnOpenBoxBuilder | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| BtnOpenBoxMaker | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | BtnOpenProductionForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | BtnOpenShipmentsForm | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | btnUpdateUser_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -119,6 +117,19 @@
 | mBtnAssignRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderAddComponent_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderArchive_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderDeleteVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderNew_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderNewVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderRemoveComponent_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxBuilderUpdateVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxMakerMake_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxMakerRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnBoxMakerUnmake_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnBuilderClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnBuilderFormulas_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnBuilderLoad_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -230,8 +241,10 @@
 | mBtnUpdateVersion_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCboBoxBuilderVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxes_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxes_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCboBoxMakerVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboVersions_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboVersions_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkRequireStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -252,6 +265,8 @@
 | mCmbWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstAssignIngredients_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstAssignRecipes_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstBoxBuilderDesigns_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstBoxMakerDesigns_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstBuilderLines_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstBuilderRecipes_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstCarriers_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -275,6 +290,7 @@
 | mOptArchiveRetire_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mOptArchiveRetireDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | MouseProc | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
+| mPages_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtBoxPicker_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtConfirmPin_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

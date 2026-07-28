@@ -645,47 +645,15 @@ Public Sub BtnToggleBuilder()
 End Sub
 
 Public Sub BtnOpenBoxBuilder()
-    On Error GoTo ErrHandler
-
-    Dim ws As Worksheet
-
-    If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
-
-    Set ws = SheetExists(SHEET_SHIPMENTS)
-    If ws Is Nothing _
-       Or GetListObject(ws, TABLE_BOX_BUILDER) Is Nothing _
-       Or GetListObject(ws, TABLE_BOX_BOM) Is Nothing Then
-        InitializeShipmentsUiForWorkbook Application.ActiveWorkbook
-    End If
-
-    frmShippingBoxBuilder.InitializeFromShipping
-    frmShippingBoxBuilder.Show
-    Exit Sub
-
-ErrHandler:
-    MsgBox "BOX_BUILDER failed: " & Err.Description, vbCritical
+    BtnOpenShipmentsForm
+    If Not mShipmentsAutoSyncForm Is Nothing Then _
+        mShipmentsAutoSyncForm.SelectShippingPageForTest "Box Builder"
 End Sub
 
 Public Sub BtnOpenBoxMaker()
-    On Error GoTo ErrHandler
-
-    Dim ws As Worksheet
-
-    If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
-
-    Set ws = SheetExists(SHEET_SHIPMENTS)
-    If ws Is Nothing _
-       Or GetListObject(ws, TABLE_BOX_BUILDER) Is Nothing _
-       Or GetListObject(ws, TABLE_BOX_BOM) Is Nothing Then
-        InitializeShipmentsUiForWorkbook Application.ActiveWorkbook
-    End If
-
-    frmShippingBoxMaker.InitializeFromShipping
-    frmShippingBoxMaker.Show
-    Exit Sub
-
-ErrHandler:
-    MsgBox "BOX_MAKER failed: " & Err.Description, vbCritical
+    BtnOpenShipmentsForm
+    If Not mShipmentsAutoSyncForm Is Nothing Then _
+        mShipmentsAutoSyncForm.SelectShippingPageForTest "Box Maker"
 End Sub
 
 Public Sub BtnOpenShipmentsForm()
@@ -696,6 +664,7 @@ Public Sub BtnOpenShipmentsForm()
     Dim repairReport As String
     Dim quietStarted As Boolean
     Dim messageText As String
+    Dim frm As frmShipmentsTally
 
     If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
 
@@ -722,14 +691,15 @@ Public Sub BtnOpenShipmentsForm()
         End If
     End If
 
-    frmShipmentsTally.SetOperatorWorkbook wb
-    frmShipmentsTally.InitializeFromShipping
+    Set frm = New frmShipmentsTally
+    frm.SetOperatorWorkbook wb
+    frm.InitializeFromShipping
     ClearSystemClipboardShipping
     If quietStarted Then
         modUiQuiet.EndQuietUi
         quietStarted = False
     End If
-    frmShipmentsTally.Show
+    frm.Show vbModeless
     GoTo CleanExit
 
 ErrHandler:
@@ -4085,7 +4055,7 @@ NextPackage:
     BuildPackagePickerItemsFromShippingBom = trimmed
 End Function
 
-Public Function LoadShippingComponentPickerItems() As Variant
+Public Function LoadShippingComponentPickerItems(Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -4099,7 +4069,7 @@ Public Function LoadShippingComponentPickerItems() As Variant
         Exit Function
     End If
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If Not ws Is Nothing Then
 
         Set lo = GetListObject(ws, TABLE_CHECK_INV)
@@ -4419,7 +4389,8 @@ End Function
 
 Public Function BoxBuilderFormLoadSavedBoxes(Optional ByVal includeActive As Boolean = True, _
                                              Optional ByVal includeArchived As Boolean = False, _
-                                             Optional ByVal skipRuntimeRefreshForTest As Boolean = False) As Variant
+                                             Optional ByVal skipRuntimeRefreshForTest As Boolean = False, _
+                                             Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -4443,7 +4414,11 @@ Public Function BoxBuilderFormLoadSavedBoxes(Optional ByVal includeActive As Boo
     Dim outputCount As Long
     Dim key As Variant
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    If operatorWb Is Nothing Then
+        Set ws = SheetExists(SHEET_SHIPMENTS)
+    Else
+        Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
+    End If
     If ws Is Nothing Then Exit Function
 
     If Not skipRuntimeRefreshForTest Then RefreshShippingBomViewForWorkbook ws.Parent, refreshReport
@@ -4575,7 +4550,8 @@ Public Function BoxMakerRenderedComponentInventoryAfterPendingActionForTest(ByVa
                                                                                                                                       actionText)
 End Function
 
-Public Function BoxBuilderFormLoadVersions(ByVal packageRow As Long) As Variant
+Public Function BoxBuilderFormLoadVersions(ByVal packageRow As Long, _
+                                           Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -4584,7 +4560,7 @@ Public Function BoxBuilderFormLoadVersions(ByVal packageRow As Long) As Variant
     Dim versionCount As Long
 
     If packageRow <= 0 Then Exit Function
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Function
     Set loView = GetListObject(ws, TABLE_SHIPPING_BOM_VIEW)
     If loView Is Nothing Then Exit Function
@@ -4598,7 +4574,9 @@ FailSoft:
     BoxBuilderFormLoadVersions = Empty
 End Function
 
-Public Function BoxBuilderFormLoadVersionComponents(ByVal packageRow As Long, ByVal versionLabel As String) As Variant
+Public Function BoxBuilderFormLoadVersionComponents(ByVal packageRow As Long, _
+                                                    ByVal versionLabel As String, _
+                                                    Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -4627,7 +4605,7 @@ Public Function BoxBuilderFormLoadVersionComponents(ByVal packageRow As Long, By
     If versionLabel = "" Then versionLabel = "v1"
     versionNumber = BomVersionNumberFromLabel(versionLabel)
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Function
     Set loView = GetListObject(ws, TABLE_SHIPPING_BOM_VIEW)
     If loView Is Nothing Then Exit Function
@@ -5525,6 +5503,49 @@ Public Sub RegisterPendingBoxVersionInventoryOverlay(ByVal packageRow As Long, _
     PersistPendingBoxVersionInventoryOverlay
 End Sub
 
+Public Sub RegisterPendingSystemKeyInventoryOverlay(ByVal systemKey As String, _
+                                                    ByVal versionLabel As String, _
+                                                    ByVal projectedQty As Double, _
+                                                    Optional ByVal baselineQty As Variant, _
+                                                    Optional ByVal includesReservation As Variant)
+    Dim key As String
+    Dim resolvedBaseline As Double
+    Dim resolvedIncludesReservation As Boolean
+
+    EnsurePendingBoxVersionInventoryOverlayLoaded
+    key = PendingSystemKeyInventoryKey(systemKey, versionLabel)
+    If key = "" Then Exit Sub
+    If mPendingBoxVersionInventoryOverlay Is Nothing Then
+        Set mPendingBoxVersionInventoryOverlay = CreateObject("Scripting.Dictionary")
+        mPendingBoxVersionInventoryOverlay.CompareMode = vbTextCompare
+    End If
+    If mPendingBoxVersionInventoryOverlayBaseline Is Nothing Then
+        Set mPendingBoxVersionInventoryOverlayBaseline = CreateObject("Scripting.Dictionary")
+        mPendingBoxVersionInventoryOverlayBaseline.CompareMode = vbTextCompare
+    End If
+    If mPendingBoxVersionInventoryOverlayIncludesReservation Is Nothing Then
+        Set mPendingBoxVersionInventoryOverlayIncludesReservation = CreateObject("Scripting.Dictionary")
+        mPendingBoxVersionInventoryOverlayIncludesReservation.CompareMode = vbTextCompare
+    End If
+    If projectedQty < 0 Then projectedQty = 0
+    If IsMissing(baselineQty) Or Not IsNumeric(baselineQty) Then
+        resolvedBaseline = projectedQty
+    Else
+        resolvedBaseline = CDbl(baselineQty)
+    End If
+    If Not IsMissing(includesReservation) Then resolvedIncludesReservation = CBool(includesReservation)
+    If mPendingBoxVersionInventoryOverlayBaseline.Exists(key) Then
+        resolvedBaseline = CDbl(mPendingBoxVersionInventoryOverlayBaseline(key))
+    End If
+    If mPendingBoxVersionInventoryOverlayIncludesReservation.Exists(key) Then
+        resolvedIncludesReservation = resolvedIncludesReservation Or CBool(mPendingBoxVersionInventoryOverlayIncludesReservation(key))
+    End If
+    mPendingBoxVersionInventoryOverlay(key) = projectedQty
+    mPendingBoxVersionInventoryOverlayBaseline(key) = resolvedBaseline
+    mPendingBoxVersionInventoryOverlayIncludesReservation(key) = resolvedIncludesReservation
+    PersistPendingBoxVersionInventoryOverlay
+End Sub
+
 Public Sub ClearPendingBoxVersionInventoryOverlay()
     Dim overlayPath As String
 
@@ -5655,6 +5676,37 @@ Public Function PendingBoxVersionInventoryOverlayText(ByVal packageRow As Long, 
 
     overlayValue = PendingBoxVersionInventoryOverlayValue(packageRow, versionLabel, backendText)
     PendingBoxVersionInventoryOverlayText = Trim$(NzStr(overlayValue))
+End Function
+
+Public Function PendingSystemKeyInventoryOverlayText(ByVal systemKey As String, _
+                                                     ByVal versionLabel As String, _
+                                                     ByVal backendText As String) As String
+    Dim key As String
+    Dim pendingQty As Double
+    Dim backendQty As Double
+    Dim baselineQty As Double
+
+    EnsurePendingBoxVersionInventoryOverlayLoaded
+    PendingSystemKeyInventoryOverlayText = backendText
+    If mPendingBoxVersionInventoryOverlay Is Nothing Then Exit Function
+    key = PendingSystemKeyInventoryKey(systemKey, versionLabel)
+    If key = "" Then Exit Function
+    If Not mPendingBoxVersionInventoryOverlay.Exists(key) Then Exit Function
+
+    pendingQty = CDbl(mPendingBoxVersionInventoryOverlay(key))
+    If IsNumeric(backendText) Then
+        backendQty = CDbl(backendText)
+        baselineQty = PendingOverlayBaselineForKey(key)
+        If backendQty > 0.0000001 And pendingQty <= 0.0000001 And baselineQty <= 0.0000001 Then
+            RemovePendingBoxVersionInventoryOverlayKey key
+            Exit Function
+        End If
+        If Abs(backendQty - pendingQty) > 0.0000001 And Abs(baselineQty - pendingQty) <= 0.0000001 Then
+            RemovePendingBoxVersionInventoryOverlayKey key
+            Exit Function
+        End If
+    End If
+    PendingSystemKeyInventoryOverlayText = Trim$(CStr(pendingQty))
 End Function
 
 Public Function HasSentOverlayForRowVersion(ByVal packageRow As Long, ByVal versionLabel As String) As Boolean
@@ -5804,6 +5856,15 @@ Public Sub ClearActiveOverlayForRowVersion(ByVal packageRow As Long, ByVal versi
 
     EnsurePendingBoxVersionInventoryOverlayLoaded
     key = PendingBoxVersionInventoryKey(packageRow, versionLabel)
+    If key = "" Then Exit Sub
+    RemovePendingBoxVersionInventoryOverlayKey key
+End Sub
+
+Public Sub ClearActiveOverlayForSystemKeyVersion(ByVal systemKey As String, ByVal versionLabel As String)
+    Dim key As String
+
+    EnsurePendingBoxVersionInventoryOverlayLoaded
+    key = PendingSystemKeyInventoryKey(systemKey, versionLabel)
     If key = "" Then Exit Sub
     RemovePendingBoxVersionInventoryOverlayKey key
 End Sub
@@ -6015,6 +6076,13 @@ Private Function PendingBoxVersionInventoryKey(ByVal packageRow As Long, ByVal v
     PendingBoxVersionInventoryKey = CStr(packageRow) & "|" & versionLabel
 End Function
 
+Private Function PendingSystemKeyInventoryKey(ByVal systemKey As String, ByVal versionLabel As String) As String
+    systemKey = Trim$(systemKey)
+    versionLabel = NormalizeBoxBomVersionLabelShipping(versionLabel)
+    If systemKey = "" Or versionLabel = "" Then Exit Function
+    PendingSystemKeyInventoryKey = "SYSTEM_KEY|" & systemKey & "|" & versionLabel
+End Function
+
 Private Function SentPendingBoxVersionInventoryKey(ByVal packageRow As Long, ByVal versionLabel As String) As String
     versionLabel = NormalizeBoxBomVersionLabelShipping(versionLabel)
     If packageRow <= 0 Or versionLabel = "" Then Exit Function
@@ -6196,7 +6264,8 @@ Private Function ExtractBoxPackageRowFromNoteShipping(ByVal noteText As String) 
     ExtractBoxPackageRowFromNoteShipping = CLng(Mid$(noteText, valueStart, valueEnd - valueStart))
 End Function
 
-Public Function BoxMakerFormLoadVersions(ByVal packageRow As Long) As Variant
+Public Function BoxMakerFormLoadVersions(ByVal packageRow As Long, _
+                                         Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -6207,7 +6276,7 @@ Public Function BoxMakerFormLoadVersions(ByVal packageRow As Long) As Variant
     Dim versionCount As Long
 
     If packageRow <= 0 Then Exit Function
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Function
 
     Set loSource = BoxMakerShippingBomSourceTable(ws, wbRuntime, openedTransient, report)
@@ -6223,7 +6292,9 @@ FailSoft:
     BoxMakerFormLoadVersions = Empty
 End Function
 
-Public Function BoxMakerFormLoadVersionComponents(ByVal packageRow As Long, ByVal versionLabel As String) As Variant
+Public Function BoxMakerFormLoadVersionComponents(ByVal packageRow As Long, _
+                                                  ByVal versionLabel As String, _
+                                                  Optional ByVal operatorWb As Workbook = Nothing) As Variant
     On Error GoTo FailSoft
 
     Dim ws As Worksheet
@@ -6243,7 +6314,7 @@ Public Function BoxMakerFormLoadVersionComponents(ByVal packageRow As Long, ByVa
     Dim itemName As String
 
     If packageRow <= 0 Then Exit Function
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Function
 
     Set loSource = BoxMakerShippingBomSourceTable(ws, wbRuntime, openedTransient, report)
@@ -6251,7 +6322,7 @@ Public Function BoxMakerFormLoadVersionComponents(ByVal packageRow As Long, ByVa
     components = BoxMakerVersionComponentsFromTable(loSource, packageRow, versionLabel)
     If IsEmpty(components) Then GoTo CleanExit
 
-    Set invLo = GetInvSysTable()
+    Set invLo = GetInvSysTableFromWorkbook(ws.Parent)
 
     ReDim result(1 To UBound(components, 1), 1 To 9)
     For r = 1 To UBound(components, 1)
@@ -6841,7 +6912,8 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
                                          ByRef resultMessage As String, _
                                          Optional ByVal actionText As String = "MAKE", _
                                          Optional ByRef syncCompletedOut As Boolean = False, _
-                                         Optional ByVal displayedAvailableQty As Variant) As Boolean
+                                         Optional ByVal displayedAvailableQty As Variant, _
+                                         Optional ByVal operatorWb As Workbook = Nothing) As Boolean
     On Error GoTo ErrHandler
 
     Dim rowCount As Long
@@ -6889,7 +6961,7 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
                 foundCurrentQty = True
             End If
         End If
-        If Not foundCurrentQty Then currentQty = ResolveBoxMakerUnboxAvailableQty(packageRow, boxName, foundCurrentQty)
+        If Not foundCurrentQty Then currentQty = ResolveBoxMakerUnboxAvailableQty(packageRow, boxName, foundCurrentQty, operatorWb)
         If Not foundCurrentQty Then
             resultMessage = "Not allowed: current inventory was not resolved for " & boxName & " " & versionLabel & "."
             Exit Function
@@ -6946,7 +7018,8 @@ Public Function CommitBoxMakerFormAction(ByVal packageRow As Long, _
                         " component units and adds " & FormatBoxMakerQuantityText(madeTotal) & _
                         " shippable units after processor sync."
     End If
-    batchProcessed = RunShippingRuntimeQueueRefresh(ActiveWorkbook, ResolveCurrentShippingWarehouseId(), runtimeReport)
+    If operatorWb Is Nothing Then Set operatorWb = ResolveShippingWorkbook(Nothing, SHEET_SHIPMENTS)
+    batchProcessed = RunShippingRuntimeQueueRefresh(operatorWb, ResolveCurrentShippingWarehouseId(), runtimeReport)
     If Not batchProcessed Then batchProcessed = BoxMakerRuntimeReportShowsProcessed(runtimeReport)
     syncCompletedOut = batchProcessed
     If batchProcessed Then
@@ -6967,7 +7040,8 @@ End Function
 
 Private Function ResolveBoxMakerUnboxAvailableQty(ByVal packageRow As Long, _
                                                   ByVal boxName As String, _
-                                                  ByRef foundCurrentQty As Boolean) As Double
+                                                  ByRef foundCurrentQty As Boolean, _
+                                                  Optional ByVal operatorWb As Workbook = Nothing) As Double
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim invLo As ListObject
@@ -6975,7 +7049,8 @@ Private Function ResolveBoxMakerUnboxAvailableQty(ByVal packageRow As Long, _
     Dim totalInv As Variant
 
     foundCurrentQty = False
-    Set wb = ActiveWorkbook
+    Set wb = operatorWb
+    If wb Is Nothing Then Set wb = ResolveShippingWorkbook(Nothing, SHEET_SHIPMENTS)
     If wb Is Nothing Then Exit Function
 
     Set invLo = GetInvSysTableFromWorkbook(wb)
@@ -7103,6 +7178,15 @@ Public Function ShipmentsFormPendingSyncCountForTest(ByVal shippablesArray As Va
     ShipmentsFormPendingSyncCountForTest = frmShipmentsTally.TestPendingSyncCount(shippablesArray, shipmentsListData)
 End Function
 
+Private Function MaxDoubleShipping(ByVal leftValue As Double, _
+                                   ByVal rightValue As Double) As Double
+    If leftValue >= rightValue Then
+        MaxDoubleShipping = leftValue
+    Else
+        MaxDoubleShipping = rightValue
+    End If
+End Function
+
 Public Function RunShipmentsSentFormActionForTest(ByVal operatorWb As Workbook, _
                                                   ByVal carrierValue As String, _
                                                   Optional ByVal activatedWb As Workbook = Nothing) As String
@@ -7131,6 +7215,52 @@ CleanExit:
 
 Failed:
     ShippingFormInitializeSmokeForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
+
+Public Function ShippingTabbedNavigationSmokeForWorkbook(ByVal operatorWb As Workbook) As String
+    Dim frm As frmShipmentsTally
+    Dim initReport As String
+    Dim shippingReport As String
+    Dim builderReport As String
+    Dim makerReport As String
+
+    On Error GoTo Failed
+    If operatorWb Is Nothing Then
+        ShippingTabbedNavigationSmokeForWorkbook = "FAIL|Operator workbook was not provided."
+        Exit Function
+    End If
+
+    Set frm = New frmShipmentsTally
+    frm.SetOperatorWorkbook operatorWb
+    initReport = frm.TestInitializeForWorkbook(operatorWb)
+    shippingReport = frm.SelectShippingPageForTest("Shipping")
+    builderReport = frm.SelectShippingPageForTest("Box Builder")
+    makerReport = frm.SelectShippingPageForTest("Box Maker")
+    If Not initReport Like "OK|*" _
+       Or Not shippingReport Like "OK|*" _
+       Or Not builderReport Like "OK|*" _
+       Or Not makerReport Like "OK|*" Then
+        ShippingTabbedNavigationSmokeForWorkbook = _
+            "FAIL|Init=" & initReport & "|Shipping=" & shippingReport & _
+            "|Builder=" & builderReport & "|Maker=" & makerReport
+    Else
+        ShippingTabbedNavigationSmokeForWorkbook = _
+            "OK|Pages=Shipping,Box Builder,Box Maker" & _
+            "|CapturedWorkbook=" & operatorWb.Name & _
+            "|BuilderActionsReachable=True|MakerActionsReachable=True"
+    End If
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    ShippingTabbedNavigationSmokeForWorkbook = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
     Resume CleanExit
 End Function
@@ -8726,6 +8856,9 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
             ' Projected Inv is derived from the active Shipments row. Once the
             ' row is removed, its persisted compatibility overlay must not keep
             ' the released quantity deducted from the NAS read-model value.
+            ClearActiveOverlayForSystemKeyVersion _
+                ShipmentRowText(lo, tableRowIndex, "System_Key"), _
+                NormalizeBoxBomVersionLabelShipping(ShipmentRowText(lo, tableRowIndex, "DESCRIPTION"))
             ClearActiveOverlayForRowVersion _
                 NzLng(ShipmentRowText(lo, tableRowIndex, "ROW")), _
                 NormalizeBoxBomVersionLabelShipping(ShipmentRowText(lo, tableRowIndex, "DESCRIPTION"))
@@ -9496,6 +9629,7 @@ Private Function ShipmentRowsByExistingLocalShipmentLock(ByVal invLo As ListObje
     Dim cQty As Long
     Dim cItem As Long
     Dim cLine As Long
+    Dim cSystemKey As Long
     Dim i As Long
     Dim rowIndex As Long
     Dim rowVal As Long
@@ -9513,16 +9647,23 @@ Private Function ShipmentRowsByExistingLocalShipmentLock(ByVal invLo As ListObje
     cQty = ColumnIndex(loShip, "QUANTITY")
     cItem = ColumnIndex(loShip, "ITEMS")
     cLine = ColumnIndex(loShip, "LINE_ID")
-    If cRow = 0 Or cQty = 0 Then Exit Function
+    cSystemKey = ColumnIndex(loShip, "System_Key")
+    If cQty = 0 Then Exit Function
+    If cRow = 0 And cSystemKey = 0 Then Exit Function
 
     Set selectedQtyByRow = CreateObject("Scripting.Dictionary")
     selectedQtyByRow.CompareMode = vbTextCompare
     For i = LBound(rowIndexes) To UBound(rowIndexes)
         rowIndex = CLng(rowIndexes(i))
         If rowIndex < 1 Or rowIndex > loShip.ListRows.Count Then GoTo NextAggregate
-        rowVal = NzLng(loShip.DataBodyRange.Cells(rowIndex, cRow).Value)
-        If rowVal <= 0 Then GoTo NextAggregate
-        key = CStr(rowVal)
+        If cRow > 0 Then
+            rowVal = NzLng(loShip.DataBodyRange.Cells(rowIndex, cRow).Value)
+            If rowVal <= 0 Then GoTo NextAggregate
+            key = CStr(rowVal)
+        Else
+            key = Trim$(NzStr(loShip.DataBodyRange.Cells(rowIndex, cSystemKey).Value))
+            If key = "" Then GoTo NextAggregate
+        End If
         If selectedQtyByRow.Exists(key) Then
             selectedQtyByRow(key) = NzDbl(selectedQtyByRow(key)) + NzDbl(loShip.DataBodyRange.Cells(rowIndex, cQty).Value)
         Else
@@ -9535,11 +9676,30 @@ NextAggregate:
     For i = LBound(rowIndexes) To UBound(rowIndexes)
         rowIndex = CLng(rowIndexes(i))
         If rowIndex < 1 Or rowIndex > loShip.ListRows.Count Then GoTo NextSelect
-        rowVal = NzLng(loShip.DataBodyRange.Cells(rowIndex, cRow).Value)
-        If rowVal <= 0 Then GoTo NextSelect
+        If cRow > 0 Then
+            rowVal = NzLng(loShip.DataBodyRange.Cells(rowIndex, cRow).Value)
+            If rowVal <= 0 Then GoTo NextSelect
+            key = CStr(rowVal)
+        Else
+            key = Trim$(NzStr(loShip.DataBodyRange.Cells(rowIndex, cSystemKey).Value))
+            If key = "" Then GoTo NextSelect
+        End If
         itemName = ""
         If cItem > 0 Then itemName = NzStr(loShip.DataBodyRange.Cells(rowIndex, cItem).Value)
-        hasLocalLock = (ShipmentLocalInventoryColumnQty(invLo, rowVal, itemName, "SHIPMENTS") + 0.0000001 >= NzDbl(selectedQtyByRow(CStr(rowVal))))
+        If cRow > 0 Then
+            hasLocalLock = (ShipmentLocalInventoryColumnQty(invLo, rowVal, itemName, "SHIPMENTS") + 0.0000001 >= NzDbl(selectedQtyByRow(key)))
+        Else
+            Dim keyedInvRow As ListRow
+            Dim keyedShipColumn As Long
+            Set keyedInvRow = FindInvListRowBySystemKey(invLo, key)
+            keyedShipColumn = ColumnIndex(invLo, "SHIPMENTS")
+            hasLocalLock = Not keyedInvRow Is Nothing And keyedShipColumn > 0
+            If hasLocalLock Then
+                hasLocalLock = _
+                    (NzDbl(keyedInvRow.Range.Cells(1, keyedShipColumn).Value) + 0.0000001 _
+                     >= NzDbl(selectedQtyByRow(key)))
+            End If
+        End If
         If hasLocalLock And requireLineId Then
             hasLocalLock = (cLine > 0 And Trim$(NzStr(loShip.DataBodyRange.Cells(rowIndex, cLine).Value)) <> "")
         End If
@@ -9672,6 +9832,8 @@ Private Function BuildSelectedShipmentRowsDeltas(ByVal invLo As ListObject, _
 
     cQtyShip = ColumnIndex(loShip, "QUANTITY")
     cRowShip = ColumnIndex(loShip, "ROW")
+    Dim cSystemKeyShip As Long
+    cSystemKeyShip = ColumnIndex(loShip, "System_Key")
     cItemShip = ColumnIndex(loShip, "ITEMS")
     cArea = ColumnIndex(loShip, "AREA")
     cDesc = ColumnIndex(loShip, "DESCRIPTION")
@@ -9679,8 +9841,17 @@ Private Function BuildSelectedShipmentRowsDeltas(ByVal invLo As ListObject, _
     cLocationShip = ColumnIndex(loShip, "LOCATION")
     cRefShip = ColumnIndex(loShip, "REF_NUMBER")
     cCarrierShip = ColumnIndex(loShip, "CARRIER")
-    If cQtyShip = 0 Or cRowShip = 0 Then
-        errNotes = "Shipments table missing QUANTITY/ROW columns."
+    If cQtyShip = 0 Then
+        errNotes = "Shipments table missing QUANTITY."
+        Exit Function
+    End If
+    If cRowShip = 0 And cSystemKeyShip > 0 Then
+        Set BuildSelectedShipmentRowsDeltas = BuildSelectedShipmentSystemKeyDeltas( _
+            invLo, loShip, rowIndexes, requiredArea, errNotes)
+        Exit Function
+    End If
+    If cRowShip = 0 Then
+        errNotes = "Shipments table missing managed System_Key."
         Exit Function
     End If
 
@@ -9856,6 +10027,141 @@ NextSelectedRow:
     Next key
 
     Set BuildSelectedShipmentRowsDeltas = result
+End Function
+
+Private Function BuildSelectedShipmentSystemKeyDeltas(ByVal invLo As ListObject, _
+                                                       ByVal loShip As ListObject, _
+                                                       ByVal rowIndexes As Variant, _
+                                                       ByVal requiredArea As String, _
+                                                       ByRef errNotes As String) As Collection
+    Dim requirements As Object
+    Dim sourceRows As Object
+    Dim result As Collection
+    Dim cSystemKey As Long
+    Dim cQty As Long
+    Dim cArea As Long
+    Dim cItem As Long
+    Dim cUom As Long
+    Dim cLocation As Long
+    Dim cDescription As Long
+    Dim cRef As Long
+    Dim cCarrier As Long
+    Dim cInvCode As Long
+    Dim cInvItem As Long
+    Dim cInvShip As Long
+    Dim cInvTotal As Long
+    Dim i As Long
+    Dim rowIndex As Long
+    Dim qtyValue As Double
+    Dim systemKey As String
+    Dim currentArea As String
+    Dim key As Variant
+    Dim invRow As ListRow
+    Dim delta As Object
+
+    errNotes = ""
+    Set requirements = CreateObject("Scripting.Dictionary")
+    requirements.CompareMode = vbTextCompare
+    Set sourceRows = CreateObject("Scripting.Dictionary")
+    sourceRows.CompareMode = vbTextCompare
+    Set result = New Collection
+
+    cSystemKey = ColumnIndex(loShip, "System_Key")
+    cQty = ColumnIndex(loShip, "QUANTITY")
+    cArea = ColumnIndex(loShip, "AREA")
+    cItem = ColumnIndex(loShip, "ITEMS")
+    cUom = ColumnIndex(loShip, "UOM")
+    cLocation = ColumnIndex(loShip, "LOCATION")
+    cDescription = ColumnIndex(loShip, "DESCRIPTION")
+    cRef = ColumnIndex(loShip, "REF_NUMBER")
+    cCarrier = ColumnIndex(loShip, "CARRIER")
+    cInvCode = ColumnIndex(invLo, "ITEM_CODE")
+    cInvItem = ColumnIndex(invLo, "ITEM")
+    cInvShip = ColumnIndex(invLo, "SHIPMENTS")
+    cInvTotal = ColumnIndex(invLo, "TOTAL INV")
+
+    If cSystemKey = 0 Or cQty = 0 Then
+        errNotes = "Shipments table requires System_Key and QUANTITY."
+        Exit Function
+    End If
+    For i = LBound(rowIndexes) To UBound(rowIndexes)
+        rowIndex = CLng(rowIndexes(i))
+        If rowIndex < 1 Or rowIndex > loShip.ListRows.Count Then
+            errNotes = "Selected shipment row is no longer valid."
+            Exit Function
+        End If
+        If cArea > 0 Then
+            currentArea = NormalizeShipmentArea( _
+                NzStr(loShip.DataBodyRange.Cells(rowIndex, cArea).Value))
+            If StrComp(requiredArea, "Locked", vbTextCompare) <> 0 _
+               And StrComp(currentArea, requiredArea, vbTextCompare) <> 0 Then
+                errNotes = "Selected shipment row is in " & currentArea & _
+                           "; expected " & requiredArea & "."
+                Exit Function
+            End If
+        End If
+        systemKey = Trim$(NzStr(loShip.DataBodyRange.Cells(rowIndex, cSystemKey).Value))
+        qtyValue = NzDbl(loShip.DataBodyRange.Cells(rowIndex, cQty).Value)
+        If systemKey = "" Or qtyValue <= 0 Then
+            errNotes = "Every shipment row requires a nonblank System_Key and positive quantity."
+            Exit Function
+        End If
+        If requirements.Exists(systemKey) Then
+            requirements(systemKey) = NzDbl(requirements(systemKey)) + qtyValue
+        Else
+            requirements.Add systemKey, qtyValue
+            sourceRows.Add systemKey, rowIndex
+        End If
+    Next i
+
+    For Each key In requirements.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        If invRow Is Nothing Then
+            errNotes = "System_Key '" & CStr(key) & "' was not found in invSys."
+            Exit Function
+        End If
+        qtyValue = NzDbl(requirements(key))
+        If StrComp(requiredArea, "Warehouse", vbTextCompare) = 0 Then
+            If cInvTotal = 0 Then
+                errNotes = "invSys table missing TOTAL INV."
+                Exit Function
+            End If
+            If qtyValue > NzDbl(invRow.Range.Cells(1, cInvTotal).Value) + 0.0000001 Then
+                errNotes = "System_Key '" & CStr(key) & "' does not have sufficient TOTAL INV."
+                Exit Function
+            End If
+        ElseIf cInvShip = 0 Then
+            errNotes = "invSys table missing SHIPMENTS."
+            Exit Function
+        ElseIf StrComp(requiredArea, "Locked", vbTextCompare) <> 0 Then
+            If qtyValue > NzDbl(invRow.Range.Cells(1, cInvShip).Value) + 0.0000001 Then
+                errNotes = "System_Key '" & CStr(key) & "' does not have sufficient staged SHIPMENTS."
+                Exit Function
+            End If
+        End If
+
+        rowIndex = CLng(sourceRows(key))
+        Set delta = CreateObject("Scripting.Dictionary")
+        delta.CompareMode = vbTextCompare
+        delta("System_Key") = CStr(key)
+        delta("QTY") = qtyValue
+        delta.Add "LIST_ROW", invRow
+        If cInvCode > 0 Then delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, cInvCode).Value)
+        If cInvItem > 0 Then
+            delta("ITEM_NAME") = NzStr(invRow.Range.Cells(1, cInvItem).Value)
+        ElseIf cItem > 0 Then
+            delta("ITEM_NAME") = NzStr(loShip.DataBodyRange.Cells(rowIndex, cItem).Value)
+        End If
+        If cUom > 0 Then delta("UOM") = NzStr(loShip.DataBodyRange.Cells(rowIndex, cUom).Value)
+        If cLocation > 0 Then delta("LOCATION") = NzStr(loShip.DataBodyRange.Cells(rowIndex, cLocation).Value)
+        If cDescription > 0 Then delta("VERSION") = NormalizeBoxBomVersionLabelShipping( _
+            NzStr(loShip.DataBodyRange.Cells(rowIndex, cDescription).Value))
+        If cRef > 0 Then delta("REF_NUMBER") = NzStr(loShip.DataBodyRange.Cells(rowIndex, cRef).Value)
+        If cCarrier > 0 Then delta("CARRIER") = NzStr(loShip.DataBodyRange.Cells(rowIndex, cCarrier).Value)
+        result.Add delta
+    Next key
+
+    Set BuildSelectedShipmentSystemKeyDeltas = result
 End Function
 
 Private Function ShippingNasInventoryOverride(ByVal rowVal As Long, _
@@ -10373,7 +10679,8 @@ Private Sub PersistShipmentRowsLocal(ByVal lo As ListObject, ByVal filePath As S
                        HoldRowField(lo, r, "AREA") & vbTab & _
                        HoldRowField(lo, r, "CARRIER") & vbTab & _
                        HoldRowField(lo, r, COL_SHIPMENT_LINE_ID) & vbTab & _
-                       HoldRowField(lo, r, COL_SHIPMENT_RESERVE_EVENT_ID)
+                       HoldRowField(lo, r, COL_SHIPMENT_RESERVE_EVENT_ID) & vbTab & _
+                       HoldRowField(lo, r, "System_Key")
             Print #fileNum, lineText
         Next r
     End If
@@ -10557,6 +10864,7 @@ Private Sub WritePersistentShipmentPartsToTable(ByVal lo As ListObject, _
     Dim cCarrier As Long
     Dim cLine As Long
     Dim cReserve As Long
+    Dim cSystemKey As Long
     Dim areaText As String
     Dim lineId As String
 
@@ -10579,6 +10887,7 @@ Private Sub WritePersistentShipmentPartsToTable(ByVal lo As ListObject, _
     cCarrier = ColumnIndex(lo, "CARRIER")
     cLine = ColumnIndex(lo, COL_SHIPMENT_LINE_ID)
     cReserve = ColumnIndex(lo, COL_SHIPMENT_RESERVE_EVENT_ID)
+    cSystemKey = ColumnIndex(lo, "System_Key")
 
     For i = 1 To rowCount
         parts = keptRows(i)
@@ -10597,6 +10906,7 @@ Private Sub WritePersistentShipmentPartsToTable(ByVal lo As ListObject, _
         If lineId = "" Then lineId = NewShipmentLineId()
         If cLine > 0 Then data(i, cLine) = lineId
         If cReserve > 0 Then data(i, cReserve) = HoldPart(parts, 10)
+        If cSystemKey > 0 Then data(i, cSystemKey) = HoldPart(parts, 11)
     Next i
 
     lo.DataBodyRange.Value = data
@@ -11727,7 +12037,8 @@ End Function
 Public Function ShipmentsFormRunShipmentsSentRows(ByVal rowIndexes As Variant, _
                                                   ByVal carrierValue As String, _
                                                   ByRef report As String, _
-                                                  Optional ByVal skipAuthForTest As Boolean = False) As Boolean
+                                                  Optional ByVal skipAuthForTest As Boolean = False, _
+                                                  Optional ByVal operatorWb As Workbook = Nothing) As Boolean
     On Error GoTo Fail
 
     Dim ws As Worksheet
@@ -11755,7 +12066,11 @@ Public Function ShipmentsFormRunShipmentsSentRows(ByVal rowIndexes As Variant, _
         End If
     End If
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    If operatorWb Is Nothing Then
+        Set ws = SheetExists(SHEET_SHIPMENTS)
+    Else
+        Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
+    End If
     If ws Is Nothing Then
         report = "ShipmentsTally sheet not found."
         Exit Function
@@ -12545,7 +12860,8 @@ Public Sub CommitBoxBuilderFormState(ByVal boxName As String, _
                                      ByVal bomRows As Variant, _
                                      Optional ByVal saveAction As String = "", _
                                      Optional ByVal versionLabel As String = "", _
-                                     Optional ByVal statusText As String = "")
+                                     Optional ByVal statusText As String = "", _
+                                     Optional ByVal operatorWb As Workbook = Nothing)
     On Error GoTo ErrHandler
 
     Dim ws As Worksheet
@@ -12574,7 +12890,7 @@ Public Sub CommitBoxBuilderFormState(ByVal boxName As String, _
         Exit Sub
     End If
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Sub
     Set wb = ws.Parent
 
@@ -12636,7 +12952,7 @@ CleanRestore:
         If Trim$(saveAction) = "" Then
             BtnSaveBox
         Else
-            SaveBoxBuilderFormTablesExplicit saveAction, versionLabel, statusText
+            SaveBoxBuilderFormTablesExplicit saveAction, versionLabel, statusText, wb
         End If
     End If
     Exit Sub
@@ -12657,7 +12973,10 @@ CleanFail:
     MsgBox "BOX_BUILDER_SAVE failed: " & errText, vbCritical
 End Sub
 
-Private Sub SaveBoxBuilderFormTablesExplicit(ByVal saveAction As String, ByVal versionLabel As String, ByVal statusText As String)
+Private Sub SaveBoxBuilderFormTablesExplicit(ByVal saveAction As String, _
+                                             ByVal versionLabel As String, _
+                                             ByVal statusText As String, _
+                                             Optional ByVal operatorWb As Workbook = Nothing)
     On Error GoTo ErrHandler
 
     Dim ws As Worksheet
@@ -12685,7 +13004,7 @@ Private Sub SaveBoxBuilderFormTablesExplicit(ByVal saveAction As String, ByVal v
     versionLabel = NormalizeBoxBomVersionLabelShipping(versionLabel)
     If versionLabel = "" Then versionLabel = "v1"
 
-    Set ws = SheetExists(SHEET_SHIPMENTS)
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
     If ws Is Nothing Then Exit Sub
     Set loMeta = GetListObject(ws, TABLE_BOX_BUILDER)
     Set loBom = GetListObject(ws, TABLE_BOX_BOM)
@@ -12712,7 +13031,7 @@ Private Sub SaveBoxBuilderFormTablesExplicit(ByVal saveAction As String, ByVal v
         Exit Sub
     End If
 
-    Set invLo = GetInvSysTable()
+    Set invLo = GetInvSysTableFromWorkbook(ws.Parent)
     If invLo Is Nothing Then
         MsgBox "InventoryManagement!invSys table not found.", vbCritical
         Exit Sub
@@ -12781,6 +13100,136 @@ Private Sub SaveBoxBuilderFormTablesExplicit(ByVal saveAction As String, ByVal v
 ErrHandler:
     MsgBox "BOX_BUILDER_EXPLICIT_SAVE failed: " & Err.Description, vbCritical
 End Sub
+
+Public Function DeleteBoxDesignVersionForWorkbook(ByVal operatorWb As Workbook, _
+                                                  ByVal packageRow As Long, _
+                                                  ByVal versionLabel As String, _
+                                                  ByRef report As String) As Boolean
+    On Error GoTo ErrHandler
+
+    Dim ws As Worksheet
+    Dim deleteReport As String
+    Dim refreshReport As String
+
+    If operatorWb Is Nothing Then
+        report = "The captured Shipping operator workbook was not provided."
+        Exit Function
+    End If
+    If packageRow <= 0 Then
+        report = "Select a saved box design."
+        Exit Function
+    End If
+    versionLabel = NormalizeBoxBomVersionLabelShipping(versionLabel)
+    If versionLabel = "" Then
+        report = "Select a box version before deleting."
+        Exit Function
+    End If
+
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
+    If ws Is Nothing Then
+        report = "ShipmentsTally sheet was not found in the captured workbook."
+        Exit Function
+    End If
+    If Not DeleteShippingBomVersionFromRuntime( _
+            operatorWb, packageRow, BomVersionNumberFromLabel(versionLabel), _
+            deleteReport) Then
+        If deleteReport = "" Then deleteReport = "Could not delete the selected box version."
+        report = deleteReport
+        Exit Function
+    End If
+
+    RefreshShippingBomViewForWorkbook operatorWb, refreshReport, True
+    DeleteLocalShippingBomViewRowsForVersion ws, packageRow, versionLabel
+    RefreshBoxBomVersionList ws, packageRow
+    report = deleteReport
+    If report = "" Then report = "Deleted the selected box version."
+    If Trim$(refreshReport) <> "" Then AppendNote report, refreshReport
+    DeleteBoxDesignVersionForWorkbook = True
+    Exit Function
+
+ErrHandler:
+    report = "BOX_BUILDER_DELETE_VERSION failed: " & Err.Description
+End Function
+
+Public Function ArchiveBoxDesignForWorkbook(ByVal operatorWb As Workbook, _
+                                            ByVal packageRow As Long, _
+                                            ByRef report As String) As Boolean
+    On Error GoTo ErrHandler
+
+    Dim ws As Worksheet
+    Dim archiveReport As String
+    Dim refreshReport As String
+
+    If operatorWb Is Nothing Then
+        report = "The captured Shipping operator workbook was not provided."
+        Exit Function
+    End If
+    If packageRow <= 0 Then
+        report = "Select a saved box design."
+        Exit Function
+    End If
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
+    If ws Is Nothing Then
+        report = "ShipmentsTally sheet was not found in the captured workbook."
+        Exit Function
+    End If
+    If Not ArchiveShippingBomPackageInRuntime(operatorWb, packageRow, archiveReport) Then
+        If archiveReport = "" Then archiveReport = "Could not archive the selected box design."
+        report = archiveReport
+        Exit Function
+    End If
+
+    RefreshShippingBomViewForWorkbook operatorWb, refreshReport, True
+    RefreshBoxBomVersionList ws, packageRow
+    InvalidateAggregates True
+    report = archiveReport
+    If report = "" Then report = "Archived the selected box design."
+    If Trim$(refreshReport) <> "" Then AppendNote report, refreshReport
+    ArchiveBoxDesignForWorkbook = True
+    Exit Function
+
+ErrHandler:
+    report = "BOX_BUILDER_ARCHIVE_BOX failed: " & Err.Description
+End Function
+
+Public Function DeleteBoxDesignForWorkbook(ByVal operatorWb As Workbook, _
+                                           ByVal packageRow As Long, _
+                                           ByRef report As String) As Boolean
+    On Error GoTo ErrHandler
+
+    Dim ws As Worksheet
+    Dim deleteReport As String
+    Dim refreshReport As String
+
+    If operatorWb Is Nothing Then
+        report = "The captured Shipping operator workbook was not provided."
+        Exit Function
+    End If
+    If packageRow <= 0 Then
+        report = "Select a saved box design."
+        Exit Function
+    End If
+    Set ws = ShipmentsWorksheetForWorkbook(operatorWb)
+    If ws Is Nothing Then
+        report = "ShipmentsTally sheet was not found in the captured workbook."
+        Exit Function
+    End If
+    If Not DeleteShippingBomPackageFromRuntime(operatorWb, packageRow, deleteReport) Then
+        If deleteReport = "" Then deleteReport = "Could not delete the selected box design."
+        report = deleteReport
+        Exit Function
+    End If
+
+    RefreshShippingBomViewForWorkbook operatorWb, refreshReport
+    report = deleteReport
+    If report = "" Then report = "Deleted the selected box design."
+    If Trim$(refreshReport) <> "" Then AppendNote report, refreshReport
+    DeleteBoxDesignForWorkbook = True
+    Exit Function
+
+ErrHandler:
+    report = "BOX_BUILDER_DELETE_BOX failed: " & Err.Description
+End Function
 
 Public Sub BoxBuilderFormDeleteVersion(ByVal packageRow As Long, ByVal versionLabel As String)
     On Error GoTo ErrHandler
@@ -12925,6 +13374,14 @@ Private Function ShippingInventoryPickerTableHasRows(ByVal lo As ListObject) As 
     If ColumnIndex(lo, "ROW") = 0 Then Exit Function
     If ColumnIndex(lo, "ITEM") = 0 Then Exit Function
     ShippingInventoryPickerTableHasRows = True
+End Function
+
+Private Function ShippingManagedInventoryTableHasRows(ByVal lo As ListObject) As Boolean
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    If ColumnIndex(lo, "System_Key") = 0 Then Exit Function
+    If ColumnIndex(lo, "ITEM_CODE") = 0 Then Exit Function
+    ShippingManagedInventoryTableHasRows = True
 End Function
 
 Private Function BuildShippingInventoryPickerItems(ByVal lo As ListObject) As Variant
@@ -18328,7 +18785,7 @@ Private Function GetMutableLocalShipmentStagingTable(ByVal wsShip As Worksheet, 
     End If
 
     Set loShip = GetListObject(wsShip, TABLE_SHIPMENTS)
-    If ShippingInventoryPickerTableHasRows(invLo) Then
+    If ShippingManagedInventoryTableHasRows(invLo) Then
         EnsureMissingInvSysRowsFromShipmentLines invLo, loShip
         ReconcileShipmentStagingFromShipmentLines invLo, loShip
         Set GetMutableLocalShipmentStagingTable = invLo
@@ -18340,7 +18797,7 @@ Private Function GetMutableLocalShipmentStagingTable(ByVal wsShip As Worksheet, 
     If Not ShippingInventoryPickerTableHasRows(sourceLo) Then
         HydrateInvSysFromShipmentLines invLo, loShip
         ReconcileShipmentStagingFromShipmentLines invLo, loShip
-        If ShippingInventoryPickerTableHasRows(invLo) Then
+        If ShippingManagedInventoryTableHasRows(invLo) Then
             Set GetMutableLocalShipmentStagingTable = invLo
         Else
             report = "Inventory read model has no rows to initialize invSys."
@@ -18351,7 +18808,7 @@ Private Function GetMutableLocalShipmentStagingTable(ByVal wsShip As Worksheet, 
     HydrateInvSysFromShippingReadModel invLo, sourceLo
     EnsureMissingInvSysRowsFromShipmentLines invLo, loShip
     ReconcileShipmentStagingFromShipmentLines invLo, loShip
-    If ShippingInventoryPickerTableHasRows(invLo) Then
+    If ShippingManagedInventoryTableHasRows(invLo) Then
         Set GetMutableLocalShipmentStagingTable = invLo
     Else
         report = "InventoryManagement!invSys could not be initialized from the shipping read model."
@@ -18737,7 +19194,11 @@ Private Sub ReconcileShipmentStagingFromShipmentLines(ByVal invLo As ListObject,
     If invLo.DataBodyRange Is Nothing Then Exit Sub
     cInvShip = ColumnIndex(invLo, "SHIPMENTS")
     cInvRow = ColumnIndex(invLo, "ROW")
-    If cInvShip = 0 Or cInvRow = 0 Then Exit Sub
+    If cInvShip = 0 Then Exit Sub
+    If cInvRow = 0 Then
+        ReconcileShipmentStagingBySystemKey invLo, loShip
+        Exit Sub
+    End If
 
     EnsureShippingWorksheetEditable invLo.Parent
     Set existingShipByRow = CreateObject("Scripting.Dictionary")
@@ -18797,6 +19258,67 @@ NextInvRow:
     Next r
 
 FailSoft:
+End Sub
+
+Private Sub ReconcileShipmentStagingBySystemKey(ByVal invLo As ListObject, _
+                                                ByVal loShip As ListObject)
+    Dim cInvShip As Long
+    Dim cShipSystemKey As Long
+    Dim cShipQty As Long
+    Dim cShipArea As Long
+    Dim cShipReserve As Long
+    Dim stagedByKey As Object
+    Dim r As Long
+    Dim systemKey As String
+    Dim rowArea As String
+    Dim hasReserve As Boolean
+    Dim invRow As ListRow
+    Dim key As Variant
+
+    If invLo Is Nothing Or loShip Is Nothing Then Exit Sub
+    If loShip.DataBodyRange Is Nothing Then Exit Sub
+    cInvShip = ColumnIndex(invLo, "SHIPMENTS")
+    cShipSystemKey = ColumnIndex(loShip, "System_Key")
+    cShipQty = ColumnIndex(loShip, "QUANTITY")
+    cShipArea = ColumnIndex(loShip, "AREA")
+    cShipReserve = ColumnIndex(loShip, COL_SHIPMENT_RESERVE_EVENT_ID)
+    If cInvShip = 0 Or cShipSystemKey = 0 Or cShipQty = 0 Then Exit Sub
+
+    Set stagedByKey = CreateObject("Scripting.Dictionary")
+    stagedByKey.CompareMode = vbTextCompare
+    For r = 1 To loShip.ListRows.Count
+        systemKey = Trim$(NzStr(loShip.DataBodyRange.Cells(r, cShipSystemKey).Value))
+        If systemKey = "" Then GoTo NextLine
+        If cShipArea > 0 Then
+            rowArea = NormalizeShipmentArea( _
+                NzStr(loShip.DataBodyRange.Cells(r, cShipArea).Value), False)
+        Else
+            rowArea = ""
+        End If
+        If cShipReserve > 0 Then
+            hasReserve = _
+                (Trim$(NzStr(loShip.DataBodyRange.Cells(r, cShipReserve).Value)) <> "")
+        Else
+            hasReserve = False
+        End If
+        If Not hasReserve And StrComp(rowArea, "Shipments", vbTextCompare) <> 0 Then _
+            GoTo NextLine
+        If stagedByKey.Exists(systemKey) Then
+            stagedByKey(systemKey) = NzDbl(stagedByKey(systemKey)) + _
+                                     NzDbl(loShip.DataBodyRange.Cells(r, cShipQty).Value)
+        Else
+            stagedByKey.Add systemKey, _
+                NzDbl(loShip.DataBodyRange.Cells(r, cShipQty).Value)
+        End If
+NextLine:
+    Next r
+
+    EnsureShippingWorksheetEditable invLo.Parent
+    For Each key In stagedByKey.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        If Not invRow Is Nothing Then _
+            invRow.Range.Cells(1, cInvShip).Value = NzDbl(stagedByKey(key))
+    Next key
 End Sub
 
 Private Sub ReconcileShippableTotalsFromVersionInventory(ByVal invLo As ListObject, _
@@ -18909,6 +19431,46 @@ Private Function FindInvListRowByRowValue(invLo As ListObject, ByVal rowValue As
     Next r
 End Function
 
+Private Function FindInvListRowBySystemKey(ByVal invLo As ListObject, _
+                                           ByVal systemKey As String) As ListRow
+    Dim cSystemKey As Long
+    Dim r As Long
+
+    If invLo Is Nothing Then Exit Function
+    systemKey = Trim$(systemKey)
+    If systemKey = "" Then Exit Function
+    cSystemKey = ColumnIndex(invLo, "System_Key")
+    If cSystemKey = 0 Then Exit Function
+    For r = 1 To invLo.ListRows.Count
+        If StrComp(Trim$(NzStr(invLo.ListRows(r).Range.Cells(1, cSystemKey).Value)), _
+                   systemKey, vbBinaryCompare) = 0 Then
+            Set FindInvListRowBySystemKey = invLo.ListRows(r)
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function DeltaInventoryRow(ByVal invLo As ListObject, _
+                                   ByVal delta As Object) As ListRow
+    If invLo Is Nothing Or delta Is Nothing Then Exit Function
+    If delta.Exists("System_Key") Then
+        Set DeltaInventoryRow = FindInvListRowBySystemKey( _
+            invLo, NzStr(delta("System_Key")))
+    ElseIf delta.Exists("ROW") Then
+        Set DeltaInventoryRow = FindInvListRowByRowValue( _
+            invLo, NzLng(delta("ROW")))
+    End If
+End Function
+
+Private Function DeltaInventoryIdentity(ByVal delta As Object) As Variant
+    If delta Is Nothing Then Exit Function
+    If delta.Exists("System_Key") Then
+        DeltaInventoryIdentity = NzStr(delta("System_Key"))
+    ElseIf delta.Exists("ROW") Then
+        DeltaInventoryIdentity = NzLng(delta("ROW"))
+    End If
+End Function
+
 Private Function ValidateComponentInventory(invLo As ListObject, aggBom As ListObject, ByRef shortageMsg As String) As Boolean
     shortageMsg = ""
     ValidateComponentInventory = False
@@ -18923,8 +19485,9 @@ Private Function ValidateComponentInventory(invLo As ListObject, aggBom As ListO
 
     Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggBom, "QUANTITY")
     Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggBom, "ROW")
-    If cQtyAgg = 0 Or cRowAgg = 0 Then
-        shortageMsg = "AggregateBoxBOM is missing QUANTITY or ROW columns."
+    Dim cSystemKeyAgg As Long: cSystemKeyAgg = ColumnIndex(aggBom, "System_Key")
+    If cQtyAgg = 0 Or (cRowAgg = 0 And cSystemKeyAgg = 0) Then
+        shortageMsg = "AggregateBoxBOM requires QUANTITY and System_Key."
         Exit Function
     End If
 
@@ -18938,18 +19501,39 @@ Private Function ValidateComponentInventory(invLo As ListObject, aggBom As ListO
     arr = To2DArrayShipping(aggBom.DataBodyRange.Value)
     Dim r As Long
     For r = 1 To UBound(arr, 1)
-        Dim rowVal As Long: rowVal = NzLng(arr(r, cRowAgg))
+        Dim rowVal As Long
+        Dim systemKey As String
+        If cRowAgg > 0 Then rowVal = NzLng(arr(r, cRowAgg))
+        If cSystemKeyAgg > 0 Then systemKey = Trim$(NzStr(arr(r, cSystemKeyAgg)))
         Dim qtyNeeded As Double: qtyNeeded = NzDbl(arr(r, cQtyAgg))
-        If rowVal = 0 Or qtyNeeded <= 0 Then GoTo NextComponent
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If rowVal = 0 And systemKey = "" Then GoTo NextComponent
+        If qtyNeeded <= 0 Then GoTo NextComponent
+        Dim invRow As ListRow
+        If systemKey <> "" Then
+            Set invRow = FindInvListRowBySystemKey(invLo, systemKey)
+        Else
+            Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        End If
         If invRow Is Nothing Then
-            AppendNote shortageMsg, "invSys ROW " & rowVal & " not found."
+            If systemKey <> "" Then
+                AppendNote shortageMsg, "invSys System_Key '" & systemKey & "' not found."
+            Else
+                AppendNote shortageMsg, "invSys ROW " & rowVal & " not found."
+            End If
             GoTo NextComponent
         End If
         Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
         Dim available As Double: available = NzDbl(totalCell.Value)
         If available < qtyNeeded Then
-            AppendNote shortageMsg, "ROW " & rowVal & " requires " & Format$(qtyNeeded, "0.###") & " but only " & Format$(available, "0.###") & " available."
+            If systemKey <> "" Then
+                AppendNote shortageMsg, "System_Key '" & systemKey & "' requires " & _
+                           Format$(qtyNeeded, "0.###") & " but only " & _
+                           Format$(available, "0.###") & " available."
+            Else
+                AppendNote shortageMsg, "ROW " & rowVal & " requires " & _
+                           Format$(qtyNeeded, "0.###") & " but only " & _
+                           Format$(available, "0.###") & " available."
+            End If
         End If
 NextComponent:
     Next r
@@ -19655,10 +20239,11 @@ Private Function BuildUsedDeltaPacket(invLo As ListObject, aggBom As ListObject,
 
     Dim colUsed As Long: colUsed = ColumnIndex(invLo, "USED")
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
+    Dim colSystemKey As Long: colSystemKey = ColumnIndex(invLo, "System_Key")
     Dim colItemCode As Long: colItemCode = ColumnIndex(invLo, "ITEM_CODE")
     Dim colItemName As Long: colItemName = ColumnIndex(invLo, "ITEM")
-    If colUsed = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing USED/ROW columns."
+    If colUsed = 0 Or (colRow = 0 And colSystemKey = 0) Then
+        errNotes = "invSys table requires USED and System_Key."
         Exit Function
     End If
 
@@ -19667,10 +20252,18 @@ Private Function BuildUsedDeltaPacket(invLo As ListObject, aggBom As ListObject,
     Dim r As Long
     For r = 1 To UBound(arr, 1)
         Dim usedVal As Double: usedVal = NzDbl(arr(r, colUsed))
-        Dim rowVal As Long: rowVal = NzLng(arr(r, colRow))
-        If rowVal = 0 Or usedVal <= 0 Then GoTo NextRow
+        Dim rowVal As Long
+        Dim systemKey As String
+        If colRow > 0 Then rowVal = NzLng(arr(r, colRow))
+        If colSystemKey > 0 Then systemKey = Trim$(NzStr(arr(r, colSystemKey)))
+        If rowVal = 0 And systemKey = "" Then GoTo NextRow
+        If usedVal <= 0 Then GoTo NextRow
         Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
-        delta("ROW") = rowVal
+        If systemKey <> "" Then
+            delta("System_Key") = systemKey
+        Else
+            delta("ROW") = rowVal
+        End If
         delta("QTY") = usedVal
         If colItemCode > 0 Then delta("ITEM_CODE") = NzStr(arr(r, colItemCode))
         If colItemName > 0 Then delta("ITEM_NAME") = NzStr(arr(r, colItemName))
@@ -19876,8 +20469,9 @@ Private Function BuildMadeDeltaPacket(invLo As ListObject, aggPack As ListObject
 
     Dim cQtyAgg As Long: cQtyAgg = ColumnIndex(aggPack, "QUANTITY")
     Dim cRowAgg As Long: cRowAgg = ColumnIndex(aggPack, "ROW")
-    If cQtyAgg = 0 Or cRowAgg = 0 Then
-        errNotes = "AggregatePackages missing QUANTITY/ROW columns."
+    Dim cSystemKeyAgg As Long: cSystemKeyAgg = ColumnIndex(aggPack, "System_Key")
+    If cQtyAgg = 0 Or (cRowAgg = 0 And cSystemKeyAgg = 0) Then
+        errNotes = "AggregatePackages requires QUANTITY and System_Key."
         Exit Function
     End If
 
@@ -19888,15 +20482,32 @@ Private Function BuildMadeDeltaPacket(invLo As ListObject, aggPack As ListObject
     Dim arr As Variant: arr = To2DArrayShipping(aggPack.DataBodyRange.Value)
     Dim r As Long
     For r = 1 To UBound(arr, 1)
-        Dim rowVal As Long: rowVal = NzLng(arr(r, cRowAgg))
+        Dim rowVal As Long
+        Dim systemKey As String
+        If cRowAgg > 0 Then rowVal = NzLng(arr(r, cRowAgg))
+        If cSystemKeyAgg > 0 Then systemKey = Trim$(NzStr(arr(r, cSystemKeyAgg)))
         Dim qtyVal As Double: qtyVal = NzDbl(arr(r, cQtyAgg))
-        If rowVal = 0 Or qtyVal <= 0 Then GoTo NextPkg
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        If rowVal = 0 And systemKey = "" Then GoTo NextPkg
+        If qtyVal <= 0 Then GoTo NextPkg
+        Dim invRow As ListRow
+        If systemKey <> "" Then
+            Set invRow = FindInvListRowBySystemKey(invLo, systemKey)
+        Else
+            Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        End If
         If invRow Is Nothing Then
-            AppendNote errNotes, "Package ROW " & rowVal & " not found in invSys."
+            If systemKey <> "" Then
+                AppendNote errNotes, "Package System_Key '" & systemKey & "' not found in invSys."
+            Else
+                AppendNote errNotes, "Package ROW " & rowVal & " not found in invSys."
+            End If
         Else
             Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
-            delta("ROW") = rowVal
+            If systemKey <> "" Then
+                delta("System_Key") = systemKey
+            Else
+                delta("ROW") = rowVal
+            End If
             delta("QTY") = qtyVal
             If colItemCode > 0 Then delta("ITEM_CODE") = NzStr(invRow.Range.Cells(1, colItemCode).Value)
             If colItemName > 0 Then delta("ITEM_NAME") = NzStr(invRow.Range.Cells(1, colItemName).Value)
@@ -19919,10 +20530,11 @@ Private Function BuildTotalInventoryDeltaPacket(invLo As ListObject, ByRef errNo
 
     Dim cMade As Long: cMade = ColumnIndex(invLo, "MADE")
     Dim cRow As Long: cRow = ColumnIndex(invLo, "ROW")
+    Dim cSystemKey As Long: cSystemKey = ColumnIndex(invLo, "System_Key")
     Dim cItemCode As Long: cItemCode = ColumnIndex(invLo, "ITEM_CODE")
     Dim cItemName As Long: cItemName = ColumnIndex(invLo, "ITEM")
-    If cMade = 0 Or cRow = 0 Then
-        errNotes = "invSys table missing MADE/ROW columns."
+    If cMade = 0 Or (cRow = 0 And cSystemKey = 0) Then
+        errNotes = "invSys table requires MADE and System_Key."
         Exit Function
     End If
 
@@ -19930,11 +20542,19 @@ Private Function BuildTotalInventoryDeltaPacket(invLo As ListObject, ByRef errNo
     Dim arr As Variant: arr = To2DArrayShipping(invLo.DataBodyRange.Value)
     Dim r As Long
     For r = 1 To UBound(arr, 1)
-        Dim rowVal As Long: rowVal = NzLng(arr(r, cRow))
+        Dim rowVal As Long
+        Dim systemKey As String
+        If cRow > 0 Then rowVal = NzLng(arr(r, cRow))
+        If cSystemKey > 0 Then systemKey = Trim$(NzStr(arr(r, cSystemKey)))
         Dim madeVal As Double: madeVal = NzDbl(arr(r, cMade))
-        If rowVal = 0 Or madeVal <= 0 Then GoTo NextRow
+        If rowVal = 0 And systemKey = "" Then GoTo NextRow
+        If madeVal <= 0 Then GoTo NextRow
         Dim delta As Object: Set delta = CreateObject("Scripting.Dictionary")
-        delta("ROW") = rowVal
+        If systemKey <> "" Then
+            delta("System_Key") = systemKey
+        Else
+            delta("ROW") = rowVal
+        End If
         delta("QTY") = madeVal
         If cItemCode > 0 Then delta("ITEM_CODE") = NzStr(arr(r, cItemCode))
         If cItemName > 0 Then delta("ITEM_NAME") = NzStr(arr(r, cItemName))
@@ -20244,13 +20864,21 @@ Private Function BuildPayloadJsonFromDeltas(ByVal deltas As Collection, Optional
     If deltas.Count = 0 Then Exit Function
 
     For Each delta In deltas
-        Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
-            NzLng(delta("ROW")), _
-            NzStr(delta("ITEM_CODE")), _
-            NzDbl(delta("QTY")), _
-            "", _
-            NzStr(delta("ITEM_NAME")), _
-            ioType)
+        If delta.Exists("System_Key") Then
+            Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+                0, NzStr(delta("ITEM_CODE")), NzDbl(delta("QTY")), "", _
+                NzStr(delta("ITEM_NAME")), ioType)
+            payloadItem.Remove "Row"
+            payloadItem("System_Key") = NzStr(delta("System_Key"))
+        Else
+            Set payloadItem = modRoleEventWriter.CreatePayloadItem( _
+                NzLng(delta("ROW")), _
+                NzStr(delta("ITEM_CODE")), _
+                NzDbl(delta("QTY")), _
+                "", _
+                NzStr(delta("ITEM_NAME")), _
+                ioType)
+        End If
         If delta.Exists("VERSION") Then
             If Trim$(NzStr(delta("VERSION"))) <> "" Then
                 Dim payloadVersion As String: payloadVersion = NormalizeBoxBomVersionLabelShipping(NzStr(delta("VERSION")))
@@ -20279,7 +20907,11 @@ Private Function ShipmentPayloadNote(ByVal delta As Object) As String
     If refText <> "" Then noteText = AppendHistoryTokenShipping(noteText, "REF=" & refText)
     If delta.Exists("CARRIER") Then carrierText = Trim$(NzStr(delta("CARRIER")))
     If carrierText <> "" Then noteText = AppendHistoryTokenShipping(noteText, "CARRIER=" & carrierText)
-    If delta.Exists("ROW") Then noteText = AppendHistoryTokenShipping(noteText, "ROW=" & CStr(NzLng(delta("ROW"))))
+    If delta.Exists("System_Key") Then
+        noteText = AppendHistoryTokenShipping(noteText, "System_Key=" & NzStr(delta("System_Key")))
+    ElseIf delta.Exists("ROW") Then
+        noteText = AppendHistoryTokenShipping(noteText, "ROW=" & CStr(NzLng(delta("ROW"))))
+    End If
     ShipmentPayloadNote = noteText
 End Function
 
@@ -20305,13 +20937,12 @@ Private Sub PrepareTotalInventoryLogEntries(invLo As ListObject, deltas As Colle
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then GoTo NextDelta
         Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
         Dim newTotal As Double: newTotal = NzDbl(totalCell.Value) + qtyVal
-        logEntries.Add Array("BTN_TO_TOTALINV", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newTotal)
+        logEntries.Add Array("BTN_TO_TOTALINV", DeltaInventoryIdentity(delta), NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newTotal)
 NextDelta:
     Next delta
 End Sub
@@ -20349,9 +20980,18 @@ Private Sub PrepareShipmentsSentLogEntries(invLo As ListObject, deltas As Collec
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim rowVal As Long
+        Dim identityValue As Variant
+        Dim invRow As ListRow
+        If delta.Exists("System_Key") Then
+            identityValue = NzStr(delta("System_Key"))
+            Set invRow = FindInvListRowBySystemKey(invLo, CStr(identityValue))
+        Else
+            rowVal = CLng(delta("ROW"))
+            identityValue = rowVal
+            Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        End If
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
         If invRow Is Nothing Then GoTo NextSent
         Dim newQty As Double
         If deductTotalInv Then
@@ -20362,7 +21002,7 @@ Private Sub PrepareShipmentsSentLogEntries(invLo As ListObject, deltas As Collec
             newQty = NzDbl(shipCell.Value) - qtyVal
         End If
         If newQty < 0 Then newQty = 0
-        logEntries.Add Array("BTN_SHIPMENTS_SENT", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newQty)
+        logEntries.Add Array("BTN_SHIPMENTS_SENT", identityValue, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newQty)
 NextSent:
     Next delta
 End Sub
@@ -20430,13 +21070,12 @@ Private Sub PrepareComponentLogEntries(invLo As ListObject, deltas As Collection
     Dim colTotalInv As Long: colTotalInv = ColumnIndex(invLo, "TOTAL INV")
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If Not invRow Is Nothing Then
             Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotalInv)
             Dim newTotal As Double: newTotal = NzDbl(totalCell.Value) - qtyVal
-            logEntries.Add Array("BTN_BOXES_MADE_COMPONENTS", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newTotal)
+            logEntries.Add Array("BTN_BOXES_MADE_COMPONENTS", DeltaInventoryIdentity(delta), NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), -qtyVal, newTotal)
         End If
     Next delta
 End Sub
@@ -20448,13 +21087,12 @@ Private Sub PreparePackageLogEntries(invLo As ListObject, deltas As Collection, 
     Dim colMade As Long: colMade = ColumnIndex(invLo, "MADE")
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If Not invRow Is Nothing Then
             Dim madeCell As Range: Set madeCell = invRow.Range.Cells(1, colMade)
             Dim newMade As Double: newMade = NzDbl(madeCell.Value) + qtyVal
-            logEntries.Add Array("BTN_BOXES_MADE_PACKAGES", rowVal, NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newMade)
+            logEntries.Add Array("BTN_BOXES_MADE_PACKAGES", DeltaInventoryIdentity(delta), NzStr(delta("ITEM_CODE")), NzStr(delta("ITEM_NAME")), qtyVal, newMade)
         End If
     Next delta
 End Sub
@@ -20525,12 +21163,17 @@ Private Function ApplyShipmentsSentDeltas(invLo As ListObject, deltas As Collect
 
     Dim colShip As Long: colShip = ColumnIndex(invLo, "SHIPMENTS")
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
-    Dim colTotal As Long
+    Dim colTotal As Long: colTotal = ColumnIndex(invLo, "TOTAL INV")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
     Dim colTotalLastEdit As Long: colTotalLastEdit = ColumnIndex(invLo, "TOTAL INV LAST EDIT")
-    If colShip = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing SHIPMENTS/ROW columns."
+    If colShip = 0 Then
+        errNotes = "invSys table missing SHIPMENTS."
         ApplyShipmentsSentDeltas = -1
+        Exit Function
+    End If
+    If colRow = 0 Then
+        ApplyShipmentsSentDeltas = ApplyShipmentsSentDeltasBySystemKey( _
+            invLo, deltas, errNotes, deductTotalInv)
         Exit Function
     End If
     If deductTotalInv Then
@@ -20603,6 +21246,95 @@ NextValidate:
         ApplyShipmentsSentDeltas = ApplyShipmentsSentDeltas + qtyVal
 NextApply:
     Next delta
+End Function
+
+Private Function ApplyShipmentsSentDeltasBySystemKey(ByVal invLo As ListObject, _
+                                                      ByVal deltas As Collection, _
+                                                      ByRef errNotes As String, _
+                                                      ByVal deductTotalInv As Boolean) As Double
+    Dim colShip As Long
+    Dim colTotal As Long
+    Dim colLastEdited As Long
+    Dim colTotalLastEdit As Long
+    Dim requiredByKey As Object
+    Dim delta As Variant
+    Dim key As Variant
+    Dim systemKey As String
+    Dim qtyValue As Double
+    Dim invRow As ListRow
+    Dim shipCell As Range
+    Dim totalCell As Range
+
+    ApplyShipmentsSentDeltasBySystemKey = -1
+    Set requiredByKey = CreateObject("Scripting.Dictionary")
+    requiredByKey.CompareMode = vbTextCompare
+    colShip = ColumnIndex(invLo, "SHIPMENTS")
+    colTotal = ColumnIndex(invLo, "TOTAL INV")
+    colLastEdited = ColumnIndex(invLo, "LAST EDITED")
+    colTotalLastEdit = ColumnIndex(invLo, "TOTAL INV LAST EDIT")
+    If colShip = 0 Then
+        errNotes = "invSys table missing SHIPMENTS."
+        Exit Function
+    End If
+    If deductTotalInv And colTotal = 0 Then
+        errNotes = "invSys table missing TOTAL INV."
+        Exit Function
+    End If
+
+    For Each delta In deltas
+        If Not delta.Exists("System_Key") Then
+            errNotes = "Managed shipment delta is missing System_Key."
+            Exit Function
+        End If
+        systemKey = Trim$(NzStr(delta("System_Key")))
+        qtyValue = NzDbl(delta("QTY"))
+        If systemKey = "" Or qtyValue <= 0 Then
+            errNotes = "Managed shipment delta has invalid identity or quantity."
+            Exit Function
+        End If
+        If requiredByKey.Exists(systemKey) Then
+            requiredByKey(systemKey) = NzDbl(requiredByKey(systemKey)) + qtyValue
+        Else
+            requiredByKey.Add systemKey, qtyValue
+        End If
+    Next delta
+
+    For Each key In requiredByKey.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        If invRow Is Nothing Then
+            errNotes = "System_Key '" & CStr(key) & "' was not found in invSys."
+            Exit Function
+        End If
+        qtyValue = NzDbl(requiredByKey(key))
+        If qtyValue > NzDbl(invRow.Range.Cells(1, colShip).Value) + 0.0000001 Then
+            errNotes = "System_Key '" & CStr(key) & "' does not have sufficient staged SHIPMENTS."
+            Exit Function
+        End If
+        If deductTotalInv Then
+            If qtyValue > NzDbl(invRow.Range.Cells(1, colTotal).Value) + 0.0000001 Then
+                errNotes = "System_Key '" & CStr(key) & "' does not have sufficient TOTAL INV."
+                Exit Function
+            End If
+        End If
+    Next key
+
+    ApplyShipmentsSentDeltasBySystemKey = 0
+    For Each key In requiredByKey.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        qtyValue = NzDbl(requiredByKey(key))
+        Set shipCell = invRow.Range.Cells(1, colShip)
+        shipCell.Value = MaxDoubleShipping(0#, NzDbl(shipCell.Value) - qtyValue)
+        If deductTotalInv Then
+            Set totalCell = invRow.Range.Cells(1, colTotal)
+            WriteShippingTotalInvValue invRow, _
+                MaxDoubleShipping(0#, NzDbl(totalCell.Value) - qtyValue), _
+                "SHIPMENTS_SENT", errNotes
+            If colTotalLastEdit > 0 Then invRow.Range.Cells(1, colTotalLastEdit).Value = Now
+        End If
+        If colLastEdited > 0 Then invRow.Range.Cells(1, colLastEdited).Value = Now
+        ApplyShipmentsSentDeltasBySystemKey = _
+            ApplyShipmentsSentDeltasBySystemKey + qtyValue
+    Next key
 End Function
 
 Private Function ApplyDirectShipmentsSentDeltas(ByVal invLo As ListObject, ByVal deltas As Collection, ByRef errNotes As String) As Double
@@ -20904,28 +21636,28 @@ Private Function ApplyShipmentReleaseDeltasLocal(invLo As ListObject, deltas As 
     If deltas.Count = 0 Then Exit Function
 
     Dim colShip As Long: colShip = ColumnIndex(invLo, "SHIPMENTS")
-    Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
-    If colShip = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing SHIPMENTS/ROW columns."
+    If colShip = 0 Then
+        errNotes = "invSys table missing SHIPMENTS column."
         ApplyShipmentReleaseDeltasLocal = -1
         Exit Function
     End If
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
+        Dim rowVal As Long
+        If delta.Exists("ROW") Then rowVal = NzLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextValidate
 
         Dim invRow As ListRow
-        If allowMissingLocalStage Then
+        If allowMissingLocalStage And rowVal > 0 Then
             Set invRow = EnsureShipmentDeltaInventoryRowForApply(invLo, delta, rowVal, errNotes)
         Else
-            Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+            Set invRow = DeltaInventoryRow(invLo, delta)
         End If
         If invRow Is Nothing Then
-            AppendNote errNotes, "invSys ROW " & rowVal & " not found."
+            AppendNote errNotes, "invSys identity '" & CStr(DeltaInventoryIdentity(delta)) & "' not found."
             ApplyShipmentReleaseDeltasLocal = -1
             Exit Function
         End If
@@ -20943,14 +21675,15 @@ NextValidate:
     Next delta
 
     For Each delta In deltas
-        rowVal = CLng(delta("ROW"))
+        rowVal = 0
+        If delta.Exists("ROW") Then rowVal = NzLng(delta("ROW"))
         qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextApply
 
-        If allowMissingLocalStage Then
+        If allowMissingLocalStage And rowVal > 0 Then
             Set invRow = EnsureShipmentDeltaInventoryRowForApply(invLo, delta, rowVal, errNotes)
         Else
-            Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+            Set invRow = DeltaInventoryRow(invLo, delta)
         End If
         If invRow Is Nothing Then GoTo NextApply
         Set shipCell = invRow.Range.Cells(1, colShip)
@@ -21025,21 +21758,20 @@ Private Function ApplyUsedDeltasLocal(invLo As ListObject, deltas As Collection,
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
     Dim colTotalLastEdit As Long: colTotalLastEdit = ColumnIndex(invLo, "TOTAL INV LAST EDIT")
-    If colUsed = 0 Or colTotal = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing USED/TOTAL INV/ROW columns."
+    If colUsed = 0 Or colTotal = 0 Then
+        errNotes = "invSys table missing USED or TOTAL INV."
         ApplyUsedDeltasLocal = -1
         Exit Function
     End If
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextValidate
 
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then
-            AppendNote errNotes, "invSys ROW " & rowVal & " not found."
+            AppendNote errNotes, "invSys identity '" & CStr(DeltaInventoryIdentity(delta)) & "' not found."
             ApplyUsedDeltasLocal = -1
             Exit Function
         End If
@@ -21047,7 +21779,9 @@ Private Function ApplyUsedDeltasLocal(invLo As ListObject, deltas As Collection,
         Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotal)
         Dim available As Double: available = NzDbl(totalCell.Value)
         If qtyVal > available + 0.0000001 Then
-            AppendNote errNotes, "ROW " & rowVal & " requires " & Format$(qtyVal, "0.###") & " but only " & Format$(available, "0.###") & " available."
+            AppendNote errNotes, "Inventory identity '" & CStr(DeltaInventoryIdentity(delta)) & _
+                       "' requires " & Format$(qtyVal, "0.###") & " but only " & _
+                       Format$(available, "0.###") & " available."
             ApplyUsedDeltasLocal = -1
             Exit Function
         End If
@@ -21055,11 +21789,10 @@ NextValidate:
     Next delta
 
     For Each delta In deltas
-        rowVal = CLng(delta("ROW"))
         qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextApply
 
-        Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then GoTo NextApply
         Set totalCell = invRow.Range.Cells(1, colTotal)
         Dim usedCell As Range: Set usedCell = invRow.Range.Cells(1, colUsed)
@@ -21086,21 +21819,20 @@ Private Function ApplyMadeDeltasLocal(invLo As ListObject, deltas As Collection,
     Dim colMade As Long: colMade = ColumnIndex(invLo, "MADE")
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
-    If colMade = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing MADE/ROW columns."
+    If colMade = 0 Then
+        errNotes = "invSys table missing MADE."
         ApplyMadeDeltasLocal = -1
         Exit Function
     End If
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextApply
 
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then
-            AppendNote errNotes, "invSys ROW " & rowVal & " not found."
+            AppendNote errNotes, "invSys identity '" & CStr(DeltaInventoryIdentity(delta)) & "' not found."
             ApplyMadeDeltasLocal = -1
             Exit Function
         End If
@@ -21129,21 +21861,20 @@ Private Function ApplyMadeToInventoryDeltasLocal(invLo As ListObject, deltas As 
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
     Dim colTotalLastEdit As Long: colTotalLastEdit = ColumnIndex(invLo, "TOTAL INV LAST EDIT")
-    If colMade = 0 Or colTotal = 0 Or colRow = 0 Then
-        errNotes = "invSys table missing MADE/TOTAL INV/ROW columns."
+    If colMade = 0 Or colTotal = 0 Then
+        errNotes = "invSys table missing MADE or TOTAL INV."
         ApplyMadeToInventoryDeltasLocal = -1
         Exit Function
     End If
 
     Dim delta As Variant
     For Each delta In deltas
-        Dim rowVal As Long: rowVal = CLng(delta("ROW"))
         Dim qtyVal As Double: qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextValidate
 
-        Dim invRow As ListRow: Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Dim invRow As ListRow: Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then
-            AppendNote errNotes, "invSys ROW " & rowVal & " not found."
+            AppendNote errNotes, "invSys identity '" & CStr(DeltaInventoryIdentity(delta)) & "' not found."
             ApplyMadeToInventoryDeltasLocal = -1
             Exit Function
         End If
@@ -21151,7 +21882,9 @@ Private Function ApplyMadeToInventoryDeltasLocal(invLo As ListObject, deltas As 
         Dim madeCell As Range: Set madeCell = invRow.Range.Cells(1, colMade)
         Dim stagedQty As Double: stagedQty = NzDbl(madeCell.Value)
         If qtyVal > stagedQty + 0.0000001 Then
-            AppendNote errNotes, "ROW " & rowVal & " only has " & Format$(stagedQty, "0.###") & " staged in MADE but requires " & Format$(qtyVal, "0.###") & "."
+            AppendNote errNotes, "Inventory identity '" & CStr(DeltaInventoryIdentity(delta)) & _
+                       "' only has " & Format$(stagedQty, "0.###") & _
+                       " staged in MADE but requires " & Format$(qtyVal, "0.###") & "."
             ApplyMadeToInventoryDeltasLocal = -1
             Exit Function
         End If
@@ -21159,11 +21892,10 @@ NextValidate:
     Next delta
 
     For Each delta In deltas
-        rowVal = CLng(delta("ROW"))
         qtyVal = NzDbl(delta("QTY"))
         If qtyVal <= 0 Then GoTo NextApply
 
-        Set invRow = FindInvListRowByRowValue(invLo, rowVal)
+        Set invRow = DeltaInventoryRow(invLo, delta)
         If invRow Is Nothing Then GoTo NextApply
         Set madeCell = invRow.Range.Cells(1, colMade)
         Dim totalCell As Range: Set totalCell = invRow.Range.Cells(1, colTotal)

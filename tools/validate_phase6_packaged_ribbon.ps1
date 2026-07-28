@@ -233,9 +233,11 @@ $ribbonSpecs = @(
             @{ Id = "btnShippingConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "SHIP_POST"'; Execute = $false },
             @{ Id = "btnShippingCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "SHIP_POST"'; Execute = $false; Screentip = "Sign in as an invSys user" },
             @{ Id = "btnShippingSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
-            @{ Id = "btnShippingShipmentsForm"; Label = "Shipments"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" },
-            @{ Id = "btnShippingBoxBuilderForm"; Label = "Box Builder"; Macro = "modTS_Shipments.BtnOpenBoxBuilder"; Execute = $false; RequiredCapability = "SHIP_POST" },
-            @{ Id = "btnShippingBoxMakerForm"; Label = "Box Maker"; Macro = "modTS_Shipments.BtnOpenBoxMaker"; Execute = $false; RequiredCapability = "SHIP_POST" }
+            @{ Id = "btnShippingShipmentsForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" }
+        )
+        ForbiddenButtons = @(
+            "btnShippingBoxBuilderForm",
+            "btnShippingBoxMakerForm"
         )
     }
     @{
