@@ -142,6 +142,17 @@
         "properties": {
           "name": { "type": "string" },
           "sourcePath": { "type": "string" },
+          "layout": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["strategy", "minimum", "default", "expandedTest"],
+            "properties": {
+              "strategy": { "type": "string" },
+              "minimum": { "$ref": "#/$defs/formSize" },
+              "default": { "$ref": "#/$defs/formSize" },
+              "expandedTest": { "$ref": "#/$defs/formSize" }
+            }
+          },
           "controls": {
             "type": "array",
             "items": {
@@ -189,6 +200,15 @@
     "warnings": { "type": "array", "items": { "$ref": "#/$defs/warning" } }
   },
   "$defs": {
+    "formSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
     "ribbonNode": {
       "type": "object",
       "required": ["id", "nodeType", "label", "callbacks", "capabilityGate", "children"],

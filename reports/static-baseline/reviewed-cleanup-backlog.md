@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 1002
-- Reviewed candidates: 1004
+- Scanner candidates: 1006
+- Reviewed candidates: 1008
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 40 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 127 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 131 | Production-owned forms, services, and role package source. |
 | SHIPPING | 175 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 66 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 313 | Headless shared runtime and developer-support source in Core. |
@@ -49,8 +49,8 @@
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4606 |
-| src/Production/Modules/mProduction.bas | Production | 12810 |
+| src/Production/Forms/frmProduction.frm | Production | 4788 |
+| src/Production/Modules/mProduction.bas | Production | 12850 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 2175 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 1855 |
 | src/Shipping/Forms/frmShippingBoxMaker.frm | Shipping | 1564 |
@@ -672,6 +672,8 @@
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookBeforeClose | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookOpen | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.ClearProductionCheckRows | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.MoveLabelByCaption | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.PositionColumnHeaders | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -688,6 +690,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.CompleteProductionRunAfterCheckIn | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.CompleteProductionRunWithUsedPayload | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ComputeProductionBandBounds | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.CurrentProductionLayoutValidationReport | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.DiagnoseProductionInventoryReadModelForWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.EnsureButtonCustom | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.EnsureListObjectRowCountSafe | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -709,6 +712,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RestoreMadeStageColumns | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.ShowProductionLayoutForValidation | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelected | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelectedStage | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestProductionRecipesRuntimeRoundTrip | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

@@ -15,6 +15,7 @@ Attribute VB_Exposed = False
 '@RuntimeStubUserFormCode
 Option Explicit
 
+'@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=690 DefaultWidth=1110 DefaultHeight=690 ExpandedWidth=1350 ExpandedHeight=750
 Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
 Private Const RUN_LOADER_LINE_WIDTHS As String = "85 pt;0 pt;55 pt;155 pt;50 pt;45 pt;65 pt;0 pt"
 Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;180 pt;45 pt;220 pt;60 pt;70 pt;45 pt;105 pt;120 pt"
@@ -99,6 +100,7 @@ Private WithEvents mTxtTreePaletteQty As MSForms.TextBox
 Private WithEvents mTxtOutputReal As MSForms.TextBox
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
+Private mLayout As cOperationsAnchorManager
 Private mOperatorWorkbookCaptured As Boolean
 Private mInventoryRows As Variant
 Private mInventoryCacheLoaded As Boolean
@@ -119,8 +121,12 @@ Private mBuilderLineTableRows() As Long
 Private mBuilderLineTableRowCount As Long
 
 Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
-Private Const PRODUCTION_BASE_WIDTH As Double = 1110
-Private Const PRODUCTION_BASE_HEIGHT As Double = 690
+Private Const PRODUCTION_MIN_WIDTH As Double = 1110
+Private Const PRODUCTION_MIN_HEIGHT As Double = 690
+Private Const PRODUCTION_DEFAULT_WIDTH As Double = 1110
+Private Const PRODUCTION_DEFAULT_HEIGHT As Double = 690
+Private Const PRODUCTION_LAYOUT_TEST_MAX_WIDTH As Double = 1350
+Private Const PRODUCTION_LAYOUT_TEST_MAX_HEIGHT As Double = 750
 Private Const PRODUCTION_DEFAULT_ROW_BUDGET As Long = 50
 Private Const PRODUCTION_MAX_ROW_BUDGET As Long = 1000
 Private Const RUN_TREE_PARENT_MARKER As String = "__RUN_TREE_PARENT__"
@@ -149,15 +155,20 @@ End Sub
 Private Sub UserForm_Activate()
     On Error GoTo FailActivate
     If Not mResizeInitialized Then
+        mResizingLayout = True
         On Error Resume Next
         modProductionFormWindow.EnableResizable Me, True, True
+        modProductionFormWindow.ApplyDpiLayoutZoom Me
         On Error GoTo FailActivate
+        ConfigureProductionAnchors
+        mResizingLayout = False
         mResizeInitialized = True
     End If
     ResizeProductionLayout
     Exit Sub
 
 FailActivate:
+    mResizingLayout = False
     On Error Resume Next
     ShowStatus "Production form activation skipped: " & Err.Description
     On Error GoTo 0
@@ -227,6 +238,75 @@ End Function
 Public Function TestPageCount() As Long
     If mPages Is Nothing Then BuildLayout
     TestPageCount = mPages.Pages.Count
+End Function
+
+Public Function TestLayoutGeometryReportForSize(ByVal requestedWidth As Double, _
+                                                ByVal requestedHeight As Double, _
+                                                Optional ByVal pageIndex As Long = 2) As String
+    If Not mBuilt Then BuildLayout
+    Me.Width = requestedWidth
+    Me.Height = requestedHeight
+    ResizeProductionLayout
+    TestLayoutGeometryReportForSize = _
+        BuildLayoutGeometryReport(requestedWidth, requestedHeight, pageIndex)
+End Function
+
+Public Function TestPrepareLayoutForScreenshot(ByVal requestedWidth As Double, _
+                                               ByVal requestedHeight As Double, _
+                                               Optional ByVal pageIndex As Long = 2) As String
+    Me.Caption = "Production Layout Validation"
+    TestPrepareLayoutForScreenshot = _
+        TestLayoutGeometryReportForSize(requestedWidth, requestedHeight, pageIndex)
+End Function
+
+Public Function TestCurrentLayoutGeometryReport(Optional ByVal pageIndex As Long = 2) As String
+    TestCurrentLayoutGeometryReport = _
+        BuildLayoutGeometryReport(Me.Width, Me.Height, pageIndex)
+End Function
+
+Private Function BuildLayoutGeometryReport(ByVal requestedWidth As Double, _
+                                           ByVal requestedHeight As Double, _
+                                           ByVal pageIndex As Long) As String
+    Dim issueDetail As String
+    Dim outOfBoundsCount As Long
+    Dim overlapCount As Long
+    Dim i As Long
+    Dim windowStyle As String
+    Dim resultState As String
+
+    If pageIndex < 0 Then pageIndex = 0
+    If pageIndex >= mPages.Pages.Count Then pageIndex = mPages.Pages.Count - 1
+    mPages.Value = pageIndex
+    DoEvents
+
+    outOfBoundsCount = CountOutOfBoundsControls(Me, issueDetail)
+    overlapCount = CountOverlappingInteractiveControls(Me, issueDetail)
+    For i = 0 To mPages.Pages.Count - 1
+        outOfBoundsCount = outOfBoundsCount + _
+                           CountOutOfBoundsControls(mPages.Pages(i), issueDetail)
+        overlapCount = overlapCount + _
+                       CountOverlappingInteractiveControls(mPages.Pages(i), issueDetail)
+    Next i
+
+    Call modProductionFormWindow.EnableResizable(Me, True, True)
+    windowStyle = modProductionFormWindow.DiagnoseWindowStyle(Me)
+    resultState = "OK"
+    If Me.Width < PRODUCTION_MIN_WIDTH Or Me.Height < PRODUCTION_MIN_HEIGHT Then resultState = "FAIL"
+    If outOfBoundsCount <> 0 Or overlapCount <> 0 Then resultState = "FAIL"
+    If InStr(1, windowStyle, "Resizable=True", vbTextCompare) = 0 Then resultState = "FAIL"
+    If InStr(1, windowStyle, "Minimize=True", vbTextCompare) = 0 Then resultState = "FAIL"
+    If InStr(1, windowStyle, "Maximize=True", vbTextCompare) = 0 Then resultState = "FAIL"
+
+    BuildLayoutGeometryReport = resultState & _
+        "|Requested=" & Format$(requestedWidth, "0.0") & "x" & Format$(requestedHeight, "0.0") & _
+        "|Actual=" & Format$(Me.Width, "0.0") & "x" & Format$(Me.Height, "0.0") & _
+        "|Page=" & CStr(pageIndex) & _
+        "|Zoom=" & CStr(Me.Zoom) & _
+        "|Anchors=" & CStr(mLayout.RegisteredControlCount) & _
+        "|OutOfBounds=" & CStr(outOfBoundsCount) & _
+        "|Overlap=" & CStr(overlapCount) & _
+        "|WindowStyle=" & windowStyle & _
+        "|Detail=" & issueDetail
 End Function
 
 Public Function TestStatusText() As String
@@ -676,12 +756,12 @@ Private Sub BuildLayout()
     If mBuilt Then Exit Sub
 
     Me.Caption = "Production"
-    Me.Width = PRODUCTION_BASE_WIDTH
-    Me.Height = PRODUCTION_BASE_HEIGHT
+    Me.Width = PRODUCTION_DEFAULT_WIDTH
+    Me.Height = PRODUCTION_DEFAULT_HEIGHT
     Me.ScrollBars = fmScrollBarsBoth
     Me.KeepScrollBarsVisible = fmScrollBarsNone
-    Me.ScrollWidth = PRODUCTION_BASE_WIDTH - 20
-    Me.ScrollHeight = PRODUCTION_BASE_HEIGHT - 35
+    Me.ScrollWidth = PRODUCTION_MIN_WIDTH - 20
+    Me.ScrollHeight = PRODUCTION_MIN_HEIGHT - 35
 
     Set mPages = Me.Controls.Add("Forms.MultiPage.1", "mpProduction", True)
     With mPages
@@ -716,6 +796,7 @@ Private Sub BuildLayout()
     End With
     Set mBtnClose = AddButton(Me, "btnProductionClose", "Close", 930, 596, 150, 42)
 
+    ConfigureProductionAnchors
     mBuilt = True
     ResizeProductionLayout
 End Sub
@@ -798,14 +879,14 @@ End Sub
 Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Recipes", 12, 12, 140, 16
     AddColumnHeaders pg, "LoaderRecipes", Array("", "Recipe", "Description"), 12, 32, RUN_LOADER_RECIPE_WIDTHS
-    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 147, 3, RUN_LOADER_RECIPE_WIDTHS)
+    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 106, 3, RUN_LOADER_RECIPE_WIDTHS)
     Set mBtnLoaderRefresh = AddButton(pg, "btnLoaderRefresh", "Refresh", 300, 32, 130, 24)
     Set mBtnLoaderLoad = AddButton(pg, "btnLoaderLoad", "Load Recipe", 300, 64, 130, 24)
     Set mBtnLoaderClear = AddButton(pg, "btnLoaderClear", "Clear Run", 300, 96, 130, 24)
 
     AddLabel pg, "Loaded Recipe Lines", 455, 12, 180, 16
     AddColumnHeaders pg, "LoaderLines", Array("Process", "", "I/O", "Ingredient", "%", "UOM", "Amount", ""), 455, 32, RUN_LOADER_LINE_WIDTHS
-    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 50, 575, 147, 8, RUN_LOADER_LINE_WIDTHS)
+    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 50, 575, 106, 8, RUN_LOADER_LINE_WIDTHS)
 
     AddLabel pg, "Process", 12, 170, 60, 16
     Set mCmbRunProcess = AddCombo(pg, "cmbRunProcess", 75, 166, 160, 22)
@@ -941,134 +1022,235 @@ Private Sub ResizeProductionLayout()
     If mResizingLayout Then Exit Sub
     mResizingLayout = True
 
-    Dim layoutW As Double
-    Dim layoutH As Double
-    layoutW = MaxDoubleForm(PRODUCTION_BASE_WIDTH - 20, Me.InsideWidth)
-    layoutH = MaxDoubleForm(PRODUCTION_BASE_HEIGHT - 35, Me.InsideHeight)
-
-    Me.ScrollWidth = layoutW
-    Me.ScrollHeight = layoutH
-
-    If Not mPages Is Nothing Then
-        mPages.Move 12, 10, MaxDoubleForm(720, layoutW - 40), MaxDoubleForm(460, layoutH - 115)
-    End If
-    If Not mTxtStatus Is Nothing Then
-        mTxtStatus.Move 12, layoutH - 84, MaxDoubleForm(360, layoutW - 210), 42
-    End If
-    If Not mBtnClose Is Nothing Then
-        mBtnClose.Move layoutW - 170, layoutH - 84, 150, 42
-    End If
-
-    ResizeProductionPages
+    If Not mLayout Is Nothing Then mLayout.ApplyAnchoredLayout
 
 CleanExit:
     mResizingLayout = False
 End Sub
 
-Private Sub ResizeProductionPages()
-    Dim pageW As Double
-    Dim pageH As Double
-    Dim runListLeft As Double
-    Dim runListWidth As Double
-    Dim paletteTop As Double
-    Dim paletteHeight As Double
-    Dim checkTop As Double
-    Dim checkHeight As Double
-    Dim outputTop As Double
-    Dim outputHeight As Double
-    Dim controlsTop As Double
-    Dim availableRunHeight As Double
-    Dim remainingRunHeight As Double
+Private Sub ConfigureProductionAnchors()
+    Set mLayout = modOperationsLayout.OperationsAnchorManager()
+    mLayout.ConfigureForForm Me, PRODUCTION_MIN_WIDTH, PRODUCTION_MIN_HEIGHT
 
-    If mPages Is Nothing Then Exit Sub
-    pageW = MaxDoubleForm(700, mPages.Width - 20)
-    pageH = MaxDoubleForm(420, mPages.Height - 45)
+    mLayout.RegisterControl mPages, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                    OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mTxtStatus, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or _
+                                        OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mBtnClose, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
 
-    If Not mLstBuilderRecipes Is Nothing Then mLstBuilderRecipes.Height = MaxDoubleForm(130, pageH - 300)
-    If Not mLstBuilderLines Is Nothing Then
-        mLstBuilderLines.Width = MaxDoubleForm(520, pageW - 40)
-        mLstBuilderLines.Height = MaxDoubleForm(120, pageH - mLstBuilderLines.Top - 18)
+    ConfigureRecipeBuilderAnchors
+    ConfigureAssignmentAnchors
+    ConfigureRunListAnchors
+    ConfigureRunTreeAnchors
+End Sub
+
+Private Sub ConfigureRecipeBuilderAnchors()
+    Dim rightTop As Long
+    rightTop = OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+
+    mLayout.RegisterControl mLstBuilderRecipes, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtRecipeName, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                           OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mTxtRecipeId, rightTop
+    mLayout.RegisterControl mTxtRecipeRowBudget, rightTop
+    mLayout.RegisterControl mTxtRecipeDescription, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                                  OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mBtnBuilderRefresh, rightTop
+    mLayout.RegisterControl mBtnBuilderNew, rightTop
+    mLayout.RegisterControl mBtnBuilderLoad, rightTop
+    mLayout.RegisterControl mBtnBuilderSave, rightTop
+    mLayout.RegisterControl mBtnBuilderProcess, rightTop
+    mLayout.RegisterControl mBtnBuilderFormulas, rightTop
+    mLayout.RegisterControl mBtnBuilderClear, rightTop
+    mLayout.RegisterControl mBtnBuilderRelease, rightTop
+    mLayout.RegisterControl mLstBuilderLines, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                             OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+End Sub
+
+Private Sub ConfigureAssignmentAnchors()
+    Dim rightTop As Long
+    rightTop = OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+
+    mLayout.RegisterControl mLstAssignRecipes, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstAssignIngredients, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                                  OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mBtnAssignIngredient, rightTop
+    mLayout.RegisterControl mBtnAssignSave, rightTop
+    mLayout.RegisterControl mBtnAssignClear, rightTop
+    mLayout.RegisterControl mLstAssignInventory, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                                OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mLstAssignAllowed, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP Or _
+                                              OPERATIONS_ANCHOR_BOTTOM
+End Sub
+
+Private Sub ConfigureRunListAnchors()
+    Dim leftRightTop As Long
+    Dim leftBottom As Long
+
+    leftRightTop = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+    leftBottom = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_BOTTOM
+
+    mLayout.RegisterControl mLstLoaderLines, leftRightTop
+    mLayout.RegisterControl mBtnRunApplyPalette, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstRunPalette, leftRightTop
+    mLayout.RegisterControl mLstManagerCheck, leftRightTop
+    mLayout.RegisterControl mLstManagerOutput, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                              OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mTxtOutputReal, leftBottom
+    mLayout.RegisterControl mBtnManagerCheckIn, leftBottom
+    mLayout.RegisterControl mBtnManagerApplyOutput, leftBottom
+    mLayout.RegisterControl mBtnManagerRefresh, leftBottom
+    mLayout.RegisterControl mBtnManagerNext, leftBottom
+    mLayout.RegisterControl mBtnManagerPrint, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    AddCaptionAnchors mPages.Pages(2), "Real Output", leftBottom
+End Sub
+
+Private Sub ConfigureRunTreeAnchors()
+    Dim rightTop As Long
+    rightTop = OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+
+    mLayout.RegisterControl mTxtTreePaletteSplit, rightTop
+    mLayout.RegisterControl mTxtTreePaletteQty, rightTop
+    mLayout.RegisterControl mBtnRunTreeApplyPalette, rightTop
+    mLayout.RegisterControl mCmbTreeRunProcess, rightTop
+    mLayout.RegisterControl mCmbTreeRunLocation, rightTop
+    mLayout.RegisterControl mLstRunTree, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
+                                         OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mBtnRunTreeExpandAll, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+    mLayout.RegisterControl mBtnRunTreeCollapseAll, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
+End Sub
+
+Private Sub AddCaptionAnchors(ByVal parent As Object, ByVal caption As String, ByVal anchorMask As Long)
+    Dim ctl As MSForms.Control
+
+    For Each ctl In parent.Controls
+        If TypeName(ctl) = "Label" Then
+            If StrComp(CStr(ctl.Caption), caption, vbTextCompare) = 0 Then
+                mLayout.RegisterControl ctl, anchorMask
+            End If
+        End If
+    Next ctl
+End Sub
+
+Private Function CountOutOfBoundsControls(ByVal parent As Object, ByRef issueDetail As String) As Long
+    Dim ctl As Object
+    Dim parentWidth As Double
+    Dim parentHeight As Double
+
+    parentWidth = LayoutParentExtent(parent, True)
+    parentHeight = LayoutParentExtent(parent, False)
+    For Each ctl In parent.Controls
+        If IsDirectLayoutChild(ctl, parent) And ctl.Visible Then
+            If CDbl(ctl.Left) < -0.5 Or CDbl(ctl.Top) < -0.5 Or _
+               CDbl(ctl.Left) + CDbl(ctl.Width) > parentWidth + 1 Or _
+               CDbl(ctl.Top) + CDbl(ctl.Height) > parentHeight + 1 Then
+                CountOutOfBoundsControls = CountOutOfBoundsControls + 1
+                AppendLayoutIssue issueDetail, _
+                    "BOUNDS:" & CStr(ctl.Name) & "@" & LayoutControlRectangleText(ctl) & _
+                    "/P=" & Format$(parentWidth, "0") & "x" & Format$(parentHeight, "0")
+            End If
+        End If
+    Next ctl
+End Function
+
+Private Function CountOverlappingInteractiveControls(ByVal parent As Object, _
+                                                     ByRef issueDetail As String) As Long
+    Dim leftControl As Object
+    Dim rightControl As Object
+    Dim leftIndex As Long
+    Dim rightIndex As Long
+
+    For leftIndex = 0 To parent.Controls.Count - 2
+        Set leftControl = parent.Controls.Item(leftIndex)
+        If IsDirectLayoutChild(leftControl, parent) And _
+           IsInteractiveLayoutControl(leftControl) Then
+            For rightIndex = leftIndex + 1 To parent.Controls.Count - 1
+                Set rightControl = parent.Controls.Item(rightIndex)
+                If IsDirectLayoutChild(rightControl, parent) And _
+                   IsInteractiveLayoutControl(rightControl) Then
+                    If LayoutRectanglesOverlap(leftControl, rightControl) Then
+                        CountOverlappingInteractiveControls = _
+                            CountOverlappingInteractiveControls + 1
+                        AppendLayoutIssue issueDetail, _
+                            "OVERLAP:" & CStr(leftControl.Name) & "@" & _
+                            LayoutControlRectangleText(leftControl) & "+" & _
+                            CStr(rightControl.Name) & "@" & _
+                            LayoutControlRectangleText(rightControl)
+                    End If
+                End If
+            Next rightIndex
+        End If
+    Next leftIndex
+End Function
+
+Private Function LayoutControlRectangleText(ByVal ctl As Object) As String
+    LayoutControlRectangleText = _
+        Format$(CDbl(ctl.Left), "0") & "," & Format$(CDbl(ctl.Top), "0") & "," & _
+        Format$(CDbl(ctl.Width), "0") & "," & Format$(CDbl(ctl.Height), "0")
+End Function
+
+Private Function IsDirectLayoutChild(ByVal ctl As Object, ByVal expectedParent As Object) As Boolean
+    Dim actualParent As Object
+
+    On Error Resume Next
+    Set actualParent = CallByName(ctl, "Container", VbGet)
+    If actualParent Is Nothing Then
+        Err.Clear
+        Set actualParent = ctl.Parent
     End If
+    IsDirectLayoutChild = (actualParent Is expectedParent)
+    On Error GoTo 0
+End Function
 
-    If Not mLstAssignRecipes Is Nothing Then mLstAssignRecipes.Height = MaxDoubleForm(115, pageH - 335)
-    If Not mLstAssignIngredients Is Nothing Then mLstAssignIngredients.Width = MaxDoubleForm(300, pageW - mLstAssignIngredients.Left - 380)
-    If Not mTxtInventorySearch Is Nothing Then mTxtInventorySearch.Width = MaxDoubleForm(150, pageW - 810)
-    If Not mLstAssignInventory Is Nothing Then
-        mLstAssignInventory.Width = MaxDoubleForm(360, (pageW - 58) / 2)
-        mLstAssignInventory.Height = MaxDoubleForm(130, pageH - mLstAssignInventory.Top - 18)
+Private Function IsInteractiveLayoutControl(ByVal ctl As Object) As Boolean
+    If Not ctl.Visible Then Exit Function
+    Select Case TypeName(ctl)
+        Case "CommandButton", "ComboBox", "ListBox", "MultiPage", "TextBox"
+            IsInteractiveLayoutControl = True
+    End Select
+End Function
+
+Private Function LayoutRectanglesOverlap(ByVal leftControl As Object, _
+                                         ByVal rightControl As Object) As Boolean
+    LayoutRectanglesOverlap = _
+        (CDbl(leftControl.Left) < CDbl(rightControl.Left) + CDbl(rightControl.Width) - 0.5) And _
+        (CDbl(rightControl.Left) < CDbl(leftControl.Left) + CDbl(leftControl.Width) - 0.5) And _
+        (CDbl(leftControl.Top) < CDbl(rightControl.Top) + CDbl(rightControl.Height) - 0.5) And _
+        (CDbl(rightControl.Top) < CDbl(leftControl.Top) + CDbl(leftControl.Height) - 0.5)
+End Function
+
+Private Function LayoutParentExtent(ByVal parent As Object, _
+                                    ByVal horizontal As Boolean) As Double
+    Dim pageHost As Object
+    Dim primaryProperty As String
+    Dim fallbackProperty As String
+
+    On Error Resume Next
+    If horizontal Then
+        primaryProperty = "InsideWidth"
+        fallbackProperty = "Width"
+    Else
+        primaryProperty = "InsideHeight"
+        fallbackProperty = "Height"
     End If
-    If Not mLstAssignAllowed Is Nothing And Not mLstAssignInventory Is Nothing Then
-        mLstAssignAllowed.Left = mLstAssignInventory.Left + mLstAssignInventory.Width + 18
-        mLstAssignAllowed.Width = MaxDoubleForm(320, pageW - mLstAssignAllowed.Left - 28)
-        mLstAssignAllowed.Height = mLstAssignInventory.Height
+    If TypeName(parent) = "Page" Then
+        Set pageHost = parent.Parent
+        LayoutParentExtent = CDbl(CallByName(pageHost, fallbackProperty, VbGet)) - 20
+        On Error GoTo 0
+        Exit Function
     End If
-
-    If Not mLstLoaderRecipes Is Nothing Then mLstLoaderRecipes.Height = 112
-    If Not mBtnLoaderRefresh Is Nothing Then mBtnLoaderRefresh.Top = 32
-    If Not mBtnLoaderLoad Is Nothing Then mBtnLoaderLoad.Top = 64
-    If Not mBtnLoaderClear Is Nothing Then mBtnLoaderClear.Top = 96
-    If Not mLstLoaderLines Is Nothing Then
-        mLstLoaderLines.Width = MaxDoubleForm(420, pageW - mLstLoaderLines.Left - 30)
-        mLstLoaderLines.Height = 112
+    LayoutParentExtent = CDbl(CallByName(parent, primaryProperty, VbGet))
+    If Err.Number <> 0 Then
+        Err.Clear
+        LayoutParentExtent = CDbl(CallByName(parent, fallbackProperty, VbGet))
     End If
+    On Error GoTo 0
+End Function
 
-    runListLeft = 12
-    runListWidth = MaxDoubleForm(640, pageW - 40)
-
-    If Not mCmbRunProcess Is Nothing Then mCmbRunProcess.Move 75, 166, 160, 22
-    If Not mCmbRunLocation Is Nothing Then mCmbRunLocation.Move 345, 166, 160, 22
-    If Not mTxtPaletteSplit Is Nothing Then mTxtPaletteSplit.Move 640, 166, 90, 22
-    If Not mTxtPaletteQty Is Nothing Then mTxtPaletteQty.Move 790, 166, 90, 22
-    If Not mBtnRunApplyPalette Is Nothing Then mBtnRunApplyPalette.Move 900, 165, 90, 24
-
-    paletteTop = 220
-    controlsTop = MaxDoubleForm(520, pageH - 34)
-    availableRunHeight = MaxDoubleForm(225, controlsTop - paletteTop - 84)
-    paletteHeight = MaxDoubleForm(82, availableRunHeight * 0.4)
-    MoveLabelByCaption mPages.Pages(2), "Acceptable Inventory For Run", runListLeft, paletteTop - 38, 230, 16
-    If Not mLstRunPalette Is Nothing Then
-        mLstRunPalette.Move runListLeft, paletteTop, runListWidth, paletteHeight
-        PositionColumnHeaders mPages.Pages(2), "RunPalette", runListLeft, paletteTop - 18, RUN_PALETTE_WIDTHS
-    End If
-
-    checkTop = paletteTop + paletteHeight + 42
-    remainingRunHeight = MaxDoubleForm(120, controlsTop - checkTop - 42)
-    checkHeight = MaxDoubleForm(62, remainingRunHeight * 0.45)
-    MoveLabelByCaption mPages.Pages(2), "Inventory Check", runListLeft, checkTop - 38, 150, 16
-    If Not mLstManagerCheck Is Nothing And Not mLstRunPalette Is Nothing Then
-        mLstManagerCheck.Move runListLeft, checkTop, runListWidth, checkHeight
-        PositionColumnHeaders mPages.Pages(2), "ManagerCheck", runListLeft, checkTop - 18, RUN_CHECK_WIDTHS
-    End If
-
-    outputTop = checkTop + checkHeight + 42
-    outputHeight = MaxDoubleForm(58, controlsTop - outputTop - 14)
-    MoveLabelByCaption mPages.Pages(2), "Production Output", runListLeft, outputTop - 38, 170, 16
-    If Not mLstManagerOutput Is Nothing And Not mLstManagerCheck Is Nothing Then
-        mLstManagerOutput.Move runListLeft, outputTop, runListWidth, outputHeight
-        PositionColumnHeaders mPages.Pages(2), "ManagerOutput", runListLeft, outputTop - 18, RUN_OUTPUT_WIDTHS
-    End If
-
-    MoveLabelByCaption mPages.Pages(2), "Real Output", 12, controlsTop, 80, 16
-    If Not mTxtOutputReal Is Nothing Then mTxtOutputReal.Move 100, controlsTop - 4, 105, 22
-    If Not mBtnManagerCheckIn Is Nothing Then mBtnManagerCheckIn.Move 230, controlsTop - 6, 95, 24
-    If Not mBtnManagerApplyOutput Is Nothing Then mBtnManagerApplyOutput.Move 340, controlsTop - 6, 120, 24
-    If Not mBtnManagerRefresh Is Nothing Then mBtnManagerRefresh.Move 480, controlsTop - 6, 95, 24
-    If Not mBtnManagerNext Is Nothing Then mBtnManagerNext.Move 595, controlsTop - 6, 120, 24
-    If Not mBtnManagerPrint Is Nothing Then
-        mBtnManagerPrint.Move 735, controlsTop - 6, 120, 24
-        If pageW > 930 Then mBtnManagerPrint.Left = pageW - 180
-    End If
-
-    If Not mLstRunTree Is Nothing Then
-        mLstRunTree.Width = MaxDoubleForm(520, pageW - 40)
-        mLstRunTree.Height = MaxDoubleForm(260, pageH - mLstRunTree.Top - 18)
-    End If
-    If Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeCollapseAll.Left = MaxDoubleForm(150, pageW - 85)
-    If Not mBtnRunTreeExpandAll Is Nothing And Not mBtnRunTreeCollapseAll Is Nothing Then mBtnRunTreeExpandAll.Left = mBtnRunTreeCollapseAll.Left - 66
-    If Not mCmbTreeRunLocation Is Nothing And Not mBtnRunTreeExpandAll Is Nothing Then mCmbTreeRunLocation.Left = mBtnRunTreeExpandAll.Left - 115
-    If Not mBtnRunTreeApplyPalette Is Nothing And Not mCmbTreeRunLocation Is Nothing Then mBtnRunTreeApplyPalette.Left = mCmbTreeRunLocation.Left - 88
-    If Not mTxtTreePaletteQty Is Nothing And Not mBtnRunTreeApplyPalette Is Nothing Then mTxtTreePaletteQty.Left = mBtnRunTreeApplyPalette.Left - 92
-    If Not mTxtTreePaletteSplit Is Nothing And Not mTxtTreePaletteQty Is Nothing Then mTxtTreePaletteSplit.Left = mTxtTreePaletteQty.Left - 120
+Private Sub AppendLayoutIssue(ByRef issueDetail As String, ByVal issueText As String)
+    If Len(issueDetail) >= 500 Then Exit Sub
+    If issueDetail <> "" Then issueDetail = issueDetail & ","
+    issueDetail = issueDetail & issueText
 End Sub
 
 Private Sub MoveLabelByCaption(ByVal parent As Object, ByVal caption As String, ByVal leftVal As Single, _

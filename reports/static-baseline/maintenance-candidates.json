@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
-                     "componentCount":  162,
-                     "procedureCount":  4578,
-                     "lineCount":  101077,
+                     "componentCount":  165,
+                     "procedureCount":  4611,
+                     "lineCount":  101552,
                      "literalApplicationRunCount":  10,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  190
@@ -868,6 +868,40 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "ClearProductionCheckRows"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.MoveLabelByCaption",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "MoveLabelByCaption"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.PositionColumnHeaders",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "PositionColumnHeaders"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -14439,6 +14473,7 @@
                                                   "ActiveRunQtyTextBox",
                                                   "ActiveRunSplitTextBox",
                                                   "AddButton",
+                                                  "AddCaptionAnchors",
                                                   "AddColumnHeaders",
                                                   "AddCombo",
                                                   "AddLabel",
@@ -14452,6 +14487,7 @@
                                                   "AddRunTreeOutputRowsForProcess",
                                                   "AddSelectedInventoryToAllowed",
                                                   "AddText",
+                                                  "AppendLayoutIssue",
                                                   "ApplyRunAllocationOverride",
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
@@ -14461,6 +14497,7 @@
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
                                                   "BuildLayout",
+                                                  "BuildLayoutGeometryReport",
                                                   "BuildLoaderPage",
                                                   "BuildRecipeBuilderPage",
                                                   "BuildRunTreeFromPaletteList",
@@ -14483,9 +14520,16 @@
                                                   "ColumnWidthPoints",
                                                   "ComboText",
                                                   "CompleteProductionRun",
+                                                  "ConfigureAssignmentAnchors",
+                                                  "ConfigureProductionAnchors",
+                                                  "ConfigureRecipeBuilderAnchors",
                                                   "ConfigureRecipeLineInputs",
+                                                  "ConfigureRunListAnchors",
+                                                  "ConfigureRunTreeAnchors",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
+                                                  "CountOutOfBoundsControls",
+                                                  "CountOverlappingInteractiveControls",
                                                   "CurrentRecipeRowBudget",
                                                   "EnsureComboValueForActionTest",
                                                   "EnsureRunBaseQtyMap",
@@ -14514,10 +14558,15 @@
                                                   "InitializeFromProduction",
                                                   "InventoryRowMatchesSearch",
                                                   "InventoryTable",
+                                                  "IsDirectLayoutChild",
+                                                  "IsInteractiveLayoutControl",
                                                   "IsRunPaletteTable",
                                                   "IsRunTreeOutputRow",
                                                   "IsRunTreeParentRow",
                                                   "IsUsableWorkbook",
+                                                  "LayoutControlRectangleText",
+                                                  "LayoutParentExtent",
+                                                  "LayoutRectanglesOverlap",
                                                   "LineIoValue",
                                                   "LoadSelectedBuilderLine",
                                                   "LoadSelectedProductionOutput",
@@ -14626,7 +14675,6 @@
                                                   "ResequenceRecipeBuilderLines",
                                                   "ResetInventoryCache",
                                                   "ResizeProductionLayout",
-                                                  "ResizeProductionPages",
                                                   "ResolveOperatorWorkbook",
                                                   "ResolveRunSystemKey",
                                                   "RunAllocationGroupKeyFromList",
@@ -14671,10 +14719,13 @@
                                                   "TestAssignmentIngredientProcessForRecipe",
                                                   "TestAssignmentItemRowsGrowWithoutTableCollision",
                                                   "TestAssignmentOutputSelectionClearsStaging",
+                                                  "TestCurrentLayoutGeometryReport",
                                                   "TestFillAssignmentIoCount",
                                                   "TestFilterAssignmentInventoryCount",
                                                   "TestInitializeForWorkbook",
+                                                  "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
+                                                  "TestPrepareLayoutForScreenshot",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
                                                   "TestProductionOutputDisplayedBatch",
                                                   "TestProductionRunLocationAllowed",
@@ -14809,6 +14860,7 @@
                                                   "ClearTemplatesForScope",
                                                   "ClearUsedStageByItemCode",
                                                   "ClearUsedStageColumns",
+                                                  "CloseProductionLayoutValidation",
                                                   "CloseWorkbookNoSaveProduction",
                                                   "CollectUsedRecipeIdsProduction",
                                                   "ColumnIndex",
@@ -14823,6 +14875,7 @@
                                                   "CreateEmptyDesignRecipeStagingWorkbook",
                                                   "CreateProductionGuid",
                                                   "CreateRecipeProcessTable",
+                                                  "CurrentProductionLayoutValidationReport",
                                                   "CurrentProductionUserId",
                                                   "CurrentProductionWarehouseId",
                                                   "DeleteCheckboxesByPrefix",
@@ -15103,6 +15156,7 @@
                                                   "ShapeExists",
                                                   "SheetExists",
                                                   "ShowProductionForm",
+                                                  "ShowProductionLayoutForValidation",
                                                   "ShowProductionStatus",
                                                   "SortedKeys",
                                                   "SplitTokens",
@@ -19767,6 +19821,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.CurrentProductionLayoutValidationReport",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "CurrentProductionLayoutValidationReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.DiagnoseProductionInventoryReadModelForWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -19943,6 +20014,23 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "RepairLastCompletedProductionRun"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ShowProductionLayoutForValidation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ShowProductionLayoutForValidation"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"

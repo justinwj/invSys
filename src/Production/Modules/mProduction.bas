@@ -77,6 +77,7 @@ Private mSystemGroupsInit As Boolean
 Private mSystemGroupNames(1 To 4) As String
 Private mSystemGroupTables(1 To 4) As Variant
 Private mProductionOperatorWorkbook As Workbook
+Private mProductionLayoutValidationForm As frmProduction
 
 Public Sub BindProductionOperatorWorkbook(ByVal operatorWb As Workbook)
     If operatorWb Is Nothing Then
@@ -226,6 +227,45 @@ CleanExit:
 ErrHandler:
     ProductionFormInitializeSmokeForWorkbook = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
     Resume CleanExit
+End Function
+
+Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
+                                                  ByVal requestedHeight As Double, _
+                                                  Optional ByVal pageIndex As Long = 2) As String
+    On Error GoTo FailValidation
+
+    CloseProductionLayoutValidation
+    Set mProductionLayoutValidationForm = New frmProduction
+    mProductionLayoutValidationForm.Show vbModeless
+    DoEvents
+    ShowProductionLayoutForValidation = _
+        mProductionLayoutValidationForm.TestPrepareLayoutForScreenshot( _
+            requestedWidth, requestedHeight, pageIndex)
+    DoEvents
+    Exit Function
+
+FailValidation:
+    ShowProductionLayoutForValidation = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Sub CloseProductionLayoutValidation()
+    On Error Resume Next
+    If Not mProductionLayoutValidationForm Is Nothing Then
+        Unload mProductionLayoutValidationForm
+    End If
+    Set mProductionLayoutValidationForm = Nothing
+    On Error GoTo 0
+End Sub
+
+Public Function CurrentProductionLayoutValidationReport( _
+    Optional ByVal pageIndex As Long = 2) As String
+    If mProductionLayoutValidationForm Is Nothing Then
+        CurrentProductionLayoutValidationReport = "FAIL|No validation form is open."
+        Exit Function
+    End If
+    CurrentProductionLayoutValidationReport = _
+        mProductionLayoutValidationForm.TestCurrentLayoutGeometryReport(pageIndex)
 End Function
 
 Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Workbook, _

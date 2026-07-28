@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "757a6678bfcbdc8d1d5a29cbe9f69a1492a562d5fc037768c8a9fc49c0f6e2cb",
-                          "maintenanceCandidatesSha256":  "d4089d8ad3e6c58288bea32719be0f056229395b1c6e5d251ccf6a7e09badaa2"
+                          "implementationManifestSha256":  "bcbe772d4e2978614d89430e0365d01ec59d21538f67727e059adac072826466",
+                          "maintenanceCandidatesSha256":  "3608aa1a294180513d1d36e6e24516bc2f1de52e5d717b7a1caa45a09c4145b3"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1002,
-                    "reviewedCandidateCount":  1004,
+                    "scannerCandidateCount":  1006,
+                    "reviewedCandidateCount":  1008,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  127,
+                            "candidateCount":  131,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -210,14 +210,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  4606,
+                                                  "baselineLineCount":  4788,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  12810,
+                                                  "baselineLineCount":  12850,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -15918,6 +15918,7 @@
                                                   "ActiveRunQtyTextBox",
                                                   "ActiveRunSplitTextBox",
                                                   "AddButton",
+                                                  "AddCaptionAnchors",
                                                   "AddColumnHeaders",
                                                   "AddCombo",
                                                   "AddLabel",
@@ -15931,6 +15932,7 @@
                                                   "AddRunTreeOutputRowsForProcess",
                                                   "AddSelectedInventoryToAllowed",
                                                   "AddText",
+                                                  "AppendLayoutIssue",
                                                   "ApplyRunAllocationOverride",
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
@@ -15940,6 +15942,7 @@
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
                                                   "BuildLayout",
+                                                  "BuildLayoutGeometryReport",
                                                   "BuildLoaderPage",
                                                   "BuildRecipeBuilderPage",
                                                   "BuildRunTreeFromPaletteList",
@@ -15962,9 +15965,16 @@
                                                   "ColumnWidthPoints",
                                                   "ComboText",
                                                   "CompleteProductionRun",
+                                                  "ConfigureAssignmentAnchors",
+                                                  "ConfigureProductionAnchors",
+                                                  "ConfigureRecipeBuilderAnchors",
                                                   "ConfigureRecipeLineInputs",
+                                                  "ConfigureRunListAnchors",
+                                                  "ConfigureRunTreeAnchors",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
+                                                  "CountOutOfBoundsControls",
+                                                  "CountOverlappingInteractiveControls",
                                                   "CurrentRecipeRowBudget",
                                                   "EnsureComboValueForActionTest",
                                                   "EnsureRunBaseQtyMap",
@@ -15993,10 +16003,15 @@
                                                   "InitializeFromProduction",
                                                   "InventoryRowMatchesSearch",
                                                   "InventoryTable",
+                                                  "IsDirectLayoutChild",
+                                                  "IsInteractiveLayoutControl",
                                                   "IsRunPaletteTable",
                                                   "IsRunTreeOutputRow",
                                                   "IsRunTreeParentRow",
                                                   "IsUsableWorkbook",
+                                                  "LayoutControlRectangleText",
+                                                  "LayoutParentExtent",
+                                                  "LayoutRectanglesOverlap",
                                                   "LineIoValue",
                                                   "LoadSelectedBuilderLine",
                                                   "LoadSelectedProductionOutput",
@@ -16105,7 +16120,6 @@
                                                   "ResequenceRecipeBuilderLines",
                                                   "ResetInventoryCache",
                                                   "ResizeProductionLayout",
-                                                  "ResizeProductionPages",
                                                   "ResolveOperatorWorkbook",
                                                   "ResolveRunSystemKey",
                                                   "RunAllocationGroupKeyFromList",
@@ -16150,10 +16164,13 @@
                                                   "TestAssignmentIngredientProcessForRecipe",
                                                   "TestAssignmentItemRowsGrowWithoutTableCollision",
                                                   "TestAssignmentOutputSelectionClearsStaging",
+                                                  "TestCurrentLayoutGeometryReport",
                                                   "TestFillAssignmentIoCount",
                                                   "TestFilterAssignmentInventoryCount",
                                                   "TestInitializeForWorkbook",
+                                                  "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
+                                                  "TestPrepareLayoutForScreenshot",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
                                                   "TestProductionOutputDisplayedBatch",
                                                   "TestProductionRunLocationAllowed",
@@ -16294,6 +16311,7 @@
                                                   "ClearTemplatesForScope",
                                                   "ClearUsedStageByItemCode",
                                                   "ClearUsedStageColumns",
+                                                  "CloseProductionLayoutValidation",
                                                   "CloseWorkbookNoSaveProduction",
                                                   "CollectUsedRecipeIdsProduction",
                                                   "ColumnIndex",
@@ -16308,6 +16326,7 @@
                                                   "CreateEmptyDesignRecipeStagingWorkbook",
                                                   "CreateProductionGuid",
                                                   "CreateRecipeProcessTable",
+                                                  "CurrentProductionLayoutValidationReport",
                                                   "CurrentProductionUserId",
                                                   "CurrentProductionWarehouseId",
                                                   "DeleteCheckboxesByPrefix",
@@ -16588,6 +16607,7 @@
                                                   "ShapeExists",
                                                   "SheetExists",
                                                   "ShowProductionForm",
+                                                  "ShowProductionLayoutForValidation",
                                                   "ShowProductionStatus",
                                                   "SortedKeys",
                                                   "SplitTokens",
@@ -16904,6 +16924,52 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "ClearProductionCheckRows"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.MoveLabelByCaption",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "MoveLabelByCaption"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.PositionColumnHeaders",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "PositionColumnHeaders"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -17282,6 +17348,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.CurrentProductionLayoutValidationReport",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "CurrentProductionLayoutValidationReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.DiagnoseProductionInventoryReadModelForWorkbook",
@@ -17765,6 +17854,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ShowProductionLayoutForValidation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ShowProductionLayoutForValidation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelected",

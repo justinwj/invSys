@@ -823,7 +823,7 @@ function Get-FormControls {
                 [double]$propertyMatch.Groups[2].Value
         }
     }
-    return [ordered]@{
+    $form = [ordered]@{
         name = $FormName
         sourcePath = $SourcePath
         controls = @(
@@ -831,6 +831,32 @@ function Get-FormControls {
                 Sort-Object { ([string]$_.owner) + "|" + ([string]$_.name) }
         )
     }
+    $layoutMatch = [regex]::Match(
+        ($Lines -join "`n"),
+        "(?im)^\s*'@FormLayout\s+" +
+        "Strategy=(?<strategy>[A-Za-z0-9_]+)\s+" +
+        "MinWidth=(?<minWidth>[0-9.]+)\s+MinHeight=(?<minHeight>[0-9.]+)\s+" +
+        "DefaultWidth=(?<defaultWidth>[0-9.]+)\s+DefaultHeight=(?<defaultHeight>[0-9.]+)\s+" +
+        "ExpandedWidth=(?<expandedWidth>[0-9.]+)\s+ExpandedHeight=(?<expandedHeight>[0-9.]+)\s*$"
+    )
+    if ($layoutMatch.Success) {
+        $form["layout"] = [ordered]@{
+            strategy = $layoutMatch.Groups["strategy"].Value
+            minimum = [ordered]@{
+                width = [double]$layoutMatch.Groups["minWidth"].Value
+                height = [double]$layoutMatch.Groups["minHeight"].Value
+            }
+            default = [ordered]@{
+                width = [double]$layoutMatch.Groups["defaultWidth"].Value
+                height = [double]$layoutMatch.Groups["defaultHeight"].Value
+            }
+            expandedTest = [ordered]@{
+                width = [double]$layoutMatch.Groups["expandedWidth"].Value
+                height = [double]$layoutMatch.Groups["expandedHeight"].Value
+            }
+        }
+    }
+    return $form
 }
 
 $resolvedSourceRoot = Resolve-RequiredPath -Path $SourceRoot -Description "Source root"

@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-07-27T20:00:00Z
 - Packages: 8
-- Components: 162
-- Procedures: 4578
+- Components: 165
+- Procedures: 4611
 - Literal Application.Run targets: 10
 - Unresolved dynamic calls: 48
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 58 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 39 |
+| OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 42 |
 | Production | invSys_Production | invSys.Production.xlam | 0 |
 | Receiving | invSys_Receiving | invSys.Receiving.xlam | 0 |
 | Shipping | invSys_Shipping | invSys.Shipping.xlam | 0 |

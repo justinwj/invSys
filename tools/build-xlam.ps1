@@ -889,7 +889,11 @@ $projectMap = @(
         Project    = "invSys_Production"
         OutputFile = "invSys.Production.xlam"
         LegacyOutputFiles = @()
-        SourceDirs = @((Join-Path $repo "src/Production"))
+        SourceDirs = @(
+            (Join-Path $repo "src/Operations"),
+            (Join-Path $repo "src/Production")
+        )
+        ExcludeFiles = @("modOperationsInit.bas")
         References = @("Core")
         Sheets     = @("Production", "InventoryManagement", "Recipes")
         AddVbideReference = $false

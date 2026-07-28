@@ -417,6 +417,7 @@ try {
         (Join-Path $repo "src/DesignsDomain/Modules/modDesignsBridgeApi.bas"),
         (Join-Path $repo "src/Receiving/Modules/modReceivingInit.bas"),
         (Join-Path $repo "src/Shipping/Modules/modShippingEventCreator.bas"),
+        (Join-Path $repo "src/Operations/Modules/modOperationsLayout.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionEventCreator.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionJson.bas"),
         (Join-Path $repo "src/Production/Modules/modProductionFormWindow.bas"),
@@ -459,6 +460,8 @@ try {
         (Join-Path $repo "src/Core/ClassModules/WarehouseTarget.cls"),
         (Join-Path $repo "src/InventoryDomain/ClassModules/cInventoryAppEvents.cls"),
         (Join-Path $repo "src/Receiving/ClassModules/cReceivingAppEvents.cls"),
+        (Join-Path $repo "src/Operations/ClassModules/cOperationsAnchorItem.cls"),
+        (Join-Path $repo "src/Operations/ClassModules/cOperationsAnchorManager.cls"),
         (Join-Path $repo "src/Production/ClassModules/cProductionRunSession.cls"),
         (Join-Path $repo "src/Production/ClassModules/cProductionCompletionResult.cls")
     )
