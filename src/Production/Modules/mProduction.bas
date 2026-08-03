@@ -96,6 +96,17 @@ Public Sub ClearProductionOperatorWorkbookBinding(Optional ByVal operatorWb As W
     End If
 End Sub
 
+Public Sub HandleProductionOperatorWorkbookClosing(ByVal operatorWb As Workbook)
+    If operatorWb Is Nothing Then Exit Sub
+    If mProductionOperatorWorkbook Is Nothing Then Exit Sub
+    If Not mProductionOperatorWorkbook Is operatorWb Then Exit Sub
+
+    On Error Resume Next
+    Unload frmProduction
+    Set mProductionOperatorWorkbook = Nothing
+    On Error GoTo 0
+End Sub
+
 Public Sub InitializeProductionUI()
     InitializeProductionUiForWorkbook Application.ActiveWorkbook
 End Sub
@@ -118,12 +129,43 @@ End Sub
 Public Sub BtnOpenProductionForm()
     On Error GoTo ErrHandler
 
-    If Not modRoleUiAccess.RequireCurrentUserCapability("PROD_POST") Then Exit Sub
-    ShowProductionForm Application.ActiveWorkbook
+    Dim launcherStage As String
+    Dim preferredWorkbookName As String
+    Dim workbookName As String
+    Dim report As String
+    Dim wb As Workbook
+
+    launcherStage = "capability"
+    If Not modRoleUiAccess.RequireCurrentUserCapabilityCached("PROD_POST") Then Exit Sub
+
+    launcherStage = "capture active workbook"
+    If Not Application.ActiveWorkbook Is Nothing Then
+        preferredWorkbookName = Application.ActiveWorkbook.Name
+    End If
+
+    launcherStage = "resolve or provision Production workbook"
+    If Not modOperationsPrimitiveBridge.OpenOrCreateCurrentRoleOperatorWorkbook( _
+            preferredWorkbookName, "PRODUCTION", workbookName, report) Then
+        If Trim$(report) = "" Then
+            report = "The station-local Production operator workbook could not be opened."
+        End If
+        MsgBox report, vbExclamation
+        Exit Sub
+    End If
+
+    launcherStage = "capture resolved Production workbook"
+    Set wb = modOperationsInit.ResolveOpenWorkbookByName(workbookName)
+    If wb Is Nothing Then
+        MsgBox "The resolved Production operator workbook is no longer open.", vbExclamation
+        Exit Sub
+    End If
+
+    launcherStage = "show production form"
+    ShowProductionForm wb
     Exit Sub
 
 ErrHandler:
-    MsgBox "Production form failed: " & Err.Description, vbCritical
+    ShowProductionLauncherError launcherStage, Err.Number, Err.Source, Err.Description
 End Sub
 
 Public Sub ShowProductionForm(Optional ByVal targetWb As Workbook = Nothing)
@@ -132,29 +174,44 @@ Public Sub ShowProductionForm(Optional ByVal targetWb As Workbook = Nothing)
     Dim wb As Workbook
     Dim repairReport As String
     Dim quietStarted As Boolean
+    Dim launcherStage As String
+    Dim preferredWorkbookName As String
+    Dim workbookName As String
 
-    Set wb = ResolveProductionWorkbook(targetWb, SHEET_PRODUCTION)
-    If wb Is Nothing Then Set wb = ResolveProductionWorkbook(targetWb)
-    If wb Is Nothing Then Set wb = Application.ActiveWorkbook
+    launcherStage = "validate Production workbook"
+    If Not targetWb Is Nothing Then preferredWorkbookName = targetWb.Name
+    If Not modOperationsPrimitiveBridge.ResolveEligibleRoleOperatorWorkbookName( _
+            preferredWorkbookName, "PRODUCTION", workbookName, repairReport) Then
+        MsgBox repairReport, vbExclamation
+        Exit Sub
+    End If
+    Set wb = modOperationsInit.ResolveOpenWorkbookByName(workbookName)
     If wb Is Nothing Then
         MsgBox "Open a Production operator workbook before opening the Production form.", vbExclamation
         Exit Sub
     End If
 
+    launcherStage = "begin quiet UI"
     modOperationsPrimitiveBridge.BeginQuietUiForWorkbook wb.Name
     quietStarted = True
+    launcherStage = "repair Production surface"
     If Not modOperationsPrimitiveBridge.EnsureProductionWorkbookSurface(wb.Name, repairReport) Then
         If Trim$(repairReport) = "" Then repairReport = "Production surface repair failed without detail."
         MsgBox repairReport, vbCritical
         GoTo CleanExit
     End If
+    launcherStage = "initialize Production UI"
     InitializeProductionUiForWorkbook wb
+    launcherStage = "bind Production form"
     frmProduction.SetOperatorWorkbook wb
+    launcherStage = "initialize Production form"
     frmProduction.InitializeFromProduction
     If quietStarted Then
+        launcherStage = "end quiet UI"
         modUiQuiet.EndQuietUi
         quietStarted = False
     End If
+    launcherStage = "show Production form"
     frmProduction.Show vbModeless
 
 CleanExit:
@@ -164,8 +221,18 @@ CleanExit:
     Exit Sub
 
 ErrHandler:
-    MsgBox "Production form failed: " & Err.Description, vbCritical
+    ShowProductionLauncherError launcherStage, Err.Number, Err.Source, Err.Description
     Resume CleanExit
+End Sub
+
+Private Sub ShowProductionLauncherError(ByVal launcherStage As String, _
+                                        ByVal errorNumber As Long, _
+                                        ByVal errorSource As String, _
+                                        ByVal errorDescription As String)
+    MsgBox "Production form failed [Stage=" & Trim$(launcherStage) & _
+           "; Err.Number=" & CStr(errorNumber) & _
+           "; Err.Source=" & modOperationsInit.SanitizeLauncherErrorSource(errorSource) & _
+           "]: " & errorDescription, vbCritical
 End Sub
 
 Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
@@ -533,11 +600,6 @@ Private Function ResolveProductionWorkbook(Optional ByVal preferredWb As Workboo
         If Not ResolveProductionWorkbook Is Nothing Then Exit Function
     End If
 
-    If requiredSheet = "" Then
-        Set ResolveProductionWorkbook = ThisWorkbook
-    ElseIf Not WorkbookSheetExists(ThisWorkbook, requiredSheet) Is Nothing Then
-        Set ResolveProductionWorkbook = ThisWorkbook
-    End If
 End Function
 
 Private Function FindFirstOpenOperationalWorkbook() As Workbook

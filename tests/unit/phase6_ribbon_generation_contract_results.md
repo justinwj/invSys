@@ -1,13 +1,13 @@
 # Phase 6 Ribbon Generation Contract Results
 
-- Date: 2026-07-25 16:52:23
+- Date: 2026-07-28 18:55:10
 - Passed: 46
 - Failed: 0
 
 | Check | Result | Detail |
 |---|---|---|
 | Build.GetEnabledXml | PASS | RequiredCapability buttons emit configured getEnabled callbacks. |
-| Build.GetEnabledUniqueNames | PASS | Each XLAM ribbon has a unique getEnabled callback name. |
+| Build.GetEnabledUniqueNames | PASS | The D12 Operations and Admin ribbons have unique getEnabled callback names with no retired standalone role callbacks. |
 | Build.GetEnabledCallback | PASS | Generated callback exists. |
 | Build.GetEnabledCallbackRibbonCompatible | PASS | Generated getEnabled callback uses Ribbon-compatible Variant ByRef result. |
 | Build.GetEnabledByIdHelper | PASS | Generated getEnabled callback delegates to a testable control-id helper. |
@@ -23,8 +23,8 @@
 | Build.ProductionCapability | PASS | Production buttons declare capability. |
 | Build.AdminDesignLifecycleButtons | PASS | Admin ribbon exposes Designs release and obsolete actions. |
 | Admin.DesignLifecycleCallbacks | PASS | Admin Designs lifecycle ribbon callbacks exist. |
-| Build.RoleConnectServerButtons | PASS | Role ribbons expose Connect Server buttons. |
-| Build.RoleSignOutButtons | PASS | Role ribbons expose Sign Out buttons. |
+| Build.RoleConnectServerButtons | PASS | The D12 Operations ribbon exposes one Connect Server button and no retired standalone role buttons. |
+| Build.RoleSignOutButtons | PASS | The D12 Operations ribbon exposes one Sign Out button and no retired standalone role buttons. |
 | Build.SignInLabelCallback | PASS | Current user button acts as Sign In while signed out. |
 | Build.UserLabelUsesDisplayName | PASS | Ribbon user label uses display name, not account id. |
 | Build.RuntimeContextNoSignIn | PASS | Runtime Context is informational and does not expose separate Sign In. |

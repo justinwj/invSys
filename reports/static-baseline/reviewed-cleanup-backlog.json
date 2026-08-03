@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-07-27T20:00:00Z",
+    "generatedAtUtc":  "2026-07-29T02:15:17Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "c5783b87a8f2c682fa1c840a86c3d6afd1a04817663941c02299cdd9989e725d",
-                          "maintenanceCandidatesSha256":  "9db668f4476840662883f6b96106fb935dff6a187c57c72743169187ecb5ff7f"
+                          "implementationManifestSha256":  "c892b76699c2ed3d6a74a163874958a8104232b31b9db0cb88d4fe87c8aa0fc8",
+                          "maintenanceCandidatesSha256":  "3854b36fd53c4fee88599ef3dd3ad16764ebf770ab69c1d5c33fcc57eea8f974"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -22,12 +22,12 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  26,
+                            "candidateCount":  27,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  130,
+                            "candidateCount":  129,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -168,7 +168,7 @@
                                                   "sourcePath":  "src/Core/Modules/modWarehouseBootstrap.bas",
                                                   "componentName":  "modWarehouseBootstrap",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1067,
+                                                  "baselineLineCount":  1278,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  12850,
+                                                  "baselineLineCount":  12912,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +231,7 @@
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  21874,
+                                                  "baselineLineCount":  21943,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -2751,7 +2751,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022LauncherContracts.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -4344,7 +4344,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022LauncherContracts.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -7623,7 +7623,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:c795f764e2b8c1e7:EnsureProductionWorkbookSurface+EnsureReceivingWorkbookSurface",
+                           "id":  "duplicate:c795f764e2b8c1e7:EnsureProductionWorkbookSurface+EnsureReceivingWorkbookSurface+EnsureShippingWorkbookSurface",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -7634,7 +7634,8 @@
                            "componentName":  "modOperationsPrimitiveBridge",
                            "procedureNames":  [
                                                   "EnsureProductionWorkbookSurface",
-                                                  "EnsureReceivingWorkbookSurface"
+                                                  "EnsureReceivingWorkbookSurface",
+                                                  "EnsureShippingWorkbookSurface"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modOperationsPrimitiveBridge.bas"
@@ -9908,6 +9909,7 @@
                                                   "BuildBootstrapDemoPayload",
                                                   "BuildBootstrapDemoPayloadItem",
                                                   "BuildReceivingOperatorPathBootstrap",
+                                                  "BuildRoleOperatorPathBootstrap",
                                                   "ClearWarehouseBootstrapTemplateRootOverride",
                                                   "CloseWorkbookIfOpenBootstrap",
                                                   "CopyBootstrapFileIfDifferent",
@@ -9917,6 +9919,7 @@
                                                   "EnsureFolderForFileBootstrap",
                                                   "EnsureFolderRecursiveBootstrap",
                                                   "EnsureInventoryTemplateExistsBootstrap",
+                                                  "EnsureRoleOperatorWorkbookSurfaceBootstrap",
                                                   "EscapeJsonBootstrap",
                                                   "FileExistsBootstrap",
                                                   "FindOpenWorkbookByPathBootstrap",
@@ -9932,19 +9935,24 @@
                                                   "LogDiagnosticSafeBootstrap",
                                                   "NormalizeFolderPathBootstrap",
                                                   "NormalizeWarehouseSpec",
+                                                  "OpenOrCreateReceivingOperatorWorkbookForCurrentTarget",
+                                                  "OpenOrCreateRoleOperatorWorkbookForCurrentTarget",
                                                   "PrepareReceivingOperatorRuntimeFilesBootstrap",
                                                   "PublishInitialArtifacts",
                                                   "PublishInitialArtifactsValues",
+                                                  "RemoveCreatedStarterSheetBootstrap",
                                                   "RemoveNonReceivingOperatorSheetsBootstrap",
                                                   "ResolveBootstrapRootPath",
                                                   "ResolveInventoryTemplatePathBootstrap",
                                                   "ResolveLocalOperatorRootBootstrap",
                                                   "ResolveTemplateRootBootstrap",
                                                   "RestoreCoreRootOverrideBootstrap",
+                                                  "RoleDisplayNameBootstrap",
                                                   "RuntimeArtifactsExistBootstrap",
                                                   "SafePathSegmentBootstrap",
                                                   "SaveWorkbookIfWritableBootstrap",
                                                   "SeedBootstrapDemoInventory",
+                                                  "SetLocalOperatorRootOverrideForAutomation",
                                                   "SetTableCellByColumnBootstrap",
                                                   "SetWarehouseBootstrapTemplateRootOverride",
                                                   "SharePointWarehouseIdExistsBootstrap",
@@ -16347,6 +16355,7 @@
                                                   "HandlePaletteRecipeSelectedCore",
                                                   "HandleProductionBeforeDoubleClick",
                                                   "HandleProductionChange",
+                                                  "HandleProductionOperatorWorkbookClosing",
                                                   "HandleProductionSelectionChange",
                                                   "HasActionableProductionWarning",
                                                   "HashProcessName",
@@ -16518,6 +16527,7 @@
                                                   "ShapeExists",
                                                   "SheetExists",
                                                   "ShowProductionForm",
+                                                  "ShowProductionLauncherError",
                                                   "ShowProductionLayoutForValidation",
                                                   "ShowProductionStatus",
                                                   "SortedKeys",
@@ -16973,29 +16983,6 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnLoadRecipe"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/mProduction.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnOpenProductionForm",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "mProduction",
-                           "procedureNames":  [
-                                                  "BtnOpenProductionForm"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -20002,6 +19989,29 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_QueryClose",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "UserForm_QueryClose"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022LauncherContracts.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Resize",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -20327,33 +20337,6 @@
                                                "src/Core/Forms/frmSignIn.frm",
                                                "src/Core/Forms/frmWarehouseConnection.frm",
                                                "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:25e3a9272732ff3f:IsProductionRoleWorkbook+IsReceivingRoleWorkbook+IsShippingRoleWorkbook",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHARED_OPERATIONS",
-                           "componentName":  "cProductionAppEvents",
-                           "procedureNames":  [
-                                                  "IsProductionRoleWorkbook",
-                                                  "IsReceivingRoleWorkbook",
-                                                  "IsShippingRoleWorkbook"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/ClassModules/cProductionAppEvents.cls",
-                                               "src/Receiving/ClassModules/cReceivingAppEvents.cls",
-                                               "src/Shipping/ClassModules/cShippingAppEvents.cls"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [
@@ -21604,6 +21587,31 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:d842288366a7ab58:FindListObjectPrimitive+FindTable",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHARED_OPERATIONS",
+                           "componentName":  "modOperationsPrimitiveBridge",
+                           "procedureNames":  [
+                                                  "FindListObjectPrimitive",
+                                                  "FindTable"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modOperationsPrimitiveBridge.bas",
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:e4c143d11569da45:JsonPayloadUnescape+JsonUnescapeRole",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22519,6 +22527,7 @@
                                                   "GetShippingInvSysReadModelForDisplay",
                                                   "HandleBoxBomVersionSelection",
                                                   "HandleHoldRow",
+                                                  "HandleShippingOperatorWorkbookClosing",
                                                   "HandleShippingSelectionChange",
                                                   "HandleShippingSheetChange",
                                                   "HasActionableShippingWarning",
@@ -25125,7 +25134,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022LauncherContracts.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

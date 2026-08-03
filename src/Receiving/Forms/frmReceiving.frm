@@ -67,6 +67,12 @@ Private Sub UserForm_Resize()
     ResizeReceivingLayout
 End Sub
 
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    On Error Resume Next
+    modTS_Received.NotifyReceivingLauncherFormTerminating Me
+    On Error GoTo 0
+End Sub
+
 Private Sub UserForm_Terminate()
     Set mOperatorWorkbook = Nothing
 End Sub

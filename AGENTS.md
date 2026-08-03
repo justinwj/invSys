@@ -1,5 +1,8 @@
 # invSys Agent Instructions
 
+NAS/server:
+"C:\Users\Justin\OneDrive\Documents\invsys-scv.txt"
+
 ## Scope and repository locations
 
 These instructions apply to work in both invSys repositories:
@@ -263,3 +266,5 @@ Do not include secrets or unredacted runtime data in a handoff.
 
 Do not use handoffs as a substitute for updating the specification, current
 plan, tests, or generated evidence.
+
+Commit and Sync/Push to Github when finished

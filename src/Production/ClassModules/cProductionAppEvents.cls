@@ -28,42 +28,32 @@ Private Sub App_WorkbookActivate(ByVal Wb As Workbook)
 End Sub
 
 Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
-    If Not IsProductionRoleWorkbook(Wb) Then Exit Sub
+    If Not modOperationsInit.WorkbookOwnsRoleTable( _
+            Wb, "Production", "RecipeBuilder") Then Exit Sub
+    mProduction.HandleProductionOperatorWorkbookClosing Wb
     modOperationsPrimitiveBridge.UnregisterProductionAutoSnapshot Wb.Name
 End Sub
 
 Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)
-    If Not IsProductionRoleSheet(Sh) Then Exit Sub
+    If Not modOperationsInit.IsRoleWorksheet( _
+            Sh, "Production", "RecipeBuilder") Then Exit Sub
     On Error Resume Next
     mProduction.HandleProductionSelectionChange Target
     On Error GoTo 0
 End Sub
 
 Private Sub App_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range, Cancel As Boolean)
-    If Not IsProductionRoleSheet(Sh) Then Exit Sub
+    If Not modOperationsInit.IsRoleWorksheet( _
+            Sh, "Production", "RecipeBuilder") Then Exit Sub
     On Error Resume Next
     mProduction.HandleProductionBeforeDoubleClick Target, Cancel
     On Error GoTo 0
 End Sub
 
 Private Sub App_SheetChange(ByVal Sh As Object, ByVal Target As Range)
-    If Not IsProductionRoleSheet(Sh) Then Exit Sub
+    If Not modOperationsInit.IsRoleWorksheet( _
+            Sh, "Production", "RecipeBuilder") Then Exit Sub
     On Error Resume Next
     mProduction.HandleProductionChange Target
     On Error GoTo 0
 End Sub
-
-Private Function IsProductionRoleWorkbook(ByVal Wb As Workbook) As Boolean
-    On Error GoTo NotRole
-    If Wb Is Nothing Then Exit Function
-    IsProductionRoleWorkbook = Not Wb.Worksheets("Production").ListObjects("RecipeBuilder") Is Nothing
-NotRole:
-End Function
-
-Private Function IsProductionRoleSheet(ByVal Sh As Object) As Boolean
-    On Error GoTo NotRole
-    If Sh Is Nothing Then Exit Function
-    If StrComp(CStr(Sh.Name), "Production", vbTextCompare) <> 0 Then Exit Function
-    IsProductionRoleSheet = IsProductionRoleWorkbook(Sh.Parent)
-NotRole:
-End Function

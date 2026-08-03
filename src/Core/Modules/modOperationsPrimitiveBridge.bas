@@ -27,6 +27,90 @@ Public Function EnsureReceivingWorkbookSurface(ByVal workbookName As String, _
         modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report)
 End Function
 
+Public Function EnsureShippingWorkbookSurface(ByVal workbookName As String, _
+                                              ByRef report As String) As Boolean
+    Dim wb As Workbook
+
+    Set wb = ResolveOpenWorkbook(workbookName)
+    If wb Is Nothing Then
+        report = "Shipping operator workbook is not open: " & Trim$(workbookName)
+        Exit Function
+    End If
+    EnsureShippingWorkbookSurface = _
+        modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wb, report)
+End Function
+
+Public Function ResolveEligibleRoleOperatorWorkbookName( _
+        ByVal preferredWorkbookName As String, _
+        ByVal roleCode As String, _
+        ByRef workbookNameOut As String, _
+        ByRef report As String) As Boolean
+    Dim wb As Workbook
+    Dim candidate As Workbook
+    Dim candidateCount As Long
+
+    workbookNameOut = vbNullString
+    report = vbNullString
+    roleCode = UCase$(Trim$(roleCode))
+    If Not IsSupportedRoleCodePrimitive(roleCode) Then
+        report = "Unsupported Operations role: " & roleCode
+        Exit Function
+    End If
+
+    Set wb = ResolveOpenWorkbook(preferredWorkbookName)
+    If IsEligibleRoleOperatorWorkbookPrimitive(wb, roleCode) Then
+        workbookNameOut = wb.Name
+        report = "OK"
+        ResolveEligibleRoleOperatorWorkbookName = True
+        Exit Function
+    End If
+
+    For Each wb In Application.Workbooks
+        If IsEligibleRoleOperatorWorkbookPrimitive(wb, roleCode) Then
+            candidateCount = candidateCount + 1
+            Set candidate = wb
+        End If
+    Next wb
+
+    If candidateCount = 1 Then
+        workbookNameOut = candidate.Name
+        report = "OK"
+        ResolveEligibleRoleOperatorWorkbookName = True
+    ElseIf candidateCount > 1 Then
+        report = "Multiple eligible " & RoleDisplayNamePrimitive(roleCode) & _
+                 " operator workbooks are open. Activate the intended workbook and try again."
+    Else
+        report = "Open a saved " & RoleDisplayNamePrimitive(roleCode) & _
+                 " operator workbook before using this control."
+    End If
+End Function
+
+Public Function OpenOrCreateCurrentReceivingOperatorWorkbook( _
+        ByVal preferredWorkbookName As String, _
+        ByRef workbookNameOut As String, _
+        ByRef report As String) As Boolean
+    OpenOrCreateCurrentReceivingOperatorWorkbook = _
+        OpenOrCreateCurrentRoleOperatorWorkbook( _
+            preferredWorkbookName, "RECEIVING", workbookNameOut, report)
+End Function
+
+Public Function OpenOrCreateCurrentRoleOperatorWorkbook( _
+        ByVal preferredWorkbookName As String, _
+        ByVal roleCode As String, _
+        ByRef workbookNameOut As String, _
+        ByRef report As String) As Boolean
+    If ResolveEligibleRoleOperatorWorkbookName( _
+            preferredWorkbookName, roleCode, workbookNameOut, report) Then
+        OpenOrCreateCurrentRoleOperatorWorkbook = True
+        Exit Function
+    End If
+    If InStr(1, report, "Multiple eligible ", vbTextCompare) = 1 Then Exit Function
+
+    OpenOrCreateCurrentRoleOperatorWorkbook = _
+        modWarehouseBootstrap.OpenOrCreateRoleOperatorWorkbookForCurrentTarget( _
+            roleCode, workbookNameOut, report)
+End Function
+
 Public Function ShouldBootstrapRoleWorkbookSurface(ByVal workbookName As String) As Boolean
     Dim wb As Workbook
 
@@ -135,14 +219,20 @@ Public Sub ApplyShapeCapability(ByVal workbookName As String, _
                                 ByVal capability As String)
     Dim wb As Workbook
     Dim ws As Worksheet
+    Dim shp As Shape
+    Dim errorMessage As String
 
     Set wb = ResolveOpenWorkbook(workbookName)
     If wb Is Nothing Then Exit Sub
     On Error Resume Next
     Set ws = wb.Worksheets(worksheetName)
+    If Not ws Is Nothing Then Set shp = ws.Shapes(shapeName)
     On Error GoTo 0
-    If ws Is Nothing Then Exit Sub
-    modRoleUiAccess.ApplyShapeCapability ws, shapeName, capability
+    If shp Is Nothing Then Exit Sub
+    shp.Visible = IIf( _
+        modRoleUiAccess.CanCurrentUserPerformCapabilityCached(capability, errorMessage), _
+        -1, _
+        0)
 End Sub
 
 Public Function ListDesigns(Optional ByVal statusFilter As String = "") As Variant
@@ -182,4 +272,90 @@ Private Function ResolveOpenWorkbook(ByVal workbookName As String) As Workbook
         End If
         On Error GoTo 0
     Next wb
+End Function
+
+Private Function IsSupportedRoleCodePrimitive(ByVal roleCode As String) As Boolean
+    IsSupportedRoleCodePrimitive = _
+        (roleCode = "RECEIVING" Or roleCode = "PRODUCTION" Or roleCode = "SHIPPING")
+End Function
+
+Private Function RoleDisplayNamePrimitive(ByVal roleCode As String) As String
+    Select Case roleCode
+        Case "RECEIVING"
+            RoleDisplayNamePrimitive = "Receiving"
+        Case "PRODUCTION"
+            RoleDisplayNamePrimitive = "Production"
+        Case "SHIPPING"
+            RoleDisplayNamePrimitive = "Shipping"
+        Case Else
+            RoleDisplayNamePrimitive = "role"
+    End Select
+End Function
+
+Private Function IsEligibleRoleOperatorWorkbookPrimitive(ByVal wb As Workbook, _
+                                                         ByVal roleCode As String) As Boolean
+    If IsRejectedOperatorAuthorityWorkbookPrimitive(wb) Then Exit Function
+
+    Select Case roleCode
+        Case "RECEIVING"
+            IsEligibleRoleOperatorWorkbookPrimitive = _
+                (Not FindListObjectPrimitive(wb, "ReceivedTally") Is Nothing) And _
+                (Not FindListObjectPrimitive(wb, "invSys") Is Nothing)
+        Case "PRODUCTION"
+            IsEligibleRoleOperatorWorkbookPrimitive = _
+                (Not FindListObjectPrimitive(wb, "RB_AddRecipeName") Is Nothing) And _
+                (Not FindListObjectPrimitive(wb, "ProductionOutput") Is Nothing)
+        Case "SHIPPING"
+            IsEligibleRoleOperatorWorkbookPrimitive = _
+                (Not FindListObjectPrimitive(wb, "ShipmentsTally") Is Nothing) And _
+                (Not FindListObjectPrimitive(wb, "NotShipped") Is Nothing)
+    End Select
+End Function
+
+Private Function IsRejectedOperatorAuthorityWorkbookPrimitive(ByVal wb As Workbook) As Boolean
+    Dim wbName As String
+
+    If wb Is Nothing Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+        Exit Function
+    End If
+    If wb.IsAddin Or wb.ReadOnly Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+        Exit Function
+    End If
+    If Trim$(wb.Path) = "" Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+        Exit Function
+    End If
+
+    wbName = LCase$(Trim$(wb.Name))
+    If wbName = "" Or Left$(wbName, 2) = "~$" Or wbName = "personal.xlsb" Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+        Exit Function
+    End If
+    If wbName Like "*.xla" Or wbName Like "*.xlam" Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+        Exit Function
+    End If
+    If wbName Like "invsys.inbox.*" _
+       Or InStr(1, wbName, ".invsys.config.", vbTextCompare) > 0 _
+       Or InStr(1, wbName, ".invsys.auth.", vbTextCompare) > 0 _
+       Or InStr(1, wbName, ".invsys.data.", vbTextCompare) > 0 _
+       Or InStr(1, wbName, ".invsys.snapshot.", vbTextCompare) > 0 _
+       Or InStr(1, wbName, ".outbox.", vbTextCompare) > 0 Then
+        IsRejectedOperatorAuthorityWorkbookPrimitive = True
+    End If
+End Function
+
+Private Function FindListObjectPrimitive(ByVal wb As Workbook, _
+                                         ByVal tableName As String) As ListObject
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        On Error Resume Next
+        Set FindListObjectPrimitive = ws.ListObjects(tableName)
+        On Error GoTo 0
+        If Not FindListObjectPrimitive Is Nothing Then Exit Function
+    Next ws
 End Function

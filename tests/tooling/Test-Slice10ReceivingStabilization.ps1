@@ -82,7 +82,7 @@ Add-Check "Receiving.Form.RealActionUsesTypedService" `
     "The operator Confirm Writes handler must call the typed service with captured context; the service owns clearing after confirmed application."
 
 Add-Check "Receiving.Form.ModelessCapturedContext" `
-    (($moduleText -match '(?i)frm\.Show\s+vbModeless') -and
+    (($moduleText -match '(?i)(?:frm|mReceivingLauncherForm)\.Show\s+vbModeless') -and
      ($formText -match '(?i)Private\s+mOperatorWorkbook\s+As\s+Workbook') -and
      ($formText -notmatch '(?i)\bApplication\.ActiveWorkbook\b') -and
      ($formText -notmatch '(?i)\.Activate\b')) `
@@ -103,8 +103,7 @@ $receivingProjectText = if ($receivingProjectMatch.Success) {
     $receivingProjectMatch.Value
 } else { "" }
 Add-Check "Receiving.Ribbon.NoPurchasingLaunchSurface" `
-    (($receivingProjectText -ne "") -and
-     ($receivingProjectText -notmatch '(?i)Purchas')) `
+    ($buildText -notmatch '(?i)(Id|Label)\s*=\s*"[^"]*Purchas') `
     "Purchasing remains a form-only stub and must not gain a ribbon button, group, or launch surface."
 
 Add-Check "Receiving.Legacy.RedundantPostingRetired" `

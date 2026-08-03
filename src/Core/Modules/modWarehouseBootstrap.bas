@@ -7,10 +7,13 @@ Private Const BOOTSTRAP_SHAREPOINT_CONFIG_WORKBOOK_SUFFIX As String = ".invSys.C
 Private Const BOOTSTRAP_TEMPLATE_FOLDER_NAME As String = "templates"
 Private Const BOOTSTRAP_INVENTORY_TEMPLATE_FILE As String = "invSys.Data.Inventory.template.xlsb"
 Private Const BOOTSTRAP_RECEIVING_OPERATOR_SUFFIX As String = ".Receiving.Operator.xlsm"
+Private Const BOOTSTRAP_PRODUCTION_OPERATOR_SUFFIX As String = ".Production.Operator.xlsm"
+Private Const BOOTSTRAP_SHIPPING_OPERATOR_SUFFIX As String = ".Shipping.Operator.xlsm"
 Private Const BOOTSTRAP_LOCAL_OPERATOR_ROOT As String = "invSys\OperatorWorkbooks"
 Private Const BOOTSTRAP_SEED_SOURCE_ID As String = "CREATE_WAREHOUSE_DEMO_SEED"
 
 Private mBootstrapTemplateRootOverride As String
+Private mLocalOperatorRootOverride As String
 Private mLastBootstrapReport As String
 Private mLastBootstrapOperatorWorkbookPath As String
 
@@ -384,6 +387,148 @@ Public Sub ClearWarehouseBootstrapTemplateRootOverride()
     mBootstrapTemplateRootOverride = vbNullString
 End Sub
 
+Public Function SetLocalOperatorRootOverrideForAutomation(ByVal rootPath As String) As Boolean
+    rootPath = NormalizeFolderPathBootstrap(rootPath)
+    If Right$(rootPath, 1) = "\" Then rootPath = Left$(rootPath, Len(rootPath) - 1)
+    If rootPath = "" Then Exit Function
+    mLocalOperatorRootOverride = rootPath
+    SetLocalOperatorRootOverrideForAutomation = True
+End Function
+
+Public Function OpenOrCreateReceivingOperatorWorkbookForCurrentTarget( _
+        ByRef workbookNameOut As String, _
+        ByRef report As String) As Boolean
+    OpenOrCreateReceivingOperatorWorkbookForCurrentTarget = _
+        OpenOrCreateRoleOperatorWorkbookForCurrentTarget( _
+            "RECEIVING", workbookNameOut, report)
+End Function
+
+Public Function OpenOrCreateRoleOperatorWorkbookForCurrentTarget( _
+        ByVal roleCode As String, _
+        ByRef workbookNameOut As String, _
+        ByRef report As String) As Boolean
+    Dim target As WarehouseTarget
+    Dim spec As WarehouseSpec
+    Dim operatorPath As String
+    Dim wb As Workbook
+    Dim createdNew As Boolean
+    Dim starterSheetName As String
+    Dim refreshReport As String
+    Dim prevEvents As Boolean
+    Dim prevDisplayAlerts As Boolean
+    Dim uiStateCaptured As Boolean
+    Dim roleName As String
+
+    On Error GoTo FailOpenCreate
+
+    workbookNameOut = vbNullString
+    report = vbNullString
+    roleCode = UCase$(Trim$(roleCode))
+    roleName = RoleDisplayNameBootstrap(roleCode)
+    If roleName = "" Then
+        report = "Unsupported Operations role: " & roleCode
+        Exit Function
+    End If
+    If Not modNasConnection.IsTargetResolved() Then
+        report = "Warehouse storage is not connected. Use Connect Server before opening " & roleName & "."
+        Exit Function
+    End If
+
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then
+        report = "The current warehouse target could not be read."
+        Exit Function
+    End If
+    If Trim$(target.WarehouseId) = "" Or Trim$(target.StationId) = "" Then
+        report = roleName & " requires a warehouse and station-scoped target."
+        Exit Function
+    End If
+
+    spec.WarehouseId = Trim$(target.WarehouseId)
+    spec.WarehouseName = Trim$(target.WarehouseName)
+    spec.StationId = Trim$(target.StationId)
+    spec.PathLocal = Trim$(target.RuntimeRoot)
+    operatorPath = BuildRoleOperatorPathBootstrap(spec, roleCode)
+    If operatorPath = "" Then
+        report = "The station-local " & roleName & " operator workbook path could not be resolved."
+        Exit Function
+    End If
+
+    prevEvents = Application.EnableEvents
+    prevDisplayAlerts = Application.DisplayAlerts
+    uiStateCaptured = True
+    Application.EnableEvents = False
+    Application.DisplayAlerts = False
+
+    Set wb = FindOpenWorkbookByPathBootstrap(operatorPath)
+    If wb Is Nothing And FileExistsBootstrap(operatorPath) Then
+        Set wb = Application.Workbooks.Open( _
+            Filename:=operatorPath, _
+            UpdateLinks:=0, _
+            ReadOnly:=False, _
+            IgnoreReadOnlyRecommended:=True, _
+            Notify:=False, _
+            AddToMru:=False)
+    End If
+    If wb Is Nothing Then
+        EnsureFolderForFileBootstrap operatorPath
+        Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+        createdNew = Not wb Is Nothing
+        If createdNew Then starterSheetName = wb.Worksheets(1).Name
+    End If
+    If wb Is Nothing Then
+        report = "The station-local " & roleName & " operator workbook could not be opened or created."
+        GoTo FailSoft
+    End If
+    If wb.ReadOnly Or wb.IsAddin Then
+        report = "The station-local " & roleName & " operator workbook is not writable."
+        GoTo FailSoft
+    End If
+
+    If Not EnsureRoleOperatorWorkbookSurfaceBootstrap(wb, roleCode, report) Then GoTo FailSoft
+    If createdNew Then RemoveCreatedStarterSheetBootstrap wb, starterSheetName
+    Call modOperatorReadModel.RefreshInventoryReadModelForWorkbook( _
+        wb, target.WarehouseId, "LOCAL", refreshReport)
+
+    If Trim$(wb.Path) = "" Then
+        wb.SaveAs Filename:=operatorPath, FileFormat:=52
+    ElseIf StrComp(wb.FullName, operatorPath, vbTextCompare) <> 0 Then
+        report = "The resolved " & roleName & " workbook does not match the station-local target."
+        GoTo FailSoft
+    ElseIf Not wb.Saved Then
+        wb.Save
+    End If
+
+    mLastBootstrapOperatorWorkbookPath = operatorPath
+    workbookNameOut = wb.Name
+    report = "OK|Workbook=" & wb.Name
+    If Trim$(refreshReport) <> "" Then report = report & "|Refresh=" & refreshReport
+    OpenOrCreateRoleOperatorWorkbookForCurrentTarget = True
+    GoTo CleanExit
+
+FailSoft:
+    OpenOrCreateRoleOperatorWorkbookForCurrentTarget = False
+    If report = "" Then
+        report = "The station-local " & roleName & " operator workbook could not be prepared."
+    End If
+    If createdNew And Not wb Is Nothing Then
+        On Error Resume Next
+        wb.Close SaveChanges:=False
+        On Error GoTo 0
+    End If
+    GoTo CleanExit
+
+FailOpenCreate:
+    report = roleName & " operator workbook open/create failed: " & Err.Description
+    Resume FailSoft
+
+CleanExit:
+    If uiStateCaptured Then
+        Application.DisplayAlerts = prevDisplayAlerts
+        Application.EnableEvents = prevEvents
+    End If
+End Function
+
 Private Sub NormalizeWarehouseSpec(ByRef spec As WarehouseSpec)
     spec.WarehouseId = Trim$(spec.WarehouseId)
     spec.WarehouseName = Trim$(spec.WarehouseName)
@@ -621,12 +766,30 @@ Private Sub SetTableCellByColumnBootstrap(ByVal lo As ListObject, _
 End Sub
 
 Private Function BuildReceivingOperatorPathBootstrap(ByRef spec As WarehouseSpec) As String
+    BuildReceivingOperatorPathBootstrap = _
+        BuildRoleOperatorPathBootstrap(spec, "RECEIVING")
+End Function
+
+Private Function BuildRoleOperatorPathBootstrap(ByRef spec As WarehouseSpec, _
+                                                ByVal roleCode As String) As String
     Dim operatorRoot As String
+    Dim operatorSuffix As String
 
     operatorRoot = ResolveLocalOperatorRootBootstrap(spec.WarehouseId, spec.StationId)
     If operatorRoot = "" Then operatorRoot = ResolveBootstrapRootPath(spec)
     If operatorRoot = "" Then Exit Function
-    BuildReceivingOperatorPathBootstrap = operatorRoot & "\" & spec.WarehouseId & BOOTSTRAP_RECEIVING_OPERATOR_SUFFIX
+
+    Select Case UCase$(Trim$(roleCode))
+        Case "RECEIVING"
+            operatorSuffix = BOOTSTRAP_RECEIVING_OPERATOR_SUFFIX
+        Case "PRODUCTION"
+            operatorSuffix = BOOTSTRAP_PRODUCTION_OPERATOR_SUFFIX
+        Case "SHIPPING"
+            operatorSuffix = BOOTSTRAP_SHIPPING_OPERATOR_SUFFIX
+        Case Else
+            Exit Function
+    End Select
+    BuildRoleOperatorPathBootstrap = operatorRoot & "\" & spec.WarehouseId & operatorSuffix
 End Function
 
 Private Function ResolveLocalOperatorRootBootstrap(ByVal warehouseId As String, ByVal stationId As String) As String
@@ -636,17 +799,20 @@ Private Function ResolveLocalOperatorRootBootstrap(ByVal warehouseId As String, 
     Dim stSegment As String
     Dim localRoot As String
 
-    userRoot = Trim$(Environ$("USERPROFILE"))
-    If userRoot = "" Then userRoot = Trim$(Environ$("HOMEDRIVE") & Environ$("HOMEPATH"))
-    If userRoot = "" Then Exit Function
-
     whSegment = SafePathSegmentBootstrap(warehouseId)
     stSegment = SafePathSegmentBootstrap(stationId)
     If whSegment = "" Then Exit Function
     If stSegment = "" Then stSegment = "S1"
 
-    documentsRoot = userRoot & "\Documents"
-    localRoot = documentsRoot & "\" & BOOTSTRAP_LOCAL_OPERATOR_ROOT & "\" & whSegment & "\" & stSegment
+    If Trim$(mLocalOperatorRootOverride) <> "" Then
+        localRoot = Trim$(mLocalOperatorRootOverride) & "\" & whSegment & "\" & stSegment
+    Else
+        userRoot = Trim$(Environ$("USERPROFILE"))
+        If userRoot = "" Then userRoot = Trim$(Environ$("HOMEDRIVE") & Environ$("HOMEPATH"))
+        If userRoot = "" Then Exit Function
+        documentsRoot = userRoot & "\Documents"
+        localRoot = documentsRoot & "\" & BOOTSTRAP_LOCAL_OPERATOR_ROOT & "\" & whSegment & "\" & stSegment
+    End If
     ResolveLocalOperatorRootBootstrap = NormalizeFolderPathBootstrap(localRoot)
     If Right$(ResolveLocalOperatorRootBootstrap, 1) = "\" Then
         ResolveLocalOperatorRootBootstrap = Left$(ResolveLocalOperatorRootBootstrap, Len(ResolveLocalOperatorRootBootstrap) - 1)
@@ -959,6 +1125,51 @@ Private Sub RemoveNonReceivingOperatorSheetsBootstrap(ByVal wb As Workbook)
             If wb.Worksheets.Count > 1 Then ws.Delete
         End If
     Next i
+End Sub
+
+Private Function EnsureRoleOperatorWorkbookSurfaceBootstrap( _
+        ByVal wb As Workbook, _
+        ByVal roleCode As String, _
+        ByRef report As String) As Boolean
+    Select Case UCase$(Trim$(roleCode))
+        Case "RECEIVING"
+            EnsureRoleOperatorWorkbookSurfaceBootstrap = _
+                modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report)
+        Case "PRODUCTION"
+            EnsureRoleOperatorWorkbookSurfaceBootstrap = _
+                modRoleWorkbookSurfaces.EnsureProductionWorkbookSurface(wb, report)
+        Case "SHIPPING"
+            EnsureRoleOperatorWorkbookSurfaceBootstrap = _
+                modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wb, report)
+    End Select
+End Function
+
+Private Function RoleDisplayNameBootstrap(ByVal roleCode As String) As String
+    Select Case UCase$(Trim$(roleCode))
+        Case "RECEIVING"
+            RoleDisplayNameBootstrap = "Receiving"
+        Case "PRODUCTION"
+            RoleDisplayNameBootstrap = "Production"
+        Case "SHIPPING"
+            RoleDisplayNameBootstrap = "Shipping"
+    End Select
+End Function
+
+Private Sub RemoveCreatedStarterSheetBootstrap(ByVal wb As Workbook, _
+                                               ByVal starterSheetName As String)
+    Dim ws As Worksheet
+
+    If wb Is Nothing Then Exit Sub
+    If Trim$(starterSheetName) = "" Then Exit Sub
+    If wb.Worksheets.Count <= 1 Then Exit Sub
+
+    On Error Resume Next
+    Set ws = wb.Worksheets(starterSheetName)
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+    If ws.ListObjects.Count > 0 Then Exit Sub
+    If Application.WorksheetFunction.CountA(ws.Cells) > 0 Then Exit Sub
+    ws.Delete
 End Sub
 
 Private Function FindOpenWorkbookByPathBootstrap(ByVal workbookPath As String) As Workbook

@@ -28,12 +28,15 @@ Private Sub App_WorkbookActivate(ByVal Wb As Workbook)
 End Sub
 
 Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
-    If Not IsReceivingRoleWorkbook(Wb) Then Exit Sub
+    If Not modOperationsInit.WorkbookOwnsRoleTable( _
+            Wb, "ReceivedTally", "ReceivedTally") Then Exit Sub
+    modTS_Received.HandleReceivingOperatorWorkbookClosing Wb
     modOperationsPrimitiveBridge.UnregisterReceivingAutoSnapshot Wb.Name
 End Sub
 
 Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)
-    If Not IsReceivingRoleSheet(Sh) Then Exit Sub
+    If Not modOperationsInit.IsRoleWorksheet( _
+            Sh, "ReceivedTally", "ReceivedTally") Then Exit Sub
     If Not Application.EnableEvents Then Exit Sub
     On Error Resume Next
     modTS_Received.HandleReceivingSelectionChange Target
@@ -41,24 +44,10 @@ Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)
 End Sub
 
 Private Sub App_SheetChange(ByVal Sh As Object, ByVal Target As Range)
-    If Not IsReceivingRoleSheet(Sh) Then Exit Sub
+    If Not modOperationsInit.IsRoleWorksheet( _
+            Sh, "ReceivedTally", "ReceivedTally") Then Exit Sub
     If Not Application.EnableEvents Then Exit Sub
     On Error Resume Next
     modTS_Received.HandleReceivingSheetChange Target
     On Error GoTo 0
 End Sub
-
-Private Function IsReceivingRoleWorkbook(ByVal Wb As Workbook) As Boolean
-    On Error GoTo NotRole
-    If Wb Is Nothing Then Exit Function
-    IsReceivingRoleWorkbook = Not Wb.Worksheets("ReceivedTally").ListObjects("ReceivedTally") Is Nothing
-NotRole:
-End Function
-
-Private Function IsReceivingRoleSheet(ByVal Sh As Object) As Boolean
-    On Error GoTo NotRole
-    If Sh Is Nothing Then Exit Function
-    If StrComp(CStr(Sh.Name), "ReceivedTally", vbTextCompare) <> 0 Then Exit Function
-    IsReceivingRoleSheet = IsReceivingRoleWorkbook(Sh.Parent)
-NotRole:
-End Function

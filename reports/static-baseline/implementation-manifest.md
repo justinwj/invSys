@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-07-27T20:00:00Z
+- Generated: 2026-07-29T02:15:17Z
 - Packages: 6
 - Components: 164
-- Procedures: 4535
+- Procedures: 4558
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -745,6 +745,7 @@
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_Layout | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_MouseScroll | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | UserForm_QueryClose | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

@@ -48,6 +48,7 @@ Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workboo
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
+    Dim landing As Worksheet
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
     EnsureWorksheetSurface wb, "ShipmentsTally"
@@ -78,6 +79,10 @@ Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workboo
     DeleteWorksheetSurface wb, "ShippingBOM"
     DeleteWorksheetSurface wb, "AggregateBoxBOM_Log"
     DeleteWorksheetSurface wb, "AggregatePackages_Log"
+    Set landing = EnsureWorksheetSurface(wb, "invSys Shipping")
+    landing.Visible = xlSheetVisible
+    landing.Range("A1").Value = "invSys Shipping"
+    landing.Range("A2").Value = "Use the invSys Shipping ribbon button to open the Shipping form."
     HideWorksheetSurface wb, "ShipmentsTally"
     HideWorksheetSurface wb, "InventoryManagement"
     HideWorksheetSurface wb, SHIPPING_BACKEND_SHEET

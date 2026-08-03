@@ -119,6 +119,49 @@ function Get-StringSha256 {
     }
 }
 
+function Convert-ExcelDateValueToUtcString {
+    param(
+        [object]$Value,
+        [string]$FallbackUtc
+    )
+
+    if ($null -eq $Value) {
+        return $FallbackUtc
+    }
+
+    try {
+        if ($Value -is [DateTime]) {
+            return ([DateTime]$Value).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        }
+
+        $text = [string]$Value
+        $oaDate = 0.0
+        if ([double]::TryParse(
+                $text,
+                [Globalization.NumberStyles]::Float,
+                [Globalization.CultureInfo]::InvariantCulture,
+                [ref]$oaDate
+            )) {
+            return [DateTime]::FromOADate($oaDate).ToUniversalTime().ToString(
+                "yyyy-MM-ddTHH:mm:ssZ"
+            )
+        }
+
+        $parsed = [DateTime]::MinValue
+        if ([DateTime]::TryParse(
+                $text,
+                [Globalization.CultureInfo]::InvariantCulture,
+                [Globalization.DateTimeStyles]::AssumeLocal,
+                [ref]$parsed
+            )) {
+            return $parsed.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        }
+    }
+    catch {}
+
+    return $FallbackUtc
+}
+
 function Get-SharedFileSha256 {
     param([string]$Path)
     if ([string]::IsNullOrWhiteSpace($Path) -or
@@ -503,9 +546,9 @@ function Get-LiveRawInput {
                                             -not [string]::IsNullOrWhiteSpace(
                                                 [string]$firstRow["LastRefreshUTC"]
                                             )) {
-                                            $lastRefresh = (
-                                                [DateTime]$firstRow["LastRefreshUTC"]
-                                            ).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+                                            $lastRefresh = Convert-ExcelDateValueToUtcString `
+                                                -Value $firstRow["LastRefreshUTC"] `
+                                                -FallbackUtc $ReportTimestampUtc
                                         }
                                         if ("SourceType" -in $headers -and
                                             [string]$firstRow["SourceType"] -in @(

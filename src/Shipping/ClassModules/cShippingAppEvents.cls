@@ -30,6 +30,7 @@ End Sub
 Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
     If Not IsShippingRoleWorkbook(Wb) Then Exit Sub
     If modUiQuiet.QuietUiIsActive() Then Exit Sub
+    modTS_Shipments.HandleShippingOperatorWorkbookClosing Wb
     modOperatorReadModel.UnregisterAutoSnapshotWorkbook Wb
 End Sub
 
@@ -55,9 +56,17 @@ Private Sub App_SheetChange(ByVal Sh As Object, ByVal Target As Range)
 End Sub
 
 Private Function IsShippingRoleWorkbook(ByVal Wb As Workbook) As Boolean
+    Dim ws As Worksheet
+
     On Error GoTo NotRole
     If Wb Is Nothing Then Exit Function
-    IsShippingRoleWorkbook = Not Wb.Worksheets("ShipmentsTally").ListObjects("ShipmentsTally") Is Nothing
+    If Wb.Worksheets("ShipmentsTally") Is Nothing Then Exit Function
+    For Each ws In Wb.Worksheets
+        On Error Resume Next
+        IsShippingRoleWorkbook = Not ws.ListObjects("ShipmentsTally") Is Nothing
+        On Error GoTo NotRole
+        If IsShippingRoleWorkbook Then Exit Function
+    Next ws
 NotRole:
 End Function
 

@@ -10,6 +10,9 @@ Private Const SHEET_LOG As String = "ReceivedLog"
 
 Private mLastConfirmSucceeded As Boolean
 Private mLastConfirmStatus As String
+Private mReceivingLauncherForm As frmReceiving
+Private mReceivingLauncherWorkbookName As String
+Private mReceivingLauncherFormTerminated As Boolean
 
 Public Sub EnsureGeneratedButtons()
     Dim wb As Workbook
@@ -62,19 +65,109 @@ Public Function RefreshReceivingUiForWorkbook(Optional ByVal targetWb As Workboo
 End Function
 
 Public Sub ShowReceivingForm()
-    Dim wb As Workbook
-    Dim frm As frmReceiving
+    On Error GoTo ErrHandler
 
-    Set wb = ResolveReceivingWorkbook(Application.ActiveWorkbook)
-    If wb Is Nothing Then
-        ShowReceivingMessage "Open a Receiving operator workbook before using the Receiving form.", vbExclamation
+    Dim wb As Workbook
+    Dim preferredWorkbookName As String
+    Dim workbookName As String
+    Dim report As String
+    Dim launcherStage As String
+
+    launcherStage = "capture active workbook"
+    If Not Application.ActiveWorkbook Is Nothing Then
+        preferredWorkbookName = Application.ActiveWorkbook.Name
+    End If
+
+    launcherStage = "resolve or provision Receiving workbook"
+    If Not modOperationsPrimitiveBridge.OpenOrCreateCurrentReceivingOperatorWorkbook( _
+            preferredWorkbookName, workbookName, report) Then
+        If Trim$(report) = "" Then
+            report = "The station-local Receiving operator workbook could not be opened."
+        End If
+        ShowReceivingMessage report, vbExclamation
         Exit Sub
     End If
-    Set frm = New frmReceiving
-    frm.SetOperatorWorkbook wb
-    frm.InitializeFromReceiving
+
+    launcherStage = "capture resolved Receiving workbook"
+    Set wb = modOperationsInit.ResolveOpenWorkbookByName(workbookName)
+    If wb Is Nothing Then
+        ShowReceivingMessage "The resolved Receiving operator workbook is no longer open.", vbExclamation
+        Exit Sub
+    End If
+
+    launcherStage = "activate Receiving workbook"
+    wb.Activate
+
+    If mReceivingLauncherFormTerminated Then
+        Set mReceivingLauncherForm = Nothing
+        mReceivingLauncherWorkbookName = vbNullString
+        mReceivingLauncherFormTerminated = False
+    End If
+
+    If Not IsReceivingLauncherFormReusable(wb) Then
+        launcherStage = "replace Receiving form binding"
+        On Error Resume Next
+        If Not mReceivingLauncherForm Is Nothing Then
+            If mReceivingLauncherForm.Visible Then Unload mReceivingLauncherForm
+        End If
+        Set mReceivingLauncherForm = Nothing
+        On Error GoTo ErrHandler
+        Set mReceivingLauncherForm = New frmReceiving
+        mReceivingLauncherFormTerminated = False
+        mReceivingLauncherWorkbookName = wb.Name
+        launcherStage = "bind Receiving form"
+        mReceivingLauncherForm.SetOperatorWorkbook wb
+        launcherStage = "initialize Receiving form"
+        mReceivingLauncherForm.InitializeFromReceiving
+    End If
+
     EnforceReceivingSupportSheetsHidden wb
-    frm.Show vbModeless
+    launcherStage = "show Receiving form"
+    If Not mReceivingLauncherForm.Visible Then
+        mReceivingLauncherForm.Show vbModeless
+    End If
+    Exit Sub
+
+ErrHandler:
+    ShowReceivingMessage _
+        "Receiving form failed [Stage=" & Trim$(launcherStage) & _
+        "; Err.Number=" & CStr(Err.Number) & _
+        "; Err.Source=" & modOperationsInit.SanitizeLauncherErrorSource(Err.Source) & _
+        "]: " & Err.Description, vbCritical
+End Sub
+
+Public Sub NotifyReceivingLauncherFormTerminating(ByVal terminatingForm As frmReceiving)
+    If terminatingForm Is Nothing Then Exit Sub
+    If mReceivingLauncherForm Is Nothing Then Exit Sub
+    If terminatingForm Is mReceivingLauncherForm Then
+        mReceivingLauncherFormTerminated = True
+    End If
+End Sub
+
+Private Function IsReceivingLauncherFormReusable(ByVal operatorWb As Workbook) As Boolean
+    Dim visibleState As Boolean
+
+    If operatorWb Is Nothing Then Exit Function
+    If mReceivingLauncherFormTerminated Then Exit Function
+    If mReceivingLauncherForm Is Nothing Then Exit Function
+    If StrComp(mReceivingLauncherWorkbookName, operatorWb.Name, vbTextCompare) <> 0 Then Exit Function
+
+    On Error GoTo Disappeared
+    visibleState = mReceivingLauncherForm.Visible
+    IsReceivingLauncherFormReusable = visibleState
+Disappeared:
+End Function
+
+Public Sub HandleReceivingOperatorWorkbookClosing(ByVal operatorWb As Workbook)
+    If operatorWb Is Nothing Then Exit Sub
+    If StrComp(mReceivingLauncherWorkbookName, operatorWb.Name, vbTextCompare) <> 0 Then Exit Sub
+
+    On Error Resume Next
+    If Not mReceivingLauncherForm Is Nothing Then Unload mReceivingLauncherForm
+    Set mReceivingLauncherForm = Nothing
+    mReceivingLauncherWorkbookName = vbNullString
+    mReceivingLauncherFormTerminated = False
+    On Error GoTo 0
 End Sub
 
 Public Function RunReceivingConfirmWritesFormActionForTest(ByVal operatorWb As Workbook, _

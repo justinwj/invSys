@@ -115,8 +115,10 @@ Private mPendingBoxVersionInventoryOverlay As Object
 Private mPendingBoxVersionInventoryOverlayBaseline As Object
 Private mPendingBoxVersionInventoryOverlayIncludesReservation As Object
 Private mPendingBoxVersionInventoryOverlayPath As String
+Private mShipmentsLauncherForm As frmShipmentsTally
 Private mShipmentsAutoSyncForm As Object
 Private mBoxMakerAutoSyncForm As Object
+Private mShipmentsLauncherWorkbookName As String
 
 Private Const BOX_VERSION_SAVE_CANCEL As Long = 0
 Private Const BOX_VERSION_SAVE_UPDATE As Long = 1
@@ -383,11 +385,6 @@ Private Function ResolveShippingWorkbook(Optional ByVal preferredWb As Workbook 
         Exit Function
     End If
 
-    If requiredSheet = "" Then
-        Set ResolveShippingWorkbook = ThisWorkbook
-    ElseIf Not WorkbookSheetExistsShipping(ThisWorkbook, requiredSheet) Is Nothing Then
-        Set ResolveShippingWorkbook = ThisWorkbook
-    End If
 End Function
 
 Private Function WorkbookSheetExistsShipping(ByVal wb As Workbook, ByVal nameOrCode As String) As Worksheet
@@ -642,23 +639,56 @@ Public Sub BtnOpenShipmentsForm()
     Dim repairReport As String
     Dim quietStarted As Boolean
     Dim messageText As String
-    Dim frm As frmShipmentsTally
+    Dim launcherStage As String
+    Dim errorNumber As Long
+    Dim errorSource As String
+    Dim errorDescription As String
+    Dim preferredWorkbookName As String
+    Dim workbookName As String
 
-    If Not modRoleUiAccess.RequireCurrentUserCapability("SHIP_POST") Then Exit Sub
+    launcherStage = "capability"
+    If Not modRoleUiAccess.RequireCurrentUserCapabilityCached("SHIP_POST") Then Exit Sub
 
-    Set wb = ResolveShippingWorkbook(Application.ActiveWorkbook)
-    modUiQuiet.BeginQuietUi wb
+    launcherStage = "capture active workbook"
+    If Not Application.ActiveWorkbook Is Nothing Then
+        preferredWorkbookName = Application.ActiveWorkbook.Name
+    End If
+
+    launcherStage = "resolve or provision Shipping workbook"
+    If Not modOperationsPrimitiveBridge.OpenOrCreateCurrentRoleOperatorWorkbook( _
+            preferredWorkbookName, "SHIPPING", workbookName, repairReport) Then
+        If Trim$(repairReport) = "" Then
+            repairReport = "The station-local Shipping operator workbook could not be opened."
+        End If
+        messageText = repairReport
+        GoTo CleanExit
+    End If
+    Set wb = modOperationsInit.ResolveOpenWorkbookByName(workbookName)
+    If wb Is Nothing Then
+        messageText = "The resolved Shipping operator workbook is no longer open."
+        GoTo CleanExit
+    End If
+
+    launcherStage = "begin quiet UI"
+    If Not modOperationsPrimitiveBridge.BeginQuietUiForWorkbook(wb.Name) Then
+        messageText = "Shipping could not prepare the selected operator workbook."
+        GoTo CleanExit
+    End If
     quietStarted = True
+    launcherStage = "hide Shipping support sheets"
     EnforceShippingSupportSheetsHidden wb
+    launcherStage = "resolve Shipping surface"
     Set ws = ShipmentsWorksheetForWorkbook(wb)
     If ws Is Nothing _
        Or GetListObject(ws, TABLE_SHIPMENTS) Is Nothing _
        Or GetListObject(ws, TABLE_NOTSHIPPED) Is Nothing Then
-        If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wb, repairReport) Then
+        launcherStage = "repair Shipping surface"
+        If Not modOperationsPrimitiveBridge.EnsureShippingWorkbookSurface(wb.Name, repairReport) Then
             If Trim$(repairReport) = "" Then repairReport = "Shipping support table repair failed without detail."
             messageText = repairReport
             GoTo CleanExit
         End If
+        launcherStage = "verify repaired Shipping surface"
         EnforceShippingSupportSheetsHidden wb
         Set ws = ShipmentsWorksheetForWorkbook(wb)
         If ws Is Nothing _
@@ -669,19 +699,43 @@ Public Sub BtnOpenShipmentsForm()
         End If
     End If
 
-    Set frm = New frmShipmentsTally
-    frm.SetOperatorWorkbook wb
-    frm.InitializeFromShipping
+    If mShipmentsLauncherForm Is Nothing _
+       Or mShipmentsAutoSyncForm Is Nothing _
+       Or StrComp(mShipmentsLauncherWorkbookName, wb.Name, vbTextCompare) <> 0 Then
+        launcherStage = "replace Shipping form binding"
+        On Error Resume Next
+        If Not mShipmentsLauncherForm Is Nothing Then Unload mShipmentsLauncherForm
+        Set mShipmentsLauncherForm = Nothing
+        On Error GoTo ErrHandler
+        launcherStage = "create Shipping form"
+        Set mShipmentsLauncherForm = New frmShipmentsTally
+        launcherStage = "bind Shipping form"
+        mShipmentsLauncherForm.SetOperatorWorkbook wb
+        mShipmentsLauncherWorkbookName = wb.Name
+        launcherStage = "initialize Shipping form"
+        mShipmentsLauncherForm.InitializeFromShipping
+    End If
+    launcherStage = "clear clipboard"
     ClearSystemClipboardShipping
     If quietStarted Then
+        launcherStage = "end quiet UI"
         modUiQuiet.EndQuietUi
         quietStarted = False
     End If
-    frm.Show vbModeless
+    launcherStage = "show Shipping form"
+    If Not mShipmentsLauncherForm.Visible Then
+        mShipmentsLauncherForm.Show vbModeless
+    End If
     GoTo CleanExit
 
 ErrHandler:
-    messageText = "SHIPMENTS failed: " & Err.Description
+    errorNumber = Err.Number
+    errorSource = Err.Source
+    errorDescription = Err.Description
+    messageText = "SHIPMENTS failed [Stage=" & Trim$(launcherStage) & _
+                  "; Err.Number=" & CStr(errorNumber) & _
+                  "; Err.Source=" & modOperationsInit.SanitizeLauncherErrorSource(errorSource) & _
+                  "]: " & errorDescription
 CleanExit:
     On Error Resume Next
     ClearSystemClipboardShipping
@@ -698,8 +752,23 @@ Public Sub UnregisterShipmentsFormAutoSync(ByVal formInstance As Object)
     On Error Resume Next
 
     If Not mShipmentsAutoSyncForm Is Nothing Then
-        If formInstance Is Nothing Or mShipmentsAutoSyncForm Is formInstance Then Set mShipmentsAutoSyncForm = Nothing
+        If formInstance Is Nothing Or mShipmentsAutoSyncForm Is formInstance Then
+            Set mShipmentsAutoSyncForm = Nothing
+            mShipmentsLauncherWorkbookName = vbNullString
+        End If
     End If
+    On Error GoTo 0
+End Sub
+
+Public Sub HandleShippingOperatorWorkbookClosing(ByVal operatorWb As Workbook)
+    If operatorWb Is Nothing Then Exit Sub
+    If StrComp(mShipmentsLauncherWorkbookName, operatorWb.Name, vbTextCompare) <> 0 Then Exit Sub
+
+    On Error Resume Next
+    If Not mShipmentsLauncherForm Is Nothing Then Unload mShipmentsLauncherForm
+    Set mShipmentsLauncherForm = Nothing
+    Set mShipmentsAutoSyncForm = Nothing
+    mShipmentsLauncherWorkbookName = vbNullString
     On Error GoTo 0
 End Sub
 

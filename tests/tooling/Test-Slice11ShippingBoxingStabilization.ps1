@@ -90,7 +90,7 @@ Add-Check "Shipping.Form.RealSendUsesTypedService" `
     "The real Shipments Sent handler must delegate to the typed service with captured workbook context."
 
 Add-Check "Shipping.Form.ModelessCapturedContext" `
-    (($moduleText -match '(?i)frm\.Show\s+vbModeless') -and
+    (($moduleText -match '(?i)(?:frm|mShipmentsLauncherForm)\.Show\s+vbModeless') -and
      ($formText -match '(?i)Private\s+mOperatorWorkbook\s+As\s+Workbook') -and
      ($formText -notmatch '(?i)\bApplication\.ActiveWorkbook\b')) `
     "The modeless Shipping shell must remain bound to its captured operator workbook."

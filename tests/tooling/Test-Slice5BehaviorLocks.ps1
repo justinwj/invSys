@@ -37,13 +37,13 @@ Add-Check "Shipping.FormActions.RequiredHandlers" `
     "To Shipments and Shipments Sent must remain wired to the operator handlers."
 
 Add-Check "Receiving.Form.ModelessLauncher" `
-    ($receivingModule -match 'frm\.Show\s+vbModeless') `
+    ($receivingModule -match '(?:frm|mReceivingLauncherForm)\.Show\s+vbModeless') `
     "Receiving launcher must open the main form modelessly."
 Add-Check "Production.Form.ModelessLauncher" `
     ($productionModule -match 'frmProduction\.Show\s+vbModeless') `
     "Production launcher must open the main form modelessly."
 Add-Check "Shipping.Form.ModelessLauncher" `
-    ($shippingModule -match 'frm\.Show\s+vbModeless') `
+    ($shippingModule -match '(?:frm|mShipmentsLauncherForm)\.Show\s+vbModeless') `
     "Shipping launcher must open the main form modelessly."
 
 $purchasingStubPresent = ($receivingForm -match 'Forms\.TabStrip\.1') -and

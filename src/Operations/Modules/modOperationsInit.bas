@@ -73,6 +73,55 @@ Public Function LegacyRoleAddinCoexistenceReport() As String
     End If
 End Function
 
+Public Function ResolveOpenWorkbookByName(ByVal workbookName As String) As Workbook
+    Dim wb As Workbook
+
+    workbookName = Trim$(workbookName)
+    If workbookName = "" Then Exit Function
+    On Error Resume Next
+    Set ResolveOpenWorkbookByName = Application.Workbooks(workbookName)
+    On Error GoTo 0
+    If Not ResolveOpenWorkbookByName Is Nothing Then Exit Function
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.Name, workbookName, vbTextCompare) = 0 Then
+            Set ResolveOpenWorkbookByName = wb
+            Exit Function
+        End If
+    Next wb
+End Function
+
+Public Function SanitizeLauncherErrorSource(ByVal errorSource As String) As String
+    errorSource = Replace(errorSource, vbCr, " ")
+    errorSource = Replace(errorSource, vbLf, " ")
+    errorSource = Replace(errorSource, "|", "/")
+    errorSource = Trim$(errorSource)
+    If Len(errorSource) > 160 Then errorSource = Left$(errorSource, 160)
+    If errorSource = "" Then errorSource = "(none)"
+    SanitizeLauncherErrorSource = errorSource
+End Function
+
+Public Function WorkbookOwnsRoleTable(ByVal wb As Workbook, _
+                                      ByVal worksheetName As String, _
+                                      ByVal tableName As String) As Boolean
+    On Error GoTo NotRole
+    If wb Is Nothing Then Exit Function
+    WorkbookOwnsRoleTable = _
+        Not wb.Worksheets(worksheetName).ListObjects(tableName) Is Nothing
+NotRole:
+End Function
+
+Public Function IsRoleWorksheet(ByVal sheetObject As Object, _
+                                ByVal worksheetName As String, _
+                                ByVal tableName As String) As Boolean
+    On Error GoTo NotRole
+    If sheetObject Is Nothing Then Exit Function
+    If StrComp(CStr(sheetObject.Name), worksheetName, vbTextCompare) <> 0 Then Exit Function
+    IsRoleWorksheet = WorkbookOwnsRoleTable( _
+        sheetObject.Parent, worksheetName, tableName)
+NotRole:
+End Function
+
 Private Function InitializeReceivingOperations() As String
     On Error GoTo Failed
     modReceivingInit.ReceivingPackageAutoOpen
