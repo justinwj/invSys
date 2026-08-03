@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-07-29T02:15:17Z",
+    "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "c892b76699c2ed3d6a74a163874958a8104232b31b9db0cb88d4fe87c8aa0fc8",
-                          "maintenanceCandidatesSha256":  "3854b36fd53c4fee88599ef3dd3ad16764ebf770ab69c1d5c33fcc57eea8f974"
+                          "implementationManifestSha256":  "f4089b7b1dedff489a2397989644b386b57d9fb12a0869a76ad34907da5defa9",
+                          "maintenanceCandidatesSha256":  "3312f9e6129744948f3fd6220da90e73431be18af1b668073fd792d6e5ff7f15"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  962,
-                    "reviewedCandidateCount":  964,
+                    "scannerCandidateCount":  963,
+                    "reviewedCandidateCount":  965,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -52,7 +52,7 @@
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  219,
+                            "candidateCount":  220,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -98,14 +98,14 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1705,
+                                                  "baselineLineCount":  1773,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Admin/Modules/modAdminConsole.bas",
                                                   "componentName":  "modAdminConsole",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1998,
+                                                  "baselineLineCount":  2008,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -1349,6 +1349,7 @@
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
                                                   "Scheduler_RunWarehouseBatch",
                                                   "Scheduler_RunWarehousePublish",
@@ -1358,6 +1359,7 @@
                                                   "SetCatalogValueAdmin",
                                                   "SetInventoryQuantityForWarehouse",
                                                   "SetPictureReferencesInCatalogAdmin",
+                                                  "SetSeedInventorySelectionForAutomation",
                                                   "SetSheetProtectionAdminLocal",
                                                   "UpdateInventoryItemCatalogForWarehouse",
                                                   "Verify_AddinsPublished"
@@ -1916,6 +1918,29 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Set_CurrentUser"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.SetSeedInventorySelectionForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "SetSeedInventorySelectionForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"

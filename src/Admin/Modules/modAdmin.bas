@@ -2,6 +2,10 @@ Attribute VB_Name = "modAdmin"
 Option Explicit
 
 Private Const ADMIN_DEMO_INVENTORY_QTY As Double = 1000#
+Private mSeedCallbackAutomationEnabled As Boolean
+Private mSeedCallbackAutomationWarehouseId As String
+Private mSeedCallbackAutomationStationId As String
+Private mSeedCallbackAutomationUserId As String
 
 Sub Admin_Click()
     Dim report As String
@@ -155,17 +159,46 @@ Sub Seed_DemoInventory()
     Dim stationId As String
     Dim userId As String
     Dim report As String
+    Dim stage As String
 
+    On Error GoTo FailSeedCallback
+
+    stage = "context resolution"
     If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, report) Then
-        MsgBox report, vbExclamation, "invSys Admin"
-        Exit Sub
+        If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
+        GoTo CleanExit
     End If
 
+    stage = "queue and processor application"
     If modAdminInventorySeed.SeedDemoInventoryForWarehouse(warehouseId, stationId, userId, report) Then
-        MsgBox report, vbInformation, "invSys Admin"
+        If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbInformation, "invSys Admin"
     Else
-        MsgBox report, vbExclamation, "invSys Admin"
+        If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
     End If
+
+CleanExit:
+    mSeedCallbackAutomationEnabled = False
+    mSeedCallbackAutomationWarehouseId = ""
+    mSeedCallbackAutomationStationId = ""
+    mSeedCallbackAutomationUserId = ""
+    Exit Sub
+
+FailSeedCallback:
+    report = "Seed Demo Inventory failed at " & stage & "." & vbCrLf & _
+             "Error " & CStr(Err.Number) & vbCrLf & _
+             "Source: " & SanitizeSeedCallbackErrorText(Err.Source) & vbCrLf & _
+             SanitizeSeedCallbackErrorText(Err.Description)
+    If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
+    Resume CleanExit
+End Sub
+
+Public Sub SetSeedInventorySelectionForAutomation(ByVal warehouseId As String, _
+                                                  ByVal stationId As String, _
+                                                  ByVal userId As String)
+    mSeedCallbackAutomationWarehouseId = Trim$(warehouseId)
+    mSeedCallbackAutomationStationId = Trim$(stationId)
+    mSeedCallbackAutomationUserId = Trim$(userId)
+    mSeedCallbackAutomationEnabled = True
 End Sub
 
 Sub Add_InventoryItem()
@@ -934,6 +967,8 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     Dim warehouseOptions As Collection
     Dim runtimeRoot As String
     Dim formReport As String
+    Dim item As Variant
+    Dim selectionFound As Boolean
 
     warehouseId = Trim$(modConfig.GetWarehouseId())
     stationId = Trim$(modConfig.GetStationId())
@@ -943,7 +978,7 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     userId = Trim$(modRoleEventWriter.ResolveCurrentUserId())
     If userId = "" Then userId = Trim$(Application.UserName)
 
-    Set warehouseOptions = modAdminConsole.GetWarehouseDirectoryOptions(Nothing, formReport)
+    Set warehouseOptions = modAdminConsole.GetWarehouseDirectoryOptions(Nothing, formReport, True)
     If warehouseOptions Is Nothing Then
         report = "No warehouse configs were found. Use Add Warehouse Root or View Warehouses first."
         Exit Function
@@ -956,19 +991,38 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         Exit Function
     End If
 
-    frmSeedInventory.Configure warehouseOptions, warehouseId, stationId, userId
-    frmSeedInventory.Show
-    If Not frmSeedInventory.Accepted Then
-        report = "Seed inventory cancelled."
-        Unload frmSeedInventory
-        Exit Function
-    End If
+    If mSeedCallbackAutomationEnabled Then
+        warehouseId = mSeedCallbackAutomationWarehouseId
+        stationId = mSeedCallbackAutomationStationId
+        userId = mSeedCallbackAutomationUserId
+        If stationId = "" Then stationId = "S1"
+        For Each item In warehouseOptions
+            If StrComp(Trim$(CStr(item(1))), warehouseId, vbTextCompare) = 0 _
+               And StrComp(Trim$(CStr(item(2))), stationId, vbTextCompare) = 0 Then
+                runtimeRoot = Trim$(CStr(item(3)))
+                selectionFound = True
+                Exit For
+            End If
+        Next item
+        If Not selectionFound Then
+            report = "The selected warehouse/station is not available in the current target."
+            Exit Function
+        End If
+    Else
+        frmSeedInventory.Configure warehouseOptions, warehouseId, stationId, userId
+        frmSeedInventory.Show
+        If Not frmSeedInventory.Accepted Then
+            report = "Seed inventory cancelled."
+            Unload frmSeedInventory
+            Exit Function
+        End If
 
-    warehouseId = Trim$(frmSeedInventory.SelectedWarehouseId)
-    stationId = Trim$(frmSeedInventory.SelectedStationId)
-    runtimeRoot = Trim$(frmSeedInventory.SelectedRuntimeRoot)
-    userId = Trim$(frmSeedInventory.SelectedUserId)
-    Unload frmSeedInventory
+        warehouseId = Trim$(frmSeedInventory.SelectedWarehouseId)
+        stationId = Trim$(frmSeedInventory.SelectedStationId)
+        runtimeRoot = Trim$(frmSeedInventory.SelectedRuntimeRoot)
+        userId = Trim$(frmSeedInventory.SelectedUserId)
+        Unload frmSeedInventory
+    End If
 
     If warehouseId = "" Then
         report = "WarehouseId is required."
@@ -987,6 +1041,20 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     End If
 
     ResolveSeedInventoryContext = True
+End Function
+
+Private Function SanitizeSeedCallbackErrorText(ByVal valueText As String) As String
+    valueText = Replace$(Replace$(Trim$(valueText), vbCr, " "), vbLf, " ")
+    Do While InStr(1, valueText, "  ", vbBinaryCompare) > 0
+        valueText = Replace$(valueText, "  ", " ")
+    Loop
+    If InStr(1, valueText, "\", vbBinaryCompare) > 0 Then
+        valueText = "<redacted-path>"
+    ElseIf Len(valueText) > 240 Then
+        valueText = Left$(valueText, 240)
+    End If
+    If valueText = "" Then valueText = "<none>"
+    SanitizeSeedCallbackErrorText = valueText
 End Function
 
 Private Function ResolveAdminCurrentTargetContext(ByRef warehouseId As String, _

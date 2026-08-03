@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-07-29T02:15:17Z
-- Scanner candidates: 962
-- Reviewed candidates: 964
+- Baseline: 2026-07-27T20:00:00Z
+- Scanner candidates: 963
+- Reviewed candidates: 965
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -17,7 +17,7 @@
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 308 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
-| ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 3 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -33,8 +33,8 @@
 | src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1158 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 1705 |
-| src/Admin/Modules/modAdminConsole.bas | Admin | 1998 |
+| src/Admin/Modules/modAdmin.bas | Admin | 1773 |
+| src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1845 |
 | src/Core/Modules/modAuth.bas | Core | 1627 |
@@ -108,6 +108,7 @@
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Scheduler_RunWarehouseBatch | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Scheduler_RunWarehousePublish | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Set_CurrentUser | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Admin_Modules_modAdmin.bas:modAdmin.SetSeedInventorySelectionForAutomation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdminConsole.bas:modAdminConsole.CloseWorkbookByFullNameAdmin | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Admin_Modules_modAdminConsole.bas:modAdminConsole.EnsureFolderForFileAdmin | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Admin_Modules_modAdminConsole.bas:modAdminConsole.GetLeafFolderNameAdmin | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |

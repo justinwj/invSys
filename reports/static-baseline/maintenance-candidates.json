@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-07-29T02:15:17Z",
+    "generatedAtUtc":  "2026-07-27T20:00:00Z",
     "baseline":  {
                      "componentCount":  164,
-                     "procedureCount":  4558,
-                     "lineCount":  99398,
+                     "procedureCount":  4560,
+                     "lineCount":  99476,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  187
@@ -12095,6 +12095,7 @@
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
                                                   "Scheduler_RunWarehouseBatch",
                                                   "Scheduler_RunWarehousePublish",
@@ -12104,6 +12105,7 @@
                                                   "SetCatalogValueAdmin",
                                                   "SetInventoryQuantityForWarehouse",
                                                   "SetPictureReferencesInCatalogAdmin",
+                                                  "SetSeedInventorySelectionForAutomation",
                                                   "SetSheetProtectionAdminLocal",
                                                   "UpdateInventoryItemCatalogForWarehouse",
                                                   "Verify_AddinsPublished"
@@ -16298,6 +16300,23 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Set_CurrentUser"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.SetSeedInventorySelectionForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "SetSeedInventorySelectionForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"

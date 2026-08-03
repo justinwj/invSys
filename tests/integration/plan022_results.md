@@ -44,6 +44,24 @@ all three roles share the Core-owned open/create primitive; and automated NAS
 validation uses a distinct account so it cannot overwrite the prepared human
 UAT PIN.
 
+The first downstream Admin control checkpoint on 2026-08-02 exposed another
+meaningful packaged RED: `modAdmin.Seed_DemoInventory` remained in its broad
+warehouse-directory/context path for more than 45 seconds before the selection
+form could complete, matching the operator-observed flashing followed by an
+application/object-defined error. The callback was resolving the active
+canonical Config workbook as an Admin surface and scanning remembered roots
+even though a valid current warehouse target was already selected.
+
+The 2026-08-03 correction makes the Seed Demo Inventory callback request only
+the current selected target. General View Warehouses scanning remains
+unchanged. The callback now reports its failing stage, error number, sanitized
+source, and description, and the packaged automation seam injects only the
+form selection before calling the same public callback. Preserved evidence:
+
+- `tests/integration/admin_seed_callback_red_results.md`;
+- `tests/integration/admin_seed_callback_green_results.md`; and
+- `tools/validate_admin_seed_inventory_callback.ps1`.
+
 ## Automated GREEN
 
 | Evidence | Result |
@@ -57,6 +75,8 @@ UAT PIN.
 | Packaged RibbonX | 136/136 |
 | Live role workflow | 46/46 |
 | Ordered Release 1 full chain | 30/30 |
+| Packaged Admin Seed Demo Inventory callback | GREEN; 3 unique D14 entities, `Condition=GOOD` |
+| Create Warehouse / repeated seed D14 lifecycle | 15/15 |
 | Slice 5 behavior locks | 13/13 |
 | Slices 6, 8, 9, 10, 11, 12, 13, and 14 static locks | 10/10, 14/14, 8/8, 10/10, 11/11, 11/11, 14/14, 9/9 |
 
@@ -81,18 +101,20 @@ mismatches.
 Relative to the committed baseline:
 
 - components: 164 -> 164;
-- procedures: 4,535 -> 4,558;
-- maintenance candidates: 962 -> 962;
+- procedures: 4,535 -> 4,560;
+- maintenance candidates: 962 -> 963;
 - duplicate-body groups: 187 -> 187;
 - literal `Application.Run` targets: 9 -> 9; and
 - unresolved dynamic calls: 48 -> 48.
 
-The reviewed +23-procedure exception consists of required operator-workbook
+The reviewed +25-procedure exception consists of required operator-workbook
 eligibility/provisioning for all three roles, captured-form/workbook lifecycle,
-safe launcher diagnostics, and the packaged test seams required by D13. The
-second UAT correction accounts for nine procedures beyond the previously
-reviewed +14. No component, maintenance-candidate, duplicate-body, or
-dynamic-call regression was introduced.
+safe launcher/Seed callback diagnostics, and the packaged test seams required
+by D13. The one new review-only maintenance candidate is the explicit Admin
+Seed callback automation setter; it remains capability-gated by the unchanged
+queue boundary and is not deletion-authorized. No component, duplicate-body,
+same-project dynamic-call, or unresolved dynamic-call regression was
+introduced.
 
 ## Remaining completion gate
 

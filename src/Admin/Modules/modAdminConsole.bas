@@ -185,7 +185,8 @@ Public Function OpenWarehouseDirectory(Optional ByVal adminWb As Workbook = Noth
 End Function
 
 Public Function GetWarehouseDirectoryOptions(Optional ByVal adminWb As Workbook = Nothing, _
-                                             Optional ByRef report As String = "") As Collection
+                                             Optional ByRef report As String = "", _
+                                             Optional ByVal currentTargetOnly As Boolean = False) As Collection
     On Error GoTo FailOptions
 
     Dim wb As Workbook
@@ -211,6 +212,15 @@ Public Function GetWarehouseDirectoryOptions(Optional ByVal adminWb As Workbook 
         AddWarehouseDirectoryOptionAdmin options, optionKeys, _
                                         currentTarget.WarehouseId, currentTarget.StationId, _
                                         currentTarget.RuntimeRoot, "Ready"
+    End If
+    If currentTargetOnly Then
+        If options.Count = 0 Then
+            report = "Connect and select a warehouse target before seeding demo inventory."
+        Else
+            report = "OK"
+        End If
+        Set GetWarehouseDirectoryOptions = options
+        Exit Function
     End If
     Set wb = ResolveAdminWorkbook(adminWb)
     If wb Is Nothing Then
