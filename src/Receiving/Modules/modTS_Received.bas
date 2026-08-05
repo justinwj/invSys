@@ -189,6 +189,35 @@ Public Function RunReceivingPurchasingTabContractForTest(ByVal operatorWb As Wor
     Unload frm
 End Function
 
+Public Function RunReceivingRefreshFormActionForTest(ByVal operatorWorkbookName As String, _
+                                                     Optional ByVal filterText As String = "") As String
+    Dim frm As frmReceiving
+    Dim operatorWb As Workbook
+
+    On Error GoTo Failed
+    Set operatorWb = modOperationsInit.ResolveOpenWorkbookByName(operatorWorkbookName)
+    If operatorWb Is Nothing Then
+        RunReceivingRefreshFormActionForTest = "FAIL|Operator workbook is not open."
+        Exit Function
+    End If
+
+    Set frm = New frmReceiving
+    RunReceivingRefreshFormActionForTest = _
+        frm.TestRefreshInventoryActionForWorkbook(operatorWb, filterText)
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    Set frm = Nothing
+    Set operatorWb = Nothing
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    RunReceivingRefreshFormActionForTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
+
 Public Function ReceivingFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
     Dim frm As frmReceiving
 

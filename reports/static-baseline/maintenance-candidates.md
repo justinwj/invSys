@@ -1,8 +1,8 @@
 # invSys VBA Maintenance Candidates
 
 - Schema: 1.0.0
-- Generated: 2026-07-27T20:00:00Z
-- Total candidates: 963
+- Generated: 2026-08-05T05:10:19Z
+- Total candidates: 964
 - Duplicate-body groups: 187
 - Unresolved dynamic calls: 48
 
@@ -906,6 +906,7 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | UNRESOLVED | MEDIUM | modReceivingInit | InitReceivingAddin | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Received | EnsureGeneratedButtons | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Received | ReceivingFormInitializeSmokeForWorkbook | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
+| UNRESOLVED | MEDIUM | modTS_Received | RunReceivingRefreshFormActionForTest | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Received | ShowReceivingForm | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | cShippingWorkflowState | MarkApplied | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | cShippingWorkflowState | MarkCompleted | No direct, dynamic-root, or test reference was found, but public visibility requires review. |

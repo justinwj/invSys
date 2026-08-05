@@ -134,6 +134,29 @@ Public Function TestInitializeForWorkbook(ByVal operatorWb As Workbook) As Strin
         "|Caption=" & Me.Caption
 End Function
 
+Public Function TestRefreshInventoryActionForWorkbook(ByVal operatorWb As Workbook, _
+                                                       Optional ByVal filterText As String = "") As String
+    On Error GoTo Failed
+
+    If operatorWb Is Nothing Then
+        TestRefreshInventoryActionForWorkbook = "FAIL|Operator workbook is required."
+        Exit Function
+    End If
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    InitializeFromReceiving
+    mTxtSearch.Value = filterText
+    mBtnRefresh_Click
+    TestRefreshInventoryActionForWorkbook = _
+        "OK|VisibleRows=" & CStr(mLstInventory.ListCount) & _
+        "|Status=" & CStr(mTxtStatus.Text)
+    Exit Function
+
+Failed:
+    TestRefreshInventoryActionForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
     If Not mBuilt Then BuildLayout

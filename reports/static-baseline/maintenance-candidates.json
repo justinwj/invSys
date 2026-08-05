@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-07-27T20:00:00Z",
+    "generatedAtUtc":  "2026-08-05T05:10:19Z",
     "baseline":  {
                      "componentCount":  164,
-                     "procedureCount":  4560,
-                     "lineCount":  99476,
+                     "procedureCount":  4562,
+                     "lineCount":  99500,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  187
@@ -18918,6 +18918,23 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "ReceivingFormInitializeSmokeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingRefreshFormActionForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "RunReceivingRefreshFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"

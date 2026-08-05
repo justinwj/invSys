@@ -229,6 +229,7 @@ function Find-ListObjectInWorkbook {
         [string]$TableName
     )
 
+    if ($null -eq $Workbook) { return $null }
     foreach ($worksheet in $Workbook.Worksheets) {
         foreach ($listObject in $worksheet.ListObjects) {
             if ([string]$listObject.Name -eq $TableName) {
@@ -398,6 +399,7 @@ $requiredHelpers = @(
     "New-ConfigWorkbook",
     "New-AuthWorkbook",
     "New-InventoryWorkbook",
+    "New-OperationalWorkbook",
     "Get-WorksheetSafe",
     "Get-ListObjectSafe",
     "Get-ColumnIndexSafe",
@@ -424,6 +426,8 @@ $testPinHash = Get-InvSysCredentialHash -Credential $testPin
 $configPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Config.xlsb")
 $authPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Auth.xlsb")
 $inventoryPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Data.Inventory.xlsb")
+$snapshotPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Snapshot.Inventory.xlsb")
+$operatorPath = Join-Path $runtimeRoot ($warehouseId + "." + $stationId + ".Receiving.Operator.xlsb")
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -479,20 +483,28 @@ try {
     }
     $authWb.Save()
 
-    $currentStep = "open packaged add-ins"
-    foreach ($packageName in $packageNames) {
+    $currentStep = "open Core package and isolate its runtime root"
+    $packageName = "invSys.Core.xlam"
+    $packagePath = Join-Path $deployPath $packageName
+    $packageWb = $excel.Workbooks.Open($packagePath)
+    $opened.Add($packageWb) | Out-Null
+    $packages[$packageName] = $packageWb
+    $coreName = [string]$packageWb.Name
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+        -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" `
+        -Arguments @($runtimeRoot))
+
+    $currentStep = "open remaining packaged add-ins"
+    foreach ($packageName in @($packageNames | Where-Object { $_ -ne "invSys.Core.xlam" })) {
         $packagePath = Join-Path $deployPath $packageName
         $packageWb = $excel.Workbooks.Open($packagePath)
         $opened.Add($packageWb) | Out-Null
         $packages[$packageName] = $packageWb
     }
 
-    $coreName = [string]$packages["invSys.Core.xlam"].Name
+    $operationsName = [string]$packages["invSys.Operations.xlam"].Name
     $adminName = [string]$packages["invSys.Admin.xlam"].Name
     $currentStep = "configure isolated target and sign in"
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
-        -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" `
-        -Arguments @($runtimeRoot))
     $configLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
         -MacroName "modConfig.LoadConfig" -Arguments @($warehouseId, $stationId))
     $authLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
@@ -605,6 +617,59 @@ try {
         $conditions = @(Get-ColumnValues -ListObject $entities -ColumnName "Condition")
         $uniqueKeyCount = @($keys | Sort-Object -Unique).Count
         $allGood = $conditions.Count -eq 3 -and @($conditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+
+        $currentStep = "inspect published snapshot"
+        $snapshotWb = Find-OpenWorkbookByPath -Excel $excel -Path $snapshotPath
+        if ($null -eq $snapshotWb -and (Test-Path -LiteralPath $snapshotPath -PathType Leaf)) {
+            $snapshotWb = $excel.Workbooks.Open($snapshotPath, 0, $true)
+            $opened.Add($snapshotWb) | Out-Null
+        }
+        $snapshotTable = Find-ListObjectInWorkbook -Workbook $snapshotWb `
+            -TableName "tblInventorySnapshot"
+        $snapshotCount = if ($null -eq $snapshotTable) { 0 } else { [int]$snapshotTable.ListRows.Count }
+        $snapshotKeys = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "System_Key" |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $snapshotConditions = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "Condition")
+        $snapshotUniqueKeyCount = @($snapshotKeys | Sort-Object -Unique).Count
+        $snapshotAllGood = $snapshotConditions.Count -eq 3 -and
+            @($snapshotConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $snapshotMatchesCanonical = $snapshotUniqueKeyCount -eq $uniqueKeyCount -and
+            @(Compare-Object -ReferenceObject @($keys | Sort-Object) `
+                -DifferenceObject @($snapshotKeys | Sort-Object)).Count -eq 0
+
+        $currentStep = "refresh saved Receiving operator read model"
+        $operatorWb = New-OperationalWorkbook -Excel $excel `
+            -NameHint "SeedReceivingOps" -Path $operatorPath
+        $opened.Add($operatorWb) | Out-Null
+        $surfaceEnsured = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.EnsureReceivingWorkbookSurface" `
+            -Arguments @($operatorWb.Name, ""))
+        $refreshSucceeded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.RefreshInventoryReadModel" `
+            -Arguments @($operatorWb.Name, $warehouseId, "LOCAL"))
+        $operatorTable = Find-ListObjectInWorkbook -Workbook $operatorWb -TableName "invSys"
+        $operatorCount = if ($null -eq $operatorTable) { 0 } else { [int]$operatorTable.ListRows.Count }
+        $operatorKeys = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "System_Key" |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $operatorConditions = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "Condition")
+        $operatorUniqueKeyCount = @($operatorKeys | Sort-Object -Unique).Count
+        $operatorAllGood = $operatorConditions.Count -eq 3 -and
+            @($operatorConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $operatorMatchesSnapshot = $operatorUniqueKeyCount -eq $snapshotUniqueKeyCount -and
+            @(Compare-Object -ReferenceObject @($snapshotKeys | Sort-Object) `
+                -DifferenceObject @($operatorKeys | Sort-Object)).Count -eq 0
+        $formRefreshReport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+            -Arguments @($operatorWb.Name, "DEMO-"))
+        $formVisibleRows = if ($formRefreshReport -match '(?:^|\|)VisibleRows=(\d+)(?:\||$)') {
+            [int]$Matches[1]
+        }
+        else {
+            0
+        }
+        $operatorWb.Save()
+
         $callbackSucceeded = $callbackResult.StartsWith("OK|")
         $successUi = if ($EvidencePhase -eq "GREEN") {
             $callbackSucceeded
@@ -619,6 +684,19 @@ try {
         $facts.EntityCount = $entityCount
         $facts.UniqueSystemKeys = $uniqueKeyCount
         $facts.AllConditionsGood = $allGood
+        $facts.SnapshotFileCreated = Test-Path -LiteralPath $snapshotPath -PathType Leaf
+        $facts.SnapshotRows = $snapshotCount
+        $facts.SnapshotUniqueSystemKeys = $snapshotUniqueKeyCount
+        $facts.SnapshotAllConditionsGood = $snapshotAllGood
+        $facts.SnapshotMatchesCanonical = $snapshotMatchesCanonical
+        $facts.ReceivingSurfaceEnsured = $surfaceEnsured
+        $facts.OperatorRefreshSucceeded = $refreshSucceeded
+        $facts.OperatorRowsAfterRefresh = $operatorCount
+        $facts.OperatorUniqueSystemKeys = $operatorUniqueKeyCount
+        $facts.OperatorAllConditionsGood = $operatorAllGood
+        $facts.OperatorMatchesSnapshot = $operatorMatchesSnapshot
+        $facts.ReceivingRefreshFormAction = if ($formRefreshReport.StartsWith("OK|")) { "OK|<redacted-detail>" } else { $formRefreshReport }
+        $facts.ReceivingVisibleDemoRows = $formVisibleRows
         $facts.ConfigSurfaceChanged = $configSurfaceChanged
         $facts.ConfigHashUnchanged = $configHashBefore -eq $configHashAfter
         $facts.AuthHashUnchanged = $authHashBefore -eq $authHashAfter
@@ -628,11 +706,17 @@ try {
         $passed = [string]::IsNullOrWhiteSpace($callbackError) -and
             $successUi -and -not $configSurfaceChanged -and
             $entityCount -eq 3 -and $uniqueKeyCount -eq 3 -and
-            $allGood -and $configHashBefore -eq $configHashAfter -and
+            $allGood -and $snapshotCount -eq 3 -and
+            $snapshotUniqueKeyCount -eq 3 -and $snapshotAllGood -and
+            $snapshotMatchesCanonical -and $surfaceEnsured -and $refreshSucceeded -and
+            $operatorCount -eq 3 -and $operatorUniqueKeyCount -eq 3 -and
+            $operatorAllGood -and $operatorMatchesSnapshot -and
+            $formRefreshReport.StartsWith("OK|") -and $formVisibleRows -eq 3 -and
+            $configHashBefore -eq $configHashAfter -and
             $authDataBefore -eq $authDataAfter -and
             $inventoryHashBefore -ne $inventoryHashAfter
         if ($passed) {
-            $detail = "The public ribbon callback completed with an injected form selection and seeded three D14 entities without using the active canonical config workbook as an Admin surface."
+            $detail = "The public ribbon callback seeded three D14 entities, published the same three immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface."
         }
         else {
             $detail = "The public ribbon callback failed its packaged behavioral contract at step '$currentStep'."

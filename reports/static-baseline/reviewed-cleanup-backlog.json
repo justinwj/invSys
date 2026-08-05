@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-07-27T20:00:00Z",
+    "generatedAtUtc":  "2026-08-05T05:10:19Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "f4089b7b1dedff489a2397989644b386b57d9fb12a0869a76ad34907da5defa9",
-                          "maintenanceCandidatesSha256":  "3312f9e6129744948f3fd6220da90e73431be18af1b668073fd792d6e5ff7f15"
+                          "implementationManifestSha256":  "49153099f12a94d37933ff97ef60d211b1463b9a1be5d54866a03456742d9ce9",
+                          "maintenanceCandidatesSha256":  "7f0c6f69646eeaa6496d0d91b8c7b3918170f0dc82a291f57fcd1b55ef650ebb"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  963,
-                    "reviewedCandidateCount":  965,
+                    "scannerCandidateCount":  964,
+                    "reviewedCandidateCount":  966,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  27,
+                            "candidateCount":  28,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -19724,6 +19724,29 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "ReceivingFormInitializeSmokeForWorkbook"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingRefreshFormActionForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "RunReceivingRefreshFormActionForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"

@@ -64,9 +64,10 @@ Add-Check "Production.Layout.NativeWindowBehavior" `
      ($windowText -match '(?i)WS_MINIMIZEBOX') -and
      ($windowText -match '(?i)WS_MAXIMIZEBOX') -and
      ($windowText -match '(?i)ApplyDpiLayoutZoom') -and
-     ($windowText -match '(?i)GetDpiForWindow') -and
+     ($windowText -notmatch '(?i)GetDpiForWindow') -and
+     ($windowText -match '(?is)ApplyDpiLayoutZoom.*?CallByName\s+productionForm\s*,\s*"Zoom"\s*,\s*VbLet\s*,\s*100') -and
      ($windowText -match '(?i)DiagnoseWindowStyle')) `
-    "The operator form must retain Windows resize, minimize, maximize, DPI-normalized layout, and diagnostic support."
+    "The operator form must retain Windows resize, minimize, maximize, 100% anchor-layout zoom, and diagnostic support."
 
 Add-Check "Production.Layout.OperationsComposition" `
     (($buildText -match '(?is)Key\s*=\s*"Operations".*?SourceDirs\s*=\s*@\(.*?src/Operations.*?src/Production.*?src/Shipping') -and

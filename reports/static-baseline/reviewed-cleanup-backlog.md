@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-07-27T20:00:00Z
-- Scanner candidates: 963
-- Reviewed candidates: 965
+- Baseline: 2026-08-05T05:10:19Z
+- Scanner candidates: 964
+- Reviewed candidates: 966
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,7 +11,7 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 27 | Receiving-owned forms, services, and role package source. |
+| RECEIVING | 28 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 129 | Production-owned forms, services, and role package source. |
 | SHIPPING | 153 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
@@ -791,6 +791,7 @@
 | reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.InitReceivingAddin | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingRefreshFormActionForTest | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_SelectionChange | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
