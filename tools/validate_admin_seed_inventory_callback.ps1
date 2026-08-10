@@ -9,6 +9,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$expectedDemoCount = 19
 
 function Import-FunctionDefinitions {
     param([string]$ScriptPath)
@@ -616,7 +617,14 @@ try {
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $conditions = @(Get-ColumnValues -ListObject $entities -ColumnName "Condition")
         $uniqueKeyCount = @($keys | Sort-Object -Unique).Count
-        $allGood = $conditions.Count -eq 3 -and @($conditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $allGood = $conditions.Count -eq $expectedDemoCount -and @($conditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $catalog = Find-ListObjectInWorkbook -Workbook $inspectionWb `
+            -TableName "tblSkuCatalog"
+        $catalogCount = if ($null -eq $catalog) { 0 } else { [int]$catalog.ListRows.Count }
+        $catalogCategories = @(Get-ColumnValues -ListObject $catalog -ColumnName "CATEGORY")
+        $requiredCategories = @("raw", "wip", "shippable", "packaging.ship")
+        $catalogCoverage = $catalogCount -eq $expectedDemoCount -and
+            @($requiredCategories | Where-Object { $_ -notin $catalogCategories }).Count -eq 0
 
         $currentStep = "inspect published snapshot"
         $snapshotWb = Find-OpenWorkbookByPath -Excel $excel -Path $snapshotPath
@@ -630,9 +638,13 @@ try {
         $snapshotKeys = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "System_Key" |
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $snapshotConditions = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "Condition")
+        $snapshotCategories = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "CATEGORY")
         $snapshotUniqueKeyCount = @($snapshotKeys | Sort-Object -Unique).Count
-        $snapshotAllGood = $snapshotConditions.Count -eq 3 -and
+        $snapshotAllGood = $snapshotConditions.Count -eq $expectedDemoCount -and
             @($snapshotConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $snapshotCategoryCoverage = @($requiredCategories | Where-Object {
+            $_ -notin $snapshotCategories
+        }).Count -eq 0
         $snapshotMatchesCanonical = $snapshotUniqueKeyCount -eq $uniqueKeyCount -and
             @(Compare-Object -ReferenceObject @($keys | Sort-Object) `
                 -DifferenceObject @($snapshotKeys | Sort-Object)).Count -eq 0
@@ -652,9 +664,13 @@ try {
         $operatorKeys = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "System_Key" |
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $operatorConditions = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "Condition")
+        $operatorCategories = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "CATEGORY")
         $operatorUniqueKeyCount = @($operatorKeys | Sort-Object -Unique).Count
-        $operatorAllGood = $operatorConditions.Count -eq 3 -and
+        $operatorAllGood = $operatorConditions.Count -eq $expectedDemoCount -and
             @($operatorConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $operatorCategoryCoverage = @($requiredCategories | Where-Object {
+            $_ -notin $operatorCategories
+        }).Count -eq 0
         $operatorMatchesSnapshot = $operatorUniqueKeyCount -eq $snapshotUniqueKeyCount -and
             @(Compare-Object -ReferenceObject @($snapshotKeys | Sort-Object) `
                 -DifferenceObject @($operatorKeys | Sort-Object)).Count -eq 0
@@ -684,16 +700,20 @@ try {
         $facts.EntityCount = $entityCount
         $facts.UniqueSystemKeys = $uniqueKeyCount
         $facts.AllConditionsGood = $allGood
+        $facts.CatalogRows = $catalogCount
+        $facts.CatalogCategoryCoverage = $catalogCoverage
         $facts.SnapshotFileCreated = Test-Path -LiteralPath $snapshotPath -PathType Leaf
         $facts.SnapshotRows = $snapshotCount
         $facts.SnapshotUniqueSystemKeys = $snapshotUniqueKeyCount
         $facts.SnapshotAllConditionsGood = $snapshotAllGood
+        $facts.SnapshotCategoryCoverage = $snapshotCategoryCoverage
         $facts.SnapshotMatchesCanonical = $snapshotMatchesCanonical
         $facts.ReceivingSurfaceEnsured = $surfaceEnsured
         $facts.OperatorRefreshSucceeded = $refreshSucceeded
         $facts.OperatorRowsAfterRefresh = $operatorCount
         $facts.OperatorUniqueSystemKeys = $operatorUniqueKeyCount
         $facts.OperatorAllConditionsGood = $operatorAllGood
+        $facts.OperatorCategoryCoverage = $operatorCategoryCoverage
         $facts.OperatorMatchesSnapshot = $operatorMatchesSnapshot
         $facts.ReceivingRefreshFormAction = if ($formRefreshReport.StartsWith("OK|")) { "OK|<redacted-detail>" } else { $formRefreshReport }
         $facts.ReceivingVisibleDemoRows = $formVisibleRows
@@ -705,18 +725,21 @@ try {
 
         $passed = [string]::IsNullOrWhiteSpace($callbackError) -and
             $successUi -and -not $configSurfaceChanged -and
-            $entityCount -eq 3 -and $uniqueKeyCount -eq 3 -and
-            $allGood -and $snapshotCount -eq 3 -and
-            $snapshotUniqueKeyCount -eq 3 -and $snapshotAllGood -and
+            $entityCount -eq $expectedDemoCount -and $uniqueKeyCount -eq $expectedDemoCount -and
+            $allGood -and $catalogCoverage -and
+            $snapshotCount -eq $expectedDemoCount -and
+            $snapshotUniqueKeyCount -eq $expectedDemoCount -and $snapshotAllGood -and
+            $snapshotCategoryCoverage -and
             $snapshotMatchesCanonical -and $surfaceEnsured -and $refreshSucceeded -and
-            $operatorCount -eq 3 -and $operatorUniqueKeyCount -eq 3 -and
-            $operatorAllGood -and $operatorMatchesSnapshot -and
-            $formRefreshReport.StartsWith("OK|") -and $formVisibleRows -eq 3 -and
+            $operatorCount -eq $expectedDemoCount -and $operatorUniqueKeyCount -eq $expectedDemoCount -and
+            $operatorAllGood -and $operatorCategoryCoverage -and
+            $operatorMatchesSnapshot -and
+            $formRefreshReport.StartsWith("OK|") -and $formVisibleRows -eq $expectedDemoCount -and
             $configHashBefore -eq $configHashAfter -and
             $authDataBefore -eq $authDataAfter -and
             $inventoryHashBefore -ne $inventoryHashAfter
         if ($passed) {
-            $detail = "The public ribbon callback seeded three D14 entities, published the same three immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface."
+            $detail = "The public ribbon callback seeded the complete 19-entity R1 workflow kit, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface."
         }
         else {
             $detail = "The public ribbon callback failed its packaged behavioral contract at step '$currentStep'."

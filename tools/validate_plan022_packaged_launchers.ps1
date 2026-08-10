@@ -5,7 +5,7 @@ param(
     [string]$OutputDirectory = "reports/runtime/plan022-slice0",
     [ValidateSet("", "Receiving", "Production", "Shipping")]
     [string]$CallbackFilter = "",
-    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed")]
+    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout")]
     [string]$WorkbookState = "NoEligible"
 )
 
@@ -505,6 +505,14 @@ if ($WorkbookState -eq "ReceivingFormClosed") {
         throw "ReceivingFormClosed supports only -CallbackFilter Receiving."
     }
 }
+if ($WorkbookState -eq "ShippingLayout") {
+    if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
+        $callbacks = @($callbacks | Where-Object { $_.Name -eq "Shipping" })
+    }
+    elseif ($CallbackFilter -ne "Shipping") {
+        throw "ShippingLayout supports only -CallbackFilter Shipping."
+    }
+}
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -611,7 +619,7 @@ try {
 
     $currentStep = "prepare workbook state"
     [IO.File]::WriteAllText($progressPath, $currentStep)
-    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed")) {
+    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout")) {
         if ($null -ne $inventoryWb) {
             $inventoryWb.Close($true)
         }
@@ -699,7 +707,18 @@ try {
         }
 
         $passed = $false
-        if ($WorkbookState -eq "ReceivingDurability" -and $callback.Name -eq "Receiving") {
+        if ($WorkbookState -eq "ShippingLayout" -and $callback.Name -eq "Shipping") {
+            $layoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingStatusAnchorTest")
+            $observedText += " || STATUS_LAYOUT=" + $layoutReport
+            $passed = [string]::IsNullOrWhiteSpace($capture.Error) -and
+                $layoutReport -match '^OK\|' -and
+                $layoutReport -match '(?:^|\|)TopStable=True(?:\||$)' -and
+                $layoutReport -match '(?:^|\|)HeightStable=True(?:\||$)' -and
+                $layoutReport -match '(?:^|\|)AboveSearch=True(?:\||$)'
+        }
+        elseif ($WorkbookState -eq "ReceivingDurability" -and $callback.Name -eq "Receiving") {
             $operatorPath = @($newWorkbookPaths | Where-Object {
                 [IO.Path]::GetFullPath($_).StartsWith(
                     [IO.Path]::GetFullPath($operatorRoot),
@@ -981,6 +1000,9 @@ finally {
     $reportTitle = if ($WorkbookState -eq "ReceivingDurability") {
         "# Plan 022 Slice 1 Receiving Durability Evidence"
     }
+    elseif ($WorkbookState -eq "ShippingLayout") {
+        "# Plan 022 Slice 4g Shipping Status Anchor Evidence"
+    }
     else {
         "# Plan 022 Slice 0 Packaged Launcher Evidence"
     }
@@ -1004,6 +1026,9 @@ finally {
     }
     $reportFile = if ($WorkbookState -eq "NoEligible") {
         "packaged-launcher-noeligible.md"
+    }
+    elseif ($WorkbookState -eq "ShippingLayout") {
+        "shipping-status-anchor.md"
     }
     elseif ($WorkbookState -eq "CapturedClosed") {
         "packaged-launcher-capturedclosed-$($CallbackFilter.ToLowerInvariant()).md"

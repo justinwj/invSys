@@ -75,11 +75,7 @@ Private WithEvents mLstManagerCheck As MSForms.ListBox
 Private WithEvents mBtnRunApplyPalette As MSForms.CommandButton
 Private WithEvents mBtnManagerCheckIn As MSForms.CommandButton
 Private WithEvents mBtnManagerRefresh As MSForms.CommandButton
-Private WithEvents mBtnManagerPrepare As MSForms.CommandButton
 Private WithEvents mBtnManagerApplyOutput As MSForms.CommandButton
-Private WithEvents mBtnManagerUsed As MSForms.CommandButton
-Private WithEvents mBtnManagerMade As MSForms.CommandButton
-Private WithEvents mBtnManagerTotal As MSForms.CommandButton
 Private WithEvents mBtnManagerNext As MSForms.CommandButton
 Private WithEvents mBtnManagerPrint As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
@@ -4725,35 +4721,8 @@ Private Sub mBtnManagerCheckIn_Click()
     CheckInProductionRun
 End Sub
 
-Private Sub mBtnManagerPrepare_Click()
-    PrepareProductionOutput
-End Sub
-
 Private Sub mBtnManagerApplyOutput_Click()
     CompleteProductionRun
-End Sub
-
-Private Sub mBtnManagerUsed_Click()
-    BindOperatorWorkbookForRun
-    mProduction.BtnToUsed
-    RefreshManagerState
-    ShowStatus "To USED completed."
-End Sub
-
-Private Sub mBtnManagerMade_Click()
-    If mLstManagerOutput.ListIndex >= 0 Then ApplySelectedProductionOutput
-    BindOperatorWorkbookForRun
-    mProduction.BtnToMade
-    RefreshManagerState
-    ShowStatus "To MADE completed."
-End Sub
-
-Private Sub mBtnManagerTotal_Click()
-    If mLstManagerOutput.ListIndex >= 0 Then ApplySelectedProductionOutput
-    BindOperatorWorkbookForRun
-    mProduction.ProductionToTotalInv
-    RefreshManagerState
-    ShowStatus "To TOTAL INV completed."
 End Sub
 
 Private Sub mCmbRunProcess_Change()

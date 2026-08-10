@@ -88,19 +88,6 @@ Public Function IdentifiersMatch(ByVal leftValue As String, ByVal rightValue As 
     Next i
 End Function
 
-Public Function ResolveSearchRole(ByVal templateFormName As String) As String
-    Select Case LCase$(Trim$(templateFormName))
-        Case "ufreceivingitemsearch"
-            ResolveSearchRole = "receiving"
-        Case "ufshippingitemsearch"
-            ResolveSearchRole = "shipping"
-        Case "ufproductionitemsearch"
-            ResolveSearchRole = "production"
-        Case "ufadminitemsearch"
-            ResolveSearchRole = "admin"
-    End Select
-End Function
-
 Public Function ResolveSearchCaption(ByVal roleKey As String, ByVal pickerMode As String) As String
     Dim resolvedRole As String
     Dim resolvedMode As String

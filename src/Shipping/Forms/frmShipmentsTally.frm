@@ -60,7 +60,6 @@ Private mTxtLocation As MSForms.TextBox
 Private mTxtRow As MSForms.TextBox
 Private mTxtCarrier As MSForms.ComboBox
 Private mTxtStatus As MSForms.TextBox
-Private mLstReadiness As MSForms.ListBox
 Private mLblSyncState As MSForms.Label
 Private mLblBoxBuilderPage As MSForms.Label
 Private mLblBoxMakerPage As MSForms.Label
@@ -1420,32 +1419,6 @@ Private Sub RenderLineList(ByVal lst As MSForms.ListBox, ByVal rowsData As Varia
 FailSoft:
 End Sub
 
-Private Sub RenderReadiness(ByVal rowsData As Variant)
-    On Error GoTo FailSoft
-
-    Dim r As Long
-    Dim displayRows As Variant
-
-    mLstReadiness.Clear
-    If IsEmpty(rowsData) Then Exit Sub
-    ReDim displayRows(0 To UBound(rowsData, 1) - 1, 0 To 8)
-    For r = 1 To UBound(rowsData, 1)
-        displayRows(r - 1, 0) = NzText(rowsData(r, 1))
-        displayRows(r - 1, 1) = NzText(rowsData(r, 2))
-        displayRows(r - 1, 2) = FormatQuantity(ParseNumber(NzText(rowsData(r, 3))))
-        displayRows(r - 1, 3) = FormatQuantity(ParseNumber(NzText(rowsData(r, 4))))
-        displayRows(r - 1, 4) = FormatQuantity(ParseNumber(NzText(rowsData(r, 5))))
-        displayRows(r - 1, 5) = NzText(rowsData(r, 6))
-        displayRows(r - 1, 6) = NzText(rowsData(r, 7))
-        displayRows(r - 1, 7) = NzText(rowsData(r, 8))
-        displayRows(r - 1, 8) = NzText(rowsData(r, 9))
-    Next r
-    mLstReadiness.List = displayRows
-    Exit Sub
-
-FailSoft:
-End Sub
-
 Private Sub LoadSelectedShippable()
     If mLstShippables.ListIndex < 0 Then Exit Sub
     mTxtBox.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 0))
@@ -2075,6 +2048,41 @@ Public Function TestInitializeForWorkbook(ByVal operatorWb As Workbook) As Strin
         "|Caption=" & Me.Caption
 End Function
 
+Public Function TestStatusAnchorAfterResize() As String
+    Dim originalHeight As Double
+    Dim originalTop As Double
+    Dim originalStatusHeight As Double
+    Dim searchTop As Double
+    Dim grownTop As Double
+    Dim grownStatusHeight As Double
+    Dim topStable As Boolean
+    Dim heightStable As Boolean
+    Dim aboveSearch As Boolean
+
+    If Not mBuilt Then BuildLayout
+    originalHeight = Me.Height
+    originalTop = mTxtStatus.Top
+    originalStatusHeight = mTxtStatus.Height
+    searchTop = mTxtPicker.Top
+
+    Me.Height = originalHeight + 180
+    mAnchors.ResizeControls
+    grownTop = mTxtStatus.Top
+    grownStatusHeight = mTxtStatus.Height
+    topStable = Abs(grownTop - originalTop) < 0.5
+    heightStable = Abs(grownStatusHeight - originalStatusHeight) < 0.5
+    aboveSearch = grownTop + grownStatusHeight < searchTop
+
+    TestStatusAnchorAfterResize = "OK|TopStable=" & CStr(topStable) & _
+        "|HeightStable=" & CStr(heightStable) & _
+        "|AboveSearch=" & CStr(aboveSearch) & _
+        "|OriginalTop=" & Format$(originalTop, "0.00") & _
+        "|GrownTop=" & Format$(grownTop, "0.00")
+
+    Me.Height = originalHeight
+    mAnchors.ResizeControls
+End Function
+
 Public Function TestRunShipmentsSentActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        ByVal carrierValue As String, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
@@ -2274,7 +2282,7 @@ Private Sub InitializeAnchors()
     mAnchors.Add mBtnHold, ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mLstHold, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnReturn, ANCHOR_TOP Or ANCHOR_RIGHT
-    mAnchors.Add mTxtStatus, ANCHOR_LEFT Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mTxtStatus, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnStage, ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnSend, ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnClose, ANCHOR_RIGHT Or ANCHOR_BOTTOM
@@ -2348,18 +2356,6 @@ Private Sub AddShipmentLineHeaders(ByVal leftPos As Single, ByVal topPos As Sing
     AddHeaderLabel UniqueHeaderName("hdrLineRow", topPos), "ROW", leftPos + 468, topPos, 46
     AddHeaderLabel UniqueHeaderName("hdrLineDesc", topPos), "Version", leftPos + 520, topPos, 58
     AddHeaderLabel UniqueHeaderName("hdrLineCarrier", topPos), "Carrier", leftPos + 584, topPos, 84
-End Sub
-
-Private Sub AddReadinessHeaders(ByVal leftPos As Single, ByVal topPos As Single)
-    AddHeaderLabel "hdrReadyType", "Type", leftPos, topPos, 60
-    AddHeaderLabel "hdrReadyItem", "Item", leftPos + 66, topPos, 174
-    AddHeaderLabel "hdrReadyReq", "Required", leftPos + 250, topPos, 58
-    AddHeaderLabel "hdrReadyInv", "Current", leftPos + 316, topPos, 58
-    AddHeaderLabel "hdrReadyStaged", "Staged", leftPos + 382, topPos, 58
-    AddHeaderLabel "hdrReadyUom", "UOM", leftPos + 448, topPos, 38
-    AddHeaderLabel "hdrReadyLoc", "Location", leftPos + 494, topPos, 90
-    AddHeaderLabel "hdrReadyRow", "ROW", leftPos + 592, topPos, 44
-    AddHeaderLabel "hdrReadyStatus", "Status", leftPos + 644, topPos, 76
 End Sub
 
 Private Function AddLabel(ByVal name As String, _

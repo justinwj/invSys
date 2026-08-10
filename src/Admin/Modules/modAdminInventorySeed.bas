@@ -1,8 +1,6 @@
 Attribute VB_Name = "modAdminInventorySeed"
 Option Explicit
 
-Private Const DEMO_INVENTORY_QTY As Double = 1000#
-
 Public Function SeedDemoInventoryForWarehouse(ByVal warehouseId As String, _
                                               ByVal stationId As String, _
                                               ByVal userId As String, _
@@ -121,14 +119,63 @@ Private Function BuildDemoInventoryPayload() As Collection
     Dim rows As Collection
 
     Set rows = New Collection
-    rows.Add modRoleEventWriter.CreateInventoryEntityPayloadItem( _
-        modRoleEventWriter.CreateSystemKey(), "DEMO-RAW-BLACK-TEA", _
-        DEMO_INVENTORY_QTY, "NAS-A1", "GOOD", "", "Admin demo seed")
-    rows.Add modRoleEventWriter.CreateInventoryEntityPayloadItem( _
-        modRoleEventWriter.CreateSystemKey(), "DEMO-SPICE-CARDAMOM", _
-        DEMO_INVENTORY_QTY, "NAS-A2", "GOOD", "", "Admin demo seed")
-    rows.Add modRoleEventWriter.CreateInventoryEntityPayloadItem( _
-        modRoleEventWriter.CreateSystemKey(), "DEMO-PKG-TIN", _
-        DEMO_INVENTORY_QTY, "NAS-P1", "GOOD", "", "Admin demo seed")
+    AddDemoInventoryItem rows, "DEMO-RAW-BLACK-TEA", "Black Tea", 5000, "lbs", _
+        "Loose black tea for brewing.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-FILTERED-WATER", "Filtered Water", 20000, "lbs", _
+        "Filtered brewing water.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-CARDAMOM", "Cardamom (Decorticated)", 500, "lbs", _
+        "Cardamom for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-BLACK-PEPPER", "Black Pepper (Whole)", 300, "lbs", _
+        "Black pepper for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-NUTMEG", "Nutmeg (Ground)", 250, "lbs", _
+        "Ground nutmeg for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-GINGER", "Ginger (Ground)", 250, "lbs", _
+        "Ground ginger for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-CITRIC-ACID", "Citric Acid", 120, "lbs", _
+        "Citric acid ingredient.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-CASSIA-OIL", "Cassia Oil 340139", 80, "lbs", _
+        "Cassia oil for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-LEMON-OIL", "Lemon Oil (5x) 34013", 80, "lbs", _
+        "Lemon oil for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-ORANGE-OIL", "Orange Oil (Cold Press)", 80, "lbs", _
+        "Orange oil for chai blend.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-SUGAR-WHITE", "Pure Cane Sugar White Granulated", 8000, "lbs", _
+        "White granulated cane sugar.", "raw"
+    AddDemoInventoryItem rows, "DEMO-RAW-SUGAR-CLOUDY", "Pure Cane Sugar Cloudy White Granulated", 6000, "lbs", _
+        "Cloudy white granulated cane sugar.", "raw"
+    AddDemoInventoryItem rows, "DEMO-WIP-BREWED-BLACK-TEA", "Brewed Black Tea", 1200, "lbs", _
+        "Intermediate brewed tea.", "wip"
+    AddDemoInventoryItem rows, "DEMO-WIP-CHAI-SPICE-BLEND", "Classic Chai Spice Blend", 600, "lbs", _
+        "Intermediate chai spice blend.", "wip"
+    AddDemoInventoryItem rows, "DEMO-RAW-BROWN-COLOR", "Brown Color 10.5g", 100, "lbs", _
+        "Brown color ingredient.", "raw"
+    AddDemoInventoryItem rows, "DEMO-FG-CLASSIC-CHAI", "Black Scottie Chai Classic Concentrate", 400, "gal", _
+        "Finished good concentrate for shipping.", "shippable"
+    AddDemoInventoryItem rows, "DEMO-FG-12PACK-CASE", "Classic Chai 12-Pack Case", 120, "each", _
+        "Finished case pack.", "shippable"
+    AddDemoInventoryItem rows, "DEMO-FG-SAMPLE-BOX", "Black Scottie Sample Box", 80, "each", _
+        "Sample assortment box.", "shippable"
+    AddDemoInventoryItem rows, "DEMO-PKG-TIN", "Classic Chai Tin", 1000, "each", _
+        "Packaging component for receiving and box-building tests.", "packaging.ship"
     Set BuildDemoInventoryPayload = rows
 End Function
+
+Private Sub AddDemoInventoryItem(ByVal rows As Collection, _
+                                 ByVal itemCode As String, _
+                                 ByVal itemName As String, _
+                                 ByVal qty As Double, _
+                                 ByVal uom As String, _
+                                 ByVal description As String, _
+                                 ByVal category As String)
+    Dim item As Object
+
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        modRoleEventWriter.CreateSystemKey(), itemCode, qty, "CLEARVIEW", _
+        "GOOD", "", "Admin R1 workflow demo seed")
+    item("ITEM_CODE") = itemCode
+    item("ITEM") = itemName
+    item("UOM") = uom
+    item("DESCRIPTION") = description
+    item("CATEGORY") = category
+    rows.Add item
+End Sub

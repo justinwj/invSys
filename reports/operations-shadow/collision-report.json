@@ -11,12 +11,11 @@
     "excludedFileNames":  [
                               "modReceivingAutoOpen.bas",
                               "modProductionAutoOpen.bas",
-                              "modShippingAutoOpen.bas",
-                              "ufDynItemSearchTemplate.frm"
+                              "modShippingAutoOpen.bas"
                           ],
     "summary":  {
-                    "componentCount":  44,
-                    "publicProcedureCount":  363,
+                    "componentCount":  36,
+                    "publicProcedureCount":  378,
                     "ribbonCallbackCount":  4,
                     "componentCollisionCount":  0,
                     "publicProcedureCollisionCount":  0,

@@ -1873,7 +1873,7 @@ Public Sub BtnLoadRecipe()
         Exit Sub
     End If
     If mRecipePicker Is Nothing Then Set mRecipePicker = CreateDynItemSearch()
-    mRecipePicker.UseTemplateForm "ufProductionItemSearch"
+    mRecipePicker.UseRoleProfile "production"
     mRecipePicker.ShowForRecipeCell targetCell
 End Sub
 

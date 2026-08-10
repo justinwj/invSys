@@ -247,8 +247,8 @@ Private Function AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse( _
     Set loEntities = FindTableCreateWarehouse(wbInventory, "tblInventoryEntities")
     Set firstKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
     If firstKeys Is Nothing Then Exit Function
-    If firstKeys.Count <> beforeKeys.Count + 3 Then
-        detail = "First Admin seed expected three newly keyed entities; before=" & _
+    If firstKeys.Count <> beforeKeys.Count + 19 Then
+        detail = "First Admin seed expected 19 newly keyed entities; before=" & _
                  CStr(beforeKeys.Count) & "; after=" & CStr(firstKeys.Count) & "."
         Exit Function
     End If
@@ -261,8 +261,8 @@ Private Function AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse( _
     Set loEntities = FindTableCreateWarehouse(wbInventory, "tblInventoryEntities")
     Set secondKeys = CollectEntityKeysCreateWarehouse(loEntities, True, detail)
     If secondKeys Is Nothing Then Exit Function
-    If secondKeys.Count <> firstKeys.Count + 3 Then
-        detail = "Second Admin seed expected three newly keyed entities; first=" & _
+    If secondKeys.Count <> firstKeys.Count + 19 Then
+        detail = "Second Admin seed expected 19 newly keyed entities; first=" & _
                  CStr(firstKeys.Count) & "; second=" & CStr(secondKeys.Count) & "."
         Exit Function
     End If
@@ -271,7 +271,7 @@ Private Function AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse( _
         Exit Function
     End If
 
-    detail = "Repeated Admin seed created six new collision-free System_Key values with Condition=GOOD and no migration event."
+    detail = "Repeated Admin seed created 38 new collision-free System_Key values with Condition=GOOD and no migration event."
     AssertRepeatedAdminSeedCreatesUniqueKeysCreateWarehouse = True
 End Function
 

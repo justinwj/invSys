@@ -744,6 +744,15 @@ CleanExit:
     If Trim$(messageText) <> "" Then MsgBox messageText, vbExclamation, "invSys Shipments"
 End Sub
 
+Public Function RunShippingStatusAnchorTest() As String
+    BtnOpenShipmentsForm
+    If mShipmentsLauncherForm Is Nothing Then
+        RunShippingStatusAnchorTest = "FAIL|FormNotOpen"
+    Else
+        RunShippingStatusAnchorTest = mShipmentsLauncherForm.TestStatusAnchorAfterResize()
+    End If
+End Function
+
 Public Sub RegisterShipmentsFormAutoSync(ByVal formInstance As Object)
     Set mShipmentsAutoSyncForm = formInstance
 End Sub
@@ -2254,7 +2263,7 @@ Public Sub ShowShippingDynamicItemSearch(ByVal targetCell As Range)
         RefreshShippingBomViewForWorkbook targetCell.Worksheet.Parent, refreshReport
     End If
     If mDynSearch Is Nothing Then Set mDynSearch = CreateDynItemSearch()
-    mDynSearch.UseTemplateForm "ufShippingItemSearch"
+    mDynSearch.UseRoleProfile "shipping"
     If ShippingPickerTargetTableName(targetCell) = "boxbom" Then
         mDynSearch.ShowForShippingComponentCell targetCell
     Else

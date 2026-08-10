@@ -428,6 +428,8 @@ try {
     $componentSpecs = @(
         @{ File = "invSys.Core.xlam"; Component = "modInventoryDomainBridge"; Exists = $true },
         @{ File = "invSys.Core.xlam"; Component = "modDesignsDomainBridge"; Exists = $true },
+        @{ File = "invSys.Core.xlam"; Component = "modInventoryViewerData"; Exists = $true },
+        @{ File = "invSys.Core.xlam"; Component = "frmItemSearch"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryApply"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryQueries"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInvMan"; Exists = $false },
@@ -436,7 +438,25 @@ try {
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsQueries"; Exists = $true },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true },
         @{ File = "invSys.Admin.xlam"; Component = "modAdminConsole"; Exists = $true },
-        @{ File = "invSys.Admin.xlam"; Component = "modAdminDesignLifecycle"; Exists = $true }
+        @{ File = "invSys.Admin.xlam"; Component = "modAdminDesignLifecycle"; Exists = $true },
+        @{ File = "invSys.Operations.xlam"; Component = "modInventoryViewer"; Exists = $true },
+        @{ File = "invSys.Operations.xlam"; Component = "frmInventoryViewer"; Exists = $true },
+        @{ File = "invSys.Admin.xlam"; Component = "frmAdminControls"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "frmAdminEmail"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "frmEditUser"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "ufAdminItemSearch"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "ufDynItemSearchTemplate"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmCreateRecipeTable"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmCreateSubstitutionList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmIngredientPalette"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmSubstitution"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufProductionItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmReceivingSavedList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufReceivingItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmShippingCreateList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmShippingSavedList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufShippingItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufDynItemSearchTemplate"; Exists = $false }
     )
     foreach ($componentSpec in $componentSpecs) {
         if (-not $workbookMap.ContainsKey($componentSpec.File)) {

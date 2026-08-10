@@ -1769,5 +1769,5 @@ End Function
 ' This module contains administrative functions for the application.
 ' It includes functions to manage user accounts, roles, and permissions. yada yada
 ' It also includes functions to manage application settings and configurations.
-' The functions in this module are used by the frmAdminControls form to perform administrative tasks.
+' Shared administrative helpers used by the active Admin ribbon actions and forms.
 ''''''''''''''''''''''''''''''''''''

@@ -28,11 +28,11 @@ Private mAllowedRows As Object
 Private mShippingBomPackageRows As Object
 Private mShippingBomPackageItems As Object
 Private mLoadedFromShippingBom As Boolean
-Private mTemplateFormName As String
+Private mRoleProfile As String
 Private Const CORE_PICKER_TEMPLATE As String = "frmItemSearch"
 
-Public Sub UseTemplateForm(ByVal formName As String)
-    mTemplateFormName = Trim$(formName)
+Public Sub UseRoleProfile(ByVal roleKey As String)
+    mRoleProfile = LCase$(Trim$(roleKey))
 End Sub
 
 Public Sub ShowForCell(ByVal targetCell As Range)
@@ -141,8 +141,7 @@ Private Function BuildForm() As Boolean
     On Error Resume Next
     Err.Clear
 
-    ' Always instantiate from a Core-owned form first. Role-specific forms live
-    ' in other XLAM projects and are not visible here.
+    ' Always instantiate the single Core-owned Release 1 search form.
     Set uf = VBA.UserForms.Add(CORE_PICKER_TEMPLATE)
     If Err.Number <> 0 Then
         Debug.Print "    UserForms.Add('" & CORE_PICKER_TEMPLATE & "') ERROR:", Err.Number, Err.Description
@@ -248,6 +247,10 @@ Private Function BuildForm() As Boolean
     txtDesc.MultiLine = True
     txtDesc.Locked = True
     txtDesc.ScrollBars = 2 'fmScrollBarsVertical
+
+    On Error Resume Next
+    CallByName uf, "ConfigureRuntimeLayout", VbMethod, txtSearch, chkShippable, lst, txtDesc
+    On Error GoTo 0
 
     BuildForm = True
     Debug.Print "    BuildForm SUCCESS"
@@ -902,7 +905,7 @@ Private Function ShouldDefaultShippable() As Boolean
 End Function
 
 Private Function CurrentRoleKey() As String
-    CurrentRoleKey = modItemSearch.ResolveSearchRole(mTemplateFormName)
+    CurrentRoleKey = mRoleProfile
 End Function
 
 Private Function LoadManagedInventoryItems(Optional ByVal includeCategory As Boolean = False) As Variant

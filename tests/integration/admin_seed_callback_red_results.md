@@ -17,5 +17,7 @@ The public callback did not complete within 45 seconds while resolving or presen
 
 ## Captured UI
 
+- `ACTION|SeedFormOK`
 - `DRIVER|Started|ProcessId=<redacted-session>`
 - `TIMEOUT|Public callback did not complete within 45s.`
+- `WINDOW|ThunderDFrame|invSys Admin - Seed Inventory`

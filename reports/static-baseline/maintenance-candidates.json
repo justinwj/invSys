@@ -1,14 +1,14 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-05T05:10:19Z",
+    "generatedAtUtc":  "2026-08-10T05:30:28Z",
     "baseline":  {
-                     "componentCount":  164,
-                     "procedureCount":  4562,
-                     "lineCount":  99500,
+                     "componentCount":  149,
+                     "procedureCount":  4566,
+                     "lineCount":  99150,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
-                     "duplicateBodyCandidateCount":  187
+                     "duplicateBodyCandidateCount":  185
                  },
     "candidates":  [
                        {
@@ -259,91 +259,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.DeleteExistingDataForCell",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "DeleteExistingDataForCell"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.FillDataTableRow",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "FillDataTableRow"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.GetLocationByItem",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "GetLocationByItem"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.GetVendorByItem",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "GetVendorByItem"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.SetTallyRowNumber",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "SetTallyRowNumber"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -913,6 +828,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.PrepareProductionOutput",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "PrepareProductionOutput"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BuildInventoryOutputIdentityLookup",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
@@ -1406,46 +1338,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.AddReadinessHeaders",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "AddReadinessHeaders"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.IsShipmentsOperatorWorkbook",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
                            "componentName":  "frmShipmentsTally",
                            "procedureNames":  [
                                                   "IsShipmentsOperatorWorkbook"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.RenderReadiness",
-                           "candidateType":  "REMOVE",
-                           "confidence":  "HIGH",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "RenderReadiness"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Forms/frmShipmentsTally.frm"
@@ -1514,6 +1412,23 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "BuildComponentDeltaPacketFromAggregate"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadItemList",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "LoadItemList"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -2073,17 +1988,15 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetItemSearch+ResolveInventoryWorksheetSnapshot",
+                           "id":  "duplicate:177a5c3477858895:ResolveInventoryWorksheetInvMan+ResolveInventoryWorksheetSnapshot",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
-                           "componentName":  "frmItemSearch",
+                           "componentName":  "modUR_Snapshot",
                            "procedureNames":  [
                                                   "ResolveInventoryWorksheetInvMan",
-                                                  "ResolveInventoryWorksheetItemSearch",
                                                   "ResolveInventoryWorksheetSnapshot"
                                               ],
                            "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm",
                                                "src/Core/Modules/modUR_Snapshot.bas",
                                                "src/InventoryDomain/Modules/modInvMan.bas"
                                            ],
@@ -2365,15 +2278,17 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize",
+                           "id":  "duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
-                           "componentName":  "frmReceiving",
+                           "componentName":  "frmInventoryViewer",
                            "procedureNames":  [
+                                                  "UserForm_Initialize",
                                                   "UserForm_Initialize",
                                                   "UserForm_Initialize"
                                               ],
                            "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm",
                                                "src/Receiving/Forms/frmReceiving.frm",
                                                "src/Shipping/Forms/frmShipmentsTally.frm"
                                            ],
@@ -2439,26 +2354,6 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:30bd2f7bbedd5489:lst_Click+lstBox_Change+lstBox_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "cDynItemSearch",
-                           "procedureNames":  [
-                                                  "lst_Click",
-                                                  "lstBox_Change",
-                                                  "lstBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/ClassModules/cDynItemSearch.cls",
-                                               "src/Core/Forms/frmItemSearch.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -3587,11 +3482,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
+                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmAddInventoryItem",
                            "procedureNames":  [
+                                                  "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
@@ -3605,6 +3501,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
+                                               "src/Core/Forms/frmItemSearch.frm",
                                                "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -3979,24 +3876,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:9c8e24ac6f2226f8:lstBox_KeyDown+txtBox_KeyDown",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_KeyDown",
-                                                  "txtBox_KeyDown"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:9c9fed8b42a31ed9:txtWarehouseId_Change+txtWarehouseId_Change",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
@@ -4301,7 +4180,7 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:b6128e74972d9bee:FindDesignsApplyTable+FindDesignsTableQuery+FindInventoryQueryTable+FindListObjectByNameAdminLocal+FindListObjectByNamePublisher+FindListObjectByNameStatus+FindListObjectInWorkbook+FindListObjectNas+FindListObjectReadModel+FindProductionListObjectByName+FindTable+FindTableByName+FindTableByNameBootstrap+FindTableByNameReadiness+FindTableByNameShip+FindTableByNameSurface",
+                           "id":  "duplicate:b6128e74972d9bee:FindDesignsApplyTable+FindDesignsTableQuery+FindInventoryQueryTable+FindListObjectByNameAdminLocal+FindListObjectByNamePublisher+FindListObjectByNameStatus+FindListObjectInWorkbook+FindListObjectNas+FindListObjectReadModel+FindProductionListObjectByName+FindTable+FindTableByName+FindTableByNameBootstrap+FindTableByNameReadiness+FindTableByNameShip+FindTableByNameSurface+ViewerFindTable",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modAdmin",
@@ -4321,11 +4200,13 @@
                                                   "FindTableByNameBootstrap",
                                                   "FindTableByNameReadiness",
                                                   "FindTableByNameShip",
-                                                  "FindTableByNameSurface"
+                                                  "FindTableByNameSurface",
+                                                  "ViewerFindTable"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas",
                                                "src/Core/ClassModules/cDynItemSearch.cls",
+                                               "src/Core/Modules/modInventoryViewerData.bas",
                                                "src/Core/Modules/modNasConnection.bas",
                                                "src/Core/Modules/modOperatorReadModel.bas",
                                                "src/Core/Modules/modPhase6DemoData.bas",
@@ -4557,7 +4438,7 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:c47acf96b3f0f5b1:btnCancel_Click+btnCancel_Click+btnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click",
+                           "id":  "duplicate:c47acf96b3f0f5b1:btnCancel_Click+btnCancel_Click+btnCancel_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click+mBtnClose_Click",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
                            "componentName":  "frmAdminDesignLifecycle",
@@ -4565,6 +4446,7 @@
                                                   "btnCancel_Click",
                                                   "btnCancel_Click",
                                                   "btnCancel_Click",
+                                                  "mBtnClose_Click",
                                                   "mBtnClose_Click",
                                                   "mBtnClose_Click",
                                                   "mBtnClose_Click",
@@ -4576,6 +4458,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
+                                               "src/Operations/Forms/frmInventoryViewer.frm",
                                                "src/Production/Forms/frmProduction.frm",
                                                "src/Receiving/Forms/frmReceiving.frm"
                                            ],
@@ -5873,40 +5756,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Admin_Forms_frmAdminControls.frm:frmAdminControls.btnCreateDeleteUser_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmAdminControls",
-                           "procedureNames":  [
-                                                  "btnCreateDeleteUser_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAdminControls.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmAdminControls.frm:frmAdminControls.btnEditUser_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmAdminControls",
-                           "procedureNames":  [
-                                                  "btnEditUser_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAdminControls.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Admin_Forms_frmAdminDesignLifecycle.frm:frmAdminDesignLifecycle.mBtnClose_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -6893,58 +6742,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmEditUser.frm:frmEditUser.btnNewPIN_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmEditUser",
-                           "procedureNames":  [
-                                                  "btnNewPIN_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmEditUser.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmEditUser.frm:frmEditUser.btnUpdateUser_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmEditUser",
-                           "procedureNames":  [
-                                                  "btnUpdateUser_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmEditUser.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmEditUser.frm:frmEditUser.UserForm_Initialize",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmEditUser",
-                           "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmEditUser.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -8569,125 +8366,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.lstBox_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.lstBox_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.lstBox_DblClick",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_DblClick"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.lstBox_KeyDown",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_KeyDown"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.lstBox_KeyPress",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "lstBox_KeyPress"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.txtBox_Change",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "txtBox_Change"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.txtBox_KeyDown",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "txtBox_KeyDown"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_Activate",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -8705,30 +8383,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_Initialize",
+                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_Layout",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmItemSearch",
                            "procedureNames":  [
-                                                  "UserForm_Initialize"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmItemSearch.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
-                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_KeyDown",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmItemSearch",
-                           "procedureNames":  [
-                                                  "UserForm_KeyDown"
+                                                  "UserForm_Layout"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmItemSearch.frm"
@@ -8740,12 +8400,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_MouseScroll",
+                           "id":  "root:src_Core_Forms_frmItemSearch.frm:frmItemSearch.UserForm_Terminate",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmItemSearch",
                            "procedureNames":  [
-                                                  "UserForm_MouseScroll"
+                                                  "UserForm_Terminate"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Forms/frmItemSearch.frm"
@@ -9391,6 +9051,126 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mBtnClose_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "mBtnClose_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mBtnRefresh_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "mBtnRefresh_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mTxtSearch_Change",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "mTxtSearch_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.UserForm_Activate",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "UserForm_Activate"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.UserForm_Initialize",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "UserForm_Initialize"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/fixtures/static/src/Operations/Forms/frmSyntheticSurface.frm",
+                                                   "tests/tooling/Test-Slice0ToolContracts.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.UserForm_Layout",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "UserForm_Layout"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.UserForm_Terminate",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "UserForm_Terminate"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.Auto_Open",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -9885,23 +9665,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerMade_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerMade_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerNext_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -9915,23 +9678,6 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerPrepare_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerPrepare_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
                                                ],
                            "reviewRequired":  true
                        },
@@ -9959,40 +9705,6 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "mBtnManagerRefresh_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerTotal_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerTotal_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Forms/frmProduction.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerUsed_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmProduction",
-                           "procedureNames":  [
-                                                  "mBtnManagerUsed_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -12394,7 +12106,7 @@
                                                   "txtSearch_Change",
                                                   "txtSearch_KeyDown",
                                                   "UpdateDescription",
-                                                  "UseTemplateForm"
+                                                  "UseRoleProfile"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cDynItemSearch.cls"
@@ -13657,13 +13369,9 @@
                                                   "mBtnLoaderRefresh_Click",
                                                   "mBtnManagerApplyOutput_Click",
                                                   "mBtnManagerCheckIn_Click",
-                                                  "mBtnManagerMade_Click",
                                                   "mBtnManagerNext_Click",
-                                                  "mBtnManagerPrepare_Click",
                                                   "mBtnManagerPrint_Click",
                                                   "mBtnManagerRefresh_Click",
-                                                  "mBtnManagerTotal_Click",
-                                                  "mBtnManagerUsed_Click",
                                                   "mBtnRunApplyPalette_Click",
                                                   "mBtnRunTreeApplyPalette_Click",
                                                   "mBtnRunTreeCollapseAll_Click",
@@ -14276,7 +13984,6 @@
                                                   "AddHeaderLabel",
                                                   "AddLabel",
                                                   "AddListBox",
-                                                  "AddReadinessHeaders",
                                                   "AddShipmentLineHeaders",
                                                   "AddShippableHeaders",
                                                   "AddTextBox",
@@ -14361,7 +14068,6 @@
                                                   "RemoveSelectedShipmentRows",
                                                   "RenderLineList",
                                                   "RenderPageRows",
-                                                  "RenderReadiness",
                                                   "RenderShippables",
                                                   "ResolveOperatorWorkbook",
                                                   "RunBoxBuilderVersionAction",
@@ -14390,6 +14096,7 @@
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
                                                   "TestRunShipmentsSentActionForWorkbook",
+                                                  "TestStatusAnchorAfterResize",
                                                   "TimingStart",
                                                   "TimingSummary",
                                                   "TLap",
@@ -14921,6 +14628,7 @@
                                                   "RollbackShipmentCommitRow",
                                                   "RunShipmentsSentFormActionForTest",
                                                   "RunShippingRuntimeQueueRefresh",
+                                                  "RunShippingStatusAnchorTest",
                                                   "SafeFileTokenShipping",
                                                   "SafeTableName",
                                                   "SaveBoxBuilderFormTablesExplicit",
@@ -16490,6 +16198,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cTableBandManager.cls"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Core_Forms_frmItemSearch.frm:frmItemSearch.ConfigureRuntimeLayout",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "frmItemSearch",
+                           "procedureNames":  [
+                                                  "ConfigureRuntimeLayout"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Forms/frmItemSearch.frm"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
@@ -18368,6 +18093,57 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.CloseInventoryViewerForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modInventoryViewer",
+                           "procedureNames":  [
+                                                  "CloseInventoryViewerForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modInventoryViewer.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerActionForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modInventoryViewer",
+                           "procedureNames":  [
+                                                  "RunInventoryViewerActionForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modInventoryViewer.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerFilterForTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modInventoryViewer",
+                           "procedureNames":  [
+                                                  "RunInventoryViewerFilterForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modInventoryViewer.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Operations_Modules_modOperationsInit.bas:modOperationsInit.OperationsShadowStartupForTest",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -18510,6 +18286,40 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "BtnShowSystem"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToMade",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "BtnToMade"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToUsed",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "BtnToUsed"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
@@ -18725,6 +18535,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionToTotalInv",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "ProductionToTotalInv"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RefreshProductionRecipesFromRuntimeForCurrentWorkbook",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -18901,6 +18728,23 @@
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
                                                   "EnsureGeneratedButtons"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RebuildAggregation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "RebuildAggregation"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Modules/modTS_Received.bas"

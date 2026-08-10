@@ -844,8 +844,7 @@ $projectMap = @(
         ExcludeFiles = @(
             "modReceivingAutoOpen.bas",
             "modProductionAutoOpen.bas",
-            "modShippingAutoOpen.bas",
-            "ufDynItemSearchTemplate.frm"
+            "modShippingAutoOpen.bas"
         )
         References = @("Core")
         Sheets     = @(
@@ -897,6 +896,13 @@ $projectMap = @(
                     )
                 },
                 @{
+                    Id      = "grpOperationsOverview"
+                    Label   = "Overview"
+                    Buttons = @(
+                        @{ Id = "btnOperationsInventoryViewer"; Label = "Inventory Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "TablePropertiesExcel"; Screentip = "View current inventory levels" }
+                    )
+                },
+                @{
                     Id      = "grpOperationsReceiving"
                     Label   = "Receiving"
                     Buttons = @(
@@ -935,8 +941,7 @@ $projectMap = @(
         ExcludeFiles = @(
             "modReceivingAutoOpen.bas",
             "modProductionAutoOpen.bas",
-            "modShippingAutoOpen.bas",
-            "ufDynItemSearchTemplate.frm"
+            "modShippingAutoOpen.bas"
         )
         References = @("Core")
         Sheets     = @(
