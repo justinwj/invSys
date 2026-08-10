@@ -708,15 +708,34 @@ try {
 
         $passed = $false
         if ($WorkbookState -eq "ShippingLayout" -and $callback.Name -eq "Shipping") {
-            $layoutReport = [string](Run-WorkbookMacro -Excel $excel `
+            $statusLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
                 -WorkbookName $operationsName `
                 -MacroName "modTS_Shipments.RunShippingStatusAnchorTest")
-            $observedText += " || STATUS_LAYOUT=" + $layoutReport
+            $boxingLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingBoxingLayoutTest")
+            $shippingIdentityReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingSystemKeyIdentityTest")
+            $observedText += " || STATUS_LAYOUT=" + $statusLayoutReport
+            $observedText += " || BOXING_LAYOUT=" + $boxingLayoutReport
+            $observedText += " || SHIPPING_IDENTITY=" + $shippingIdentityReport
             $passed = [string]::IsNullOrWhiteSpace($capture.Error) -and
-                $layoutReport -match '^OK\|' -and
-                $layoutReport -match '(?:^|\|)TopStable=True(?:\||$)' -and
-                $layoutReport -match '(?:^|\|)HeightStable=True(?:\||$)' -and
-                $layoutReport -match '(?:^|\|)AboveSearch=True(?:\||$)'
+                $statusLayoutReport -match '^OK\|' -and
+                $statusLayoutReport -match '(?:^|\|)TopStable=True(?:\||$)' -and
+                $statusLayoutReport -match '(?:^|\|)HeightStable=True(?:\||$)' -and
+                $statusLayoutReport -match '(?:^|\|)AboveSearch=True(?:\||$)' -and
+                $boxingLayoutReport -match '^OK\|' -and
+                $boxingLayoutReport -match '(?:^|\|)BuilderInventoryGrew=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)MakerDesignsGrew=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)BoxingHeaderWidthsMatchLists=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)HeadersMatch=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)SearchFiltered=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)NonVersionIsNA=True(?:\||$)' -and
+                $shippingIdentityReport -match '^OK\|' -and
+                $shippingIdentityReport -match '(?:^|\|)ControlReady=True(?:\||$)' -and
+                $shippingIdentityReport -match '(?:^|\|)ValuePreserved=True(?:\||$)' -and
+                $shippingIdentityReport -match '(?:^|\|)ReservationUsesKey=True(?:\||$)'
         }
         elseif ($WorkbookState -eq "ReceivingDurability" -and $callback.Name -eq "Receiving") {
             $operatorPath = @($newWorkbookPaths | Where-Object {
@@ -734,6 +753,8 @@ try {
             $customHeader = "Custom_R1_Launcher_Persistence"
             $customValue = "PRESERVE"
             $customAdded = $false
+            $historyRowsAdded = 0
+            $receivingHistoryReport = ""
             if ($null -ne $operatorWb) {
                 $inventorySheet = Get-WorksheetSafe -Workbook $operatorWb `
                     -WorksheetName "InventoryManagement"
@@ -748,6 +769,42 @@ try {
                     $operatorWb.Save()
                     $customAdded = (Get-ColumnIndexSafe -ListObject $inventoryTable -ColumnName $customHeader) -gt 0
                 }
+                $historySheet = Get-WorksheetSafe -Workbook $operatorWb `
+                    -WorksheetName "ReceivedLog"
+                $historyTable = Get-ListObjectSafe -Worksheet $historySheet `
+                    -TableName "ReceivedLog"
+                if ($null -ne $historyTable) {
+                    foreach ($historyOrdinal in 1..2) {
+                        $historyRow = $historyTable.ListRows.Add()
+                        $historyValues = @{
+                            "ENTRY_DATE" = [DateTime]::UtcNow.AddMinutes(-$historyOrdinal).ToOADate()
+                            "USER" = $testUser
+                            "REF_NUMBER" = "R1-HISTORY-$historyOrdinal"
+                            "ITEMS" = "R1 durability item"
+                            "QUANTITY" = $historyOrdinal
+                            "UOM" = "EA"
+                            "VENDOR" = "R1 test vendor"
+                            "LOCATION" = "TEST"
+                            "ITEM_CODE" = "SKU-R1-DURABILITY"
+                            "System_Key" = "SYS-R1-HISTORY-$historyOrdinal"
+                            "EventId" = "EVT-R1-HISTORY-$historyOrdinal"
+                        }
+                        foreach ($historyColumn in $historyValues.Keys) {
+                            $historyColumnIndex = Get-ColumnIndexSafe `
+                                -ListObject $historyTable -ColumnName $historyColumn
+                            if ($historyColumnIndex -gt 0) {
+                                $historyRow.Range.Cells.Item(1, $historyColumnIndex).Value2 = `
+                                    $historyValues[$historyColumn]
+                            }
+                        }
+                        $historyRowsAdded++
+                    }
+                    $operatorWb.Save()
+                }
+                $receivingHistoryReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+                    -Arguments @([string]$operatorWb.Name, ""))
             }
             $formsBeforeClose = Get-RoleFormWindowCount -ExcelProcessId $excelProcessId
             if ($null -ne $operatorWb) {
@@ -813,6 +870,8 @@ try {
             ).Count
             $reopenText = @($reopenCapture.WindowText) -join " // "
             $observedText += " || CUSTOM_ADDED=$customAdded"
+            $observedText += " || RECEIVING_HISTORY_ROWS_ADDED=$historyRowsAdded"
+            $observedText += " || RECEIVING_HISTORY=" + $receivingHistoryReport
             $observedText += " || REFRESH_OK=$refreshOk"
             $observedText += " || CUSTOM_PRESERVED=$customPreserved"
             $observedText += " || CANONICAL_HASHES_UNCHANGED=$canonicalHashesUnchanged"
@@ -832,6 +891,12 @@ try {
             $passed = $operatorRootOverrideSet -and
                 $newWorkbooks.Count -eq 1 -and
                 $customAdded -and
+                $historyRowsAdded -eq 2 -and
+                $receivingHistoryReport -match '^OK\|' -and
+                $receivingHistoryReport -match '(?:^|\|)HistoryRows=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsBefore=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsAfter=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)DirectHistoryRows=2(?:\||$)' -and
                 $refreshOk -and
                 $customPreserved -and
                 $canonicalHashesUnchanged -and
@@ -1001,7 +1066,7 @@ finally {
         "# Plan 022 Slice 1 Receiving Durability Evidence"
     }
     elseif ($WorkbookState -eq "ShippingLayout") {
-        "# Plan 022 Slice 4g Shipping Status Anchor Evidence"
+        "# Plan 022 Slices 4g-4h Shipping Layout Evidence"
     }
     else {
         "# Plan 022 Slice 0 Packaged Launcher Evidence"
@@ -1028,7 +1093,7 @@ finally {
         "packaged-launcher-noeligible.md"
     }
     elseif ($WorkbookState -eq "ShippingLayout") {
-        "shipping-status-anchor.md"
+        "shipping-layout.md"
     }
     elseif ($WorkbookState -eq "CapturedClosed") {
         "packaged-launcher-capturedclosed-$($CallbackFilter.ToLowerInvariant()).md"

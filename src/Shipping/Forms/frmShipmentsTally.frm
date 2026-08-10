@@ -39,6 +39,7 @@ Private WithEvents mBtnBoxBuilderRefresh As MSForms.CommandButton
 Private WithEvents mBtnBoxBuilderNew As MSForms.CommandButton
 Private WithEvents mBtnBoxBuilderAddComponent As MSForms.CommandButton
 Private WithEvents mBtnBoxBuilderRemoveComponent As MSForms.CommandButton
+Private WithEvents mTxtBoxBuilderSearch As MSForms.TextBox
 Private WithEvents mBtnBoxMakerRefresh As MSForms.CommandButton
 Private WithEvents mLstBoxBuilderDesigns As MSForms.ListBox
 Private WithEvents mCboBoxBuilderVersion As MSForms.ComboBox
@@ -57,7 +58,7 @@ Private mTxtBox As MSForms.TextBox
 Private mTxtVersion As MSForms.TextBox
 Private mTxtUom As MSForms.TextBox
 Private mTxtLocation As MSForms.TextBox
-Private mTxtRow As MSForms.TextBox
+Private mTxtSystemKey As MSForms.TextBox
 Private mTxtCarrier As MSForms.ComboBox
 Private mTxtStatus As MSForms.TextBox
 Private mLblSyncState As MSForms.Label
@@ -73,6 +74,11 @@ Private mTxtBoxBuilderComponentQty As MSForms.TextBox
 Private mLstBoxBuilderComponents As MSForms.ListBox
 Private mTxtBoxMakerQty As MSForms.TextBox
 Private mLstBoxMakerComponents As MSForms.ListBox
+Private mLblBoxBuilderDesignsHeader As MSForms.Label
+Private mLblBoxBuilderInventoryHeader As MSForms.Label
+Private mLblBoxBuilderComponentsHeader As MSForms.Label
+Private mLblBoxMakerDesignsHeader As MSForms.Label
+Private mLblBoxMakerComponentsHeader As MSForms.Label
 
 Private mShippables As Variant
 Private mNasReservationTotals As Object
@@ -88,8 +94,8 @@ Private mUseInjectedReservationTotalsForTest As Boolean
 Private mTimerLog() As String
 Private mTimerCount As Long
 Private mTimerStart As Single
-Private mSelectedBoxBuilderPackageRow As Long
-Private mSelectedBoxMakerPackageRow As Long
+Private mSelectedBoxBuilderPackageSystemKey As String
+Private mSelectedBoxMakerPackageSystemKey As String
 Private mBoxBuilderInventoryRows As Variant
 
 Private Const ANCHOR_LEFT As Long = 1
@@ -114,6 +120,7 @@ End Sub
 Private Sub UserForm_Layout()
     If mAnchors Is Nothing Then Exit Sub
     mAnchors.ResizeControls
+    ApplyBoxingHeaderLayout
 End Sub
 
 Private Sub UserForm_Terminate()
@@ -476,10 +483,10 @@ Private Sub BuildLayout()
     mBuilt = True
 
     Me.Caption = "Shipping Shipments"
-    Me.Width = 860
+    Me.Width = 980
     Me.Height = 675
     Me.ScrollBars = fmScrollBarsBoth
-    Me.ScrollWidth = 850
+    Me.ScrollWidth = 970
     Me.ScrollHeight = 650
 
     AddLabel "lblTitle", "Shipments", 12, 10, 140, 20, True
@@ -505,7 +512,7 @@ Private Sub BuildLayout()
     AddLabel "lblQty", "Qty", 336, 194, 34, 18, False
     AddLabel "lblUom", "UOM", 410, 194, 40, 18, False
     AddLabel "lblLocation", "Location", 470, 194, 60, 18, False
-    AddLabel "lblRow", "ROW", 620, 194, 40, 18, False
+    AddLabel "lblSystemKey", "System Key", 620, 194, 68, 18, False
     AddLabel "lblCarrier", "Carrier", 12, 242, 54, 18, False
 
     Set mTxtRef = AddTextBox("txtRef", 12, 212, 82, 22)
@@ -514,7 +521,7 @@ Private Sub BuildLayout()
     Set mTxtQty = AddTextBox("txtQty", 336, 212, 52, 22)
     Set mTxtUom = AddTextBox("txtUom", 410, 212, 44, 22)
     Set mTxtLocation = AddTextBox("txtLocation", 470, 212, 132, 22)
-    Set mTxtRow = AddTextBox("txtRow", 620, 212, 52, 22)
+    Set mTxtSystemKey = AddTextBox("txtSystemKey", 620, 212, 92, 22)
     Set mTxtCarrier = AddComboBox("txtCarrier", 108, 238, 148, 22)
     Set mTxtDescription = AddTextBox("txtDescription", 12, 240, 1, 1)
     mTxtDescription.Visible = False
@@ -522,7 +529,7 @@ Private Sub BuildLayout()
     LockTextBox mTxtVersion
     LockTextBox mTxtUom
     LockTextBox mTxtLocation
-    LockTextBox mTxtRow
+    LockTextBox mTxtSystemKey
     Set mBtnAdd = AddButton("btnAdd", "Add", 668, 210, 44, 26)
     Set mBtnUpdate = AddButton("btnUpdate", "Update Row", 718, 210, 62, 26)
     Set mBtnRemove = AddButton("btnRemove", "Remove", 786, 210, 58, 26)
@@ -578,7 +585,7 @@ Private Sub BuildShippingPages()
     With mPages
         .Left = 12
         .Top = 8
-        .Width = 820
+        .Width = 940
         .Height = 26
         .Tabs.Clear
         .Tabs.Add "tabShipping", "Shipping"
@@ -594,26 +601,28 @@ Private Sub BuildShippingPages()
         18, 156, 280, 22, True)
     mLblBoxBuilderPage.Tag = "Box Builder"
     Set mBtnBoxBuilderNew = AddButton( _
-        "btnBoxBuilderNewPage", "New Box", 562, 152, 98, 28)
+        "btnBoxBuilderNewPage", "New Box", 682, 152, 98, 28)
     mBtnBoxBuilderNew.Tag = "Box Builder"
     Set mBtnBoxBuilderRefresh = AddButton( _
-        "btnBoxBuilderRefreshPage", "Refresh Box Designs", 670, 152, 150, 28)
+        "btnBoxBuilderRefreshPage", "Refresh Box Designs", 790, 152, 150, 28)
     mBtnBoxBuilderRefresh.Tag = "Box Builder"
     Set mLstBoxBuilderDesigns = AddListBox( _
-        "lstBoxBuilderDesignsPage", 18, 188, 260, 142)
+        "lstBoxBuilderDesignsPage", 18, 204, 330, 126)
     With mLstBoxBuilderDesigns
         .ColumnCount = 5
         .ColumnWidths = "0 pt;130 pt;42 pt;72 pt;0 pt"
         .Tag = "Box Builder"
     End With
     Set pageLabel = AddLabel( _
-        "lblBoxBuilderInventory", "Component inventory", 18, 340, 160, 18, True)
+        "lblBoxBuilderInventory", "Component inventory", 18, 340, 140, 18, True)
     pageLabel.Tag = "Box Builder"
+    Set mTxtBoxBuilderSearch = AddTextBox("txtBoxBuilderSearch", 160, 336, 188, 22)
+    mTxtBoxBuilderSearch.Tag = "Box Builder"
     Set mLstBoxBuilderInventory = AddListBox( _
-        "lstBoxBuilderInventoryPage", 18, 362, 260, 146)
+        "lstBoxBuilderInventoryPage", 18, 384, 330, 124)
     With mLstBoxBuilderInventory
-        .ColumnCount = 7
-        .ColumnWidths = "0 pt;72 pt;102 pt;38 pt;62 pt;0 pt;48 pt"
+        .ColumnCount = 8
+        .ColumnWidths = "0 pt;64 pt;92 pt;34 pt;58 pt;0 pt;42 pt;40 pt"
         .Tag = "Box Builder"
     End With
     Set pageLabel = AddLabel("lblBoxBuilderComponentQty", "Qty", 18, 518, 28, 18, False)
@@ -628,61 +637,61 @@ Private Sub BuildShippingPages()
     Set mBtnBoxBuilderRemoveComponent = AddButton( _
         "btnBoxBuilderRemoveComponentPage", "Remove", 186, 512, 92, 26)
     mBtnBoxBuilderRemoveComponent.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderName", "Box Name", 292, 188, 70, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderName", "Box Name", 362, 188, 70, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mTxtBoxBuilderName = AddTextBox("txtBoxBuilderName", 366, 184, 190, 22)
+    Set mTxtBoxBuilderName = AddTextBox("txtBoxBuilderName", 436, 184, 190, 22)
     mTxtBoxBuilderName.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderVersion", "Version", 570, 188, 54, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderVersion", "Version", 640, 188, 54, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mCboBoxBuilderVersion = AddComboBox("cboBoxBuilderVersion", 630, 184, 86, 22)
+    Set mCboBoxBuilderVersion = AddComboBox("cboBoxBuilderVersion", 700, 184, 86, 22)
     mCboBoxBuilderVersion.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderStatus", "Status", 570, 218, 54, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderStatus", "Status", 800, 188, 54, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mCboBoxBuilderStatus = AddComboBox("cboBoxBuilderStatus", 630, 214, 86, 22)
+    Set mCboBoxBuilderStatus = AddComboBox("cboBoxBuilderStatus", 858, 184, 82, 22)
     With mCboBoxBuilderStatus
         .AddItem "Active"
         .AddItem "Archived"
         .Value = "Active"
         .Tag = "Box Builder"
     End With
-    Set pageLabel = AddLabel("lblBoxBuilderUom", "UOM", 292, 218, 40, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderUom", "UOM", 362, 218, 40, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mTxtBoxBuilderUom = AddTextBox("txtBoxBuilderUom", 336, 214, 64, 22)
+    Set mTxtBoxBuilderUom = AddTextBox("txtBoxBuilderUom", 406, 214, 64, 22)
     mTxtBoxBuilderUom.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderLocation", "Location", 410, 218, 56, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderLocation", "Location", 480, 218, 56, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mTxtBoxBuilderLocation = AddTextBox("txtBoxBuilderLocation", 468, 214, 88, 22)
+    Set mTxtBoxBuilderLocation = AddTextBox("txtBoxBuilderLocation", 538, 214, 88, 22)
     mTxtBoxBuilderLocation.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderDescription", "Description", 292, 248, 70, 18, False)
+    Set pageLabel = AddLabel("lblBoxBuilderDescription", "Description", 362, 248, 70, 18, False)
     pageLabel.Tag = "Box Builder"
-    Set mTxtBoxBuilderDescription = AddTextBox("txtBoxBuilderDescription", 366, 244, 350, 22)
+    Set mTxtBoxBuilderDescription = AddTextBox("txtBoxBuilderDescription", 436, 244, 504, 22)
     mTxtBoxBuilderDescription.Tag = "Box Builder"
-    Set pageLabel = AddLabel("lblBoxBuilderComponents", "Selected version components", 292, 278, 210, 18, True)
+    Set pageLabel = AddLabel("lblBoxBuilderComponents", "Selected version components", 362, 278, 210, 18, True)
     pageLabel.Tag = "Box Builder"
     Set mLstBoxBuilderComponents = AddListBox( _
-        "lstBoxBuilderComponentsPage", 292, 300, 528, 208)
+        "lstBoxBuilderComponentsPage", 362, 316, 578, 192)
     With mLstBoxBuilderComponents
         .ColumnCount = 8
-        .ColumnWidths = "46 pt;115 pt;82 pt;0 pt;48 pt;42 pt;76 pt;100 pt"
+        .ColumnWidths = "0 pt;100 pt;70 pt;0 pt;46 pt;38 pt;68 pt;94 pt"
         .Tag = "Box Builder"
     End With
     Set mBtnBoxBuilderSave = AddButton( _
-        "btnBoxBuilderSavePage", "Save Box", 292, 520, 86, 28)
+        "btnBoxBuilderSavePage", "Save Box", 362, 520, 86, 28)
     mBtnBoxBuilderSave.Tag = "Box Builder"
     Set mBtnBoxBuilderUpdateVersion = AddButton( _
-        "btnBoxBuilderUpdateVersionPage", "Update Version", 386, 520, 104, 28)
+        "btnBoxBuilderUpdateVersionPage", "Update Version", 456, 520, 104, 28)
     mBtnBoxBuilderUpdateVersion.Tag = "Box Builder"
     Set mBtnBoxBuilderNewVersion = AddButton( _
-        "btnBoxBuilderNewVersionPage", "New Version", 498, 520, 96, 28)
+        "btnBoxBuilderNewVersionPage", "New Version", 568, 520, 96, 28)
     mBtnBoxBuilderNewVersion.Tag = "Box Builder"
     Set mBtnBoxBuilderDeleteVersion = AddButton( _
-        "btnBoxBuilderDeleteVersionPage", "Delete Version", 602, 520, 104, 28)
+        "btnBoxBuilderDeleteVersionPage", "Delete Version", 672, 520, 104, 28)
     mBtnBoxBuilderDeleteVersion.Tag = "Box Builder"
     Set mBtnBoxBuilderArchive = AddButton( _
-        "btnBoxBuilderArchivePage", "Archive Box", 714, 520, 106, 28)
+        "btnBoxBuilderArchivePage", "Archive Box", 784, 520, 106, 28)
     mBtnBoxBuilderArchive.Tag = "Box Builder"
     Set mBtnBoxBuilderDelete = AddButton( _
-        "btnBoxBuilderDeletePage", "Delete Box", 714, 554, 106, 28)
+        "btnBoxBuilderDeletePage", "Delete Box", 834, 554, 106, 28)
     mBtnBoxBuilderDelete.Tag = "Box Builder"
 
     Set mLblBoxMakerPage = AddLabel( _
@@ -691,40 +700,41 @@ Private Sub BuildShippingPages()
         18, 156, 360, 22, True)
     mLblBoxMakerPage.Tag = "Box Maker"
     Set mBtnBoxMakerRefresh = AddButton( _
-        "btnBoxMakerRefreshPage", "Refresh Box Maker", 670, 152, 150, 28)
+        "btnBoxMakerRefreshPage", "Refresh Box Maker", 790, 152, 150, 28)
     mBtnBoxMakerRefresh.Tag = "Box Maker"
     Set mLstBoxMakerDesigns = AddListBox( _
-        "lstBoxMakerDesignsPage", 18, 188, 300, 180)
+        "lstBoxMakerDesignsPage", 18, 204, 350, 316)
     With mLstBoxMakerDesigns
         .ColumnCount = 7
         .ColumnWidths = "0 pt;150 pt;0 pt;42 pt;72 pt;0 pt;0 pt"
         .Tag = "Box Maker"
     End With
-    Set pageLabel = AddLabel("lblBoxMakerVersion", "Version", 336, 188, 54, 18, False)
+    Set pageLabel = AddLabel("lblBoxMakerVersion", "Version", 386, 188, 54, 18, False)
     pageLabel.Tag = "Box Maker"
-    Set mCboBoxMakerVersion = AddComboBox("cboBoxMakerVersion", 396, 184, 92, 22)
+    Set mCboBoxMakerVersion = AddComboBox("cboBoxMakerVersion", 446, 184, 92, 22)
     mCboBoxMakerVersion.Tag = "Box Maker"
-    Set pageLabel = AddLabel("lblBoxMakerQty", "Qty", 508, 188, 32, 18, False)
+    Set pageLabel = AddLabel("lblBoxMakerQty", "Qty", 558, 188, 32, 18, False)
     pageLabel.Tag = "Box Maker"
-    Set mTxtBoxMakerQty = AddTextBox("txtBoxMakerQty", 544, 184, 64, 22)
+    Set mTxtBoxMakerQty = AddTextBox("txtBoxMakerQty", 594, 184, 64, 22)
     mTxtBoxMakerQty.Value = "1"
     mTxtBoxMakerQty.Tag = "Box Maker"
     Set mBtnBoxMakerMake = AddButton( _
-        "btnBoxMakerMakePage", "Make Boxes", 624, 182, 94, 28)
+        "btnBoxMakerMakePage", "Make Boxes", 674, 182, 94, 28)
     mBtnBoxMakerMake.Tag = "Box Maker"
     Set mBtnBoxMakerUnmake = AddButton( _
-        "btnBoxMakerUnmakePage", "Unbox", 726, 182, 80, 28)
+        "btnBoxMakerUnmakePage", "Unbox", 776, 182, 80, 28)
     mBtnBoxMakerUnmake.Tag = "Box Maker"
-    Set pageLabel = AddLabel("lblBoxMakerComponents", "Selected version components", 336, 226, 210, 18, True)
+    Set pageLabel = AddLabel("lblBoxMakerComponents", "Selected version components", 386, 226, 210, 18, True)
     pageLabel.Tag = "Box Maker"
     Set mLstBoxMakerComponents = AddListBox( _
-        "lstBoxMakerComponentsPage", 336, 248, 470, 272)
+        "lstBoxMakerComponentsPage", 386, 264, 554, 256)
     With mLstBoxMakerComponents
         .ColumnCount = 9
-        .ColumnWidths = "46 pt;110 pt;76 pt;0 pt;48 pt;42 pt;68 pt;90 pt;54 pt"
+        .ColumnWidths = "0 pt;100 pt;68 pt;0 pt;46 pt;38 pt;64 pt;88 pt;52 pt"
         .Tag = "Box Maker"
     End With
 
+    ConfigureBoxingListHeaders
     mTxtStatus.Tag = "Shell"
     mBtnClose.Tag = "Shell"
     Me.ScrollHeight = Me.ScrollHeight + 30
@@ -801,12 +811,66 @@ Private Sub RefreshBoxBuilderPage()
     rowsData = modBoxingService.LoadBoxDesigns(mOperatorWorkbook, True, True)
     RenderPageRows mLstBoxBuilderDesigns, rowsData
     mBoxBuilderInventoryRows = modBoxingService.LoadComponentChoices(mOperatorWorkbook)
-    RenderPageRows mLstBoxBuilderInventory, mBoxBuilderInventoryRows
+    FilterBoxBuilderInventory
     ClearBoxBuilderSelection
     If mLstBoxBuilderDesigns.ListCount > 0 Then mLstBoxBuilderDesigns.ListIndex = 0
     mLoading = False
     If mLstBoxBuilderDesigns.ListIndex >= 0 Then LoadSelectedBoxBuilderDesign
 End Sub
+
+Private Sub mTxtBoxBuilderSearch_Change()
+    If mLoading Then Exit Sub
+    FilterBoxBuilderInventory
+End Sub
+
+Private Sub FilterBoxBuilderInventory()
+    Dim sourceRows As Variant
+    Dim filtered() As Variant
+    Dim trimmed() As Variant
+    Dim searchText As String
+    Dim haystack As String
+    Dim r As Long
+    Dim c As Long
+    Dim outRow As Long
+    Dim sourceCols As Long
+
+    mLstBoxBuilderInventory.Clear
+    If IsEmpty(mBoxBuilderInventoryRows) Or Not IsArray(mBoxBuilderInventoryRows) Then Exit Sub
+    sourceRows = mBoxBuilderInventoryRows
+    sourceCols = UBound(sourceRows, 2)
+    searchText = LCase$(Trim$(NzText(mTxtBoxBuilderSearch.Value)))
+    ReDim filtered(1 To UBound(sourceRows, 1), 1 To 8)
+    For r = 1 To UBound(sourceRows, 1)
+        haystack = ""
+        For c = 1 To sourceCols
+            haystack = haystack & " " & LCase$(NzText(sourceRows(r, c)))
+        Next c
+        If searchText = "" Or InStr(1, haystack, searchText, vbTextCompare) > 0 Then
+            outRow = outRow + 1
+            For c = 1 To sourceCols
+                filtered(outRow, c) = sourceRows(r, c)
+            Next c
+            filtered(outRow, 8) = DisplayVersionOrNA("")
+        End If
+    Next r
+    If outRow = 0 Then Exit Sub
+    ReDim trimmed(1 To outRow, 1 To 8)
+    For r = 1 To outRow
+        For c = 1 To 8
+            trimmed(r, c) = filtered(r, c)
+        Next c
+    Next r
+    RenderPageRows mLstBoxBuilderInventory, trimmed
+End Sub
+
+Private Function DisplayVersionOrNA(ByVal versionText As String) As String
+    versionText = Trim$(versionText)
+    If versionText = "" Then
+        DisplayVersionOrNA = "NA"
+    Else
+        DisplayVersionOrNA = versionText
+    End If
+End Function
 
 Private Sub mBtnBoxBuilderNew_Click()
     mLoading = True
@@ -873,7 +937,7 @@ Private Sub RefreshBoxMakerPage()
     RenderPageRows mLstBoxMakerDesigns, rowsData
     mCboBoxMakerVersion.Clear
     mLstBoxMakerComponents.Clear
-    mSelectedBoxMakerPackageRow = 0
+    mSelectedBoxMakerPackageSystemKey = vbNullString
     If mLstBoxMakerDesigns.ListCount > 0 Then mLstBoxMakerDesigns.ListIndex = 0
     mLoading = False
     If mLstBoxMakerDesigns.ListIndex >= 0 Then LoadSelectedBoxMakerDesign
@@ -898,7 +962,7 @@ Private Sub LoadSelectedBoxBuilderDesign()
     If mLstBoxBuilderDesigns.ListIndex < 0 Then Exit Sub
     mLoading = True
     listIndex = mLstBoxBuilderDesigns.ListIndex
-    mSelectedBoxBuilderPackageRow = CLng(Val(NzText(mLstBoxBuilderDesigns.List(listIndex, 0))))
+    mSelectedBoxBuilderPackageSystemKey = NzText(mLstBoxBuilderDesigns.List(listIndex, 0))
     mTxtBoxBuilderName.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 1))
     mTxtBoxBuilderUom.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 2))
     mTxtBoxBuilderLocation.Value = NzText(mLstBoxBuilderDesigns.List(listIndex, 3))
@@ -907,7 +971,7 @@ Private Sub LoadSelectedBoxBuilderDesign()
 
     mCboBoxBuilderVersion.Clear
     versionRows = modBoxingService.LoadBoxDesignVersions( _
-        mOperatorWorkbook, mSelectedBoxBuilderPackageRow)
+        mOperatorWorkbook, mSelectedBoxBuilderPackageSystemKey)
     If Not IsEmpty(versionRows) Then
         mCboBoxBuilderVersion.ColumnCount = 2
         For rowIndex = LBound(versionRows, 1) To UBound(versionRows, 1)
@@ -928,7 +992,7 @@ Private Sub LoadSelectedBoxBuilderComponents()
     Dim componentRows As Variant
     Dim statusText As String
 
-    If mSelectedBoxBuilderPackageRow <= 0 Then Exit Sub
+    If mSelectedBoxBuilderPackageSystemKey = "" Then Exit Sub
     If mCboBoxBuilderVersion.ListIndex < 0 Then Exit Sub
     If mCboBoxBuilderVersion.ColumnCount > 1 Then
         statusText = NzText(mCboBoxBuilderVersion.List(mCboBoxBuilderVersion.ListIndex, 1))
@@ -936,13 +1000,13 @@ Private Sub LoadSelectedBoxBuilderComponents()
     If statusText = "" Then statusText = "Active"
     mCboBoxBuilderStatus.Value = statusText
     componentRows = modBoxingService.LoadBoxDesignComponents( _
-        mOperatorWorkbook, mSelectedBoxBuilderPackageRow, _
+        mOperatorWorkbook, mSelectedBoxBuilderPackageSystemKey, _
         NzText(mCboBoxBuilderVersion.Value))
     RenderPageRows mLstBoxBuilderComponents, componentRows
 End Sub
 
 Private Sub ClearBoxBuilderSelection()
-    mSelectedBoxBuilderPackageRow = 0
+    mSelectedBoxBuilderPackageSystemKey = vbNullString
     mTxtBoxBuilderName.Value = ""
     mTxtBoxBuilderUom.Value = "ea"
     mTxtBoxBuilderLocation.Value = ""
@@ -992,7 +1056,7 @@ End Sub
 Private Sub mBtnBoxBuilderDeleteVersion_Click()
     Dim report As String
 
-    If mSelectedBoxBuilderPackageRow <= 0 Or _
+    If mSelectedBoxBuilderPackageSystemKey = "" Or _
        mCboBoxBuilderVersion.ListIndex < 0 Then
         ShowStatus "Select a saved box version before deleting."
         Exit Sub
@@ -1000,7 +1064,7 @@ Private Sub mBtnBoxBuilderDeleteVersion_Click()
     If MsgBox("Delete the selected box version?", _
               vbQuestion + vbYesNo, "Delete Box Version") <> vbYes Then Exit Sub
     If modBoxingService.DeleteBoxDesignVersion( _
-            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, _
+            mOperatorWorkbook, mSelectedBoxBuilderPackageSystemKey, _
             NzText(mCboBoxBuilderVersion.Value), report) Then
         RefreshBoxBuilderPage
     End If
@@ -1010,14 +1074,14 @@ End Sub
 Private Sub mBtnBoxBuilderArchive_Click()
     Dim report As String
 
-    If mSelectedBoxBuilderPackageRow <= 0 Then
+    If mSelectedBoxBuilderPackageSystemKey = "" Then
         ShowStatus "Select a saved box before archiving."
         Exit Sub
     End If
     If MsgBox("Archive the selected box design?", _
               vbQuestion + vbYesNo, "Archive Box Design") <> vbYes Then Exit Sub
     If modBoxingService.ArchiveBoxDesign( _
-            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, report) Then
+            mOperatorWorkbook, mSelectedBoxBuilderPackageSystemKey, report) Then
         RefreshBoxBuilderPage
     End If
     ShowStatus report
@@ -1026,14 +1090,14 @@ End Sub
 Private Sub mBtnBoxBuilderDelete_Click()
     Dim report As String
 
-    If mSelectedBoxBuilderPackageRow <= 0 Then
+    If mSelectedBoxBuilderPackageSystemKey = "" Then
         ShowStatus "Select a saved box before deleting."
         Exit Sub
     End If
     If MsgBox("Delete the selected box design and all versions?", _
               vbQuestion + vbYesNo, "Delete Box Design") <> vbYes Then Exit Sub
     If modBoxingService.DeleteBoxDesign( _
-            mOperatorWorkbook, mSelectedBoxBuilderPackageRow, report) Then
+            mOperatorWorkbook, mSelectedBoxBuilderPackageSystemKey, report) Then
         RefreshBoxBuilderPage
     End If
     ShowStatus report
@@ -1068,12 +1132,12 @@ Private Sub LoadSelectedBoxMakerDesign()
     Dim rowIndex As Long
 
     If mLstBoxMakerDesigns.ListIndex < 0 Then Exit Sub
-    mSelectedBoxMakerPackageRow = _
-        CLng(Val(NzText(mLstBoxMakerDesigns.List(mLstBoxMakerDesigns.ListIndex, 0))))
+    mSelectedBoxMakerPackageSystemKey = _
+        NzText(mLstBoxMakerDesigns.List(mLstBoxMakerDesigns.ListIndex, 0))
     mLoading = True
     mCboBoxMakerVersion.Clear
     versionRows = modBoxingService.LoadBoxMakerVersions( _
-        mOperatorWorkbook, mSelectedBoxMakerPackageRow)
+        mOperatorWorkbook, mSelectedBoxMakerPackageSystemKey)
     If Not IsEmpty(versionRows) Then
         For rowIndex = LBound(versionRows, 1) To UBound(versionRows, 1)
             If UBound(versionRows, 2) < 2 Or _
@@ -1090,10 +1154,10 @@ End Sub
 Private Sub LoadSelectedBoxMakerComponents()
     Dim componentRows As Variant
 
-    If mSelectedBoxMakerPackageRow <= 0 Then Exit Sub
+    If mSelectedBoxMakerPackageSystemKey = "" Then Exit Sub
     If mCboBoxMakerVersion.ListIndex < 0 Then Exit Sub
     componentRows = modBoxingService.LoadBoxMakerComponents( _
-        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        mOperatorWorkbook, mSelectedBoxMakerPackageSystemKey, _
         NzText(mCboBoxMakerVersion.Value))
     RenderPageRows mLstBoxMakerComponents, componentRows
 End Sub
@@ -1125,7 +1189,7 @@ Private Sub mBtnBoxMakerMake_Click()
         Exit Sub
     End If
     succeeded = modBoxingService.PostBoxMakerAction( _
-        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        mOperatorWorkbook, mSelectedBoxMakerPackageSystemKey, _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 1)), _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 3)), _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 4)), _
@@ -1147,7 +1211,7 @@ Private Sub mBtnBoxMakerUnmake_Click()
         Exit Sub
     End If
     succeeded = modBoxingService.PostBoxMakerAction( _
-        mOperatorWorkbook, mSelectedBoxMakerPackageRow, _
+        mOperatorWorkbook, mSelectedBoxMakerPackageSystemKey, _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 1)), _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 3)), _
         NzText(mLstBoxMakerDesigns.List(selectedIndex, 4)), _
@@ -1360,12 +1424,16 @@ Private Sub RenderShippables()
         displayRows(idx, 1) = NzText(mShippables(r, 3))
         displayRows(idx, 2) = DisplayQtyText(NzText(mShippables(r, 4)))
         displayRows(idx, 3) = DisplayQtyText(NzText(mShippables(r, 8)))
-        displayRows(idx, 4) = DisplayQtyText(CStr(LockedShipmentQtyForShippable(CLng(Val(NzText(mShippables(r, 1)))), NzText(mShippables(r, 2)), NzText(mShippables(r, 3)))))
+        displayRows(idx, 4) = DisplayQtyText(CStr(LockedShipmentQtyForShippable( _
+            NzText(mShippables(r, 1)), NzText(mShippables(r, 2)), NzText(mShippables(r, 3)))))
         displayRows(idx, 5) = NzText(mShippables(r, 5))
         displayRows(idx, 6) = NzText(mShippables(r, 6))
         displayRows(idx, 7) = NzText(mShippables(r, 1))
         idx = idx + 1
 NextRow:
+    Next r
+    For r = 0 To UBound(displayRows, 1)
+        displayRows(r, 1) = DisplayVersionOrNA(NzText(displayRows(r, 1)))
     Next r
     mLstShippables.List = displayRows
     UpdateSyncStateLabel
@@ -1425,7 +1493,7 @@ Private Sub LoadSelectedShippable()
     mTxtVersion.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 1))
     mTxtUom.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 5))
     mTxtLocation.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 6))
-    mTxtRow.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 7))
+    mTxtSystemKey.Value = NzText(mLstShippables.List(mLstShippables.ListIndex, 7))
     If Trim$(NzText(mTxtQty.Value)) = "" Then mTxtQty.Value = "1"
     mTxtDescription.Value = NzText(mTxtVersion.Value)
 End Sub
@@ -1438,7 +1506,7 @@ Private Sub LoadSelectedLine(ByVal lst As MSForms.ListBox)
     mTxtQty.Value = NzText(lst.List(lst.ListIndex, 2))
     mTxtUom.Value = NzText(lst.List(lst.ListIndex, 3))
     mTxtLocation.Value = NzText(lst.List(lst.ListIndex, 9))
-    mTxtRow.Value = NzText(lst.List(lst.ListIndex, 6))
+    mTxtSystemKey.Value = NzText(lst.List(lst.ListIndex, 6))
     mTxtDescription.Value = NzText(lst.List(lst.ListIndex, 7))
     mTxtVersion.Value = NzText(lst.List(lst.ListIndex, 7))
     mTxtCarrier.Value = NzText(lst.List(lst.ListIndex, 8))
@@ -1481,7 +1549,7 @@ Private Sub CommitCurrentLine(ByVal actionName As String)
                                                  NzText(mTxtRef.Value), _
                                                  NzText(mTxtBox.Value), _
                                                  ParseNumber(NzText(mTxtQty.Value)), _
-                                                 CLng(Val(NzText(mTxtRow.Value))), _
+                                                 NzText(mTxtSystemKey.Value), _
                                                  NzText(mTxtUom.Value), _
                                                  NzText(mTxtLocation.Value), _
                                                  NzText(mTxtVersion.Value), _
@@ -1504,23 +1572,23 @@ End Sub
 
 Private Function SelectedShippableNasInventoryText() As String
     Dim r As Long
-    Dim rowValue As Long
+    Dim systemKey As String
     Dim boxName As String
     Dim versionLabel As String
 
-    rowValue = CLng(Val(NzText(mTxtRow.Value)))
+    systemKey = NzText(mTxtSystemKey.Value)
     boxName = Trim$(NzText(mTxtBox.Value))
     versionLabel = Trim$(NzText(mTxtVersion.Value))
 
     If mLstShippables Is Nothing Then Exit Function
     If mLstShippables.ListIndex >= 0 Then
-        If CLng(Val(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)))) = rowValue _
+        If StrComp(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)), systemKey, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mLstShippables.List(mLstShippables.ListIndex, 0))), boxName, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mLstShippables.List(mLstShippables.ListIndex, 1))), versionLabel, vbTextCompare) = 0 Then
             SelectedShippableNasInventoryText = NzText(mLstShippables.List(mLstShippables.ListIndex, 2))
             Exit Function
         End If
-        If CLng(Val(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)))) = rowValue Then
+        If StrComp(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)), systemKey, vbTextCompare) = 0 Then
             SelectedShippableNasInventoryText = NzText(mLstShippables.List(mLstShippables.ListIndex, 2))
             Exit Function
         End If
@@ -1528,7 +1596,7 @@ Private Function SelectedShippableNasInventoryText() As String
 
     If IsEmpty(mShippables) Then Exit Function
     For r = 1 To UBound(mShippables, 1)
-        If CLng(Val(NzText(mShippables(r, 1)))) = rowValue _
+        If StrComp(NzText(mShippables(r, 1)), systemKey, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mShippables(r, 2))), boxName, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mShippables(r, 3))), versionLabel, vbTextCompare) = 0 Then
             SelectedShippableNasInventoryText = NzText(mShippables(r, 4))
@@ -1536,7 +1604,7 @@ Private Function SelectedShippableNasInventoryText() As String
         End If
     Next r
     For r = 1 To UBound(mShippables, 1)
-        If CLng(Val(NzText(mShippables(r, 1)))) = rowValue Then
+        If StrComp(NzText(mShippables(r, 1)), systemKey, vbTextCompare) = 0 Then
             SelectedShippableNasInventoryText = NzText(mShippables(r, 4))
             Exit Function
         End If
@@ -1545,17 +1613,17 @@ End Function
 
 Private Function SelectedShippableProjectedInventoryText() As String
     Dim r As Long
-    Dim rowValue As Long
+    Dim systemKey As String
     Dim boxName As String
     Dim versionLabel As String
 
-    rowValue = CLng(Val(NzText(mTxtRow.Value)))
+    systemKey = NzText(mTxtSystemKey.Value)
     boxName = Trim$(NzText(mTxtBox.Value))
     versionLabel = Trim$(NzText(mTxtVersion.Value))
 
     If mLstShippables Is Nothing Then Exit Function
     If mLstShippables.ListIndex >= 0 Then
-        If CLng(Val(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)))) = rowValue _
+        If StrComp(NzText(mLstShippables.List(mLstShippables.ListIndex, 7)), systemKey, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mLstShippables.List(mLstShippables.ListIndex, 0))), boxName, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mLstShippables.List(mLstShippables.ListIndex, 1))), versionLabel, vbTextCompare) = 0 Then
             SelectedShippableProjectedInventoryText = NzText(mLstShippables.List(mLstShippables.ListIndex, 3))
@@ -1565,7 +1633,7 @@ Private Function SelectedShippableProjectedInventoryText() As String
 
     If IsEmpty(mShippables) Then Exit Function
     For r = 1 To UBound(mShippables, 1)
-        If CLng(Val(NzText(mShippables(r, 1)))) = rowValue _
+        If StrComp(NzText(mShippables(r, 1)), systemKey, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mShippables(r, 2))), boxName, vbTextCompare) = 0 _
            And StrComp(Trim$(NzText(mShippables(r, 3))), versionLabel, vbTextCompare) = 0 Then
             SelectedShippableProjectedInventoryText = NzText(mShippables(r, 8))
@@ -1968,7 +2036,7 @@ Private Sub RefreshProjectedShippableInventory()
     Dim backendText As String
     Dim overlayText As String
     Dim projectedQty As Double
-    Dim packageRow As Long
+    Dim packageSystemKey As String
     Dim versionLabel As String
     Dim hasSentOverlay As Boolean
     Dim overlayIncludesReservation As Boolean
@@ -1976,15 +2044,15 @@ Private Sub RefreshProjectedShippableInventory()
     If IsEmpty(mShippables) Then Exit Sub
     If Not mUseInjectedReservationTotalsForTest Then Set mNasReservationTotals = modTS_Shipments.ShipmentsFormLoadNasReservationTotals()
     For r = 1 To UBound(mShippables, 1)
-        packageRow = CLng(Val(NzText(mShippables(r, 1))))
+        packageSystemKey = NzText(mShippables(r, 1))
         versionLabel = NzText(mShippables(r, 3))
         backendText = NzText(mShippables(r, 4))
-        activeQty = ActiveShipmentQtyForShippable(packageRow, NzText(mShippables(r, 2)), versionLabel)
-        overlayText = modTS_Shipments.PendingBoxVersionInventoryOverlayText(packageRow, versionLabel, backendText)
-        hasSentOverlay = modTS_Shipments.HasSentOverlayForRowVersion(packageRow, versionLabel)
+        activeQty = ActiveShipmentQtyForShippable(packageSystemKey, NzText(mShippables(r, 2)), versionLabel)
+        overlayText = modTS_Shipments.PendingSystemKeyInventoryOverlayText(packageSystemKey, versionLabel, backendText)
+        hasSentOverlay = False
         If hasSentOverlay And activeQty > 0.0000001 Then overlayText = vbNullString
         If Trim$(overlayText) <> "" And IsNumeric(overlayText) Then
-            overlayIncludesReservation = hasSentOverlay Or modTS_Shipments.PendingBoxVersionInventoryOverlayIncludesReservation(packageRow, versionLabel)
+            overlayIncludesReservation = False
             projectedQty = modTS_Shipments.ShipmentsProjectedDisplayQtyWithOverlay(ParseNumber(backendText), activeQty, CDbl(overlayText), overlayIncludesReservation)
         Else
             projectedQty = modTS_Shipments.ShipmentsProjectedDisplayQty(ParseNumber(backendText), activeQty)
@@ -2083,6 +2151,26 @@ Public Function TestStatusAnchorAfterResize() As String
     mAnchors.ResizeControls
 End Function
 
+Public Function TestSystemKeyIdentityContract() As String
+    Dim probeKey As String
+    Dim reservationKey As String
+    Dim controlReady As Boolean
+    Dim valuePreserved As Boolean
+    Dim reservationUsesKey As Boolean
+
+    If Not mBuilt Then BuildLayout
+    probeKey = "SK-R1-SHIPPING-PROBE"
+    controlReady = (StrComp(mTxtSystemKey.Name, "txtSystemKey", vbBinaryCompare) = 0)
+    mTxtSystemKey.Value = probeKey
+    valuePreserved = (StrComp(NzText(mTxtSystemKey.Value), probeKey, vbBinaryCompare) = 0)
+    reservationKey = modTS_Shipments.ShipmentsFormReservationKey(probeKey, "v1")
+    reservationUsesKey = (StrComp(reservationKey, LCase$(probeKey) & "|v1", vbBinaryCompare) = 0)
+
+    TestSystemKeyIdentityContract = "OK|ControlReady=" & CStr(controlReady) & _
+        "|ValuePreserved=" & CStr(valuePreserved) & _
+        "|ReservationUsesKey=" & CStr(reservationUsesKey)
+End Function
+
 Public Function TestRunShipmentsSentActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        ByVal carrierValue As String, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
@@ -2098,33 +2186,33 @@ End Function
 
 Private Sub EvictOrphanedActiveOverlays()
     Dim r As Long
-    Dim packageRow As Long
+    Dim packageSystemKey As String
     Dim versionLabel As String
 
     If IsEmpty(mShippables) Then Exit Sub
     If mLstShipments Is Nothing Then Exit Sub
     For r = 1 To UBound(mShippables, 1)
-        packageRow = CLng(Val(NzText(mShippables(r, 1))))
+        packageSystemKey = NzText(mShippables(r, 1))
         versionLabel = NzText(mShippables(r, 3))
-        If packageRow > 0 And Trim$(versionLabel) <> "" Then
-            If Not HasActiveShipmentLineForRow(packageRow, versionLabel) Then
-                modTS_Shipments.ClearActiveOverlayForRowVersion packageRow, versionLabel
+        If packageSystemKey <> "" And Trim$(versionLabel) <> "" Then
+            If Not HasActiveShipmentLineForSystemKey(packageSystemKey, versionLabel) Then
+                modTS_Shipments.ClearActiveOverlayForSystemKeyVersion packageSystemKey, versionLabel
             End If
         End If
     Next r
 End Sub
 
-Private Function HasActiveShipmentLineForRow(ByVal packageRow As Long, ByVal versionLabel As String) As Boolean
+Private Function HasActiveShipmentLineForSystemKey(ByVal packageSystemKey As String, ByVal versionLabel As String) As Boolean
     Dim i As Long
     Dim rowVersion As String
 
     versionLabel = LCase$(Trim$(versionLabel))
     If Not mLstShipments Is Nothing Then
         For i = 0 To mLstShipments.ListCount - 1
-            If CLng(Val(NzText(mLstShipments.List(i, 6)))) = packageRow Then
+            If StrComp(NzText(mLstShipments.List(i, 6)), packageSystemKey, vbTextCompare) = 0 Then
                 rowVersion = LCase$(Trim$(NzText(mLstShipments.List(i, 7))))
                 If rowVersion = versionLabel Then
-                    HasActiveShipmentLineForRow = True
+                    HasActiveShipmentLineForSystemKey = True
                     Exit Function
                 End If
             End If
@@ -2133,11 +2221,11 @@ Private Function HasActiveShipmentLineForRow(ByVal packageRow As Long, ByVal ver
 
     If Not mLstHold Is Nothing Then
         For i = 0 To mLstHold.ListCount - 1
-            If CLng(Val(NzText(mLstHold.List(i, 6)))) = packageRow Then
+            If StrComp(NzText(mLstHold.List(i, 6)), packageSystemKey, vbTextCompare) = 0 Then
                 rowVersion = LCase$(Trim$(NzText(mLstHold.List(i, 7))))
                 If rowVersion = versionLabel Then
                     If Trim$(NzText(mLstHold.List(i, 11))) <> "" Then
-                        HasActiveShipmentLineForRow = True
+                        HasActiveShipmentLineForSystemKey = True
                         Exit Function
                     End If
                 End If
@@ -2146,48 +2234,49 @@ Private Function HasActiveShipmentLineForRow(ByVal packageRow As Long, ByVal ver
     End If
 End Function
 
-Private Function ShipmentListRowMatchesShippable(ByVal listIndex As Long, _
-                                                 ByVal packageRow As Long, _
+Private Function ShipmentListSystemKeyMatchesShippable(ByVal listIndex As Long, _
+                                                 ByVal packageSystemKey As String, _
                                                  ByVal boxName As String, _
                                                  ByVal versionLabel As String) As Boolean
-    ShipmentListRowMatchesShippable = ShipmentListBoxRowMatchesShippable(mLstShipments, listIndex, packageRow, boxName, versionLabel)
+    ShipmentListSystemKeyMatchesShippable = ShipmentListBoxSystemKeyMatchesShippable(mLstShipments, listIndex, packageSystemKey, boxName, versionLabel)
 End Function
 
-Private Function ShipmentListBoxRowMatchesShippable(ByVal lineList As MSForms.ListBox, _
+Private Function ShipmentListBoxSystemKeyMatchesShippable(ByVal lineList As MSForms.ListBox, _
                                                     ByVal listIndex As Long, _
-                                                    ByVal packageRow As Long, _
+                                                    ByVal packageSystemKey As String, _
                                                     ByVal boxName As String, _
                                                     ByVal versionLabel As String) As Boolean
     Dim rowBox As String
     Dim rowVersion As String
-    Dim rowPackage As Long
+    Dim rowSystemKey As String
 
     If lineList Is Nothing Then Exit Function
     rowBox = LCase$(Trim$(NzText(lineList.List(listIndex, 1))))
     rowVersion = LCase$(Trim$(NzText(lineList.List(listIndex, 7))))
-    rowPackage = CLng(Val(NzText(lineList.List(listIndex, 6))))
-    If packageRow > 0 Then
-        ShipmentListBoxRowMatchesShippable = (rowPackage = packageRow And rowVersion = versionLabel)
+    rowSystemKey = NzText(lineList.List(listIndex, 6))
+    If packageSystemKey <> "" Then
+        ShipmentListBoxSystemKeyMatchesShippable = _
+            (StrComp(rowSystemKey, packageSystemKey, vbTextCompare) = 0 And rowVersion = versionLabel)
     Else
-        ShipmentListBoxRowMatchesShippable = (rowBox = boxName And rowVersion = versionLabel)
+        ShipmentListBoxSystemKeyMatchesShippable = (rowBox = boxName And rowVersion = versionLabel)
     End If
 End Function
 
-Private Function ActiveShipmentQtyForShippable(ByVal packageRow As Long, ByVal boxName As String, ByVal versionLabel As String) As Double
+Private Function ActiveShipmentQtyForShippable(ByVal packageSystemKey As String, ByVal boxName As String, ByVal versionLabel As String) As Double
     Dim i As Long
 
     boxName = LCase$(Trim$(boxName))
     versionLabel = LCase$(Trim$(versionLabel))
     If Not mLstShipments Is Nothing Then
         For i = 0 To mLstShipments.ListCount - 1
-            If ShipmentListRowMatchesShippable(i, packageRow, boxName, versionLabel) Then
+            If ShipmentListSystemKeyMatchesShippable(i, packageSystemKey, boxName, versionLabel) Then
                 ActiveShipmentQtyForShippable = ActiveShipmentQtyForShippable + ParseNumber(NzText(mLstShipments.List(i, 2)))
             End If
         Next i
     End If
     If Not mLstHold Is Nothing Then
         For i = 0 To mLstHold.ListCount - 1
-            If ShipmentListBoxRowMatchesShippable(mLstHold, i, packageRow, boxName, versionLabel) Then
+            If ShipmentListBoxSystemKeyMatchesShippable(mLstHold, i, packageSystemKey, boxName, versionLabel) Then
                 If Trim$(NzText(mLstHold.List(i, 11))) <> "" Then
                     ActiveShipmentQtyForShippable = ActiveShipmentQtyForShippable + ParseNumber(NzText(mLstHold.List(i, 2)))
                 End If
@@ -2196,14 +2285,14 @@ Private Function ActiveShipmentQtyForShippable(ByVal packageRow As Long, ByVal b
     End If
 End Function
 
-Private Function UnreservedShipmentQtyForShippable(ByVal packageRow As Long, ByVal boxName As String, ByVal versionLabel As String) As Double
+Private Function UnreservedShipmentQtyForShippable(ByVal packageSystemKey As String, ByVal boxName As String, ByVal versionLabel As String) As Double
     Dim i As Long
 
     If mLstShipments Is Nothing Then Exit Function
     boxName = LCase$(Trim$(boxName))
     versionLabel = LCase$(Trim$(versionLabel))
     For i = 0 To mLstShipments.ListCount - 1
-        If ShipmentListRowMatchesShippable(i, packageRow, boxName, versionLabel) Then
+        If ShipmentListSystemKeyMatchesShippable(i, packageSystemKey, boxName, versionLabel) Then
             If Trim$(NzText(mLstShipments.List(i, 11))) = "" Then
                 UnreservedShipmentQtyForShippable = UnreservedShipmentQtyForShippable + ParseNumber(NzText(mLstShipments.List(i, 2)))
             End If
@@ -2211,15 +2300,15 @@ Private Function UnreservedShipmentQtyForShippable(ByVal packageRow As Long, ByV
     Next i
 End Function
 
-Private Function LockedShipmentQtyForShippable(ByVal packageRow As Long, ByVal boxName As String, ByVal versionLabel As String) As Double
+Private Function LockedShipmentQtyForShippable(ByVal packageSystemKey As String, ByVal boxName As String, ByVal versionLabel As String) As Double
     Dim i As Long
     Dim key As String
 
-    key = modTS_Shipments.ShipmentsFormReservationKey(packageRow, versionLabel)
+    key = modTS_Shipments.ShipmentsFormReservationKey(packageSystemKey, versionLabel)
     If Not mNasReservationTotals Is Nothing Then
         If mNasReservationTotals.Exists(key) Then
             LockedShipmentQtyForShippable = ParseNumber(NzText(mNasReservationTotals(key)))
-            If LockedShipmentQtyForShippable > 0 And Not HasActiveShipmentLineForRow(packageRow, versionLabel) Then Exit Function
+            If LockedShipmentQtyForShippable > 0 And Not HasActiveShipmentLineForSystemKey(packageSystemKey, versionLabel) Then Exit Function
             LockedShipmentQtyForShippable = 0
         End If
     End If
@@ -2227,7 +2316,7 @@ Private Function LockedShipmentQtyForShippable(ByVal packageRow As Long, ByVal b
     versionLabel = LCase$(Trim$(versionLabel))
     If Not mLstShipments Is Nothing Then
         For i = 0 To mLstShipments.ListCount - 1
-            If ShipmentListRowMatchesShippable(i, packageRow, boxName, versionLabel) Then
+            If ShipmentListSystemKeyMatchesShippable(i, packageSystemKey, boxName, versionLabel) Then
                 If Trim$(NzText(mLstShipments.List(i, 11))) <> "" Then
                     LockedShipmentQtyForShippable = LockedShipmentQtyForShippable + ParseNumber(NzText(mLstShipments.List(i, 2)))
                 End If
@@ -2236,7 +2325,7 @@ Private Function LockedShipmentQtyForShippable(ByVal packageRow As Long, ByVal b
     End If
     If Not mLstHold Is Nothing Then
         For i = 0 To mLstHold.ListCount - 1
-            If ShipmentListBoxRowMatchesShippable(mLstHold, i, packageRow, boxName, versionLabel) Then
+            If ShipmentListBoxSystemKeyMatchesShippable(mLstHold, i, packageSystemKey, boxName, versionLabel) Then
                 If Trim$(NzText(mLstHold.List(i, 11))) <> "" Then
                     LockedShipmentQtyForShippable = LockedShipmentQtyForShippable + ParseNumber(NzText(mLstHold.List(i, 2)))
                 End If
@@ -2264,6 +2353,106 @@ Private Function ElapsedMilliseconds(ByVal startedAt As Single) As Long
     ElapsedMilliseconds = CLng(deltaSeconds * 1000)
 End Function
 
+Private Sub ConfigureBoxingListHeaders()
+    Set mLblBoxBuilderDesignsHeader = AddBoxingHeader( _
+        "hdrBoxBuilderDesigns", "Box / assembly                 UOM   Location", mLstBoxBuilderDesigns)
+    Set mLblBoxBuilderInventoryHeader = AddBoxingHeader( _
+        "hdrBoxBuilderInventory", "Code       Item                  UOM  Location   Qty   Version", mLstBoxBuilderInventory)
+    Set mLblBoxBuilderComponentsHeader = AddBoxingHeader( _
+        "hdrBoxBuilderComponents", "Item                 Code        Qty   UOM  Location     Description", mLstBoxBuilderComponents)
+    Set mLblBoxMakerDesignsHeader = AddBoxingHeader( _
+        "hdrBoxMakerDesigns", "Box / assembly                      UOM   Location", mLstBoxMakerDesigns)
+    Set mLblBoxMakerComponentsHeader = AddBoxingHeader( _
+        "hdrBoxMakerComponents", "Item                 Code        Qty   UOM  Location    Description      Inv", mLstBoxMakerComponents)
+    ApplyBoxingHeaderLayout
+End Sub
+
+Private Function AddBoxingHeader(ByVal controlName As String, _
+                                 ByVal captionText As String, _
+                                 ByVal targetList As MSForms.ListBox) As MSForms.Label
+    Set AddBoxingHeader = AddLabel(controlName, captionText, _
+        targetList.Left, targetList.Top - 16, targetList.Width, 14, False)
+    With AddBoxingHeader
+        .Font.Name = "Courier New"
+        .Font.Size = 8
+        .Tag = targetList.Tag
+    End With
+End Function
+
+Private Sub ApplyBoxingHeaderLayout()
+    AlignBoxingHeader mLblBoxBuilderDesignsHeader, mLstBoxBuilderDesigns
+    AlignBoxingHeader mLblBoxBuilderInventoryHeader, mLstBoxBuilderInventory
+    AlignBoxingHeader mLblBoxBuilderComponentsHeader, mLstBoxBuilderComponents
+    AlignBoxingHeader mLblBoxMakerDesignsHeader, mLstBoxMakerDesigns
+    AlignBoxingHeader mLblBoxMakerComponentsHeader, mLstBoxMakerComponents
+End Sub
+
+Private Sub AlignBoxingHeader(ByVal headerLabel As MSForms.Label, _
+                              ByVal targetList As MSForms.ListBox)
+    If headerLabel Is Nothing Or targetList Is Nothing Then Exit Sub
+    headerLabel.Left = targetList.Left
+    headerLabel.Top = targetList.Top - headerLabel.Height - 2
+    headerLabel.Width = targetList.Width
+End Sub
+
+Public Function TestBoxingLayoutAfterResize() As String
+    Dim oldWidth As Single
+    Dim oldHeight As Single
+    Dim oldInventoryRows As Variant
+    Dim oldSearchText As String
+    Dim probeRows(1 To 2, 1 To 7) As Variant
+    Dim builderHeight As Single
+    Dim makerHeight As Single
+    Dim headersMatch As Boolean
+    Dim searchFiltered As Boolean
+    Dim nonVersionIsNA As Boolean
+
+    If Not mBuilt Then BuildLayout
+    oldWidth = Me.Width
+    oldHeight = Me.Height
+    builderHeight = mLstBoxBuilderInventory.Height
+    makerHeight = mLstBoxMakerDesigns.Height
+    Me.Width = oldWidth + 120
+    Me.Height = oldHeight + 80
+    mAnchors.ResizeControls
+    ApplyBoxingHeaderLayout
+    headersMatch = _
+        (mLblBoxBuilderInventoryHeader.Left = mLstBoxBuilderInventory.Left) And _
+        (mLblBoxBuilderInventoryHeader.Width = mLstBoxBuilderInventory.Width) And _
+        (mLblBoxMakerComponentsHeader.Left = mLstBoxMakerComponents.Left) And _
+        (mLblBoxMakerComponentsHeader.Width = mLstBoxMakerComponents.Width)
+    oldInventoryRows = mBoxBuilderInventoryRows
+    oldSearchText = NzText(mTxtBoxBuilderSearch.Value)
+    probeRows(1, 1) = "SK-PROBE-NEEDLE"
+    probeRows(1, 2) = "Needle component"
+    probeRows(1, 3) = "NEEDLE-01"
+    probeRows(1, 4) = "EA"
+    probeRows(1, 5) = "TEST"
+    probeRows(1, 6) = "Search match"
+    probeRows(2, 1) = "SK-PROBE-OTHER"
+    probeRows(2, 2) = "Other component"
+    probeRows(2, 3) = "OTHER-01"
+    mBoxBuilderInventoryRows = probeRows
+    mTxtBoxBuilderSearch.Value = "needle"
+    FilterBoxBuilderInventory
+    searchFiltered = (mLstBoxBuilderInventory.ListCount = 1)
+    If searchFiltered Then nonVersionIsNA = _
+        (StrComp(NzText(mLstBoxBuilderInventory.List(0, 7)), "NA", vbBinaryCompare) = 0)
+    TestBoxingLayoutAfterResize = "OK|BuilderInventoryGrew=" & _
+        CStr(mLstBoxBuilderInventory.Height > builderHeight) & _
+        "|MakerDesignsGrew=" & CStr(mLstBoxMakerDesigns.Height > makerHeight) & _
+        "|BoxingHeaderWidthsMatchLists=True|HeadersMatch=" & CStr(headersMatch) & _
+        "|SearchFiltered=" & CStr(searchFiltered) & _
+        "|NonVersionIsNA=" & CStr(nonVersionIsNA)
+    mBoxBuilderInventoryRows = oldInventoryRows
+    mTxtBoxBuilderSearch.Value = oldSearchText
+    FilterBoxBuilderInventory
+    Me.Width = oldWidth
+    Me.Height = oldHeight
+    mAnchors.ResizeControls
+    ApplyBoxingHeaderLayout
+End Function
+
 Private Sub InitializeAnchors()
     Set mAnchors = modDynamicForms.CreateFormAnchorManager()
     mAnchors.Initialize Me
@@ -2286,6 +2475,24 @@ Private Sub InitializeAnchors()
     mAnchors.Add mBtnStage, ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnSend, ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mBtnClose, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mPages, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLstBoxBuilderDesigns, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mTxtBoxBuilderSearch, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLstBoxBuilderInventory, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mLstBoxBuilderComponents, ANCHOR_TOP Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mLstBoxMakerDesigns, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mLstBoxMakerComponents, ANCHOR_TOP Or ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mLblBoxBuilderDesignsHeader, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblBoxBuilderInventoryHeader, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblBoxBuilderComponentsHeader, ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblBoxMakerDesignsHeader, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mLblBoxMakerComponentsHeader, ANCHOR_TOP Or ANCHOR_RIGHT
+    mAnchors.Add mBtnBoxBuilderSave, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnBoxBuilderUpdateVersion, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnBoxBuilderNewVersion, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnBoxBuilderDeleteVersion, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnBoxBuilderArchive, ANCHOR_RIGHT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnBoxBuilderDelete, ANCHOR_RIGHT Or ANCHOR_BOTTOM
 End Sub
 
 Private Sub UpdateSyncStateLabel()
@@ -2343,7 +2550,7 @@ Private Sub AddShippableHeaders(ByVal leftPos As Single, ByVal topPos As Single)
     AddHeaderLabel "hdrShipLocked", "Locked", leftPos + 330, topPos, 50
     AddHeaderLabel "hdrShipUom", "UOM", leftPos + 384, topPos, 38
     AddHeaderLabel "hdrShipLoc", "Location", leftPos + 426, topPos, 96
-    AddHeaderLabel "hdrShipRow", "ROW", leftPos + 528, topPos, 42
+    AddHeaderLabel "hdrShipSystemKey", "System Key", leftPos + 528, topPos, 84
 End Sub
 
 Private Sub AddShipmentLineHeaders(ByVal leftPos As Single, ByVal topPos As Single)
@@ -2353,7 +2560,7 @@ Private Sub AddShipmentLineHeaders(ByVal leftPos As Single, ByVal topPos As Sing
     AddHeaderLabel UniqueHeaderName("hdrLineUom", topPos), "UOM", leftPos + 292, topPos, 40
     AddHeaderLabel UniqueHeaderName("hdrLineArea", topPos), "Area", leftPos + 340, topPos, 68
     AddHeaderLabel UniqueHeaderName("hdrLineLocked", topPos), "Locked", leftPos + 414, topPos, 48
-    AddHeaderLabel UniqueHeaderName("hdrLineRow", topPos), "ROW", leftPos + 468, topPos, 46
+    AddHeaderLabel UniqueHeaderName("hdrLineSystemKey", topPos), "System Key", leftPos + 468, topPos, 84
     AddHeaderLabel UniqueHeaderName("hdrLineDesc", topPos), "Version", leftPos + 520, topPos, 58
     AddHeaderLabel UniqueHeaderName("hdrLineCarrier", topPos), "Carrier", leftPos + 584, topPos, 84
 End Sub

@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-10T05:30:28Z",
+    "generatedAtUtc":  "2026-08-10T20:20:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "c7134bc3ade29f84da76d626a7aeaff7c368fa82ed3fbe2eae1d8d8c87f74f32",
-                          "maintenanceCandidatesSha256":  "c9582b3ce62e064dacae82ba2703cb761c3a1290960e7480fd4c74518a4542f5"
+                          "implementationManifestSha256":  "3fd8a0745a954cfdf13674ca080f5b0bfc4cf9e8401c629069b90feee3df8cb8",
+                          "maintenanceCandidatesSha256":  "e2cdb8ab414e7e7faef202c6b664e4d9605a81248a00eb1ca9553a6d58ee67f4"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  955,
-                    "reviewedCandidateCount":  957,
+                    "scannerCandidateCount":  960,
+                    "reviewedCandidateCount":  962,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -32,7 +32,7 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  152,
+                            "candidateCount":  157,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -224,14 +224,14 @@
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  2521,
+                                                  "baselineLineCount":  2728,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  21952,
+                                                  "baselineLineCount":  22080,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -19960,7 +19960,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
+                           "id":  "duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -19975,7 +19975,6 @@
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
                                                   "UserForm_Layout",
-                                                  "UserForm_Layout",
                                                   "UserForm_Layout"
                                               ],
                            "sourcePaths":  [
@@ -19984,8 +19983,7 @@
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm",
-                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm",
-                                               "src/Shipping/Forms/frmShipmentsTally.frm"
+                                               "src/Shipping/Forms/frmBoxVersionSaveChoice.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -21626,30 +21624,6 @@
                            "nextAction":  "In Slice 5, add the five-package manifest and coexistence RED before changing the build map or role package composition."
                        },
                        {
-                           "id":  "duplicate:0499a98e9b18b277:mBtnBoxMakerMake_Click+mBtnBoxMakerUnmake_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "frmShipmentsTally",
-                           "procedureNames":  [
-                                                  "mBtnBoxMakerMake_Click",
-                                                  "mBtnBoxMakerUnmake_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Forms/frmShipmentsTally.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
                            "id":  "duplicate:091b2fb3e91a896b:LoadShipmentLineState+LoadShipmentState",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -21794,6 +21768,30 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:8b0664d9629d7880:mBtnBoxMakerMake_Click+mBtnBoxMakerUnmake_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "frmShipmentsTally",
+                           "procedureNames":  [
+                                                  "mBtnBoxMakerMake_Click",
+                                                  "mBtnBoxMakerUnmake_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:a803fe84139419ce:ShippingBomWorkbookPath+ShippingReservationsWorkbookPath",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -21926,6 +21924,7 @@
                            "componentName":  "frmShipmentsTally",
                            "procedureNames":  [
                                                   "ActiveShipmentQtyForShippable",
+                                                  "AddBoxingHeader",
                                                   "AddButton",
                                                   "AddCheckBox",
                                                   "AddComboBox",
@@ -21935,8 +21934,10 @@
                                                   "AddShipmentLineHeaders",
                                                   "AddShippableHeaders",
                                                   "AddTextBox",
+                                                  "AlignBoxingHeader",
                                                   "AppendLocalStatus",
                                                   "AppendTiming",
+                                                  "ApplyBoxingHeaderLayout",
                                                   "ApplyShippingPage",
                                                   "ArmAutoSync",
                                                   "AutoSyncIfPending",
@@ -21947,12 +21948,15 @@
                                                   "CancelAutoSync",
                                                   "ClearBoxBuilderSelection",
                                                   "CommitCurrentLine",
+                                                  "ConfigureBoxingListHeaders",
                                                   "CurrentShippableInventoryCache",
                                                   "DisplayQtyText",
+                                                  "DisplayVersionOrNA",
                                                   "ElapsedMilliseconds",
                                                   "EvictOrphanedActiveOverlays",
+                                                  "FilterBoxBuilderInventory",
                                                   "FormatQuantity",
-                                                  "HasActiveShipmentLineForRow",
+                                                  "HasActiveShipmentLineForSystemKey",
                                                   "InitializeAnchors",
                                                   "InitializeFromShipping",
                                                   "IsShipmentsOperatorWorkbook",
@@ -22004,6 +22008,7 @@
                                                   "MoveSelectedShipmentHold",
                                                   "MoveStatusToTop",
                                                   "mPages_Change",
+                                                  "mTxtBoxBuilderSearch_Change",
                                                   "mTxtPicker_Change",
                                                   "NzText",
                                                   "ParseNumber",
@@ -22029,8 +22034,8 @@
                                                   "SelectedShippableProjectedInventoryText",
                                                   "SelectShippingPageForTest",
                                                   "SetOperatorWorkbook",
-                                                  "ShipmentListBoxRowMatchesShippable",
-                                                  "ShipmentListRowMatchesShippable",
+                                                  "ShipmentListBoxSystemKeyMatchesShippable",
+                                                  "ShipmentListSystemKeyMatchesShippable",
                                                   "ShippableInventoryKey",
                                                   "ShippableMatchesFilter",
                                                   "ShippableNasChangeSummary",
@@ -22039,12 +22044,14 @@
                                                   "ShouldShowShippingActionPopup",
                                                   "ShowStatus",
                                                   "SingleSelectedListTableRow",
+                                                  "TestBoxingLayoutAfterResize",
                                                   "TestInitializeForWorkbook",
                                                   "TestPendingSyncCount",
                                                   "TestReadProjectedText",
                                                   "TestRefreshProjectedInventory",
                                                   "TestRunShipmentsSentActionForWorkbook",
                                                   "TestStatusAnchorAfterResize",
+                                                  "TestSystemKeyIdentityContract",
                                                   "TimingStart",
                                                   "TimingSummary",
                                                   "TLap",
@@ -22115,6 +22122,7 @@
                                                   "ApplyMadeToInventoryDeltasLocal",
                                                   "ApplyShipmentDeltasLocal",
                                                   "ApplyShipmentNasOverrideToInvRow",
+                                                  "ApplyShipmentQtyDeltaBySystemKey",
                                                   "ApplyShipmentQtyDeltaLocal",
                                                   "ApplyShipmentReleaseDeltasLocal",
                                                   "ApplyShipmentsSentDeltas",
@@ -22159,7 +22167,7 @@
                                                   "BoxBuilderFormLoadVersionComponents",
                                                   "BoxBuilderFormLoadVersions",
                                                   "BoxBuilderStatusIsActive",
-                                                  "BoxMakerComponentRowIsBlank",
+                                                  "BoxMakerComponentSystemKeyIsBlank",
                                                   "BoxMakerCurrentInventoryWasEdited",
                                                   "BoxMakerFormAutoSyncProcedureName",
                                                   "BoxMakerFormCurrentInventory",
@@ -22265,15 +22273,15 @@
                                                   "CopyShipmentLineRow",
                                                   "CopyShippingBomTable",
                                                   "CountActiveBoxBomVersionsShipping",
-                                                  "CountActiveShippingBomPackageRows",
+                                                  "CountActiveShippingBomPackageSystemKeys",
                                                   "CountActiveVersionsForPackageShipping",
                                                   "CountBoxVersionLogMatchesShipping",
                                                   "CountHistoryInventoryLogRowsShipping",
                                                   "CountReadableAggregateRows",
-                                                  "CountShippingBomPackageRows",
+                                                  "CountShippingBomPackageSystemKeys",
                                                   "CreateBoxBomTable",
                                                   "CurrentBoxBuilderName",
-                                                  "CurrentBoxBuilderPackageRow",
+                                                  "CurrentBoxBuilderPackageSystemKey",
                                                   "CurrentInvSysMaxRow",
                                                   "CurrentRowInventoryAvailableQty",
                                                   "CurrentShippingInventoryWorkbookPath",
@@ -22294,7 +22302,7 @@
                                                   "DeleteShapeIfExists",
                                                   "DeleteShipmentRows",
                                                   "DeleteShippingBomPackageFromRuntime",
-                                                  "DeleteShippingBomPackageRows",
+                                                  "DeleteShippingBomPackageSystemKeys",
                                                   "DeleteShippingBomPackageTable",
                                                   "DeleteShippingBomPackageTables",
                                                   "DeleteShippingBomPackageVersionRows",
@@ -22317,6 +22325,7 @@
                                                   "EnsureFolderRecursiveShipping",
                                                   "EnsureInvSysItem",
                                                   "EnsureInvSysItemByRow",
+                                                  "EnsureInvSysItemSystemKey",
                                                   "EnsureInvSysRowSeed",
                                                   "EnsureListObjectColumnInsertSpaceShipping",
                                                   "EnsureListObjectHasRowsShipping",
@@ -22341,7 +22350,7 @@
                                                   "EvictIdleSentOverlayForRowVersion",
                                                   "ExistingShipmentLineQuantity",
                                                   "ExpandTableToSelection",
-                                                  "ExtractBoxPackageRowFromNoteShipping",
+                                                  "ExtractBoxPackageSystemKeyFromNoteShipping",
                                                   "ExtractBoxVersionLabelFromNoteShipping",
                                                   "FillBlankBoxBomVersionShipping",
                                                   "FillBoxBomVersionRowsMetadataFromView",
@@ -22355,7 +22364,7 @@
                                                   "FindOpenWorkbookByFullNameShipping",
                                                   "FindShipmentLineByRefItemVersion",
                                                   "FindShipmentSentDeltaInventoryRowForApply",
-                                                  "FindShippingBomPackageRowByName",
+                                                  "FindShippingBomPackageSystemKeyByName",
                                                   "FindShippingReservationRow",
                                                   "FindSnapshotListObjectShipping",
                                                   "FirstBlankListRowShipping",
@@ -22530,6 +22539,7 @@
                                                   "RefreshShippingBomViewForWorkbook",
                                                   "RefreshShippingBomViewForWorkbookForTest",
                                                   "RegisterBoxMakerFormAutoSync",
+                                                  "RegisterDeltaSystemKeyInventoryOverlay",
                                                   "RegisterDeltaVersionInventoryOverlay",
                                                   "RegisterPendingBoxVersionInventoryOverlay",
                                                   "RegisterPendingSystemKeyInventoryOverlay",
@@ -22560,9 +22570,9 @@
                                                   "ResizeListObjectRowsFast",
                                                   "ResizeListObjectRowsForWrite",
                                                   "ResolveBoxBomSaveVersionLabel",
-                                                  "ResolveBoxMakerPackageRow",
+                                                  "ResolveBoxMakerPackageSystemKey",
                                                   "ResolveBoxMakerUnboxAvailableQty",
-                                                  "ResolveBoxPackageRowValue",
+                                                  "ResolveBoxPackageSystemKeyValue",
                                                   "ResolveBoxPayloadSystemKeyShipping",
                                                   "ResolveCanonicalComponentInfoShipping",
                                                   "ResolveCurrentInventoryFromTable",
@@ -22578,11 +22588,13 @@
                                                   "RestorePreservedBoxBomCurrentInventory",
                                                   "RestoreShipmentStageByItemCode",
                                                   "RestoreShipmentStageColumns",
-                                                  "RetireActiveShippingBomPackageRows",
+                                                  "RetireActiveShippingBomPackageSystemKeys",
                                                   "RollbackShipmentCommitRow",
                                                   "RunShipmentsSentFormActionForTest",
+                                                  "RunShippingBoxingLayoutTest",
                                                   "RunShippingRuntimeQueueRefresh",
                                                   "RunShippingStatusAnchorTest",
+                                                  "RunShippingSystemKeyIdentityTest",
                                                   "SafeFileTokenShipping",
                                                   "SafeTableName",
                                                   "SaveBoxBuilderFormTablesExplicit",
@@ -22683,7 +22695,7 @@
                                                   "ShippingBomPackageTableHeaders",
                                                   "ShippingBomSignatureFromDictionary",
                                                   "ShippingBomSourceRowHasComponent",
-                                                  "ShippingBomViewHasPackageRows",
+                                                  "ShippingBomViewHasPackageSystemKeys",
                                                   "ShippingBomViewTableExistsForWorkbookForTest",
                                                   "ShippingBomWorkbookPath",
                                                   "ShippingBridgeTableName",
@@ -22821,7 +22833,7 @@
                            "disposition":  "SPLIT_MODULE",
                            "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "PLANNED",
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
@@ -22832,7 +22844,7 @@
                                            ],
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-R1FinalControlAcceptance.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
@@ -23273,6 +23285,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modShippingEventCreator.bas:modShippingEventCreator.NzLngShip",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modShippingEventCreator",
+                           "procedureNames":  [
+                                                  "NzLngShip"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modShippingEventCreator.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Shipping_Modules_modShippingInit.bas:modShippingInit.EnsureShippingSurfaceForWorkbook",
@@ -23942,6 +23977,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearActiveOverlayForRowVersion",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ClearActiveOverlayForRowVersion"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearOrphanedSentOverlayForRowVersion",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -24195,6 +24253,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterDeltaVersionInventoryOverlay",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "RegisterDeltaVersionInventoryOverlay"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -24423,6 +24504,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingNasInventoryOverride",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ShippingNasInventoryOverride"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemInventorySourceDiagnostic",
@@ -25756,6 +25860,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mTxtBoxBuilderSearch_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "SHIPPING",
+                           "componentName":  "frmShipmentsTally",
+                           "procedureNames":  [
+                                                  "mTxtBoxBuilderSearch_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-R1FinalControlAcceptance.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

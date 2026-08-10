@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-10T05:30:28Z
+- Generated: 2026-08-10T20:20:00Z
 - Packages: 6
 - Components: 149
-- Procedures: 4566
+- Procedures: 4585
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -254,6 +254,7 @@
 | MouseProc | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | mPages_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mTxtBoxBuilderSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtConfirmPin_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Enter | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Exit | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -786,8 +787,6 @@
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventoryApply.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInventorySchema.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/InventoryDomain/Modules/modInvMan.bas]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Forms/frmShipmentsTally.frm]
-- RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Modules/modShippingEventCreator.bas]
 - RETIRED_ROW_HEADER - Retired managed header ROW is referenced by runtime source. [src/Shipping/Modules/modTS_Shipments.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/ClassModules/cDynItemSearch.cls]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/ClassModules/cPickerRouter.cls]

@@ -25,7 +25,7 @@ Private mCategoryCol As Long
 Private mHasCategory As Boolean
 Private mIngredientRecipeId As String
 Private mAllowedRows As Object
-Private mShippingBomPackageRows As Object
+Private mShippingBomPackageSystemKeys As Object
 Private mShippingBomPackageItems As Object
 Private mLoadedFromShippingBom As Boolean
 Private mRoleProfile As String
@@ -668,14 +668,14 @@ Private Sub InitShippingBomPackageState(Optional ByVal forceLoad As Boolean = Fa
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim lo As ListObject
-    Dim cPackageRow As Long
+    Dim cPackageSystemKey As Long
     Dim cPackageItem As Long
     Dim cActive As Long
     Dim r As Long
     Dim rowKey As String
     Dim itemKey As String
 
-    Set mShippingBomPackageRows = Nothing
+    Set mShippingBomPackageSystemKeys = Nothing
     Set mShippingBomPackageItems = Nothing
     If Not forceLoad Then
         If Not ShouldUseShippingBomFilter() Then Exit Sub
@@ -689,22 +689,22 @@ Private Sub InitShippingBomPackageState(Optional ByVal forceLoad As Boolean = Fa
     If lo Is Nothing Then Exit Sub
     If lo.DataBodyRange Is Nothing Then Exit Sub
 
-    cPackageRow = ColumnIndex(lo, "PackageRow")
+    cPackageSystemKey = ColumnIndex(lo, "PackageSystemKey")
     cPackageItem = ColumnIndex(lo, "PackageItem")
     cActive = ColumnIndex(lo, "IsActive")
-    If cPackageRow = 0 And cPackageItem = 0 Then Exit Sub
+    If cPackageSystemKey = 0 And cPackageItem = 0 Then Exit Sub
 
-    Set mShippingBomPackageRows = CreateObject("Scripting.Dictionary")
+    Set mShippingBomPackageSystemKeys = CreateObject("Scripting.Dictionary")
     Set mShippingBomPackageItems = CreateObject("Scripting.Dictionary")
 
     For r = 1 To lo.ListRows.Count
         If cActive > 0 Then
             If Not ShippingBomActiveValue(lo.DataBodyRange.Cells(r, cActive).Value) Then GoTo NextPackageStateRow
         End If
-        If cPackageRow > 0 Then
-            rowKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cPackageRow).Value))
+        If cPackageSystemKey > 0 Then
+            rowKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cPackageSystemKey).Value))
             If rowKey <> "" Then
-                If Not mShippingBomPackageRows.Exists(rowKey) Then mShippingBomPackageRows.Add rowKey, True
+                If Not mShippingBomPackageSystemKeys.Exists(rowKey) Then mShippingBomPackageSystemKeys.Add rowKey, True
             End If
         End If
         If cPackageItem > 0 Then
@@ -730,7 +730,7 @@ Private Function LoadShippingBomPackageItems() As Variant
 
     Dim wb As Workbook
     Dim lo As ListObject
-    Dim cPackageRow As Long
+    Dim cPackageSystemKey As Long
     Dim cPackageItem As Long
     Dim cPackageUom As Long
     Dim cPackageLocation As Long
@@ -754,13 +754,13 @@ Private Function LoadShippingBomPackageItems() As Variant
     If lo Is Nothing Then Exit Function
     If lo.DataBodyRange Is Nothing Then Exit Function
 
-    cPackageRow = ColumnIndex(lo, "PackageRow")
+    cPackageSystemKey = ColumnIndex(lo, "PackageSystemKey")
     cPackageItem = ColumnIndex(lo, "PackageItem")
     cPackageUom = ColumnIndex(lo, "PackageUOM")
     cPackageLocation = ColumnIndex(lo, "PackageLocation")
     cPackageDescription = ColumnIndex(lo, "PackageDescription")
     cActive = ColumnIndex(lo, "IsActive")
-    If cPackageRow = 0 Or cPackageItem = 0 Then Exit Function
+    If cPackageSystemKey = 0 Or cPackageItem = 0 Then Exit Function
 
     src = lo.DataBodyRange.Value
     Set dict = CreateObject("Scripting.Dictionary")
@@ -770,7 +770,7 @@ Private Function LoadShippingBomPackageItems() As Variant
         If cActive > 0 Then
             If Not ShippingBomActiveValue(src(r, cActive)) Then GoTo NextPackage
         End If
-        rowKey = NormalizePickerRowKey(src(r, cPackageRow))
+        rowKey = NormalizePickerRowKey(src(r, cPackageSystemKey))
         itemName = Trim$(NzStr(src(r, cPackageItem)))
         If rowKey = "" And itemName = "" Then GoTo NextPackage
 
@@ -866,12 +866,12 @@ Private Function IsRowListedInShippingBom(ByVal rowIndex As Long) As Boolean
     Dim rowKey As String
     Dim itemKey As String
 
-    If mShippingBomPackageRows Is Nothing And mShippingBomPackageItems Is Nothing Then Exit Function
+    If mShippingBomPackageSystemKeys Is Nothing And mShippingBomPackageItems Is Nothing Then Exit Function
 
     rowKey = Trim$(NzStr(itemsArr(rowIndex, 1)))
-    If Not mShippingBomPackageRows Is Nothing Then
+    If Not mShippingBomPackageSystemKeys Is Nothing Then
         If rowKey <> "" Then
-            If mShippingBomPackageRows.Exists(rowKey) Then
+            If mShippingBomPackageSystemKeys.Exists(rowKey) Then
                 IsRowListedInShippingBom = True
                 Exit Function
             End If

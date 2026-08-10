@@ -193,6 +193,12 @@ Public Function RunReceivingRefreshFormActionForTest(ByVal operatorWorkbookName 
                                                      Optional ByVal filterText As String = "") As String
     Dim frm As frmReceiving
     Dim operatorWb As Workbook
+    Dim itemRows As Variant
+    Dim historyRows As Variant
+    Dim loaderItemRowsBefore As Long
+    Dim loaderHistoryRowsBefore As Long
+    Dim actionReport As String
+    Dim directHistoryRows As Long
 
     On Error GoTo Failed
     Set operatorWb = modOperationsInit.ResolveOpenWorkbookByName(operatorWorkbookName)
@@ -202,8 +208,21 @@ Public Function RunReceivingRefreshFormActionForTest(ByVal operatorWorkbookName 
     End If
 
     Set frm = New frmReceiving
+    itemRows = LoadReceivingItemChoicesForWorkbook(operatorWb)
+    historyRows = LoadReceivingEntriesHistoryForWorkbook(operatorWb)
+    loaderItemRowsBefore = VariantArrayRowCount(itemRows)
+    loaderHistoryRowsBefore = VariantArrayRowCount(historyRows)
+    actionReport = frm.TestRefreshInventoryActionForWorkbook(operatorWb, filterText)
+    itemRows = LoadReceivingItemChoicesForWorkbook(operatorWb)
+    historyRows = LoadReceivingEntriesHistoryForWorkbook(operatorWb)
+    directHistoryRows = frm.TestSearchInventoryCount(historyRows, filterText)
     RunReceivingRefreshFormActionForTest = _
-        frm.TestRefreshInventoryActionForWorkbook(operatorWb, filterText)
+        actionReport & _
+        "|LoaderItemRowsBefore=" & CStr(loaderItemRowsBefore) & _
+        "|LoaderHistoryRowsBefore=" & CStr(loaderHistoryRowsBefore) & _
+        "|LoaderItemRowsAfter=" & CStr(VariantArrayRowCount(itemRows)) & _
+        "|LoaderHistoryRowsAfter=" & CStr(VariantArrayRowCount(historyRows)) & _
+        "|DirectHistoryRows=" & CStr(directHistoryRows)
 CleanExit:
     On Error Resume Next
     If Not frm Is Nothing Then Unload frm
@@ -216,6 +235,13 @@ Failed:
     RunReceivingRefreshFormActionForTest = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
     Resume CleanExit
+End Function
+
+Private Function VariantArrayRowCount(ByVal values As Variant) As Long
+    On Error GoTo NoRows
+    If IsEmpty(values) Or Not IsArray(values) Then Exit Function
+    VariantArrayRowCount = UBound(values, 1) - LBound(values, 1) + 1
+NoRows:
 End Function
 
 Public Function ReceivingFormInitializeSmokeForWorkbook(ByVal operatorWb As Workbook) As String
@@ -329,6 +355,67 @@ Public Function LoadReceivingFormInventory(Optional ByVal filterText As String =
     If wb Is Nothing Then Exit Function
     LoadReceivingFormInventory = _
         LoadReceivingFormInventoryForWorkbook(wb, filterText)
+End Function
+
+Public Function LoadReceivingItemChoicesForWorkbook(ByVal operatorWb As Workbook) As Variant
+    Dim sourceRows As Variant
+    Dim seen As Object
+    Dim result() As Variant
+    Dim trimmed() As Variant
+    Dim itemCode As String
+    Dim r As Long
+    Dim outRow As Long
+
+    sourceRows = LoadReceivingFormInventoryForWorkbook(operatorWb, "")
+    If IsEmpty(sourceRows) Then Exit Function
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbTextCompare
+    ReDim result(1 To UBound(sourceRows, 1), 1 To 3)
+    For r = 1 To UBound(sourceRows, 1)
+        itemCode = Trim$(CStr(sourceRows(r, 2)))
+        If itemCode = "" Or seen.Exists(itemCode) Then GoTo NextRow
+        seen.Add itemCode, True
+        outRow = outRow + 1
+        result(outRow, 1) = sourceRows(r, 1)
+        result(outRow, 2) = itemCode
+        result(outRow, 3) = sourceRows(r, 3)
+NextRow:
+    Next r
+    If outRow = 0 Then Exit Function
+    ReDim trimmed(1 To outRow, 1 To 3)
+    For r = 1 To outRow
+        trimmed(r, 1) = result(r, 1)
+        trimmed(r, 2) = result(r, 2)
+        trimmed(r, 3) = result(r, 3)
+    Next r
+    LoadReceivingItemChoicesForWorkbook = trimmed
+End Function
+
+Public Function LoadReceivingEntriesHistoryForWorkbook(ByVal operatorWb As Workbook) As Variant
+    Dim historyTable As ListObject
+    Dim result() As Variant
+    Dim sourceRow As Long
+    Dim outputRow As Long
+    Dim rowCount As Long
+
+    Set historyTable = FindTable(operatorWb, "ReceivedLog")
+    If historyTable Is Nothing Or historyTable.DataBodyRange Is Nothing Then Exit Function
+    rowCount = historyTable.ListRows.Count
+    ReDim result(1 To rowCount, 1 To 10)
+    For sourceRow = rowCount To 1 Step -1
+        outputRow = outputRow + 1
+        result(outputRow, 1) = CellText(historyTable, sourceRow, "ENTRY_DATE")
+        result(outputRow, 2) = CellText(historyTable, sourceRow, "USER")
+        result(outputRow, 3) = CellText(historyTable, sourceRow, "REF_NUMBER")
+        result(outputRow, 4) = CellText(historyTable, sourceRow, "ITEMS")
+        result(outputRow, 5) = CellText(historyTable, sourceRow, "QUANTITY")
+        result(outputRow, 6) = CellText(historyTable, sourceRow, "UOM")
+        result(outputRow, 7) = CellText(historyTable, sourceRow, "VENDOR")
+        result(outputRow, 8) = CellText(historyTable, sourceRow, "LOCATION")
+        result(outputRow, 9) = CellText(historyTable, sourceRow, "ITEM_CODE")
+        result(outputRow, 10) = CellText(historyTable, sourceRow, "System_Key")
+    Next sourceRow
+    LoadReceivingEntriesHistoryForWorkbook = result
 End Function
 
 Public Function LoadReceivingFormTableForWorkbook(ByVal operatorWb As Workbook, _

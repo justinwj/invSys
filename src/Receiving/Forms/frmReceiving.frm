@@ -19,6 +19,7 @@ Private WithEvents mTxtRef As MSForms.TextBox
 Private WithEvents mTxtReceiptId As MSForms.TextBox
 Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mTxtQty As MSForms.TextBox
+Private WithEvents mCboReceiveItem As MSForms.ComboBox
 Private WithEvents mTabs As MSForms.TabStrip
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnAdd As MSForms.CommandButton
@@ -42,7 +43,8 @@ Private mLblAggregateHeader As MSForms.Label
 Private mLblPurchasingStub As MSForms.Label
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
-Private mInventoryRows As Variant
+Private mHistoryRows As Variant
+Private mItemRows As Variant
 Private mBuilt As Boolean
 Private mLoading As Boolean
 Private mResizeInitialized As Boolean
@@ -110,7 +112,7 @@ End Sub
 
 Public Function TestSearchInventoryCount(ByVal values As Variant, ByVal filterText As String) As Long
     If Not mBuilt Then BuildLayout
-    mInventoryRows = values
+    mHistoryRows = values
     FillInventoryList FilterInventoryRows(filterText)
     TestSearchInventoryCount = mLstInventory.ListCount
 End Function
@@ -148,13 +150,27 @@ Public Function TestRefreshInventoryActionForWorkbook(ByVal operatorWb As Workbo
     mTxtSearch.Value = filterText
     mBtnRefresh_Click
     TestRefreshInventoryActionForWorkbook = _
-        "OK|VisibleRows=" & CStr(mLstInventory.ListCount) & _
+        "OK|VisibleRows=" & CStr(CountManagedItemChoices(filterText)) & _
+        "|HistoryRows=" & CStr(mLstInventory.ListCount) & _
         "|Status=" & CStr(mTxtStatus.Text)
     Exit Function
 
 Failed:
     TestRefreshInventoryActionForWorkbook = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Private Function CountManagedItemChoices(ByVal filterText As String) As Long
+    Dim r As Long
+    Dim haystack As String
+    filterText = LCase$(Trim$(filterText))
+    If IsEmpty(mItemRows) Or Not IsArray(mItemRows) Then Exit Function
+    For r = 1 To UBound(mItemRows, 1)
+        haystack = LCase$(NzText(mItemRows(r, 2)) & " " & NzText(mItemRows(r, 3)))
+        If filterText = "" Or InStr(1, haystack, filterText, vbTextCompare) > 0 Then
+            CountManagedItemChoices = CountManagedItemChoices + 1
+        End If
+    Next r
 End Function
 
 Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbook, _
@@ -209,8 +225,19 @@ Private Sub BuildLayout()
     mTxtReceiptId.BackColor = &HEFEFEF
     Set mLblRef = AddLabel("lblRef", "PO/BOL Ref", 258, 48, 78, 18, True)
     Set mTxtRef = AddTextBox("txtRef", 338, 46, 150, 22)
-    Set mLblSearch = AddLabel("lblSearch", "Search inventory", 506, 48, 110, 18, True)
-    Set mTxtSearch = AddTextBox("txtSearch", 618, 46, 190, 22)
+    Set mLblSearch = AddLabel("lblSearch", "Search history", 18, 80, 90, 18, True)
+    Set mTxtSearch = AddTextBox("txtSearch", 110, 78, 300, 22)
+    AddLabel "lblReceiveItem", "Receive item", 420, 48, 84, 18, True
+    Set mCboReceiveItem = Me.Controls.Add("Forms.ComboBox.1", "cboReceiveItem", True)
+    With mCboReceiveItem
+        .Left = 506
+        .Top = 46
+        .Width = 300
+        .Height = 22
+        .ColumnCount = 3
+        .ColumnWidths = "0 pt;82 pt;200 pt"
+        .MatchEntry = fmMatchEntryComplete
+    End With
     Set mLblQty = AddLabel("lblQty", "Qty", 826, 48, 34, 18, True)
     Set mTxtQty = AddTextBox("txtQty", 862, 46, 80, 22)
     mTxtQty.Value = "1"
@@ -221,9 +248,9 @@ Private Sub BuildLayout()
     Set mBtnClear = AddButton("btnClear", "Clear", 136, 610, 72, 30)
     Set mBtnClose = AddButton("btnClose", "Close", 892, 610, 90, 30)
 
-    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Inventory", 18, 86, 130, 18, True)
-    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "System_Key                         Code          Item                         UOM   Inv       Location      Description / Vendor", 18, 108, 930, 16, False)
-    Set mLstInventory = AddListBox("lstInventory", 18, 126, 964, 206, 8, "210 pt;82 pt;190 pt;42 pt;62 pt;80 pt;230 pt;120 pt")
+    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Receiving Entries History", 18, 108, 220, 18, True)
+    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "Date                 User       Reference        Item                    Qty    UOM   Vendor       Location     Code", 18, 130, 930, 16, False)
+    Set mLstInventory = AddListBox("lstInventory", 18, 148, 964, 184, 10, "110 pt;70 pt;100 pt;150 pt;52 pt;42 pt;90 pt;80 pt;72 pt;0 pt")
 
     Set mLblStagedTitle = AddLabel("lblStagedTitle", "Received Tally", 18, 348, 150, 18, True)
     Set mLblStagedHeader = AddLabel("lblStagedHeader", "Ref number             Item                                      Qty        System_Key", 18, 370, 520, 16, False)
@@ -337,8 +364,8 @@ Private Sub ResizeReceivingLayout()
     mTabs.Width = layoutW - (margin * 2)
     mLblPurchasingStub.Width = layoutW - 72
 
-    mTxtSearch.Width = MaxDoubleReceiving(160, layoutW - mTxtSearch.Left - 206)
-    mLblQty.Left = mTxtSearch.Left + mTxtSearch.Width + 16
+    mCboReceiveItem.Width = MaxDoubleReceiving(220, layoutW - mCboReceiveItem.Left - 214)
+    mLblQty.Left = mCboReceiveItem.Left + mCboReceiveItem.Width + 16
     mTxtQty.Left = mLblQty.Left + 36
     mBtnRefresh.Left = layoutW - 224
     mBtnAdd.Left = layoutW - 116
@@ -398,6 +425,7 @@ End Function
 
 Private Sub RefreshAllViews()
     LoadInventoryCache
+    LoadHistoryCache
     RefreshInventory
     RefreshStaging
     modTS_Received.EnforceReceivingSupportSheetsHidden ResolveOperatorWorkbook()
@@ -405,13 +433,29 @@ End Sub
 
 Private Sub LoadInventoryCache()
     On Error GoTo ErrHandler
-    mInventoryRows = _
-        modTS_Received.LoadReceivingFormInventoryForWorkbook( _
-            ResolveOperatorWorkbook(), "")
+    Dim r As Long
+    mItemRows = modTS_Received.LoadReceivingItemChoicesForWorkbook(ResolveOperatorWorkbook())
+    mCboReceiveItem.Clear
+    If Not IsEmpty(mItemRows) Then
+        For r = 1 To UBound(mItemRows, 1)
+            mCboReceiveItem.AddItem NzText(mItemRows(r, 1))
+            mCboReceiveItem.List(mCboReceiveItem.ListCount - 1, 1) = NzText(mItemRows(r, 2))
+            mCboReceiveItem.List(mCboReceiveItem.ListCount - 1, 2) = NzText(mItemRows(r, 3))
+        Next r
+    End If
     Exit Sub
 ErrHandler:
-    Erase mInventoryRows
+    Erase mItemRows
     ShowStatus "Inventory cache load failed: " & Err.Description
+End Sub
+
+Private Sub LoadHistoryCache()
+    On Error GoTo ErrHandler
+    mHistoryRows = modTS_Received.LoadReceivingEntriesHistoryForWorkbook(ResolveOperatorWorkbook())
+    Exit Sub
+ErrHandler:
+    Erase mHistoryRows
+    ShowStatus "Receiving history load failed: " & Err.Description
 End Sub
 
 Private Sub RefreshInventory()
@@ -473,8 +517,8 @@ Private Function FilterInventoryRows(ByVal filterText As String) As Variant
     Dim token As Variant
     Dim matched As Boolean
 
-    If IsEmpty(mInventoryRows) Or Not IsArray(mInventoryRows) Then Exit Function
-    sourceRows = mInventoryRows
+    If IsEmpty(mHistoryRows) Or Not IsArray(mHistoryRows) Then Exit Function
+    sourceRows = mHistoryRows
     filterText = NormalizeSearchText(filterText)
     tokens = Split(filterText, " ")
 
@@ -516,11 +560,11 @@ Private Function FilterInventoryRows(ByVal filterText As String) As Variant
 End Function
 
 Private Sub FillInventoryList(ByVal values As Variant)
-    FillListBox mLstInventory, values, 9
+    FillListBox mLstInventory, values, 10
     If IsEmpty(values) Or Not IsArray(values) Then
-        If Trim$(CStr(mTxtSearch.Value)) <> "" Then ShowStatus "No inventory rows match: " & CStr(mTxtSearch.Value)
+        If Trim$(CStr(mTxtSearch.Value)) <> "" Then ShowStatus "No receiving history rows match: " & CStr(mTxtSearch.Value)
     Else
-        ShowStatus "Inventory rows shown: " & CStr(UBound(values, 1))
+        ShowStatus "Receiving history rows shown: " & CStr(UBound(values, 1))
     End If
 End Sub
 
@@ -577,7 +621,7 @@ Private Sub RefreshClicked()
     On Error GoTo ErrHandler
     modTS_Received.RefreshReceivingUiForWorkbook ResolveOperatorWorkbook(), "LOCAL"
     RefreshAllViews
-    ShowStatus "Receiving inventory and staging refreshed."
+    ShowStatus "Receiving history, managed items, and staging refreshed."
     Exit Sub
 ErrHandler:
     ShowStatus "Refresh failed: " & Err.Description
@@ -593,9 +637,9 @@ Private Sub AddSelectedInventory()
     Dim itemCode As String
     Dim sourceSystemKey As String
 
-    idx = mLstInventory.ListIndex
+    idx = mCboReceiveItem.ListIndex
     If idx < 0 Then
-        ShowStatus "Select an inventory item first."
+        ShowStatus "Select a managed item to receive first."
         Exit Sub
     End If
 
@@ -605,8 +649,8 @@ Private Sub AddSelectedInventory()
         Exit Sub
     End If
 
-    sourceSystemKey = NzText(mLstInventory.List(idx, 0))
-    itemCode = NzText(mLstInventory.List(idx, 1))
+    sourceSystemKey = NzText(mCboReceiveItem.List(idx, 0))
+    itemCode = NzText(mCboReceiveItem.List(idx, 1))
     qtyVal = CDbl(Val(CStr(mTxtQty.Value)))
     If qtyVal <= 0 Then
         ShowStatus "Quantity must be greater than zero."

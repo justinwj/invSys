@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-10T05:30:28Z
-- Scanner candidates: 955
-- Reviewed candidates: 957
+- Baseline: 2026-08-10T20:20:00Z
+- Scanner candidates: 960
+- Reviewed candidates: 962
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -13,7 +13,7 @@
 |---|---:|---|
 | RECEIVING | 29 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 129 | Production-owned forms, services, and role package source. |
-| SHIPPING | 152 | Shipping and Boxing forms, services, and role package source. |
+| SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 294 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
@@ -51,8 +51,8 @@
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4757 |
 | src/Production/Modules/mProduction.bas | Production | 12912 |
-| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2521 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 21952 |
+| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2728 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22080 |
 
 ## Reviewed candidates
 
@@ -801,7 +801,7 @@
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Terminate | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Modules_modReceivingAutoOpen.bas:modReceivingAutoOpen.Auto_Open | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | duplicate:001250ca4c3969cb:AddListBox+AddListBox | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:0240399e720e0f27:UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout+UserForm_Layout | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:0352bd7c18f22a6e:ShippingBomActiveValue+ShippingBomActiveValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:037587d479aa71ae:StateStaged+StateStaged | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -863,13 +863,13 @@
 | duplicate:f454ecc20a559e2f:EnsureShippingWorksheetEditable+EnsureTableSheetEditableAdminSheet | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:f7bd50fe701e9e52:FindWorksheetByNameConfig+WorkbookSheetByNameReadiness | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | manual:operations-shared-package-boundary | SHARED_OPERATIONS | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:0499a98e9b18b277:mBtnBoxMakerMake_Click+mBtnBoxMakerUnmake_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:091b2fb3e91a896b:LoadShipmentLineState+LoadShipmentState | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:26919ed9f8a41c28:mBtnBoxBuilderNewVersion_Click+mBtnBoxBuilderUpdateVersion_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:38c53fac27e773fb:BtnOpenBoxBuilder+BtnOpenBoxMaker | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:5010b83d04f91baf:EnsureBoxMakerHistoryWorksheetShipping+EnsureShipmentHistoryWorksheetShipping | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:606aca1754beeea3:BoxMakerRuntimeReportMetric+ShippingRuntimeReportMetric | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:6bf04a816000979b:BoxMakerFormAutoSyncProcedureName+ShipmentsFormAutoSyncProcedureName | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:8b0664d9629d7880:mBtnBoxMakerMake_Click+mBtnBoxMakerUnmake_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:a803fe84139419ce:ShippingBomWorkbookPath+ShippingReservationsWorkbookPath | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:b3ca9d9e25ef9972:ShippingInventoryPickerTableHasRows+ShippingManagedInventoryTableHasRows | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:cb3f48556ae84c25:mBtnAdd_Click+mBtnUpdate_Click | SHIPPING | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
@@ -878,7 +878,7 @@
 | module-size:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildSelectedShipmentRowsDeltas | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormCommitLine | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormCommitLine | SHIPPING | SPLIT_MODULE | MEDIUM | PLANNED |
 | reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_NewWorkbook | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetActivate | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetChange | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -898,6 +898,7 @@
 | reachability:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UnreservedShipmentQtyForShippable | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modBoxingService.bas:modBoxingService.NasInventoryIsReadOnly | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modBoxingService.bas:modBoxingService.ProjectedComponentInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modShippingEventCreator.bas:modShippingEventCreator.NzLngShip | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modShippingInit.bas:modShippingInit.EnsureShippingSurfaceForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modShippingInit.bas:modShippingInit.InitShippingAddin | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modShippingPostingService.bas:modShippingPostingService.ClearCompletedStaging | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -927,6 +928,7 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToShipments | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnUnship | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromAggregate | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearActiveOverlayForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearOrphanedSentOverlayForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearSentOverlayForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ClearShippingSystemOverlayForImmediate | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -938,6 +940,7 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.LoadShippingBomPackagePickerItems | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterDeltaVersionInventoryOverlay | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormHydrateInvSysFromShippables | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormLoadReadiness | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -948,6 +951,7 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormRunStageAndShipmentsSent | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingComponentPickerLastStatus | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingFormInitializeSmokeForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingNasInventoryOverride | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemInventorySourceDiagnostic | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingSystemOverlayDiagnostic | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShippingTabbedNavigationSmokeForWorkbook | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -1006,6 +1010,7 @@
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mLstShipments_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mLstShippables_Click | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mPages_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mTxtBoxBuilderSearch_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mTxtPicker_Change | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UserForm_Activate | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.UserForm_Initialize | SHIPPING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

@@ -213,9 +213,9 @@ End Function
 
 Private Function ShippingBomViewHeadersSurface() As Variant
     ShippingBomViewHeadersSurface = Array( _
-        "PackageRow", "PackageItem", "PackageUOM", "PackageLocation", "PackageDescription", _
+        "PackageSystemKey", "PackageItem", "PackageUOM", "PackageLocation", "PackageDescription", _
         "BomVersion", "BomVersionLabel", "IsActive", "EffectiveFromUTC", "EffectiveToUTC", "RetiredAtUTC", _
-        "ComponentRow", "ComponentItem", "ComponentQty", "ComponentUOM", "ComponentLocation", "ComponentDescription", _
+        "ComponentSystemKey", "ComponentItem", "ComponentQty", "ComponentUOM", "ComponentLocation", "ComponentDescription", _
         "UpdatedAtUTC", "UpdatedBy")
 End Function
 

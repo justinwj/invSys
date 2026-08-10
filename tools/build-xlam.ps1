@@ -899,7 +899,7 @@ $projectMap = @(
                     Id      = "grpOperationsOverview"
                     Label   = "Overview"
                     Buttons = @(
-                        @{ Id = "btnOperationsInventoryViewer"; Label = "Inventory Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "TablePropertiesExcel"; Screentip = "View current inventory levels" }
+                        @{ Id = "btnOperationsInventoryViewer"; Label = "Inventory Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "PivotTableInsert"; Screentip = "View current inventory levels" }
                     )
                 },
                 @{
