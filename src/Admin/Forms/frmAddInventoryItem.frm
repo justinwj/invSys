@@ -352,7 +352,7 @@ Private Sub EnsureControls()
     Me.Width = 575
     Me.Height = 665
 
-    Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item")
+    Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item Mode")
     Set mBtnEditMode = AddButton("btnEditMode", 138, 10, 118, 24, "Edit Item")
 
     Set mLblTitle = AddLabel("lblTitle", 14, 44, 530, 20, "Add inventory item")

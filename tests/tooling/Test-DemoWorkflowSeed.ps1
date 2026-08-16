@@ -11,13 +11,14 @@ $text = Get-Content -Raw -LiteralPath $sourcePath
 $seedRows = [regex]::Matches($text, '(?m)^\s*AddDemoInventoryItem\s+rows,').Count
 $checks = @(
     [pscustomobject]@{
-        Name = "Seed.CompleteKitCount"; Passed = $seedRows -eq 19
-        Contract = "One Admin seed event carries exactly 19 R1 workflow inventory entities."
+        Name = "Seed.CompleteKitCount"; Passed = $seedRows -eq 24
+        Contract = "One Admin seed event carries exactly 24 R1 workflow inventory entities, including box-making consumables."
     },
     [pscustomobject]@{
         Name = "Seed.MaterialCoverage"
         Passed = ($text -match '"raw"') -and ($text -match '"wip"') -and
-            ($text -match '"shippable"') -and ($text -match '"packaging\.ship"')
+            ($text -match '"shippable"') -and ($text -match '"packaging\.ship"') -and
+            ($text -match 'DEMO-PKG-SHIPPING-CARTON') -and ($text -match 'DEMO-PKG-PACKING-TAPE')
         Contract = "The kit covers raw inputs, WIP, shippable goods, and shipping packaging."
     },
     [pscustomobject]@{

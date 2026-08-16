@@ -12,7 +12,7 @@
 | Production.Form.ModelessLauncher | PASS | Production launcher must open the main form modelessly. |
 | Shipping.Form.ModelessLauncher | PASS | Shipping launcher must open the main form modelessly. |
 | Receiving.Navigation.PurchasingStub | PASS | Receiving must expose a selectable, visibly non-operational Purchasing tab. |
-| Shipping.Navigation.SingleTabbedShell | PASS | The main Shipping form must contain Box Builder and Box Maker tabs. |
+| Shipping.Navigation.SingleTabbedShell | PASS | The main Shipping form must contain Box Designer and Box Maker tabs. |
 | Operations.Package.Exists | PASS | The build map must define invSys.Operations.xlam. |
 | Operations.Ribbon.SingleShippingLauncher | PASS | Operations Ribbon must expose one Shipping launcher and no separate Box Builder or Box Maker buttons. |
 | Receiving.Form.CapturedWorkbookState | PASS | Receiving form must retain explicit operator-workbook state. |

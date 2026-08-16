@@ -296,6 +296,22 @@ ErrHandler:
     Resume CleanExit
 End Function
 
+Public Function RunProductionBatchScaleContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionBatchScaleContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionBatchScaleContractTest = frmProduction.TestBatchScaleContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProductionBatchScaleContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
                                                   ByVal requestedHeight As Double, _
                                                   Optional ByVal pageIndex As Long = 2) As String
@@ -1351,11 +1367,11 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
                              ") is " & ValueOrPlaceholderProduction(unavailableStatus, "not released") & _
                              "." & vbCrLf & vbCrLf & _
                              "Production can load only RELEASED Designs Domain versions. " & _
-                             "Use Admin > Release Design to release this version."
+                             "Use Admin > Design Lifecycle to release this design."
             Else
                 syncReport = "Recipe Design ID " & recipeId & _
                              " is not present in the Designs Domain." & vbCrLf & vbCrLf & _
-                             "For an existing legacy recipe, use Admin > Release Design > " & _
+                             "For an existing legacy recipe, use Admin > Design Lifecycle > " & _
                              "Import Legacy Recipes, then release the imported version."
             End If
             MsgBox syncReport, vbExclamation, "Production Designs"

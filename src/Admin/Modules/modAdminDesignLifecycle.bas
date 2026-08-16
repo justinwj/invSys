@@ -4,11 +4,7 @@ Option Explicit
 Private Const DESIGN_EVENT_RELEASE As String = "DESIGN_RELEASE"
 Private Const DESIGN_EVENT_OBSOLETE As String = "DESIGN_OBSOLETE"
 
-Public Sub Admin_ReleaseDesignVersion_Click()
-    frmAdminDesignLifecycle.Show vbModal
-End Sub
-
-Public Sub Admin_ObsoleteDesignVersion_Click()
+Public Sub Admin_DesignLifecycle_Click()
     frmAdminDesignLifecycle.Show vbModal
 End Sub
 

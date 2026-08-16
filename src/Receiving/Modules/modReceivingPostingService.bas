@@ -174,7 +174,7 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
     Dim stateValue As String
 
     If Not RequiredColumnsPresent(aggregateTable, _
-        Array("REF_NUMBER", "ITEM_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", _
+        Array("REF_NUMBER", "ITEM_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", _
               "System_Key", "EventId", "WorkflowState")) Then
         report = "AggregateReceived is missing required Receiving workflow columns."
         Exit Function
@@ -191,7 +191,7 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
             CellNumber(aggregateTable, rowIndex, "QUANTITY"), _
             CellText(aggregateTable, rowIndex, "LOCATION"), _
             BuildEventNote(aggregateTable, rowIndex), _
-            "GOOD", "", stateValue
+            "GOOD", BuildReceivingAttributesJson(aggregateTable, rowIndex), stateValue
 
         Select Case state.CurrentState
             Case state.StateStaged
@@ -211,6 +211,25 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
 
 Failed:
     report = "Receiving validation failed: " & Err.Description
+End Function
+
+Private Function BuildReceivingAttributesJson(ByVal aggregateTable As ListObject, _
+                                              ByVal rowIndex As Long) As String
+    Dim lotNumber As String
+
+    lotNumber = CellText(aggregateTable, rowIndex, "LOT_NUMBER")
+    If lotNumber = "" Then Exit Function
+    BuildReceivingAttributesJson = _
+        "{""LOT_NUMBER"":""" & EscapeJsonReceiving(lotNumber) & """}"
+End Function
+
+Private Function EscapeJsonReceiving(ByVal textIn As String) As String
+    EscapeJsonReceiving = Replace$(textIn, "\", "\\")
+    EscapeJsonReceiving = Replace$(EscapeJsonReceiving, Chr$(34), "\" & Chr$(34))
+    EscapeJsonReceiving = Replace$(EscapeJsonReceiving, vbCrLf, "\n")
+    EscapeJsonReceiving = Replace$(EscapeJsonReceiving, vbCr, "\n")
+    EscapeJsonReceiving = Replace$(EscapeJsonReceiving, vbLf, "\n")
+    EscapeJsonReceiving = Replace$(EscapeJsonReceiving, vbTab, "\t")
 End Function
 
 Private Function QueueReceivingState(ByVal state As cReceivingWorkflowState, _
@@ -275,6 +294,8 @@ Private Sub AppendReceivedLog(ByVal logTable As ListObject, _
     SetCellText logTable, logIndex, "VENDOR", _
                 CellText(aggregateTable, aggregateIndex, "VENDORS")
     SetCellText logTable, logIndex, "LOCATION", state.Location
+    SetCellText logTable, logIndex, "LOT_NUMBER", _
+                CellText(aggregateTable, aggregateIndex, "LOT_NUMBER")
     SetCellText logTable, logIndex, "ITEM_CODE", state.Sku
     SetCellText logTable, logIndex, "System_Key", state.SystemKey
     SetCellText logTable, logIndex, "EventId", state.EventId
@@ -290,6 +311,10 @@ Private Function BuildEventNote(ByVal aggregateTable As ListObject, _
     If CellText(aggregateTable, rowIndex, "VENDORS") <> "" Then
         BuildEventNote = BuildEventNote & _
                          "; VENDORS=" & CellText(aggregateTable, rowIndex, "VENDORS")
+    End If
+    If CellText(aggregateTable, rowIndex, "LOT_NUMBER") <> "" Then
+        BuildEventNote = BuildEventNote & _
+                         "; LOT_NUMBER=" & CellText(aggregateTable, rowIndex, "LOT_NUMBER")
     End If
 End Function
 

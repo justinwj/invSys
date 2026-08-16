@@ -372,7 +372,7 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     locationVal = Trim$(locationVal)
 
     If warehouseId = "" Then report = "WarehouseId is required.": Exit Function
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If userId = "" Then report = "Admin user is required.": Exit Function
     If sku = "" Then report = "SKU is required.": Exit Function
     If itemName = "" Then itemName = sku
@@ -479,7 +479,7 @@ Private Function AddInventoryQuantityForWarehouse(ByVal warehouseId As String, _
     locationVal = Trim$(locationVal)
 
     If warehouseId = "" Then report = "WarehouseId is required.": Exit Function
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If userId = "" Then report = "Admin user is required.": Exit Function
     If sku = "" Then report = "SKU is required.": Exit Function
     If rowVal <= 0 Then report = "Inventory ROW id must be positive.": Exit Function
@@ -567,7 +567,7 @@ Private Function SetInventoryQuantityForWarehouse(ByVal warehouseId As String, _
     editReason = Trim$(editReason)
 
     If warehouseId = "" Then report = "WarehouseId is required.": Exit Function
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If userId = "" Then report = "Admin user is required.": Exit Function
     If sku = "" Then report = "SKU is required.": Exit Function
     If rowVal <= 0 Then report = "Inventory ROW id must be positive.": Exit Function
@@ -973,7 +973,7 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     warehouseId = Trim$(modConfig.GetWarehouseId())
     stationId = Trim$(modConfig.GetStationId())
     If warehouseId = "" Then warehouseId = Trim$(modConfig.GetString("WarehouseId", ""))
-    If stationId = "" Then stationId = Trim$(modConfig.GetString("StationId", "S1"))
+    If stationId = "" Then stationId = Trim$(modConfig.GetString("StationId", modStationIdentity.CurrentComputerStationId()))
 
     userId = Trim$(modRoleEventWriter.ResolveCurrentUserId())
     If userId = "" Then userId = Trim$(Application.UserName)
@@ -995,7 +995,7 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         warehouseId = mSeedCallbackAutomationWarehouseId
         stationId = mSeedCallbackAutomationStationId
         userId = mSeedCallbackAutomationUserId
-        If stationId = "" Then stationId = "S1"
+        If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
         For Each item In warehouseOptions
             If StrComp(Trim$(CStr(item(1))), warehouseId, vbTextCompare) = 0 _
                And StrComp(Trim$(CStr(item(2))), stationId, vbTextCompare) = 0 Then
@@ -1028,7 +1028,7 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         report = "WarehouseId is required."
         Exit Function
     End If
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If userId = "" Then
         report = "Admin user is required."
         Exit Function
@@ -1079,7 +1079,7 @@ Private Function ResolveAdminCurrentTargetContext(ByRef warehouseId As String, _
     warehouseId = Trim$(target.WarehouseId)
     stationId = Trim$(target.StationId)
     userId = Trim$(modAuth.GetCurrentUserId())
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If warehouseId = "" Then
         report = "Current warehouse target is missing WarehouseId."
         Exit Function
@@ -1708,7 +1708,7 @@ Sub Verify_AddinsPublished()
         If Len(detail) = 0 Then detail = "One or more required add-ins are missing or zero-byte."
         If InStr(1, detail, "PathSharePointRoot is not configured", vbTextCompare) > 0 Then
             detail = detail & vbCrLf & _
-                     "Use Create New Warehouse or Setup Tester Station to choose the locally synced invSys SharePoint root first."
+                     "Use Create New Warehouse or Test Environment Setup to choose the locally synced invSys SharePoint root first."
         End If
         MsgBox "Add-ins publish verification failed." & vbCrLf & detail, vbExclamation, "invSys Admin"
     End If

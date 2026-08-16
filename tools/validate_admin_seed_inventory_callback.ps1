@@ -9,7 +9,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$expectedDemoCount = 19
+$expectedDemoCount = 24
 
 function Import-FunctionDefinitions {
     param([string]$ScriptPath)
@@ -420,7 +420,11 @@ $runtimeRoot = Join-Path ([IO.Path]::GetTempPath()) (
     "invsys-admin-seed-callback-" + [guid]::NewGuid().ToString("N")
 )
 $warehouseId = "WHS" + [guid]::NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant()
-$stationId = "S1"
+$stationId = if ([string]::IsNullOrWhiteSpace($env:COMPUTERNAME)) {
+    "LOCAL-COMPUTER"
+} else {
+    $env:COMPUTERNAME.Trim()
+}
 $testUser = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) { "user1" } else { $env:USERNAME }
 $testPin = [guid]::NewGuid().ToString("N")
 $testPinHash = Get-InvSysCredentialHash -Credential $testPin
@@ -739,7 +743,7 @@ try {
             $authDataBefore -eq $authDataAfter -and
             $inventoryHashBefore -ne $inventoryHashAfter
         if ($passed) {
-            $detail = "The public ribbon callback seeded the complete 19-entity R1 workflow kit, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface."
+            $detail = "The public ribbon callback seeded the complete 24-entity R1 workflow kit, including box-making consumables, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface."
         }
         else {
             $detail = "The public ribbon callback failed its packaged behavioral contract at step '$currentStep'."

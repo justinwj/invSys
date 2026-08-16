@@ -53,10 +53,10 @@ Add-Check "Receiving.Navigation.PurchasingStub" $purchasingStubPresent `
     "Receiving must expose a selectable, visibly non-operational Purchasing tab."
 
 $shippingTabbedShell = ($shippingForm -match 'Forms\.TabStrip\.1') -and
-                       ($shippingForm -match '(?i)\.Tabs\.Add\s+"tabBoxBuilder",\s*"Box Builder"') -and
+                       ($shippingForm -match '(?i)\.Tabs\.Add\s+"tabBoxBuilder",\s*"Box Designer"') -and
                        ($shippingForm -match '(?i)\.Tabs\.Add\s+"tabBoxMaker",\s*"Box Maker"')
 Add-Check "Shipping.Navigation.SingleTabbedShell" $shippingTabbedShell `
-    "The main Shipping form must contain Box Builder and Box Maker tabs."
+    "The main Shipping form must contain Box Designer and Box Maker tabs."
 
 $operationsPackage = ($buildScript -match 'invSys\.Operations\.xlam')
 Add-Check "Operations.Package.Exists" $operationsPackage `

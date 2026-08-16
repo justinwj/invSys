@@ -18,22 +18,61 @@ Public Function EnsureReceivingWorkbookSurface(Optional ByVal targetWb As Workbo
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
+    Dim ensureStep As String
     Set wb = ResolveTargetWorkbookSurface(targetWb)
 
-    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState"), True, "C3"
-    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "System_Key", "EventId", "WorkflowState"), False, "M3"
-    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "AA3"
-    EnsureInventoryManagementSurface wb
-    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "ITEM_CODE", "System_Key", "EventId"), False
+    ' Move the existing tables apart before adding columns. Expanding a table
+    ' while a legacy neighbor still occupies the destination columns raises
+    ' Excel error 80041E00 (a table cannot overlap another table).
+    ensureStep = "pre-layout"
     ArrangeReceivingTablesSurface wb
+    ensureStep = "ReceivedTally schema [" & ReceivingTableLayoutSummarySurface(wb) & "]"
+    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState"), True, "C3"
+    ensureStep = "AggregateReceived schema [" & ReceivingTableLayoutSummarySurface(wb) & "]"
+    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "EventId", "WorkflowState"), False, "N3"
+    ensureStep = "invSysData_Receiving schema"
+    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "AB3"
+    ensureStep = "InventoryManagement schema"
+    EnsureInventoryManagementSurface wb
+    ensureStep = "ReceivedLog schema"
+    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "LOT_NUMBER", "ITEM_CODE", "System_Key", "EventId"), False
+    ensureStep = "final layout"
+    ArrangeReceivingTablesSurface wb
+    ensureStep = "buttons"
     EnsureReceivingButtonsSurface wb
+    ensureStep = "format"
     FormatWorkbookSurface wb
 
     EnsureReceivingWorkbookSurface = True
     Exit Function
 
 FailEnsure:
-    report = "EnsureReceivingWorkbookSurface failed: " & Err.Description
+    report = "EnsureReceivingWorkbookSurface failed at " & ensureStep & ": " & Err.Description
+End Function
+
+Private Function ReceivingTableLayoutSummarySurface(ByVal wb As Workbook) As String
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim tableName As Variant
+
+    If wb Is Nothing Then Exit Function
+    On Error Resume Next
+    Set ws = wb.Worksheets("ReceivedTally")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+
+    For Each tableName In Array("ReceivedTally", "AggregateReceived", "invSysData_Receiving")
+        Set lo = Nothing
+        On Error Resume Next
+        Set lo = ws.ListObjects(CStr(tableName))
+        On Error GoTo 0
+        If ReceivingTableLayoutSummarySurface <> "" Then ReceivingTableLayoutSummarySurface = ReceivingTableLayoutSummarySurface & ";"
+        If lo Is Nothing Then
+            ReceivingTableLayoutSummarySurface = ReceivingTableLayoutSummarySurface & CStr(tableName) & "=<missing>"
+        Else
+            ReceivingTableLayoutSummarySurface = ReceivingTableLayoutSummarySurface & CStr(tableName) & "=" & lo.Range.Address(False, False)
+        End If
+    Next tableName
 End Function
 
 Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workbook = Nothing, _
@@ -359,6 +398,8 @@ Private Sub EnsureTableSurface(ByVal wb As Workbook, _
                                ByVal headers As Variant, _
                                ByVal seedEntryRow As Boolean, _
                                Optional ByVal startAddress As String = "")
+    On Error GoTo FailEnsure
+
     Dim ws As Worksheet
     Dim lo As ListObject
     Dim i As Long
@@ -400,10 +441,27 @@ Private Sub EnsureTableSurface(ByVal wb As Workbook, _
     ElseIf Not lo.DataBodyRange Is Nothing Then
         If lo.ListRows.Count = 1 And TableRowIsBlankSurface(lo, 1) Then lo.ListRows(1).Delete
     End If
+    Exit Sub
+
+FailEnsure:
+    Dim errorNumber As Long
+    Dim errorDescription As String
+    errorNumber = Err.Number
+    errorDescription = Err.Description
+    Err.Raise errorNumber, "modRoleWorkbookSurfaces.EnsureTableSurface(" & tableName & ")", _
+              "Table '" & tableName & "' on sheet '" & sheetName & "': " & errorDescription
 End Sub
 
 Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     Dim ws As Worksheet
+    Dim loReceived As ListObject
+    Dim loAggregate As ListObject
+    Dim receivedHeaders As Variant
+    Dim aggregateHeaders As Variant
+    Dim receivedWidth As Long
+    Dim aggregateWidth As Long
+    Dim aggregateStartColumn As Long
+    Dim inventoryStartColumn As Long
 
     If wb Is Nothing Then Exit Sub
     On Error Resume Next
@@ -411,9 +469,47 @@ Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
 
-    MoveTableTopLeftSurface ws, "ReceivedTally", "C3"
-    MoveTableTopLeftSurface ws, "AggregateReceived", "M3"
-    MoveTableTopLeftSurface ws, "invSysData_Receiving", "AA3"
+    receivedHeaders = Array("REF_NUMBER", "ITEMS", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState")
+    aggregateHeaders = Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "EventId", "WorkflowState")
+    On Error Resume Next
+    Set loReceived = ws.ListObjects("ReceivedTally")
+    Set loAggregate = ws.ListObjects("AggregateReceived")
+    On Error GoTo 0
+
+    receivedWidth = ProjectedTableColumnCountSurface(loReceived, receivedHeaders)
+    aggregateWidth = ProjectedTableColumnCountSurface(loAggregate, aggregateHeaders)
+    aggregateStartColumn = 3 + receivedWidth + 1
+    inventoryStartColumn = aggregateStartColumn + aggregateWidth + 1
+
+    MoveTableTopLeftAtCellSurface ws, "invSysData_Receiving", ws.Cells(3, inventoryStartColumn)
+    MoveTableTopLeftAtCellSurface ws, "AggregateReceived", ws.Cells(3, aggregateStartColumn)
+    MoveTableTopLeftAtCellSurface ws, "ReceivedTally", ws.Cells(3, 3)
+End Sub
+
+Private Function ProjectedTableColumnCountSurface(ByVal lo As ListObject, ByVal requiredHeaders As Variant) As Long
+    Dim i As Long
+
+    If Not lo Is Nothing Then ProjectedTableColumnCountSurface = lo.ListColumns.Count
+    For i = LBound(requiredHeaders) To UBound(requiredHeaders)
+        If lo Is Nothing Then
+            ProjectedTableColumnCountSurface = ProjectedTableColumnCountSurface + 1
+        ElseIf GetColumnIndexSurface(lo, CStr(requiredHeaders(i))) = 0 Then
+            ProjectedTableColumnCountSurface = ProjectedTableColumnCountSurface + 1
+        End If
+    Next i
+End Function
+
+Private Sub MoveTableTopLeftAtCellSurface(ByVal ws As Worksheet, ByVal tableName As String, ByVal targetCell As Range)
+    Dim lo As ListObject
+
+    If ws Is Nothing Or targetCell Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set lo = ws.ListObjects(tableName)
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Sub
+    If lo.Range.Cells(1, 1).Address(False, False) = targetCell.Address(False, False) Then Exit Sub
+
+    RebuildTableAtSurface lo, targetCell
 End Sub
 
 Private Sub MoveTableTopLeftSurface(ByVal ws As Worksheet, ByVal tableName As String, ByVal targetAddress As String)
@@ -451,7 +547,7 @@ Private Sub MoveTableToSheetSurface(ByVal wb As Workbook, ByVal tableName As Str
 End Sub
 
 Private Sub RebuildTableAtSurface(ByVal lo As ListObject, ByVal targetCell As Range)
-    On Error GoTo CleanExit
+    On Error GoTo FailRebuild
 
     Dim sourceRange As Range
     Dim targetRange As Range
@@ -485,11 +581,18 @@ Private Sub RebuildTableAtSurface(ByVal lo As ListObject, ByVal targetCell As Ra
     If Trim$(tableStyle) <> "" Then newLo.TableStyle = tableStyle
     newLo.ShowTotals = showTotals
     ClearClipboardSurface
+    Exit Sub
 
-CleanExit:
+FailRebuild:
+    Dim errorNumber As Long
+    Dim errorDescription As String
+    errorNumber = Err.Number
+    errorDescription = Err.Description
     On Error Resume Next
     ClearClipboardSurface
     On Error GoTo 0
+    Err.Raise errorNumber, "modRoleWorkbookSurfaces.RebuildTableAtSurface(" & tableName & ")", _
+              "Could not move table '" & tableName & "' to '" & targetCell.Address(False, False) & "': " & errorDescription
 End Sub
 
 Private Sub ArrangeShippingBackendTablesSurface(ByVal wb As Workbook)

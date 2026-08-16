@@ -264,9 +264,10 @@ $ribbonSpecs = @(
             @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminWarehouseRoot"; Label = "Add Warehouse Root"; Macro = "modAdmin.Add_WarehouseDirectoryRoot"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminCreateWarehouse"; Label = "Create New Warehouse"; Macro = "modAdmin.Open_CreateWarehouse"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminSetupTesterStation"; Label = "Setup Tester Station"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminSetupTesterStation"; Label = "Test Environment Setup"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminAddInventoryItem"; Label = "Add Inventory Item"; Macro = "modAdmin.Add_InventoryItem"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminSeedInventory"; Label = "Seed Demo Inventory"; Macro = "modAdmin.Seed_DemoInventory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminDesignLifecycle"; Label = "Design Lifecycle"; Macro = "modAdminDesignLifecycle.Admin_DesignLifecycle_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminVerifyAddinsPublished"; Label = "Verify Add-ins Published"; Macro = "modAdmin.Verify_AddinsPublished"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminRetireMigrateWarehouse"; Label = "Retire / Migrate Warehouse"; Macro = "modAdmin.Admin_RetireMigrateWarehouse_Click"; Execute = $false; Screentip = "Archive, migrate, retire, or delete a warehouse runtime"; RequiredCapability = "ADMIN_MAINT" }
         )

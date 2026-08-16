@@ -49,10 +49,10 @@ Add-Check "Shipping.Services.SeparatedStateAndActions" `
 
 Add-Check "Shipping.Form.SingleTabbedShell" `
     (($formText -match '(?i)MSForms\.(TabStrip|MultiPage)') -and
-     ($formText -match '(?i)Box Builder') -and
+     ($formText -match '(?i)Box Designer') -and
      ($formText -match '(?i)Box Maker') -and
      ($formText -match '(?i)SelectShippingPageForTest')) `
-    "The main Shipping form must own selectable Shipping, Box Builder, and Box Maker pages."
+    "The main Shipping form must own selectable Shipping, Box Designer, and Box Maker pages."
 
 Add-Check "Shipping.Form.TabOperatorActionsReachable" `
     (($formText -match '(?i)mBtnBoxBuilderNew') -and

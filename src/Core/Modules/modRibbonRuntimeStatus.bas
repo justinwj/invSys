@@ -155,7 +155,7 @@ Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
 
     Set targets = GetWarehouseTargetsCachedStatus()
     If targets.Count = 0 Then
-        MsgBox "No warehouse config workbooks were found. Use Admin > Setup Tester Station or Create New Warehouse first.", vbExclamation, "invSys Warehouse Target"
+        MsgBox "No warehouse config workbooks were found. Use Admin > Test Environment Setup or Create New Warehouse first.", vbExclamation, "invSys Warehouse Target"
         Exit Sub
     End If
     If selectedIndex < 0 Or selectedIndex >= targets.Count Then Exit Sub
@@ -496,7 +496,7 @@ Private Sub AddConfigFileTargetStatus(ByVal targets As Collection, ByVal seen As
     fileName = FileNameFromPathStatus(configPath)
     whId = WarehouseIdFromConfigNameStatus(fileName)
     If whId = "" Then Exit Sub
-    stId = "S1"
+    stId = modStationIdentity.CurrentComputerStationId()
     rootPath = ParentFolderStatus(configPath)
     AddWarehouseTargetStatus targets, seen, whId, stId, rootPath
 End Sub
@@ -513,12 +513,12 @@ Private Function ConfigWorkbookLooksUsableStatus(ByVal wb As Workbook, ByRef war
 
     warehouseId = SafeTableValueStatus(loWh, 1, "WarehouseId")
     If loSt.DataBodyRange Is Nothing Then
-        stationId = "S1"
+        stationId = modStationIdentity.CurrentComputerStationId()
     Else
         stationId = SafeTableValueStatus(loSt, 1, "StationId")
     End If
     If warehouseId = "" Then warehouseId = WarehouseIdFromConfigNameStatus(wb.Name)
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     ConfigWorkbookLooksUsableStatus = (warehouseId <> "")
 End Function
 
@@ -533,7 +533,7 @@ Private Sub AddWarehouseTargetStatus(ByVal targets As Collection, _
     stationId = Trim$(stationId)
     rootPath = NormalizeFolderForStatus(rootPath)
     If warehouseId = "" Then Exit Sub
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
 
     key = warehouseId & TARGET_DELIM & stationId & TARGET_DELIM & rootPath
     If seen.Exists(key) Then Exit Sub

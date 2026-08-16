@@ -157,6 +157,16 @@ Private Function BuildDemoInventoryPayload() As Collection
         "Sample assortment box.", "shippable"
     AddDemoInventoryItem rows, "DEMO-PKG-TIN", "Classic Chai Tin", 1000, "each", _
         "Packaging component for receiving and box-building tests.", "packaging.ship"
+    AddDemoInventoryItem rows, "DEMO-PKG-SHIPPING-CARTON", "Shipping Carton Blank", 1000, "each", _
+        "Corrugated carton blank for Box Designer and Box Maker tests.", "packaging.ship"
+    AddDemoInventoryItem rows, "DEMO-PKG-CASE-DIVIDER", "Case Divider", 2000, "each", _
+        "Divider insert for shipping-box alternatives.", "packaging.ship"
+    AddDemoInventoryItem rows, "DEMO-PKG-SHIPPING-LABEL", "Shipping Label", 5000, "each", _
+        "Adhesive label consumed when making a shipping box.", "packaging.ship"
+    AddDemoInventoryItem rows, "DEMO-PKG-PACKING-TAPE", "Packing Tape Strip", 5000, "each", _
+        "Premeasured packing-tape strip for shipping assembly tests.", "packaging.ship"
+    AddDemoInventoryItem rows, "DEMO-PKG-VOID-FILL", "Void Fill Sheet", 3000, "each", _
+        "Protective void fill for shipping-box alternatives.", "packaging.ship"
     Set BuildDemoInventoryPayload = rows
 End Function
 

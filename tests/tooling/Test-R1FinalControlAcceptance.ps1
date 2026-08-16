@@ -47,7 +47,7 @@ foreach ($listName in $boxingLists) {
     }
 }
 Add-Check "Boxing.Layout.ListsAnchored" $allBoxingListsAnchored `
-    "Every Box Builder and Box Maker list participates in native form resizing."
+    "Every Box Designer and Box Maker list participates in native form resizing."
 Add-Check "Boxing.Layout.PackagedSeam" `
     (($shippingForm -match 'Public Function TestBoxingLayoutAfterResize') -and
      ($shippingModule -match 'Public Function RunShippingBoxingLayoutTest') -and
@@ -57,7 +57,7 @@ Add-Check "BoxBuilder.ComponentSearch" `
     (($shippingForm -match 'Private WithEvents mTxtBoxBuilderSearch As MSForms\.TextBox') -and
      ($shippingForm -match 'Private Sub mTxtBoxBuilderSearch_Change\(\)') -and
      ($shippingForm -match 'FilterBoxBuilderInventory')) `
-    "Box Builder locally filters the loaded managed component inventory from a dedicated search control."
+    "Box Designer locally filters the loaded managed component inventory from a dedicated search control."
 Add-Check "Boxing.Headers.Aligned" `
     (($shippingForm -match 'ConfigureBoxingListHeaders') -and
      ($shippingForm -match 'ApplyBoxingHeaderLayout') -and
@@ -74,10 +74,10 @@ Add-Check "Receiving.History.TopList" `
      ($receivingModule -match 'Public Function LoadReceivingEntriesHistoryForWorkbook')) `
     "The Receiving form's top list is a captured-workbook ReceivedLog history projection."
 Add-Check "Receiving.History.SeparateItemSelector" `
-    (($receivingForm -match 'Private WithEvents mCboReceiveItem As MSForms\.ComboBox') -and
-     ($receivingForm -match 'LoadReceivingItemChoicesForWorkbook') -and
-     ($receivingModule -match 'Public Function LoadReceivingItemChoicesForWorkbook')) `
-    "Receiving stages from a deduplicated managed-item selector, not from a history row."
+    (($receivingForm -match 'Private WithEvents mLstReceiveItems As MSForms\.ListBox') -and
+     ($receivingForm -match 'mTxtItemSearch') -and
+     ($receivingForm -match 'LoadReceivingFormInventoryForWorkbook')) `
+    "Receiving stages from a dedicated searchable managed-item results list, not from a history row."
 Add-Check "Receiving.History.RefreshSemantics" `
     (($receivingForm -match 'Search history') -and
      ($receivingForm -notmatch 'Set mLblInventoryTitle = AddLabel\([^\r\n]*"Inventory"')) `

@@ -61,7 +61,7 @@ Private Sub UserForm_Initialize()
     ConfigureSummaryArea
     RestoreDefaultButtonLayout
     mFormBusy = True
-    Me.txtStationId.Value = "S1"
+    Me.txtStationId.Value = modStationIdentity.CurrentComputerStationId()
     Me.txtAdminUser.Value = ResolveDefaultAdminUserForm()
     Me.txtPathSharePoint.Value = ResolveDefaultSharePointRootForm()
     ConfigureHubPathHelperButton

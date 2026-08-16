@@ -11,35 +11,35 @@
 - CallbackResult: OK|<redacted-detail>
 - CallbackTimedOut: False
 - CatalogCategoryCoverage: True
-- CatalogRows: 19
+- CatalogRows: 24
 - ConfigHashUnchanged: True
 - ConfigLoaded: True
 - ConfigSurfaceChanged: False
-- EntityCount: 19
+- EntityCount: 24
 - InventoryHashChanged: True
 - OperatorAllConditionsGood: True
 - OperatorCategoryCoverage: True
 - OperatorMatchesSnapshot: True
 - OperatorRefreshSucceeded: True
-- OperatorRowsAfterRefresh: 19
-- OperatorUniqueSystemKeys: 19
+- OperatorRowsAfterRefresh: 24
+- OperatorUniqueSystemKeys: 24
 - ReceivingRefreshFormAction: OK|<redacted-detail>
 - ReceivingSurfaceEnsured: True
-- ReceivingVisibleDemoRows: 19
+- ReceivingVisibleDemoRows: 24
 - SignedIn: True
 - SnapshotAllConditionsGood: True
 - SnapshotCategoryCoverage: True
 - SnapshotFileCreated: True
 - SnapshotMatchesCanonical: True
-- SnapshotRows: 19
-- SnapshotUniqueSystemKeys: 19
+- SnapshotRows: 24
+- SnapshotUniqueSystemKeys: 24
 - TargetPathsSet: True
 - TargetSelected: True
-- UniqueSystemKeys: 19
+- UniqueSystemKeys: 24
 
 ## Observed result
 
-The public ribbon callback seeded the complete 19-entity R1 workflow kit, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface.
+The public ribbon callback seeded the complete 24-entity R1 workflow kit, including box-making consumables, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface.
 
 ## Captured UI
 

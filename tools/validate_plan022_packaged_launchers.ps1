@@ -755,6 +755,7 @@ try {
             $customAdded = $false
             $historyRowsAdded = 0
             $receivingHistoryReport = ""
+            $receivingControlReport = ""
             if ($null -ne $operatorWb) {
                 $inventorySheet = Get-WorksheetSafe -Workbook $operatorWb `
                     -WorksheetName "InventoryManagement"
@@ -805,6 +806,9 @@ try {
                     -WorkbookName $operationsName `
                     -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
                     -Arguments @([string]$operatorWb.Name, ""))
+                $receivingControlReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "modTS_Received.RunReceivingSearchAndHeaderContractTest")
             }
             $formsBeforeClose = Get-RoleFormWindowCount -ExcelProcessId $excelProcessId
             if ($null -ne $operatorWb) {
@@ -872,6 +876,7 @@ try {
             $observedText += " || CUSTOM_ADDED=$customAdded"
             $observedText += " || RECEIVING_HISTORY_ROWS_ADDED=$historyRowsAdded"
             $observedText += " || RECEIVING_HISTORY=" + $receivingHistoryReport
+            $observedText += " || RECEIVING_CONTROLS=" + $receivingControlReport
             $observedText += " || REFRESH_OK=$refreshOk"
             $observedText += " || CUSTOM_PRESERVED=$customPreserved"
             $observedText += " || CANONICAL_HASHES_UNCHANGED=$canonicalHashesUnchanged"
@@ -897,6 +902,11 @@ try {
                 $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsBefore=2(?:\||$)' -and
                 $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsAfter=2(?:\||$)' -and
                 $receivingHistoryReport -match '(?:^|\|)DirectHistoryRows=2(?:\||$)' -and
+                $receivingControlReport -match '^OK\|' -and
+                $receivingControlReport -match '(?:^|\|)DedicatedItemResults=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)Location=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)OptionalLot=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)ReceivingHeaderColumnsAligned=True(?:\||$)' -and
                 $refreshOk -and
                 $customPreserved -and
                 $canonicalHashesUnchanged -and
@@ -969,12 +979,25 @@ try {
                 $secondText -notmatch "(?i)(failed|automation error)"
         }
         elseif ($WorkbookState -eq "NoEligible") {
+            $workflowControlReport = ""
+            $workflowControlPassed = $true
             $secondBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
             $secondCapture = Invoke-PackagedCallback -Excel $excel `
                 -WorkbookName $operationsName -MacroName $callback.Macro
             $secondAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
             $secondNewWorkbooks = @($secondAfterNames | Where-Object { $_ -notin $secondBeforeNames })
             $observedText += " || SECOND_LAUNCH_NEW_WORKBOOKS=" + $secondNewWorkbooks.Count
+            if ($callback.Name -eq "Production") {
+                $workflowControlReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "mProduction.RunProductionBatchScaleContractTest")
+                $workflowControlPassed = $workflowControlReport -match '^OK\|' -and
+                    $workflowControlReport -match '(?:^|\|)Min=\.001%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)Default=100%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)Max=1000%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
+                $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
+            }
             if (@($secondCapture.WindowText).Count -gt 0) {
                 $observedText += " || SECOND_LAUNCH=" + (@($secondCapture.WindowText) -join " // ")
             }
@@ -987,6 +1010,7 @@ try {
             $passed = $operatorRootOverrideSet -and
                 $stationLocalCount -eq 1 -and
                 $secondNewWorkbooks.Count -eq 0 -and
+                $workflowControlPassed -and
                 [string]::IsNullOrWhiteSpace($capture.Error) -and
                 [string]::IsNullOrWhiteSpace($secondCapture.Error) -and
                 $observedText -notmatch "(?i)(failed|Type mismatch|operator workbook)"

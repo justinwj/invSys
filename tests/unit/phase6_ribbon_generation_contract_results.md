@@ -1,6 +1,6 @@
 # Phase 6 Ribbon Generation Contract Results
 
-- Date: 2026-08-09 00:07:49
+- Date: 2026-08-16 04:07:54
 - Passed: 46
 - Failed: 0
 
@@ -21,8 +21,8 @@
 | Build.ReceivingCapability | PASS | Receiving buttons declare capability. |
 | Build.ShippingCapability | PASS | Shipping buttons declare capability. |
 | Build.ProductionCapability | PASS | Production buttons declare capability. |
-| Build.AdminDesignLifecycleButtons | PASS | Admin ribbon exposes Designs release and obsolete actions. |
-| Admin.DesignLifecycleCallbacks | PASS | Admin Designs lifecycle ribbon callbacks exist. |
+| Build.AdminDesignLifecycleButton | PASS | Admin ribbon exposes one Designs lifecycle launcher. |
+| Admin.DesignLifecycleCallback | PASS | The single Admin Designs lifecycle callback exists. |
 | Build.RoleConnectServerButtons | PASS | The D12 Operations ribbon exposes one Connect Server button and no retired standalone role buttons. |
 | Build.RoleSignOutButtons | PASS | The D12 Operations ribbon exposes one Sign Out button and no retired standalone role buttons. |
 | Build.SignInLabelCallback | PASS | Current user button acts as Sign In while signed out. |

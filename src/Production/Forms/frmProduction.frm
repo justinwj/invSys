@@ -21,6 +21,8 @@ Private Const RUN_LOADER_LINE_WIDTHS As String = "85 pt;0 pt;55 pt;155 pt;50 pt;
 Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;180 pt;45 pt;220 pt;60 pt;70 pt;45 pt;105 pt;120 pt"
 Private Const RUN_OUTPUT_WIDTHS As String = "85 pt;260 pt;45 pt;70 pt;55 pt;80 pt;105 pt;45 pt"
 Private Const RUN_CHECK_WIDTHS As String = "48 pt;120 pt;320 pt;50 pt;70 pt;100 pt"
+Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
+Private Const BATCH_SCALE_MAX_PERCENT As Double = 1000
 
 Private WithEvents mPages As MSForms.MultiPage
 Private WithEvents mLstBuilderRecipes As MSForms.ListBox
@@ -73,6 +75,7 @@ Private WithEvents mBtnRunTreeApplyPalette As MSForms.CommandButton
 Private WithEvents mLstManagerOutput As MSForms.ListBox
 Private WithEvents mLstManagerCheck As MSForms.ListBox
 Private WithEvents mBtnRunApplyPalette As MSForms.CommandButton
+Private WithEvents mBtnApplyBatchScale As MSForms.CommandButton
 Private WithEvents mBtnManagerCheckIn As MSForms.CommandButton
 Private WithEvents mBtnManagerRefresh As MSForms.CommandButton
 Private WithEvents mBtnManagerApplyOutput As MSForms.CommandButton
@@ -94,6 +97,7 @@ Private WithEvents mTxtPaletteQty As MSForms.TextBox
 Private WithEvents mTxtTreePaletteSplit As MSForms.TextBox
 Private WithEvents mTxtTreePaletteQty As MSForms.TextBox
 Private WithEvents mTxtOutputReal As MSForms.TextBox
+Private WithEvents mTxtBatchScalePercent As MSForms.TextBox
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
 Private mLayout As cOperationsAnchorManager
@@ -875,10 +879,14 @@ End Sub
 Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Recipes", 12, 12, 140, 16
     AddColumnHeaders pg, "LoaderRecipes", Array("", "Recipe", "Description"), 12, 32, RUN_LOADER_RECIPE_WIDTHS
-    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 106, 3, RUN_LOADER_RECIPE_WIDTHS)
+    Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 70, 3, RUN_LOADER_RECIPE_WIDTHS)
     Set mBtnLoaderRefresh = AddButton(pg, "btnLoaderRefresh", "Refresh", 300, 32, 130, 24)
     Set mBtnLoaderLoad = AddButton(pg, "btnLoaderLoad", "Load Recipe", 300, 64, 130, 24)
     Set mBtnLoaderClear = AddButton(pg, "btnLoaderClear", "Clear Run", 300, 96, 130, 24)
+    AddLabel pg, "Batch scale %", 12, 132, 88, 16
+    Set mTxtBatchScalePercent = AddText(pg, "txtBatchScalePercent", 104, 128, 70, 22)
+    mTxtBatchScalePercent.Text = "100"
+    Set mBtnApplyBatchScale = AddButton(pg, "btnApplyBatchScale", "Apply Scale", 184, 127, 100, 24)
 
     AddLabel pg, "Loaded Recipe Lines", 455, 12, 180, 16
     AddColumnHeaders pg, "LoaderLines", Array("Process", "", "I/O", "Ingredient", "%", "UOM", "Amount", ""), 455, 32, RUN_LOADER_LINE_WIDTHS
@@ -1088,6 +1096,8 @@ Private Sub ConfigureRunListAnchors()
 
     mLayout.RegisterControl mLstLoaderLines, leftRightTop
     mLayout.RegisterControl mBtnRunApplyPalette, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtBatchScalePercent, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mBtnApplyBatchScale, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLstRunPalette, leftRightTop
     mLayout.RegisterControl mLstManagerCheck, leftRightTop
     mLayout.RegisterControl mLstManagerOutput, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
@@ -3154,20 +3164,32 @@ End Sub
 Private Sub LoadSelectedRecipeIntoLoader()
     Dim idx As Long
     Dim prepared As Variant
+    Dim scalePercent As Double
+    Dim scaleReport As String
 
     idx = mLstLoaderRecipes.ListIndex
     If idx < 0 Then
         ShowStatus "Select a recipe first."
         Exit Sub
     End If
+    If Not TryParseBatchScalePercent( _
+            NzStr(mTxtBatchScalePercent.Text), scalePercent, scaleReport) Then
+        ShowStatus scaleReport
+        Exit Sub
+    End If
     If Not mRunTreeCollapsed Is Nothing Then mRunTreeCollapsed.RemoveAll
     BindOperatorWorkbookForRun
     mProduction.LoadRecipeChooser NzStr(mLstLoaderRecipes.List(idx, 0))
+    If Not ApplyBatchScaleToRunList(scalePercent, scaleReport) Then
+        ShowStatus scaleReport
+        Exit Sub
+    End If
     prepared = mProduction.PrepareProductionOutputForCurrentRecipe()
     RefreshLoaderState
     RefreshManagerState
     If CBool(prepared) Then
-        ShowStatus "Loaded recipe and prepared output rows: " & NzStr(mLstLoaderRecipes.List(idx, 1))
+        ShowStatus "Loaded recipe at " & FormatRunNumber(scalePercent) & _
+            "% and prepared output rows: " & NzStr(mLstLoaderRecipes.List(idx, 1))
     Else
         ShowStatus "Loaded recipe, but no output rows were prepared: " & NzStr(mLstLoaderRecipes.List(idx, 1))
     End If
@@ -4323,6 +4345,129 @@ Private Sub BindOperatorWorkbookForRun()
     If wb Is Nothing Then Exit Sub
     mProduction.BindProductionOperatorWorkbook wb
 End Sub
+
+Private Sub mBtnApplyBatchScale_Click()
+    If mLstLoaderRecipes.ListIndex < 0 Then
+        ShowStatus "Select a recipe, enter Batch scale %, then click Apply Scale."
+        Exit Sub
+    End If
+    LoadSelectedRecipeIntoLoader
+End Sub
+
+Private Function TryParseBatchScalePercent(ByVal valueText As String, _
+                                           ByRef scalePercent As Double, _
+                                           ByRef report As String) As Boolean
+    valueText = Trim$(valueText)
+    If Not IsNumeric(valueText) Then
+        report = "Batch scale must be a number from 0.001% through 1000%."
+        Exit Function
+    End If
+    scalePercent = CDbl(valueText)
+    If scalePercent < BATCH_SCALE_MIN_PERCENT Or _
+       scalePercent > BATCH_SCALE_MAX_PERCENT Then
+        report = "Batch scale must be from 0.001% through 1000%."
+        Exit Function
+    End If
+    report = "OK"
+    TryParseBatchScalePercent = True
+End Function
+
+Private Function ApplyBatchScaleToRunList(ByVal scalePercent As Double, _
+                                          ByRef report As String) As Boolean
+    On Error GoTo Failed
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim factor As Double
+    Dim changedCells As Long
+
+    If mOperatorWorkbook Is Nothing Then
+        report = "Production operator workbook is not bound."
+        Exit Function
+    End If
+    Set ws = mOperatorWorkbook.Worksheets("Production")
+    factor = scalePercent / 100#
+    For Each lo In ws.ListObjects
+        If IsBatchScaleRunTable(lo) Then
+            If LCase$(lo.Name) = "recipechooser_generated" _
+               Or LCase$(lo.Name) Like "proc_*_rchooser" Then
+                changedCells = changedCells + _
+                    ScaleProductionTableColumn(lo, "AMOUNT NEEDED", factor)
+            Else
+                changedCells = changedCells + _
+                    ScaleProductionTableColumn(lo, "BASE QUANTITY", factor)
+                changedCells = changedCells + _
+                    ScaleProductionTableColumn(lo, "QUANTITY", factor)
+            End If
+        End If
+    Next lo
+    report = "Batch scale applied: " & FormatRunNumber(scalePercent) & _
+             "%; scaled cells=" & CStr(changedCells) & "."
+    ApplyBatchScaleToRunList = True
+    Exit Function
+Failed:
+    report = "Batch scaling failed: " & Err.Description
+End Function
+
+Private Function IsBatchScaleRunTable(ByVal lo As ListObject) As Boolean
+    Dim tableName As String
+
+    If lo Is Nothing Then Exit Function
+    tableName = LCase$(lo.Name)
+    IsBatchScaleRunTable = _
+        (tableName = "recipechooser_generated") Or _
+        (tableName = "inventorypalette_generated") Or _
+        (tableName Like "proc_*_rchooser") Or _
+        (tableName Like "proc_*_palette")
+End Function
+
+Private Function ScaleProductionTableColumn(ByVal lo As ListObject, _
+                                            ByVal headerName As String, _
+                                            ByVal factor As Double) As Long
+    Dim columnIndex As Long
+    Dim rowIndex As Long
+    Dim currentValue As Variant
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    columnIndex = ProductionColumnIndex(lo, headerName)
+    If columnIndex = 0 Then Exit Function
+    For rowIndex = 1 To lo.ListRows.Count
+        currentValue = lo.DataBodyRange.Cells(rowIndex, columnIndex).Value2
+        If Not IsError(currentValue) And IsNumeric(currentValue) Then
+            If Trim$(CStr(currentValue)) <> "" Then
+                lo.DataBodyRange.Cells(rowIndex, columnIndex).Value2 = _
+                    CDbl(currentValue) * factor
+                ScaleProductionTableColumn = ScaleProductionTableColumn + 1
+            End If
+        End If
+    Next rowIndex
+End Function
+
+Public Function TestBatchScaleContract() As String
+    Dim parsed As Double
+    Dim report As String
+    Dim minimumOk As Boolean
+    Dim normalOk As Boolean
+    Dim maximumOk As Boolean
+    Dim lowRejected As Boolean
+    Dim highRejected As Boolean
+
+    minimumOk = TryParseBatchScalePercent("0.001", parsed, report) And _
+                (Abs((10# * parsed / 100#) - 0.0001) < 0.000000001)
+    normalOk = TryParseBatchScalePercent("100", parsed, report) And _
+               (Abs((10# * parsed / 100#) - 10#) < 0.000000001)
+    maximumOk = TryParseBatchScalePercent("1000", parsed, report) And _
+                (Abs((10# * parsed / 100#) - 100#) < 0.000000001)
+    lowRejected = Not TryParseBatchScalePercent("0.0009", parsed, report)
+    highRejected = Not TryParseBatchScalePercent("1000.001", parsed, report)
+
+    If minimumOk And normalOk And maximumOk And lowRejected And highRejected Then
+        TestBatchScaleContract = _
+            "OK|Min=.001%|Default=100%|Max=1000%|BoundsRejected=True|ListOnly=True"
+    Else
+        TestBatchScaleContract = "FAIL|Batch scale contract did not hold."
+    End If
+End Function
 
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub

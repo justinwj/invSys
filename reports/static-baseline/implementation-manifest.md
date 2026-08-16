@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-10T20:20:00Z
+- Generated: 2026-08-16T20:00:00Z
 - Packages: 6
-- Components: 149
-- Procedures: 4585
+- Components: 150
+- Procedures: 4614
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -13,7 +13,7 @@
 | Package | Project | Output | Components |
 |---|---|---|---:|
 | Admin | invSys_Admin | invSys.Admin.xlam | 24 |
-| Core | invSys_Core | invSys.Core.xlam | 56 |
+| Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
 | Operations | invSys_Operations | invSys.Operations.xlam | 36 |
@@ -26,8 +26,7 @@
 | Add_InventoryItem | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | Add_WarehouseDirectoryRoot | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | AddOrMergeFromSearch | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
-| Admin_ObsoleteDesignVersion_Click | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| Admin_ReleaseDesignVersion_Click | RIBBON_CALLBACK | tools/build-xlam.ps1 |
+| Admin_DesignLifecycle_Click | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | Admin_RetireMigrateWarehouse_Click | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | Admin_SetupTesterStation_Click | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | ApplyCanonicalRuntimeRowApply | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
@@ -94,6 +93,7 @@
 | mBtnAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAddField_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAddMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnApplyBatchScale_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnArchiveDestBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnAssignClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -212,7 +212,6 @@
 | mBtnWarehouseRootRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxBuilderVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxMakerVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mChkRequireStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkRoamingStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkUseExisting_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_AfterUpdate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -238,6 +237,7 @@
 | mLstHold_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstLoaderLines_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstManagerOutput_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstReceiveItems_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunPalette_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunTree_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstShipments_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -259,6 +259,7 @@
 | mTxtImagePath_Enter | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtImagePath_Exit | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtInventorySearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mTxtItemSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtNasPassword_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtNasUser_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtOutputReal_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

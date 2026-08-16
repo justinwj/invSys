@@ -94,7 +94,7 @@ Public Sub Configure(ByVal warehouseOptions As Collection, _
         mCmbWarehouse.ListIndex = matchIndex
     End If
 
-    mTxtStation.Value = IIf(defaultStationId = "", "S1", defaultStationId)
+    mTxtStation.Value = modStationIdentity.CurrentComputerStationId()
     mTxtUser.Value = defaultUserId
     ApplyWarehouseSelection
 End Sub
@@ -128,6 +128,8 @@ Private Sub EnsureControls()
 
     Set mLblStation = AddLabel("lblStation", 12, 82, 92, 18, "Station")
     Set mTxtStation = AddTextBox("txtStation", 108, 78, 90, 22)
+    mTxtStation.Locked = True
+    mTxtStation.BackColor = &HEFEFEF
     Set mLblUser = AddLabel("lblUser", 220, 82, 84, 18, "Admin user")
     Set mTxtUser = AddTextBox("txtUser", 304, 78, 152, 22)
 
@@ -241,7 +243,7 @@ Private Sub mBtnRepairInboxes_Click()
     warehouseId = CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 1))
     stationId = Trim$(CStr(mTxtStation.Value))
     runtimeRoot = CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 3))
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
 
     If RepairStationInboxes(warehouseId, stationId, runtimeRoot, report) Then
         mCmbWarehouse.List(mCmbWarehouse.ListIndex, 0) = warehouseId & " | " & stationId & " | " & runtimeRoot
@@ -261,7 +263,7 @@ Private Sub ApplyWarehouseSelection()
         Exit Sub
     End If
 
-    mTxtStation.Value = CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 2))
+    mTxtStation.Value = modStationIdentity.CurrentComputerStationId()
     mLblRootValue.Caption = CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 3))
     If Trim$(CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 4))) = "" _
        Or StrComp(CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 4)), "Ready", vbTextCompare) = 0 Then
@@ -287,7 +289,7 @@ Private Function RepairStationInboxes(ByVal warehouseId As String, _
         report = "WarehouseId is required."
         Exit Function
     End If
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
 
     If Not modConfig.EnsureStationInbox(warehouseId, stationId, "RECEIVE", "", inboxPath, stepReport) Then

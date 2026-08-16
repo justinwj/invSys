@@ -66,7 +66,7 @@ if ($failures.Count -eq 0) {
         New-Item -ItemType Directory -Path $tempRoot | Out-Null
         & $generatorPath `
             -OutputDirectory $tempRoot `
-            -ReportTimestampUtc "2026-08-10T05:30:28Z"
+            -ReportTimestampUtc "2026-08-16T20:00:00Z"
         if (-not $?) {
             throw "Baseline generator failed."
         }

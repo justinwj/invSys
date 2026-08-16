@@ -1,14 +1,14 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-10T20:20:00Z",
+    "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
-                     "componentCount":  149,
-                     "procedureCount":  4585,
-                     "lineCount":  99621,
+                     "componentCount":  150,
+                     "procedureCount":  4614,
+                     "lineCount":  100404,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
-                     "duplicateBodyCandidateCount":  185
+                     "duplicateBodyCandidateCount":  184
                  },
     "candidates":  [
                        {
@@ -1423,6 +1423,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormBomLong",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "BoxBuilderFormBomLong"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildComponentDeltaPacketFromAggregate",
                            "candidateType":  "REMOVE",
                            "confidence":  "HIGH",
@@ -1480,6 +1497,23 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "RegisterDeltaVersionInventoryOverlay"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Shipping/Modules/modTS_Shipments.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveBoxPayloadSystemKeyShipping",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modTS_Shipments",
+                           "procedureNames":  [
+                                                  "ResolveBoxPayloadSystemKeyShipping"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"
@@ -4804,24 +4838,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:d262ae0a278868a7:Admin_ObsoleteDesignVersion_Click+Admin_ReleaseDesignVersion_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "modAdminDesignLifecycle",
-                           "procedureNames":  [
-                                                  "Admin_ObsoleteDesignVersion_Click",
-                                                  "Admin_ReleaseDesignVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Modules/modAdminDesignLifecycle.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "duplicate:d30cba0fbd80557a:mOptArchiveMigrate_Click+mOptArchiveOnly_Click+mOptArchiveRetire_Click+mOptArchiveRetireDelete_Click+optArchiveMigrate_Click+optArchiveOnly_Click+optArchiveRetire_Click+optArchiveRetireDelete_Click",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
@@ -7904,29 +7920,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_ObsoleteDesignVersion_Click",
+                           "id":  "root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_DesignLifecycle_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "modAdminDesignLifecycle",
                            "procedureNames":  [
-                                                  "Admin_ObsoleteDesignVersion_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Modules/modAdminDesignLifecycle.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_ReleaseDesignVersion_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modAdminDesignLifecycle",
-                           "procedureNames":  [
-                                                  "Admin_ReleaseDesignVersion_Click"
+                                                  "Admin_DesignLifecycle_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminDesignLifecycle.bas"
@@ -8603,23 +8602,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mChkRequireStation_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmWarehouseConnection",
-                           "procedureNames":  [
-                                                  "mChkRequireStation_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Forms/frmWarehouseConnection.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mLstTargets_Change",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -9247,6 +9229,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/ClassModules/cProductionRunSession.cls"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnApplyBatchScale_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnApplyBatchScale_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -10465,12 +10464,46 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mLstReceiveItems_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "mLstReceiveItems_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTabs_Change",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmReceiving",
                            "procedureNames":  [
                                                   "mTabs_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTxtItemSearch_Change",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "mTxtItemSearch_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Receiving/Forms/frmReceiving.frm"
@@ -13320,6 +13353,7 @@
                                                   "AddSelectedInventoryToAllowed",
                                                   "AddText",
                                                   "AppendLayoutIssue",
+                                                  "ApplyBatchScaleToRunList",
                                                   "ApplyRunAllocationOverride",
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
@@ -13390,6 +13424,7 @@
                                                   "InitializeFromProduction",
                                                   "InventoryRowMatchesSearch",
                                                   "InventoryTable",
+                                                  "IsBatchScaleRunTable",
                                                   "IsDirectLayoutChild",
                                                   "IsInteractiveLayoutControl",
                                                   "IsRunPaletteTable",
@@ -13408,6 +13443,7 @@
                                                   "LoggedOutputStats",
                                                   "MaxDoubleForm",
                                                   "MaxLongLocal",
+                                                  "mBtnApplyBatchScale_Click",
                                                   "mBtnAssignAdd_Click",
                                                   "mBtnAssignClear_Click",
                                                   "mBtnAssignIngredient_Click",
@@ -13521,6 +13557,7 @@
                                                   "RunTreeGroupCollapsed",
                                                   "RunTreeGroupKey",
                                                   "RunTreeParentCaption",
+                                                  "ScaleProductionTableColumn",
                                                   "SelectAssignmentIngredientFromList",
                                                   "SelectAssignmentRecipeFromList",
                                                   "SelectedProductionOutputTableRow",
@@ -13547,6 +13584,7 @@
                                                   "TestAssignmentIngredientProcessForRecipe",
                                                   "TestAssignmentItemRowsGrowWithoutTableCollision",
                                                   "TestAssignmentOutputSelectionClearsStaging",
+                                                  "TestBatchScaleContract",
                                                   "TestCurrentLayoutGeometryReport",
                                                   "TestFillAssignmentIoCount",
                                                   "TestFilterAssignmentInventoryCount",
@@ -13570,6 +13608,7 @@
                                                   "TestStatusText",
                                                   "TestWriteRecipeHeaderToBoundWorkbook",
                                                   "ToggleSelectedRunTreeParent",
+                                                  "TryParseBatchScalePercent",
                                                   "TryParseNonNegativeRunNumber",
                                                   "UpdateSelectedRecipeBuilderLine",
                                                   "UserForm_Activate",
@@ -13977,6 +14016,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProductionBatchScaleContractTest",
                                                   "SafeProcessKey",
                                                   "SaveFormulaTemplatesForRecipe",
                                                   "SaveIngredientPalette",
@@ -14062,7 +14102,10 @@
                                                   "ArmAutoSync",
                                                   "AutoSyncIfPending",
                                                   "BoxBuilderPageComponents",
+                                                  "BoxDesignerHasInteractiveOverlap",
+                                                  "BoxMakerHasInteractiveOverlap",
                                                   "BoxMakerPageComponents",
+                                                  "BuildBoxingHeaderCaption",
                                                   "BuildLayout",
                                                   "BuildShippingPages",
                                                   "CancelAutoSync",
@@ -14081,6 +14124,8 @@
                                                   "InitializeFromShipping",
                                                   "IsShipmentsOperatorWorkbook",
                                                   "IsUsableOperatorWorkbook",
+                                                  "LayoutBoxDesignerPage",
+                                                  "LayoutBoxMakerPage",
                                                   "LoadCarrierChoices",
                                                   "LoadSelectedBoxBuilderComponents",
                                                   "LoadSelectedBoxBuilderDesign",
@@ -14093,6 +14138,7 @@
                                                   "LoadShippables",
                                                   "LockedShipmentQtyForShippable",
                                                   "LockTextBox",
+                                                  "MaxSingleBoxing",
                                                   "mBtnAdd_Click",
                                                   "mBtnBoxBuilderAddComponent_Click",
                                                   "mBtnBoxBuilderArchive_Click",
@@ -14133,7 +14179,9 @@
                                                   "NzText",
                                                   "ParseNumber",
                                                   "PendingShipmentSyncCount",
+                                                  "PositionBoxingControl",
                                                   "PreserveMissingShippableInventory",
+                                                  "RectanglesOverlapBoxing",
                                                   "RefreshAfterAction",
                                                   "RefreshBoxBuilderPage",
                                                   "RefreshBoxMakerPage",
@@ -14342,7 +14390,6 @@
                                                   "BuildShipmentLineDeltas",
                                                   "BuildShipmentsSentDeltaPacket",
                                                   "BuildShippingInventoryPickerItems",
-                                                  "BuildSkuBalanceDictionaryShipping",
                                                   "BuildSkuMetadataCacheShipping",
                                                   "BuildTotalInventoryDeltaPacket",
                                                   "BuildUsedDeltaPacket",
@@ -14684,11 +14731,14 @@
                                                   "ResizeListObjectRowsFast",
                                                   "ResizeListObjectRowsForWrite",
                                                   "ResolveBoxBomSaveVersionLabel",
+                                                  "ResolveBoxingInventorySystemKeyForSku",
                                                   "ResolveBoxMakerPackageSystemKey",
                                                   "ResolveBoxMakerUnboxAvailableQty",
                                                   "ResolveBoxPackageSystemKeyValue",
                                                   "ResolveBoxPayloadSystemKeyShipping",
                                                   "ResolveCanonicalComponentInfoShipping",
+                                                  "ResolveCurrentInventoryBySystemKey",
+                                                  "ResolveCurrentInventoryFromSystemKeyTable",
                                                   "ResolveCurrentInventoryFromTable",
                                                   "ResolveCurrentInventoryValue",
                                                   "ResolveCurrentShippingStationId",
@@ -18870,23 +18920,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Received",
-                           "procedureNames":  [
-                                                  "ShowReceivingForm"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Receiving/Modules/modTS_Received.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Shipping_ClassModules_cShippingWorkflowState.cls:cShippingWorkflowState.MarkApplied",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -19142,23 +19175,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentComponents",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BoxBuilderFormCurrentComponents"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentMeta",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -19250,23 +19266,6 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "BoxMakerFormCurrentInventoryDebugReport"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormLoadShippableInventory",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BoxMakerFormLoadShippableInventory"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

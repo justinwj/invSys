@@ -488,7 +488,7 @@ End Function
 
 Private Function ResolveStationIdRuntime(ByVal stationId As String) As String
     ResolveStationIdRuntime = Trim$(stationId)
-    If ResolveStationIdRuntime = "" Then ResolveStationIdRuntime = "S1"
+    If ResolveStationIdRuntime = "" Then ResolveStationIdRuntime = modStationIdentity.CurrentComputerStationId()
 End Function
 
 Private Function NormalizeFolderPath(ByVal folderPath As String) As String

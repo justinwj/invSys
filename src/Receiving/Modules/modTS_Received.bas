@@ -189,6 +189,23 @@ Public Function RunReceivingPurchasingTabContractForTest(ByVal operatorWb As Wor
     Unload frm
 End Function
 
+Public Function RunReceivingSearchAndHeaderContractTest() As String
+    On Error GoTo Failed
+
+    ShowReceivingForm
+    If mReceivingLauncherForm Is Nothing Then
+        RunReceivingSearchAndHeaderContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReceivingSearchAndHeaderContractTest = _
+            mReceivingLauncherForm.TestReceivingSearchAndHeaderContract()
+    End If
+    Exit Function
+
+Failed:
+    RunReceivingSearchAndHeaderContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReceivingRefreshFormActionForTest(ByVal operatorWorkbookName As String, _
                                                      Optional ByVal filterText As String = "") As String
     Dim frm As frmReceiving
@@ -401,7 +418,7 @@ Public Function LoadReceivingEntriesHistoryForWorkbook(ByVal operatorWb As Workb
     Set historyTable = FindTable(operatorWb, "ReceivedLog")
     If historyTable Is Nothing Or historyTable.DataBodyRange Is Nothing Then Exit Function
     rowCount = historyTable.ListRows.Count
-    ReDim result(1 To rowCount, 1 To 10)
+    ReDim result(1 To rowCount, 1 To 11)
     For sourceRow = rowCount To 1 Step -1
         outputRow = outputRow + 1
         result(outputRow, 1) = CellText(historyTable, sourceRow, "ENTRY_DATE")
@@ -413,7 +430,8 @@ Public Function LoadReceivingEntriesHistoryForWorkbook(ByVal operatorWb As Workb
         result(outputRow, 7) = CellText(historyTable, sourceRow, "VENDOR")
         result(outputRow, 8) = CellText(historyTable, sourceRow, "LOCATION")
         result(outputRow, 9) = CellText(historyTable, sourceRow, "ITEM_CODE")
-        result(outputRow, 10) = CellText(historyTable, sourceRow, "System_Key")
+        result(outputRow, 10) = CellText(historyTable, sourceRow, "LOT_NUMBER")
+        result(outputRow, 11) = CellText(historyTable, sourceRow, "System_Key")
     Next sourceRow
     LoadReceivingEntriesHistoryForWorkbook = result
 End Function
@@ -440,7 +458,9 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
                                                   ByVal sourceSystemKey As String, _
                                                   ByVal itemCodeValue As String, _
                                                   ByVal qty As Double, _
-                                                  ByRef report As String) As Boolean
+                                                  ByRef report As String, _
+                                                  Optional ByVal locationOverride As String = "", _
+                                                  Optional ByVal lotNumber As String = "") As Boolean
     On Error GoTo Failed
 
     Dim inventoryTable As ListObject
@@ -489,8 +509,12 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     If itemName = "" Then itemName = CellText(inventoryTable, inventoryIndex, "ItemName")
     uomValue = CellText(inventoryTable, inventoryIndex, "UOM")
     locationValue = CellText(inventoryTable, inventoryIndex, "LOCATION")
+    If Trim$(locationOverride) <> "" Then locationValue = Trim$(locationOverride)
+    lotNumber = Trim$(lotNumber)
+    If locationValue = "" Then report = "Receive location is required.": Exit Function
 
-    stagingIndex = FindExistingStagingRecord(stagingTable, refNumber, sourceSystemKey)
+    stagingIndex = FindExistingStagingRecord( _
+        stagingTable, refNumber, sourceSystemKey, locationValue, lotNumber)
     If stagingIndex > 0 Then
         receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
         eventId = CellText(stagingTable, stagingIndex, "EventId")
@@ -503,6 +527,8 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
         SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
         SetCellText stagingTable, stagingIndex, "ITEMS", itemName
         SetCellValue stagingTable, stagingIndex, "QUANTITY", qty
+        SetCellText stagingTable, stagingIndex, "LOCATION", locationValue
+        SetCellText stagingTable, stagingIndex, "LOT_NUMBER", lotNumber
         SetCellText stagingTable, stagingIndex, "System_Key", receivingSystemKey
         SetCellText stagingTable, stagingIndex, "ITEM_CODE", itemCode
         SetCellText stagingTable, stagingIndex, "Source_System_Key", sourceSystemKey
@@ -514,7 +540,8 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     If aggregateIndex = 0 Then aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
     PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
                             refNumber, receivingSystemKey, eventId, _
-                            CellNumber(stagingTable, stagingIndex, "QUANTITY")
+                            CellNumber(stagingTable, stagingIndex, "QUANTITY"), _
+                            locationValue, lotNumber
 
     report = "Staged " & CStr(qty) & " " & uomValue & " of " & itemName & _
              "; System_Key=" & receivingSystemKey
@@ -572,7 +599,9 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
                                 CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
                                 receivingSystemKey, _
                                 CellText(stagingTable, stagingIndex, "EventId"), _
-                                CellNumber(stagingTable, stagingIndex, "QUANTITY")
+                                CellNumber(stagingTable, stagingIndex, "QUANTITY"), _
+                                CellText(stagingTable, stagingIndex, "LOCATION"), _
+                                CellText(stagingTable, stagingIndex, "LOT_NUMBER")
         SetCellText aggregateTable, aggregateIndex, "WorkflowState", _
                     CellText(stagingTable, stagingIndex, "WorkflowState")
     Next stagingIndex
@@ -705,7 +734,9 @@ Private Sub PopulateAggregateRecord(ByVal aggregateTable As ListObject, _
                                     ByVal refNumber As String, _
                                     ByVal receivingSystemKey As String, _
                                     ByVal eventId As String, _
-                                    ByVal qty As Double)
+                                    ByVal qty As Double, _
+                                    ByVal locationOverride As String, _
+                                    ByVal lotNumber As String)
     SetCellText aggregateTable, aggregateIndex, "REF_NUMBER", refNumber
     SetCellText aggregateTable, aggregateIndex, "ITEM_CODE", _
                 CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
@@ -724,8 +755,10 @@ Private Sub PopulateAggregateRecord(ByVal aggregateTable As ListObject, _
     SetCellText aggregateTable, aggregateIndex, "UOM", _
                 CellText(inventoryTable, inventoryIndex, "UOM")
     SetCellValue aggregateTable, aggregateIndex, "QUANTITY", qty
-    SetCellText aggregateTable, aggregateIndex, "LOCATION", _
-                CellText(inventoryTable, inventoryIndex, "LOCATION")
+    If Trim$(locationOverride) = "" Then _
+        locationOverride = CellText(inventoryTable, inventoryIndex, "LOCATION")
+    SetCellText aggregateTable, aggregateIndex, "LOCATION", locationOverride
+    SetCellText aggregateTable, aggregateIndex, "LOT_NUMBER", lotNumber
     SetCellText aggregateTable, aggregateIndex, "System_Key", receivingSystemKey
     SetCellText aggregateTable, aggregateIndex, "EventId", eventId
     SetCellText aggregateTable, aggregateIndex, "WorkflowState", "STAGED"
@@ -733,7 +766,9 @@ End Sub
 
 Private Function FindExistingStagingRecord(ByVal stagingTable As ListObject, _
                                            ByVal refNumber As String, _
-                                           ByVal sourceSystemKey As String) As Long
+                                           ByVal sourceSystemKey As String, _
+                                           ByVal locationValue As String, _
+                                           ByVal lotNumber As String) As Long
     Dim recordIndex As Long
 
     If stagingTable Is Nothing Or stagingTable.DataBodyRange Is Nothing Then Exit Function
@@ -741,7 +776,11 @@ Private Function FindExistingStagingRecord(ByVal stagingTable As ListObject, _
         If StrComp(CellText(stagingTable, recordIndex, "REF_NUMBER"), _
                    refNumber, vbTextCompare) = 0 _
            And StrComp(CellText(stagingTable, recordIndex, "Source_System_Key"), _
-                       sourceSystemKey, vbBinaryCompare) = 0 Then
+                       sourceSystemKey, vbBinaryCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "LOCATION"), _
+                       locationValue, vbTextCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "LOT_NUMBER"), _
+                       lotNumber, vbTextCompare) = 0 Then
             FindExistingStagingRecord = recordIndex
             Exit Function
         End If

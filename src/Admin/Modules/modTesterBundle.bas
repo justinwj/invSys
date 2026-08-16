@@ -427,7 +427,7 @@ Private Function GetTesterReadmeText(ByVal warehouseId As String) As String
     lines(0) = "# invSys " & warehouseId & " Tester Bundle"
     lines(1) = "1. Download add-ins from Addins/ on SharePoint"
     lines(2) = "2. Open invSys.Admin.xlam"
-    lines(3) = "3. Click Setup Tester Station"
+    lines(3) = "3. Click Test Environment Setup"
     lines(4) = "4. Enter your UserId and a PIN when prompted"
     lines(5) = "5. Click Open Receiving Workbook"
     lines(6) = "6. Click Refresh Inventory - confirm TEST-SKU-001 shows QtyOnHand = 100"

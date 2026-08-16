@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-10T20:20:00Z
-- Scanner candidates: 960
-- Reviewed candidates: 962
+- Baseline: 2026-08-16T20:00:00Z
+- Scanner candidates: 959
+- Reviewed candidates: 961
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,13 +11,13 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 29 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 129 | Production-owned forms, services, and role package source. |
+| RECEIVING | 30 | Receiving-owned forms, services, and role package source. |
+| PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 294 | Headless shared runtime and developer-support source in Core. |
+| CORE | 293 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
-| ADMIN | 215 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 213 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -49,10 +49,10 @@
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4757 |
-| src/Production/Modules/mProduction.bas | Production | 12912 |
-| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2728 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22080 |
+| src/Production/Forms/frmProduction.frm | Production | 4902 |
+| src/Production/Modules/mProduction.bas | Production | 12928 |
+| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
 
 ## Reviewed candidates
 
@@ -80,7 +80,6 @@
 | duplicate:ca014d23efd50a54:ClearErrorLabel+ClearErrorLabel+ClearInlineError | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:cb7c65ab5a78e133:txtStationId_Change+txtStationId_Change | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:ceb578f41cc269ff:txtPathLocal_Change+txtPathLocal_Change | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
-| duplicate:d262ae0a278868a7:Admin_ObsoleteDesignVersion_Click+Admin_ReleaseDesignVersion_Click | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:d30cba0fbd80557a:mOptArchiveMigrate_Click+mOptArchiveOnly_Click+mOptArchiveRetire_Click+mOptArchiveRetireDelete_Click+optArchiveMigrate_Click+optArchiveOnly_Click+optArchiveRetire_Click+optArchiveRetireDelete_Click | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:e2d802bc3d8c1e06:AddCombo+AddCombo | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:e6784db3a48a59a1:AddButton+AddButton | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -269,8 +268,7 @@
 | root:src_Admin_Modules_modAdmin.bas:modAdmin.Open_WarehouseDirectory | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Modules_modAdmin.bas:modAdmin.Seed_DemoInventory | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Modules_modAdmin.bas:modAdmin.Verify_AddinsPublished | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_ObsoleteDesignVersion_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_ReleaseDesignVersion_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.Admin_DesignLifecycle_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Modules_modAdminInit.bas:modAdminInit.Auto_Open | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Modules_modAdminShipmentReconcile.bas:modAdminShipmentReconcile.OpenShipmentReconcileTool | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | duplicate:00583da1f4f34c75:OpenFirstRuntimeAuthWorkbook+OpenFirstRuntimeConfigWorkbook | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -544,7 +542,6 @@
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnConnect_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnOK_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnScan_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mChkRequireStation_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mLstTargets_Change | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.UserForm_Activate | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.UserForm_Initialize | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -707,6 +704,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestProductionRecipesRuntimeRoundTrip | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ValidateQueueProductionCompleteEventFromCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Production_ClassModules_cProductionRunSession.cls:cProductionRunSession.Class_Initialize | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnApplyBatchScale_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignAdd_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnAssignIngredient_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -784,7 +782,6 @@
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RebuildAggregation | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RunReceivingRefreshFormActionForTest | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ShowReceivingForm | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_ClassModules_Sheets_ReceivedTally.cls:ReceivedTally.Worksheet_SelectionChange | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnAdd_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -792,7 +789,9 @@
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnClose_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnConfirm_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mBtnRefresh_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mLstReceiveItems_Click | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTabs_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTxtItemSearch_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mTxtSearch_Change | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Activate | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.UserForm_Initialize | RECEIVING | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -906,14 +905,13 @@
 | reachability:src_Shipping_Modules_modShippingPostingService.bas:modShippingPostingService.ProjectedInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.AppendAggregateRowFromInventory | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormArchiveBox | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentComponents | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormBomLong | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormCurrentMeta | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteBox | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxBuilderFormDeleteVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormAutoSyncProcedureName | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormCurrentInventoryDebugReport | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BoxMakerFormLoadShippableInventory | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnBoxCreated | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnBoxesMade | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnBoxUnboxed | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -941,6 +939,7 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.NextAvailableBomRow | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterBoxMakerFormAutoSync | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.RegisterDeltaVersionInventoryOverlay | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ResolveBoxPayloadSystemKeyShipping | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.SentOverlayKeyForRowVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormHydrateInvSysFromShippables | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormLoadReadiness | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

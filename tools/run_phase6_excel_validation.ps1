@@ -401,6 +401,7 @@ try {
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modStationIdentity.bas"),
         (Join-Path $repo "src/Core/Modules/modUomSettings.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),

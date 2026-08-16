@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmBoxVersionSaveChoice
-   Caption         =   "Save Box Version"
+   Caption         =   "Save Box Alternative"
    ClientHeight    =   2040
    ClientLeft      =   120
    ClientTop       =   465
@@ -73,15 +73,15 @@ Public Property Get Choice() As Long
 End Property
 
 Private Sub BuildChoiceLayout()
-    Me.Caption = "Save Box Version"
+    Me.Caption = "Save Box Alternative"
     Me.Width = 430
     Me.Height = 230
 
-    Set mLblTitle = AddLabel("lblTitle", "Save Box Version", 18, 14, 360, 22, True)
+    Set mLblTitle = AddLabel("lblTitle", "Save Box Alternative", 18, 14, 360, 22, True)
     Set mLblBody = AddLabel("lblBody", "", 18, 44, 370, 70, False)
 
-    Set mBtnUpdate = AddButton("btnUpdate", "Update Version", 18, 132, 112, 28)
-    Set mBtnNew = AddButton("btnNewVersion", "New Version", 144, 132, 112, 28)
+    Set mBtnUpdate = AddButton("btnUpdate", "Update Alternative", 18, 132, 112, 28)
+    Set mBtnNew = AddButton("btnNewVersion", "New Alternative", 144, 132, 112, 28)
     Set mBtnCancel = AddButton("btnCancel", "Cancel", 270, 132, 90, 28)
     InitializeChoiceAnchors
 End Sub
@@ -93,7 +93,7 @@ Private Sub RenderChoiceText()
     textValue = "You are editing " & IIf(mBoxName <> "", mBoxName, "this box")
     If mVersionLabel <> "" Then textValue = textValue & " " & mVersionLabel
     textValue = textValue & "." & vbCrLf & vbCrLf & _
-                "Update the selected version, or save these rows as a new version?"
+                "Update the selected alternative, or save these rows as a new alternative?"
     mLblBody.Caption = textValue
 End Sub
 

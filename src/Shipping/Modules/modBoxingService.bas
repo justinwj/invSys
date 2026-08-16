@@ -90,7 +90,7 @@ Public Function DeleteBoxDesignVersion(ByVal operatorWb As Workbook, _
                                        ByRef report As String) As Boolean
     If Not ValidateBoxMaintenanceRequest(operatorWb, packageSystemKey, report) Then Exit Function
     If Trim$(versionLabel) = "" Then
-        report = "Select a box version before deleting."
+        report = "Select a box alternative before deleting."
         Exit Function
     End If
     DeleteBoxDesignVersion = modTS_Shipments.DeleteBoxDesignVersionForWorkbook( _
@@ -165,18 +165,35 @@ Public Function RunRelease1BoxingActionForTest(ByVal operatorWb As Workbook, _
                                                ByVal boxQty As Double, _
                                                ByVal componentQtyPerBox As Double) As String
     Dim componentRows(1 To 1, 1 To 8) As Variant
+    Dim componentSystemKey As String
+    Dim packageSystemKey As String
     Dim report As String
     Dim succeeded As Boolean
 
+    componentSystemKey = _
+        modTS_Shipments.ResolveBoxingInventorySystemKeyForSku( _
+            operatorWb, componentSku)
+    If componentSystemKey = "" Then
+        RunRelease1BoxingActionForTest = _
+            "FAIL|Component System_Key was not resolved for " & componentSku
+        Exit Function
+    End If
+    packageSystemKey = modRoleEventWriter.CreateSystemKey()
+    If packageSystemKey = "" Then
+        RunRelease1BoxingActionForTest = _
+            "FAIL|Package System_Key could not be created."
+        Exit Function
+    End If
+
     componentRows(1, 2) = componentSku
     componentRows(1, 3) = componentSku
-    componentRows(1, 4) = 1
+    componentRows(1, 4) = componentSystemKey
     componentRows(1, 5) = componentQtyPerBox
     componentRows(1, 6) = "EA"
     componentRows(1, 7) = "BIN-A"
     componentRows(1, 8) = "Release 1 packaged component"
 
-    succeeded = PostBoxMakerAction(operatorWb, 1, packageSku, "EA", _
+    succeeded = PostBoxMakerAction(operatorWb, packageSystemKey, packageSku, "EA", _
         "BIN-B", "Release 1 versioned box", versionLabel, boxQty, _
         componentRows, "MAKE", report)
     If succeeded Then

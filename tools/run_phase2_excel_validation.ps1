@@ -200,6 +200,7 @@ try {
         (Join-Path $repo "src/Core/Modules/modConfigDefaults.bas"),
         (Join-Path $repo "src/Core/Modules/modDeploymentPaths.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modStationIdentity.bas"),
         (Join-Path $repo "src/Core/Modules/modRuntimeWorkbooks.bas"),
         (Join-Path $repo "src/Core/Modules/modNasConnection.bas"),
         (Join-Path $repo "src/Core/Modules/modUiQuiet.bas"),

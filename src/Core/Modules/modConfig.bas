@@ -1227,7 +1227,7 @@ End Function
 
 Private Function ResolveSeedStationIdConfig(ByVal stationId As String) As String
     ResolveSeedStationIdConfig = SafeTrim(stationId)
-    If ResolveSeedStationIdConfig = "" Then ResolveSeedStationIdConfig = "S1"
+    If ResolveSeedStationIdConfig = "" Then ResolveSeedStationIdConfig = modStationIdentity.CurrentComputerStationId()
 End Function
 
 Private Sub FormatConfigSurface(ByVal wb As Workbook)
