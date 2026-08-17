@@ -498,6 +498,8 @@ try {
         "TestPhase6CoreSurfaces.TestRoleWriteCurrent_RejectsFallbackTarget",
         "TestPhase6CoreSurfaces.TestRoleWriteCurrent_AllowsSignedInReceivePost",
         "TestPhase6CoreSurfaces.TestAuthSignOut_ClearsUserButKeepsWarehouseTarget",
+        "TestPhase6CoreSurfaces.TestRibbonSessionLabels_DisconnectedUseExplicitNames",
+        "TestPhase6CoreSurfaces.TestServerSignOutAction_ClearsUserTargetAndAccess",
         "TestPhase6CoreSurfaces.TestAuthCanPerform_SignedOutFailsClosedWithLoadedAuth",
         "TestPhase6CoreSurfaces.TestAuthTtlExpiry_FailsClosedForIsSignedInAndCanPerform",
         "TestAddinsPublish.TestVerifyAddinsPublished_AllPresent",

@@ -1210,6 +1210,87 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestRibbonSessionLabels_DisconnectedUseExplicitNames() As Long
+    Dim prerequisite As String
+
+    On Error GoTo CleanFail
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ClearWarehouseTarget
+
+    prerequisite = modRoleEventWriter.InvSysSignInPrerequisiteForAutomation()
+    If modRibbonRuntimeStatus.GetServerSessionActionLabel() <> "Server Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetAccessStatusLabel("lblOperationsAccessStatus") <> "Access: Server Sign In required" Then GoTo CleanExit
+    If Left$(prerequisite, 8) <> "BLOCKED|" Then GoTo CleanExit
+    If InStr(1, prerequisite, "Use Server Sign In before invSys Sign In", vbTextCompare) = 0 Then GoTo CleanExit
+
+    TestRibbonSessionLabels_DisconnectedUseExplicitNames = 1
+
+CleanExit:
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ClearWarehouseTarget
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestServerSignOutAction_ClearsUserTargetAndAccess() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim actionResult As String
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_server_signout_action")
+    authPath = rootPath & "\WH4L.invSys.Auth.xlsb"
+
+    On Error GoTo CleanFail
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH4L", "S4L", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH4L", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH4L", "S4L", "session_user", "Session User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "session_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S4L", True)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("session_user", "fixture-pin", target, "RECEIVE_POST")
+    If authStatus <> AUTH_OK Or Not modAuth.IsSignedIn() Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign Out" Then GoTo CleanExit
+
+    actionResult = modRoleEventWriter.SignOutServerSessionForAutomation()
+    If Left$(actionResult, 3) <> "OK|" Then GoTo CleanExit
+    If modAuth.IsSignedIn() Then GoTo CleanExit
+    If modNasConnection.IsTargetResolved() Then GoTo CleanExit
+    If modNasConnection.HasConnectedUncRoot() Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetServerSessionActionLabel() <> "Server Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetAccessStatusLabel("lblOperationsAccessStatus") <> "Access: Server Sign In required" Then GoTo CleanExit
+
+    TestServerSignOutAction_ClearsUserTargetAndAccess = 1
+
+CleanExit:
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ForgetTarget "WH4L"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestAuthCanPerform_SignedOutFailsClosedWithLoadedAuth() As Long
     Dim rootPath As String
     Dim wbCfg As Workbook

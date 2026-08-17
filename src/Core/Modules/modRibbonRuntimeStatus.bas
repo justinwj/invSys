@@ -24,10 +24,13 @@ Public Sub InvalidateCurrentUserRibbons()
     On Error Resume Next
     For Each ribbon In mRibbonUis
         ribbon.Invalidate
+        ribbon.InvalidateControl "btnOperationsCurrentUser"
+        ribbon.InvalidateControl "btnOperationsServerSession"
         ribbon.InvalidateControl "btnReceivingCurrentUser"
         ribbon.InvalidateControl "btnShippingCurrentUser"
         ribbon.InvalidateControl "btnProductionCurrentUser"
         ribbon.InvalidateControl "btnAdminCurrentUser"
+        ribbon.InvalidateControl "btnAdminServerSession"
         ribbon.InvalidateControl "btnRuntimeUser"
     Next ribbon
     On Error GoTo 0
@@ -72,6 +75,19 @@ End Function
 Public Function GetAccessStatusLabel(ByVal controlId As String) As String
     Dim capability As String
     Dim errorMessage As String
+
+    If StrComp(Trim$(controlId), "lblOperationsAccessStatus", vbTextCompare) = 0 Then
+        If Not modNasConnection.HasConnectedUncRoot() Then
+            GetAccessStatusLabel = "Access: Server Sign In required"
+        ElseIf Not modNasConnection.IsCurrentTargetAllowed(True) Then
+            GetAccessStatusLabel = "Access: Select warehouse"
+        ElseIf Not modAuth.IsSignedIn() Then
+            GetAccessStatusLabel = "Access: invSys Sign In required"
+        Else
+            GetAccessStatusLabel = "Access: Ready"
+        End If
+        Exit Function
+    End If
 
     capability = AccessCapabilityForControlStatus(controlId)
     If capability = "" Then
@@ -158,6 +174,22 @@ Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
     targetText = CStr(targets(selectedIndex + 1))
     Call ApplyWarehouseTargetSelectionStatus(targetText, True)
 End Sub
+
+Public Function GetCurrentUserActionLabel() As String
+    If modAuth.IsSignedIn() Then
+        GetCurrentUserActionLabel = "invSys Sign Out"
+    Else
+        GetCurrentUserActionLabel = "invSys Sign In"
+    End If
+End Function
+
+Public Function GetServerSessionActionLabel() As String
+    If modNasConnection.HasConnectedUncRoot() Then
+        GetServerSessionActionLabel = "Server Sign Out"
+    Else
+        GetServerSessionActionLabel = "Server Sign In"
+    End If
+End Function
 
 Public Function SelectWarehouseTargetTextForAutomation(ByVal targetText As String) As String
     On Error GoTo FailSelect
@@ -288,6 +320,12 @@ Private Sub InvalidateWarehouseTargetRibbonsStatus()
 
     On Error Resume Next
     For Each ribbon In mRibbonUis
+        ribbon.Invalidate
+        ribbon.InvalidateControl "ddOperationsWarehouseTarget"
+        ribbon.InvalidateControl "lblOperationsServerStatus"
+        ribbon.InvalidateControl "lblOperationsAccessStatus"
+        ribbon.InvalidateControl "btnOperationsServerSession"
+        ribbon.InvalidateControl "btnOperationsCurrentUser"
         ribbon.InvalidateControl "ddReceivingWarehouseTarget"
         ribbon.InvalidateControl "ddShippingWarehouseTarget"
         ribbon.InvalidateControl "ddProductionWarehouseTarget"
@@ -299,6 +337,8 @@ Private Sub InvalidateWarehouseTargetRibbonsStatus()
         ribbon.InvalidateControl "lblShippingAccessStatus"
         ribbon.InvalidateControl "lblProductionAccessStatus"
         ribbon.InvalidateControl "lblAdminAccessStatus"
+        ribbon.InvalidateControl "btnAdminServerSession"
+        ribbon.InvalidateControl "btnAdminCurrentUser"
         ribbon.InvalidateControl "btnRuntimeWarehouse"
         ribbon.InvalidateControl "btnRuntimeDataRoot"
         ribbon.InvalidateControl "btnRuntimeInboxRoot"

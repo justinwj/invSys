@@ -66,11 +66,18 @@ Public Sub PromptSetCurrentUserForCapability(Optional ByVal requiredCapability A
     Dim statusCode As NasStatusCode
     Dim authStatus As AuthStatusCode
     Dim requireNasTarget As Boolean
+    Dim prerequisiteMessage As String
+
+    If Not InvSysSignInPrerequisiteRole(prerequisiteMessage) Then
+        MsgBox prerequisiteMessage, vbExclamation, "invSys Sign In"
+        modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
+        Exit Sub
+    End If
 
     requireNasTarget = CapabilityRequiresNasTargetRole(requiredCapability)
     Set target = ResolveRoleWarehouseTarget(requireNasTarget, statusCode)
     If target Is Nothing Then
-        MsgBox "Warehouse storage is not connected. Use Connect Server or Runtime Context before signing in.", vbExclamation, "invSys Current User"
+        MsgBox "No warehouse is selected. Use Send To after Server Sign In, then use invSys Sign In.", vbExclamation, "invSys Sign In"
         modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
         Exit Sub
     End If
@@ -84,6 +91,40 @@ Public Sub PromptSetCurrentUserForCapability(Optional ByVal requiredCapability A
     End If
 
     MsgBox "Current invSys user: " & CurrentInvSysUserDisplayRole(), vbInformation, "invSys Current User"
+End Sub
+
+Public Function InvSysSignInPrerequisiteForAutomation() As String
+    Dim prerequisiteMessage As String
+
+    If InvSysSignInPrerequisiteRole(prerequisiteMessage) Then
+        InvSysSignInPrerequisiteForAutomation = "READY|ServerConnected=True"
+    Else
+        InvSysSignInPrerequisiteForAutomation = "BLOCKED|" & prerequisiteMessage
+    End If
+End Function
+
+Private Function InvSysSignInPrerequisiteRole(ByRef prerequisiteMessage As String) As Boolean
+    If Not modNasConnection.HasConnectedUncRoot() Then
+        prerequisiteMessage = "Warehouse storage is not connected. Use Server Sign In before invSys Sign In."
+        Exit Function
+    End If
+    InvSysSignInPrerequisiteRole = True
+End Function
+
+Public Sub ToggleCurrentInvSysUserForCapability(Optional ByVal requiredCapability As String = "")
+    If modAuth.IsSignedIn() Then
+        SignOutCurrentUser
+    Else
+        PromptSetCurrentUserForCapability requiredCapability
+    End If
+End Sub
+
+Public Sub ToggleServerSessionForCapability(Optional ByVal requiredCapability As String = "")
+    If modNasConnection.HasConnectedUncRoot() Then
+        SignOutServerSession
+    Else
+        ConnectWarehouseStorageForCapability requiredCapability
+    End If
 End Sub
 
 Public Sub ShowCurrentUser()
@@ -240,11 +281,46 @@ Public Sub SignOutCurrentUser()
     SetCurrentUserId vbNullString
     modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
     If modAuth.IsSignedIn() Or Trim$(modAuth.GetCurrentUserId()) <> "" Or Trim$(GetCurrentUserOverride()) <> "" Then
-        MsgBox "Sign out did not complete. Close and reopen Excel, then try again.", vbExclamation, "invSys Current User"
+        MsgBox "invSys Sign Out did not complete. Close and reopen Excel, then try again.", vbExclamation, "invSys Sign Out"
     Else
-        MsgBox "Signed out of invSys. Warehouse storage remains selected.", vbInformation, "invSys Current User"
+        MsgBox "Signed out of invSys. Warehouse storage remains connected.", vbInformation, "invSys Sign Out"
     End If
 End Sub
+
+Public Sub SignOutServerSession()
+    Call ApplyServerSignOutRole(True, True)
+End Sub
+
+Public Function SignOutServerSessionForAutomation(Optional ByVal disconnectWindowsSession As Boolean = False) As String
+    If ApplyServerSignOutRole(False, disconnectWindowsSession) Then
+        SignOutServerSessionForAutomation = "OK|ServerDisconnected=True|InvSysSignedIn=False|TargetSelected=False"
+    Else
+        SignOutServerSessionForAutomation = "FAIL|" & modNasConnection.GetConnectionStatus()
+    End If
+End Function
+
+Private Function ApplyServerSignOutRole(ByVal showMessage As Boolean, _
+                                        ByVal disconnectWindowsSession As Boolean) As Boolean
+    Dim disconnectResult As String
+
+    modAuth.SignOut
+    SetCurrentUserId vbNullString
+    disconnectResult = modNasConnection.DisconnectCurrentNasSession(disconnectWindowsSession)
+    modRibbonRuntimeStatus.InvalidateWarehouseTargets
+    modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
+
+    ApplyServerSignOutRole = _
+        (Not modAuth.IsSignedIn()) And _
+        (Not modNasConnection.HasConnectedUncRoot()) And _
+        (Not modNasConnection.IsTargetResolved())
+
+    If Not showMessage Then Exit Function
+    If ApplyServerSignOutRole Then
+        MsgBox "Signed out of invSys and disconnected from the warehouse server.", vbInformation, "Server Sign Out"
+    Else
+        MsgBox "Server Sign Out did not complete." & vbCrLf & vbCrLf & disconnectResult, vbExclamation, "Server Sign Out"
+    End If
+End Function
 
 Private Function ValidateCurrentUserCredential(ByVal userId As String, _
                                                ByVal pinText As String, _

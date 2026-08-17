@@ -504,14 +504,11 @@ function Add-RibbonCallbacksModule {
     [void]$lines.Add("End Sub")
     [void]$lines.Add("")
     [void]$lines.Add("Public Sub RibbonCurrentUserGetLabel(control As IRibbonControl, ByRef returnedVal)")
-    [void]$lines.Add("    Dim displayName As String")
-    [void]$lines.Add("    If modAuth.IsSignedIn() Then")
-    [void]$lines.Add('        displayName = Trim$(modAuth.GetCurrentUserDisplayName())')
-    [void]$lines.Add('        If displayName = "" Then displayName = "<not signed in>"')
-    [void]$lines.Add('        returnedVal = "User: " & displayName')
-    [void]$lines.Add("    Else")
-    [void]$lines.Add('        returnedVal = "Sign In"')
-    [void]$lines.Add("    End If")
+    [void]$lines.Add("    returnedVal = modRibbonRuntimeStatus.GetCurrentUserActionLabel()")
+    [void]$lines.Add("End Sub")
+    [void]$lines.Add("")
+    [void]$lines.Add("Public Sub RibbonServerSessionGetLabel(control As IRibbonControl, ByRef returnedVal)")
+    [void]$lines.Add("    returnedVal = modRibbonRuntimeStatus.GetServerSessionActionLabel()")
     [void]$lines.Add("End Sub")
     [void]$lines.Add("")
     [void]$lines.Add("Public Sub " + $enabledCallbackName + "(control As IRibbonControl, ByRef returnedVal As Variant)")
@@ -886,9 +883,8 @@ $projectMap = @(
                         }
                     )
                     Buttons = @(
-                        @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnOperationsCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" }
+                        @{ Id = "btnOperationsServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
+                        @{ Id = "btnOperationsCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" }
                     )
                     StatusLabels = @(
                         @{ Id = "lblOperationsServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
@@ -975,9 +971,8 @@ $projectMap = @(
                     Label   = "Actions"
                     Buttons = @(
                         @{ Id = "btnAdminOpen"; Label = "Admin Console"; Macro = "modAdmin.Admin_Click"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnAdminCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnAdminSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
+                        @{ Id = "btnAdminServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
+                        @{ Id = "btnAdminCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" },
                         @{ Id = "btnAdminUsers"; Label = "Users and Roles"; Macro = "modAdmin.Open_CreateDeleteUser"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminSettings"; Label = "Settings"; Macro = "modAdmin.Open_Settings"; ImageMso = "FileProperties"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; ImageMso = "TablePropertiesDialog"; RequiredCapability = "ADMIN_MAINT" },

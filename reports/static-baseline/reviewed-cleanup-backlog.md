@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 959
-- Reviewed candidates: 961
+- Scanner candidates: 953
+- Reviewed candidates: 955
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -15,7 +15,7 @@
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 293 | Headless shared runtime and developer-support source in Core. |
+| CORE | 287 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 213 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
@@ -39,10 +39,10 @@
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
 | src/Core/Modules/modAuth.bas | Core | 1635 |
 | src/Core/Modules/modConfig.bas | Core | 1662 |
-| src/Core/Modules/modNasConnection.bas | Core | 1453 |
+| src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
 | src/Core/Modules/modProcessor.bas | Core | 1417 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 2843 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 2919 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
 | src/Core/Modules/modWarehouseSync.bas | Core | 1617 |
@@ -373,7 +373,6 @@
 | dynamic-call:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RunInventoryDomainMacroFallback2:df190682398c | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RunInventoryDomainMacroFallback3:57af10884e1b | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RunInventoryDomainMacroFallback3:dd696debe72f | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:7cbfce761a52 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.LogDiagnosticSafeReadModel:f4187b7091ea | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.MarkSegmentSafeReadModel:8b6eba1650f0 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.PerfIsTransactionActiveSafeReadModel:b9c63dcce4d8 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
@@ -453,7 +452,6 @@
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RemoveLastBulkLogEntriesBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.ResolveInventoryWorkbookBridgeIsResolved | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.WorkbookHasListObjectLocal | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.DisconnectNasRoot | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.EnsureWarehouseTargetInteractive | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.IsConnected | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.PromptTextNas | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -478,7 +476,6 @@
 | reachability:src_Core_Modules_modProcessor.bas:modProcessor.ResolveCurrentTargetRuntimeRootProcessor | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.AddRememberedConfigTargetsStatus | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.ApplyRememberedWarehouseTargetForAutomation | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetAccessStatusLabel | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetSelectedWarehouseTargetIndex | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetServerStatusLabel | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetWarehouseTargetCount | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -545,13 +542,11 @@
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mLstTargets_Change | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.UserForm_Activate | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.UserForm_Initialize | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Modules_modAuth.bas:modAuth.SignOut | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatch | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatchForAutomation | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatchReportForAutomation | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ConnectWarehouseStorageForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.PromptSetCurrentUserForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.SignOutCurrentUser | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleCurrentInvSysUserForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleServerSessionForCapability | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.Workbook_Open | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.Worksheet_Change | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Core_Modules_MouseScroll.bas:MouseScroll.GetCallbackPtr | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -563,7 +558,6 @@
 | same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:HandlePaletteRecipeSelected | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:LoadRecipeChooser | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | same-project-run:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.CommitSelection:LoadRecipeFromRecipes | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
-| same-project-run:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:SignOut | CORE | REPLACE_SAME_PROJECT_LATE_BINDING | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.CloseInventoryViewerForTest | DEVELOPER_TOOLING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerActionForTest | DEVELOPER_TOOLING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerFilterForTest | DEVELOPER_TOOLING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

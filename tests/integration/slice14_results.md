@@ -1,6 +1,6 @@
 # Slice 14 Full-Chain, Restart, and Reconciliation Evidence
 
-- Date: 2026-08-17 12:23:13
+- Date: 2026-08-17 13:31:36
 - Package set: R1-5
 - Ordered phases: 
 GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> ProcessorApplyReceive -> RefreshAfterReceive -> ProductionTwoBatches -> ProductionConsumptionAndOutput -> BoxingVersionSelection -> ShipmentStagingAndSent -> ProcessorApplyShipment -> FinalRefresh -> RestartAndReconcile
@@ -45,4 +45,4 @@ GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> P
 | RestartReconciliation | PASS | Saved canonical and operator workbooks reconciled after a new Excel runtime opened them. |
 | CanonicalWorkbooksHidden | PASS | The reconciliation runtime kept canonical workbooks out of the visible operator surface. |
 | RuntimeFivePackages | PASS | Read-only extractor observed: invSys.Admin.xlam, invSys.Core.xlam, invSys.Designs.Domain.xlam, invSys.Inventory.Domain.xlam, invSys.Operations.xlam |
-| StaticRetiredPathRatchet | PASS | New static warning paths=0; Current warnings=28; Baseline warnings=28 |
+| StaticRetiredPathRatchet | PASS | New static warning paths=0; Current warnings=27; Baseline warnings=28 |

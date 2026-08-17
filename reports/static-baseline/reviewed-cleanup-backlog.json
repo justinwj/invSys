@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "03b3d7c440e9ceae95459a789ec17b51ce690dbb6936857823c94fa13975b427",
-                          "maintenanceCandidatesSha256":  "bfdb60c8e7a1ad09b923148bc160b833628af6d170d563efa2ae08172ae9d742"
+                          "implementationManifestSha256":  "a078dc9ca655c6018e94cfdce078c1797447e21e791990541d092cbb6e96d38c",
+                          "maintenanceCandidatesSha256":  "4ad5f1da91cd80a33aba4603603053ae74d119cc1b0336a643d6fc4d7baa06ce"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  959,
-                    "reviewedCandidateCount":  961,
+                    "scannerCandidateCount":  953,
+                    "reviewedCandidateCount":  955,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -42,7 +42,7 @@
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  293,
+                            "candidateCount":  287,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -140,7 +140,7 @@
                                                   "sourcePath":  "src/Core/Modules/modNasConnection.bas",
                                                   "componentName":  "modNasConnection",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1453,
+                                                  "baselineLineCount":  1494,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -161,7 +161,7 @@
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  2843,
+                                                  "baselineLineCount":  2919,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -8375,29 +8375,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "dynamic-call:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:7cbfce761a52",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "ClearWarehouseTarget"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"\u0027\" \u0026 ThisWorkbook.Name \u0026 \"\u0027!modAuth.SignOut\"",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "dynamic-call:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.LogDiagnosticSafeReadModel:f4187b7091ea",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -9257,6 +9234,7 @@
                                                   "ConnectShareNasCurrentUser",
                                                   "CurrentWarehouseTargetDiagnosticForAutomation",
                                                   "DateFromSerialNas",
+                                                  "DisconnectCurrentNasSession",
                                                   "DisconnectNasRoot",
                                                   "EnsureSessionRootsNas",
                                                   "EnsureWarehouseTargetInteractive",
@@ -9267,6 +9245,7 @@
                                                   "FindOpenWorkbookNas",
                                                   "FindStationRowNas",
                                                   "FindWarehouseWorkbookNas",
+                                                  "FirstConnectedUncRootNas",
                                                   "FolderExistsNas",
                                                   "ForgetPersistedTargetNas",
                                                   "ForgetRoot",
@@ -9577,6 +9556,7 @@
                                                   "AccumulateBoxPayloadVersionInventoryDeltasRole",
                                                   "AddInboxDirectoryCandidateRole",
                                                   "AppendInboxRowToLocalStagingRole",
+                                                  "ApplyServerSignOutRole",
                                                   "ArchiveStagingFileRole",
                                                   "AuthStatusMessageRole",
                                                   "BuildInboxRowValuesRole",
@@ -9622,6 +9602,8 @@
                                                   "InboxContainsEventIdRole",
                                                   "InboxTableNameRole",
                                                   "InboxWorkbookNameRole",
+                                                  "InvSysSignInPrerequisiteForAutomation",
+                                                  "InvSysSignInPrerequisiteRole",
                                                   "IsLockContentionMessageRole",
                                                   "IsUncPathRole",
                                                   "IsUncShareRootRole",
@@ -9685,9 +9667,13 @@
                                                   "ShouldStageEventLocallyRole",
                                                   "ShowCurrentUser",
                                                   "SignOutCurrentUser",
+                                                  "SignOutServerSession",
+                                                  "SignOutServerSessionForAutomation",
                                                   "SkipJsonWhitespaceRole",
                                                   "SyncingStagingPathRole",
                                                   "SyncLocalStagedInboxRows",
+                                                  "ToggleCurrentInvSysUserForCapability",
+                                                  "ToggleServerSessionForCapability",
                                                   "ValidateCurrentUserCredential",
                                                   "ValueOrPlaceholderRole",
                                                   "WaitSecondsRole",
@@ -11083,29 +11069,6 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.DisconnectNasRoot",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "DisconnectNasRoot"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.EnsureWarehouseTargetInteractive",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -11646,29 +11609,6 @@
                            "componentName":  "modRibbonRuntimeStatus",
                            "procedureNames":  [
                                                   "ApplyRememberedWarehouseTargetForAutomation"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRibbonRuntimeStatus.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetAccessStatusLabel",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modRibbonRuntimeStatus",
-                           "procedureNames":  [
-                                                  "GetAccessStatusLabel"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRibbonRuntimeStatus.bas"
@@ -13201,31 +13141,6 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Core_Modules_modAuth.bas:modAuth.SignOut",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "modAuth",
-                           "procedureNames":  [
-                                                  "SignOut"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modAuth.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ReceivingReadiness.bas",
-                                                   "tests/unit/TestPhase6CoreSurfaces.bas",
-                                                   "tests/unit/TestReceivingReadiness.bas"
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
                            "id":  "root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatch",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -13304,7 +13219,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ConnectWarehouseStorageForCapability",
+                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleCurrentInvSysUserForCapability",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -13314,20 +13229,20 @@
                            "workstream":  "CORE",
                            "componentName":  "modRoleEventWriter",
                            "procedureNames":  [
-                                                  "ConnectWarehouseStorageForCapability"
+                                                  "ToggleCurrentInvSysUserForCapability"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4lRibbonSessionControls.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.PromptSetCurrentUserForCapability",
+                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleServerSessionForCapability",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -13337,37 +13252,14 @@
                            "workstream":  "CORE",
                            "componentName":  "modRoleEventWriter",
                            "procedureNames":  [
-                                                  "PromptSetCurrentUserForCapability"
+                                                  "ToggleServerSessionForCapability"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.SignOutCurrentUser",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "CORE",
-                           "componentName":  "modRoleEventWriter",
-                           "procedureNames":  [
-                                                  "SignOutCurrentUser"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRoleEventWriter.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4lRibbonSessionControls.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -13624,30 +13516,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/ClassModules/cDynItemSearch.cls"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
-                           "id":  "same-project-run:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:SignOut",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "disposition":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "scannerConfidence":  "HIGH",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "CORE",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "ClearWarehouseTarget",
-                                                  "SignOut"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
                                            ],
                            "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
                            "protectingTests":  [

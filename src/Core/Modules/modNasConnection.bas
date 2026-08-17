@@ -236,6 +236,8 @@ End Function
 
 Public Sub DisconnectNasRoot(ByVal rootPath As String, Optional ByVal disconnectWindowsSession As Boolean = False)
     Dim shareRoot As String
+    Dim sessionRoot As Variant
+    Dim sessionRoots As Variant
 
     rootPath = NormalizeFolderNas(rootPath)
     If rootPath = "" Then Exit Sub
@@ -246,11 +248,44 @@ Public Sub DisconnectNasRoot(ByVal rootPath As String, Optional ByVal disconnect
     End If
 
     EnsureSessionRootsNas
-    If m_SessionRoots.Exists(rootPath) Then m_SessionRoots.Remove rootPath
     shareRoot = ResolveShareRootNas(rootPath)
-    If shareRoot <> "" And m_SessionRoots.Exists(shareRoot) Then m_SessionRoots.Remove shareRoot
+    sessionRoots = m_SessionRoots.Keys
+    For Each sessionRoot In sessionRoots
+        If SamePathNas(CStr(sessionRoot), rootPath) _
+           Or (shareRoot <> "" And SamePathNas(ResolveShareRootNas(CStr(sessionRoot)), shareRoot)) Then
+            m_SessionRoots.Remove CStr(sessionRoot)
+        End If
+    Next sessionRoot
     If disconnectWindowsSession And shareRoot <> "" Then WNetCancelConnection2 shareRoot, 0, True
 End Sub
+
+Public Function DisconnectCurrentNasSession(Optional ByVal disconnectWindowsSession As Boolean = True) As String
+    Dim target As WarehouseTarget
+    Dim rootPath As String
+
+    On Error GoTo FailDisconnect
+    Set target = CloneTargetNas(m_CurrentTarget)
+    If Not target Is Nothing Then
+        rootPath = NormalizeFolderNas(target.HubRoot)
+        If rootPath = "" Then rootPath = NormalizeFolderNas(target.RuntimeRoot)
+    End If
+    If rootPath = "" Then rootPath = FirstConnectedUncRootNas()
+
+    If rootPath <> "" Then
+        DisconnectNasRoot rootPath, disconnectWindowsSession
+    Else
+        ClearWarehouseTarget
+    End If
+    Set m_StaleTarget = Nothing
+    SetStatusNas WH_NO_TARGET, "Disconnected from warehouse server."
+    DisconnectCurrentNasSession = "OK|Disconnected=True"
+    Exit Function
+
+FailDisconnect:
+    ClearWarehouseTarget
+    SetStatusNas NAS_TARGET_UNREACHABLE, "Warehouse server disconnect failed: " & Err.Description
+    DisconnectCurrentNasSession = "FAIL|" & m_LastStatusText
+End Function
 
 Public Sub ForgetRoot(ByVal rootPath As String)
     rootPath = NormalizeFolderNas(rootPath)
@@ -570,13 +605,7 @@ Public Function EnsureWarehouseTargetInteractive(Optional ByVal reason As String
 End Function
 
 Public Sub ClearWarehouseTarget()
-    On Error Resume Next
-    Application.Run "'" & ThisWorkbook.Name & "'!modAuth.SignOut"
-    If Err.Number <> 0 Then
-        Err.Clear
-        Application.Run "modAuth.SignOut"
-    End If
-    On Error GoTo 0
+    modAuth.SignOut
     Set m_CurrentTarget = Nothing
     modRuntimeWorkbooks.ClearCoreDataRootOverride
     SetStatusNas WH_NO_TARGET, "No warehouse target selected."
@@ -1322,6 +1351,18 @@ Private Function FindStationRowNas(ByVal lo As ListObject, ByVal warehouseId As 
             Exit Function
         End If
     Next i
+End Function
+
+Private Function FirstConnectedUncRootNas() As String
+    Dim rootPath As Variant
+
+    EnsureSessionRootsNas
+    For Each rootPath In m_SessionRoots.Keys
+        If IsUncPathNas(CStr(rootPath)) Then
+            FirstConnectedUncRootNas = CStr(rootPath)
+            Exit Function
+        End If
+    Next rootPath
 End Function
 
 Public Function GetLastConnectionAttemptStatus() As String

@@ -4,10 +4,10 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4619,
-                     "lineCount":  100494,
-                     "literalApplicationRunCount":  9,
-                     "unresolvedApplicationRunCount":  48,
+                     "procedureCount":  4630,
+                     "lineCount":  100651,
+                     "literalApplicationRunCount":  8,
+                     "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
                  },
     "candidates":  [
@@ -5479,24 +5479,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "same-project-run:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:SignOut",
-                           "candidateType":  "REPLACE_SAME_PROJECT_LATE_BINDING",
-                           "confidence":  "HIGH",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "ClearWarehouseTarget",
-                                                  "SignOut"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "Literal Application.Run resolves to a procedure in the scanned project surface.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnAddField_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -8654,25 +8636,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Modules_modAuth.bas:modAuth.SignOut",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modAuth",
-                           "procedureNames":  [
-                                                  "SignOut"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modAuth.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-                                                   "tests/integration/test_ReceivingReadiness.bas",
-                                                   "tests/unit/TestPhase6CoreSurfaces.bas",
-                                                   "tests/unit/TestReceivingReadiness.bas"
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "root:src_Core_Modules_modProcessor.bas:modProcessor.RunBatch",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -8733,53 +8696,36 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ConnectWarehouseStorageForCapability",
+                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleCurrentInvSysUserForCapability",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "modRoleEventWriter",
                            "procedureNames":  [
-                                                  "ConnectWarehouseStorageForCapability"
+                                                  "ToggleCurrentInvSysUserForCapability"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4lRibbonSessionControls.ps1"
                                                ],
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.PromptSetCurrentUserForCapability",
+                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.ToggleServerSessionForCapability",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "modRoleEventWriter",
                            "procedureNames":  [
-                                                  "PromptSetCurrentUserForCapability"
+                                                  "ToggleServerSessionForCapability"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleEventWriter.bas"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Core_Modules_modRoleEventWriter.bas:modRoleEventWriter.SignOutCurrentUser",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "modRoleEventWriter",
-                           "procedureNames":  [
-                                                  "SignOutCurrentUser"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRoleEventWriter.bas"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4lRibbonSessionControls.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12436,6 +12382,7 @@
                                                   "ConnectShareNasCurrentUser",
                                                   "CurrentWarehouseTargetDiagnosticForAutomation",
                                                   "DateFromSerialNas",
+                                                  "DisconnectCurrentNasSession",
                                                   "DisconnectNasRoot",
                                                   "EnsureSessionRootsNas",
                                                   "EnsureWarehouseTargetInteractive",
@@ -12446,6 +12393,7 @@
                                                   "FindOpenWorkbookNas",
                                                   "FindStationRowNas",
                                                   "FindWarehouseWorkbookNas",
+                                                  "FirstConnectedUncRootNas",
                                                   "FolderExistsNas",
                                                   "ForgetPersistedTargetNas",
                                                   "ForgetRoot",
@@ -12738,6 +12686,7 @@
                                                   "AccumulateBoxPayloadVersionInventoryDeltasRole",
                                                   "AddInboxDirectoryCandidateRole",
                                                   "AppendInboxRowToLocalStagingRole",
+                                                  "ApplyServerSignOutRole",
                                                   "ArchiveStagingFileRole",
                                                   "AuthStatusMessageRole",
                                                   "BuildInboxRowValuesRole",
@@ -12783,6 +12732,8 @@
                                                   "InboxContainsEventIdRole",
                                                   "InboxTableNameRole",
                                                   "InboxWorkbookNameRole",
+                                                  "InvSysSignInPrerequisiteForAutomation",
+                                                  "InvSysSignInPrerequisiteRole",
                                                   "IsLockContentionMessageRole",
                                                   "IsUncPathRole",
                                                   "IsUncShareRootRole",
@@ -12846,9 +12797,13 @@
                                                   "ShouldStageEventLocallyRole",
                                                   "ShowCurrentUser",
                                                   "SignOutCurrentUser",
+                                                  "SignOutServerSession",
+                                                  "SignOutServerSessionForAutomation",
                                                   "SkipJsonWhitespaceRole",
                                                   "SyncingStagingPathRole",
                                                   "SyncLocalStagedInboxRows",
+                                                  "ToggleCurrentInvSysUserForCapability",
+                                                  "ToggleServerSessionForCapability",
                                                   "ValidateCurrentUserCredential",
                                                   "ValueOrPlaceholderRole",
                                                   "WaitSecondsRole",
@@ -15523,23 +15478,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "dynamic-call:src_Core_Modules_modNasConnection.bas:modNasConnection.ClearWarehouseTarget:7cbfce761a52",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "LOW",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "ClearWarehouseTarget"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "Application.Run target is dynamic and cannot be guessed safely: \"\u0027\" \u0026 ThisWorkbook.Name \u0026 \"\u0027!modAuth.SignOut\"",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "dynamic-call:src_Core_Modules_modOperatorReadModel.bas:modOperatorReadModel.LogDiagnosticSafeReadModel:f4187b7091ea",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "LOW",
@@ -16900,23 +16838,6 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.DisconnectNasRoot",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modNasConnection",
-                           "procedureNames":  [
-                                                  "DisconnectNasRoot"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modNasConnection.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modNasConnection.bas:modNasConnection.EnsureWarehouseTargetInteractive",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
@@ -17195,23 +17116,6 @@
                            "componentName":  "modRibbonRuntimeStatus",
                            "procedureNames":  [
                                                   "ApplyRememberedWarehouseTargetForAutomation"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modRibbonRuntimeStatus.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modRibbonRuntimeStatus.bas:modRibbonRuntimeStatus.GetAccessStatusLabel",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modRibbonRuntimeStatus",
-                           "procedureNames":  [
-                                                  "GetAccessStatusLabel"
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRibbonRuntimeStatus.bas"

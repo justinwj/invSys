@@ -212,9 +212,8 @@ $ribbonSpecs = @(
             @{ Id = "lblOperationsAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
         )
         Buttons = @(
-            @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; Execute = $false },
-            @{ Id = "btnOperationsCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
+            @{ Id = "btnOperationsServerSession"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; Execute = $false; Screentip = "Sign in to or sign out of warehouse server storage" },
+            @{ Id = "btnOperationsCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability"; Execute = $false; Screentip = "Sign in to or sign out of invSys" },
             @{ Id = "btnOperationsReceivingForm"; Label = "Receiving"; Macro = "modTS_Received.ShowReceivingForm"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
             @{ Id = "btnOperationsProductionForm"; Label = "Production"; Macro = "mProduction.BtnOpenProductionForm"; Execute = $false; RequiredCapability = "PROD_POST" },
             @{ Id = "btnOperationsShippingForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" }
@@ -256,9 +255,8 @@ $ribbonSpecs = @(
         )
         Buttons = @(
             @{ Id = "btnAdminOpen"; Label = "Admin Console"; Macro = "modAdmin.Admin_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "ADMIN_MAINT"'; Execute = $false },
-            @{ Id = "btnAdminCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnAdminSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
+            @{ Id = "btnAdminServerSession"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = 'modRoleEventWriter.ToggleServerSessionForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in to or sign out of warehouse server storage" },
+            @{ Id = "btnAdminCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.ToggleCurrentInvSysUserForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in to or sign out of invSys" },
             @{ Id = "btnAdminUsers"; Label = "Users and Roles"; Macro = "modAdmin.Open_CreateDeleteUser"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminSettings"; Label = "Settings"; Macro = "modAdmin.Open_Settings"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },

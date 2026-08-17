@@ -4,9 +4,9 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4619
-- Literal Application.Run targets: 9
-- Unresolved dynamic calls: 48
+- Procedures: 4630
+- Literal Application.Run targets: 8
+- Unresolved dynamic calls: 47
 
 ## Packages
 
@@ -62,7 +62,6 @@
 | Class_Terminate | CLASS_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbSourceWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | cmbTargetWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| ConnectWarehouseStorageForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | GetCallbackPtr | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | HandlePaletteIngredientSelected | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
 | HandlePaletteRecipeSelected | CROSS_XLAM_BRIDGE | src/Core/ClassModules/cDynItemSearch.cls |
@@ -281,13 +280,13 @@
 | optArchiveOnly_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | optArchiveRetire_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | optArchiveRetireDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| PromptSetCurrentUserForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonAccessStatusGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonCurrentUserGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonOnActionAdmin | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonOnActionOperations | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonRequiredCapabilityGetEnabledAdmin | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonRequiredCapabilityGetEnabledOperations | RIBBON_CALLBACK | tools/build-xlam.ps1 |
+| RibbonServerSessionGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonServerStatusGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RunAdminConsoleTests | TEST_ENTRY | tests/unit/TestAdminConsole.bas |
 | RunAuthTests | TEST_ENTRY | tests/unit/TestCoreAuth.bas |
@@ -311,8 +310,6 @@
 | RunWanWh1SetupProof | TEST_ENTRY | tests/integration/TestWanWh1SetupEntry.bas |
 | RunWanWh2SetupProof | TEST_ENTRY | tests/integration/TestWanWh2SetupEntry.bas |
 | Seed_DemoInventory | RIBBON_CALLBACK | tools/build-xlam.ps1 |
-| SignOut | CROSS_XLAM_BRIDGE | src/Core/Modules/modNasConnection.bas |
-| SignOutCurrentUser | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | TestAcquireReleaseLock_Lifecycle | TEST_ENTRY | tests/unit/TestCoreLockManager.bas |
 | TestAdminAddInventoryItemForm_ConfiguresWithoutTypeMismatch | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestAdminConfigEditor_UpdatesCanonicalTypedValueAndProtectsIdentity | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -557,6 +554,7 @@
 | TestRetireSourceWarehouse_SharePointUnavailableDoesNotBlockRetirement | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesRetirementMarker | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesValidTombstoneJson | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
+| TestRibbonSessionLabels_DisconnectedUseExplicitNames | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_AllowsSignedInReceivePost | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_RejectsFallbackTarget | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -585,6 +583,7 @@
 | TestSavedReceivingWorkbook_StaleSharePointSnapshotShowsVisibleMetadataWithoutMutatingLocalTables | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestSavedShippingWorkbook_RefreshPreservesStagingAndLogs | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestSavedShippingWorkbook_ReopenQueueProcessRefreshPreservesStagingAndLogs | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestServerSignOutAction_ClearsUserTargetAndAccess | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShipmentsFormLoadShippables_RefreshesEmptyBomViewWithoutBoxMaker | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_BlankCarrierRequiresCarrier | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_BlocksWhenFloorWouldBeBreached | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -680,6 +679,8 @@
 | TestWriteArchivePackage_AuthExportMasksPinHash | TEST_ENTRY | tests/unit/TestWarehouseRetireArchive.bas |
 | TestWriteArchivePackage_PartialFailureRollsBackTempArchive | TEST_ENTRY | tests/unit/TestWarehouseRetireArchive.bas |
 | TestWriteArchivePackage_SuccessCreatesAtomicArchive | TEST_ENTRY | tests/unit/TestWarehouseRetireArchive.bas |
+| ToggleCurrentInvSysUserForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
+| ToggleServerSessionForCapability | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | txtAdminUser_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | txtAdminUser_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | txtArchiveDestPath_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -795,7 +796,6 @@
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/ClassModules/cPickerRouter.cls]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modDesignsDomainBridge.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modInventoryDomainBridge.bas]
-- UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modNasConnection.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modOperatorReadModel.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modProcessor.bas]
 - UNRESOLVED_APPLICATION_RUN - Dynamic Application.Run expression requires registry or manual review. [src/Core/Modules/modRoleEventWriter.bas]

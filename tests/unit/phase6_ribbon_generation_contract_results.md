@@ -1,7 +1,7 @@
 # Phase 6 Ribbon Generation Contract Results
 
-- Date: 2026-08-17 12:10:21
-- Passed: 46
+- Date: 2026-08-17 13:22:57
+- Passed: 48
 - Failed: 0
 
 | Check | Result | Detail |
@@ -23,10 +23,10 @@
 | Build.ProductionCapability | PASS | Production buttons declare capability. |
 | Build.AdminDesignLifecycleButton | PASS | Admin ribbon exposes one Designs lifecycle launcher. |
 | Admin.DesignLifecycleCallback | PASS | The single Admin Designs lifecycle callback exists. |
-| Build.RoleConnectServerButtons | PASS | The D12 Operations ribbon exposes one Connect Server button and no retired standalone role buttons. |
-| Build.RoleSignOutButtons | PASS | The D12 Operations ribbon exposes one Sign Out button and no retired standalone role buttons. |
-| Build.SignInLabelCallback | PASS | Current user button acts as Sign In while signed out. |
-| Build.UserLabelUsesDisplayName | PASS | Ribbon user label uses display name, not account id. |
+| Build.RoleServerSessionButtons | PASS | The D12 Operations ribbon exposes one dynamic Server Sign In/Out button and no retired standalone role buttons. |
+| Build.NoGenericSignOutButtons | PASS | Standalone generic Sign Out buttons are retired in favor of explicit server and invSys toggles. |
+| Build.InvSysLabelCallback | PASS | Current user button uses explicit invSys Sign In/Out wording. |
+| Build.ServerLabelCallback | PASS | Server session button uses explicit Server Sign In/Out wording. |
 | Build.RuntimeContextNoSignIn | PASS | Runtime Context is informational and does not expose separate Sign In. |
 | Build.ServerStatusLabelControl | PASS | Role ribbons emit server status label controls. |
 | Build.RuntimeReferencesNormalXlams | PASS | Built operator XLAMs reference normal deployed XLAM outputs. |
@@ -39,6 +39,8 @@
 | Core.ManualServerCredentialsPreference | PASS | Connect Server honors the per-Windows-user manual credential preference before remembered-server connection. |
 | Core.RoleTargetsRejectLocalPaths | PASS | Role-required NAS targets reject stale local/temp targets and report NAS probe status. |
 | Core.SignOutClearsPersistedUser | PASS | Sign Out clears live auth and persisted current-user state. |
+| Core.ServerSignOutDisconnects | PASS | Server Sign Out clears invSys state, the target, and the Windows SMB session. |
+| Core.InvSysSignInRequiresServer | PASS | invSys Sign In fails closed until Server Sign In establishes a live NAS session. |
 | Core.AuthStoresDisplayName | PASS | Auth cache stores and exposes signed-in display name. |
 | Core.RuntimeContextShowsUserId | PASS | Runtime Context shows signed-in account id. |
 | Core.RememberedTargetUsesConfigAuth | PASS | Remembered server reconnect requires config/auth, not a local inventory workbook. |
