@@ -147,11 +147,6 @@ End Function
 Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
     Dim targets As Collection
     Dim targetText As String
-    Dim targetWh As String
-    Dim targetSt As String
-    Dim targetRoot As String
-    Dim nasTarget As WarehouseTarget
-    Dim statusCode As Long
 
     Set targets = GetWarehouseTargetsCachedStatus()
     If targets.Count = 0 Then
@@ -161,17 +156,46 @@ Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
     If selectedIndex < 0 Or selectedIndex >= targets.Count Then Exit Sub
 
     targetText = CStr(targets(selectedIndex + 1))
+    Call ApplyWarehouseTargetSelectionStatus(targetText, True)
+End Sub
+
+Public Function SelectWarehouseTargetTextForAutomation(ByVal targetText As String) As String
+    On Error GoTo FailSelect
+
+    If ApplyWarehouseTargetSelectionStatus(targetText, False) Then
+        SelectWarehouseTargetTextForAutomation = "OK|" & modNasConnection.GetConnectionStatus()
+    Else
+        SelectWarehouseTargetTextForAutomation = "FAIL|" & modNasConnection.GetLastConnectionAttemptStatus()
+    End If
+    Exit Function
+
+FailSelect:
+    SelectWarehouseTargetTextForAutomation = "FAIL|ERROR|" & Err.Description
+End Function
+
+Private Function ApplyWarehouseTargetSelectionStatus(ByVal targetText As String, _
+                                                     ByVal showMessages As Boolean) As Boolean
+    Dim targetWh As String
+    Dim targetSt As String
+    Dim targetRoot As String
+    Dim nasTarget As WarehouseTarget
+    Dim statusCode As Long
+
     targetWh = TargetPartStatus(targetText, 0)
     targetSt = TargetPartStatus(targetText, 1)
     targetRoot = TargetPartStatus(targetText, 2)
+    If targetWh = "" Or targetRoot = "" Then Exit Function
 
     If targetRoot <> "" Then
         statusCode = modNasConnection.SelectWarehouseTarget(targetRoot, targetRoot, nasTarget, targetSt, False)
         If statusCode <> NAS_OK Or (nasTarget Is Nothing) Then
-            MsgBox "Warehouse target could not be selected:" & vbCrLf & _
-                   TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
-                   modNasConnection.GetConnectionStatus(), vbExclamation, "invSys Warehouse Target"
-            Exit Sub
+            If showMessages Then
+                MsgBox "Warehouse target could not be selected:" & vbCrLf & _
+                       TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
+                       "Selection status: " & ValueOrPlaceholderStatus(modNasConnection.GetLastConnectionAttemptStatus()) & vbCrLf & _
+                       "Current target remains: " & modNasConnection.GetConnectionStatus(), vbExclamation, "invSys Warehouse Target"
+            End If
+            Exit Function
         End If
         targetWh = nasTarget.WarehouseId
         targetSt = nasTarget.StationId
@@ -184,16 +208,21 @@ Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
         If targetRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride targetRoot
         RememberSelectedWarehouseTargetStatus targetText
         InvalidateWarehouseTargetRibbonsStatus
-        MsgBox "Warehouse target selected:" & vbCrLf & vbCrLf & _
-               TargetLabelStatus(targetText) & vbCrLf & _
-               "Inbox root: " & ValueOrPlaceholderStatus(RuntimeInboxRootStatus()), _
-               vbInformation, "invSys Warehouse Target"
+        If showMessages Then
+            MsgBox "Warehouse target selected:" & vbCrLf & vbCrLf & _
+                   TargetLabelStatus(targetText) & vbCrLf & _
+                   "Inbox root: " & ValueOrPlaceholderStatus(RuntimeInboxRootStatus()), _
+                   vbInformation, "invSys Warehouse Target"
+        End If
+        ApplyWarehouseTargetSelectionStatus = True
     Else
-        MsgBox "Warehouse target could not be loaded:" & vbCrLf & _
-               TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
-               modConfig.Validate(), vbExclamation, "invSys Warehouse Target"
+        If showMessages Then
+            MsgBox "Warehouse target could not be loaded:" & vbCrLf & _
+                   TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
+                   modConfig.Validate(), vbExclamation, "invSys Warehouse Target"
+        End If
     End If
-End Sub
+End Function
 
 Public Sub InvalidateWarehouseTargets()
     InvalidateWarehouseTargetsCacheStatus

@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4614
+- Procedures: 4619
 - Literal Application.Run targets: 9
 - Unresolved dynamic calls: 48
 
@@ -460,6 +460,7 @@
 | TestNasScanRoot_RejectsMismatchedConfigAuthPair | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestNasScanRoot_ReturnsPathStringsWithoutWarehouseInference | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestNasSelectWarehouseTarget_AllowsRoamingBlankStationWithoutInboxRequirement | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestNasSelectWarehouseTarget_ReadsWarehouseIdFromConfig | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestNasSelectWarehouseTarget_RequiresStationInboxRejectsBlankStation | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -556,6 +557,7 @@
 | TestRetireSourceWarehouse_SharePointUnavailableDoesNotBlockRetirement | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesRetirementMarker | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesValidTombstoneJson | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
+| TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_AllowsSignedInReceivePost | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_RejectsFallbackTarget | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_RejectsMissingCapability | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |

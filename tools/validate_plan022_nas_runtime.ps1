@@ -552,7 +552,11 @@ if (-not (Test-Path -LiteralPath $nasRoot -PathType Container)) {
 }
 $rootFingerprint = Get-PathFingerprint -Path $nasRoot
 $warehouseId = "WHT" + (($NasTestLeaf -split "-")[-1]).Substring(0, 6)
-$stationId = "S1"
+$stationId = if ([string]::IsNullOrWhiteSpace($env:COMPUTERNAME)) {
+    "LOCAL-COMPUTER"
+} else {
+    $env:COMPUTERNAME.Trim()
+}
 $uatUser = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) {
     "plan022-user"
 } else {

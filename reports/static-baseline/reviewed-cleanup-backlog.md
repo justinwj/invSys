@@ -37,9 +37,9 @@
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
-| src/Core/Modules/modAuth.bas | Core | 1627 |
+| src/Core/Modules/modAuth.bas | Core | 1635 |
 | src/Core/Modules/modConfig.bas | Core | 1662 |
-| src/Core/Modules/modNasConnection.bas | Core | 1400 |
+| src/Core/Modules/modNasConnection.bas | Core | 1453 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
 | src/Core/Modules/modProcessor.bas | Core | 1417 |
 | src/Core/Modules/modRoleEventWriter.bas | Core | 2843 |

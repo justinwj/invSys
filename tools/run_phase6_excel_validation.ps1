@@ -476,6 +476,8 @@ try {
         "TestPhase6CoreSurfaces.TestNasGetCurrentTarget_ReturnsDeepCopy",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_RequiresStationInboxRejectsBlankStation",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AllowsRoamingBlankStationWithoutInboxRequirement",
+        "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn",
+        "TestPhase6CoreSurfaces.TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots",
         "TestPhase6CoreSurfaces.TestNasScanRoot_ReturnsPathStringsWithoutWarehouseInference",
         "TestPhase6CoreSurfaces.TestNasScanRoot_RejectsMismatchedConfigAuthPair",

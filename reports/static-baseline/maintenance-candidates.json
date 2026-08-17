@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4614,
-                     "lineCount":  100404,
+                     "procedureCount":  4619,
+                     "lineCount":  100494,
                      "literalApplicationRunCount":  9,
                      "unresolvedApplicationRunCount":  48,
                      "duplicateBodyCandidateCount":  184
@@ -12456,12 +12456,14 @@
                                                   "GetCurrentTargetStationId",
                                                   "GetCurrentTargetWarehouseId",
                                                   "GetKnownWarehouseTargetRoots",
+                                                  "GetLastConnectionAttemptStatus",
                                                   "GetPromptDefaultRoot",
                                                   "GetRememberedNasUser",
                                                   "GetRememberedRootsNas",
                                                   "GetRootsTextNas",
                                                   "HasConnectedUncRoot",
                                                   "IsConnected",
+                                                  "IsCurrentComputerStationNas",
                                                   "IsCurrentTargetAllowed",
                                                   "IsReservedWarehouseIdNas",
                                                   "IsRootInSessionNas",
@@ -12505,6 +12507,7 @@
                                                   "TryResolveFallbackTargetNas",
                                                   "TryResolveOpenOrConfiguredTargetNas",
                                                   "TryRevalidateRememberedRoot",
+                                                  "WarehouseTargetIdentityChangedNas",
                                                   "WorkbookReadableNas"
                                               ],
                            "sourcePaths":  [

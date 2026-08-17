@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "d106fff018a70767465efb7d287a30e9c2d00601a707760303311d9bd35bb800",
-                          "maintenanceCandidatesSha256":  "b18e18ab3d37852d71ea421f55a5b1e3dc209e25a58b941228d1387cfaa3c531"
+                          "implementationManifestSha256":  "03b3d7c440e9ceae95459a789ec17b51ce690dbb6936857823c94fa13975b427",
+                          "maintenanceCandidatesSha256":  "bfdb60c8e7a1ad09b923148bc160b833628af6d170d563efa2ae08172ae9d742"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -126,7 +126,7 @@
                                                   "sourcePath":  "src/Core/Modules/modAuth.bas",
                                                   "componentName":  "modAuth",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1627,
+                                                  "baselineLineCount":  1635,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -140,7 +140,7 @@
                                                   "sourcePath":  "src/Core/Modules/modNasConnection.bas",
                                                   "componentName":  "modNasConnection",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1400,
+                                                  "baselineLineCount":  1453,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -9277,12 +9277,14 @@
                                                   "GetCurrentTargetStationId",
                                                   "GetCurrentTargetWarehouseId",
                                                   "GetKnownWarehouseTargetRoots",
+                                                  "GetLastConnectionAttemptStatus",
                                                   "GetPromptDefaultRoot",
                                                   "GetRememberedNasUser",
                                                   "GetRememberedRootsNas",
                                                   "GetRootsTextNas",
                                                   "HasConnectedUncRoot",
                                                   "IsConnected",
+                                                  "IsCurrentComputerStationNas",
                                                   "IsCurrentTargetAllowed",
                                                   "IsReservedWarehouseIdNas",
                                                   "IsRootInSessionNas",
@@ -9326,6 +9328,7 @@
                                                   "TryResolveFallbackTargetNas",
                                                   "TryResolveOpenOrConfiguredTargetNas",
                                                   "TryRevalidateRememberedRoot",
+                                                  "WarehouseTargetIdentityChangedNas",
                                                   "WorkbookReadableNas"
                                               ],
                            "sourcePaths":  [

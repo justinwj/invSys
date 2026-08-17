@@ -307,6 +307,9 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
     Dim whName As String
     Dim resolvedStation As String
     Dim statusCode As NasStatusCode
+    Dim stationReport As String
+    Dim priorRootOverride As String
+    Dim priorTarget As WarehouseTarget
 
     Set outTarget = Nothing
     hubRoot = NormalizeFolderNas(hubRoot)
@@ -342,6 +345,20 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
     End If
 
     statusCode = ReadConfigIdentityNas(configPath, stationId, whId, whName, resolvedStation)
+    If statusCode = WH_TARGET_INCOMPLETE And IsCurrentComputerStationNas(stationId) Then
+        authPath = FindWarehouseWorkbookNas(runtimeRoot, whId, "Auth")
+        If authPath = "" Or Not WorkbookReadableNas(authPath) Then
+            SetStatusNas WH_AUTH_NOT_FOUND, "Warehouse auth workbook was not readable."
+            SelectWarehouseTarget = WH_AUTH_NOT_FOUND
+            Exit Function
+        End If
+        If Not modConfig.EnsureStationConfigEntry(whId, stationId, stationId, "", "RECEIVE", configPath, runtimeRoot, stationReport) Then
+            SetStatusNas WH_TARGET_INCOMPLETE, "This computer could not be registered as the warehouse station: " & stationReport
+            SelectWarehouseTarget = WH_TARGET_INCOMPLETE
+            Exit Function
+        End If
+        statusCode = ReadConfigIdentityNas(configPath, stationId, whId, whName, resolvedStation)
+    End If
     If statusCode <> NAS_OK Then
         If statusCode = WH_TARGET_INCOMPLETE Then
             SetStatusNas statusCode, "The requested StationId is not configured for this warehouse."
@@ -385,10 +402,19 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
         .LastResolvedUTC = Now
     End With
 
+    Set priorTarget = CloneTargetNas(m_CurrentTarget)
+    priorRootOverride = modRuntimeWorkbooks.GetCoreDataRootOverride()
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    If Not modConfig.LoadConfig(whId, resolvedStation) Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride priorRootOverride
+        SetStatusNas WH_CONFIG_INVALID, "Warehouse config could not be loaded for station " & resolvedStation & "."
+        Set outTarget = Nothing
+        SelectWarehouseTarget = WH_CONFIG_INVALID
+        Exit Function
+    End If
+    If WarehouseTargetIdentityChangedNas(priorTarget, outTarget) Then modAuth.SignOut
     Set m_CurrentTarget = CloneTargetNas(outTarget)
     Set m_StaleTarget = Nothing
-    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
-    modConfig.LoadConfig whId, resolvedStation
     RememberTarget outTarget
     SetStatusNas NAS_OK, "Connected to " & TargetDisplayNas(outTarget) & "."
     SelectWarehouseTarget = NAS_OK
@@ -721,6 +747,7 @@ Public Function SetCurrentTargetPathsForTest(ByVal hubRoot As String, ByVal runt
     If m_CurrentTarget Is Nothing Then Exit Function
     m_CurrentTarget.HubRoot = hubRoot
     m_CurrentTarget.RuntimeRoot = runtimeRoot
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
     SetCurrentTargetPathsForTest = True
 End Function
 
@@ -1297,6 +1324,10 @@ Private Function FindStationRowNas(ByVal lo As ListObject, ByVal warehouseId As 
     Next i
 End Function
 
+Public Function GetLastConnectionAttemptStatus() As String
+    GetLastConnectionAttemptStatus = m_LastStatusText
+End Function
+
 Private Function TableValueNas(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As String
     On Error Resume Next
     TableValueNas = Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value))
@@ -1369,6 +1400,28 @@ Private Function TargetDisplayNas(ByVal target As WarehouseTarget) As String
         TargetDisplayNas = TargetDisplayNas & " (" & target.WarehouseName & ")"
     End If
     If target.RuntimeRoot <> "" Then TargetDisplayNas = TargetDisplayNas & " at " & target.RuntimeRoot
+End Function
+
+Private Function IsCurrentComputerStationNas(ByVal stationId As String) As Boolean
+    Dim computerStation As String
+
+    computerStation = Trim$(modStationIdentity.CurrentComputerStationId())
+    If computerStation = "" Then Exit Function
+    IsCurrentComputerStationNas = (StrComp(Trim$(stationId), computerStation, vbTextCompare) = 0)
+End Function
+
+Private Function WarehouseTargetIdentityChangedNas(ByVal priorTarget As WarehouseTarget, _
+                                                   ByVal selectedTarget As WarehouseTarget) As Boolean
+    If selectedTarget Is Nothing Then Exit Function
+    If priorTarget Is Nothing Then
+        WarehouseTargetIdentityChangedNas = True
+        Exit Function
+    End If
+
+    WarehouseTargetIdentityChangedNas = _
+        (StrComp(Trim$(priorTarget.WarehouseId), Trim$(selectedTarget.WarehouseId), vbTextCompare) <> 0) Or _
+        (StrComp(Trim$(priorTarget.StationId), Trim$(selectedTarget.StationId), vbTextCompare) <> 0) Or _
+        (StrComp(NormalizeFolderNas(priorTarget.RuntimeRoot), NormalizeFolderNas(selectedTarget.RuntimeRoot), vbTextCompare) <> 0)
 End Function
 
 Private Sub SetStatusNas(ByVal statusCode As NasStatusCode, ByVal statusText As String)

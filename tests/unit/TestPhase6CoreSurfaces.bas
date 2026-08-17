@@ -161,6 +161,111 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn() As Long
+    Dim rootPath As String
+    Dim configPath As String
+    Dim authPath As String
+    Dim legacyStation As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_dnas_computer_station")
+    configPath = rootPath & "\WH73.invSys.Config.xlsb"
+    authPath = rootPath & "\WH73.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+    legacyStation = "S1"
+    If StrComp(computerStation, legacyStation, vbTextCompare) = 0 Then legacyStation = "LEGACY-S1"
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH73", legacyStation, rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH73", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH73", computerStation, "fixture_user", "Fixture User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "fixture_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    If StrComp(target.WarehouseId, "WH73", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(target.StationId, computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+    If Not modConfig.LoadConfig("WH73", computerStation) Then GoTo CleanExit
+    If StrComp(modConfig.GetStationId(), computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+
+    authStatus = modAuth.ValidateUserCredentialForTarget("fixture_user", "fixture-pin", target)
+    If authStatus = AUTH_OK And modAuth.IsSignedIn() Then
+        TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH73"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim legacyStation As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim selectionResult As String
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_ribbon_computer_station")
+    authPath = rootPath & "\WH72.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+    legacyStation = "S1"
+    If StrComp(computerStation, legacyStation, vbTextCompare) = 0 Then legacyStation = "LEGACY-S1"
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH72", legacyStation, rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH72", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH72", computerStation, "ribbon_user", "Ribbon User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "ribbon_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    selectionResult = modRibbonRuntimeStatus.SelectWarehouseTargetTextForAutomation( _
+        "WH72|" & computerStation & "|" & rootPath)
+    If Left$(selectionResult, 3) <> "OK|" Then GoTo CleanExit
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then GoTo CleanExit
+    If StrComp(target.WarehouseId, "WH72", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(target.StationId, computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+
+    authStatus = modAuth.ValidateUserCredentialForTarget("ribbon_user", "fixture-pin", target)
+    If authStatus = AUTH_OK And modAuth.IsSignedIn() Then
+        TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH72"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots() As Long
     Dim rootPath As String
     Dim inboxRootA As String
@@ -877,10 +982,19 @@ Public Function TestRoleWriteCurrent_RejectsMissingCapability() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S16", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH90") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH90") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("dilbert", "123456", target)
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     payloadJson = modRoleEventWriter.BuildPayloadJson( _
         modRoleEventWriter.CreatePayloadItem(1, "SKU-RM-NOCAP", 1, "A1", "no-cap"))
@@ -891,6 +1005,8 @@ Public Function TestRoleWriteCurrent_RejectsMissingCapability() As Long
        And eventIdOut = "" _
        And InStr(1, report, "lacks SHIP_POST", vbTextCompare) > 0 Then
         TestRoleWriteCurrent_RejectsMissingCapability = 1
+    Else
+        mLastTestFailure = "Expected SHIP_POST denial; queued=" & CStr(queued) & "; event=" & eventIdOut & "; report=" & report
     End If
 
 CleanExit:
@@ -983,10 +1099,19 @@ Public Function TestRoleWriteCurrent_AllowsSignedInReceivePost() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S18", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH92") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH92") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("dilbert", "123456", target, "RECEIVE_POST")
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     report = ""
     queued = modRoleEventWriter.QueueReceiveEventCurrent("", "SKU-RM-ALLOW", 2, "A1", "allowed", eventIdOut, report)
@@ -995,6 +1120,8 @@ Public Function TestRoleWriteCurrent_AllowsSignedInReceivePost() As Long
        And eventIdOut <> "" _
        And report = "" Then
         TestRoleWriteCurrent_AllowsSignedInReceivePost = 1
+    Else
+        mLastTestFailure = "Expected RECEIVE_POST queue; queued=" & CStr(queued) & "; event=" & eventIdOut & "; report=" & report
     End If
 
 CleanExit:
@@ -1034,10 +1161,19 @@ Public Function TestAuthSignOut_ClearsUserButKeepsWarehouseTarget() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S19", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH93") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH93") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("calvin", "123456", target, "RECEIVE_POST")
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     modAuth.SignOut
     Set targetAfterSignOut = modNasConnection.GetCurrentTarget()
@@ -1048,6 +1184,16 @@ Public Function TestAuthSignOut_ClearsUserButKeepsWarehouseTarget() As Long
            And StrComp(targetAfterSignOut.StationId, "S19", vbTextCompare) = 0 _
            And modNasConnection.IsCurrentTargetAllowed(True) Then
             TestAuthSignOut_ClearsUserButKeepsWarehouseTarget = 1
+        End If
+    End If
+    If TestAuthSignOut_ClearsUserButKeepsWarehouseTarget = 0 Then
+        If targetAfterSignOut Is Nothing Then
+            mLastTestFailure = "Target disappeared after sign-out."
+        Else
+            mLastTestFailure = "Unexpected sign-out state: user=" & modAuth.GetCurrentUserId() & _
+                               "; warehouse=" & targetAfterSignOut.WarehouseId & _
+                               "; station=" & targetAfterSignOut.StationId & _
+                               "; allowed=" & CStr(modNasConnection.IsCurrentTargetAllowed(True))
         End If
     End If
 

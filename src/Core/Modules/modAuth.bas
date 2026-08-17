@@ -176,7 +176,11 @@ Public Function ValidateUserCredentialForTarget(ByVal userId As String, _
     End If
 
     priorRootOverride = modRuntimeWorkbooks.GetCoreDataRootOverride()
-    If SafeTrim(target.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    If Not currentTarget Is Nothing Then
+        If SafeTrim(currentTarget.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride currentTarget.RuntimeRoot
+    ElseIf SafeTrim(target.RuntimeRoot) <> "" Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    End If
     configLoaded = modConfig.LoadConfig(target.WarehouseId, target.StationId)
     authLoaded = LoadAuth(target.WarehouseId)
     RestoreRootOverrideAuth priorRootOverride
@@ -219,7 +223,11 @@ Public Function ValidateUserCredentialForTarget(ByVal userId As String, _
     mSignedInWarehouseId = target.WarehouseId
     mSignedInStationId = target.StationId
     mSignedInAt = Now
-    If SafeTrim(target.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    If Not currentTarget Is Nothing Then
+        If SafeTrim(currentTarget.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride currentTarget.RuntimeRoot
+    ElseIf SafeTrim(target.RuntimeRoot) <> "" Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    End If
     SetAuthSessionStatus AUTH_OK
     On Error Resume Next
     modRoleEventWriter.SetCurrentUserId normalizedUser

@@ -874,7 +874,7 @@ if ($legacyAddins.Count -gt 0) {
         context = (($legacyAddins | ForEach-Object { $_.name }) -join ", ")
     })
 }
-if (@($safeAddins | Where-Object { $_.packageRole -eq "OPERATIONS" }).Count -gt 0 -and
+if ((@($safeAddins | Where-Object { $_.packageRole -eq "OPERATIONS" })).Count -gt 0 -and
     $legacyAddins.Count -gt 0) {
     $warnings.Add([ordered]@{
         code = "OPERATIONS_LEGACY_COEXISTENCE"
@@ -1037,8 +1037,8 @@ $markdown.Add("")
 $markdown.Add("- Schema: 1.1.0")
 $markdown.Add("- Capture: " + $ReportTimestampUtc)
 $markdown.Add("- Inspection mode: " + $runtime.safety.inspectionMode)
-$markdown.Add("- Loaded invSys add-ins: " + @($runtime.loadedAddins).Count)
-$markdown.Add("- Open workbooks: " + @($runtime.openWorkbooks).Count)
+$markdown.Add("- Loaded invSys add-ins: " + (@($runtime.loadedAddins)).Count)
+$markdown.Add("- Open workbooks: " + (@($runtime.openWorkbooks)).Count)
 $markdown.Add("- Warehouse / station: " +
     $runtime.runtimeResolution.warehouseId + " / " +
     $runtime.runtimeResolution.stationId)
@@ -1049,7 +1049,7 @@ $markdown.Add("- Redacted fields: " + $runtime.redaction.redactedFieldCount)
 $markdown.Add("- Excel started by tool: False")
 $markdown.Add("- Mutating actions invoked: 0")
 $markdown.Add("- Inspected files unchanged: " +
-    @($runtime.safety.inspectedFiles).Count + "/" + @($runtime.safety.inspectedFiles).Count)
+    (@($runtime.safety.inspectedFiles)).Count + "/" + (@($runtime.safety.inspectedFiles)).Count)
 $markdown.Add("")
 $markdown.Add("## Loaded add-ins")
 $markdown.Add("")
@@ -1064,7 +1064,7 @@ foreach ($addin in @($runtime.loadedAddins)) {
 $markdown.Add("")
 $markdown.Add("## Warnings")
 $markdown.Add("")
-if (@($runtime.warnings).Count -eq 0) {
+if ((@($runtime.warnings)).Count -eq 0) {
     $markdown.Add("- None.")
 }
 else {
@@ -1077,8 +1077,8 @@ Write-Utf8NoBom -Path $markdownPath -Content ($markdown -join "`n")
 
 Write-Host "Read-only invSys runtime extraction complete."
 Write-Host ("Inspection mode: " + $runtime.safety.inspectionMode)
-Write-Host ("Loaded add-ins: " + @($runtime.loadedAddins).Count)
-Write-Host ("Open workbooks: " + @($runtime.openWorkbooks).Count)
+Write-Host ("Loaded add-ins: " + (@($runtime.loadedAddins)).Count)
+Write-Host ("Open workbooks: " + (@($runtime.openWorkbooks)).Count)
 Write-Host ("Redacted fields: " + $runtime.redaction.redactedFieldCount)
 Write-Host ("Mutating actions: " + $runtime.safety.mutatingActionsInvoked)
 Write-Host ("Output: " + $resolvedOutput)
