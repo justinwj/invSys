@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "4cd682233493a4871959f040f314e181e39e906c9edcc165545c153393c69cd5",
-                          "maintenanceCandidatesSha256":  "c005cbf5af792124302a8777da3f423dd7edb286416a14070583ce41cf496b8d"
+                          "implementationManifestSha256":  "cf9a745d77ef2ca98336219dfc1ac03b62c83c13a60ecbbf3b670cde53b70439",
+                          "maintenanceCandidatesSha256":  "c308501e387a24060290fe48c549de81cb87f241561e3ef3350fe69f39320f20"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  959,
-                    "reviewedCandidateCount":  961,
+                    "scannerCandidateCount":  962,
+                    "reviewedCandidateCount":  964,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -52,7 +52,7 @@
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  219,
+                            "candidateCount":  222,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -98,7 +98,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1895,
+                                                  "baselineLineCount":  1920,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -2201,6 +2201,29 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdminInventorySeed",
+                           "procedureNames":  [
+                                                  "DescribeDemoInventoryDataSetsForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdminInventorySeed.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
@@ -5000,6 +5023,29 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDeleteDataSet_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "ADMIN",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnDeleteDataSet_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnRepairInboxes_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -5057,6 +5103,29 @@
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
                                                   "mBtnUpload_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mCboDemoDataSet_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "ADMIN",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mCboDemoDataSet_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"

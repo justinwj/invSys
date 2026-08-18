@@ -39,10 +39,10 @@ $checks = @(
     },
     [pscustomobject]@{
         Name = "DemoLifecycle.FormActions"
-        Passed = @('Seed Demo Inventory','Delete Demo Inventory','Upload Demo Inventory') |
+        Passed = @('Seed Demo Inventory','Delete Demo Inventory','Upload Data Set','Delete Data Set') |
             ForEach-Object { $allText -match [regex]::Escape($_) } |
             Where-Object { -not $_ } | Measure-Object | Select-Object -ExpandProperty Count | ForEach-Object { $_ -eq 0 }
-        Contract = "The Admin Demo Inventory form exposes explicit Seed, Delete, and Upload actions."
+        Contract = "The Admin Demo Inventory form exposes separate inventory and data-set actions."
     },
     [pscustomobject]@{
         Name = "DemoLifecycle.IdempotentSeed"
@@ -68,6 +68,25 @@ $checks = @(
             ($formText -match 'R1 Workflow Kit \(built-in\)') -and
             ($formText -match 'SelectedUploadPath')
         Contract = "The form lets the administrator choose the built-in kit or an uploaded CSV before Seed mutates inventory."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.PersistentDatasetLibrary"
+        Passed = ($text -match 'ListDemoInventoryDataSets') -and
+            ($text -match 'ImportDemoInventoryDataSet') -and
+            ($text -match 'DemoInventoryDataSetLibraryPath')
+        Contract = "Uploaded CSV definitions persist in the selected warehouse library and remain selectable on later form launches."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.DeleteDatasetDefinition"
+        Passed = ($allText -match 'Delete Data Set') -and
+            ($text -match 'DeleteDemoInventoryDataSet')
+        Contract = "The form can delete a selected uploaded dataset definition independently from active demo inventory."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.R1DatasetImmutable"
+        Passed = ($text -match 'R1_DATA_SET_ID') -and
+            ($text -match 'built-in R1.*cannot be deleted')
+        Contract = "The built-in R1 workflow dataset cannot be deleted."
     }
 )
 $passed = @($checks | Where-Object Passed).Count

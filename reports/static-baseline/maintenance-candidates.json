@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4662,
-                     "lineCount":  101546,
+                     "procedureCount":  4670,
+                     "lineCount":  101763,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -7375,6 +7375,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDeleteDataSet_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnDeleteDataSet_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnRepairInboxes_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -7415,6 +7432,23 @@
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
                                                   "mBtnUpload_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mCboDemoDataSet_Change",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mCboDemoDataSet_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"
@@ -16279,6 +16313,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdminInventorySeed",
+                           "procedureNames":  [
+                                                  "DescribeDemoInventoryDataSetsForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdminInventorySeed.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

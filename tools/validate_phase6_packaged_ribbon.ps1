@@ -133,6 +133,30 @@ function Get-RibbonLabelControls {
     return $result
 }
 
+function Get-RibbonDropDowns {
+    param([string]$CustomUiXml)
+
+    if ([string]::IsNullOrWhiteSpace($CustomUiXml)) { return @{} }
+
+    $doc = New-Object System.Xml.XmlDocument
+    $doc.LoadXml($CustomUiXml)
+    $ns = New-Object System.Xml.XmlNamespaceManager($doc.NameTable)
+    $ns.AddNamespace("cu", "http://schemas.microsoft.com/office/2006/01/customui")
+
+    $result = @{}
+    foreach ($dropDown in $doc.SelectNodes("//cu:dropDown", $ns)) {
+        $result[$dropDown.id] = [pscustomobject]@{
+            Id = [string]$dropDown.id
+            Label = [string]$dropDown.label
+            GetItemCount = [string]$dropDown.getItemCount
+            GetItemLabel = [string]$dropDown.getItemLabel
+            GetSelectedItemIndex = [string]$dropDown.getSelectedItemIndex
+            OnAction = [string]$dropDown.onAction
+        }
+    }
+    return $result
+}
+
 function Get-ModuleText {
     param(
         [object]$Workbook,
@@ -249,6 +273,10 @@ $ribbonSpecs = @(
         File = "invSys.Admin.xlam"
         Callback = "RibbonOnActionAdmin"
         EnabledCallback = "RibbonRequiredCapabilityGetEnabledAdmin"
+        WarehouseSelector = @{
+            Id = "ddAdminWarehouseTarget"
+            Label = "Send To"
+        }
         StatusLabels = @(
             @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
             @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
@@ -333,8 +361,29 @@ try {
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).RibbonXml" -Passed $true -Detail "customUI/customUI.xml present."
         $buttons = Get-RibbonButtons -CustomUiXml $customUiXml
         $labels = Get-RibbonLabelControls -CustomUiXml $customUiXml
+        $dropDowns = Get-RibbonDropDowns -CustomUiXml $customUiXml
         $callbackModuleText = Get-ModuleText -Workbook $wb -ComponentName "modRibbonGenerated"
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).CallbackModule" -Passed (-not [string]::IsNullOrWhiteSpace($callbackModuleText)) -Detail "modRibbonGenerated"
+
+        if ($spec.ContainsKey("WarehouseSelector")) {
+            $selector = $spec.WarehouseSelector
+            $selectorId = [string]$selector.Id
+            if ($dropDowns.ContainsKey($selectorId)) {
+                $dropDown = $dropDowns[$selectorId]
+                $selectorOk = $dropDown.Label -eq $selector.Label -and
+                    $dropDown.GetItemCount -eq "RibbonWarehouseGetItemCount" -and
+                    $dropDown.GetItemLabel -eq "RibbonWarehouseGetItemLabel" -and
+                    $dropDown.GetSelectedItemIndex -eq "RibbonWarehouseGetSelectedItemIndex" -and
+                    $dropDown.OnAction -eq "RibbonWarehouseOnAction"
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelector.$selectorId" -Passed $selectorOk -Detail "Label=$($dropDown.Label); OnAction=$($dropDown.OnAction)"
+            }
+            else {
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelector.$selectorId" -Passed $false -Detail "Warehouse selector missing from Ribbon XML."
+            }
+            $callbackOk = $callbackModuleText.Contains("Public Sub RibbonWarehouseOnAction") -and
+                $callbackModuleText.Contains("modRibbonRuntimeStatus.SelectWarehouseTarget selectedIndex")
+            Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelectorCallback.$selectorId" -Passed $callbackOk -Detail "RibbonWarehouseOnAction -> SelectWarehouseTarget"
+        }
 
         if ($spec.ContainsKey("StatusLabels")) {
             foreach ($statusLabel in $spec.StatusLabels) {

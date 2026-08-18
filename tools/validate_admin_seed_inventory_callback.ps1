@@ -737,10 +737,25 @@ try {
             'DEMO-UPLOAD-VALIDATION,Uploaded Demo Item,7,each,UPLOAD-A1,GOOD,Packaged lifecycle upload fixture,packaging.ship,Demo Vendor'
         ) -join "`r`n"
         [IO.File]::WriteAllText($uploadCsvPath, ($uploadCsv + "`r`n"), (New-Object Text.UTF8Encoding($false)))
+        $currentStep = "import uploaded demo inventory data set"
+        $dataSetImportResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "UPLOAD_DATASET", $uploadCsvPath, $false))
+        $storedUploadCsvPath = Join-Path $runtimeRoot "admin\demo-inventory-data-sets\demo-inventory-upload.csv"
+        $dataSetsAfterImport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation" `
+            -Arguments @($runtimeRoot))
+        $dataSetImported = $dataSetImportResult.StartsWith("OK|") -and
+            (Test-Path -LiteralPath $storedUploadCsvPath -PathType Leaf) -and
+            $dataSetsAfterImport -match '(?:^|\|)R1=Protected(?:\||$)' -and
+            $dataSetsAfterImport -match '(?:^|\|)Uploaded=1(?:\||$)'
+        $currentStep = "seed from selected stored data set"
         $uploadResult = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
-            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $uploadCsvPath, $false))
+            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $storedUploadCsvPath, $false))
         $stateAfterUpload = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
@@ -765,7 +780,7 @@ try {
         $repeatUploadResult = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
-            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $uploadCsvPath, $false))
+            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $storedUploadCsvPath, $false))
         $stateAfterRepeatUpload = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
@@ -775,6 +790,31 @@ try {
             $stateAfterRepeatUpload -match '(?:^|\|)Active=1(?:\||$)' -and
             $stateAfterRepeatUpload -match '(?:^|\|)Entities=25(?:\||$)'
 
+        $currentStep = "delete uploaded data set definition"
+        $deleteDataSetResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE_DATASET", $storedUploadCsvPath, $true))
+        $dataSetsAfterDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation" `
+            -Arguments @($runtimeRoot))
+        $stateAfterDataSetDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $r1DeleteResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE_DATASET", "", $true))
+        $dataSetDeletePassed = $deleteDataSetResult.StartsWith("OK|") -and
+            -not (Test-Path -LiteralPath $storedUploadCsvPath -PathType Leaf) -and
+            $dataSetsAfterDelete -match '(?:^|\|)Uploaded=0(?:\||$)' -and
+            $stateAfterDataSetDelete -match '(?:^|\|)Active=1(?:\||$)' -and
+            $r1DeleteResult.StartsWith("FAIL|") -and
+            $r1DeleteResult -match '(?i)built-in R1 Workflow Kit cannot be deleted'
+
+        $currentStep = "reject invalid uploaded data set and cancelled inventory delete"
         $invalidCsvPath = Join-Path $runtimeRoot "invalid-demo-inventory-upload.csv"
         $invalidCsv = @(
             'ITEM_CODE,ITEM,QTY,UOM,LOCATION',
@@ -784,7 +824,7 @@ try {
         $invalidUploadResult = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
-            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $invalidCsvPath, $false))
+            -Arguments @($warehouseId, $stationId, $testUser, "UPLOAD_DATASET", $invalidCsvPath, $false))
         $cancelDeleteResult = [string](Run-WorkbookMacro -Excel $excel `
             -WorkbookName $adminName `
             -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
@@ -834,11 +874,13 @@ try {
         $facts.AuthHashUnchanged = $authHashBefore -eq $authHashAfter
         $facts.AuthTableDataUnchanged = $authDataBefore -eq $authDataAfter
         $facts.InventoryHashChanged = $inventoryHashBefore -ne $inventoryHashAfter
-        $facts.DemoInventoryFormActions = if ($formContract.StartsWith("OK|")) { "OK|Seed=True|Delete=True|Upload=True|Dataset=True" } else { $formContract }
+        $facts.DemoInventoryFormActions = if ($formContract.StartsWith("OK|")) { "OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True" } else { $formContract }
         $facts.RepeatedSeedIdempotent = $repeatSeedIdempotent
         $facts.DeleteDepletedActiveDemoInventory = $deleteDepleted
+        $facts.DataSetImportedAndSelectable = $dataSetImported
         $facts.UploadCreatedOneDemoEntity = $uploadCreated
         $facts.RepeatedUploadIdempotent = $uploadIdempotent
+        $facts.DataSetDeletedInventoryRetainedAndR1Protected = $dataSetDeletePassed
         $facts.UploadAndDeleteGuards = $destructiveGuardsPassed
 
         $passed = [string]::IsNullOrWhiteSpace($callbackError) -and
@@ -854,13 +896,14 @@ try {
             $operatorMatchesSnapshot -and
             $formRefreshReport.StartsWith("OK|") -and $formVisibleRows -eq $expectedDemoCount -and
             $formContract.StartsWith("OK|") -and $repeatSeedIdempotent -and
-            $deleteDepleted -and $uploadCreated -and $uploadIdempotent -and
+            $deleteDepleted -and $dataSetImported -and $uploadCreated -and
+            $uploadIdempotent -and $dataSetDeletePassed -and
             $destructiveGuardsPassed -and
             $configHashBefore -eq $configHashAfter -and
             $authDataBefore -eq $authDataAfter -and
             $inventoryHashBefore -ne $inventoryHashAfter
         if ($passed) {
-            $detail = "The public Demo Inventory callback seeded the complete 24-entity R1 kit idempotently, depleted it through exact-key audited adjustments, uploaded one validated CSV entity idempotently, and retained the original snapshot/Receiving projection contract."
+            $detail = "The public Demo Inventory callback seeded the R1 kit idempotently, managed a selectable uploaded CSV library, protected R1 from deletion, deleted an uploaded definition without changing seeded stock, and retained the snapshot/Receiving contract."
         }
         else {
             $detail = "The public ribbon callback failed its packaged behavioral contract at step '$currentStep'."

@@ -326,6 +326,7 @@ Private Sub InvalidateWarehouseTargetRibbonsStatus()
         ribbon.InvalidateControl "lblOperationsAccessStatus"
         ribbon.InvalidateControl "btnOperationsServerSession"
         ribbon.InvalidateControl "btnOperationsCurrentUser"
+        ribbon.InvalidateControl "ddAdminWarehouseTarget"
         ribbon.InvalidateControl "ddReceivingWarehouseTarget"
         ribbon.InvalidateControl "ddShippingWarehouseTarget"
         ribbon.InvalidateControl "ddProductionWarehouseTarget"

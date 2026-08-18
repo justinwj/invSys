@@ -51,6 +51,12 @@ Check "Ribbon.TargetSelectionInvalidatesOperations" (
     $status.Contains('ribbon.InvalidateControl "lblOperationsAccessStatus"')
 ) "Selecting Send To must invalidate the actual Operations dropdown and status controls."
 
+Check "Ribbon.AdminWarehouseSelector" (
+    $build.Contains('Id = "ddAdminWarehouseTarget"') -and
+    $build.Contains('Label = "Send To"') -and
+    $status.Contains('ribbon.InvalidateControl "ddAdminWarehouseTarget"')
+) "Admin must expose the same live Send To warehouse selector and shared selection callback as Operations."
+
 Check "Ribbon.TargetSelectionFullInvalidate" (
     [regex]::Match($status, '(?ms)^Private Sub InvalidateWarehouseTargetRibbonsStatus\(\).*?^End Sub').Value -match '(?m)^\s*ribbon\.Invalidate\s*$'
 ) "Warehouse selection must force Excel to requery the live ribbon immediately."

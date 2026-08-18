@@ -2,7 +2,7 @@
 
 - Schema: 1.0.0
 - Generated: 2026-08-16T20:00:00Z
-- Total candidates: 959
+- Total candidates: 962
 - Duplicate-body groups: 184
 - Unresolved dynamic calls: 47
 
@@ -405,9 +405,11 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | RETAIN_DYNAMIC_ROOT | LOW | frmRetireMigrateWarehouse | UserForm_Terminate | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnCancel_Click | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnDelete_Click | Procedure is a registered or discovered dynamic root. |
+| RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnDeleteDataSet_Click | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnRepairInboxes_Click | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnSeed_Click | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mBtnUpload_Click | Procedure is a registered or discovered dynamic root. |
+| RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mCboDemoDataSet_Change | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | mCmbWarehouse_Change | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | UserForm_Activate | Procedure is a registered or discovered dynamic root. |
 | RETAIN_DYNAMIC_ROOT | LOW | frmSeedInventory | UserForm_Initialize | Procedure is a registered or discovered dynamic root. |
@@ -748,6 +750,7 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | UNRESOLVED | MEDIUM | modAdminDesignLifecycle | ObsoleteDesignVersion | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modAdminDesignLifecycle | ReleaseDesignVersion | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modAdminInit | InitAdminAddin | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
+| UNRESOLVED | MEDIUM | modAdminInventorySeed | DescribeDemoInventoryDataSetsForAutomation | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modAdminInventorySeed | DescribeDemoInventoryStateForAutomation | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTesterSetup | ClearTesterSharePointRootOverride | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTesterSetup | GetLastTesterSharePointRoot | No direct, dynamic-root, or test reference was found, but public visibility requires review. |

@@ -4,6 +4,11 @@ Option Explicit
 Public Const DEMO_ACTION_SEED As String = "SEED"
 Public Const DEMO_ACTION_DELETE As String = "DELETE"
 Public Const DEMO_ACTION_UPLOAD As String = "UPLOAD"
+Public Const DEMO_ACTION_UPLOAD_DATA_SET As String = "UPLOAD_DATASET"
+Public Const DEMO_ACTION_DELETE_DATA_SET As String = "DELETE_DATASET"
+Public Const R1_DATA_SET_ID As String = "R1_WORKFLOW_KIT"
+
+Private Const DEMO_DATA_SET_RELATIVE_PATH As String = "admin\demo-inventory-data-sets"
 
 Private mBuildActiveDemoGroups As Object
 Private mBuildSkippedCount As Long
@@ -165,6 +170,125 @@ Public Function UploadDemoInventoryForWarehouse(ByVal warehouseId As String, _
 
 FailUpload:
     report = "UploadDemoInventoryForWarehouse failed: " & Err.Description
+End Function
+
+Public Function DemoInventoryDataSetLibraryPath(ByVal runtimeRoot As String) As String
+    runtimeRoot = Trim$(runtimeRoot)
+    Do While Right$(runtimeRoot, 1) = "\" Or Right$(runtimeRoot, 1) = "/"
+        runtimeRoot = Left$(runtimeRoot, Len(runtimeRoot) - 1)
+    Loop
+    If runtimeRoot = "" Then Exit Function
+    DemoInventoryDataSetLibraryPath = runtimeRoot & "\" & DEMO_DATA_SET_RELATIVE_PATH
+End Function
+
+Public Function ListDemoInventoryDataSets(ByVal runtimeRoot As String) As Collection
+    Dim results As Collection
+    Dim libraryPath As String
+    Dim fileName As String
+
+    Set results = New Collection
+    libraryPath = DemoInventoryDataSetLibraryPath(runtimeRoot)
+    If libraryPath <> "" And Len(Dir$(libraryPath, vbDirectory)) > 0 Then
+        fileName = Dir$(libraryPath & "\*.csv", vbNormal)
+        Do While fileName <> ""
+            results.Add Array("Uploaded: " & fileName, libraryPath & "\" & fileName)
+            fileName = Dir$()
+        Loop
+    End If
+    Set ListDemoInventoryDataSets = results
+End Function
+
+Public Function ImportDemoInventoryDataSet(ByVal runtimeRoot As String, _
+                                           ByVal sourcePath As String, _
+                                           ByRef storedPath As String, _
+                                           ByRef report As String) As Boolean
+    Dim emptyGroups As Object
+    Dim validatedRows As Collection
+    Dim skippedCount As Long
+    Dim libraryPath As String
+    Dim sourceName As String
+    Dim fso As Object
+
+    On Error GoTo FailImport
+
+    storedPath = ""
+    sourcePath = Trim$(sourcePath)
+    If sourcePath = "" Then report = "Choose a demo inventory CSV data set.": Exit Function
+    If LCase$(Right$(sourcePath, 4)) <> ".csv" Then report = "Demo inventory data sets must be .csv files.": Exit Function
+    If Len(Dir$(sourcePath, vbNormal)) = 0 Then report = "The selected demo inventory data set was not found.": Exit Function
+
+    Set emptyGroups = CreateObject("Scripting.Dictionary")
+    emptyGroups.CompareMode = vbTextCompare
+    Set validatedRows = LoadDemoInventoryCsv(sourcePath, emptyGroups, skippedCount, report, False)
+    If validatedRows Is Nothing Then Exit Function
+    If validatedRows.Count = 0 Then report = "The demo inventory data set contains no rows.": Exit Function
+
+    libraryPath = DemoInventoryDataSetLibraryPath(runtimeRoot)
+    If libraryPath = "" Then report = "The selected warehouse runtime root is unavailable.": Exit Function
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(Trim$(runtimeRoot)) Then report = "The selected warehouse runtime root is unavailable.": Exit Function
+    If Not EnsureDemoDataSetLibrarySeed(runtimeRoot, libraryPath, report) Then Exit Function
+
+    sourceName = fso.GetFileName(sourcePath)
+    storedPath = libraryPath & "\" & sourceName
+    If fso.FileExists(storedPath) Then
+        report = "A data set named " & sourceName & " already exists. Delete it first or rename the source file."
+        storedPath = ""
+        Exit Function
+    End If
+    fso.CopyFile sourcePath, storedPath, False
+    report = "Demo inventory data set uploaded.|DataSet=" & sourceName
+    ImportDemoInventoryDataSet = True
+    Exit Function
+
+FailImport:
+    storedPath = ""
+    report = "ImportDemoInventoryDataSet failed: " & Err.Description
+End Function
+
+Public Function DeleteDemoInventoryDataSet(ByVal runtimeRoot As String, _
+                                           ByVal selectedPath As String, _
+                                           ByRef report As String) As Boolean
+    Dim libraryPath As String
+    Dim normalizedLibrary As String
+    Dim normalizedSelected As String
+    Dim fso As Object
+
+    On Error GoTo FailDeleteDataSet
+
+    If Trim$(selectedPath) = "" Or StrComp(Trim$(selectedPath), R1_DATA_SET_ID, vbTextCompare) = 0 Then
+        report = "The built-in R1 Workflow Kit cannot be deleted."
+        Exit Function
+    End If
+    libraryPath = DemoInventoryDataSetLibraryPath(runtimeRoot)
+    If libraryPath = "" Then report = "The selected warehouse runtime root is unavailable.": Exit Function
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    normalizedLibrary = fso.GetAbsolutePathName(libraryPath)
+    normalizedSelected = fso.GetAbsolutePathName(Trim$(selectedPath))
+    If StrComp(Left$(normalizedSelected, Len(normalizedLibrary) + 1), _
+               normalizedLibrary & "\", vbTextCompare) <> 0 Then
+        report = "Only an uploaded data set in the selected warehouse library can be deleted."
+        Exit Function
+    End If
+    If LCase$(Right$(normalizedSelected, 4)) <> ".csv" Then
+        report = "Only an uploaded CSV data set can be deleted."
+        Exit Function
+    End If
+    If Not fso.FileExists(normalizedSelected) Then report = "The selected uploaded data set was not found.": Exit Function
+
+    fso.DeleteFile normalizedSelected, False
+    report = "Demo inventory data set deleted.|DataSet=" & fso.GetFileName(normalizedSelected)
+    DeleteDemoInventoryDataSet = True
+    Exit Function
+
+FailDeleteDataSet:
+    report = "DeleteDemoInventoryDataSet failed: " & Err.Description
+End Function
+
+Public Function DescribeDemoInventoryDataSetsForAutomation(ByVal runtimeRoot As String) As String
+    Dim dataSets As Collection
+    Set dataSets = ListDemoInventoryDataSets(runtimeRoot)
+    DescribeDemoInventoryDataSetsForAutomation = "OK|R1=Protected|Uploaded=" & CStr(dataSets.Count)
 End Function
 
 Public Function DescribeDemoInventoryStateForAutomation(ByVal warehouseId As String) As String
@@ -364,7 +488,8 @@ End Function
 Private Function LoadDemoInventoryCsv(ByVal csvPath As String, _
                                       ByVal activeGroups As Object, _
                                       ByRef skippedCount As Long, _
-                                      ByRef report As String) As Collection
+                                      ByRef report As String, _
+                                      Optional ByVal createPayloadItems As Boolean = True) As Collection
     Dim sourceWb As Workbook
     Dim sourceWs As Worksheet
     Dim values As Variant
@@ -444,15 +569,21 @@ Private Function LoadDemoInventoryCsv(ByVal csvPath As String, _
         descriptionValue = Trim$(CsvValueSeed(values, rowIndex, headers, "DESCRIPTION"))
         categoryValue = Trim$(CsvValueSeed(values, rowIndex, headers, "CATEGORY"))
         vendorValue = Trim$(CsvValueSeed(values, rowIndex, headers, "VENDOR"))
-        Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
-            modRoleEventWriter.CreateSystemKey(), itemCode, qty, locationValue, _
-            conditionValue, "", "Admin demo inventory CSV upload")
-        item("ITEM_CODE") = itemCode
-        item("ITEM") = itemName
-        item("UOM") = uomValue
-        item("DESCRIPTION") = descriptionValue
-        item("CATEGORY") = categoryValue
-        If vendorValue <> "" Then item("VENDOR(s)") = vendorValue
+        If createPayloadItems Then
+            Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+                modRoleEventWriter.CreateSystemKey(), itemCode, qty, locationValue, _
+                conditionValue, "", "Admin demo inventory CSV upload")
+            item("ITEM_CODE") = itemCode
+            item("ITEM") = itemName
+            item("UOM") = uomValue
+            item("DESCRIPTION") = descriptionValue
+            item("CATEGORY") = categoryValue
+            If vendorValue <> "" Then item("VENDOR(s)") = vendorValue
+        Else
+            Set item = CreateObject("Scripting.Dictionary")
+            item.CompareMode = vbTextCompare
+            item("ITEM_CODE") = itemCode
+        End If
         rows.Add item
 NextCsvRow:
     Next rowIndex
@@ -523,6 +654,31 @@ Private Function NormalizeCsvHeaderSeed(ByVal headerText As String) As String
         headerText = Replace$(headerText, "__", "_")
     Loop
     NormalizeCsvHeaderSeed = headerText
+End Function
+
+Private Function EnsureDemoDataSetLibrarySeed(ByVal runtimeRoot As String, _
+                                              ByVal libraryPath As String, _
+                                              ByRef report As String) As Boolean
+    Dim fso As Object
+    Dim adminPath As String
+
+    On Error GoTo FailEnsureLibrary
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    runtimeRoot = fso.GetAbsolutePathName(Trim$(runtimeRoot))
+    libraryPath = fso.GetAbsolutePathName(Trim$(libraryPath))
+    If StrComp(Left$(libraryPath, Len(runtimeRoot) + 1), runtimeRoot & "\", vbTextCompare) <> 0 Then
+        report = "The demo inventory data set library is outside the selected warehouse runtime."
+        Exit Function
+    End If
+    adminPath = runtimeRoot & "\admin"
+    If Not fso.FolderExists(adminPath) Then fso.CreateFolder adminPath
+    If Not fso.FolderExists(libraryPath) Then fso.CreateFolder libraryPath
+    EnsureDemoDataSetLibrarySeed = True
+    Exit Function
+
+FailEnsureLibrary:
+    report = "The demo inventory data set library could not be prepared: " & Err.Description
 End Function
 
 Private Function FindTableByNameSeed(ByVal wb As Workbook, ByVal tableName As String) As ListObject

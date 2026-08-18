@@ -15,8 +15,10 @@
 - ConfigHashUnchanged: True
 - ConfigLoaded: True
 - ConfigSurfaceChanged: False
+- DataSetDeletedInventoryRetainedAndR1Protected: True
+- DataSetImportedAndSelectable: True
 - DeleteDepletedActiveDemoInventory: True
-- DemoInventoryFormActions: OK|Seed=True|Delete=True|Upload=True|Dataset=True
+- DemoInventoryFormActions: OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True
 - EntityCount: 24
 - InventoryHashChanged: True
 - OperatorAllConditionsGood: True
@@ -45,7 +47,7 @@
 
 ## Observed result
 
-The public Demo Inventory callback seeded the complete 24-entity R1 kit idempotently, depleted it through exact-key audited adjustments, uploaded one validated CSV entity idempotently, and retained the original snapshot/Receiving projection contract.
+The public Demo Inventory callback seeded the R1 kit idempotently, managed a selectable uploaded CSV library, protected R1 from deletion, deleted an uploaded definition without changing seeded stock, and retained the snapshot/Receiving contract.
 
 ## Captured UI
 

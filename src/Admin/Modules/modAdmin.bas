@@ -166,6 +166,8 @@ Sub Seed_DemoInventory()
     Dim stage As String
     Dim actionName As String
     Dim uploadPath As String
+    Dim runtimeRoot As String
+    Dim storedPath As String
     Dim deleteConfirmed As Boolean
     Dim succeeded As Boolean
 
@@ -173,7 +175,7 @@ Sub Seed_DemoInventory()
 
     stage = "context resolution"
     mSeedCallbackLastResult = ""
-    If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, actionName, uploadPath, report) Then
+    If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, actionName, uploadPath, runtimeRoot, report) Then
         If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
         mSeedCallbackLastResult = "FAIL|" & report
         GoTo CleanExit
@@ -193,16 +195,31 @@ Sub Seed_DemoInventory()
             mSeedCallbackLastResult = "CANCEL|" & report
             GoTo CleanExit
         End If
-    ElseIf actionName = modAdminInventorySeed.DEMO_ACTION_UPLOAD Then
+    ElseIf actionName = modAdminInventorySeed.DEMO_ACTION_DELETE_DATA_SET Then
+        If mSeedCallbackAutomationEnabled Then
+            deleteConfirmed = mSeedCallbackAutomationDeleteConfirmed
+        Else
+            deleteConfirmed = (MsgBox( _
+                "Delete the selected uploaded demo inventory data set?" & vbCrLf & vbCrLf & _
+                "This deletes only the stored CSV definition. It does not change inventory already seeded from it.", _
+                vbQuestion Or vbYesNo Or vbDefaultButton2, "invSys Admin - Demo Inventory") = vbYes)
+        End If
+        If Not deleteConfirmed Then
+            report = "Delete Data Set cancelled."
+            mSeedCallbackLastResult = "CANCEL|" & report
+            GoTo CleanExit
+        End If
+    ElseIf actionName = modAdminInventorySeed.DEMO_ACTION_UPLOAD _
+           Or actionName = modAdminInventorySeed.DEMO_ACTION_UPLOAD_DATA_SET Then
         If uploadPath = "" And Not mSeedCallbackAutomationEnabled Then uploadPath = PromptDemoInventoryCsvPath()
         If uploadPath = "" Then
-            report = "Upload Demo Inventory cancelled."
+            report = "Upload Data Set cancelled."
             mSeedCallbackLastResult = "CANCEL|" & report
             GoTo CleanExit
         End If
     End If
 
-    stage = LCase$(actionName) & " queue and processor application"
+    stage = LCase$(actionName) & " action"
     Select Case actionName
         Case modAdminInventorySeed.DEMO_ACTION_SEED
             If uploadPath = "" Then
@@ -218,8 +235,14 @@ Sub Seed_DemoInventory()
         Case modAdminInventorySeed.DEMO_ACTION_UPLOAD
             succeeded = modAdminInventorySeed.UploadDemoInventoryForWarehouse( _
                 warehouseId, stationId, userId, uploadPath, report)
+        Case modAdminInventorySeed.DEMO_ACTION_UPLOAD_DATA_SET
+            succeeded = modAdminInventorySeed.ImportDemoInventoryDataSet( _
+                runtimeRoot, uploadPath, storedPath, report)
+        Case modAdminInventorySeed.DEMO_ACTION_DELETE_DATA_SET
+            succeeded = modAdminInventorySeed.DeleteDemoInventoryDataSet( _
+                runtimeRoot, uploadPath, report)
         Case Else
-            report = "Choose Seed Demo Inventory, Delete Demo Inventory, or Upload Demo Inventory."
+            report = "Choose a demo inventory or data set action."
     End Select
 
     If succeeded Then
@@ -1062,9 +1085,9 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
                                              ByRef userId As String, _
                                              ByRef actionName As String, _
                                              ByRef uploadPath As String, _
+                                             ByRef runtimeRoot As String, _
                                              ByRef report As String) As Boolean
     Dim warehouseOptions As Collection
-    Dim runtimeRoot As String
     Dim formReport As String
     Dim item As Variant
     Dim selectionFound As Boolean
@@ -1140,7 +1163,9 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     Select Case actionName
         Case modAdminInventorySeed.DEMO_ACTION_SEED, _
              modAdminInventorySeed.DEMO_ACTION_DELETE, _
-             modAdminInventorySeed.DEMO_ACTION_UPLOAD
+             modAdminInventorySeed.DEMO_ACTION_UPLOAD, _
+             modAdminInventorySeed.DEMO_ACTION_UPLOAD_DATA_SET, _
+             modAdminInventorySeed.DEMO_ACTION_DELETE_DATA_SET
         Case Else
             report = "Choose a demo inventory action."
             Exit Function

@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 959
-- Reviewed candidates: 961
+- Scanner candidates: 962
+- Reviewed candidates: 964
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -17,7 +17,7 @@
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 287 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
-| ADMIN | 219 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 222 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -33,7 +33,7 @@
 | src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1158 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 1895 |
+| src/Admin/Modules/modAdmin.bas | Admin | 1920 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
@@ -120,6 +120,7 @@
 | reachability:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.ObsoleteDesignVersion | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdminDesignLifecycle.bas:modAdminDesignLifecycle.ReleaseDesignVersion | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdminInit.bas:modAdminInit.InitAdminAddin | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryStateForAutomation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modLocalAddinsRegistration.bas:modLocalAddinsRegistration.ResolveAddinByTargetPathLocal | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Admin_Modules_modLocalAddinsRegistration.bas:modLocalAddinsRegistration.ShouldKeepInvSysAddinLocal | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -241,9 +242,11 @@
 | root:src_Admin_Forms_frmRetireMigrateWarehouse.frm:frmRetireMigrateWarehouse.UserForm_Terminate | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnCancel_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDeleteDataSet_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnRepairInboxes_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnSeed_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnUpload_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mCboDemoDataSet_Change | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mCmbWarehouse_Change | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.UserForm_Activate | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.UserForm_Initialize | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

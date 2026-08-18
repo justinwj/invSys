@@ -27,6 +27,8 @@ Private WithEvents mBtnDelete As MSForms.CommandButton
 Attribute mBtnDelete.VB_VarHelpID = -1
 Private WithEvents mBtnUpload As MSForms.CommandButton
 Attribute mBtnUpload.VB_VarHelpID = -1
+Private WithEvents mBtnDeleteDataSet As MSForms.CommandButton
+Attribute mBtnDeleteDataSet.VB_VarHelpID = -1
 Private WithEvents mBtnRepairInboxes As MSForms.CommandButton
 Attribute mBtnRepairInboxes.VB_VarHelpID = -1
 Private WithEvents mBtnCancel As MSForms.CommandButton
@@ -161,6 +163,8 @@ Private Sub EnsureControls()
     Set mLblDemoDataSet = AddLabel("lblDemoDataSet", 12, 158, 92, 18, "Data set")
     Set mCboDemoDataSet = AddCombo("cboDemoDataSet", 108, 154, 468, 24)
     mCboDemoDataSet.Style = fmStyleDropDownList
+    mCboDemoDataSet.ColumnCount = 2
+    mCboDemoDataSet.ColumnWidths = "450 pt;0 pt"
     ConfigureDemoDataSetChoices
 
     Set mLblStatus = AddLabel("lblStatus", 108, 186, 468, 24, "")
@@ -168,17 +172,32 @@ Private Sub EnsureControls()
 
     Set mBtnSeed = AddButton("btnSeedDemoInventory", 18, 218, 172, 32, "Seed Demo Inventory")
     Set mBtnDelete = AddButton("btnDeleteDemoInventory", 204, 218, 172, 32, "Delete Demo Inventory")
-    Set mBtnUpload = AddButton("btnUploadDemoInventory", 390, 218, 186, 32, "Upload Demo Inventory")
+    Set mBtnUpload = AddButton("btnUploadDemoInventory", 390, 218, 186, 32, "Upload Data Set")
+    Set mBtnDeleteDataSet = AddButton("btnDeleteDemoDataSet", 18, 262, 172, 28, "Delete Data Set")
+    mBtnDeleteDataSet.Enabled = False
     Set mBtnRepairInboxes = AddButton("btnRepairInboxes", 342, 262, 116, 28, "Repair Inboxes")
     Set mBtnCancel = AddButton("btnCancel", 470, 262, 106, 28, "Cancel")
 End Sub
 
-Private Sub ConfigureDemoDataSetChoices()
+Private Sub ConfigureDemoDataSetChoices(Optional ByVal runtimeRoot As String = "")
+    Dim dataSets As Collection
+    Dim dataSetItem As Variant
+    Dim rowIndex As Long
+
     If mCboDemoDataSet Is Nothing Then Exit Sub
     mCboDemoDataSet.Clear
     mCboDemoDataSet.AddItem "R1 Workflow Kit (built-in)"
-    mCboDemoDataSet.AddItem "Uploaded CSV (choose with Upload Demo Inventory)"
+    mCboDemoDataSet.List(0, 1) = modAdminInventorySeed.R1_DATA_SET_ID
+    If Trim$(runtimeRoot) <> "" Then
+        Set dataSets = modAdminInventorySeed.ListDemoInventoryDataSets(runtimeRoot)
+        For Each dataSetItem In dataSets
+            mCboDemoDataSet.AddItem CStr(dataSetItem(0))
+            rowIndex = mCboDemoDataSet.ListCount - 1
+            mCboDemoDataSet.List(rowIndex, 1) = CStr(dataSetItem(1))
+        Next dataSetItem
+    End If
     mCboDemoDataSet.ListIndex = 0
+    mSelectedUploadPath = ""
 End Sub
 
 Private Function AddLabel(ByVal controlName As String, _
@@ -261,9 +280,9 @@ Private Sub AcceptDemoInventoryAction(ByVal actionName As String)
 End Sub
 
 Private Sub mBtnSeed_Click()
-    If mCboDemoDataSet.ListIndex = 1 And Trim$(mSelectedUploadPath) = "" Then
+    If mCboDemoDataSet.ListIndex > 0 And Trim$(mSelectedUploadPath) = "" Then
         mLblStatus.ForeColor = 255
-        mLblStatus.Caption = "Use Upload Demo Inventory to choose a CSV data set first."
+        mLblStatus.Caption = "Choose a stored data set or upload one first."
         Exit Sub
     End If
     If mCboDemoDataSet.ListIndex = 0 Then mSelectedUploadPath = ""
@@ -276,19 +295,33 @@ End Sub
 
 Private Sub mBtnUpload_Click()
     Dim selectedPath As Variant
-    Dim displayName As String
 
     selectedPath = Application.GetOpenFilename( _
         FileFilter:="CSV files (*.csv),*.csv", _
-        Title:="Select Demo Inventory Data Set")
+        Title:="Upload Demo Inventory Data Set")
     If VarType(selectedPath) = vbBoolean Then Exit Sub
     mSelectedUploadPath = Trim$(CStr(selectedPath))
-    displayName = Dir$(mSelectedUploadPath)
-    If displayName = "" Then displayName = mSelectedUploadPath
-    mCboDemoDataSet.List(1) = "Uploaded CSV: " & displayName
-    mCboDemoDataSet.ListIndex = 1
-    mLblStatus.ForeColor = &H8000
-    mLblStatus.Caption = "Selected data set. Click Seed Demo Inventory to apply it."
+    AcceptDemoInventoryAction modAdminInventorySeed.DEMO_ACTION_UPLOAD_DATA_SET
+End Sub
+
+Private Sub mBtnDeleteDataSet_Click()
+    If mCboDemoDataSet.ListIndex <= 0 Then
+        mLblStatus.ForeColor = 255
+        mLblStatus.Caption = "The built-in R1 Workflow Kit cannot be deleted."
+        Exit Sub
+    End If
+    mSelectedUploadPath = CStr(mCboDemoDataSet.List(mCboDemoDataSet.ListIndex, 1))
+    AcceptDemoInventoryAction modAdminInventorySeed.DEMO_ACTION_DELETE_DATA_SET
+End Sub
+
+Private Sub mCboDemoDataSet_Change()
+    If Not mBtnDeleteDataSet Is Nothing Then _
+        mBtnDeleteDataSet.Enabled = (mCboDemoDataSet.ListIndex > 0)
+    If mCboDemoDataSet.ListIndex <= 0 Then
+        mSelectedUploadPath = ""
+    Else
+        mSelectedUploadPath = CStr(mCboDemoDataSet.List(mCboDemoDataSet.ListIndex, 1))
+    End If
 End Sub
 
 Private Sub mBtnCancel_Click()
@@ -300,10 +333,11 @@ Public Function TestDemoInventoryActionContract() As String
     EnsureControls
     If mBtnSeed.Caption = "Seed Demo Inventory" _
        And mBtnDelete.Caption = "Delete Demo Inventory" _
-       And mBtnUpload.Caption = "Upload Demo Inventory" _
-       And mCboDemoDataSet.ListCount = 2 _
+       And mBtnUpload.Caption = "Upload Data Set" _
+       And mBtnDeleteDataSet.Caption = "Delete Data Set" _
+       And mCboDemoDataSet.ListCount >= 1 _
        And mCboDemoDataSet.List(0) = "R1 Workflow Kit (built-in)" Then
-        TestDemoInventoryActionContract = "OK|Seed=True|Delete=True|Upload=True|Dataset=True"
+        TestDemoInventoryActionContract = "OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True"
     Else
         TestDemoInventoryActionContract = "FAIL|Demo inventory actions are incomplete."
     End If
@@ -346,6 +380,7 @@ Private Sub ApplyWarehouseSelection()
 
     mTxtStation.Value = modStationIdentity.CurrentComputerStationId()
     mLblRootValue.Caption = CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 3))
+    ConfigureDemoDataSetChoices CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 3))
     If Trim$(CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 4))) = "" _
        Or StrComp(CStr(mCmbWarehouse.List(mCmbWarehouse.ListIndex, 4)), "Ready", vbTextCompare) = 0 Then
         mLblStatus.ForeColor = 32768

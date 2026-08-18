@@ -967,12 +967,26 @@ $projectMap = @(
             EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledAdmin"
             Groups = @(
                 @{
+                    Id      = "grpAdminSession"
+                    Label   = "Session"
+                    WarehouseSelector = @{
+                        Id = "ddAdminWarehouseTarget"
+                        Label = "Send To"
+                    }
+                    Buttons = @(
+                        @{ Id = "btnAdminServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
+                        @{ Id = "btnAdminCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" }
+                    )
+                    StatusLabels = @(
+                        @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
+                        @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+                    )
+                }
+                @{
                     Id      = "grpAdminActions"
                     Label   = "Actions"
                     Buttons = @(
                         @{ Id = "btnAdminOpen"; Label = "Admin Console"; Macro = "modAdmin.Admin_Click"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
-                        @{ Id = "btnAdminCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" },
                         @{ Id = "btnAdminUsers"; Label = "Users and Roles"; Macro = "modAdmin.Open_CreateDeleteUser"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminSettings"; Label = "Settings"; Macro = "modAdmin.Open_Settings"; ImageMso = "FileProperties"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; ImageMso = "TablePropertiesDialog"; RequiredCapability = "ADMIN_MAINT" },
@@ -985,10 +999,6 @@ $projectMap = @(
                         @{ Id = "btnAdminDesignLifecycle"; Label = "Design Lifecycle"; Macro = "modAdminDesignLifecycle.Admin_DesignLifecycle_Click"; ImageMso = "AcceptInvitation"; Screentip = "Release or obsolete immutable Designs Domain recipes"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminVerifyAddinsPublished"; Label = "Verify Add-ins Published"; Macro = "modAdmin.Verify_AddinsPublished"; ImageMso = "FileDocumentInspect"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminRetireMigrateWarehouse"; Label = "Retire / Migrate Warehouse"; Macro = "modAdmin.Admin_RetireMigrateWarehouse_Click"; ImageMso = "DeleteSite"; Screentip = "Archive, migrate, retire, or delete a warehouse runtime"; RequiredCapability = "ADMIN_MAINT" }
-                    )
-                    StatusLabels = @(
-                        @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-                        @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
                     )
                 }
             )
