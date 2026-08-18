@@ -683,6 +683,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal",
         "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderUsesSystemKey",
+        "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates",
         "TestPhase6RoleSurfaces.TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddStagesSelectedInventoryForConfirm",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef",

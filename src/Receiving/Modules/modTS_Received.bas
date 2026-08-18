@@ -303,16 +303,21 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
     Dim recordIndex As Long
     Dim fieldIndex As Long
     Dim outputIndex As Long
+    Dim matchedIndex As Long
     Dim searchText As String
     Dim searchableText As String
     Dim systemKey As String
     Dim itemCode As String
     Dim itemName As String
     Dim uomValue As String
-    Dim qtyValue As String
+    Dim qtyValue As Double
+    Dim qtyText As String
     Dim locationValue As String
+    Dim conditionValue As String
     Dim descriptionValue As String
     Dim vendorValue As String
+    Dim groupKey As String
+    Dim groupIndex As Object
 
     Set inventoryTable = FindTable(operatorWb, TABLE_INVENTORY)
     If inventoryTable Is Nothing Or inventoryTable.DataBodyRange Is Nothing Then Exit Function
@@ -322,45 +327,75 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
     searchText = LCase$(Trim$(filterText))
     sourceValues = inventoryTable.DataBodyRange.Value2
     ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 8)
+    Set groupIndex = CreateObject("Scripting.Dictionary")
+    groupIndex.CompareMode = vbTextCompare
     For recordIndex = 1 To UBound(sourceValues, 1)
         systemKey = CellText(inventoryTable, recordIndex, "System_Key")
         itemCode = CellText(inventoryTable, recordIndex, "ITEM_CODE")
         itemName = CellText(inventoryTable, recordIndex, "ITEM")
         If itemName = "" Then itemName = CellText(inventoryTable, recordIndex, "ItemName")
         uomValue = CellText(inventoryTable, recordIndex, "UOM")
-        qtyValue = CellText(inventoryTable, recordIndex, "QtyAvailable")
-        If qtyValue = "" Then qtyValue = CellText(inventoryTable, recordIndex, "TOTAL INV")
+        qtyText = CellText(inventoryTable, recordIndex, "QtyAvailable")
+        If qtyText = "" Then qtyText = CellText(inventoryTable, recordIndex, "TOTAL INV")
+        If IsNumeric(qtyText) Then qtyValue = CDbl(qtyText) Else qtyValue = 0
         locationValue = CellText(inventoryTable, recordIndex, "LOCATION")
+        conditionValue = UCase$(CellText(inventoryTable, recordIndex, "Condition"))
+        If conditionValue = "" Then conditionValue = "GOOD"
         descriptionValue = CellText(inventoryTable, recordIndex, "DESCRIPTION")
         vendorValue = CellText(inventoryTable, recordIndex, "VENDOR(s)")
         If systemKey = "" Or itemCode = "" Then GoTo NextInventoryRecord
 
-        searchableText = LCase$(systemKey & " " & itemCode & " " & itemName & " " & _
-                                    descriptionValue & " " & vendorValue & " " & locationValue)
-        If searchText <> "" Then
-            If InStr(1, searchableText, searchText, vbTextCompare) = 0 Then
-                GoTo NextInventoryRecord
-            End If
+        groupKey = UCase$(itemCode) & Chr$(30) & UCase$(uomValue) & Chr$(30) & _
+                   UCase$(locationValue) & Chr$(30) & conditionValue
+        If groupIndex.Exists(groupKey) Then
+            outputValues(CLng(groupIndex(groupKey)), 5) = _
+                CDbl(outputValues(CLng(groupIndex(groupKey)), 5)) + qtyValue
+        Else
+            outputIndex = outputIndex + 1
+            groupIndex.Add groupKey, outputIndex
+            outputValues(outputIndex, 1) = systemKey
+            outputValues(outputIndex, 2) = itemCode
+            outputValues(outputIndex, 3) = itemName
+            outputValues(outputIndex, 4) = uomValue
+            outputValues(outputIndex, 5) = qtyValue
+            outputValues(outputIndex, 6) = locationValue
+            outputValues(outputIndex, 7) = descriptionValue
+            outputValues(outputIndex, 8) = vendorValue
         End If
-
-        outputIndex = outputIndex + 1
-        outputValues(outputIndex, 1) = systemKey
-        outputValues(outputIndex, 2) = itemCode
-        outputValues(outputIndex, 3) = itemName
-        outputValues(outputIndex, 4) = uomValue
-        outputValues(outputIndex, 5) = qtyValue
-        outputValues(outputIndex, 6) = locationValue
-        outputValues(outputIndex, 7) = descriptionValue
-        outputValues(outputIndex, 8) = vendorValue
 NextInventoryRecord:
     Next recordIndex
 
     If outputIndex = 0 Then Exit Function
-    ReDim trimmedValues(1 To outputIndex, 1 To 8)
+
     For recordIndex = 1 To outputIndex
-        For fieldIndex = 1 To 8
-            trimmedValues(recordIndex, fieldIndex) = outputValues(recordIndex, fieldIndex)
-        Next fieldIndex
+        If CDbl(outputValues(recordIndex, 5)) <= 0 Then GoTo NextGroupedCount
+        searchableText = LCase$(CStr(outputValues(recordIndex, 2)) & " " & _
+                                    CStr(outputValues(recordIndex, 3)) & " " & _
+                                    CStr(outputValues(recordIndex, 6)) & " " & _
+                                    CStr(outputValues(recordIndex, 7)) & " " & _
+                                    CStr(outputValues(recordIndex, 8)))
+        If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then _
+            matchedIndex = matchedIndex + 1
+NextGroupedCount:
+    Next recordIndex
+    If matchedIndex = 0 Then Exit Function
+
+    ReDim trimmedValues(1 To matchedIndex, 1 To 8)
+    matchedIndex = 0
+    For recordIndex = 1 To outputIndex
+        If CDbl(outputValues(recordIndex, 5)) <= 0 Then GoTo NextGroupedCopy
+        searchableText = LCase$(CStr(outputValues(recordIndex, 2)) & " " & _
+                                    CStr(outputValues(recordIndex, 3)) & " " & _
+                                    CStr(outputValues(recordIndex, 6)) & " " & _
+                                    CStr(outputValues(recordIndex, 7)) & " " & _
+                                    CStr(outputValues(recordIndex, 8)))
+        If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then
+            matchedIndex = matchedIndex + 1
+            For fieldIndex = 1 To 8
+                trimmedValues(matchedIndex, fieldIndex) = outputValues(recordIndex, fieldIndex)
+            Next fieldIndex
+        End If
+NextGroupedCopy:
     Next recordIndex
     LoadReceivingFormInventoryForWorkbook = trimmedValues
 End Function

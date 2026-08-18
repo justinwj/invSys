@@ -6,6 +6,10 @@ Private mSeedCallbackAutomationEnabled As Boolean
 Private mSeedCallbackAutomationWarehouseId As String
 Private mSeedCallbackAutomationStationId As String
 Private mSeedCallbackAutomationUserId As String
+Private mSeedCallbackAutomationAction As String
+Private mSeedCallbackAutomationUploadPath As String
+Private mSeedCallbackAutomationDeleteConfirmed As Boolean
+Private mSeedCallbackLastResult As String
 
 Sub Admin_Click()
     Dim report As String
@@ -160,19 +164,69 @@ Sub Seed_DemoInventory()
     Dim userId As String
     Dim report As String
     Dim stage As String
+    Dim actionName As String
+    Dim uploadPath As String
+    Dim deleteConfirmed As Boolean
+    Dim succeeded As Boolean
 
     On Error GoTo FailSeedCallback
 
     stage = "context resolution"
-    If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, report) Then
+    mSeedCallbackLastResult = ""
+    If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, actionName, uploadPath, report) Then
         If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
+        mSeedCallbackLastResult = "FAIL|" & report
         GoTo CleanExit
     End If
 
-    stage = "queue and processor application"
-    If modAdminInventorySeed.SeedDemoInventoryForWarehouse(warehouseId, stationId, userId, report) Then
+    If actionName = modAdminInventorySeed.DEMO_ACTION_DELETE Then
+        If mSeedCallbackAutomationEnabled Then
+            deleteConfirmed = mSeedCallbackAutomationDeleteConfirmed
+        Else
+            deleteConfirmed = (MsgBox( _
+                "Delete all active DEMO- inventory from this warehouse?" & vbCrLf & vbCrLf & _
+                "This posts audited adjustments that deplete demo entities; event history is retained.", _
+                vbQuestion Or vbYesNo Or vbDefaultButton2, "invSys Admin - Demo Inventory") = vbYes)
+        End If
+        If Not deleteConfirmed Then
+            report = "Delete Demo Inventory cancelled."
+            mSeedCallbackLastResult = "CANCEL|" & report
+            GoTo CleanExit
+        End If
+    ElseIf actionName = modAdminInventorySeed.DEMO_ACTION_UPLOAD Then
+        If uploadPath = "" And Not mSeedCallbackAutomationEnabled Then uploadPath = PromptDemoInventoryCsvPath()
+        If uploadPath = "" Then
+            report = "Upload Demo Inventory cancelled."
+            mSeedCallbackLastResult = "CANCEL|" & report
+            GoTo CleanExit
+        End If
+    End If
+
+    stage = LCase$(actionName) & " queue and processor application"
+    Select Case actionName
+        Case modAdminInventorySeed.DEMO_ACTION_SEED
+            If uploadPath = "" Then
+                succeeded = modAdminInventorySeed.SeedDemoInventoryForWarehouse( _
+                    warehouseId, stationId, userId, report)
+            Else
+                succeeded = modAdminInventorySeed.UploadDemoInventoryForWarehouse( _
+                    warehouseId, stationId, userId, uploadPath, report)
+            End If
+        Case modAdminInventorySeed.DEMO_ACTION_DELETE
+            succeeded = modAdminInventorySeed.DeleteDemoInventoryForWarehouse( _
+                warehouseId, stationId, userId, report)
+        Case modAdminInventorySeed.DEMO_ACTION_UPLOAD
+            succeeded = modAdminInventorySeed.UploadDemoInventoryForWarehouse( _
+                warehouseId, stationId, userId, uploadPath, report)
+        Case Else
+            report = "Choose Seed Demo Inventory, Delete Demo Inventory, or Upload Demo Inventory."
+    End Select
+
+    If succeeded Then
+        mSeedCallbackLastResult = "OK|" & report
         If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbInformation, "invSys Admin"
     Else
+        mSeedCallbackLastResult = "FAIL|" & report
         If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
     End If
 
@@ -181,6 +235,9 @@ CleanExit:
     mSeedCallbackAutomationWarehouseId = ""
     mSeedCallbackAutomationStationId = ""
     mSeedCallbackAutomationUserId = ""
+    mSeedCallbackAutomationAction = ""
+    mSeedCallbackAutomationUploadPath = ""
+    mSeedCallbackAutomationDeleteConfirmed = False
     Exit Sub
 
 FailSeedCallback:
@@ -188,6 +245,7 @@ FailSeedCallback:
              "Error " & CStr(Err.Number) & vbCrLf & _
              "Source: " & SanitizeSeedCallbackErrorText(Err.Source) & vbCrLf & _
              SanitizeSeedCallbackErrorText(Err.Description)
+    mSeedCallbackLastResult = "FAIL|" & report
     If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
     Resume CleanExit
 End Sub
@@ -198,8 +256,47 @@ Public Sub SetSeedInventorySelectionForAutomation(ByVal warehouseId As String, _
     mSeedCallbackAutomationWarehouseId = Trim$(warehouseId)
     mSeedCallbackAutomationStationId = Trim$(stationId)
     mSeedCallbackAutomationUserId = Trim$(userId)
+    mSeedCallbackAutomationAction = modAdminInventorySeed.DEMO_ACTION_SEED
+    mSeedCallbackAutomationUploadPath = ""
+    mSeedCallbackAutomationDeleteConfirmed = False
     mSeedCallbackAutomationEnabled = True
 End Sub
+
+Public Sub SetDemoInventorySelectionForAutomation(ByVal warehouseId As String, _
+                                                  ByVal stationId As String, _
+                                                  ByVal userId As String, _
+                                                  ByVal actionName As String, _
+                                                  Optional ByVal uploadPath As String = "", _
+                                                  Optional ByVal deleteConfirmed As Boolean = False)
+    mSeedCallbackAutomationWarehouseId = Trim$(warehouseId)
+    mSeedCallbackAutomationStationId = Trim$(stationId)
+    mSeedCallbackAutomationUserId = Trim$(userId)
+    mSeedCallbackAutomationAction = UCase$(Trim$(actionName))
+    mSeedCallbackAutomationUploadPath = Trim$(uploadPath)
+    mSeedCallbackAutomationDeleteConfirmed = deleteConfirmed
+    mSeedCallbackAutomationEnabled = True
+End Sub
+
+Public Function GetLastDemoInventoryCallbackResultForAutomation() As String
+    GetLastDemoInventoryCallbackResultForAutomation = mSeedCallbackLastResult
+End Function
+
+Public Function RunDemoInventoryActionCallbackForAutomation(ByVal warehouseId As String, _
+                                                            ByVal stationId As String, _
+                                                            ByVal userId As String, _
+                                                            ByVal actionName As String, _
+                                                            Optional ByVal uploadPath As String = "", _
+                                                            Optional ByVal deleteConfirmed As Boolean = False) As String
+    SetDemoInventorySelectionForAutomation warehouseId, stationId, userId, _
+        actionName, uploadPath, deleteConfirmed
+    Seed_DemoInventory
+    RunDemoInventoryActionCallbackForAutomation = mSeedCallbackLastResult
+End Function
+
+Public Function DemoInventoryFormContractForAutomation() As String
+    DemoInventoryFormContractForAutomation = frmSeedInventory.TestDemoInventoryActionContract()
+    Unload frmSeedInventory
+End Function
 
 Sub Add_InventoryItem()
     Dim warehouseId As String
@@ -963,6 +1060,8 @@ End Function
 Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
                                              ByRef stationId As String, _
                                              ByRef userId As String, _
+                                             ByRef actionName As String, _
+                                             ByRef uploadPath As String, _
                                              ByRef report As String) As Boolean
     Dim warehouseOptions As Collection
     Dim runtimeRoot As String
@@ -995,6 +1094,9 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         warehouseId = mSeedCallbackAutomationWarehouseId
         stationId = mSeedCallbackAutomationStationId
         userId = mSeedCallbackAutomationUserId
+        actionName = UCase$(Trim$(mSeedCallbackAutomationAction))
+        uploadPath = Trim$(mSeedCallbackAutomationUploadPath)
+        If actionName = "" Then actionName = modAdminInventorySeed.DEMO_ACTION_SEED
         If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
         For Each item In warehouseOptions
             If StrComp(Trim$(CStr(item(1))), warehouseId, vbTextCompare) = 0 _
@@ -1021,6 +1123,8 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         stationId = Trim$(frmSeedInventory.SelectedStationId)
         runtimeRoot = Trim$(frmSeedInventory.SelectedRuntimeRoot)
         userId = Trim$(frmSeedInventory.SelectedUserId)
+        actionName = UCase$(Trim$(frmSeedInventory.SelectedAction))
+        uploadPath = Trim$(frmSeedInventory.SelectedUploadPath)
         Unload frmSeedInventory
     End If
 
@@ -1033,6 +1137,14 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         report = "Admin user is required."
         Exit Function
     End If
+    Select Case actionName
+        Case modAdminInventorySeed.DEMO_ACTION_SEED, _
+             modAdminInventorySeed.DEMO_ACTION_DELETE, _
+             modAdminInventorySeed.DEMO_ACTION_UPLOAD
+        Case Else
+            report = "Choose a demo inventory action."
+            Exit Function
+    End Select
     If runtimeRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
 
     If Not modConfig.LoadConfig(warehouseId, stationId) Then
@@ -1041,6 +1153,16 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
     End If
 
     ResolveSeedInventoryContext = True
+End Function
+
+Private Function PromptDemoInventoryCsvPath() As String
+    Dim selectedPath As Variant
+
+    selectedPath = Application.GetOpenFilename( _
+        FileFilter:="CSV files (*.csv),*.csv", _
+        Title:="Upload Demo Inventory CSV")
+    If VarType(selectedPath) = vbBoolean Then Exit Function
+    PromptDemoInventoryCsvPath = Trim$(CStr(selectedPath))
 End Function
 
 Private Function SanitizeSeedCallbackErrorText(ByVal valueText As String) As String

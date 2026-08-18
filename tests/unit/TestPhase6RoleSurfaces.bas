@@ -820,6 +820,51 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim loInv As ListObject
+    Dim lr As ListRow
+    Dim rowsOut As Variant
+
+    Set wb = Application.Workbooks.Add
+
+    On Error GoTo CleanFail
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set loInv = FindTable(wb, "invSys")
+    If loInv Is Nothing Then GoTo CleanExit
+
+    Set lr = FirstOrNewListRowPhase6(loInv)
+    PopulateReceivingChoiceRowPhase6 loInv, lr.Index, "SYS-AGG-001", _
+        "DEMO-RAW-BLACK-TEA", "Black Tea", "LB", "A1", 500
+    Set lr = loInv.ListRows.Add
+    PopulateReceivingChoiceRowPhase6 loInv, lr.Index, "SYS-AGG-002", _
+        "DEMO-RAW-BLACK-TEA", "Black Tea", "LB", "A1", 1000
+    Set lr = loInv.ListRows.Add
+    PopulateReceivingChoiceRowPhase6 loInv, lr.Index, "SYS-AGG-003", _
+        "DEMO-RAW-BLACK-TEA", "Black Tea", "LB", "B2", 250
+    Set lr = loInv.ListRows.Add
+    PopulateReceivingChoiceRowPhase6 loInv, lr.Index, "SYS-AGG-DEPLETED", _
+        "DEMO-RAW-BLACK-TEA", "Black Tea", "LB", "C3", 0
+
+    rowsOut = modTS_Received.LoadReceivingFormInventoryForWorkbook(wb, "black tea")
+    If IsEmpty(rowsOut) Or Not IsArray(rowsOut) Then GoTo CleanExit
+    If UBound(rowsOut, 1) = 2 _
+       And CStr(rowsOut(1, 1)) = "SYS-AGG-001" _
+       And CDbl(rowsOut(1, 5)) = 1500 _
+       And CStr(rowsOut(1, 6)) = "A1" _
+       And CDbl(rowsOut(2, 5)) = 250 _
+       And CStr(rowsOut(2, 6)) = "B2" Then
+        TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates = 1
+    End If
+
+CleanExit:
+    CloseNoSavePhase6 wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestProductionForm_ClosedCapturedWorkbookDoesNotRebindToActiveWorkbook() As Long
     Dim capturedWb As Workbook
     Dim decoyWb As Workbook
@@ -1823,6 +1868,32 @@ Private Sub SetTableValueByColumn(ByVal lo As ListObject, ByVal rowIndex As Long
     idx = TableColumnIndex(lo, columnName)
     If idx = 0 Then Exit Sub
     lo.DataBodyRange.Cells(rowIndex, idx).Value = valueOut
+End Sub
+
+Private Function FirstOrNewListRowPhase6(ByVal lo As ListObject) As ListRow
+    If lo.DataBodyRange Is Nothing Then
+        Set FirstOrNewListRowPhase6 = lo.ListRows.Add
+    Else
+        Set FirstOrNewListRowPhase6 = lo.ListRows(1)
+    End If
+End Function
+
+Private Sub PopulateReceivingChoiceRowPhase6(ByVal lo As ListObject, _
+                                             ByVal rowIndex As Long, _
+                                             ByVal systemKey As String, _
+                                             ByVal itemCode As String, _
+                                             ByVal itemName As String, _
+                                             ByVal uomValue As String, _
+                                             ByVal locationValue As String, _
+                                             ByVal qtyAvailable As Double)
+    SetTableValueByColumn lo, rowIndex, "System_Key", systemKey
+    SetTableValueByColumn lo, rowIndex, "ITEM_CODE", itemCode
+    SetTableValueByColumn lo, rowIndex, "ITEM", itemName
+    SetTableValueByColumn lo, rowIndex, "UOM", uomValue
+    SetTableValueByColumn lo, rowIndex, "LOCATION", locationValue
+    SetTableValueByColumn lo, rowIndex, "DESCRIPTION", "Aggregation contract fixture"
+    SetTableValueByColumn lo, rowIndex, "TOTAL INV", qtyAvailable
+    SetTableValueByColumn lo, rowIndex, "QtyAvailable", qtyAvailable
 End Sub
 
 Private Function GetTableValueByColumn(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant

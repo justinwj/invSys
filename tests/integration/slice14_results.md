@@ -1,6 +1,6 @@
 # Slice 14 Full-Chain, Restart, and Reconciliation Evidence
 
-- Date: 2026-08-17 17:56:20
+- Date: 2026-08-17 19:44:43
 - Package set: R1-5
 - Ordered phases: 
 GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> ProcessorApplyReceive -> RefreshAfterReceive -> ProductionTwoBatches -> ProductionConsumptionAndOutput -> BoxingVersionSelection -> ShipmentStagingAndSent -> ProcessorApplyShipment -> FinalRefresh -> RestartAndReconcile
@@ -17,7 +17,7 @@ GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> P
 | Check | Result | Detail |
 |---|---|---|
 | GenerateFreshWarehouse | PASS | Packaged Admin created a fresh greenfield warehouse runtime. |
-| SeedDemoInventoryThroughAdmin | PASS | OK/Demo inventory seeded./Applied=1/Processor=Applied=1; SkipDup=0; Poison=0; RunId=<redacted> |
+| SeedDemoInventoryThroughAdmin | PASS | OK/Demo inventory seeded./Created=21/Skipped=3/Applied=1/Processor=Applied=1; SkipDup=0; Poison=0; RunId=<redacted> |
 | AdminEntry.InventoryCreated | PASS | The packaged entry boundary produced the canonical inventory workbook. |
 | AdminEntry.SourceIntegrationRegression | PASS | Create Warehouse D14 source integration remained green. |
 | ReceiveInventory | PASS | Packaged Receiving used its captured-workbook form action. |

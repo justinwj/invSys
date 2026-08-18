@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4633,
-                     "lineCount":  100792,
+                     "procedureCount":  4662,
+                     "lineCount":  101546,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -1831,16 +1831,18 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm",
+                           "id":  "duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm+FindTableByNameSeed",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "frmCreateDeleteUser",
                            "procedureNames":  [
                                                   "FindListObjectByNameShipping",
-                                                  "FindListObjectForm"
+                                                  "FindListObjectForm",
+                                                  "FindTableByNameSeed"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateDeleteUser.frm",
+                                               "src/Admin/Modules/modAdminInventorySeed.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -7356,12 +7358,12 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
-                                                  "mBtnOK_Click"
+                                                  "mBtnDelete_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"
@@ -7379,6 +7381,40 @@
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
                                                   "mBtnRepairInboxes_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnSeed_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnSeed_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnUpload_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnUpload_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"
@@ -11820,6 +11856,7 @@
                                                   "CombinedPictureReferencesAdmin",
                                                   "CsvFieldAdmin",
                                                   "CsvHeaderMapAdmin",
+                                                  "DemoInventoryFormContractForAutomation",
                                                   "EnsureCatalogColumnAdmin",
                                                   "EnsureDemoStationInboxes",
                                                   "Export_LoadedPackageReport",
@@ -11827,6 +11864,7 @@
                                                   "FindListObjectByNameAdminLocal",
                                                   "FindOpenWorkbookByFullNameAdmin",
                                                   "GenerateInventorySkuAdmin",
+                                                  "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
@@ -11843,6 +11881,7 @@
                                                   "Open_WarehouseDirectory",
                                                   "ParseCsvLineAdmin",
                                                   "ParsePictureReferencesAdmin",
+                                                  "PromptDemoInventoryCsvPath",
                                                   "PromptForWarehouseDirectoryRootIfNeeded",
                                                   "PublishSchedulerResult",
                                                   "ResolveAdminCurrentTargetContext",
@@ -11852,6 +11891,7 @@
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
                                                   "Scheduler_RunWarehouseBatch",
@@ -11860,6 +11900,7 @@
                                                   "SeedDemoInventoryForWarehouse",
                                                   "Set_CurrentUser",
                                                   "SetCatalogValueAdmin",
+                                                  "SetDemoInventorySelectionForAutomation",
                                                   "SetInventoryQuantityForWarehouse",
                                                   "SetPictureReferencesInCatalogAdmin",
                                                   "SetSeedInventorySelectionForAutomation",
@@ -15957,12 +15998,46 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.DemoInventoryFormContractForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "DemoInventoryFormContractForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Export_LoadedPackageReport",
                            "candidateType":  "UNRESOLVED",
                            "confidence":  "MEDIUM",
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Export_LoadedPackageReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.GetLastDemoInventoryCallbackResultForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "GetLastDemoInventoryCallbackResultForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -16014,6 +16089,23 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Open_SetupTesterStation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.RunDemoInventoryActionCallbackForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "RunDemoInventoryActionCallbackForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -16187,6 +16279,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryStateForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modAdminInventorySeed",
+                           "procedureNames":  [
+                                                  "DescribeDemoInventoryStateForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdminInventorySeed.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

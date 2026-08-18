@@ -15,6 +15,8 @@
 - ConfigHashUnchanged: True
 - ConfigLoaded: True
 - ConfigSurfaceChanged: False
+- DeleteDepletedActiveDemoInventory: True
+- DemoInventoryFormActions: OK|Seed=True|Delete=True|Upload=True|Dataset=True
 - EntityCount: 24
 - InventoryHashChanged: True
 - OperatorAllConditionsGood: True
@@ -26,6 +28,8 @@
 - ReceivingRefreshFormAction: OK|<redacted-detail>
 - ReceivingSurfaceEnsured: True
 - ReceivingVisibleDemoRows: 24
+- RepeatedSeedIdempotent: True
+- RepeatedUploadIdempotent: True
 - SignedIn: True
 - SnapshotAllConditionsGood: True
 - SnapshotCategoryCoverage: True
@@ -36,11 +40,13 @@
 - TargetPathsSet: True
 - TargetSelected: True
 - UniqueSystemKeys: 24
+- UploadAndDeleteGuards: True
+- UploadCreatedOneDemoEntity: True
 
 ## Observed result
 
-The public ribbon callback seeded the complete 24-entity R1 workflow kit, including box-making consumables, published the same immutable identities to the snapshot, and exposed them through a refreshed saved Receiving operator workbook without using the active canonical config workbook as an Admin surface.
+The public Demo Inventory callback seeded the complete 24-entity R1 kit idempotently, depleted it through exact-key audited adjustments, uploaded one validated CSV entity idempotently, and retained the original snapshot/Receiving projection contract.
 
 ## Captured UI
 
-- `ACTION|InjectedFormSelectionThroughSeed_DemoInventory`
+- `ACTION|SeedThroughPublicDemoInventoryCallback`

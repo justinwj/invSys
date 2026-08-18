@@ -700,8 +700,9 @@
                            "name":  "frmSeedInventory",
                            "kind":  "FORM",
                            "sourcePath":  "src/Admin/Forms/frmSeedInventory.frm",
-                           "lineCount":  316,
+                           "lineCount":  397,
                            "procedureNames":  [
+                                                  "AcceptDemoInventoryAction",
                                                   "Accepted",
                                                   "AddButton",
                                                   "AddCombo",
@@ -709,16 +710,22 @@
                                                   "AddTextBox",
                                                   "ApplyWarehouseSelection",
                                                   "Configure",
+                                                  "ConfigureDemoDataSetChoices",
                                                   "EnsureControls",
                                                   "mBtnCancel_Click",
-                                                  "mBtnOK_Click",
+                                                  "mBtnDelete_Click",
                                                   "mBtnRepairInboxes_Click",
+                                                  "mBtnSeed_Click",
+                                                  "mBtnUpload_Click",
                                                   "mCmbWarehouse_Change",
                                                   "RepairStationInboxes",
+                                                  "SelectedAction",
                                                   "SelectedRuntimeRoot",
                                                   "SelectedStationId",
+                                                  "SelectedUploadPath",
                                                   "SelectedUserId",
                                                   "SelectedWarehouseId",
+                                                  "TestDemoInventoryActionContract",
                                                   "UserForm_Activate",
                                                   "UserForm_Initialize"
                                               ],
@@ -825,7 +832,7 @@
                            "name":  "modAdmin",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modAdmin.bas",
-                           "lineCount":  1773,
+                           "lineCount":  1895,
                            "procedureNames":  [
                                                   "Add_InventoryItem",
                                                   "Add_WarehouseDirectoryRoot",
@@ -848,6 +855,7 @@
                                                   "CombinedPictureReferencesAdmin",
                                                   "CsvFieldAdmin",
                                                   "CsvHeaderMapAdmin",
+                                                  "DemoInventoryFormContractForAutomation",
                                                   "EnsureCatalogColumnAdmin",
                                                   "EnsureDemoStationInboxes",
                                                   "Export_LoadedPackageReport",
@@ -855,6 +863,7 @@
                                                   "FindListObjectByNameAdminLocal",
                                                   "FindOpenWorkbookByFullNameAdmin",
                                                   "GenerateInventorySkuAdmin",
+                                                  "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
@@ -871,6 +880,7 @@
                                                   "Open_WarehouseDirectory",
                                                   "ParseCsvLineAdmin",
                                                   "ParsePictureReferencesAdmin",
+                                                  "PromptDemoInventoryCsvPath",
                                                   "PromptForWarehouseDirectoryRootIfNeeded",
                                                   "PublishSchedulerResult",
                                                   "ResolveAdminCurrentTargetContext",
@@ -880,6 +890,7 @@
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
                                                   "Scheduler_RunWarehouseBatch",
@@ -888,6 +899,7 @@
                                                   "SeedDemoInventoryForWarehouse",
                                                   "Set_CurrentUser",
                                                   "SetCatalogValueAdmin",
+                                                  "SetDemoInventorySelectionForAutomation",
                                                   "SetInventoryQuantityForWarehouse",
                                                   "SetPictureReferencesInCatalogAdmin",
                                                   "SetSeedInventorySelectionForAutomation",
@@ -1065,13 +1077,30 @@
                            "name":  "modAdminInventorySeed",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modAdminInventorySeed.bas",
-                           "lineCount":  191,
+                           "lineCount":  701,
                            "procedureNames":  [
                                                   "AddDemoInventoryItem",
+                                                  "BuildActiveDemoGroupIndex",
+                                                  "BuildCsvHeaderIndexSeed",
                                                   "BuildDemoInventoryPayload",
+                                                  "CsvHasRequiredHeadersSeed",
+                                                  "CsvRawValueSeed",
+                                                  "CsvValueSeed",
+                                                  "DeleteDemoInventoryForWarehouse",
+                                                  "DemoGroupKeySeed",
+                                                  "DescribeDemoInventoryStateForAutomation",
                                                   "EnsureDemoStationInboxes",
                                                   "FindOpenWorkbookByPathSeed",
-                                                  "SeedDemoInventoryForWarehouse"
+                                                  "FindTableByNameSeed",
+                                                  "IsDemoSkuSeed",
+                                                  "LoadDemoInventoryCsv",
+                                                  "NormalizeCsvHeaderSeed",
+                                                  "QueueDemoCreateAndProcess",
+                                                  "SeedDemoInventoryForWarehouse",
+                                                  "TableCellNumberSeed",
+                                                  "TableCellTextSeed",
+                                                  "TableColumnIndexSeed",
+                                                  "UploadDemoInventoryForWarehouse"
                                               ],
                            "metadata":  {
 
@@ -2207,7 +2236,7 @@
                            "name":  "modInventoryViewerData",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Core/Modules/modInventoryViewerData.bas",
-                           "lineCount":  171,
+                           "lineCount":  177,
                            "procedureNames":  [
                                                   "LoadCurrentInventoryViewerData",
                                                   "ViewerCellNumber",
@@ -5372,7 +5401,7 @@
                            "name":  "modTS_Received",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
-                           "lineCount":  964,
+                           "lineCount":  999,
                            "procedureNames":  [
                                                   "CanHideWorksheet",
                                                   "CellNumber",
@@ -7630,7 +7659,6 @@
                                                                    ],
                            "rootIds":  [
                                            "convention.userform-event:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnOK_Click",
-                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmSignIn.frm:frmSignIn.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnOK_Click"
                                        ]
@@ -10014,7 +10042,8 @@
 
                                                                    ],
                            "rootIds":  [
-                                           "convention.userform-event:src_Admin_Forms_frmCreateDeleteUser.frm:frmCreateDeleteUser.mBtnDelete_Click"
+                                           "convention.userform-event:src_Admin_Forms_frmCreateDeleteUser.frm:frmCreateDeleteUser.mBtnDelete_Click",
+                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click"
                                        ]
                        },
                        {
@@ -14466,8 +14495,8 @@
                            "name":  "Accepted",
                            "visibility":  "PUBLIC",
                            "kind":  "PROPERTY_GET",
-                           "startLine":  44,
-                           "endLine":  46,
+                           "startLine":  53,
+                           "endLine":  55,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -14487,8 +14516,8 @@
                            "name":  "SelectedWarehouseId",
                            "visibility":  "PUBLIC",
                            "kind":  "PROPERTY_GET",
-                           "startLine":  48,
-                           "endLine":  50,
+                           "startLine":  57,
+                           "endLine":  59,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -14508,8 +14537,8 @@
                            "name":  "SelectedStationId",
                            "visibility":  "PUBLIC",
                            "kind":  "PROPERTY_GET",
-                           "startLine":  52,
-                           "endLine":  54,
+                           "startLine":  61,
+                           "endLine":  63,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -14529,8 +14558,8 @@
                            "name":  "SelectedRuntimeRoot",
                            "visibility":  "PUBLIC",
                            "kind":  "PROPERTY_GET",
-                           "startLine":  56,
-                           "endLine":  58,
+                           "startLine":  65,
+                           "endLine":  67,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -14550,8 +14579,50 @@
                            "name":  "SelectedUserId",
                            "visibility":  "PUBLIC",
                            "kind":  "PROPERTY_GET",
-                           "startLine":  60,
-                           "endLine":  62,
+                           "startLine":  69,
+                           "endLine":  71,
+                           "lineCount":  3,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "SelectedAction",
+                           "visibility":  "PUBLIC",
+                           "kind":  "PROPERTY_GET",
+                           "startLine":  73,
+                           "endLine":  75,
+                           "lineCount":  3,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "SelectedUploadPath",
+                           "visibility":  "PUBLIC",
+                           "kind":  "PROPERTY_GET",
+                           "startLine":  77,
+                           "endLine":  79,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -14571,11 +14642,12 @@
                            "name":  "Configure",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  64,
-                           "endLine":  100,
-                           "lineCount":  37,
+                           "startLine":  81,
+                           "endLine":  121,
+                           "lineCount":  41,
                            "directCalls":  [
                                                "ApplyWarehouseSelection",
+                                               "ConfigureDemoDataSetChoices",
                                                "CurrentComputerStationId",
                                                "EnsureControls"
                                            ],
@@ -14594,8 +14666,8 @@
                            "name":  "UserForm_Initialize",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  102,
-                           "endLine":  104,
+                           "startLine":  123,
+                           "endLine":  125,
                            "lineCount":  3,
                            "directCalls":  [
                                                "EnsureControls"
@@ -14630,8 +14702,8 @@
                            "name":  "UserForm_Activate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  106,
-                           "endLine":  112,
+                           "startLine":  127,
+                           "endLine":  133,
                            "lineCount":  7,
                            "directCalls":  [
                                                "EnableResizableUserForm"
@@ -14667,14 +14739,36 @@
                            "name":  "EnsureControls",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  114,
-                           "endLine":  146,
-                           "lineCount":  33,
+                           "startLine":  135,
+                           "endLine":  174,
+                           "lineCount":  40,
                            "directCalls":  [
                                                "AddButton",
                                                "AddCombo",
                                                "AddLabel",
-                                               "AddTextBox"
+                                               "AddTextBox",
+                                               "ConfigureDemoDataSetChoices"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "ConfigureDemoDataSetChoices",
+                           "visibility":  "PRIVATE",
+                           "kind":  "SUB",
+                           "startLine":  176,
+                           "endLine":  182,
+                           "lineCount":  7,
+                           "directCalls":  [
+
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -14691,8 +14785,8 @@
                            "name":  "AddLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  148,
-                           "endLine":  160,
+                           "startLine":  184,
+                           "endLine":  196,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -14712,8 +14806,8 @@
                            "name":  "AddCombo",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  162,
-                           "endLine":  172,
+                           "startLine":  198,
+                           "endLine":  208,
                            "lineCount":  11,
                            "directCalls":  [
                                                "Add"
@@ -14733,8 +14827,8 @@
                            "name":  "AddTextBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  174,
-                           "endLine":  184,
+                           "startLine":  210,
+                           "endLine":  220,
                            "lineCount":  11,
                            "directCalls":  [
                                                "Add"
@@ -14754,8 +14848,8 @@
                            "name":  "AddButton",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  186,
-                           "endLine":  198,
+                           "startLine":  222,
+                           "endLine":  234,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -14775,8 +14869,8 @@
                            "name":  "mCmbWarehouse_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  200,
-                           "endLine":  202,
+                           "startLine":  236,
+                           "endLine":  238,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ApplyWarehouseSelection"
@@ -14794,12 +14888,12 @@
                        },
                        {
                            "componentName":  "frmSeedInventory",
-                           "name":  "mBtnOK_Click",
+                           "name":  "AcceptDemoInventoryAction",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  204,
-                           "endLine":  224,
-                           "lineCount":  21,
+                           "startLine":  240,
+                           "endLine":  261,
+                           "lineCount":  22,
                            "directCalls":  [
 
                                            ],
@@ -14810,10 +14904,71 @@
 
                                                                    ],
                            "rootIds":  [
-                                           "convention.userform-event:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnOK_Click",
-                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
-                                           "convention.userform-event:src_Core_Forms_frmSignIn.frm:frmSignIn.mBtnOK_Click",
-                                           "convention.userform-event:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnOK_Click"
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "mBtnSeed_Click",
+                           "visibility":  "PRIVATE",
+                           "kind":  "SUB",
+                           "startLine":  263,
+                           "endLine":  271,
+                           "lineCount":  9,
+                           "directCalls":  [
+                                               "AcceptDemoInventoryAction"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnSeed_Click"
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "mBtnDelete_Click",
+                           "visibility":  "PRIVATE",
+                           "kind":  "SUB",
+                           "startLine":  273,
+                           "endLine":  275,
+                           "lineCount":  3,
+                           "directCalls":  [
+                                               "AcceptDemoInventoryAction"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+                                           "convention.userform-event:src_Admin_Forms_frmCreateDeleteUser.frm:frmCreateDeleteUser.mBtnDelete_Click",
+                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click"
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
+                           "name":  "mBtnUpload_Click",
+                           "visibility":  "PRIVATE",
+                           "kind":  "SUB",
+                           "startLine":  277,
+                           "endLine":  292,
+                           "lineCount":  16,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnUpload_Click"
                                        ]
                        },
                        {
@@ -14821,8 +14976,8 @@
                            "name":  "mBtnCancel_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  226,
-                           "endLine":  229,
+                           "startLine":  294,
+                           "endLine":  297,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -14843,11 +14998,32 @@
                        },
                        {
                            "componentName":  "frmSeedInventory",
+                           "name":  "TestDemoInventoryActionContract",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  299,
+                           "endLine":  310,
+                           "lineCount":  12,
+                           "directCalls":  [
+                                               "EnsureControls"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmSeedInventory",
                            "name":  "mBtnRepairInboxes_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  231,
-                           "endLine":  258,
+                           "startLine":  312,
+                           "endLine":  339,
                            "lineCount":  28,
                            "directCalls":  [
                                                "CurrentComputerStationId",
@@ -14868,8 +15044,8 @@
                            "name":  "ApplyWarehouseSelection",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  260,
-                           "endLine":  276,
+                           "startLine":  341,
+                           "endLine":  357,
                            "lineCount":  17,
                            "directCalls":  [
                                                "CurrentComputerStationId"
@@ -14889,8 +15065,8 @@
                            "name":  "RepairStationInboxes",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  278,
-                           "endLine":  316,
+                           "startLine":  359,
+                           "endLine":  397,
                            "lineCount":  39,
                            "directCalls":  [
                                                "CurrentComputerStationId",
@@ -16301,8 +16477,8 @@
                            "name":  "Admin_Click",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  10,
-                           "endLine":  17,
+                           "startLine":  14,
+                           "endLine":  21,
                            "lineCount":  8,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16324,8 +16500,8 @@
                            "name":  "Set_CurrentUser",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  19,
-                           "endLine":  21,
+                           "startLine":  23,
+                           "endLine":  25,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PromptSetCurrentUser"
@@ -16345,8 +16521,8 @@
                            "name":  "Open_CreateDeleteUser",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  23,
-                           "endLine":  35,
+                           "startLine":  27,
+                           "endLine":  39,
                            "lineCount":  13,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16368,8 +16544,8 @@
                            "name":  "Open_CreateWarehouse",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  37,
-                           "endLine":  49,
+                           "startLine":  41,
+                           "endLine":  53,
                            "lineCount":  13,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16391,8 +16567,8 @@
                            "name":  "Admin_SetupTesterStation_Click",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  51,
-                           "endLine":  63,
+                           "startLine":  55,
+                           "endLine":  67,
                            "lineCount":  13,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16414,8 +16590,8 @@
                            "name":  "Open_SetupTesterStation",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  65,
-                           "endLine":  67,
+                           "startLine":  69,
+                           "endLine":  71,
                            "lineCount":  3,
                            "directCalls":  [
                                                "Admin_SetupTesterStation_Click"
@@ -16435,8 +16611,8 @@
                            "name":  "Open_LastTesterWorkbook",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  69,
-                           "endLine":  75,
+                           "startLine":  73,
+                           "endLine":  79,
                            "lineCount":  7,
                            "directCalls":  [
                                                "OpenTesterReceivingWorkbook"
@@ -16456,8 +16632,8 @@
                            "name":  "Open_WarehouseDirectory",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  77,
-                           "endLine":  90,
+                           "startLine":  81,
+                           "endLine":  94,
                            "lineCount":  14,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16480,8 +16656,8 @@
                            "name":  "Open_Settings",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  92,
-                           "endLine":  107,
+                           "startLine":  96,
+                           "endLine":  111,
                            "lineCount":  16,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16506,8 +16682,8 @@
                            "name":  "AdminSettingsFormInitializeSmokeForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  109,
-                           "endLine":  133,
+                           "startLine":  113,
+                           "endLine":  137,
                            "lineCount":  25,
                            "directCalls":  [
                                                "TestInitializeConfigEditor"
@@ -16527,8 +16703,8 @@
                            "name":  "Add_WarehouseDirectoryRoot",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  135,
-                           "endLine":  155,
+                           "startLine":  139,
+                           "endLine":  159,
                            "lineCount":  21,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -16551,13 +16727,17 @@
                            "name":  "Seed_DemoInventory",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  157,
-                           "endLine":  193,
-                           "lineCount":  37,
+                           "startLine":  161,
+                           "endLine":  251,
+                           "lineCount":  91,
                            "directCalls":  [
+                                               "DeleteDemoInventoryForWarehouse",
+                                               "PromptDemoInventoryCsvPath",
                                                "ResolveSeedInventoryContext",
                                                "SanitizeSeedCallbackErrorText",
-                                               "SeedDemoInventoryForWarehouse"
+                                               "SeedDemoInventoryForWarehouse",
+                                               "Succeeded",
+                                               "UploadDemoInventoryForWarehouse"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -16574,11 +16754,96 @@
                            "name":  "SetSeedInventorySelectionForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  195,
-                           "endLine":  202,
-                           "lineCount":  8,
+                           "startLine":  253,
+                           "endLine":  263,
+                           "lineCount":  11,
                            "directCalls":  [
 
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdmin",
+                           "name":  "SetDemoInventorySelectionForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "SUB",
+                           "startLine":  265,
+                           "endLine":  278,
+                           "lineCount":  14,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdmin",
+                           "name":  "GetLastDemoInventoryCallbackResultForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  280,
+                           "endLine":  282,
+                           "lineCount":  3,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdmin",
+                           "name":  "RunDemoInventoryActionCallbackForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  284,
+                           "endLine":  294,
+                           "lineCount":  11,
+                           "directCalls":  [
+                                               "Seed_DemoInventory",
+                                               "SetDemoInventorySelectionForAutomation"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdmin",
+                           "name":  "DemoInventoryFormContractForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  296,
+                           "endLine":  299,
+                           "lineCount":  4,
+                           "directCalls":  [
+                                               "TestDemoInventoryActionContract"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -16595,8 +16860,8 @@
                            "name":  "Add_InventoryItem",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  204,
-                           "endLine":  335,
+                           "startLine":  301,
+                           "endLine":  432,
                            "lineCount":  132,
                            "directCalls":  [
                                                "Accepted",
@@ -16644,8 +16909,8 @@
                            "name":  "AddInventoryItemForWarehouse",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  337,
-                           "endLine":  450,
+                           "startLine":  434,
+                           "endLine":  547,
                            "lineCount":  114,
                            "directCalls":  [
                                                "Add",
@@ -16684,8 +16949,8 @@
                            "name":  "AddInventoryQuantityForWarehouse",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  452,
-                           "endLine":  533,
+                           "startLine":  549,
+                           "endLine":  630,
                            "lineCount":  82,
                            "directCalls":  [
                                                "Add",
@@ -16715,8 +16980,8 @@
                            "name":  "SetInventoryQuantityForWarehouse",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  535,
-                           "endLine":  641,
+                           "startLine":  632,
+                           "endLine":  738,
                            "lineCount":  107,
                            "directCalls":  [
                                                "Add",
@@ -16747,8 +17012,8 @@
                            "name":  "UpdateInventoryItemCatalogForWarehouse",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  643,
-                           "endLine":  746,
+                           "startLine":  740,
+                           "endLine":  843,
                            "lineCount":  104,
                            "directCalls":  [
                                                "AppendCatalogEditHistoryAdmin",
@@ -16784,8 +17049,8 @@
                            "name":  "AppendCatalogEditHistoryAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  748,
-                           "endLine":  760,
+                           "startLine":  845,
+                           "endLine":  857,
                            "lineCount":  13,
                            "directCalls":  [
                                                "CatalogCellAdmin",
@@ -16806,8 +17071,8 @@
                            "name":  "GenerateInventorySkuAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  762,
-                           "endLine":  777,
+                           "startLine":  859,
+                           "endLine":  874,
                            "lineCount":  16,
                            "directCalls":  [
                                                "Base36Admin"
@@ -16827,8 +17092,8 @@
                            "name":  "LoadInventoryCatalogItemsAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  779,
-                           "endLine":  837,
+                           "startLine":  876,
+                           "endLine":  934,
                            "lineCount":  59,
                            "directCalls":  [
                                                "Add",
@@ -16854,8 +17119,8 @@
                            "name":  "LoadCatalogItemsIntoAddInventoryForm",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  839,
-                           "endLine":  860,
+                           "startLine":  936,
+                           "endLine":  957,
                            "lineCount":  22,
                            "directCalls":  [
                                                "AddCatalogItem",
@@ -16876,8 +17141,8 @@
                            "name":  "IsNonCountedCustomFieldsAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  862,
-                           "endLine":  875,
+                           "startLine":  959,
+                           "endLine":  972,
                            "lineCount":  14,
                            "directCalls":  [
                                                "CustomFields"
@@ -16897,8 +17162,8 @@
                            "name":  "NonCountedItemKindAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  877,
-                           "endLine":  890,
+                           "startLine":  974,
+                           "endLine":  987,
                            "lineCount":  14,
                            "directCalls":  [
                                                "CustomFields"
@@ -16918,8 +17183,8 @@
                            "name":  "CatalogItemTextAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  892,
-                           "endLine":  896,
+                           "startLine":  989,
+                           "endLine":  993,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -16939,8 +17204,8 @@
                            "name":  "ResolveInventoryQtyOnHandAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  898,
-                           "endLine":  924,
+                           "startLine":  995,
+                           "endLine":  1021,
                            "lineCount":  27,
                            "directCalls":  [
                                                "FindListObjectByNameAdminLocal",
@@ -16964,8 +17229,8 @@
                            "name":  "ResolveQtyOnHandFromBalanceAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  926,
-                           "endLine":  944,
+                           "startLine":  1023,
+                           "endLine":  1041,
                            "lineCount":  19,
                            "directCalls":  [
                                                "ColumnIndexAdminLocal",
@@ -16986,8 +17251,8 @@
                            "name":  "Base36Admin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  946,
-                           "endLine":  961,
+                           "startLine":  1043,
+                           "endLine":  1058,
                            "lineCount":  16,
                            "directCalls":  [
 
@@ -17007,9 +17272,9 @@
                            "name":  "ResolveSeedInventoryContext",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  963,
-                           "endLine":  1044,
-                           "lineCount":  82,
+                           "startLine":  1060,
+                           "endLine":  1156,
+                           "lineCount":  97,
                            "directCalls":  [
                                                "Accepted",
                                                "Configure",
@@ -17020,8 +17285,10 @@
                                                "GetWarehouseId",
                                                "LoadConfig",
                                                "ResolveCurrentUserId",
+                                               "SelectedAction",
                                                "SelectedRuntimeRoot",
                                                "SelectedStationId",
+                                               "SelectedUploadPath",
                                                "SelectedUserId",
                                                "SelectedWarehouseId",
                                                "SetCoreDataRootOverride",
@@ -17039,11 +17306,32 @@
                        },
                        {
                            "componentName":  "modAdmin",
+                           "name":  "PromptDemoInventoryCsvPath",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  1158,
+                           "endLine":  1166,
+                           "lineCount":  9,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdmin",
                            "name":  "SanitizeSeedCallbackErrorText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1046,
-                           "endLine":  1058,
+                           "startLine":  1168,
+                           "endLine":  1180,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -17063,8 +17351,8 @@
                            "name":  "ResolveAdminCurrentTargetContext",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1060,
-                           "endLine":  1097,
+                           "startLine":  1182,
+                           "endLine":  1219,
                            "lineCount":  38,
                            "directCalls":  [
                                                "CanCurrentUserPerformCapabilityCached",
@@ -17089,8 +17377,8 @@
                            "name":  "NextInventoryRowSuggestionAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1099,
-                           "endLine":  1151,
+                           "startLine":  1221,
+                           "endLine":  1273,
                            "lineCount":  53,
                            "directCalls":  [
                                                "ColumnIndexAdminLocal",
@@ -17113,8 +17401,8 @@
                            "name":  "FindOpenWorkbookByFullNameAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1153,
-                           "endLine":  1164,
+                           "startLine":  1275,
+                           "endLine":  1286,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -17134,8 +17422,8 @@
                            "name":  "FindListObjectByNameAdminLocal",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1166,
-                           "endLine":  1176,
+                           "startLine":  1288,
+                           "endLine":  1298,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -17155,8 +17443,8 @@
                            "name":  "ColumnIndexAdminLocal",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1178,
-                           "endLine":  1188,
+                           "startLine":  1300,
+                           "endLine":  1310,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -17176,8 +17464,8 @@
                            "name":  "FindCatalogRowBySkuAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1190,
-                           "endLine":  1209,
+                           "startLine":  1312,
+                           "endLine":  1331,
                            "lineCount":  20,
                            "directCalls":  [
                                                "ColumnIndexAdminLocal",
@@ -17198,8 +17486,8 @@
                            "name":  "CatalogCellAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1211,
-                           "endLine":  1219,
+                           "startLine":  1333,
+                           "endLine":  1341,
                            "lineCount":  9,
                            "directCalls":  [
                                                "ColumnIndexAdminLocal"
@@ -17219,8 +17507,8 @@
                            "name":  "SetCatalogValueAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1221,
-                           "endLine":  1231,
+                           "startLine":  1343,
+                           "endLine":  1353,
                            "lineCount":  11,
                            "directCalls":  [
                                                "EnsureCatalogColumnAdmin",
@@ -17241,8 +17529,8 @@
                            "name":  "EnsureCatalogColumnAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1233,
-                           "endLine":  1241,
+                           "startLine":  1355,
+                           "endLine":  1363,
                            "lineCount":  9,
                            "directCalls":  [
                                                "Add",
@@ -17264,8 +17552,8 @@
                            "name":  "NormalizeCatalogColumnNameAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1243,
-                           "endLine":  1255,
+                           "startLine":  1365,
+                           "endLine":  1377,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -17285,8 +17573,8 @@
                            "name":  "SetSheetProtectionAdminLocal",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1257,
-                           "endLine":  1266,
+                           "startLine":  1379,
+                           "endLine":  1388,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -17306,8 +17594,8 @@
                            "name":  "AddPictureReferencesToPayloadAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1268,
-                           "endLine":  1282,
+                           "startLine":  1390,
+                           "endLine":  1404,
                            "lineCount":  15,
                            "directCalls":  [
                                                "ImagePath",
@@ -17328,8 +17616,8 @@
                            "name":  "SetPictureReferencesInCatalogAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1284,
-                           "endLine":  1303,
+                           "startLine":  1406,
+                           "endLine":  1425,
                            "lineCount":  20,
                            "directCalls":  [
                                                "ColumnIndexAdminLocal",
@@ -17352,8 +17640,8 @@
                            "name":  "CombinedPictureReferencesAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1305,
-                           "endLine":  1323,
+                           "startLine":  1427,
+                           "endLine":  1445,
                            "lineCount":  19,
                            "directCalls":  [
                                                "Add",
@@ -17374,8 +17662,8 @@
                            "name":  "ParsePictureReferencesAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1325,
-                           "endLine":  1341,
+                           "startLine":  1447,
+                           "endLine":  1463,
                            "lineCount":  17,
                            "directCalls":  [
                                                "Add",
@@ -17396,8 +17684,8 @@
                            "name":  "SeedDemoInventoryForWarehouse",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1343,
-                           "endLine":  1393,
+                           "startLine":  1465,
+                           "endLine":  1515,
                            "lineCount":  51,
                            "directCalls":  [
                                                "BuildAdminDemoInventoryPayload",
@@ -17421,8 +17709,8 @@
                            "name":  "EnsureDemoStationInboxes",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1395,
-                           "endLine":  1422,
+                           "startLine":  1517,
+                           "endLine":  1544,
                            "lineCount":  28,
                            "directCalls":  [
                                                "EnsureStationInbox"
@@ -17442,8 +17730,8 @@
                            "name":  "BuildAdminDemoInventoryPayload",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1424,
-                           "endLine":  1440,
+                           "startLine":  1546,
+                           "endLine":  1562,
                            "lineCount":  17,
                            "directCalls":  [
                                                "BuildAdminDemoInventoryFallbackPayload",
@@ -17465,8 +17753,8 @@
                            "name":  "BuildAdminDemoInventoryFallbackPayload",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1442,
-                           "endLine":  1488,
+                           "startLine":  1564,
+                           "endLine":  1610,
                            "lineCount":  47,
                            "directCalls":  [
                                                "Add",
@@ -17488,8 +17776,8 @@
                            "name":  "BuildAdminDemoInventoryPayloadFromCsv",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1490,
-                           "endLine":  1564,
+                           "startLine":  1612,
+                           "endLine":  1686,
                            "lineCount":  75,
                            "directCalls":  [
                                                "Add",
@@ -17521,8 +17809,8 @@
                            "name":  "NormalizeAdminDemoInventoryRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1566,
-                           "endLine":  1577,
+                           "startLine":  1688,
+                           "endLine":  1699,
                            "lineCount":  12,
                            "directCalls":  [
                                                "AdminDemoInventoryRowForSku",
@@ -17543,8 +17831,8 @@
                            "name":  "AdminDemoInventoryRowForSku",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1579,
-                           "endLine":  1592,
+                           "startLine":  1701,
+                           "endLine":  1714,
                            "lineCount":  14,
                            "directCalls":  [
                                                "Sku"
@@ -17564,8 +17852,8 @@
                            "name":  "ResolveAdminDemoInventoryCsvPath",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1594,
-                           "endLine":  1626,
+                           "startLine":  1716,
+                           "endLine":  1748,
                            "lineCount":  33,
                            "directCalls":  [
                                                "Add"
@@ -17585,8 +17873,8 @@
                            "name":  "CsvHeaderMapAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1628,
-                           "endLine":  1641,
+                           "startLine":  1750,
+                           "endLine":  1763,
                            "lineCount":  14,
                            "directCalls":  [
 
@@ -17606,8 +17894,8 @@
                            "name":  "CsvFieldAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1643,
-                           "endLine":  1652,
+                           "startLine":  1765,
+                           "endLine":  1774,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -17627,8 +17915,8 @@
                            "name":  "ParseCsvLineAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1654,
-                           "endLine":  1680,
+                           "startLine":  1776,
+                           "endLine":  1802,
                            "lineCount":  27,
                            "directCalls":  [
                                                "Add"
@@ -17648,8 +17936,8 @@
                            "name":  "ResolveDemoSeedQuantityAdmin",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1682,
-                           "endLine":  1684,
+                           "startLine":  1804,
+                           "endLine":  1806,
                            "lineCount":  3,
                            "directCalls":  [
                                                "Category",
@@ -17670,8 +17958,8 @@
                            "name":  "PromptForWarehouseDirectoryRootIfNeeded",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1686,
-                           "endLine":  1695,
+                           "startLine":  1808,
+                           "endLine":  1817,
                            "lineCount":  10,
                            "directCalls":  [
                                                "HasRememberedWarehouseScanRoots",
@@ -17692,8 +17980,8 @@
                            "name":  "Verify_AddinsPublished",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  1697,
-                           "endLine":  1715,
+                           "startLine":  1819,
+                           "endLine":  1837,
                            "lineCount":  19,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -17716,8 +18004,8 @@
                            "name":  "Export_LoadedPackageReport",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  1717,
-                           "endLine":  1730,
+                           "startLine":  1839,
+                           "endLine":  1852,
                            "lineCount":  14,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -17739,8 +18027,8 @@
                            "name":  "Admin_RetireMigrateWarehouse_Click",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  1732,
-                           "endLine":  1739,
+                           "startLine":  1854,
+                           "endLine":  1861,
                            "lineCount":  8,
                            "directCalls":  [
                                                "EnsureAdminLegacyWorkbookSurface",
@@ -17761,8 +18049,8 @@
                            "name":  "Open_RetireMigrateWarehouse",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  1741,
-                           "endLine":  1743,
+                           "startLine":  1863,
+                           "endLine":  1865,
                            "lineCount":  3,
                            "directCalls":  [
                                                "Admin_RetireMigrateWarehouse_Click"
@@ -17782,8 +18070,8 @@
                            "name":  "Scheduler_RunWarehouseBatch",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1745,
-                           "endLine":  1747,
+                           "startLine":  1867,
+                           "endLine":  1869,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PublishSchedulerResult",
@@ -17804,8 +18092,8 @@
                            "name":  "Scheduler_RunWarehousePublish",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1749,
-                           "endLine":  1751,
+                           "startLine":  1871,
+                           "endLine":  1873,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PublishSchedulerResult",
@@ -17826,8 +18114,8 @@
                            "name":  "Scheduler_RunHQAggregation",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1753,
-                           "endLine":  1755,
+                           "startLine":  1875,
+                           "endLine":  1877,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PublishSchedulerResult",
@@ -17848,8 +18136,8 @@
                            "name":  "PublishSchedulerResult",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1757,
-                           "endLine":  1762,
+                           "startLine":  1879,
+                           "endLine":  1884,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -17869,8 +18157,8 @@
                            "name":  "ResolveInteractiveAdminWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1764,
-                           "endLine":  1766,
+                           "startLine":  1886,
+                           "endLine":  1888,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ResolveAdminTargetWorkbook"
@@ -20594,11 +20882,141 @@
                            "name":  "SeedDemoInventoryForWarehouse",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  4,
-                           "endLine":  79,
-                           "lineCount":  76,
+                           "startLine":  11,
+                           "endLine":  37,
+                           "lineCount":  27,
                            "directCalls":  [
+                                               "BuildActiveDemoGroupIndex",
                                                "BuildDemoInventoryPayload",
+                                               "QueueDemoCreateAndProcess"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "DeleteDemoInventoryForWarehouse",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  39,
+                           "endLine":  133,
+                           "lineCount":  95,
+                           "directCalls":  [
+                                               "Add",
+                                               "BuildPayloadJsonFromCollection",
+                                               "ConditionValue",
+                                               "EnsureDemoStationInboxes",
+                                               "FindTableByNameSeed",
+                                               "IsDemoSkuSeed",
+                                               "LocationValue",
+                                               "QueueAdminInventoryAdjustEvent",
+                                               "ResolveInventoryWorkbookBridge",
+                                               "RunBatch",
+                                               "Sku",
+                                               "SystemKey",
+                                               "TableCellNumberSeed",
+                                               "TableCellTextSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "UploadDemoInventoryForWarehouse",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  135,
+                           "endLine":  168,
+                           "lineCount":  34,
+                           "directCalls":  [
+                                               "BuildActiveDemoGroupIndex",
+                                               "LoadDemoInventoryCsv",
+                                               "QueueDemoCreateAndProcess"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "DescribeDemoInventoryStateForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  170,
+                           "endLine":  221,
+                           "lineCount":  52,
+                           "directCalls":  [
+                                               "ConditionValue",
+                                               "DemoGroupKeySeed",
+                                               "FindTableByNameSeed",
+                                               "IsDemoSkuSeed",
+                                               "LocationValue",
+                                               "ResolveInventoryWorkbookBridge",
+                                               "Sku",
+                                               "SystemKey",
+                                               "TableCellNumberSeed",
+                                               "TableCellTextSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "FindOpenWorkbookByPathSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  223,
+                           "endLine":  234,
+                           "lineCount":  12,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "QueueDemoCreateAndProcess",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  236,
+                           "endLine":  318,
+                           "lineCount":  83,
+                           "directCalls":  [
                                                "BuildPayloadJsonFromCollection",
                                                "EnsureDemoStationInboxes",
                                                "FindOpenWorkbookByPathSeed",
@@ -20619,14 +21037,292 @@
                        },
                        {
                            "componentName":  "modAdminInventorySeed",
-                           "name":  "FindOpenWorkbookByPathSeed",
+                           "name":  "BuildActiveDemoGroupIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  81,
-                           "endLine":  92,
-                           "lineCount":  12,
+                           "startLine":  320,
+                           "endLine":  362,
+                           "lineCount":  43,
+                           "directCalls":  [
+                                               "ConditionValue",
+                                               "DemoGroupKeySeed",
+                                               "FindTableByNameSeed",
+                                               "IsDemoSkuSeed",
+                                               "LocationValue",
+                                               "ResolveInventoryWorkbookBridge",
+                                               "Sku",
+                                               "TableCellNumberSeed",
+                                               "TableCellTextSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "LoadDemoInventoryCsv",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  364,
+                           "endLine":  470,
+                           "lineCount":  107,
+                           "directCalls":  [
+                                               "Add",
+                                               "BuildCsvHeaderIndexSeed",
+                                               "ConditionValue",
+                                               "CreateInventoryEntityPayloadItem",
+                                               "CreateSystemKey",
+                                               "CsvHasRequiredHeadersSeed",
+                                               "CsvRawValueSeed",
+                                               "CsvValueSeed",
+                                               "DemoGroupKeySeed",
+                                               "DescriptionValue",
+                                               "IsDemoSkuSeed",
+                                               "ItemName",
+                                               "LocationValue",
+                                               "Qty"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "BuildCsvHeaderIndexSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  472,
+                           "endLine":  485,
+                           "lineCount":  14,
+                           "directCalls":  [
+                                               "Add",
+                                               "ColumnIndex",
+                                               "NormalizeCsvHeaderSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "CsvHasRequiredHeadersSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  487,
+                           "endLine":  500,
+                           "lineCount":  14,
                            "directCalls":  [
 
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "CsvValueSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  502,
+                           "endLine":  509,
+                           "lineCount":  8,
+                           "directCalls":  [
+                                               "CsvRawValueSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "CsvRawValueSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  511,
+                           "endLine":  516,
+                           "lineCount":  6,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "NormalizeCsvHeaderSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  518,
+                           "endLine":  526,
+                           "lineCount":  9,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "FindTableByNameSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  528,
+                           "endLine":  541,
+                           "lineCount":  14,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "TableColumnIndexSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  543,
+                           "endLine":  553,
+                           "lineCount":  11,
+                           "directCalls":  [
+
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "TableCellTextSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  555,
+                           "endLine":  565,
+                           "lineCount":  11,
+                           "directCalls":  [
+                                               "ColumnIndex",
+                                               "TableColumnIndexSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "TableCellNumberSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  567,
+                           "endLine":  576,
+                           "lineCount":  10,
+                           "directCalls":  [
+                                               "ColumnIndex",
+                                               "TableColumnIndexSeed"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "DemoGroupKeySeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  578,
+                           "endLine":  584,
+                           "lineCount":  7,
+                           "directCalls":  [
+                                               "ConditionValue",
+                                               "LocationValue"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAdminInventorySeed",
+                           "name":  "IsDemoSkuSeed",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  586,
+                           "endLine":  588,
+                           "lineCount":  3,
+                           "directCalls":  [
+                                               "Sku"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -20643,8 +21339,8 @@
                            "name":  "EnsureDemoStationInboxes",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  94,
-                           "endLine":  116,
+                           "startLine":  590,
+                           "endLine":  612,
                            "lineCount":  23,
                            "directCalls":  [
                                                "EnsureStationInbox"
@@ -20664,9 +21360,9 @@
                            "name":  "BuildDemoInventoryPayload",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  118,
-                           "endLine":  171,
-                           "lineCount":  54,
+                           "startLine":  614,
+                           "endLine":  672,
+                           "lineCount":  59,
                            "directCalls":  [
                                                "AddDemoInventoryItem"
                                            ],
@@ -20685,14 +21381,15 @@
                            "name":  "AddDemoInventoryItem",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  173,
-                           "endLine":  191,
-                           "lineCount":  19,
+                           "startLine":  674,
+                           "endLine":  701,
+                           "lineCount":  28,
                            "directCalls":  [
                                                "Add",
                                                "Category",
                                                "CreateInventoryEntityPayloadItem",
                                                "CreateSystemKey",
+                                               "DemoGroupKeySeed",
                                                "ItemName",
                                                "Qty",
                                                "Uom"
@@ -28441,7 +29138,6 @@
                                                                    ],
                            "rootIds":  [
                                            "convention.userform-event:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnOK_Click",
-                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmSignIn.frm:frmSignIn.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnOK_Click"
                                        ]
@@ -28871,7 +29567,6 @@
                                                                    ],
                            "rootIds":  [
                                            "convention.userform-event:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnOK_Click",
-                                           "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmSignIn.frm:frmSignIn.mBtnOK_Click",
                                            "convention.userform-event:src_Core_Forms_frmWarehouseConnection.frm:frmWarehouseConnection.mBtnOK_Click"
                                        ]
@@ -37037,8 +37732,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  6,
-                           "endLine":  106,
-                           "lineCount":  101,
+                           "endLine":  112,
+                           "lineCount":  107,
                            "directCalls":  [
                                                "Add",
                                                "ConditionValue",
@@ -37070,8 +37765,8 @@
                            "name":  "ViewerWorkbookNameIsOpen",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  108,
-                           "endLine":  117,
+                           "startLine":  114,
+                           "endLine":  123,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -37091,8 +37786,8 @@
                            "name":  "ViewerFindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  119,
-                           "endLine":  129,
+                           "startLine":  125,
+                           "endLine":  135,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -37112,8 +37807,8 @@
                            "name":  "ViewerColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  131,
-                           "endLine":  141,
+                           "startLine":  137,
+                           "endLine":  147,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -37133,8 +37828,8 @@
                            "name":  "ViewerCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  143,
-                           "endLine":  154,
+                           "startLine":  149,
+                           "endLine":  160,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -37155,8 +37850,8 @@
                            "name":  "ViewerCellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  156,
-                           "endLine":  163,
+                           "startLine":  162,
+                           "endLine":  169,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ViewerCellText"
@@ -37176,8 +37871,8 @@
                            "name":  "ViewerEscape",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  165,
-                           "endLine":  171,
+                           "startLine":  171,
+                           "endLine":  177,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -89770,11 +90465,13 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  297,
-                           "endLine":  366,
-                           "lineCount":  70,
+                           "endLine":  401,
+                           "lineCount":  105,
                            "directCalls":  [
+                                               "Add",
                                                "CellText",
                                                "ColumnIndex",
+                                               "ConditionValue",
                                                "DescriptionValue",
                                                "FindTable",
                                                "InventoryTable",
@@ -89797,8 +90494,8 @@
                            "name":  "LoadReceivingFormInventory",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  368,
-                           "endLine":  375,
+                           "startLine":  403,
+                           "endLine":  410,
                            "lineCount":  8,
                            "directCalls":  [
                                                "LoadReceivingFormInventoryForWorkbook",
@@ -89819,8 +90516,8 @@
                            "name":  "LoadReceivingItemChoicesForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  377,
-                           "endLine":  409,
+                           "startLine":  412,
+                           "endLine":  444,
                            "lineCount":  33,
                            "directCalls":  [
                                                "Add",
@@ -89841,8 +90538,8 @@
                            "name":  "LoadReceivingEntriesHistoryForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  411,
-                           "endLine":  437,
+                           "startLine":  446,
+                           "endLine":  472,
                            "lineCount":  27,
                            "directCalls":  [
                                                "CellText",
@@ -89863,8 +90560,8 @@
                            "name":  "LoadReceivingFormTableForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  439,
-                           "endLine":  446,
+                           "startLine":  474,
+                           "endLine":  481,
                            "lineCount":  8,
                            "directCalls":  [
                                                "FindTable"
@@ -89884,8 +90581,8 @@
                            "name":  "LoadReceivingFormTable",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  448,
-                           "endLine":  454,
+                           "startLine":  483,
+                           "endLine":  489,
                            "lineCount":  7,
                            "directCalls":  [
                                                "LoadReceivingFormTableForWorkbook",
@@ -89906,8 +90603,8 @@
                            "name":  "StageReceivingFormItemForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  456,
-                           "endLine":  552,
+                           "startLine":  491,
+                           "endLine":  587,
                            "lineCount":  97,
                            "directCalls":  [
                                                "CellNumber",
@@ -89941,8 +90638,8 @@
                            "name":  "RebuildAggregationForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  554,
-                           "endLine":  613,
+                           "startLine":  589,
+                           "endLine":  648,
                            "lineCount":  60,
                            "directCalls":  [
                                                "CellNumber",
@@ -89969,8 +90666,8 @@
                            "name":  "RebuildAggregation",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  615,
-                           "endLine":  624,
+                           "startLine":  650,
+                           "endLine":  659,
                            "lineCount":  10,
                            "directCalls":  [
                                                "RebuildAggregationForWorkbook",
@@ -89992,8 +90689,8 @@
                            "name":  "ClearReceivingFormStagingForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  626,
-                           "endLine":  633,
+                           "startLine":  661,
+                           "endLine":  668,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ClearReceivingStaging",
@@ -90014,8 +90711,8 @@
                            "name":  "ClearReceivingFormStaging",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  635,
-                           "endLine":  641,
+                           "startLine":  670,
+                           "endLine":  676,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ClearReceivingFormStagingForWorkbook",
@@ -90036,8 +90733,8 @@
                            "name":  "ConfirmWrites",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  643,
-                           "endLine":  658,
+                           "startLine":  678,
+                           "endLine":  693,
                            "lineCount":  16,
                            "directCalls":  [
                                                "ExecuteConfirmWrites",
@@ -90059,8 +90756,8 @@
                            "name":  "RecordConfirmWritesResult",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  660,
-                           "endLine":  663,
+                           "startLine":  695,
+                           "endLine":  698,
                            "lineCount":  4,
                            "directCalls":  [
                                                "Succeeded"
@@ -90080,8 +90777,8 @@
                            "name":  "LastConfirmWritesSucceeded",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  665,
-                           "endLine":  667,
+                           "startLine":  700,
+                           "endLine":  702,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -90101,8 +90798,8 @@
                            "name":  "LastConfirmWritesStatus",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  669,
-                           "endLine":  671,
+                           "startLine":  704,
+                           "endLine":  706,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -90122,8 +90819,8 @@
                            "name":  "ShowReceivingDynamicItemSearch",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  673,
-                           "endLine":  675,
+                           "startLine":  708,
+                           "endLine":  710,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -90143,8 +90840,8 @@
                            "name":  "HandleReceivingSelectionChange",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  677,
-                           "endLine":  679,
+                           "startLine":  712,
+                           "endLine":  714,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -90164,8 +90861,8 @@
                            "name":  "HandleReceivingSheetChange",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  681,
-                           "endLine":  704,
+                           "startLine":  716,
+                           "endLine":  739,
                            "lineCount":  24,
                            "directCalls":  [
                                                "NzDbl",
@@ -90186,8 +90883,8 @@
                            "name":  "SyncQuantityFromStaging",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  706,
-                           "endLine":  723,
+                           "startLine":  741,
+                           "endLine":  758,
                            "lineCount":  18,
                            "directCalls":  [
                                                "CellText",
@@ -90211,8 +90908,8 @@
                            "name":  "NzDbl",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  725,
-                           "endLine":  728,
+                           "startLine":  760,
+                           "endLine":  763,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -90232,8 +90929,8 @@
                            "name":  "PopulateAggregateRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  730,
-                           "endLine":  765,
+                           "startLine":  765,
+                           "endLine":  800,
                            "lineCount":  36,
                            "directCalls":  [
                                                "CellText",
@@ -90258,8 +90955,8 @@
                            "name":  "FindExistingStagingRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  767,
-                           "endLine":  788,
+                           "startLine":  802,
+                           "endLine":  823,
                            "lineCount":  22,
                            "directCalls":  [
                                                "CellText",
@@ -90280,8 +90977,8 @@
                            "name":  "ResolveReceivingWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  790,
-                           "endLine":  797,
+                           "startLine":  825,
+                           "endLine":  832,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -90301,8 +90998,8 @@
                            "name":  "WorkbookSheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  799,
-                           "endLine":  805,
+                           "startLine":  834,
+                           "endLine":  840,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -90322,8 +91019,8 @@
                            "name":  "FindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  807,
-                           "endLine":  818,
+                           "startLine":  842,
+                           "endLine":  853,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -90343,8 +91040,8 @@
                            "name":  "FindTableRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  820,
-                           "endLine":  836,
+                           "startLine":  855,
+                           "endLine":  871,
                            "lineCount":  17,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -90364,8 +91061,8 @@
                            "name":  "FirstBlankOrNewRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  838,
-                           "endLine":  857,
+                           "startLine":  873,
+                           "endLine":  892,
                            "lineCount":  20,
                            "directCalls":  [
                                                "Add"
@@ -90385,8 +91082,8 @@
                            "name":  "ColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  859,
-                           "endLine":  870,
+                           "startLine":  894,
+                           "endLine":  905,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -90406,8 +91103,8 @@
                            "name":  "CellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  872,
-                           "endLine":  883,
+                           "startLine":  907,
+                           "endLine":  918,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -90427,8 +91124,8 @@
                            "name":  "CellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  885,
-                           "endLine":  892,
+                           "startLine":  920,
+                           "endLine":  927,
                            "lineCount":  8,
                            "directCalls":  [
                                                "CellText"
@@ -90448,8 +91145,8 @@
                            "name":  "SetCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  894,
-                           "endLine":  899,
+                           "startLine":  929,
+                           "endLine":  934,
                            "lineCount":  6,
                            "directCalls":  [
                                                "SetCellValue"
@@ -90469,8 +91166,8 @@
                            "name":  "SetCellValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  901,
-                           "endLine":  913,
+                           "startLine":  936,
+                           "endLine":  948,
                            "lineCount":  13,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -90490,8 +91187,8 @@
                            "name":  "CanHideWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  915,
-                           "endLine":  924,
+                           "startLine":  950,
+                           "endLine":  959,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -90511,8 +91208,8 @@
                            "name":  "EnsureReceivingButtons",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  926,
-                           "endLine":  948,
+                           "startLine":  961,
+                           "endLine":  983,
                            "lineCount":  23,
                            "directCalls":  [
                                                "DeleteReceivingActionButton"
@@ -90532,8 +91229,8 @@
                            "name":  "DeleteReceivingActionButton",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  950,
-                           "endLine":  955,
+                           "startLine":  985,
+                           "endLine":  990,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -90553,8 +91250,8 @@
                            "name":  "ShowReceivingMessage",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  957,
-                           "endLine":  964,
+                           "startLine":  992,
+                           "endLine":  999,
                            "lineCount":  8,
                            "directCalls":  [
                                                "QuietUiIsActive"
@@ -113629,7 +114326,7 @@
                                                                                {
                                                                                    "id":  "btnAdminSeedInventory",
                                                                                    "nodeType":  "button",
-                                                                                   "label":  "Seed Demo Inventory",
+                                                                                   "label":  "Demo Inventory",
                                                                                    "callbacks":  [
                                                                                                      "modAdmin.Seed_DemoInventory"
                                                                                                  ],
@@ -114131,7 +114828,7 @@
                                               "LastAppliedUTC",
                                               "LastRefreshUTC",
                                               "Location",
-                                              "Qty",
+                                              "QTY",
                                               "QtyAvailable",
                                               "QtyDelta",
                                               "QtyOnHand",
@@ -114142,6 +114839,7 @@
                                           ],
                        "unknownHeadersPolicy":  "PRESERVE",
                        "locations":  [
+                                         "src/Admin/Modules/modAdminInventorySeed.bas",
                                          "src/Core/Modules/modInventoryDomainBridge.bas",
                                          "src/Core/Modules/modWarehouseSync.bas",
                                          "src/InventoryDomain/Modules/modInventoryApply.bas",
@@ -115226,6 +115924,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "BuildActiveDemoGroupIndex",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "BuildBoxVersionInventoryCache",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1"
@@ -115598,6 +116302,12 @@
                                "entryPoint":  "DeleteBoxDesignVersion",
                                "testPaths":  [
                                                  "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "DeleteDemoInventoryForWarehouse",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1"
                                              ]
                            },
                            {
@@ -116614,6 +117324,7 @@
                                                  "tests/integration/test_ConfirmWrites_Tester.bas",
                                                  "tests/integration/test_CreateWarehouse.bas",
                                                  "tests/tooling/fixtures/static/src/Operations/Modules/modSyntheticSurface.bas",
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1",
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1",
                                                  "tests/unit/TestDesignsDomain.bas",
                                                  "tests/unit/TestInventoryApply.bas",
@@ -116630,7 +117341,8 @@
                            {
                                "entryPoint":  "LocationValue",
                                "testPaths":  [
-                                                 "tests/unit/TestPhase6CoreSurfaces.bas"
+                                                 "tests/unit/TestPhase6CoreSurfaces.bas",
+                                                 "tests/unit/TestPhase6RoleSurfaces.bas"
                                              ]
                            },
                            {
@@ -117011,6 +117723,12 @@
                                "entryPoint":  "QueueAdminDesignLifecycleEvent",
                                "testPaths":  [
                                                  "tests/unit/TestCoreRoleEventWriter.bas"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "QueueAdminInventoryAdjustEvent",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1"
                                              ]
                            },
                            {
@@ -117554,6 +118272,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "SelectedUploadPath",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "SelectShippingPageForTest",
                                "testPaths":  [
                                                  "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1"
@@ -117982,6 +118706,7 @@
                                                  "tests/tooling/Test-Slice0ToolContracts.ps1",
                                                  "tests/unit/TestPhase2Helpers.bas",
                                                  "tests/unit/TestPhase6CoreSurfaces.bas",
+                                                 "tests/unit/TestPhase6RoleSurfaces.bas",
                                                  "tests/unit/TestProductionSessionService.bas"
                                              ]
                            },
@@ -118308,6 +119033,12 @@
                                "entryPoint":  "UpdateHeartbeat",
                                "testPaths":  [
                                                  "tests/unit/TestCoreLockManager.bas"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "UploadDemoInventoryForWarehouse",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-DemoWorkflowSeed.ps1"
                                              ]
                            },
                            {
@@ -119348,6 +120079,13 @@
                              "source":  "tools/contracts/vba-dynamic-roots.json"
                          },
                          {
+                             "id":  "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click",
+                             "procedure":  "mBtnDelete_Click",
+                             "rootKind":  "USERFORM_EVENT",
+                             "reason":  "UserForm and control events are convention-dispatched.",
+                             "source":  "tools/contracts/vba-dynamic-roots.json"
+                         },
+                         {
                              "id":  "convention.userform-event:src_Admin_Forms_frmSetupTesterStation.frm:frmSetupTesterStation.mBtnDeleteGenerated_Click",
                              "procedure":  "mBtnDeleteGenerated_Click",
                              "rootKind":  "USERFORM_EVENT",
@@ -119551,13 +120289,6 @@
                              "source":  "tools/contracts/vba-dynamic-roots.json"
                          },
                          {
-                             "id":  "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
-                             "procedure":  "mBtnOK_Click",
-                             "rootKind":  "USERFORM_EVENT",
-                             "reason":  "UserForm and control events are convention-dispatched.",
-                             "source":  "tools/contracts/vba-dynamic-roots.json"
-                         },
-                         {
                              "id":  "convention.userform-event:src_Core_Forms_frmSignIn.frm:frmSignIn.mBtnOK_Click",
                              "procedure":  "mBtnOK_Click",
                              "rootKind":  "USERFORM_EVENT",
@@ -119747,6 +120478,13 @@
                              "source":  "tools/contracts/vba-dynamic-roots.json"
                          },
                          {
+                             "id":  "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnSeed_Click",
+                             "procedure":  "mBtnSeed_Click",
+                             "rootKind":  "USERFORM_EVENT",
+                             "reason":  "UserForm and control events are convention-dispatched.",
+                             "source":  "tools/contracts/vba-dynamic-roots.json"
+                         },
+                         {
                              "id":  "convention.userform-event:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mBtnSend_Click",
                              "procedure":  "mBtnSend_Click",
                              "rootKind":  "USERFORM_EVENT",
@@ -119805,6 +120543,13 @@
                          {
                              "id":  "convention.userform-event:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally.mBtnUpdate_Click",
                              "procedure":  "mBtnUpdate_Click",
+                             "rootKind":  "USERFORM_EVENT",
+                             "reason":  "UserForm and control events are convention-dispatched.",
+                             "source":  "tools/contracts/vba-dynamic-roots.json"
+                         },
+                         {
+                             "id":  "convention.userform-event:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnUpload_Click",
+                             "procedure":  "mBtnUpload_Click",
                              "rootKind":  "USERFORM_EVENT",
                              "reason":  "UserForm and control events are convention-dispatched.",
                              "source":  "tools/contracts/vba-dynamic-roots.json"
@@ -122031,6 +122776,13 @@
                          {
                              "id":  "test-entry:tests_unit_TestPhase6RoleSurfaces.bas:TestPhase6RoleSurfaces.TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
                              "procedure":  "TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
+                             "rootKind":  "TEST_ENTRY",
+                             "reason":  "Public test harness entry point discovered under the configured test root.",
+                             "source":  "tests/unit/TestPhase6RoleSurfaces.bas"
+                         },
+                         {
+                             "id":  "test-entry:tests_unit_TestPhase6RoleSurfaces.bas:TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates",
+                             "procedure":  "TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates",
                              "rootKind":  "TEST_ENTRY",
                              "reason":  "Public test harness entry point discovered under the configured test root.",
                              "source":  "tests/unit/TestPhase6RoleSurfaces.bas"

@@ -6,8 +6,11 @@ Set-StrictMode -Version 2.0
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $sourcePath = Join-Path $repo "src\Admin\Modules\modAdminInventorySeed.bas"
+$formPath = Join-Path $repo "src\Admin\Forms\frmSeedInventory.frm"
 $resultPath = Join-Path $repo "tests\unit\demo_workflow_seed_results.md"
 $text = Get-Content -Raw -LiteralPath $sourcePath
+$formText = Get-Content -Raw -LiteralPath $formPath
+$allText = $text + "`n" + $formText
 $seedRows = [regex]::Matches($text, '(?m)^\s*AddDemoInventoryItem\s+rows,').Count
 $checks = @(
     [pscustomobject]@{
@@ -33,6 +36,38 @@ $checks = @(
             ForEach-Object { $text -match ('item\("' + [regex]::Escape($_) + '"\)') } |
             Where-Object { -not $_ } | Measure-Object | Select-Object -ExpandProperty Count | ForEach-Object { $_ -eq 0 }
         Contract = "The event carries the catalog metadata needed by Receiving, Production, Shipping, and Viewer projections."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.FormActions"
+        Passed = @('Seed Demo Inventory','Delete Demo Inventory','Upload Demo Inventory') |
+            ForEach-Object { $allText -match [regex]::Escape($_) } |
+            Where-Object { -not $_ } | Measure-Object | Select-Object -ExpandProperty Count | ForEach-Object { $_ -eq 0 }
+        Contract = "The Admin Demo Inventory form exposes explicit Seed, Delete, and Upload actions."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.IdempotentSeed"
+        Passed = ($text -match 'BuildActiveDemoGroupIndex') -and ($text -match 'Skipped=')
+        Contract = "Repeated seed skips active demo item/location/condition groups instead of creating duplicate entities."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.ExactKeyDelete"
+        Passed = ($text -match 'DeleteDemoInventoryForWarehouse') -and
+            ($text -match 'System_Key') -and ($text -match 'QueueAdminInventoryAdjustEvent')
+        Contract = "Delete depletes demo entities through exact-System_Key audited adjustments."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.ValidatedCsvUpload"
+        Passed = ($text -match 'UploadDemoInventoryForWarehouse') -and
+            ($text -match '\.csv') -and ($text -match 'ITEM_CODE') -and
+            ($text -match 'LOCATION') -and ($text -match 'CONDITION')
+        Contract = "Upload accepts a validated demo CSV and preserves generated entity identity."
+    },
+    [pscustomobject]@{
+        Name = "DemoLifecycle.DatasetSelection"
+        Passed = ($formText -match 'cboDemoDataSet') -and
+            ($formText -match 'R1 Workflow Kit \(built-in\)') -and
+            ($formText -match 'SelectedUploadPath')
+        Contract = "The form lets the administrator choose the built-in kit or an uploaded CSV before Seed mutates inventory."
     }
 )
 $passed = @($checks | Where-Object Passed).Count

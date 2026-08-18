@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4633
+- Procedures: 4662
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -141,6 +141,7 @@
 | mBtnCopyPin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeactivate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeleteGenerated_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnEditMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnGeneratePin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -172,7 +173,6 @@
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpen_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpenReceiving_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -198,6 +198,7 @@
 | mBtnSaveConfig_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSaveConnectionPolicy_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnScan_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnSeed_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSend_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -207,6 +208,7 @@
 | mBtnUomReset_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnUpload_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxBuilderVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -525,6 +527,7 @@
 | TestReceivingForm_AddStagesByItemCodeWhenRowsCollide | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_AddStagesSelectedInventoryForConfirm | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_HidesSupportSheetsAfterFormRefresh | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_InventoryLoaderUsesSystemKey | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingPurchasingTab_IsVisibleAndReadOnly | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |

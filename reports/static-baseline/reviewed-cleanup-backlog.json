@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "6f7375b7f34545a1acbcf7aa20d361dfd0730face14effb0468efd73e9001e18",
-                          "maintenanceCandidatesSha256":  "4e73d468a8f531b74a52b329736348f3a5f9c153a9ac17f4a347472a96f09d54"
+                          "implementationManifestSha256":  "4cd682233493a4871959f040f314e181e39e906c9edcc165545c153393c69cd5",
+                          "maintenanceCandidatesSha256":  "c005cbf5af792124302a8777da3f423dd7edb286416a14070583ce41cf496b8d"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  953,
-                    "reviewedCandidateCount":  955,
+                    "scannerCandidateCount":  959,
+                    "reviewedCandidateCount":  961,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -52,7 +52,7 @@
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  213,
+                            "candidateCount":  219,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -98,7 +98,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1773,
+                                                  "baselineLineCount":  1895,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -1293,6 +1293,7 @@
                                                   "CombinedPictureReferencesAdmin",
                                                   "CsvFieldAdmin",
                                                   "CsvHeaderMapAdmin",
+                                                  "DemoInventoryFormContractForAutomation",
                                                   "EnsureCatalogColumnAdmin",
                                                   "EnsureDemoStationInboxes",
                                                   "Export_LoadedPackageReport",
@@ -1300,6 +1301,7 @@
                                                   "FindListObjectByNameAdminLocal",
                                                   "FindOpenWorkbookByFullNameAdmin",
                                                   "GenerateInventorySkuAdmin",
+                                                  "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
@@ -1316,6 +1318,7 @@
                                                   "Open_WarehouseDirectory",
                                                   "ParseCsvLineAdmin",
                                                   "ParsePictureReferencesAdmin",
+                                                  "PromptDemoInventoryCsvPath",
                                                   "PromptForWarehouseDirectoryRootIfNeeded",
                                                   "PublishSchedulerResult",
                                                   "ResolveAdminCurrentTargetContext",
@@ -1325,6 +1328,7 @@
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
                                                   "Scheduler_RunWarehouseBatch",
@@ -1333,6 +1337,7 @@
                                                   "SeedDemoInventoryForWarehouse",
                                                   "Set_CurrentUser",
                                                   "SetCatalogValueAdmin",
+                                                  "SetDemoInventorySelectionForAutomation",
                                                   "SetInventoryQuantityForWarehouse",
                                                   "SetPictureReferencesInCatalogAdmin",
                                                   "SetSeedInventorySelectionForAutomation",
@@ -1699,6 +1704,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.DemoInventoryFormContractForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "DemoInventoryFormContractForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Export_LoadedPackageReport",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -1710,6 +1738,29 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Export_LoadedPackageReport"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.GetLastDemoInventoryCallbackResultForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "GetLastDemoInventoryCallbackResultForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -1802,6 +1853,29 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "Open_SetupTesterStation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.RunDemoInventoryActionCallbackForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "RunDemoInventoryActionCallbackForAutomation"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -2127,6 +2201,29 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdminInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdminInventorySeed.bas:modAdminInventorySeed.DescribeDemoInventoryStateForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "ADMIN",
+                           "componentName":  "modAdminInventorySeed",
+                           "procedureNames":  [
+                                                  "DescribeDemoInventoryStateForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdminInventorySeed.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
@@ -4880,7 +4977,7 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
-                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnOK_Click",
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
                            "disposition":  "RETAIN_DYNAMIC_ROOT",
@@ -4890,7 +4987,7 @@
                            "workstream":  "ADMIN",
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
-                                                  "mBtnOK_Click"
+                                                  "mBtnDelete_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"
@@ -4914,6 +5011,52 @@
                            "componentName":  "frmSeedInventory",
                            "procedureNames":  [
                                                   "mBtnRepairInboxes_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnSeed_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "ADMIN",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnSeed_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmSeedInventory.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnUpload_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "ADMIN",
+                           "componentName":  "frmSeedInventory",
+                           "procedureNames":  [
+                                                  "mBtnUpload_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmSeedInventory.frm"
@@ -19900,7 +20043,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm",
+                           "id":  "duplicate:0eb4f625e03646be:FindListObjectByNameShipping+FindListObjectForm+FindTableByNameSeed",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -19911,10 +20054,12 @@
                            "componentName":  "frmCreateDeleteUser",
                            "procedureNames":  [
                                                   "FindListObjectByNameShipping",
-                                                  "FindListObjectForm"
+                                                  "FindListObjectForm",
+                                                  "FindTableByNameSeed"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateDeleteUser.frm",
+                                               "src/Admin/Modules/modAdminInventorySeed.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",

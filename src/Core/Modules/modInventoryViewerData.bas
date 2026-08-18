@@ -22,6 +22,7 @@ Public Function LoadCurrentInventoryViewerData() As String
     Dim key As Variant
     Dim fields As Variant
     Dim resultText As String
+    Dim visibleCount As Long
 
     On Error GoTo FailLoad
 
@@ -77,9 +78,13 @@ ContinueRow:
         Next rowIndex
     End If
 
-    resultText = "OK" & vbTab & ViewerEscape(warehouseId) & vbTab & _
-        Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbTab & CStr(quantities.Count)
     For Each key In quantities.Keys
+        If CDbl(quantities(key)) > 0 Then visibleCount = visibleCount + 1
+    Next key
+    resultText = "OK" & vbTab & ViewerEscape(warehouseId) & vbTab & _
+        Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbTab & CStr(visibleCount)
+    For Each key In quantities.Keys
+        If CDbl(quantities(key)) <= 0 Then GoTo ContinueDisplayGroup
         fields = displayRows(key)
         resultText = resultText & vbCrLf & _
             ViewerEscape(CStr(fields(0))) & vbTab & _
@@ -88,6 +93,7 @@ ContinueRow:
             Format$(CDbl(quantities(key)), "0.########") & vbTab & _
             ViewerEscape(CStr(fields(3))) & vbTab & _
             ViewerEscape(CStr(fields(4)))
+ContinueDisplayGroup:
     Next key
     LoadCurrentInventoryViewerData = resultText
 
