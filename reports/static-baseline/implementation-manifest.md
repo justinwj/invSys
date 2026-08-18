@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4630
+- Procedures: 4633
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -320,6 +320,9 @@
 | TestAdminShipmentReconcile_RecentLogIncludesShipReserveEvidence | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestAdminShipmentReconcile_RecentShipmentsSentLogShowsLast20 | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestAdminShipmentReconcile_RejectsOrphanAndMissingNarrative | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestAdminSignIn_CurrentComputerPreservesExplicitDeny | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestAnyTextMatchesSearch_MatchesAcrossFields | TEST_ENTRY | tests/unit/TestCoreItemSearch.bas |
 | TestApplyBoxUnbox_RejectsNegativePackageInventory | TEST_ENTRY | tests/unit/TestInventoryApply.bas |
 | TestApplyProdComplete_MultiLineEvent | TEST_ENTRY | tests/unit/TestInventoryApply.bas |

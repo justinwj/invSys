@@ -214,6 +214,164 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_legacy_s1_signin")
+    authPath = rootPath & "\WH7M.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7M", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7M", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7M", "S1", "legacy_admin", "Legacy Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7M", "S1", "legacy_admin", "Legacy Admin", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "legacy_admin", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("legacy_admin", "fixture-pin", target, "ADMIN_MAINT")
+
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    If authStatus = AUTH_OK _
+       And modAuth.IsSignedIn() _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "ADMIN_MAINT", "WH7M", computerStation) > 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "RECEIVE_POST", "WH7M", computerStation) > 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "ADMIN_MAINT", "WH7M", "S1") > 0 Then
+        TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7M"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_no_legacy_cap")
+    authPath = rootPath & "\WH7N.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7N", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7N", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7N", "S1", "legacy_operator", "Legacy Operator", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "legacy_operator", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("legacy_operator", "fixture-pin", target, "ADMIN_MAINT")
+
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    If authStatus = AUTH_NO_CAPABILITIES _
+       And Not modAuth.IsSignedIn() _
+       And FindCapabilityRowForTest(loCaps, "legacy_operator", "ADMIN_MAINT", "WH7N", computerStation) = 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_operator", "RECEIVE_POST", "WH7N", computerStation) = 0 Then
+        TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7N"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestAdminSignIn_CurrentComputerPreservesExplicitDeny() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim denyRow As Long
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_preserve_deny")
+    authPath = rootPath & "\WH7P.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7P", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7P", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7P", "S1", "denied_admin", "Denied Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7P", computerStation, "denied_admin", "Denied Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    denyRow = FindCapabilityRowForTest(loCaps, "denied_admin", "ADMIN_MAINT", "WH7P", computerStation)
+    If denyRow = 0 Then GoTo CleanExit
+    SetTableCell loCaps, denyRow, "Status", "DENY"
+    TestPhase2Helpers.SetUserPinHash wbAuth, "denied_admin", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("denied_admin", "fixture-pin", target, "ADMIN_MAINT")
+
+    denyRow = FindCapabilityRowForTest(loCaps, "denied_admin", "ADMIN_MAINT", "WH7P", computerStation)
+    If authStatus = AUTH_NO_CAPABILITIES _
+       And Not modAuth.IsSignedIn() _
+       And denyRow > 0 _
+       And StrComp(CStr(GetTableValue(loCaps, denyRow, "Status")), "DENY", vbTextCompare) = 0 Then
+        TestAdminSignIn_CurrentComputerPreservesExplicitDeny = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7P"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn() As Long
     Dim rootPath As String
     Dim authPath As String

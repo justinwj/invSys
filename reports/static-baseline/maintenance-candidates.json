@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4630,
-                     "lineCount":  100651,
+                     "procedureCount":  4633,
+                     "lineCount":  100792,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -12195,6 +12195,7 @@
                                                   "FindCapabilityRow",
                                                   "FindListObjectByName",
                                                   "FindOpenWorkbookByFullNameAuth",
+                                                  "FindScopedCapabilityRowForTransition",
                                                   "FormatAuthSurface",
                                                   "GetAuthStatus",
                                                   "GetCellByColumn",
@@ -12240,6 +12241,8 @@
                                                   "ShowSignInPrompt",
                                                   "SignInCurrentTargetForAutomation",
                                                   "SignOut",
+                                                  "TextCollectionContainsAuth",
+                                                  "TryTransitionLegacyS1CapabilitiesForCurrentComputer",
                                                   "UserSecretMatchesAuth",
                                                   "ValidateAuth",
                                                   "ValidateStationRoleAuthForAutomation",

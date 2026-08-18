@@ -1704,7 +1704,7 @@
                            "name":  "modAuth",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Core/Modules/modAuth.bas",
-                           "lineCount":  1635,
+                           "lineCount":  1776,
                            "procedureNames":  [
                                                   "AddValidationIssue",
                                                   "ApplyCurrentTargetRootForAuth",
@@ -1733,6 +1733,7 @@
                                                   "FindCapabilityRow",
                                                   "FindListObjectByName",
                                                   "FindOpenWorkbookByFullNameAuth",
+                                                  "FindScopedCapabilityRowForTransition",
                                                   "FormatAuthSurface",
                                                   "GetAuthStatus",
                                                   "GetCellByColumn",
@@ -1778,6 +1779,8 @@
                                                   "ShowSignInPrompt",
                                                   "SignInCurrentTargetForAutomation",
                                                   "SignOut",
+                                                  "TextCollectionContainsAuth",
+                                                  "TryTransitionLegacyS1CapabilitiesForCurrentComputer",
                                                   "UserSecretMatchesAuth",
                                                   "ValidateAuth",
                                                   "ValidateStationRoleAuthForAutomation",
@@ -29157,12 +29160,13 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  138,
-                           "endLine":  242,
-                           "lineCount":  105,
+                           "endLine":  253,
+                           "lineCount":  116,
                            "directCalls":  [
                                                "GetCoreDataRootOverride",
                                                "GetCurrentTarget",
                                                "GetWarehouseId",
+                                               "HasEffectiveCapabilityAuth",
                                                "LoadAuth",
                                                "LoadConfig",
                                                "ResolveUserDisplayNameAuth",
@@ -29172,8 +29176,8 @@
                                                "SetAuthSessionStatus",
                                                "SetCoreDataRootOverride",
                                                "SetCurrentUserId",
-                                               "UserSecretMatchesAuth",
-                                               "ValidateUserCredentialForCapability"
+                                               "TryTransitionLegacyS1CapabilitiesForCurrentComputer",
+                                               "UserSecretMatchesAuth"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -29190,8 +29194,8 @@
                            "name":  "SignInCurrentTargetForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  244,
-                           "endLine":  268,
+                           "startLine":  255,
+                           "endLine":  279,
                            "lineCount":  25,
                            "directCalls":  [
                                                "GetCurrentTarget",
@@ -29214,8 +29218,8 @@
                            "name":  "ShowSignInPrompt",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  270,
-                           "endLine":  295,
+                           "startLine":  281,
+                           "endLine":  306,
                            "lineCount":  26,
                            "directCalls":  [
                                                "InitializeSignIn",
@@ -29237,8 +29241,8 @@
                            "name":  "SignOut",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  297,
-                           "endLine":  307,
+                           "startLine":  308,
+                           "endLine":  318,
                            "lineCount":  11,
                            "directCalls":  [
                                                "SetAuthSessionStatus",
@@ -29259,8 +29263,8 @@
                            "name":  "GetCurrentUserId",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  309,
-                           "endLine":  311,
+                           "startLine":  320,
+                           "endLine":  322,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -29280,8 +29284,8 @@
                            "name":  "GetCurrentUserDisplayName",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  313,
-                           "endLine":  316,
+                           "startLine":  324,
+                           "endLine":  327,
                            "lineCount":  4,
                            "directCalls":  [
                                                "SafeTrim"
@@ -29301,8 +29305,8 @@
                            "name":  "IsSignedIn",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  318,
-                           "endLine":  330,
+                           "startLine":  329,
+                           "endLine":  341,
                            "lineCount":  13,
                            "directCalls":  [
                                                "NormalizeAuthCacheTtlSeconds",
@@ -29323,8 +29327,8 @@
                            "name":  "GetAuthStatus",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  332,
-                           "endLine":  343,
+                           "startLine":  343,
+                           "endLine":  354,
                            "lineCount":  12,
                            "directCalls":  [
                                                "IsSignedIn"
@@ -29344,8 +29348,8 @@
                            "name":  "CanPerform",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  345,
-                           "endLine":  404,
+                           "startLine":  356,
+                           "endLine":  415,
                            "lineCount":  60,
                            "directCalls":  [
                                                "ApplyCurrentTargetRootForAuth",
@@ -29372,8 +29376,8 @@
                            "name":  "Require",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  406,
-                           "endLine":  416,
+                           "startLine":  417,
+                           "endLine":  427,
                            "lineCount":  11,
                            "directCalls":  [
                                                "CanPerform"
@@ -29393,8 +29397,8 @@
                            "name":  "HasProvisionedCapabilityForSystem",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  418,
-                           "endLine":  442,
+                           "startLine":  429,
+                           "endLine":  453,
                            "lineCount":  25,
                            "directCalls":  [
                                                "ApplyCurrentTargetRootForAuth",
@@ -29419,8 +29423,8 @@
                            "name":  "ValidateUserCredential",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  444,
-                           "endLine":  448,
+                           "startLine":  455,
+                           "endLine":  459,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ValidateUserCredentialForCapability"
@@ -29440,8 +29444,8 @@
                            "name":  "ValidateUserCredentialForCapability",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  450,
-                           "endLine":  478,
+                           "startLine":  461,
+                           "endLine":  489,
                            "lineCount":  29,
                            "directCalls":  [
                                                "EnsureFreshCache",
@@ -29466,8 +29470,8 @@
                            "name":  "DiagnoseUserCredential",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  480,
-                           "endLine":  520,
+                           "startLine":  491,
+                           "endLine":  531,
                            "lineCount":  41,
                            "directCalls":  [
                                                "EnsureFreshCache",
@@ -29493,8 +29497,8 @@
                            "name":  "HashUserCredential",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  522,
-                           "endLine":  540,
+                           "startLine":  533,
+                           "endLine":  551,
                            "lineCount":  19,
                            "directCalls":  [
 
@@ -29514,8 +29518,8 @@
                            "name":  "ValidateAuth",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  542,
-                           "endLine":  560,
+                           "startLine":  553,
+                           "endLine":  571,
                            "lineCount":  19,
                            "directCalls":  [
 
@@ -29535,8 +29539,8 @@
                            "name":  "EnsureStationRoleAuth",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  562,
-                           "endLine":  641,
+                           "startLine":  573,
+                           "endLine":  652,
                            "lineCount":  80,
                            "directCalls":  [
                                                "CapabilityForRoleAuth",
@@ -29565,8 +29569,8 @@
                            "name":  "EnsureStationRoleAuthForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  643,
-                           "endLine":  658,
+                           "startLine":  654,
+                           "endLine":  669,
                            "lineCount":  16,
                            "directCalls":  [
                                                "EnsureStationRoleAuth"
@@ -29586,8 +29590,8 @@
                            "name":  "EnsureStationRoleAuthPackedForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  660,
-                           "endLine":  672,
+                           "startLine":  671,
+                           "endLine":  683,
                            "lineCount":  13,
                            "directCalls":  [
                                                "EnsureStationRoleAuthForAutomation",
@@ -29608,8 +29612,8 @@
                            "name":  "ValidateStationRoleAuthForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  674,
-                           "endLine":  749,
+                           "startLine":  685,
+                           "endLine":  760,
                            "lineCount":  76,
                            "directCalls":  [
                                                "CapabilityForRoleAuth",
@@ -29636,8 +29640,8 @@
                            "name":  "ValidateStationRoleAuthPackedForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  751,
-                           "endLine":  762,
+                           "startLine":  762,
+                           "endLine":  773,
                            "lineCount":  12,
                            "directCalls":  [
                                                "GetPackedArgAuth",
@@ -29658,8 +29662,8 @@
                            "name":  "InitializeState",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  764,
-                           "endLine":  774,
+                           "startLine":  775,
+                           "endLine":  785,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -29679,8 +29683,8 @@
                            "name":  "EnsureFreshCache",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  776,
-                           "endLine":  785,
+                           "startLine":  787,
+                           "endLine":  796,
                            "lineCount":  10,
                            "directCalls":  [
                                                "ReloadAuth"
@@ -29700,8 +29704,8 @@
                            "name":  "SetAuthSessionStatus",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  787,
-                           "endLine":  789,
+                           "startLine":  798,
+                           "endLine":  800,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -29721,8 +29725,8 @@
                            "name":  "NormalizeAuthCacheTtlSeconds",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  791,
-                           "endLine":  797,
+                           "startLine":  802,
+                           "endLine":  808,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -29742,8 +29746,8 @@
                            "name":  "SetAuthFailureStatus",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  799,
-                           "endLine":  802,
+                           "startLine":  810,
+                           "endLine":  813,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -29763,8 +29767,8 @@
                            "name":  "UserSecretMatchesAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  804,
-                           "endLine":  818,
+                           "startLine":  815,
+                           "endLine":  829,
                            "lineCount":  15,
                            "directCalls":  [
                                                "GetUserPinHashAuth",
@@ -29784,11 +29788,89 @@
                        },
                        {
                            "componentName":  "modAuth",
+                           "name":  "TryTransitionLegacyS1CapabilitiesForCurrentComputer",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  831,
+                           "endLine":  925,
+                           "lineCount":  95,
+                           "directCalls":  [
+                                               "CurrentComputerStationId",
+                                               "EnsureCapabilityRow",
+                                               "FindCapabilityRow",
+                                               "FindListObjectByName",
+                                               "FindOpenWorkbookByFullNameAuth",
+                                               "FindScopedCapabilityRowForTransition",
+                                               "FormatAuthSurface",
+                                               "HasCapabilityMatch",
+                                               "HasEffectiveCapabilityAuth",
+                                               "IsWithinDateRange",
+                                               "ListRuntimeStationsForConnection",
+                                               "SafeTrim",
+                                               "SaveAuthWorkbookIfWritable",
+                                               "TextCollectionContainsAuth",
+                                               "WarehouseScopeMatchesAuth"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAuth",
+                           "name":  "FindScopedCapabilityRowForTransition",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  927,
+                           "endLine":  947,
+                           "lineCount":  21,
+                           "directCalls":  [
+                                               "SafeTrim",
+                                               "WarehouseScopeMatchesAuth"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAuth",
+                           "name":  "TextCollectionContainsAuth",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  949,
+                           "endLine":  959,
+                           "lineCount":  11,
+                           "directCalls":  [
+                                               "SafeTrim"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modAuth",
                            "name":  "ApplyCurrentTargetRootForAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  820,
-                           "endLine":  855,
+                           "startLine":  961,
+                           "endLine":  996,
                            "lineCount":  36,
                            "directCalls":  [
                                                "GetCoreDataRootOverride",
@@ -29812,8 +29894,8 @@
                            "name":  "RestoreRootOverrideAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  857,
-                           "endLine":  863,
+                           "startLine":  998,
+                           "endLine":  1004,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ClearCoreDataRootOverride",
@@ -29835,8 +29917,8 @@
                            "name":  "LoadUsers",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  865,
-                           "endLine":  886,
+                           "startLine":  1006,
+                           "endLine":  1027,
                            "lineCount":  22,
                            "directCalls":  [
                                                "GetCellByColumn",
@@ -29858,8 +29940,8 @@
                            "name":  "LoadCapabilities",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  888,
-                           "endLine":  924,
+                           "startLine":  1029,
+                           "endLine":  1065,
                            "lineCount":  37,
                            "directCalls":  [
                                                "Add",
@@ -29883,8 +29965,8 @@
                            "name":  "ResolveUserDisplayNameAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  926,
-                           "endLine":  945,
+                           "startLine":  1067,
+                           "endLine":  1086,
                            "lineCount":  20,
                            "directCalls":  [
                                                "SafeTrim"
@@ -29904,8 +29986,8 @@
                            "name":  "IsUserActive",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  947,
-                           "endLine":  957,
+                           "startLine":  1088,
+                           "endLine":  1098,
                            "lineCount":  11,
                            "directCalls":  [
                                                "IsWithinDateRange"
@@ -29925,8 +30007,8 @@
                            "name":  "HasEffectiveCapabilityAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  959,
-                           "endLine":  975,
+                           "startLine":  1100,
+                           "endLine":  1116,
                            "lineCount":  17,
                            "directCalls":  [
                                                "GetString",
@@ -29948,8 +30030,8 @@
                            "name":  "GetUserPinHashAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  977,
-                           "endLine":  982,
+                           "startLine":  1118,
+                           "endLine":  1123,
                            "lineCount":  6,
                            "directCalls":  [
                                                "SafeTrim"
@@ -29969,8 +30051,8 @@
                            "name":  "HasCapabilityMatch",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  984,
-                           "endLine":  1005,
+                           "startLine":  1125,
+                           "endLine":  1146,
                            "lineCount":  22,
                            "directCalls":  [
                                                "CapabilityMatches",
@@ -29994,8 +30076,8 @@
                            "name":  "WarehouseScopeMatchesAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1007,
-                           "endLine":  1029,
+                           "startLine":  1148,
+                           "endLine":  1170,
                            "lineCount":  23,
                            "directCalls":  [
                                                "GetCurrentTarget",
@@ -30018,8 +30100,8 @@
                            "name":  "CapabilityMatches",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1031,
-                           "endLine":  1038,
+                           "startLine":  1172,
+                           "endLine":  1179,
                            "lineCount":  8,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30039,8 +30121,8 @@
                            "name":  "PathLeafNameAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1040,
-                           "endLine":  1050,
+                           "startLine":  1181,
+                           "endLine":  1191,
                            "lineCount":  11,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30060,8 +30142,8 @@
                            "name":  "ScopeMatches",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1052,
-                           "endLine":  1063,
+                           "startLine":  1193,
+                           "endLine":  1204,
                            "lineCount":  12,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30081,8 +30163,8 @@
                            "name":  "IsWithinDateRange",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1065,
-                           "endLine":  1073,
+                           "startLine":  1206,
+                           "endLine":  1214,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -30102,8 +30184,8 @@
                            "name":  "LogDecision",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1075,
-                           "endLine":  1093,
+                           "startLine":  1216,
+                           "endLine":  1234,
                            "lineCount":  19,
                            "directCalls":  [
 
@@ -30123,8 +30205,8 @@
                            "name":  "ResolveAuthWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1095,
-                           "endLine":  1134,
+                           "startLine":  1236,
+                           "endLine":  1275,
                            "lineCount":  40,
                            "directCalls":  [
                                                "GetString",
@@ -30149,8 +30231,8 @@
                            "name":  "CaptureOpenWorkbookPathsAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1136,
-                           "endLine":  1148,
+                           "startLine":  1277,
+                           "endLine":  1289,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -30170,8 +30252,8 @@
                            "name":  "WorkbookWasAlreadyOpenAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1150,
-                           "endLine":  1155,
+                           "startLine":  1291,
+                           "endLine":  1296,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -30191,8 +30273,8 @@
                            "name":  "HideWorkbookWindowsAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1157,
-                           "endLine":  1166,
+                           "startLine":  1298,
+                           "endLine":  1307,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -30212,8 +30294,8 @@
                            "name":  "CloseTransientAuthAfterLoad",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1168,
-                           "endLine":  1179,
+                           "startLine":  1309,
+                           "endLine":  1320,
                            "lineCount":  12,
                            "directCalls":  [
                                                "HideWorkbookWindowsAuth"
@@ -30233,8 +30315,8 @@
                            "name":  "ResolveAuthWorkbookForSetup",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1181,
-                           "endLine":  1198,
+                           "startLine":  1322,
+                           "endLine":  1339,
                            "lineCount":  18,
                            "directCalls":  [
                                                "FindOpenWorkbookByFullNameAuth",
@@ -30256,8 +30338,8 @@
                            "name":  "IsAuthWorkbookName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1200,
-                           "endLine":  1206,
+                           "startLine":  1341,
+                           "endLine":  1347,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -30277,8 +30359,8 @@
                            "name":  "EnsureAuthTables",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1208,
-                           "endLine":  1219,
+                           "startLine":  1349,
+                           "endLine":  1360,
                            "lineCount":  12,
                            "directCalls":  [
                                                "EnsureListObjectWithHeaders"
@@ -30298,8 +30380,8 @@
                            "name":  "EnsureListObjectWithHeaders",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1221,
-                           "endLine":  1252,
+                           "startLine":  1362,
+                           "endLine":  1393,
                            "lineCount":  32,
                            "directCalls":  [
                                                "Add",
@@ -30324,8 +30406,8 @@
                            "name":  "EnsureWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1254,
-                           "endLine":  1263,
+                           "startLine":  1395,
+                           "endLine":  1404,
                            "lineCount":  10,
                            "directCalls":  [
                                                "Add"
@@ -30345,8 +30427,8 @@
                            "name":  "SeedAuthDefaults",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1265,
-                           "endLine":  1295,
+                           "startLine":  1406,
+                           "endLine":  1436,
                            "lineCount":  31,
                            "directCalls":  [
                                                "AuthTableHasCapabilityRows",
@@ -30372,8 +30454,8 @@
                            "name":  "EnsureUserRow",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1297,
-                           "endLine":  1317,
+                           "startLine":  1438,
+                           "endLine":  1458,
                            "lineCount":  21,
                            "directCalls":  [
                                                "Add",
@@ -30395,8 +30477,8 @@
                            "name":  "FindAuthUserRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1319,
-                           "endLine":  1331,
+                           "startLine":  1460,
+                           "endLine":  1472,
                            "lineCount":  13,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30416,8 +30498,8 @@
                            "name":  "AuthTableHasCapabilityRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1333,
-                           "endLine":  1346,
+                           "startLine":  1474,
+                           "endLine":  1487,
                            "lineCount":  14,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30437,8 +30519,8 @@
                            "name":  "ResolveCurrentUserIdAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1348,
-                           "endLine":  1351,
+                           "startLine":  1489,
+                           "endLine":  1492,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -30458,8 +30540,8 @@
                            "name":  "EnsureCapabilityRow",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1353,
-                           "endLine":  1373,
+                           "startLine":  1494,
+                           "endLine":  1514,
                            "lineCount":  21,
                            "directCalls":  [
                                                "Add",
@@ -30482,8 +30564,8 @@
                            "name":  "FindCapabilityRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1375,
-                           "endLine":  1394,
+                           "startLine":  1516,
+                           "endLine":  1535,
                            "lineCount":  20,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30503,8 +30585,8 @@
                            "name":  "NextWritableAuthRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1396,
-                           "endLine":  1408,
+                           "startLine":  1537,
+                           "endLine":  1549,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add",
@@ -30525,8 +30607,8 @@
                            "name":  "FormatAuthSurface",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1410,
-                           "endLine":  1417,
+                           "startLine":  1551,
+                           "endLine":  1558,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -30546,8 +30628,8 @@
                            "name":  "GetNextTableStartCell",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1419,
-                           "endLine":  1425,
+                           "startLine":  1560,
+                           "endLine":  1566,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -30567,8 +30649,8 @@
                            "name":  "EnsureWorksheetEditableAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1427,
-                           "endLine":  1439,
+                           "startLine":  1568,
+                           "endLine":  1580,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -30588,8 +30670,8 @@
                            "name":  "EnsureListColumn",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1441,
-                           "endLine":  1446,
+                           "startLine":  1582,
+                           "endLine":  1587,
                            "lineCount":  6,
                            "directCalls":  [
                                                "Add",
@@ -30611,8 +30693,8 @@
                            "name":  "GetCellByColumn",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1448,
-                           "endLine":  1454,
+                           "startLine":  1589,
+                           "endLine":  1595,
                            "lineCount":  7,
                            "directCalls":  [
                                                "GetColumnIndex"
@@ -30632,8 +30714,8 @@
                            "name":  "GetColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1456,
-                           "endLine":  1465,
+                           "startLine":  1597,
+                           "endLine":  1606,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -30653,8 +30735,8 @@
                            "name":  "WorkbookHasListObject",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1467,
-                           "endLine":  1469,
+                           "startLine":  1608,
+                           "endLine":  1610,
                            "lineCount":  3,
                            "directCalls":  [
                                                "FindListObjectByName"
@@ -30674,8 +30756,8 @@
                            "name":  "WorkbookHasAuthScope",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1471,
-                           "endLine":  1486,
+                           "startLine":  1612,
+                           "endLine":  1627,
                            "lineCount":  16,
                            "directCalls":  [
                                                "FindListObjectByName",
@@ -30697,8 +30779,8 @@
                            "name":  "CapabilityForRoleAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1488,
-                           "endLine":  1499,
+                           "startLine":  1629,
+                           "endLine":  1640,
                            "lineCount":  12,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30718,8 +30800,8 @@
                            "name":  "GetPackedArgAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1501,
-                           "endLine":  1504,
+                           "startLine":  1642,
+                           "endLine":  1645,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -30739,8 +30821,8 @@
                            "name":  "FindOpenWorkbookByFullNameAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1506,
-                           "endLine":  1518,
+                           "startLine":  1647,
+                           "endLine":  1659,
                            "lineCount":  13,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30760,8 +30842,8 @@
                            "name":  "OpenOrCreateWorkbookByPathAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1520,
-                           "endLine":  1562,
+                           "startLine":  1661,
+                           "endLine":  1703,
                            "lineCount":  43,
                            "directCalls":  [
                                                "Add",
@@ -30783,8 +30865,8 @@
                            "name":  "EnsureDirectoryExistsAuth",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1564,
-                           "endLine":  1598,
+                           "startLine":  1705,
+                           "endLine":  1739,
                            "lineCount":  35,
                            "directCalls":  [
                                                "SafeTrim"
@@ -30804,8 +30886,8 @@
                            "name":  "SaveAuthWorkbookIfWritable",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1600,
-                           "endLine":  1604,
+                           "startLine":  1741,
+                           "endLine":  1745,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -30825,8 +30907,8 @@
                            "name":  "FindListObjectByName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1606,
-                           "endLine":  1614,
+                           "startLine":  1747,
+                           "endLine":  1755,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -30846,8 +30928,8 @@
                            "name":  "SafeTrim",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1616,
-                           "endLine":  1619,
+                           "startLine":  1757,
+                           "endLine":  1760,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -30867,8 +30949,8 @@
                            "name":  "AddValidationIssue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1621,
-                           "endLine":  1624,
+                           "startLine":  1762,
+                           "endLine":  1765,
                            "lineCount":  4,
                            "directCalls":  [
                                                "Add",
@@ -30889,8 +30971,8 @@
                            "name":  "CountFatalIssues",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1626,
-                           "endLine":  1635,
+                           "startLine":  1767,
+                           "endLine":  1776,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -120514,6 +120596,27 @@
                          {
                              "id":  "test-entry:tests_unit_TestPhase6CoreSurfaces.bas:TestPhase6CoreSurfaces.TestAdminShipmentReconcile_RejectsOrphanAndMissingNarrative",
                              "procedure":  "TestAdminShipmentReconcile_RejectsOrphanAndMissingNarrative",
+                             "rootKind":  "TEST_ENTRY",
+                             "reason":  "Public test harness entry point discovered under the configured test root.",
+                             "source":  "tests/unit/TestPhase6CoreSurfaces.bas"
+                         },
+                         {
+                             "id":  "test-entry:tests_unit_TestPhase6CoreSurfaces.bas:TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities",
+                             "procedure":  "TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities",
+                             "rootKind":  "TEST_ENTRY",
+                             "reason":  "Public test harness entry point discovered under the configured test root.",
+                             "source":  "tests/unit/TestPhase6CoreSurfaces.bas"
+                         },
+                         {
+                             "id":  "test-entry:tests_unit_TestPhase6CoreSurfaces.bas:TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability",
+                             "procedure":  "TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability",
+                             "rootKind":  "TEST_ENTRY",
+                             "reason":  "Public test harness entry point discovered under the configured test root.",
+                             "source":  "tests/unit/TestPhase6CoreSurfaces.bas"
+                         },
+                         {
+                             "id":  "test-entry:tests_unit_TestPhase6CoreSurfaces.bas:TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerPreservesExplicitDeny",
+                             "procedure":  "TestAdminSignIn_CurrentComputerPreservesExplicitDeny",
                              "rootKind":  "TEST_ENTRY",
                              "reason":  "Public test harness entry point discovered under the configured test root.",
                              "source":  "tests/unit/TestPhase6CoreSurfaces.bas"

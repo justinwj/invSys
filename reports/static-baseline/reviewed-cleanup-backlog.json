@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "a078dc9ca655c6018e94cfdce078c1797447e21e791990541d092cbb6e96d38c",
-                          "maintenanceCandidatesSha256":  "4ad5f1da91cd80a33aba4603603053ae74d119cc1b0336a643d6fc4d7baa06ce"
+                          "implementationManifestSha256":  "6f7375b7f34545a1acbcf7aa20d361dfd0730face14effb0468efd73e9001e18",
+                          "maintenanceCandidatesSha256":  "4e73d468a8f531b74a52b329736348f3a5f9c153a9ac17f4a347472a96f09d54"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -126,7 +126,7 @@
                                                   "sourcePath":  "src/Core/Modules/modAuth.bas",
                                                   "componentName":  "modAuth",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1635,
+                                                  "baselineLineCount":  1776,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -9035,6 +9035,7 @@
                                                   "FindCapabilityRow",
                                                   "FindListObjectByName",
                                                   "FindOpenWorkbookByFullNameAuth",
+                                                  "FindScopedCapabilityRowForTransition",
                                                   "FormatAuthSurface",
                                                   "GetAuthStatus",
                                                   "GetCellByColumn",
@@ -9080,6 +9081,8 @@
                                                   "ShowSignInPrompt",
                                                   "SignInCurrentTargetForAutomation",
                                                   "SignOut",
+                                                  "TextCollectionContainsAuth",
+                                                  "TryTransitionLegacyS1CapabilitiesForCurrentComputer",
                                                   "UserSecretMatchesAuth",
                                                   "ValidateAuth",
                                                   "ValidateStationRoleAuthForAutomation",
