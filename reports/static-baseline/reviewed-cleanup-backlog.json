@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "cf9a745d77ef2ca98336219dfc1ac03b62c83c13a60ecbbf3b670cde53b70439",
-                          "maintenanceCandidatesSha256":  "c308501e387a24060290fe48c549de81cb87f241561e3ef3350fe69f39320f20"
+                          "implementationManifestSha256":  "ae14c700f1295c0e5a87463c4c31b919a1e92bedaeb582aa886316170d66ad57",
+                          "maintenanceCandidatesSha256":  "b506ec9bbfc77a1e4633bce1bca369558e8e02cffd01fa7628e982dc740af2b7"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  962,
-                    "reviewedCandidateCount":  964,
+                    "scannerCandidateCount":  961,
+                    "reviewedCandidateCount":  963,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  30,
+                            "candidateCount":  31,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -52,7 +52,7 @@
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  222,
+                            "candidateCount":  220,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -98,7 +98,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1920,
+                                                  "baselineLineCount":  1924,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -218,6 +218,13 @@
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
                                                   "baselineLineCount":  12928,
+                                                  "growthAllowedWithoutException":  false
+                                              },
+                                              {
+                                                  "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
+                                                  "componentName":  "modTS_Received",
+                                                  "packageKey":  "Receiving",
+                                                  "baselineLineCount":  1155,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -386,31 +393,6 @@
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmSetupTesterStation.frm"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
-                       },
-                       {
-                           "id":  "duplicate:2deb5f929c9ddd95:mBtnCancel_Click+mBtnCancel_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "REPLACE_DUPLICATE",
-                           "disposition":  "REPLACE_DUPLICATE",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
-                           "workstream":  "ADMIN",
-                           "componentName":  "frmAddInventoryItem",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click",
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAddInventoryItem.frm",
-                                               "src/Admin/Forms/frmSeedInventory.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -4968,29 +4950,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnCancel_Click",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "disposition":  "RETAIN_DYNAMIC_ROOT",
-                           "scannerConfidence":  "LOW",
-                           "reviewedConfidence":  "LOW",
-                           "reviewStatus":  "RETAIN",
-                           "workstream":  "ADMIN",
-                           "componentName":  "frmSeedInventory",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmSeedInventory.frm"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -19309,6 +19268,84 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "BuildReceivingAggregateGroupKey",
+                                                  "CanHideWorksheet",
+                                                  "CellNumber",
+                                                  "CellText",
+                                                  "ClearReceivingFormStaging",
+                                                  "ClearReceivingFormStagingForWorkbook",
+                                                  "ColumnIndex",
+                                                  "ConfirmWrites",
+                                                  "DeleteReceivingActionButton",
+                                                  "EnforceReceivingSupportSheetsHidden",
+                                                  "EnsureGeneratedButtons",
+                                                  "EnsureReceivingButtons",
+                                                  "FindExistingStagingRecord",
+                                                  "FindTable",
+                                                  "FindTableRecord",
+                                                  "FirstBlankOrNewRecord",
+                                                  "HandleReceivingOperatorWorkbookClosing",
+                                                  "HandleReceivingSelectionChange",
+                                                  "HandleReceivingSheetChange",
+                                                  "InitializeReceivingUiForWorkbook",
+                                                  "IsReceivingLauncherFormReusable",
+                                                  "LastConfirmWritesStatus",
+                                                  "LastConfirmWritesSucceeded",
+                                                  "LoadReceivingAggregateViewForWorkbook",
+                                                  "LoadReceivingEntriesHistoryForWorkbook",
+                                                  "LoadReceivingFormInventory",
+                                                  "LoadReceivingFormInventoryForWorkbook",
+                                                  "LoadReceivingFormTable",
+                                                  "LoadReceivingFormTableForWorkbook",
+                                                  "LoadReceivingItemChoicesForWorkbook",
+                                                  "LoadReceivingStagingViewForWorkbook",
+                                                  "NormalizeReceivingCondition",
+                                                  "NotifyReceivingLauncherFormTerminating",
+                                                  "NzDbl",
+                                                  "PopulateAggregateRecord",
+                                                  "RebuildAggregation",
+                                                  "RebuildAggregationForWorkbook",
+                                                  "ReceivingFormInitializeSmokeForWorkbook",
+                                                  "RecordConfirmWritesResult",
+                                                  "RefreshReceivingUiForWorkbook",
+                                                  "ResolveReceivingWorkbook",
+                                                  "RunReceivingConfirmWritesFormActionForTest",
+                                                  "RunReceivingInboundReturnFormActionForTest",
+                                                  "RunReceivingPurchasingTabContractForTest",
+                                                  "RunReceivingRefreshFormActionForTest",
+                                                  "RunReceivingReturnsTabContractForTest",
+                                                  "RunReceivingSearchAndHeaderContractTest",
+                                                  "SetCellText",
+                                                  "SetCellValue",
+                                                  "ShowReceivingDynamicItemSearch",
+                                                  "ShowReceivingForm",
+                                                  "ShowReceivingMessage",
+                                                  "StageReceivingFormItemForWorkbook",
+                                                  "SyncQuantityFromStaging",
+                                                  "VariantArrayRowCount",
+                                                  "WorkbookSheet"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
+                                           ],
+                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
                        },
                        {
                            "id":  "reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook",

@@ -174,7 +174,7 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
     Dim stateValue As String
 
     If Not RequiredColumnsPresent(aggregateTable, _
-        Array("REF_NUMBER", "ITEM_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", _
+        Array("REF_NUMBER", "RECEIPT_TYPE", "ITEM_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", _
               "System_Key", "EventId", "WorkflowState")) Then
         report = "AggregateReceived is missing required Receiving workflow columns."
         Exit Function
@@ -191,7 +191,8 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
             CellNumber(aggregateTable, rowIndex, "QUANTITY"), _
             CellText(aggregateTable, rowIndex, "LOCATION"), _
             BuildEventNote(aggregateTable, rowIndex), _
-            "GOOD", BuildReceivingAttributesJson(aggregateTable, rowIndex), stateValue
+            CellText(aggregateTable, rowIndex, "Condition"), _
+            BuildReceivingAttributesJson(aggregateTable, rowIndex), stateValue
 
         Select Case state.CurrentState
             Case state.StateStaged
@@ -216,11 +217,22 @@ End Function
 Private Function BuildReceivingAttributesJson(ByVal aggregateTable As ListObject, _
                                               ByVal rowIndex As Long) As String
     Dim lotNumber As String
+    Dim receiptType As String
+    Dim returnReason As String
+    Dim result As String
 
     lotNumber = CellText(aggregateTable, rowIndex, "LOT_NUMBER")
-    If lotNumber = "" Then Exit Function
-    BuildReceivingAttributesJson = _
-        "{""LOT_NUMBER"":""" & EscapeJsonReceiving(lotNumber) & """}"
+    receiptType = CellText(aggregateTable, rowIndex, "RECEIPT_TYPE")
+    If receiptType = "" Then receiptType = "RECEIPT"
+    returnReason = CellText(aggregateTable, rowIndex, "RETURN_REASON")
+    result = "{""RECEIPT_TYPE"":""" & EscapeJsonReceiving(receiptType) & """"
+    If lotNumber <> "" Then
+        result = result & ",""LOT_NUMBER"":""" & EscapeJsonReceiving(lotNumber) & """"
+    End If
+    If returnReason <> "" Then
+        result = result & ",""RETURN_REASON"":""" & EscapeJsonReceiving(returnReason) & """"
+    End If
+    BuildReceivingAttributesJson = result & "}"
 End Function
 
 Private Function EscapeJsonReceiving(ByVal textIn As String) As String
@@ -284,6 +296,8 @@ Private Sub AppendReceivedLog(ByVal logTable As ListObject, _
     SetCellText logTable, logIndex, "SNAPSHOT_ID", state.EventId
     SetCellValue logTable, logIndex, "ENTRY_DATE", Now
     SetCellText logTable, logIndex, "USER", userId
+    SetCellText logTable, logIndex, "RECEIPT_TYPE", _
+                CellText(aggregateTable, aggregateIndex, "RECEIPT_TYPE")
     SetCellText logTable, logIndex, "REF_NUMBER", _
                 CellText(aggregateTable, aggregateIndex, "REF_NUMBER")
     SetCellText logTable, logIndex, "ITEMS", _
@@ -296,6 +310,9 @@ Private Sub AppendReceivedLog(ByVal logTable As ListObject, _
     SetCellText logTable, logIndex, "LOCATION", state.Location
     SetCellText logTable, logIndex, "LOT_NUMBER", _
                 CellText(aggregateTable, aggregateIndex, "LOT_NUMBER")
+    SetCellText logTable, logIndex, "Condition", state.ConditionValue
+    SetCellText logTable, logIndex, "RETURN_REASON", _
+                CellText(aggregateTable, aggregateIndex, "RETURN_REASON")
     SetCellText logTable, logIndex, "ITEM_CODE", state.Sku
     SetCellText logTable, logIndex, "System_Key", state.SystemKey
     SetCellText logTable, logIndex, "EventId", state.EventId
@@ -303,7 +320,9 @@ End Sub
 
 Private Function BuildEventNote(ByVal aggregateTable As ListObject, _
                                 ByVal rowIndex As Long) As String
-    BuildEventNote = "REF_NUMBER=" & CellText(aggregateTable, rowIndex, "REF_NUMBER")
+    BuildEventNote = "RECEIPT_TYPE=" & CellText(aggregateTable, rowIndex, "RECEIPT_TYPE") & _
+                     "; REF_NUMBER=" & CellText(aggregateTable, rowIndex, "REF_NUMBER") & _
+                     "; CONDITION=" & CellText(aggregateTable, rowIndex, "Condition")
     If CellText(aggregateTable, rowIndex, "ITEM") <> "" Then
         BuildEventNote = BuildEventNote & _
                          "; ITEM=" & CellText(aggregateTable, rowIndex, "ITEM")
@@ -315,6 +334,10 @@ Private Function BuildEventNote(ByVal aggregateTable As ListObject, _
     If CellText(aggregateTable, rowIndex, "LOT_NUMBER") <> "" Then
         BuildEventNote = BuildEventNote & _
                          "; LOT_NUMBER=" & CellText(aggregateTable, rowIndex, "LOT_NUMBER")
+    End If
+    If CellText(aggregateTable, rowIndex, "RETURN_REASON") <> "" Then
+        BuildEventNote = BuildEventNote & _
+                         "; RETURN_REASON=" & CellText(aggregateTable, rowIndex, "RETURN_REASON")
     End If
 End Function
 

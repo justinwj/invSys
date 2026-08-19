@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4670
+- Procedures: 4680
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -122,7 +122,6 @@
 | mBtnBuilderRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnBuilderRelease_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnBuilderSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
-| mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCancel_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -528,15 +527,19 @@
 | TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_AddStagesByItemCodeWhenRowsCollide | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_AddStagesSelectedInventoryForConfirm | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
+| TestReceivingForm_DeclaresConditionAndInboundReturns | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingForm_HidesSupportSheetsAfterFormRefresh | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_InventoryLoaderUsesSystemKey | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestReceivingPurchasingTab_IsVisibleAndReadOnly | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReadiness_StatusPanelRendersForKnownBadWorkbook | TEST_ENTRY | tests/integration/test_ReceivingReadiness.bas |
+| TestReceivingRefresh_RebuildsCompleteAggregate | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingReturns_StagesThroughFormAction | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |
 | TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestReceivingStage_GeneratesStableDistinctSystemKeys | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingStage_MixedConditionCreatesDistinctEntities | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingWorkflowState_PreservesEventIdentity | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingWorkflowState_RejectsMissingSystemKey | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingWorkflowState_UsesOrderedTransitions | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |

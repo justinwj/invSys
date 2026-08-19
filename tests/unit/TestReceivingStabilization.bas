@@ -162,6 +162,173 @@ CleanFailure:
               failureDescription
 End Function
 
+Public Function TestReceivingForm_DeclaresConditionAndInboundReturns() As Long
+    Dim frm As frmReceiving
+    Dim result As String
+
+    Set frm = New frmReceiving
+    On Error GoTo Failed
+    result = frm.TestReceivingSearchAndHeaderContract()
+    If Left$(result, 3) <> "OK|" _
+       Or InStr(1, result, "Condition=True", vbBinaryCompare) = 0 _
+       Or InStr(1, result, "Returns=True", vbBinaryCompare) = 0 _
+       Or InStr(1, result, "ViewerReadOnly=True", vbBinaryCompare) = 0 Then
+        GoTo CleanExit
+    End If
+    TestReceivingForm_DeclaresConditionAndInboundReturns = 1
+
+CleanExit:
+    On Error Resume Next
+    Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+    Exit Function
+Failed:
+    On Error Resume Next
+    Unload frm
+    Set frm = Nothing
+    On Error GoTo 0
+End Function
+
+Public Function TestReceivingRefresh_RebuildsCompleteAggregate() As Long
+    Dim wb As Workbook
+    Dim frm As frmReceiving
+    Dim inventoryTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim sourceRecord As ListRow
+    Dim report As String
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo Failed
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then
+        GoTo CleanExit
+    End If
+    Set inventoryTable = FindTableReceivingTest(wb, "invSys")
+    Set aggregateTable = FindTableReceivingTest(wb, "AggregateReceived")
+    Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-SOURCE-AGG"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-AGG"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Aggregate Item"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "DOCK"
+
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-A", "SYS-SOURCE-AGG", "SKU-AGG", 2, report, "DOCK", "LOT-1") Then
+        GoTo CleanExit
+    End If
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-B", "SYS-SOURCE-AGG", "SKU-AGG", 3, report, "DOCK", "LOT-1") Then
+        GoTo CleanExit
+    End If
+
+    Do While aggregateTable.ListRows.Count > 1
+        aggregateTable.ListRows(aggregateTable.ListRows.Count).Delete
+    Loop
+    Set frm = New frmReceiving
+    result = frm.TestRefreshInventoryActionForWorkbook(wb)
+    If InStr(1, result, "AggregateRows=2", vbBinaryCompare) = 0 _
+       Or TableRecordCountReceivingTest(aggregateTable) <> 2 Then
+        GoTo CleanExit
+    End If
+    TestReceivingRefresh_RebuildsCompleteAggregate = 1
+
+CleanExit:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    wb.Close SaveChanges:=False
+    Set frm = Nothing
+    Set wb = Nothing
+    On Error GoTo 0
+    Exit Function
+Failed:
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    wb.Close SaveChanges:=False
+    Set frm = Nothing
+    Set wb = Nothing
+    On Error GoTo 0
+End Function
+
+Public Function TestReceivingReturns_StagesThroughFormAction() As Long
+    Dim wb As Workbook
+    Dim inventoryTable As ListObject
+    Dim sourceRecord As ListRow
+    Dim report As String
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set inventoryTable = FindTableReceivingTest(wb, "invSys")
+    Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-SOURCE-RETURN"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-RETURN"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Returned Item"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "RETURNS"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 1
+
+    result = modTS_Received.RunReceivingInboundReturnFormActionForTest(wb)
+    If Left$(result, 3) = "OK|" _
+       And InStr(1, result, "StagedRows=1", vbBinaryCompare) > 0 _
+       And InStr(1, result, "ReceiptType=RETURN", vbBinaryCompare) > 0 _
+       And InStr(1, result, "Condition=BAD", vbBinaryCompare) > 0 _
+       And InStr(1, result, "Reason=TEST RETURN", vbBinaryCompare) > 0 Then
+        TestReceivingReturns_StagesThroughFormAction = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    Set wb = Nothing
+    On Error GoTo 0
+End Function
+
+Public Function TestReceivingStage_MixedConditionCreatesDistinctEntities() As Long
+    Dim wb As Workbook
+    Dim inventoryTable As ListObject
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim sourceRecord As ListRow
+    Dim report As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set inventoryTable = FindTableReceivingTest(wb, "invSys")
+    Set stagingTable = FindTableReceivingTest(wb, "ReceivedTally")
+    Set aggregateTable = FindTableReceivingTest(wb, "AggregateReceived")
+    Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-SOURCE-CONDITION"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-CONDITION"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Condition Item"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "DOCK"
+
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-CONDITION", "SYS-SOURCE-CONDITION", "SKU-CONDITION", 2, report, _
+        "DOCK", "LOT-C", "GOOD") Then GoTo CleanExit
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-CONDITION", "SYS-SOURCE-CONDITION", "SKU-CONDITION", 3, report, _
+        "DOCK", "LOT-C", "BAD") Then GoTo CleanExit
+
+    If TableRecordCountReceivingTest(stagingTable) = 2 _
+       And TableRecordCountReceivingTest(aggregateTable) = 2 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "System_Key"), _
+                   ValueReceivingTest(stagingTable, 2, "System_Key"), vbBinaryCompare) <> 0 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "Condition"), "GOOD", vbBinaryCompare) = 0 _
+       And StrComp(ValueReceivingTest(stagingTable, 2, "Condition"), "BAD", vbBinaryCompare) = 0 Then
+        TestReceivingStage_MixedConditionCreatesDistinctEntities = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    Set wb = Nothing
+    On Error GoTo 0
+End Function
+
 Private Function FindTableReceivingTest(ByVal wb As Workbook, _
                                         ByVal tableName As String) As ListObject
     Dim ws As Worksheet

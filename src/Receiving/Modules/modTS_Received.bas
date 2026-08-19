@@ -189,6 +189,23 @@ Public Function RunReceivingPurchasingTabContractForTest(ByVal operatorWb As Wor
     Unload frm
 End Function
 
+Public Function RunReceivingReturnsTabContractForTest(ByVal operatorWb As Workbook) As String
+    Dim frm As frmReceiving
+
+    Set frm = New frmReceiving
+    RunReceivingReturnsTabContractForTest = frm.TestReturnsTabContract(operatorWb)
+    Unload frm
+End Function
+
+Public Function RunReceivingInboundReturnFormActionForTest(ByVal operatorWb As Workbook) As String
+    Dim frm As frmReceiving
+
+    Set frm = New frmReceiving
+    RunReceivingInboundReturnFormActionForTest = _
+        frm.TestStageInboundReturnActionForWorkbook(operatorWb)
+    Unload frm
+End Function
+
 Public Function RunReceivingSearchAndHeaderContractTest() As String
     On Error GoTo Failed
 
@@ -453,22 +470,67 @@ Public Function LoadReceivingEntriesHistoryForWorkbook(ByVal operatorWb As Workb
     Set historyTable = FindTable(operatorWb, "ReceivedLog")
     If historyTable Is Nothing Or historyTable.DataBodyRange Is Nothing Then Exit Function
     rowCount = historyTable.ListRows.Count
-    ReDim result(1 To rowCount, 1 To 11)
+    ReDim result(1 To rowCount, 1 To 10)
     For sourceRow = rowCount To 1 Step -1
         outputRow = outputRow + 1
         result(outputRow, 1) = CellText(historyTable, sourceRow, "ENTRY_DATE")
-        result(outputRow, 2) = CellText(historyTable, sourceRow, "USER")
+        result(outputRow, 2) = CellText(historyTable, sourceRow, "RECEIPT_TYPE")
         result(outputRow, 3) = CellText(historyTable, sourceRow, "REF_NUMBER")
         result(outputRow, 4) = CellText(historyTable, sourceRow, "ITEMS")
         result(outputRow, 5) = CellText(historyTable, sourceRow, "QUANTITY")
         result(outputRow, 6) = CellText(historyTable, sourceRow, "UOM")
-        result(outputRow, 7) = CellText(historyTable, sourceRow, "VENDOR")
-        result(outputRow, 8) = CellText(historyTable, sourceRow, "LOCATION")
-        result(outputRow, 9) = CellText(historyTable, sourceRow, "ITEM_CODE")
-        result(outputRow, 10) = CellText(historyTable, sourceRow, "LOT_NUMBER")
-        result(outputRow, 11) = CellText(historyTable, sourceRow, "System_Key")
+        result(outputRow, 7) = CellText(historyTable, sourceRow, "LOCATION")
+        result(outputRow, 8) = CellText(historyTable, sourceRow, "LOT_NUMBER")
+        result(outputRow, 9) = CellText(historyTable, sourceRow, "Condition")
+        result(outputRow, 10) = CellText(historyTable, sourceRow, "RETURN_REASON")
     Next sourceRow
     LoadReceivingEntriesHistoryForWorkbook = result
+End Function
+
+Public Function LoadReceivingStagingViewForWorkbook(ByVal operatorWb As Workbook) As Variant
+    Dim targetTable As ListObject
+    Dim result() As Variant
+    Dim rowIndex As Long
+
+    Set targetTable = FindTable(operatorWb, TABLE_STAGING)
+    If targetTable Is Nothing Or targetTable.DataBodyRange Is Nothing Then Exit Function
+    ReDim result(1 To targetTable.ListRows.Count, 1 To 10)
+    For rowIndex = 1 To targetTable.ListRows.Count
+        result(rowIndex, 1) = CellText(targetTable, rowIndex, "REF_NUMBER")
+        result(rowIndex, 2) = CellText(targetTable, rowIndex, "RECEIPT_TYPE")
+        result(rowIndex, 3) = CellText(targetTable, rowIndex, "ITEMS")
+        result(rowIndex, 4) = CellText(targetTable, rowIndex, "QUANTITY")
+        result(rowIndex, 5) = CellText(targetTable, rowIndex, "UOM")
+        result(rowIndex, 6) = CellText(targetTable, rowIndex, "LOCATION")
+        result(rowIndex, 7) = CellText(targetTable, rowIndex, "LOT_NUMBER")
+        result(rowIndex, 8) = CellText(targetTable, rowIndex, "VENDOR")
+        result(rowIndex, 9) = CellText(targetTable, rowIndex, "Condition")
+        result(rowIndex, 10) = CellText(targetTable, rowIndex, "RETURN_REASON")
+    Next rowIndex
+    LoadReceivingStagingViewForWorkbook = result
+End Function
+
+Public Function LoadReceivingAggregateViewForWorkbook(ByVal operatorWb As Workbook) As Variant
+    Dim targetTable As ListObject
+    Dim result() As Variant
+    Dim rowIndex As Long
+
+    Set targetTable = FindTable(operatorWb, TABLE_AGGREGATE)
+    If targetTable Is Nothing Or targetTable.DataBodyRange Is Nothing Then Exit Function
+    ReDim result(1 To targetTable.ListRows.Count, 1 To 10)
+    For rowIndex = 1 To targetTable.ListRows.Count
+        result(rowIndex, 1) = CellText(targetTable, rowIndex, "REF_NUMBER")
+        result(rowIndex, 2) = CellText(targetTable, rowIndex, "RECEIPT_TYPE")
+        result(rowIndex, 3) = CellText(targetTable, rowIndex, "ITEM_CODE")
+        result(rowIndex, 4) = CellText(targetTable, rowIndex, "ITEM")
+        result(rowIndex, 5) = CellText(targetTable, rowIndex, "UOM")
+        result(rowIndex, 6) = CellText(targetTable, rowIndex, "QUANTITY")
+        result(rowIndex, 7) = CellText(targetTable, rowIndex, "LOCATION")
+        result(rowIndex, 8) = CellText(targetTable, rowIndex, "LOT_NUMBER")
+        result(rowIndex, 9) = CellText(targetTable, rowIndex, "Condition")
+        result(rowIndex, 10) = CellText(targetTable, rowIndex, "RETURN_REASON")
+    Next rowIndex
+    LoadReceivingAggregateViewForWorkbook = result
 End Function
 
 Public Function LoadReceivingFormTableForWorkbook(ByVal operatorWb As Workbook, _
@@ -495,7 +557,10 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
                                                   ByVal qty As Double, _
                                                   ByRef report As String, _
                                                   Optional ByVal locationOverride As String = "", _
-                                                  Optional ByVal lotNumber As String = "") As Boolean
+                                                  Optional ByVal lotNumber As String = "", _
+                                                  Optional ByVal conditionValue As String = "GOOD", _
+                                                  Optional ByVal receiptType As String = "RECEIPT", _
+                                                  Optional ByVal returnReason As String = "") As Boolean
     On Error GoTo Failed
 
     Dim inventoryTable As ListObject
@@ -510,6 +575,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     Dim itemName As String
     Dim uomValue As String
     Dim locationValue As String
+    Dim vendorValue As String
 
     refNumber = Trim$(refNumber)
     sourceSystemKey = Trim$(sourceSystemKey)
@@ -518,6 +584,19 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     If refNumber = "" Then report = "Ref number is required.": Exit Function
     If sourceSystemKey = "" And itemCodeValue = "" Then report = "Select an inventory item first.": Exit Function
     If qty <= 0 Then report = "Quantity must be greater than zero.": Exit Function
+    conditionValue = NormalizeReceivingCondition(conditionValue)
+    If conditionValue = "" Then report = "Choose a valid receiving condition.": Exit Function
+    receiptType = UCase$(Trim$(receiptType))
+    If receiptType = "" Then receiptType = "RECEIPT"
+    If receiptType <> "RECEIPT" And receiptType <> "RETURN" Then
+        report = "Receiving type must be RECEIPT or RETURN."
+        Exit Function
+    End If
+    returnReason = Trim$(returnReason)
+    If receiptType = "RETURN" And returnReason = "" Then
+        report = "Return reason is required."
+        Exit Function
+    End If
 
     Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
     Set stagingTable = FindTable(targetWb, TABLE_STAGING)
@@ -543,13 +622,15 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     itemName = CellText(inventoryTable, inventoryIndex, "ITEM")
     If itemName = "" Then itemName = CellText(inventoryTable, inventoryIndex, "ItemName")
     uomValue = CellText(inventoryTable, inventoryIndex, "UOM")
+    vendorValue = CellText(inventoryTable, inventoryIndex, "VENDOR(s)")
     locationValue = CellText(inventoryTable, inventoryIndex, "LOCATION")
     If Trim$(locationOverride) <> "" Then locationValue = Trim$(locationOverride)
     lotNumber = Trim$(lotNumber)
     If locationValue = "" Then report = "Receive location is required.": Exit Function
 
     stagingIndex = FindExistingStagingRecord( _
-        stagingTable, refNumber, sourceSystemKey, locationValue, lotNumber)
+        stagingTable, refNumber, sourceSystemKey, locationValue, lotNumber, _
+        conditionValue, receiptType, returnReason)
     If stagingIndex > 0 Then
         receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
         eventId = CellText(stagingTable, stagingIndex, "EventId")
@@ -560,10 +641,15 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
         eventId = modRoleEventWriter.CreateSystemKey()
         stagingIndex = FirstBlankOrNewRecord(stagingTable).Index
         SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
+        SetCellText stagingTable, stagingIndex, "RECEIPT_TYPE", receiptType
         SetCellText stagingTable, stagingIndex, "ITEMS", itemName
         SetCellValue stagingTable, stagingIndex, "QUANTITY", qty
+        SetCellText stagingTable, stagingIndex, "UOM", uomValue
+        SetCellText stagingTable, stagingIndex, "VENDOR", vendorValue
         SetCellText stagingTable, stagingIndex, "LOCATION", locationValue
         SetCellText stagingTable, stagingIndex, "LOT_NUMBER", lotNumber
+        SetCellText stagingTable, stagingIndex, "Condition", conditionValue
+        SetCellText stagingTable, stagingIndex, "RETURN_REASON", returnReason
         SetCellText stagingTable, stagingIndex, "System_Key", receivingSystemKey
         SetCellText stagingTable, stagingIndex, "ITEM_CODE", itemCode
         SetCellText stagingTable, stagingIndex, "Source_System_Key", sourceSystemKey
@@ -576,7 +662,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
                             refNumber, receivingSystemKey, eventId, _
                             CellNumber(stagingTable, stagingIndex, "QUANTITY"), _
-                            locationValue, lotNumber
+                            locationValue, lotNumber, conditionValue, receiptType, returnReason
 
     report = "Staged " & CStr(qty) & " " & uomValue & " of " & itemName & _
              "; System_Key=" & receivingSystemKey
@@ -598,6 +684,11 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
     Dim aggregateIndex As Long
     Dim sourceSystemKey As String
     Dim receivingSystemKey As String
+    Dim aggregateGroupKey As String
+    Dim aggregateIndexes As Object
+    Dim receiptType As String
+    Dim conditionValue As String
+    Dim returnReason As String
 
     Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
     Set stagingTable = FindTable(targetWb, TABLE_STAGING)
@@ -612,6 +703,9 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
         RebuildAggregationForWorkbook = True
         Exit Function
     End If
+
+    Set aggregateIndexes = CreateObject("Scripting.Dictionary")
+    aggregateIndexes.CompareMode = vbTextCompare
 
     For stagingIndex = 1 To stagingTable.ListRows.Count
         receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
@@ -629,18 +723,39 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
             report = "A staged source inventory item is no longer available."
             Exit Function
         End If
-        aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
-        PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
-                                CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
-                                receivingSystemKey, _
-                                CellText(stagingTable, stagingIndex, "EventId"), _
-                                CellNumber(stagingTable, stagingIndex, "QUANTITY"), _
-                                CellText(stagingTable, stagingIndex, "LOCATION"), _
-                                CellText(stagingTable, stagingIndex, "LOT_NUMBER")
-        SetCellText aggregateTable, aggregateIndex, "WorkflowState", _
-                    CellText(stagingTable, stagingIndex, "WorkflowState")
+        receiptType = CellText(stagingTable, stagingIndex, "RECEIPT_TYPE")
+        If receiptType = "" Then receiptType = "RECEIPT"
+        conditionValue = NormalizeReceivingCondition( _
+            CellText(stagingTable, stagingIndex, "Condition"))
+        If conditionValue = "" Then conditionValue = "GOOD"
+        returnReason = CellText(stagingTable, stagingIndex, "RETURN_REASON")
+        aggregateGroupKey = BuildReceivingAggregateGroupKey( _
+            receiptType, CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
+            CellText(stagingTable, stagingIndex, "ITEM_CODE"), _
+            CellText(stagingTable, stagingIndex, "LOCATION"), _
+            CellText(stagingTable, stagingIndex, "LOT_NUMBER"), conditionValue, returnReason)
+        If aggregateIndexes.Exists(aggregateGroupKey) Then
+            aggregateIndex = CLng(aggregateIndexes(aggregateGroupKey))
+            SetCellValue aggregateTable, aggregateIndex, "QUANTITY", _
+                CellNumber(aggregateTable, aggregateIndex, "QUANTITY") + _
+                CellNumber(stagingTable, stagingIndex, "QUANTITY")
+        Else
+            aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
+            aggregateIndexes.Add aggregateGroupKey, aggregateIndex
+            PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
+                                    CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
+                                    receivingSystemKey, _
+                                    CellText(stagingTable, stagingIndex, "EventId"), _
+                                    CellNumber(stagingTable, stagingIndex, "QUANTITY"), _
+                                    CellText(stagingTable, stagingIndex, "LOCATION"), _
+                                    CellText(stagingTable, stagingIndex, "LOT_NUMBER"), _
+                                    conditionValue, receiptType, returnReason
+            SetCellText aggregateTable, aggregateIndex, "WorkflowState", _
+                        CellText(stagingTable, stagingIndex, "WorkflowState")
+        End If
     Next stagingIndex
-    report = "OK|Rows=" & CStr(stagingTable.ListRows.Count)
+    report = "OK|Rows=" & CStr(aggregateIndexes.Count) & _
+             "|SourceRows=" & CStr(stagingTable.ListRows.Count)
     RebuildAggregationForWorkbook = True
     Exit Function
 Failed:
@@ -771,8 +886,12 @@ Private Sub PopulateAggregateRecord(ByVal aggregateTable As ListObject, _
                                     ByVal eventId As String, _
                                     ByVal qty As Double, _
                                     ByVal locationOverride As String, _
-                                    ByVal lotNumber As String)
+                                    ByVal lotNumber As String, _
+                                    ByVal conditionValue As String, _
+                                    ByVal receiptType As String, _
+                                    ByVal returnReason As String)
     SetCellText aggregateTable, aggregateIndex, "REF_NUMBER", refNumber
+    SetCellText aggregateTable, aggregateIndex, "RECEIPT_TYPE", receiptType
     SetCellText aggregateTable, aggregateIndex, "ITEM_CODE", _
                 CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
     SetCellText aggregateTable, aggregateIndex, "VENDORS", _
@@ -794,6 +913,8 @@ Private Sub PopulateAggregateRecord(ByVal aggregateTable As ListObject, _
         locationOverride = CellText(inventoryTable, inventoryIndex, "LOCATION")
     SetCellText aggregateTable, aggregateIndex, "LOCATION", locationOverride
     SetCellText aggregateTable, aggregateIndex, "LOT_NUMBER", lotNumber
+    SetCellText aggregateTable, aggregateIndex, "Condition", conditionValue
+    SetCellText aggregateTable, aggregateIndex, "RETURN_REASON", returnReason
     SetCellText aggregateTable, aggregateIndex, "System_Key", receivingSystemKey
     SetCellText aggregateTable, aggregateIndex, "EventId", eventId
     SetCellText aggregateTable, aggregateIndex, "WorkflowState", "STAGED"
@@ -803,7 +924,10 @@ Private Function FindExistingStagingRecord(ByVal stagingTable As ListObject, _
                                            ByVal refNumber As String, _
                                            ByVal sourceSystemKey As String, _
                                            ByVal locationValue As String, _
-                                           ByVal lotNumber As String) As Long
+                                           ByVal lotNumber As String, _
+                                           ByVal conditionValue As String, _
+                                           ByVal receiptType As String, _
+                                           ByVal returnReason As String) As Long
     Dim recordIndex As Long
 
     If stagingTable Is Nothing Or stagingTable.DataBodyRange Is Nothing Then Exit Function
@@ -815,11 +939,43 @@ Private Function FindExistingStagingRecord(ByVal stagingTable As ListObject, _
            And StrComp(CellText(stagingTable, recordIndex, "LOCATION"), _
                        locationValue, vbTextCompare) = 0 _
            And StrComp(CellText(stagingTable, recordIndex, "LOT_NUMBER"), _
-                       lotNumber, vbTextCompare) = 0 Then
+                       lotNumber, vbTextCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "Condition"), _
+                       conditionValue, vbTextCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "RECEIPT_TYPE"), _
+                       receiptType, vbTextCompare) = 0 _
+           And StrComp(CellText(stagingTable, recordIndex, "RETURN_REASON"), _
+                       returnReason, vbTextCompare) = 0 Then
             FindExistingStagingRecord = recordIndex
             Exit Function
         End If
     Next recordIndex
+End Function
+
+Private Function NormalizeReceivingCondition(ByVal conditionValue As String) As String
+    conditionValue = UCase$(Trim$(conditionValue))
+    If conditionValue = "" Then conditionValue = "GOOD"
+    Select Case conditionValue
+        Case "GOOD", "BAD", "DAMAGED", "EXPIRED", "REJECTED"
+            NormalizeReceivingCondition = conditionValue
+    End Select
+End Function
+
+Private Function BuildReceivingAggregateGroupKey(ByVal receiptType As String, _
+                                                 ByVal refNumber As String, _
+                                                 ByVal itemCode As String, _
+                                                 ByVal locationValue As String, _
+                                                 ByVal lotNumber As String, _
+                                                 ByVal conditionValue As String, _
+                                                 ByVal returnReason As String) As String
+    BuildReceivingAggregateGroupKey = _
+        UCase$(Trim$(receiptType)) & Chr$(30) & _
+        UCase$(Trim$(refNumber)) & Chr$(30) & _
+        UCase$(Trim$(itemCode)) & Chr$(30) & _
+        UCase$(Trim$(locationValue)) & Chr$(30) & _
+        UCase$(Trim$(lotNumber)) & Chr$(30) & _
+        UCase$(Trim$(conditionValue)) & Chr$(30) & _
+        UCase$(Trim$(returnReason))
 End Function
 
 Private Function ResolveReceivingWorkbook(Optional ByVal preferredWb As Workbook = Nothing) As Workbook

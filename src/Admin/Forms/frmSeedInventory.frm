@@ -31,8 +31,6 @@ Private WithEvents mBtnDeleteDataSet As MSForms.CommandButton
 Attribute mBtnDeleteDataSet.VB_VarHelpID = -1
 Private WithEvents mBtnRepairInboxes As MSForms.CommandButton
 Attribute mBtnRepairInboxes.VB_VarHelpID = -1
-Private WithEvents mBtnCancel As MSForms.CommandButton
-Attribute mBtnCancel.VB_VarHelpID = -1
 Private mLblTitle As MSForms.Label
 Private mLblWarehouse As MSForms.Label
 Private mLblStation As MSForms.Label
@@ -175,8 +173,7 @@ Private Sub EnsureControls()
     Set mBtnUpload = AddButton("btnUploadDemoInventory", 390, 218, 186, 32, "Upload Data Set")
     Set mBtnDeleteDataSet = AddButton("btnDeleteDemoDataSet", 18, 262, 172, 28, "Delete Data Set")
     mBtnDeleteDataSet.Enabled = False
-    Set mBtnRepairInboxes = AddButton("btnRepairInboxes", 342, 262, 116, 28, "Repair Inboxes")
-    Set mBtnCancel = AddButton("btnCancel", 470, 262, 106, 28, "Cancel")
+    Set mBtnRepairInboxes = AddButton("btnRepairInboxes", 460, 262, 116, 28, "Repair Inboxes")
 End Sub
 
 Private Sub ConfigureDemoDataSetChoices(Optional ByVal runtimeRoot As String = "")
@@ -324,11 +321,6 @@ Private Sub mCboDemoDataSet_Change()
     End If
 End Sub
 
-Private Sub mBtnCancel_Click()
-    mAccepted = False
-    Me.Hide
-End Sub
-
 Public Function TestDemoInventoryActionContract() As String
     EnsureControls
     If mBtnSeed.Caption = "Seed Demo Inventory" _
@@ -337,7 +329,7 @@ Public Function TestDemoInventoryActionContract() As String
        And mBtnDeleteDataSet.Caption = "Delete Data Set" _
        And mCboDemoDataSet.ListCount >= 1 _
        And mCboDemoDataSet.List(0) = "R1 Workflow Kit (built-in)" Then
-        TestDemoInventoryActionContract = "OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True"
+        TestDemoInventoryActionContract = "OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True|Cancel=False|CloseIsSilent=True"
     Else
         TestDemoInventoryActionContract = "FAIL|Demo inventory actions are incomplete."
     End If

@@ -176,8 +176,12 @@ Sub Seed_DemoInventory()
     stage = "context resolution"
     mSeedCallbackLastResult = ""
     If Not ResolveSeedInventoryContext(warehouseId, stationId, userId, actionName, uploadPath, runtimeRoot, report) Then
-        If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
-        mSeedCallbackLastResult = "FAIL|" & report
+        If Trim$(report) = "" Then
+            mSeedCallbackLastResult = "CANCEL|"
+        Else
+            If Not mSeedCallbackAutomationEnabled Then MsgBox report, vbExclamation, "invSys Admin"
+            mSeedCallbackLastResult = "FAIL|" & report
+        End If
         GoTo CleanExit
     End If
 
@@ -1137,7 +1141,7 @@ Private Function ResolveSeedInventoryContext(ByRef warehouseId As String, _
         frmSeedInventory.Configure warehouseOptions, warehouseId, stationId, userId
         frmSeedInventory.Show
         If Not frmSeedInventory.Accepted Then
-            report = "Seed inventory cancelled."
+            report = ""
             Unload frmSeedInventory
             Exit Function
         End If

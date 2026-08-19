@@ -219,8 +219,8 @@ $checks = @(
         Name = "Receiving.SchemaExpansionAvoidsOverlap"
         Passed = ($receivingEnsureBlock.IndexOf('ArrangeReceivingTablesSurface wb') -ge 0) -and
             ($receivingEnsureBlock.IndexOf('ArrangeReceivingTablesSurface wb') -lt $receivingEnsureBlock.IndexOf('EnsureTableSurface wb')) -and
-            ($receivingEnsureBlock -match 'AggregateReceived.+False, "N3"') -and
-            ($receivingEnsureBlock -match 'invSysData_Receiving.+False, "AB3"') -and
+            ($receivingEnsureBlock -match 'AggregateReceived.+NextFreeReceivingTableAddressSurface') -and
+            ($receivingEnsureBlock -match 'invSysData_Receiving.+NextFreeReceivingTableAddressSurface') -and
             ($receivingArrangeBlock -match 'ProjectedTableColumnCountSurface') -and
             ($receivingArrangeBlock -match 'inventoryStartColumn') -and
             ($receivingArrangeBlock -match 'aggregateStartColumn\s*=\s*3\s*\+\s*receivedWidth\s*\+\s*1') -and

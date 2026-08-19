@@ -4,11 +4,11 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  150,
-                     "procedureCount":  4670,
-                     "lineCount":  101763,
+                     "procedureCount":  4680,
+                     "lineCount":  102110,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
-                     "duplicateBodyCandidateCount":  184
+                     "duplicateBodyCandidateCount":  183
                  },
     "candidates":  [
                        {
@@ -2255,25 +2255,6 @@
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas",
                                                "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "Normalized procedure bodies are identical; review before consolidation.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "duplicate:2deb5f929c9ddd95:mBtnCancel_Click+mBtnCancel_Click",
-                           "candidateType":  "REPLACE_DUPLICATE",
-                           "confidence":  "LOW",
-                           "componentName":  "frmAddInventoryItem",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click",
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmAddInventoryItem.frm",
-                                               "src/Admin/Forms/frmSeedInventory.frm"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
                            "protectingTests":  [
@@ -7333,23 +7314,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm"
-                                           ],
-                           "reason":  "Procedure is a registered or discovered dynamic root.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnCancel_Click",
-                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
-                           "confidence":  "LOW",
-                           "componentName":  "frmSeedInventory",
-                           "procedureNames":  [
-                                                  "mBtnCancel_Click"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Admin/Forms/frmSeedInventory.frm"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
@@ -14106,6 +14070,78 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received",
+                           "candidateType":  "SPLIT_MODULE",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modTS_Received",
+                           "procedureNames":  [
+                                                  "BuildReceivingAggregateGroupKey",
+                                                  "CanHideWorksheet",
+                                                  "CellNumber",
+                                                  "CellText",
+                                                  "ClearReceivingFormStaging",
+                                                  "ClearReceivingFormStagingForWorkbook",
+                                                  "ColumnIndex",
+                                                  "ConfirmWrites",
+                                                  "DeleteReceivingActionButton",
+                                                  "EnforceReceivingSupportSheetsHidden",
+                                                  "EnsureGeneratedButtons",
+                                                  "EnsureReceivingButtons",
+                                                  "FindExistingStagingRecord",
+                                                  "FindTable",
+                                                  "FindTableRecord",
+                                                  "FirstBlankOrNewRecord",
+                                                  "HandleReceivingOperatorWorkbookClosing",
+                                                  "HandleReceivingSelectionChange",
+                                                  "HandleReceivingSheetChange",
+                                                  "InitializeReceivingUiForWorkbook",
+                                                  "IsReceivingLauncherFormReusable",
+                                                  "LastConfirmWritesStatus",
+                                                  "LastConfirmWritesSucceeded",
+                                                  "LoadReceivingAggregateViewForWorkbook",
+                                                  "LoadReceivingEntriesHistoryForWorkbook",
+                                                  "LoadReceivingFormInventory",
+                                                  "LoadReceivingFormInventoryForWorkbook",
+                                                  "LoadReceivingFormTable",
+                                                  "LoadReceivingFormTableForWorkbook",
+                                                  "LoadReceivingItemChoicesForWorkbook",
+                                                  "LoadReceivingStagingViewForWorkbook",
+                                                  "NormalizeReceivingCondition",
+                                                  "NotifyReceivingLauncherFormTerminating",
+                                                  "NzDbl",
+                                                  "PopulateAggregateRecord",
+                                                  "RebuildAggregation",
+                                                  "RebuildAggregationForWorkbook",
+                                                  "ReceivingFormInitializeSmokeForWorkbook",
+                                                  "RecordConfirmWritesResult",
+                                                  "RefreshReceivingUiForWorkbook",
+                                                  "ResolveReceivingWorkbook",
+                                                  "RunReceivingConfirmWritesFormActionForTest",
+                                                  "RunReceivingInboundReturnFormActionForTest",
+                                                  "RunReceivingPurchasingTabContractForTest",
+                                                  "RunReceivingRefreshFormActionForTest",
+                                                  "RunReceivingReturnsTabContractForTest",
+                                                  "RunReceivingSearchAndHeaderContractTest",
+                                                  "SetCellText",
+                                                  "SetCellValue",
+                                                  "ShowReceivingDynamicItemSearch",
+                                                  "ShowReceivingForm",
+                                                  "ShowReceivingMessage",
+                                                  "StageReceivingFormItemForWorkbook",
+                                                  "SyncQuantityFromStaging",
+                                                  "VariantArrayRowCount",
+                                                  "WorkbookSheet"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modTS_Received.bas"
                                            ],
                            "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
                            "protectingTests":  [

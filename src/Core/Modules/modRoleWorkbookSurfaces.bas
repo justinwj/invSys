@@ -27,15 +27,15 @@ Public Function EnsureReceivingWorkbookSurface(Optional ByVal targetWb As Workbo
     ensureStep = "pre-layout"
     ArrangeReceivingTablesSurface wb
     ensureStep = "ReceivedTally schema [" & ReceivingTableLayoutSummarySurface(wb) & "]"
-    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "ITEMS", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState"), True, "C3"
+    EnsureTableSurface wb, "ReceivedTally", "ReceivedTally", Array("REF_NUMBER", "RECEIPT_TYPE", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState"), True, "C3"
     ensureStep = "AggregateReceived schema [" & ReceivingTableLayoutSummarySurface(wb) & "]"
-    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "EventId", "WorkflowState"), False, "N3"
+    EnsureTableSurface wb, "ReceivedTally", "AggregateReceived", Array("REF_NUMBER", "RECEIPT_TYPE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", "System_Key", "EventId", "WorkflowState"), False, NextFreeReceivingTableAddressSurface(wb, 16)
     ensureStep = "invSysData_Receiving schema"
-    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, "AB3"
+    EnsureTableSurface wb, "ReceivedTally", "invSysData_Receiving", InventoryManagementHeadersSurface(), False, NextFreeReceivingTableAddressSurface(wb, InventoryManagementHeaderCountSurface())
     ensureStep = "InventoryManagement schema"
     EnsureInventoryManagementSurface wb
     ensureStep = "ReceivedLog schema"
-    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "LOT_NUMBER", "ITEM_CODE", "System_Key", "EventId"), False
+    EnsureTableSurface wb, "ReceivedLog", "ReceivedLog", Array("SNAPSHOT_ID", "ENTRY_DATE", "USER", "RECEIPT_TYPE", "REF_NUMBER", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", "ITEM_CODE", "System_Key", "EventId"), False
     ensureStep = "final layout"
     ArrangeReceivingTablesSurface wb
     ensureStep = "buttons"
@@ -73,6 +73,28 @@ Private Function ReceivingTableLayoutSummarySurface(ByVal wb As Workbook) As Str
             ReceivingTableLayoutSummarySurface = ReceivingTableLayoutSummarySurface & CStr(tableName) & "=" & lo.Range.Address(False, False)
         End If
     Next tableName
+End Function
+
+Private Function NextFreeReceivingTableAddressSurface(ByVal wb As Workbook, _
+                                                      ByVal requiredWidth As Long) As String
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim nextColumn As Long
+    Dim rightColumn As Long
+
+    If requiredWidth < 1 Then requiredWidth = 1
+    Set ws = wb.Worksheets("ReceivedTally")
+    nextColumn = 3
+    For Each lo In ws.ListObjects
+        rightColumn = lo.Range.Column + lo.Range.Columns.Count - 1
+        If rightColumn + 2 > nextColumn Then nextColumn = rightColumn + 2
+    Next lo
+    If nextColumn + requiredWidth - 1 > ws.Columns.Count Then
+        Err.Raise vbObjectError + 7710, _
+                  "modRoleWorkbookSurfaces.NextFreeReceivingTableAddressSurface", _
+                  "Receiving tables and preserved user columns exceed the worksheet width."
+    End If
+    NextFreeReceivingTableAddressSurface = ws.Cells(3, nextColumn).Address(False, False)
 End Function
 
 Public Function EnsureShippingWorkbookSurface(Optional ByVal targetWb As Workbook = Nothing, _
@@ -456,12 +478,15 @@ Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     Dim ws As Worksheet
     Dim loReceived As ListObject
     Dim loAggregate As ListObject
+    Dim loInventory As ListObject
     Dim receivedHeaders As Variant
     Dim aggregateHeaders As Variant
     Dim receivedWidth As Long
     Dim aggregateWidth As Long
     Dim aggregateStartColumn As Long
     Dim inventoryStartColumn As Long
+    Dim inventoryWidth As Long
+    Dim parkingAddress As String
 
     If wb Is Nothing Then Exit Sub
     On Error Resume Next
@@ -469,11 +494,12 @@ Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
 
-    receivedHeaders = Array("REF_NUMBER", "ITEMS", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState")
-    aggregateHeaders = Array("REF_NUMBER", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "System_Key", "EventId", "WorkflowState")
+    receivedHeaders = Array("REF_NUMBER", "RECEIPT_TYPE", "ITEMS", "QUANTITY", "UOM", "VENDOR", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", "System_Key", "ITEM_CODE", "Source_System_Key", "EventId", "WorkflowState")
+    aggregateHeaders = Array("REF_NUMBER", "RECEIPT_TYPE", "ITEM_CODE", "VENDORS", "VENDOR_CODE", "DESCRIPTION", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", "System_Key", "EventId", "WorkflowState")
     On Error Resume Next
     Set loReceived = ws.ListObjects("ReceivedTally")
     Set loAggregate = ws.ListObjects("AggregateReceived")
+    Set loInventory = ws.ListObjects("invSysData_Receiving")
     On Error GoTo 0
 
     receivedWidth = ProjectedTableColumnCountSurface(loReceived, receivedHeaders)
@@ -481,9 +507,14 @@ Private Sub ArrangeReceivingTablesSurface(ByVal wb As Workbook)
     aggregateStartColumn = 3 + receivedWidth + 1
     inventoryStartColumn = aggregateStartColumn + aggregateWidth + 1
 
-    MoveTableTopLeftAtCellSurface ws, "invSysData_Receiving", ws.Cells(3, inventoryStartColumn)
+    If Not loInventory Is Nothing Then
+        inventoryWidth = loInventory.ListColumns.Count
+        parkingAddress = NextFreeReceivingTableAddressSurface(wb, inventoryWidth)
+        MoveTableTopLeftAtCellSurface ws, "invSysData_Receiving", ws.Range(parkingAddress)
+    End If
     MoveTableTopLeftAtCellSurface ws, "AggregateReceived", ws.Cells(3, aggregateStartColumn)
     MoveTableTopLeftAtCellSurface ws, "ReceivedTally", ws.Cells(3, 3)
+    MoveTableTopLeftAtCellSurface ws, "invSysData_Receiving", ws.Cells(3, inventoryStartColumn)
 End Sub
 
 Private Function ProjectedTableColumnCountSurface(ByVal lo As ListObject, ByVal requiredHeaders As Variant) As Long
@@ -497,6 +528,13 @@ Private Function ProjectedTableColumnCountSurface(ByVal lo As ListObject, ByVal 
             ProjectedTableColumnCountSurface = ProjectedTableColumnCountSurface + 1
         End If
     Next i
+End Function
+
+Private Function InventoryManagementHeaderCountSurface() As Long
+    Dim headers As Variant
+
+    headers = InventoryManagementHeadersSurface()
+    InventoryManagementHeaderCountSurface = UBound(headers) - LBound(headers) + 1
 End Function
 
 Private Sub MoveTableTopLeftAtCellSurface(ByVal ws As Worksheet, ByVal tableName As String, ByVal targetCell As Range)

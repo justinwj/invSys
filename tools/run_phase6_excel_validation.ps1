@@ -758,7 +758,11 @@ try {
         "TestReceivingStabilization.TestReceivingWorkflowState_PreservesEventIdentity",
         "TestReceivingStabilization.TestReceivingWorkflowState_RejectsMissingSystemKey",
         "TestReceivingStabilization.TestReceivingStage_GeneratesStableDistinctSystemKeys",
-        "TestReceivingStabilization.TestReceivingPurchasingTab_IsVisibleAndReadOnly"
+        "TestReceivingStabilization.TestReceivingPurchasingTab_IsVisibleAndReadOnly",
+        "TestReceivingStabilization.TestReceivingForm_DeclaresConditionAndInboundReturns",
+        "TestReceivingStabilization.TestReceivingRefresh_RebuildsCompleteAggregate",
+        "TestReceivingStabilization.TestReceivingReturns_StagesThroughFormAction",
+        "TestReceivingStabilization.TestReceivingStage_MixedConditionCreatesDistinctEntities"
     )
 
     $totalAvailableTests = $allTests.Count

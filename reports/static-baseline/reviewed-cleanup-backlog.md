@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 962
-- Reviewed candidates: 964
+- Scanner candidates: 961
+- Reviewed candidates: 963
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,13 +11,13 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 30 | Receiving-owned forms, services, and role package source. |
+| RECEIVING | 31 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 287 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
-| ADMIN | 222 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -33,7 +33,7 @@
 | src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1158 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 1920 |
+| src/Admin/Modules/modAdmin.bas | Admin | 1924 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
@@ -51,6 +51,7 @@
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4902 |
 | src/Production/Modules/mProduction.bas | Production | 12928 |
+| src/Receiving/Modules/modTS_Received.bas | Receiving | 1155 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
 
@@ -64,7 +65,6 @@
 | duplicate:1e1e5e314df30082:AddTextBox+AddTextBox | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2585fcdf92cef382:Accepted+Accepted | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:275a509c017b5e28:chkPublishInitial_Click+txtPathSharePoint_Change+txtPathSharePoint_Change | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
-| duplicate:2deb5f929c9ddd95:mBtnCancel_Click+mBtnCancel_Click | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:357363dde3e23882:WNetConnectionErrorTextForm+WNetConnectionErrorTextForm | ADMIN | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:49f673542416fb83:mBtnObsolete_Click+mBtnRelease_Click | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:5f842f3a8995049c:txtWarehouseName_Change+txtWarehouseName_Change | ADMIN | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
@@ -240,7 +240,6 @@
 | root:src_Admin_Forms_frmRetireMigrateWarehouse.frm:frmRetireMigrateWarehouse.UserForm_Initialize | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmRetireMigrateWarehouse.frm:frmRetireMigrateWarehouse.UserForm_Layout | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmRetireMigrateWarehouse.frm:frmRetireMigrateWarehouse.UserForm_Terminate | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnCancel_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDelete_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnDeleteDataSet_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmSeedInventory.frm:frmSeedInventory.mBtnRepairInboxes_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -772,6 +771,7 @@
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionIngredientPaletteRuntimeRoundTrip | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionInventoryPickerPrefersCanonicalRuntime | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received | RECEIVING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetChange | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetSelectionChange | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
