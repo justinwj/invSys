@@ -93,6 +93,85 @@ FailAppend:
     report = "AppendEventToOutbox failed: " & Err.Description
 End Function
 
+Public Function AppendEventsToOutboxBatch(ByVal events As Collection, _
+                                          Optional ByVal inventoryWb As Workbook = Nothing, _
+                                          Optional ByVal runId As String = "", _
+                                          Optional ByRef report As String = "") As Boolean
+    On Error GoTo Failed
+
+    Dim firstEvent As Object
+    Dim evt As Variant
+    Dim eventObject As Object
+    Dim warehouseId As String
+    Dim eventId As String
+    Dim wbOutbox As Workbook
+    Dim loOutbox As ListObject
+    Dim appliedMeta As Object
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+    Dim rowIndex As Long
+    Dim targetRow As ListRow
+
+    If events Is Nothing Or events.Count = 0 Then
+        report = "OK|Rows=0|Saves=0"
+        AppendEventsToOutboxBatch = True
+        Exit Function
+    End If
+    Set firstEvent = events(1)
+    warehouseId = GetEventStringSync(firstEvent, "WarehouseId")
+    Set openPaths = CaptureOpenWorkbookPathsSync()
+    Set wbOutbox = ResolveOutboxWorkbook(warehouseId, Nothing, True)
+    If wbOutbox Is Nothing Then
+        report = "Outbox workbook not found."
+        Exit Function
+    End If
+    openedTransient = Not WorkbookWasAlreadyOpenSync(openPaths, wbOutbox)
+    If openedTransient Then HideWorkbookWindowsSync wbOutbox
+    If Not EnsureOutboxSchema(wbOutbox, report) Then GoTo CleanExit
+    Set loOutbox = wbOutbox.Worksheets(SHEET_OUTBOX).ListObjects(TABLE_OUTBOX)
+    EnsureTableSheetEditableSync loOutbox, TABLE_OUTBOX
+
+    For Each evt In events
+        Set eventObject = evt
+        eventId = GetEventStringSync(eventObject, "EventID")
+        If eventId = "" Then
+            report = "Outbox batch row requires EventID."
+            GoTo CleanExit
+        End If
+        Set appliedMeta = ResolveAppliedMeta(eventId, inventoryWb)
+        If appliedMeta Is Nothing Then
+            report = "Applied metadata not found for EventID " & eventId
+            GoTo CleanExit
+        End If
+        rowIndex = FindRowByValueSync(loOutbox, "EventID", eventId)
+        If rowIndex = 0 Then
+            Set targetRow = loOutbox.ListRows.Add
+            rowIndex = targetRow.Index
+        End If
+        SetTableRowValueSync loOutbox, rowIndex, "EventID", eventId
+        SetTableRowValueSync loOutbox, rowIndex, "UndoOfEventId", GetEventStringSync(eventObject, "UndoOfEventId")
+        SetTableRowValueSync loOutbox, rowIndex, "EventType", GetEventStringSync(eventObject, "EventType")
+        SetTableRowValueSync loOutbox, rowIndex, "WarehouseId", warehouseId
+        SetTableRowValueSync loOutbox, rowIndex, "StationId", GetEventStringSync(eventObject, "StationId")
+        SetTableRowValueSync loOutbox, rowIndex, "OccurredAtUTC", GetEventValueSync(eventObject, "CreatedAtUTC")
+        SetTableRowValueSync loOutbox, rowIndex, "AppliedAtUTC", appliedMeta("AppliedAtUTC")
+        SetTableRowValueSync loOutbox, rowIndex, "AppliedByUserId", GetEventStringSync(eventObject, "UserId")
+        SetTableRowValueSync loOutbox, rowIndex, "RunId", ResolveStringSync(appliedMeta, "RunId", runId)
+        SetTableRowValueSync loOutbox, rowIndex, "DeltaJson", BuildDeltaJsonForOutbox(eventObject)
+    Next evt
+
+    SaveWorkbookSync wbOutbox
+    report = "OK|Rows=" & CStr(events.Count) & "|Saves=1"
+    AppendEventsToOutboxBatch = True
+CleanExit:
+    If openedTransient Then CloseWorkbookQuietlySync wbOutbox
+    Exit Function
+
+Failed:
+    report = "AppendEventsToOutboxBatch failed: " & Err.Description
+    Resume CleanExit
+End Function
+
 Public Function EnsureOutboxSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                    Optional ByRef report As String = "") As Boolean
     On Error GoTo FailEnsure

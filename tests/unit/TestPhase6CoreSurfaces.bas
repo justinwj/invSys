@@ -12417,6 +12417,100 @@ Private Function CountShipmentRowsForTest(ByVal lo As ListObject, _
     Next r
 End Function
 
+Public Function TestConfigAuthRead_HealthySchemasRemainSaved() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim rootPath As String
+    Dim configPath As String
+    Dim authPath As String
+    Dim configBefore As Date
+    Dim authBefore As Date
+    Dim report As String
+
+    On Error GoTo CleanExit
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("phase6_read_save")
+    configPath = rootPath & "\WHREADSAVE.invSys.Config.xlsb"
+    authPath = rootPath & "\WHREADSAVE.invSys.Auth.xlsb"
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHREADSAVE", "S1", rootPath)
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHREADSAVE", rootPath)
+    If Not modConfig.EnsureConfigSchema(wbCfg, "WHREADSAVE", "S1", report) Then GoTo CleanExit
+    If Not modAuth.EnsureAuthSchema(wbAuth, "WHREADSAVE", "svc_processor", report) Then GoTo CleanExit
+    wbCfg.Save
+    wbAuth.Save
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    Set wbAuth = Nothing
+    Set wbCfg = Nothing
+    configBefore = FileDateTime(configPath)
+    authBefore = FileDateTime(authPath)
+    Application.Wait Now + TimeSerial(0, 0, 2)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+
+    If Not modConfig.LoadConfig("WHREADSAVE", "S1") Then GoTo CleanExit
+    If FileDateTime(configPath) <> configBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 2
+        GoTo CleanExit
+    End If
+    If Not modAuth.LoadAuth("WHREADSAVE") Then GoTo CleanExit
+    If FileDateTime(authPath) <> authBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 3
+        GoTo CleanExit
+    End If
+    If FileDateTime(configPath) = configBefore _
+       And FileDateTime(authPath) = authBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
+End Function
+
+Public Function TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim rootPath As String
+    Dim report As String
+    Dim processed As Long
+
+    On Error GoTo CleanExit
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("phase6_receive_save_batch")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHBATCHSAVE", "S1", rootPath)
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHBATCHSAVE", rootPath)
+    Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHBATCHSAVE", rootPath, Array("SKU-001"))
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("S1", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+
+    TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WHBATCHSAVE", "S1", "ACTIVE"
+    TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WHBATCHSAVE", "*", "ACTIVE"
+    wbAuth.Save
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-1", Now, "WHBATCHSAVE", "S1", "user1", "SKU-001", 1, "A1", "batch one"
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-2", DateAdd("s", 1, Now), "WHBATCHSAVE", "S1", "user1", "SKU-001", 2, "A1", "batch two"
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-3", DateAdd("s", 2, Now), "WHBATCHSAVE", "S1", "user1", "SKU-001", 3, "A1", "batch three"
+    processed = modProcessor.RunBatch("WHBATCHSAVE", 500, report)
+
+    If processed = 3 _
+       And InStr(1, report, "EventPersistenceSaves=3", vbBinaryCompare) > 0 Then
+        TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInbox
+    TestPhase2Helpers.CloseNoSave wbInv
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
+End Function
+
 Private Function FindShipmentRowForTest(ByVal lo As ListObject, _
                                         ByVal refNumber As String, _
                                         ByVal itemName As String, _

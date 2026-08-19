@@ -69,7 +69,12 @@ try {
     $contract = [string]$excel.Run("'" + $operations.Name + "'!modTS_Received.RunReceivingReturnsTabContractForTest", $operator)
     $checks.Add([pscustomobject]@{
         Name = "Packaged.ReturnsTabContract"
-        Passed = $contract.StartsWith("OK|") -and $contract.Contains("Selected=Returns") -and $contract.Contains("AddCaption=Add Return") -and $contract.Contains("ReceiptEventType=RECEIVE")
+        Passed = $contract.StartsWith("OK|") -and $contract.Contains("Selected=Returns") -and
+            $contract.Contains("AddCaption=Add Return") -and $contract.Contains("ReceiptEventType=RECEIVE") -and
+            $contract.Contains("HistoryTitle=Return Entries History") -and
+            $contract.Contains("TallyTitle=Return Tally") -and
+            $contract.Contains("AggregateTitle=Aggregate Returns") -and
+            $contract.Contains("ItemConditionColumn=True")
         Detail = $contract
     })
 
@@ -82,12 +87,33 @@ try {
 
     $staging = Find-ListObject $operator "ReceivedTally"
     $aggregate = Find-ListObject $operator "AggregateReceived"
-    $stagingOk = ($null -ne $staging) -and ($staging.ListRows.Count -eq 1) -and
+    $secondRow = $staging.ListRows.Add()
+    Set-TableValue $staging 2 "REF_NUMBER" "RETURN-SECOND"
+    Set-TableValue $staging 2 "RECEIPT_TYPE" "RETURN"
+    Set-TableValue $staging 2 "ITEMS" "Packaged Return Item"
+    Set-TableValue $staging 2 "QUANTITY" 2
+    Set-TableValue $staging 2 "UOM" "EA"
+    Set-TableValue $staging 2 "VENDOR" ""
+    Set-TableValue $staging 2 "LOCATION" "RETURNS"
+    Set-TableValue $staging 2 "LOT_NUMBER" "RETURN-LOT"
+    Set-TableValue $staging 2 "Condition" "BAD"
+    Set-TableValue $staging 2 "RETURN_REASON" "TEST RETURN"
+    Set-TableValue $staging 2 "System_Key" "SYS-PACKAGED-RETURN-SECOND"
+    Set-TableValue $staging 2 "ITEM_CODE" "SKU-PACKAGED-RETURN"
+    Set-TableValue $staging 2 "Source_System_Key" "SYS-PACKAGED-RETURN"
+    Set-TableValue $staging 2 "EventId" "EVT-PACKAGED-RETURN-SECOND"
+    Set-TableValue $staging 2 "WorkflowState" "STAGED"
+    $aggregateRebuilt = [bool]$excel.Run("'" + $operations.Name + "'!modTS_Received.RebuildAggregationForWorkbook", $operator)
+    $stagingOk = ($null -ne $staging) -and ($staging.ListRows.Count -eq 2) -and
         ([string]$staging.ListColumns.Item("RECEIPT_TYPE").DataBodyRange.Cells.Item(1, 1).Value2 -eq "RETURN") -and
         ([string]$staging.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "BAD")
     $aggregateOk = ($null -ne $aggregate) -and ($aggregate.ListRows.Count -eq 1) -and
-        ([string]$aggregate.ListColumns.Item("RETURN_REASON").DataBodyRange.Cells.Item(1, 1).Value2 -eq "TEST RETURN")
-    $checks.Add([pscustomobject]@{ Name = "Packaged.ReturnProjection"; Passed = $stagingOk -and $aggregateOk; Detail = "Staging and aggregate retain return type, condition, and reason." })
+        ([string]$aggregate.ListColumns.Item("RETURN_REASON").DataBodyRange.Cells.Item(1, 1).Value2 -eq "TEST RETURN") -and
+        ([double]$aggregate.ListColumns.Item("QUANTITY").DataBodyRange.Cells.Item(1, 1).Value2 -eq 3) -and
+        ([string]$aggregate.ListColumns.Item("REF_NUMBER").DataBodyRange.Cells.Item(1, 1).Value2 -eq "RETURN-TEST, RETURN-SECOND") -and
+        ([string]$aggregate.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "BAD")
+    $aggregateDetail = "Rebuilt=$aggregateRebuilt; Rows=$($aggregate.ListRows.Count); Ref=$([string]$aggregate.ListColumns.Item('REF_NUMBER').DataBodyRange.Cells.Item(1, 1).Value2); Qty=$([string]$aggregate.ListColumns.Item('QUANTITY').DataBodyRange.Cells.Item(1, 1).Value2); Condition=$([string]$aggregate.ListColumns.Item('Condition').DataBodyRange.Cells.Item(1, 1).Value2); Reason=$([string]$aggregate.ListColumns.Item('RETURN_REASON').DataBodyRange.Cells.Item(1, 1).Value2)"
+    $checks.Add([pscustomobject]@{ Name = "Packaged.ReturnProjection"; Passed = $stagingOk -and $aggregateRebuilt -and $aggregateOk; Detail = $aggregateDetail })
 
     $adminContract = [string]$excel.Run("'" + $admin.Name + "'!modAdmin.DemoInventoryFormContractForAutomation")
     $checks.Add([pscustomobject]@{

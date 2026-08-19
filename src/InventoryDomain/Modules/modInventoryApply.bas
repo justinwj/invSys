@@ -24,7 +24,8 @@ Public Function ApplyEvent(ByVal evt As Object, _
                            Optional ByVal runId As String = "", _
                            Optional ByRef statusOut As String = "", _
                            Optional ByRef errorCode As String = "", _
-                           Optional ByRef errorMessage As String = "") As Boolean
+                           Optional ByRef errorMessage As String = "", _
+                           Optional ByVal deferSave As Boolean = False) As Boolean
     On Error GoTo FailApply
 
     Dim wb As Workbook
@@ -155,7 +156,7 @@ Public Function ApplyEvent(ByVal evt As Object, _
 
     RebuildInventoryProjections wb
     RefreshLedgerStatus wb, warehouseId, appliedSeq, eventId, appliedAt
-    SaveInventoryWorkbookIfWritable wb
+    If Not deferSave Then SaveInventoryWorkbookIfWritable wb
     statusOut = APPLY_STATUS_APPLIED
     ApplyEvent = True
 

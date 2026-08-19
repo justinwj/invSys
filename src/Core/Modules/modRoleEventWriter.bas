@@ -642,6 +642,103 @@ Public Function QueueReceiveEventServer(Optional ByVal warehouseId As String = "
     QueueReceiveEventServer = QueueEventCore(ROLE_EVENT_TYPE_RECEIVE, warehouseId, stationId, userId, sku, qty, location, noteVal, "", "", "", "", 0, Nothing, eventIdOut, errorMessage, perfRunId, False, True, "", "", systemKeyOut, conditionValue, attributesJson)
 End Function
 
+Public Function QueueReceiveEventBatchServer(ByVal warehouseId As String, _
+                                             ByVal stationId As String, _
+                                             ByVal userId As String, _
+                                             ByVal batchJsonLines As String, _
+                                             Optional ByRef errorMessage As String = "", _
+                                             Optional ByRef acceptedCount As Long = 0) As Boolean
+    On Error GoTo Failed
+
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+    Dim resolvedUser As String
+    Dim lines As Variant
+    Dim lineValue As Variant
+    Dim payload As Object
+    Dim rows As Collection
+    Dim rowValues As Object
+    Dim parseReport As String
+    Dim mergedCount As Long
+    Dim mergeReport As String
+    Dim qtyValue As Double
+    Dim eventId As String
+    Dim systemKey As String
+    Dim sku As String
+    Dim locationValue As String
+
+    acceptedCount = 0
+    If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
+    resolvedUser = Trim$(userId)
+    If resolvedUser = "" Then resolvedUser = ResolveCurrentUserId()
+    If resolvedUser = "" Then
+        errorMessage = "Unable to resolve current user identity."
+        Exit Function
+    End If
+    If Not modAuth.LoadAuth(resolvedWh) Then
+        errorMessage = "Auth load failed: " & modAuth.ValidateAuth()
+        Exit Function
+    End If
+    If Not modAuth.HasProvisionedCapabilityForSystem( _
+        "RECEIVE_POST", resolvedUser, resolvedWh, resolvedSt) Then
+        errorMessage = "Current user lacks RECEIVE_POST capability."
+        Exit Function
+    End If
+
+    Set rows = New Collection
+    lines = Split(Replace$(batchJsonLines, vbCrLf, vbLf), vbLf)
+    For Each lineValue In lines
+        If Trim$(CStr(lineValue)) <> "" Then
+            parseReport = ""
+            Set payload = ParseJsonObjectRole(Trim$(CStr(lineValue)), parseReport)
+            If payload Is Nothing Then
+                errorMessage = "Invalid Receiving batch payload: " & parseReport
+                Exit Function
+            End If
+            eventId = Trim$(CStr(payload("EventID")))
+            systemKey = Trim$(CStr(payload("System_Key")))
+            sku = Trim$(CStr(payload("SKU")))
+            locationValue = Trim$(CStr(payload("Location")))
+            If payload.Exists("Qty") Then
+                If IsNumeric(payload("Qty")) Then qtyValue = CDbl(payload("Qty")) Else qtyValue = 0
+            Else
+                qtyValue = 0
+            End If
+            If eventId = "" Or systemKey = "" Or sku = "" Or qtyValue <= 0 Or locationValue = "" Then
+                errorMessage = "Receiving batch row requires EventID, System_Key, SKU, positive Qty, and Location." & _
+                    " EventID=" & CStr(eventId <> "") & _
+                    "; System_Key=" & CStr(systemKey <> "") & _
+                    "; SKU=" & CStr(sku <> "") & _
+                    "; PositiveQty=" & CStr(qtyValue > 0) & _
+                    "; Location=" & CStr(locationValue <> "")
+                Exit Function
+            End If
+            Set rowValues = BuildInboxRowValuesRole( _
+                eventId, "", "", ROLE_EVENT_TYPE_RECEIVE, Now, resolvedWh, resolvedSt, _
+                resolvedUser, "", sku, qtyValue, locationValue, _
+                Trim$(CStr(payload("Note"))), "", "", "", systemKey, _
+                Trim$(CStr(payload("Condition"))), Trim$(CStr(payload("AttributesJson"))))
+            rows.Add rowValues
+        End If
+    Next lineValue
+    If rows.Count = 0 Then
+        errorMessage = "Receiving batch contains no rows."
+        Exit Function
+    End If
+
+    If Not MergeRowsIntoNasInboxRole( _
+        rows, ROLE_EVENT_TYPE_RECEIVE, resolvedWh, resolvedSt, mergedCount, mergeReport) Then
+        errorMessage = mergeReport
+        Exit Function
+    End If
+    acceptedCount = rows.Count
+    QueueReceiveEventBatchServer = True
+    Exit Function
+
+Failed:
+    errorMessage = Err.Description
+End Function
+
 Public Function QueuePayloadEvent(ByVal eventType As String, _
                                   Optional ByVal warehouseId As String = "", _
                                   Optional ByVal stationId As String = "", _

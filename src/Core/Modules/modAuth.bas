@@ -39,6 +39,7 @@ Public Function LoadAuth(Optional ByVal whId As String = "") As Boolean
     Dim openedTransient As Boolean
     Dim loUsers As ListObject
     Dim loCaps As ListObject
+    Dim schemaWasPresent As Boolean
 
     InitializeState
 
@@ -49,12 +50,18 @@ Public Function LoadAuth(Optional ByVal whId As String = "") As Boolean
         GoTo FailSoft
     End If
     openedTransient = Not WorkbookWasAlreadyOpenAuth(preOpen, wb)
-    If openedTransient Then HideWorkbookWindowsAuth wb
+    If openedTransient Then
+        HideWorkbookWindowsAuth wb
+        wb.Saved = True
+    End If
     mAuthWorkbook = wb.Name
 
-    If Not EnsureAuthSchema(wb, whId, modConfig.GetString("ProcessorServiceUserId", "svc_processor")) Then
-        AddValidationIssue "ERROR", "AUTH_SELF_HEAL_FAILED", "Failed to create/repair auth tables."
-        GoTo FailSoft
+    schemaWasPresent = modRuntimeWorkbooks.RuntimeWorkbookSchemaPresentForRead(wb, "AUTH")
+    If Not schemaWasPresent Then
+        If Not EnsureAuthSchema(wb, whId, modConfig.GetString("ProcessorServiceUserId", "svc_processor"), , False) Then
+            AddValidationIssue "ERROR", "AUTH_SELF_HEAL_FAILED", "Failed to create/repair auth tables."
+            GoTo FailSoft
+        End If
     End If
 
     Set loUsers = FindListObjectByName(wb, "tblUsers")
@@ -89,13 +96,14 @@ FailLoad:
     Resume FailSoft
 
 CleanExit:
-    CloseTransientAuthAfterLoad wb, openedTransient
+    CloseTransientAuthAfterLoad wb, openedTransient, Not schemaWasPresent
 End Function
 
 Public Function EnsureAuthSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                  Optional ByVal warehouseId As String = "", _
                                  Optional ByVal processorServiceUserId As String = "", _
-                                 Optional ByRef report As String = "") As Boolean
+                                 Optional ByRef report As String = "", _
+                                 Optional ByVal formatSurface As Boolean = True) As Boolean
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
@@ -108,7 +116,7 @@ Public Function EnsureAuthSchema(Optional ByVal targetWb As Workbook = Nothing, 
 
     If Not EnsureAuthTables(wb) Then GoTo FailSoft
     SeedAuthDefaults wb, warehouseId, processorServiceUserId
-    FormatAuthSurface wb
+    If formatSurface Then FormatAuthSurface wb
 
     EnsureAuthSchema = True
     Exit Function
@@ -1306,13 +1314,15 @@ Private Sub HideWorkbookWindowsAuth(ByVal wb As Workbook)
     On Error GoTo 0
 End Sub
 
-Private Sub CloseTransientAuthAfterLoad(ByVal wb As Workbook, ByVal openedTransient As Boolean)
+Private Sub CloseTransientAuthAfterLoad(ByVal wb As Workbook, _
+                                        ByVal openedTransient As Boolean, _
+                                        Optional ByVal saveRepairs As Boolean = True)
     If Not openedTransient Then Exit Sub
     If wb Is Nothing Then Exit Sub
 
     On Error Resume Next
-    HideWorkbookWindowsAuth wb
-    If Not wb.ReadOnly Then
+    If Not saveRepairs Then wb.Saved = True
+    If saveRepairs And Not wb.ReadOnly Then
         If wb.Saved = False Then wb.Save
     End If
     wb.Close SaveChanges:=False
@@ -1368,14 +1378,16 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     Dim i As Long
     Dim dataRange As Range
     Dim startCell As Range
+    Dim surfaceEditable As Boolean
 
     Set ws = EnsureWorksheet(wb, sheetName)
-    EnsureWorksheetEditableAuth ws
     On Error Resume Next
     Set lo = ws.ListObjects(tableName)
     On Error GoTo 0
 
     If lo Is Nothing Then
+        EnsureWorksheetEditableAuth ws
+        surfaceEditable = True
         Set startCell = GetNextTableStartCell(ws)
         For i = LBound(headers) To UBound(headers)
             startCell.Offset(0, i - LBound(headers)).Value = headers(i)
@@ -1388,6 +1400,10 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     End If
 
     For i = LBound(headers) To UBound(headers)
+        If GetColumnIndex(lo, CStr(headers(i))) = 0 And Not surfaceEditable Then
+            EnsureWorksheetEditableAuth ws
+            surfaceEditable = True
+        End If
         EnsureListColumn lo, CStr(headers(i))
     Next i
 End Sub
@@ -1451,10 +1467,22 @@ Private Sub EnsureUserRow(ByVal lo As ListObject, ByVal userId As String, ByVal 
         End If
     End If
 
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("UserId").Index).Value = userId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("DisplayName").Index).Value = displayName
-    If rowWasCreated Then lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("PinHash").Index).Value = ""
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Status").Index).Value = "Active"
+    SetAuthCellIfDifferent lo, rowIndex, "UserId", userId
+    SetAuthCellIfDifferent lo, rowIndex, "DisplayName", displayName
+    If rowWasCreated Then SetAuthCellIfDifferent lo, rowIndex, "PinHash", ""
+    SetAuthCellIfDifferent lo, rowIndex, "Status", "Active"
+End Sub
+
+Private Sub SetAuthCellIfDifferent(ByVal lo As ListObject, _
+                                   ByVal rowIndex As Long, _
+                                   ByVal columnName As String, _
+                                   ByVal valueOut As Variant)
+    Dim targetCell As Range
+
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index)
+    If StrComp(SafeTrim(targetCell.Value), SafeTrim(valueOut), vbTextCompare) <> 0 Then
+        targetCell.Value = valueOut
+    End If
 End Sub
 
 Private Function FindAuthUserRow(ByVal lo As ListObject, ByVal userId As String) As Long
@@ -1506,11 +1534,11 @@ Private Sub EnsureCapabilityRow(ByVal lo As ListObject, _
         AddValidationIssue "WARN", "AUTH_CAPABILITY_CREATED", userId & "." & capability & " created."
     End If
 
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("UserId").Index).Value = userId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Capability").Index).Value = capability
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("WarehouseId").Index).Value = warehouseId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("StationId").Index).Value = stationId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Status").Index).Value = statusVal
+    SetAuthCellIfDifferent lo, rowIndex, "UserId", userId
+    SetAuthCellIfDifferent lo, rowIndex, "Capability", capability
+    SetAuthCellIfDifferent lo, rowIndex, "WarehouseId", warehouseId
+    SetAuthCellIfDifferent lo, rowIndex, "StationId", stationId
+    SetAuthCellIfDifferent lo, rowIndex, "Status", statusVal
 End Sub
 
 Private Function FindCapabilityRow(ByVal lo As ListObject, _

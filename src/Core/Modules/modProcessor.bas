@@ -69,6 +69,10 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim designsWb As Workbook
     Dim designsOpenedTransient As Boolean
     Dim eventApplied As Boolean
+    Dim targetOutboxEvents As Collection
+    Dim targetInboxDirty As Boolean
+    Dim targetInventoryDirty As Boolean
+    Dim eventPersistenceSaves As Long
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -127,6 +131,9 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     PerfMarkSafeProcessor runId, "Dequeue", CLng((Timer - phaseStart) * 1000)
     phaseStart = Timer
     For Each target In inboxTargets
+        Set targetOutboxEvents = New Collection
+        targetInboxDirty = False
+        targetInventoryDirty = False
         If Not EnsureInboxTargetSchema(target("Workbook"), CStr(target("TableName")), report) Then GoTo ContinueInbox
 
         Set loInbox = FindListObjectByNameProcessor(target("Workbook"), CStr(target("TableName")))
@@ -140,21 +147,24 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
 
             Set evt = BuildInboxEvent(loInbox, rowIndex, target("Workbook").Name, CStr(target("TableName")), CStr(target("DefaultEventType")))
             If evt Is Nothing Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT", "Unable to read inbox row."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT", "Unable to read inbox row.", True
+                targetInboxDirty = True
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
 
             capability = CapabilityForEventType(GetDictionaryString(evt, "EventType"))
             If capability = "" Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType.", True
+                targetInboxDirty = True
                 lastPoisonDetail = "INVALID_EVENT_TYPE: Unsupported EventType."
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
 
             If Not modAuth.HasProvisionedCapabilityForSystem(capability, GetDictionaryString(evt, "UserId"), GetDictionaryString(evt, "WarehouseId"), GetDictionaryString(evt, "StationId")) Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks " & capability & " capability."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks " & capability & " capability.", True
+                targetInboxDirty = True
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
@@ -179,28 +189,31 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
                         evt, designsWb, runId, statusOut, errorCode, errorMessage)
                 End If
             Else
-                eventApplied = ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
+                eventApplied = ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage, True)
             End If
 
             If eventApplied Then
                 Select Case UCase$(statusOut)
                     Case PROC_APPLY_STATUS_APPLIED
-                        artifactReport = vbNullString
-                        If Not AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED
+                        targetOutboxEvents.Add evt
+                        If Not IsDesignEventTypeProcessor(GetDictionaryString(evt, "EventType")) Then targetInventoryDirty = True
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED, , , True
+                        targetInboxDirty = True
                         RunBatch = RunBatch + 1
                     Case PROC_APPLY_STATUS_SKIP_DUP
-                        artifactReport = vbNullString
-                        If Not AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_SKIP_DUP
+                        targetOutboxEvents.Add evt
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_SKIP_DUP, , , True
+                        targetInboxDirty = True
                         skipDupCount = skipDupCount + 1
                     Case Else
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "UNKNOWN_APPLY_STATUS", "Unknown apply status."
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "UNKNOWN_APPLY_STATUS", "Unknown apply status.", True
+                        targetInboxDirty = True
                         lastPoisonDetail = "UNKNOWN_APPLY_STATUS: Unknown apply status."
                         poisonCount = poisonCount + 1
                 End Select
             Else
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, errorCode, errorMessage
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, errorCode, errorMessage, True
+                targetInboxDirty = True
                 lastPoisonDetail = errorCode & ": " & errorMessage
                 poisonCount = poisonCount + 1
             End If
@@ -214,17 +227,34 @@ MaybeHeartbeat:
 ContinueRow:
         Next rowIndex
 
+        If targetInventoryDirty Then
+            SaveWorkbookProcessor inventoryWb
+            eventPersistenceSaves = eventPersistenceSaves + 1
+        End If
+        If targetOutboxEvents.Count > 0 Then
+            artifactReport = vbNullString
+            If AppendEventsToOutboxBatch(targetOutboxEvents, inventoryWb, runId, artifactReport) Then
+                eventPersistenceSaves = eventPersistenceSaves + 1
+            Else
+                artifactWarnings = artifactWarnings + 1
+            End If
+        End If
+        If targetInboxDirty Then
+            SaveWorkbookProcessor target("Workbook")
+            eventPersistenceSaves = eventPersistenceSaves + 1
+        End If
+
         If RunBatch >= batchSize Then
-            CloseInboxTargetIfNeeded target
+            CloseInboxTargetIfNeeded target, False
             Exit For
         End If
 ContinueInbox:
-        CloseInboxTargetIfNeeded target
+        CloseInboxTargetIfNeeded target, False
     Next target
 
     PerfMarkSafeProcessor runId, "Apply", CLng((Timer - phaseStart) * 1000)
     If PerfIsTransactionActiveSafeProcessor() Then MarkSegmentSafeProcessor "ProcessorApplyLoop"
-    report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
+    report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId & "; EventPersistenceSaves=" & CStr(eventPersistenceSaves)
     If lastPoisonDetail <> "" Then report = report & "; LastPoison=" & lastPoisonDetail
     If localStagingReport <> "" And InStr(1, localStagingReport, "No local staged inbox rows", vbTextCompare) = 0 Then
         report = report & "; LocalStagingSync=" & IIf(localStagingOk, "OK", "WARN") & " (" & localStagingReport & ")"
@@ -931,11 +961,11 @@ Private Function OpenInboxWorkbookForProcessor(ByVal fullPath As String) As Work
     HideProcessorWorkbookWindows OpenInboxWorkbookForProcessor
 End Function
 
-Private Sub CloseInboxTargetIfNeeded(ByVal target As Variant)
+Private Sub CloseInboxTargetIfNeeded(ByVal target As Variant, Optional ByVal saveChanges As Boolean = True)
     If IsObject(target) Then
         If target.Exists("CloseWhenDone") Then
             If CBool(target("CloseWhenDone")) Then
-                CloseProcessorWorkbookIfNeeded target("Workbook"), True
+                CloseProcessorWorkbookIfNeeded target("Workbook"), saveChanges
             End If
         End If
     End If
@@ -1125,7 +1155,8 @@ Private Function IsDesignEventTypeProcessor(ByVal eventType As String) As Boolea
 End Function
 
 Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal newStatus As String, _
-                                 Optional ByVal errorCode As String = "", Optional ByVal errorMessage As String = "")
+                                 Optional ByVal errorCode As String = "", Optional ByVal errorMessage As String = "", _
+                                 Optional ByVal deferSave As Boolean = False)
     Dim retryCount As Long
     Dim eventId As String
     If lo Is Nothing Then Exit Sub
@@ -1152,7 +1183,7 @@ Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long,
     End Select
 
     SetSheetProtectionProcessor lo.Parent, True
-    SaveWorkbookProcessor lo.Parent.Parent
+    If Not deferSave Then SaveWorkbookProcessor lo.Parent.Parent
     LogDiagnosticSafeProcessor "INBOX-STATUS", "Workbook=" & lo.Parent.Parent.Name & "|Table=" & lo.Name & "|EventID=" & eventId & "|Status=" & newStatus & "|ErrorCode=" & errorCode & "|ErrorMessage=" & errorMessage
 End Sub
 

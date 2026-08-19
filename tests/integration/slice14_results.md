@@ -1,6 +1,6 @@
 # Slice 14 Full-Chain, Restart, and Reconciliation Evidence
 
-- Date: 2026-08-19 01:24:14
+- Date: 2026-08-19 12:20:14
 - Package set: R1-5
 - Ordered phases: 
 GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> ProcessorApplyReceive -> RefreshAfterReceive -> ProductionTwoBatches -> ProductionConsumptionAndOutput -> BoxingVersionSelection -> ShipmentStagingAndSent -> ProcessorApplyShipment -> FinalRefresh -> RestartAndReconcile
@@ -17,7 +17,7 @@ GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> P
 | Check | Result | Detail |
 |---|---|---|
 | GenerateFreshWarehouse | PASS | Packaged Admin created a fresh greenfield warehouse runtime. |
-| SeedDemoInventoryThroughAdmin | PASS | OK/Demo inventory seeded./Created=21/Skipped=3/Applied=1/Processor=Applied=1; SkipDup=0; Poison=0; RunId=<redacted> |
+| SeedDemoInventoryThroughAdmin | PASS | OK/Demo inventory seeded./Created=21/Skipped=3/Applied=1/Processor=Applied=1; SkipDup=0; Poison=0; RunId=<redacted>; EventPersistenceSaves=3 |
 | AdminEntry.InventoryCreated | PASS | The packaged entry boundary produced the canonical inventory workbook. |
 | AdminEntry.SourceIntegrationRegression | PASS | Create Warehouse D14 source integration remained green. |
 | ReceiveInventory | PASS | Packaged Receiving used its captured-workbook form action. |
@@ -39,7 +39,7 @@ GenerateFreshWarehouse -> SeedDemoInventoryThroughAdmin -> ReceiveInventory -> P
 | NoNegativeInventory | PASS | No canonical detailed entity has negative QtyOnHand. |
 | ExactBalancesAndLocations.Final | PASS | Final canonical balances after two additional batches, Boxing, and shipment: SKU-BOX=1; SKU-FG=22; SKU-REC=8; SKU-SHIP=20; SKU-SUGAR=94 |
 | ExactBalancesAndLocations.Location | PASS | Nonzero location balances: SKU-BOX/BIN-B=1; SKU-COMP/LINE=10; SKU-FG/BIN-A=22; SKU-REC/A1=8; SKU-SHIP/DOCK=20; SKU-SUGAR/BIN-A=94 |
-| EventIdentityStatusLogAndReplay | PASS | Replaying all saved inboxes appended no log rows; Processed=0; Report=Applied=0; SkipDup=0; Poison=0; RunId=<redacted> |
+| EventIdentityStatusLogAndReplay | PASS | Replaying all saved inboxes appended no log rows; Processed=0; Report=Applied=0; SkipDup=0; Poison=0; RunId=<redacted>; EventPersistenceSaves=0 |
 | LocksReleased | PASS | No active inventory locks remain after Shipments Sent and replay. |
 | NoDuplicatePackagesOrCallbacks | PASS | Exactly one instance of each Release 1 package was reopened. |
 | RestartReconciliation | PASS | Saved canonical and operator workbooks reconciled after a new Excel runtime opened them. |

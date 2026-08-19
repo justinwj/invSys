@@ -762,7 +762,10 @@ try {
         "TestReceivingStabilization.TestReceivingForm_DeclaresConditionAndInboundReturns",
         "TestReceivingStabilization.TestReceivingRefresh_RebuildsCompleteAggregate",
         "TestReceivingStabilization.TestReceivingReturns_StagesThroughFormAction",
-        "TestReceivingStabilization.TestReceivingStage_MixedConditionCreatesDistinctEntities"
+        "TestReceivingStabilization.TestReceivingStage_MixedConditionCreatesDistinctEntities",
+        "TestReceivingStabilization.TestReceivingReturns_UsesReturnTitlesAndConditionColumn",
+        "TestPhase6CoreSurfaces.TestConfigAuthRead_HealthySchemasRemainSaved",
+        "TestPhase6CoreSurfaces.TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves"
     )
 
     $totalAvailableTests = $allTests.Count
@@ -824,7 +827,7 @@ try {
             Passed   = ($passed -eq 1)
             Error    = $errorText
         }
-        $resultText = if ($passed -eq 1) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($errorText)) { "FAIL" } else { "FAIL - $errorText" }
+        $resultText = if ($passed -eq 1) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($errorText)) { "FAIL - Returned=$passed" } else { "FAIL - $errorText" }
         Write-TestResultsFile -ResultPath $resultPath -TestRows $testRows -StartAt $StartAt -EndAt $EndAt -TotalAvailable $totalAvailableTests -Complete $false
         Write-HarnessStatus -Phase "Completed test" -Current $testNumber -Total $allTests.Count -Detail "$resultText $testLabel" -StartedAt $scriptStart
     }

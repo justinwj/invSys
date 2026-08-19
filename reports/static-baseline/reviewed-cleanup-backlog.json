@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "ae14c700f1295c0e5a87463c4c31b919a1e92bedaeb582aa886316170d66ad57",
-                          "maintenanceCandidatesSha256":  "b506ec9bbfc77a1e4633bce1bca369558e8e02cffd01fa7628e982dc740af2b7"
+                          "implementationManifestSha256":  "d580c990a468ad148127faf4032791c3271f306e2b4144bbccc6a27aa713b93a",
+                          "maintenanceCandidatesSha256":  "0a39f453311d6e3c4608a894ebbd17064ea96e8e4e0d6b21f71f347d7745215a"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  961,
-                    "reviewedCandidateCount":  963,
+                    "scannerCandidateCount":  964,
+                    "reviewedCandidateCount":  966,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  31,
+                            "candidateCount":  32,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -42,7 +42,7 @@
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  287,
+                            "candidateCount":  289,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -126,14 +126,14 @@
                                                   "sourcePath":  "src/Core/Modules/modAuth.bas",
                                                   "componentName":  "modAuth",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1776,
+                                                  "baselineLineCount":  1804,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modConfig.bas",
                                                   "componentName":  "modConfig",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1662,
+                                                  "baselineLineCount":  1679,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -154,14 +154,14 @@
                                                   "sourcePath":  "src/Core/Modules/modProcessor.bas",
                                                   "componentName":  "modProcessor",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1417,
+                                                  "baselineLineCount":  1448,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  2919,
+                                                  "baselineLineCount":  3016,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -182,7 +182,7 @@
                                                   "sourcePath":  "src/Core/Modules/modWarehouseSync.bas",
                                                   "componentName":  "modWarehouseSync",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1617,
+                                                  "baselineLineCount":  1696,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -196,7 +196,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2317,
+                                                  "baselineLineCount":  2318,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -224,7 +224,7 @@
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1155,
+                                                  "baselineLineCount":  1180,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -6324,6 +6324,31 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:3505a566eaddd536:CloseTransientAuthAfterLoad+CloseTransientConfigAfterLoad",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "CORE",
+                           "componentName":  "modAuth",
+                           "procedureNames":  [
+                                                  "CloseTransientAuthAfterLoad",
+                                                  "CloseTransientConfigAfterLoad"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modAuth.bas",
+                                               "src/Core/Modules/modConfig.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:3765554ea97b368a:ResolvePaletteTableContext+ResolvePaletteTableContext",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -9247,6 +9272,7 @@
                                                   "SaveAuthWorkbookIfWritable",
                                                   "ScopeMatches",
                                                   "SeedAuthDefaults",
+                                                  "SetAuthCellIfDifferent",
                                                   "SetAuthFailureStatus",
                                                   "SetAuthSessionStatus",
                                                   "ShowSignInPrompt",
@@ -9816,6 +9842,7 @@
                                                   "QueuePayloadEventCurrent",
                                                   "QueuePayloadEventServer",
                                                   "QueueReceiveEvent",
+                                                  "QueueReceiveEventBatchServer",
                                                   "QueueReceiveEventCurrent",
                                                   "QueueReceiveEventServer",
                                                   "ReactivateQuietOwnerSafeRole",
@@ -10051,6 +10078,7 @@
                            "componentName":  "modWarehouseSync",
                            "procedureNames":  [
                                                   "AppendCatalogRowsSync",
+                                                  "AppendEventsToOutboxBatch",
                                                   "AppendEventToOutbox",
                                                   "AppendLocationFragmentSync",
                                                   "AppendLocationSummariesSync",
@@ -12347,6 +12375,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendEventToOutbox",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modWarehouseSync",
+                           "procedureNames":  [
+                                                  "AppendEventToOutbox"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modWarehouseSync.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
@@ -14538,7 +14589,7 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeEncoded",
+                           "id":  "reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeEncodedDeferred",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
                            "disposition":  "UNRESOLVED",
@@ -14548,7 +14599,7 @@
                            "workstream":  "DOMAINS",
                            "componentName":  "modInventoryBridgeApi",
                            "procedureNames":  [
-                                                  "ApplyEventBridgeEncoded"
+                                                  "ApplyEventBridgeEncodedDeferred"
                                               ],
                            "sourcePaths":  [
                                                "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"
@@ -19280,6 +19331,7 @@
                            "workstream":  "RECEIVING",
                            "componentName":  "modTS_Received",
                            "procedureNames":  [
+                                                  "AppendDistinctReceivingValue",
                                                   "BuildReceivingAggregateGroupKey",
                                                   "CanHideWorksheet",
                                                   "CellNumber",
@@ -19553,6 +19605,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
+                           "id":  "reachability:src_Receiving_Modules_modReceivingPostingService.bas:modReceivingPostingService.WriteWorkflowStateBySystemKey",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "modReceivingPostingService",
+                           "procedureNames":  [
+                                                  "WriteWorkflowStateBySystemKey"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Modules/modReceivingPostingService.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
                            "id":  "reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons",

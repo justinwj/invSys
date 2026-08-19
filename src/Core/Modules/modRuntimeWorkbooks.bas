@@ -279,6 +279,13 @@ Private Function OpenOrCreateRuntimeWorkbook(ByVal targetPath As String, _
         End If
     End If
 
+    If Not wasCreated Then
+        If RuntimeWorkbookSchemaPresentForRead(wb, workbookKind) Then
+            Set OpenOrCreateRuntimeWorkbook = wb
+            Exit Function
+        End If
+    End If
+
     NormalizeRuntimeWorkbookSheets wb, workbookKind
 
     Select Case UCase$(workbookKind)
@@ -304,6 +311,62 @@ FailOpen:
     If eventsSuppressed Then Application.EnableEvents = prevEvents
     On Error GoTo 0
     report = workbookKind & " workbook open/create failed: " & Err.Description
+End Function
+
+Public Function RuntimeWorkbookSchemaPresentForRead(ByVal wb As Workbook, _
+                                                    ByVal workbookKind As String) As Boolean
+    Dim firstTable As ListObject
+    Dim secondTable As ListObject
+    Dim firstHeaders As Variant
+    Dim secondHeaders As Variant
+    Dim ws As Worksheet
+    Dim headerValue As Variant
+    Dim targetColumn As ListColumn
+
+    If wb Is Nothing Then Exit Function
+    Select Case UCase$(Trim$(workbookKind))
+        Case "CONFIG"
+            firstHeaders = Array( _
+                "WarehouseId", "WarehouseName", "Timezone", "DefaultLocation", _
+                "BatchSize", "LockTimeoutMinutes", "HeartbeatIntervalSeconds", "MaxLockHoldMinutes", _
+                "SnapshotCadence", "BackupCadence", "PathDataRoot", "PathBackupRoot", "PathSharePointRoot", _
+                "WarehouseStatus", "RetiredAtUTC", "DesignsEnabled", "PoisonRetryMax", "AuthCacheTTLSeconds", _
+                "ProcessorServiceUserId", "FF_DesignsEnabled", "FF_OutlookAlerts", "FF_AutoSnapshot", _
+                "AutoRefreshIntervalSeconds")
+            secondHeaders = Array("StationId", "WarehouseId", "StationName", "PathInboxRoot", "RoleDefault")
+        Case "AUTH"
+            firstHeaders = Array("UserId", "DisplayName", "PinHash", "Status", "ValidFrom", "ValidTo")
+            secondHeaders = Array("UserId", "Capability", "WarehouseId", "StationId", "Status", "ValidFrom", "ValidTo")
+        Case Else
+            Exit Function
+    End Select
+    For Each ws In wb.Worksheets
+        On Error Resume Next
+        If UCase$(Trim$(workbookKind)) = "CONFIG" Then
+            If firstTable Is Nothing Then Set firstTable = ws.ListObjects("tblWarehouseConfig")
+            If secondTable Is Nothing Then Set secondTable = ws.ListObjects("tblStationConfig")
+        Else
+            If firstTable Is Nothing Then Set firstTable = ws.ListObjects("tblUsers")
+            If secondTable Is Nothing Then Set secondTable = ws.ListObjects("tblCapabilities")
+        End If
+        On Error GoTo 0
+    Next ws
+    If firstTable Is Nothing Or secondTable Is Nothing Then Exit Function
+    For Each headerValue In firstHeaders
+        Set targetColumn = Nothing
+        On Error Resume Next
+        Set targetColumn = firstTable.ListColumns(CStr(headerValue))
+        On Error GoTo 0
+        If targetColumn Is Nothing Then Exit Function
+    Next headerValue
+    For Each headerValue In secondHeaders
+        Set targetColumn = Nothing
+        On Error Resume Next
+        Set targetColumn = secondTable.ListColumns(CStr(headerValue))
+        On Error GoTo 0
+        If targetColumn Is Nothing Then Exit Function
+    Next headerValue
+    RuntimeWorkbookSchemaPresentForRead = True
 End Function
 
 Private Function OpenFirstRuntimeWorkbook(ByVal likePattern As String, _

@@ -4,6 +4,7 @@ Option Explicit
 Private Const SHEET_RECEIVING As String = "ReceivedTally"
 Private Const SHEET_RECEIVED_LOG As String = "ReceivedLog"
 Private Const TABLE_STAGING As String = "ReceivedTally"
+Private Const TABLE_RECEIVED_TALLY As String = "ReceivedTally"
 Private Const TABLE_AGGREGATE As String = "AggregateReceived"
 Private Const TABLE_LOG As String = "ReceivedLog"
 
@@ -19,6 +20,7 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
     Dim rowIndex As Long
     Dim userId As String
     Dim queueError As String
+    Dim queuePayload As String
     Dim runtimeReport As String
     Dim queuedWorkHandled As Boolean
     Dim queuedCount As Long
@@ -41,8 +43,8 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
         report = "Receiving staging or log tables are missing."
         Exit Function
     End If
-    If aggregateTable.DataBodyRange Is Nothing Then
-        report = "AggregateReceived has no rows to confirm."
+    If stagingTable.DataBodyRange Is Nothing Then
+        report = "ReceivedTally has no rows to confirm."
         Exit Function
     End If
 
@@ -52,24 +54,31 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
         Exit Function
     End If
 
-    Set states = BuildValidatedStates(aggregateTable, report)
+    Set states = BuildValidatedStates(stagingTable, report)
     If states Is Nothing Then Exit Function
 
     For rowIndex = 1 To states.Count
         Set state = states(rowIndex)
         If StrComp(state.CurrentState, state.StateValidated, vbBinaryCompare) = 0 Then
-            queueError = ""
-            If Not QueueReceivingState(state, userId, queueError) Then
-                report = "Inbox queue failed for staged item " & CStr(rowIndex) & _
-                         ": " & queueError
-                Exit Function
-            End If
-            state.MarkSubmitted
-            WriteWorkflowState aggregateTable, rowIndex, state
-            WriteWorkflowStateBySystemKey stagingTable, state
-            queuedCount = queuedCount + 1
+            If queuePayload <> "" Then queuePayload = queuePayload & vbLf
+            queuePayload = queuePayload & BuildReceivingQueueJson(state)
         End If
     Next rowIndex
+    queueError = ""
+    If queuePayload <> "" Then
+        If Not modRoleEventWriter.QueueReceiveEventBatchServer( _
+            "", "", userId, queuePayload, queueError, queuedCount) Then
+            report = "Inbox queue failed for staged receipt batch: " & queueError
+            Exit Function
+        End If
+        For rowIndex = 1 To states.Count
+            Set state = states(rowIndex)
+            If StrComp(state.CurrentState, state.StateValidated, vbBinaryCompare) = 0 Then
+                state.MarkSubmitted
+                WriteWorkflowState stagingTable, rowIndex, state
+            End If
+        Next rowIndex
+    End If
 
     If Not modOperationsPrimitiveBridge.RunBatchAndRefreshOperatorWorkbook( _
         operatorWb.Name, "", "LOCAL", runtimeReport, False, queuedWorkHandled) Then
@@ -82,15 +91,13 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
         Set state = states(rowIndex)
         If StrComp(state.CurrentState, state.StateSubmitted, vbBinaryCompare) = 0 Then
             state.MarkProcessorApplied
-            WriteWorkflowState aggregateTable, rowIndex, state
-            WriteWorkflowStateBySystemKey stagingTable, state
+            WriteWorkflowState stagingTable, rowIndex, state
         End If
         If StrComp(state.CurrentState, state.StateProcessorApplied, vbBinaryCompare) = 0 Then
             state.MarkSnapshotRefreshed
-            WriteWorkflowState aggregateTable, rowIndex, state
-            WriteWorkflowStateBySystemKey stagingTable, state
+            WriteWorkflowState stagingTable, rowIndex, state
         End If
-        AppendReceivedLog logTable, aggregateTable, rowIndex, state, userId
+        AppendReceivedLog logTable, stagingTable, rowIndex, state, userId
     Next rowIndex
 
     ClearReceivingStaging stagingTable, aggregateTable
@@ -164,7 +171,7 @@ Failed:
     End If
 End Function
 
-Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
+Private Function BuildValidatedStates(ByVal stagingTable As ListObject, _
                                       ByRef report As String) As Collection
     On Error GoTo Failed
 
@@ -173,26 +180,26 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
     Dim rowIndex As Long
     Dim stateValue As String
 
-    If Not RequiredColumnsPresent(aggregateTable, _
-        Array("REF_NUMBER", "RECEIPT_TYPE", "ITEM_CODE", "ITEM", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", _
+    If Not RequiredColumnsPresent(stagingTable, _
+        Array("REF_NUMBER", "RECEIPT_TYPE", "ITEM_CODE", "ITEMS", "UOM", "QUANTITY", "LOCATION", "LOT_NUMBER", "Condition", "RETURN_REASON", _
               "System_Key", "EventId", "WorkflowState")) Then
-        report = "AggregateReceived is missing required Receiving workflow columns."
+        report = "ReceivedTally is missing required Receiving workflow columns."
         Exit Function
     End If
 
     Set states = New Collection
-    For rowIndex = 1 To aggregateTable.ListRows.Count
+    For rowIndex = 1 To stagingTable.ListRows.Count
         Set state = New cReceivingWorkflowState
-        stateValue = CellText(aggregateTable, rowIndex, "WorkflowState")
+        stateValue = CellText(stagingTable, rowIndex, "WorkflowState")
         state.Initialize _
-            CellText(aggregateTable, rowIndex, "System_Key"), _
-            CellText(aggregateTable, rowIndex, "EventId"), _
-            CellText(aggregateTable, rowIndex, "ITEM_CODE"), _
-            CellNumber(aggregateTable, rowIndex, "QUANTITY"), _
-            CellText(aggregateTable, rowIndex, "LOCATION"), _
-            BuildEventNote(aggregateTable, rowIndex), _
-            CellText(aggregateTable, rowIndex, "Condition"), _
-            BuildReceivingAttributesJson(aggregateTable, rowIndex), stateValue
+            CellText(stagingTable, rowIndex, "System_Key"), _
+            CellText(stagingTable, rowIndex, "EventId"), _
+            CellText(stagingTable, rowIndex, "ITEM_CODE"), _
+            CellNumber(stagingTable, rowIndex, "QUANTITY"), _
+            CellText(stagingTable, rowIndex, "LOCATION"), _
+            BuildEventNote(stagingTable, rowIndex), _
+            CellText(stagingTable, rowIndex, "Condition"), _
+            BuildReceivingAttributesJson(stagingTable, rowIndex), stateValue
 
         Select Case state.CurrentState
             Case state.StateStaged
@@ -201,10 +208,10 @@ Private Function BuildValidatedStates(ByVal aggregateTable As ListObject, _
                  state.StateProcessorApplied, state.StateSnapshotRefreshed
                 state.EnsureEventIdentities
             Case Else
-                report = "AggregateReceived contains an invalid completed workflow row."
+                report = "ReceivedTally contains an invalid completed workflow row."
                 Exit Function
         End Select
-        WriteWorkflowState aggregateTable, rowIndex, state
+        WriteWorkflowState stagingTable, rowIndex, state
         states.Add state
     Next rowIndex
     Set BuildValidatedStates = states
@@ -244,25 +251,16 @@ Private Function EscapeJsonReceiving(ByVal textIn As String) As String
     EscapeJsonReceiving = Replace$(EscapeJsonReceiving, vbTab, "\t")
 End Function
 
-Private Function QueueReceivingState(ByVal state As cReceivingWorkflowState, _
-                                     ByVal userId As String, _
-                                     ByRef errorMessage As String) As Boolean
-    Dim eventId As String
-    Dim systemKey As String
-
-    eventId = state.EventId
-    systemKey = state.SystemKey
-    QueueReceivingState = modRoleEventWriter.QueueReceiveEventServer( _
-        "", "", userId, state.Sku, state.Qty, state.Location, state.Note, _
-        eventId, errorMessage, "", systemKey, state.ConditionValue, _
-        state.AttributesJson)
-    If QueueReceivingState Then
-        If StrComp(eventId, state.EventId, vbBinaryCompare) <> 0 _
-           Or StrComp(systemKey, state.SystemKey, vbBinaryCompare) <> 0 Then
-            Err.Raise vbObjectError + 7670, "modReceivingPostingService.QueueReceivingState", _
-                      "Receiving queue changed a preassigned event or System_Key identity."
-        End If
-    End If
+Private Function BuildReceivingQueueJson(ByVal state As cReceivingWorkflowState) As String
+    BuildReceivingQueueJson = _
+        "{""EventID"":""" & EscapeJsonReceiving(state.EventId) & _
+        """,""System_Key"":""" & EscapeJsonReceiving(state.SystemKey) & _
+        """,""SKU"":""" & EscapeJsonReceiving(state.Sku) & _
+        """,""Qty"":" & Replace$(CStr(state.Qty), Application.DecimalSeparator, ".") & _
+        ",""Location"":""" & EscapeJsonReceiving(state.Location) & _
+        """,""Note"":""" & EscapeJsonReceiving(state.Note) & _
+        """,""Condition"":""" & EscapeJsonReceiving(state.ConditionValue) & _
+        """,""AttributesJson"":""" & EscapeJsonReceiving(state.AttributesJson) & """}"
 End Function
 
 Private Sub WriteWorkflowState(ByVal targetTable As ListObject, _
@@ -283,8 +281,8 @@ Private Sub WriteWorkflowStateBySystemKey(ByVal targetTable As ListObject, _
 End Sub
 
 Private Sub AppendReceivedLog(ByVal logTable As ListObject, _
-                              ByVal aggregateTable As ListObject, _
-                              ByVal aggregateIndex As Long, _
+                              ByVal stagingTable As ListObject, _
+                              ByVal stagingIndex As Long, _
                               ByVal state As cReceivingWorkflowState, _
                               ByVal userId As String)
     Dim targetRow As ListRow
@@ -297,47 +295,47 @@ Private Sub AppendReceivedLog(ByVal logTable As ListObject, _
     SetCellValue logTable, logIndex, "ENTRY_DATE", Now
     SetCellText logTable, logIndex, "USER", userId
     SetCellText logTable, logIndex, "RECEIPT_TYPE", _
-                CellText(aggregateTable, aggregateIndex, "RECEIPT_TYPE")
+                CellText(stagingTable, stagingIndex, "RECEIPT_TYPE")
     SetCellText logTable, logIndex, "REF_NUMBER", _
-                CellText(aggregateTable, aggregateIndex, "REF_NUMBER")
+                CellText(stagingTable, stagingIndex, "REF_NUMBER")
     SetCellText logTable, logIndex, "ITEMS", _
-                CellText(aggregateTable, aggregateIndex, "ITEM")
+                CellText(stagingTable, stagingIndex, "ITEMS")
     SetCellValue logTable, logIndex, "QUANTITY", state.Qty
     SetCellText logTable, logIndex, "UOM", _
-                CellText(aggregateTable, aggregateIndex, "UOM")
+                CellText(stagingTable, stagingIndex, "UOM")
     SetCellText logTable, logIndex, "VENDOR", _
-                CellText(aggregateTable, aggregateIndex, "VENDORS")
+                CellText(stagingTable, stagingIndex, "VENDOR")
     SetCellText logTable, logIndex, "LOCATION", state.Location
     SetCellText logTable, logIndex, "LOT_NUMBER", _
-                CellText(aggregateTable, aggregateIndex, "LOT_NUMBER")
+                CellText(stagingTable, stagingIndex, "LOT_NUMBER")
     SetCellText logTable, logIndex, "Condition", state.ConditionValue
     SetCellText logTable, logIndex, "RETURN_REASON", _
-                CellText(aggregateTable, aggregateIndex, "RETURN_REASON")
+                CellText(stagingTable, stagingIndex, "RETURN_REASON")
     SetCellText logTable, logIndex, "ITEM_CODE", state.Sku
     SetCellText logTable, logIndex, "System_Key", state.SystemKey
     SetCellText logTable, logIndex, "EventId", state.EventId
 End Sub
 
-Private Function BuildEventNote(ByVal aggregateTable As ListObject, _
+Private Function BuildEventNote(ByVal stagingTable As ListObject, _
                                 ByVal rowIndex As Long) As String
-    BuildEventNote = "RECEIPT_TYPE=" & CellText(aggregateTable, rowIndex, "RECEIPT_TYPE") & _
-                     "; REF_NUMBER=" & CellText(aggregateTable, rowIndex, "REF_NUMBER") & _
-                     "; CONDITION=" & CellText(aggregateTable, rowIndex, "Condition")
-    If CellText(aggregateTable, rowIndex, "ITEM") <> "" Then
+    BuildEventNote = "RECEIPT_TYPE=" & CellText(stagingTable, rowIndex, "RECEIPT_TYPE") & _
+                     "; REF_NUMBER=" & CellText(stagingTable, rowIndex, "REF_NUMBER") & _
+                     "; CONDITION=" & CellText(stagingTable, rowIndex, "Condition")
+    If CellText(stagingTable, rowIndex, "ITEMS") <> "" Then
         BuildEventNote = BuildEventNote & _
-                         "; ITEM=" & CellText(aggregateTable, rowIndex, "ITEM")
+                         "; ITEM=" & CellText(stagingTable, rowIndex, "ITEMS")
     End If
-    If CellText(aggregateTable, rowIndex, "VENDORS") <> "" Then
+    If CellText(stagingTable, rowIndex, "VENDOR") <> "" Then
         BuildEventNote = BuildEventNote & _
-                         "; VENDORS=" & CellText(aggregateTable, rowIndex, "VENDORS")
+                         "; VENDORS=" & CellText(stagingTable, rowIndex, "VENDOR")
     End If
-    If CellText(aggregateTable, rowIndex, "LOT_NUMBER") <> "" Then
+    If CellText(stagingTable, rowIndex, "LOT_NUMBER") <> "" Then
         BuildEventNote = BuildEventNote & _
-                         "; LOT_NUMBER=" & CellText(aggregateTable, rowIndex, "LOT_NUMBER")
+                         "; LOT_NUMBER=" & CellText(stagingTable, rowIndex, "LOT_NUMBER")
     End If
-    If CellText(aggregateTable, rowIndex, "RETURN_REASON") <> "" Then
+    If CellText(stagingTable, rowIndex, "RETURN_REASON") <> "" Then
         BuildEventNote = BuildEventNote & _
-                         "; RETURN_REASON=" & CellText(aggregateTable, rowIndex, "RETURN_REASON")
+                         "; RETURN_REASON=" & CellText(stagingTable, rowIndex, "RETURN_REASON")
     End If
 End Function
 

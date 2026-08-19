@@ -249,8 +249,8 @@ Private Sub BuildLayout()
     Set mBtnAdd = AddButton("btnAdd", "Add Selected", 884, 78, 98, 28)
     Set mLblReceiveItemsTitle = AddLabel("lblReceiveItemsTitle", "Receive Item Results", 18, 110, 180, 18, True)
     Set mLblReceiveItemsHeader = AddLabel("lblReceiveItemsHeader", "", 18, 132, 964, 16, False)
-    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 8, _
-        "0 pt;100 pt;220 pt;52 pt;70 pt;100 pt;220 pt;110 pt")
+    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 9, _
+        "0 pt;100 pt;190 pt;52 pt;70 pt;100 pt;72 pt;190 pt;110 pt")
 
     Set mLblReceiveLocation = AddLabel("lblReceiveLocation", "Receive location *", 18, 280, 112, 18, True)
     Set mTxtReceiveLocation = AddTextBox("txtReceiveLocation", 134, 276, 170, 22)
@@ -514,7 +514,7 @@ ErrHandler:
 End Sub
 
 Private Sub RefreshReceiveItems()
-    FillListBox mLstReceiveItems, mItemRows, 8
+    FillListBox mLstReceiveItems, mItemRows, 9
     If mLstReceiveItems.ListCount = 1 Then
         mLstReceiveItems.ListIndex = 0
         LoadSelectedReceiveItemDetails
@@ -818,6 +818,9 @@ Private Sub ApplyReceivingTab()
         mLblReceiveItemsTitle.Caption = "Receive Item Results"
         mBtnAdd.Caption = "Add Selected"
         mBtnConfirm.Caption = "Confirm Writes"
+        mLblInventoryTitle.Caption = "Receiving Entries History"
+        mLblStagedTitle.Caption = "Received Tally"
+        mLblAggregateTitle.Caption = "Aggregate Received"
         ShowStatus "Receiving is ready."
     ElseIf showReturns Then
         mLblRef.Caption = "Return Ref"
@@ -825,6 +828,9 @@ Private Sub ApplyReceivingTab()
         mLblReceiveItemsTitle.Caption = "Return Item Results"
         mBtnAdd.Caption = "Add Return"
         mBtnConfirm.Caption = "Confirm Returns"
+        mLblInventoryTitle.Caption = "Return Entries History"
+        mLblStagedTitle.Caption = "Return Tally"
+        mLblAggregateTitle.Caption = "Aggregate Returns"
         ShowStatus "Inbound returns are ready. Condition and return reason are required."
     Else
         ShowStatus "Purchasing is not yet operational."
@@ -834,7 +840,7 @@ End Sub
 
 Private Sub ApplyReceivingHeaderLayout()
     AlignReceivingHeader mLblReceiveItemsHeader, mLstReceiveItems, _
-        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Description", "Vendor")
+        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Condition", "Description", "Vendor")
     AlignReceivingHeader mLblInventoryHeader, mLstInventory, _
         Array("Date", "Type", "Reference", "Item", "Qty", "UOM", "Location", "Lot", "Condition", "Return reason")
     AlignReceivingHeader mLblStagedHeader, mLstStaged, _
@@ -892,6 +898,10 @@ Public Function TestReturnsTabContract(ByVal operatorWb As Workbook) As String
         "|AddCaption=" & mBtnAdd.Caption & _
         "|ConditionVisible=" & CStr(mCboCondition.Visible) & _
         "|ReturnReasonVisible=" & CStr(mTxtReturnReason.Visible) & _
+        "|HistoryTitle=" & mLblInventoryTitle.Caption & _
+        "|TallyTitle=" & mLblStagedTitle.Caption & _
+        "|AggregateTitle=" & mLblAggregateTitle.Caption & _
+        "|ItemConditionColumn=True" & _
         "|ReceiptEventType=RECEIVE"
 End Function
 

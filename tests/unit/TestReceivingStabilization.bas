@@ -221,6 +221,11 @@ Public Function TestReceivingRefresh_RebuildsCompleteAggregate() As Long
         wb, "BOL-B", "SYS-SOURCE-AGG", "SKU-AGG", 3, report, "DOCK", "LOT-1") Then
         GoTo CleanExit
     End If
+    If Not modTS_Received.StageReceivingFormItemForWorkbook( _
+        wb, "BOL-C", "SYS-SOURCE-AGG", "SKU-AGG", 4, report, _
+        "DOCK", "LOT-1", "BAD") Then
+        GoTo CleanExit
+    End If
 
     Do While aggregateTable.ListRows.Count > 1
         aggregateTable.ListRows(aggregateTable.ListRows.Count).Delete
@@ -228,7 +233,13 @@ Public Function TestReceivingRefresh_RebuildsCompleteAggregate() As Long
     Set frm = New frmReceiving
     result = frm.TestRefreshInventoryActionForWorkbook(wb)
     If InStr(1, result, "AggregateRows=2", vbBinaryCompare) = 0 _
-       Or TableRecordCountReceivingTest(aggregateTable) <> 2 Then
+       Or TableRecordCountReceivingTest(aggregateTable) <> 2 _
+       Or CDbl(ValueReceivingTest(aggregateTable, 1, "QUANTITY")) <> 5 _
+       Or InStr(1, ValueReceivingTest(aggregateTable, 1, "REF_NUMBER"), "BOL-A", vbTextCompare) = 0 _
+       Or InStr(1, ValueReceivingTest(aggregateTable, 1, "REF_NUMBER"), "BOL-B", vbTextCompare) = 0 _
+       Or StrComp(ValueReceivingTest(aggregateTable, 1, "Condition"), "GOOD", vbBinaryCompare) <> 0 _
+       Or CDbl(ValueReceivingTest(aggregateTable, 2, "QUANTITY")) <> 4 _
+       Or StrComp(ValueReceivingTest(aggregateTable, 2, "Condition"), "BAD", vbBinaryCompare) <> 0 Then
         GoTo CleanExit
     End If
     TestReceivingRefresh_RebuildsCompleteAggregate = 1
@@ -246,6 +257,42 @@ Failed:
     If Not frm Is Nothing Then Unload frm
     wb.Close SaveChanges:=False
     Set frm = Nothing
+    Set wb = Nothing
+    On Error GoTo 0
+End Function
+
+Public Function TestReceivingReturns_UsesReturnTitlesAndConditionColumn() As Long
+    Dim wb As Workbook
+    Dim inventoryTable As ListObject
+    Dim sourceRecord As ListRow
+    Dim report As String
+    Dim result As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set inventoryTable = FindTableReceivingTest(wb, "invSys")
+    Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-RETURN-TITLES"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-RETURN-TITLES"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Return Titles Item"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "RETURNS"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 2
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "Condition", "DAMAGED"
+
+    result = modTS_Received.RunReceivingReturnsTabContractForTest(wb)
+    If Left$(result, 3) = "OK|" _
+       And InStr(1, result, "HistoryTitle=Return Entries History", vbBinaryCompare) > 0 _
+       And InStr(1, result, "TallyTitle=Return Tally", vbBinaryCompare) > 0 _
+       And InStr(1, result, "AggregateTitle=Aggregate Returns", vbBinaryCompare) > 0 _
+       And InStr(1, result, "ItemConditionColumn=True", vbBinaryCompare) > 0 Then
+        TestReceivingReturns_UsesReturnTitlesAndConditionColumn = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    wb.Close SaveChanges:=False
     Set wb = Nothing
     On Error GoTo 0
 End Function

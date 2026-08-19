@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4680
+- Procedures: 4686
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -384,6 +384,7 @@
 | TestCheckReceivingReadiness_SnapshotOk_WhenAuthMissingCapability | TEST_ENTRY | tests/unit/TestReceivingReadiness.bas |
 | TestCheckReceivingReadiness_SnapshotStale_ReturnsStale | TEST_ENTRY | tests/unit/TestReceivingReadiness.bas |
 | TestCheckReceivingReadiness_SnapshotUnreadable_ReturnsUnreadable | TEST_ENTRY | tests/unit/TestReceivingReadiness.bas |
+| TestConfigAuthRead_HealthySchemasRemainSaved | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestConfirmWrites_Tester_EndToEnd | TEST_ENTRY | tests/integration/test_ConfirmWrites_Tester.bas |
 | TestCreateWarehouse_EndToEndLifecycle | TEST_ENTRY | tests/integration/test_CreateWarehouse.bas |
 | TestDataIntegrity | TEST_ENTRY | tests/legacy-vba/modTestModule.bas |
@@ -476,6 +477,7 @@
 | TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestPrecedence_StationOverridesWarehouse | TEST_ENTRY | tests/unit/TestCoreConfig.bas |
 | TestProcessor_DiscoversClosedConfiguredStationInboxWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestProductionCheckIn_StagesBySystemKeyWithoutMutatingInventory | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -536,6 +538,7 @@
 | TestReceivingReadiness_StatusPanelRendersForKnownBadWorkbook | TEST_ENTRY | tests/integration/test_ReceivingReadiness.bas |
 | TestReceivingRefresh_RebuildsCompleteAggregate | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReturns_StagesThroughFormAction | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingReturns_UsesReturnTitlesAndConditionColumn | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |
 | TestReceivingSetupUi_ForceRefreshesRegisteredWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestReceivingStage_GeneratesStableDistinctSystemKeys | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |

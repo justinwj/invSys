@@ -115,13 +115,20 @@ Public Function ApplyInventoryEventBridge(ByVal evt As Object, _
                                          Optional ByVal runId As String = "", _
                                          Optional ByRef statusOut As String = "", _
                                          Optional ByRef errorCode As String = "", _
-                                         Optional ByRef errorMessage As String = "") As Boolean
+                                         Optional ByRef errorMessage As String = "", _
+                                         Optional ByVal deferSave As Boolean = False) As Boolean
     Dim encoded As String
 
     On Error GoTo FailApply
     If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge(GetBridgeString(evt, "WarehouseId"))
 
-    encoded = CStr(RunInventoryDomainMacro3("modInventoryBridgeApi.ApplyEventBridgeEncoded", evt, inventoryWb, runId))
+    If deferSave Then
+        encoded = CStr(RunInventoryDomainMacro3( _
+            "modInventoryBridgeApi.ApplyEventBridgeEncodedDeferred", evt, inventoryWb, runId))
+    Else
+        encoded = CStr(RunInventoryDomainMacro3( _
+            "modInventoryBridgeApi.ApplyEventBridgeEncoded", evt, inventoryWb, runId))
+    End If
     ApplyInventoryEventBridge = DecodeApplyBridgeEncoded(encoded, statusOut, errorCode, errorMessage)
     Exit Function
 

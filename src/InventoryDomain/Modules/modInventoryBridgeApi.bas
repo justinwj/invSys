@@ -49,14 +49,21 @@ End Function
 
 Public Function ApplyEventBridgeEncoded(ByVal evt As Object, _
                                         Optional ByVal inventoryWb As Workbook = Nothing, _
-                                        Optional ByVal runId As String = "") As String
+                                        Optional ByVal runId As String = "", _
+                                        Optional ByVal deferSave As Boolean = False) As String
     Dim statusOut As String
     Dim errorCode As String
     Dim errorMessage As String
     Dim success As Boolean
 
-    success = modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
+    success = modInventoryApply.ApplyEvent(evt, inventoryWb, runId, statusOut, errorCode, errorMessage, deferSave)
     ApplyEventBridgeEncoded = CStr(Abs(CLng(success))) & vbTab & statusOut & vbTab & errorCode & vbTab & errorMessage
+End Function
+
+Public Function ApplyEventBridgeEncodedDeferred(ByVal evt As Object, _
+                                                Optional ByVal inventoryWb As Workbook = Nothing, _
+                                                Optional ByVal runId As String = "") As String
+    ApplyEventBridgeEncodedDeferred = ApplyEventBridgeEncoded(evt, inventoryWb, runId, True)
 End Function
 
 Public Function RemoveLastBulkLogEntriesBridgeResult(ByVal countToRemove As Long) As Collection

@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 961
-- Reviewed candidates: 963
+- Scanner candidates: 964
+- Reviewed candidates: 966
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,11 +11,11 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 31 | Receiving-owned forms, services, and role package source. |
+| RECEIVING | 32 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 287 | Headless shared runtime and developer-support source in Core. |
+| CORE | 289 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
@@ -37,21 +37,21 @@
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
-| src/Core/Modules/modAuth.bas | Core | 1776 |
-| src/Core/Modules/modConfig.bas | Core | 1662 |
+| src/Core/Modules/modAuth.bas | Core | 1804 |
+| src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
-| src/Core/Modules/modProcessor.bas | Core | 1417 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 2919 |
+| src/Core/Modules/modProcessor.bas | Core | 1448 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 3016 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
-| src/Core/Modules/modWarehouseSync.bas | Core | 1617 |
+| src/Core/Modules/modWarehouseSync.bas | Core | 1696 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2317 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2318 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4902 |
 | src/Production/Modules/mProduction.bas | Production | 12928 |
-| src/Receiving/Modules/modTS_Received.bas | Receiving | 1155 |
+| src/Receiving/Modules/modTS_Received.bas | Receiving | 1180 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
 
@@ -296,6 +296,7 @@
 | duplicate:2f498c030594a2ee:GetParentFolderApply+GetParentFolderLocal | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:30f28a9c93c207d7:ShowForCell+ShowForShippingComponentCell | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:34472a36a95ce387:SafeTableValueStatus+TableValueNas | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:3505a566eaddd536:CloseTransientAuthAfterLoad+CloseTransientConfigAfterLoad | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:3765554ea97b368a:ResolvePaletteTableContext+ResolvePaletteTableContext | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:38a4e0938ce68a5f:CountTableRowsApply+GetListRowCountReadModel+ListObjectRowCountDiagnostics | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:3bedf7db9e6b745e:CountFatalIssues+CountFatalIssues | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -508,6 +509,7 @@
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.RequireReAuth | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveCurrentAdminUserRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveRequiredRoleRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendEventToOutbox | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseSync.bas:modWarehouseSync.AppendLocationSummariesSync | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_MouseScroll.bas:MouseScroll.DisableMouseScroll | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | root:src_Core_ClassModules_cDynItemSearch.cls:cDynItemSearch.chkShippable_Click | CORE | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -597,7 +599,7 @@
 | reachability:src_InventoryDomain_ClassModules_cInventoryAppEvents.cls:cInventoryAppEvents.App_WorkbookOpen | DOMAINS | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.RefreshInvSysFromCanonicalRuntime | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.WorkbookHasListObjectApply | DOMAINS | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeEncodedDeferred | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.DiagnoseInventoryDomainBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.EnsureInventorySchemaBridgeReport | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -781,6 +783,7 @@
 | reachability:src_Receiving_ClassModules_cReceivingWorkflowState.cls:cReceivingWorkflowState.StateReady | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.ClearReceivingReadinessForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modReceivingInit.bas:modReceivingInit.InitReceivingAddin | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Receiving_Modules_modReceivingPostingService.bas:modReceivingPostingService.WriteWorkflowStateBySystemKey | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.EnsureGeneratedButtons | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.RebuildAggregation | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Receiving_Modules_modTS_Received.bas:modTS_Received.ReceivingFormInitializeSmokeForWorkbook | RECEIVING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

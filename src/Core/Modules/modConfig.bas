@@ -29,6 +29,7 @@ Public Function LoadConfig(Optional ByVal whId As String = "", Optional ByVal st
     Dim rawVal As Variant
     Dim valOut As Variant
     Dim hasVal As Boolean
+    Dim schemaWasPresent As Boolean
 
     InitializeState
 
@@ -39,12 +40,18 @@ Public Function LoadConfig(Optional ByVal whId As String = "", Optional ByVal st
         GoTo FailSoft
     End If
     openedTransient = Not WorkbookWasAlreadyOpenConfig(preOpen, wb)
-    If openedTransient Then HideWorkbookWindowsConfig wb
+    If openedTransient Then
+        HideWorkbookWindowsConfig wb
+        wb.Saved = True
+    End If
     mResolvedWorkbook = wb.Name
 
-    If Not EnsureConfigSchema(wb, whId, stId) Then
-        AddValidationIssue "ERROR", "CONFIG_SELF_HEAL_FAILED", "Failed to create/repair config tables."
-        GoTo FailSoft
+    schemaWasPresent = modRuntimeWorkbooks.RuntimeWorkbookSchemaPresentForRead(wb, "CONFIG")
+    If Not schemaWasPresent Then
+        If Not EnsureConfigSchema(wb, whId, stId, , False) Then
+            AddValidationIssue "ERROR", "CONFIG_SELF_HEAL_FAILED", "Failed to create/repair config tables."
+            GoTo FailSoft
+        End If
     End If
 
     Set loWh = FindListObjectByName(wb, "tblWarehouseConfig")
@@ -133,13 +140,14 @@ FailLoad:
     Resume FailSoft
 
 CleanExit:
-    CloseTransientConfigAfterLoad wb, openedTransient
+    CloseTransientConfigAfterLoad wb, openedTransient, Not schemaWasPresent
 End Function
 
 Public Function EnsureConfigSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                    Optional ByVal warehouseId As String = "", _
                                    Optional ByVal stationId As String = "", _
-                                   Optional ByRef report As String = "") As Boolean
+                                   Optional ByRef report As String = "", _
+                                   Optional ByVal formatSurface As Boolean = True) As Boolean
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
@@ -152,7 +160,7 @@ Public Function EnsureConfigSchema(Optional ByVal targetWb As Workbook = Nothing
 
     If Not EnsureConfigTables(wb) Then GoTo FailSoft
     SeedConfigDefaults wb, warehouseId, stationId
-    FormatConfigSurface wb
+    If formatSurface Then FormatConfigSurface wb
 
     EnsureConfigSchema = True
     Exit Function
@@ -1060,14 +1068,16 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     Dim i As Long
     Dim dataRange As Range
     Dim startCell As Range
+    Dim surfaceEditable As Boolean
 
     Set ws = EnsureConfigWorksheet(wb, sheetName, tableName)
-    EnsureWorksheetEditableConfig ws
     On Error Resume Next
     Set lo = ws.ListObjects(tableName)
     On Error GoTo 0
 
     If lo Is Nothing Then
+        EnsureWorksheetEditableConfig ws
+        surfaceEditable = True
         Set startCell = GetNextTableStartCell(ws)
         For i = LBound(headers) To UBound(headers)
             startCell.Offset(0, i - LBound(headers)).Value = headers(i)
@@ -1080,6 +1090,10 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     End If
 
     For i = LBound(headers) To UBound(headers)
+        If GetColumnIndex(lo, CStr(headers(i))) = 0 And Not surfaceEditable Then
+            EnsureWorksheetEditableConfig ws
+            surfaceEditable = True
+        End If
         EnsureListColumn lo, CStr(headers(i))
     Next i
 
@@ -1215,6 +1229,7 @@ Private Sub EnsureConfigCellDefault(ByVal lo As ListObject, ByVal rowIndex As Lo
     If idx = 0 Then Exit Sub
     existingValue = lo.DataBodyRange.Cells(rowIndex, idx).Value
     If IsBlankValue(existingValue) Then
+        If IsBlankValue(defaultValue) Then Exit Sub
         lo.DataBodyRange.Cells(rowIndex, idx).Value = defaultValue
     End If
 End Sub
@@ -1477,13 +1492,15 @@ Private Sub HideWorkbookWindowsConfig(ByVal wb As Workbook)
     On Error GoTo 0
 End Sub
 
-Private Sub CloseTransientConfigAfterLoad(ByVal wb As Workbook, ByVal openedTransient As Boolean)
+Private Sub CloseTransientConfigAfterLoad(ByVal wb As Workbook, _
+                                          ByVal openedTransient As Boolean, _
+                                          Optional ByVal saveRepairs As Boolean = True)
     If Not openedTransient Then Exit Sub
     If wb Is Nothing Then Exit Sub
 
     On Error Resume Next
-    HideWorkbookWindowsConfig wb
-    If Not wb.ReadOnly Then
+    If Not saveRepairs Then wb.Saved = True
+    If saveRepairs And Not wb.ReadOnly Then
         If wb.Saved = False Then wb.Save
     End If
     wb.Close SaveChanges:=False

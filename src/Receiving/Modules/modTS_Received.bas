@@ -343,7 +343,7 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
 
     searchText = LCase$(Trim$(filterText))
     sourceValues = inventoryTable.DataBodyRange.Value2
-    ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 8)
+    ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 9)
     Set groupIndex = CreateObject("Scripting.Dictionary")
     groupIndex.CompareMode = vbTextCompare
     For recordIndex = 1 To UBound(sourceValues, 1)
@@ -376,8 +376,9 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
             outputValues(outputIndex, 4) = uomValue
             outputValues(outputIndex, 5) = qtyValue
             outputValues(outputIndex, 6) = locationValue
-            outputValues(outputIndex, 7) = descriptionValue
-            outputValues(outputIndex, 8) = vendorValue
+            outputValues(outputIndex, 7) = conditionValue
+            outputValues(outputIndex, 8) = descriptionValue
+            outputValues(outputIndex, 9) = vendorValue
         End If
 NextInventoryRecord:
     Next recordIndex
@@ -390,14 +391,15 @@ NextInventoryRecord:
                                     CStr(outputValues(recordIndex, 3)) & " " & _
                                     CStr(outputValues(recordIndex, 6)) & " " & _
                                     CStr(outputValues(recordIndex, 7)) & " " & _
-                                    CStr(outputValues(recordIndex, 8)))
+                                    CStr(outputValues(recordIndex, 8)) & " " & _
+                                    CStr(outputValues(recordIndex, 9)))
         If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then _
             matchedIndex = matchedIndex + 1
 NextGroupedCount:
     Next recordIndex
     If matchedIndex = 0 Then Exit Function
 
-    ReDim trimmedValues(1 To matchedIndex, 1 To 8)
+    ReDim trimmedValues(1 To matchedIndex, 1 To 9)
     matchedIndex = 0
     For recordIndex = 1 To outputIndex
         If CDbl(outputValues(recordIndex, 5)) <= 0 Then GoTo NextGroupedCopy
@@ -405,10 +407,11 @@ NextGroupedCount:
                                     CStr(outputValues(recordIndex, 3)) & " " & _
                                     CStr(outputValues(recordIndex, 6)) & " " & _
                                     CStr(outputValues(recordIndex, 7)) & " " & _
-                                    CStr(outputValues(recordIndex, 8)))
+                                    CStr(outputValues(recordIndex, 8)) & " " & _
+                                    CStr(outputValues(recordIndex, 9)))
         If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then
             matchedIndex = matchedIndex + 1
-            For fieldIndex = 1 To 8
+            For fieldIndex = 1 To 9
                 trimmedValues(matchedIndex, fieldIndex) = outputValues(recordIndex, fieldIndex)
             Next fieldIndex
         End If
@@ -730,15 +733,22 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
         If conditionValue = "" Then conditionValue = "GOOD"
         returnReason = CellText(stagingTable, stagingIndex, "RETURN_REASON")
         aggregateGroupKey = BuildReceivingAggregateGroupKey( _
-            receiptType, CellText(stagingTable, stagingIndex, "REF_NUMBER"), _
-            CellText(stagingTable, stagingIndex, "ITEM_CODE"), _
+            receiptType, CellText(stagingTable, stagingIndex, "ITEM_CODE"), _
+            CellText(stagingTable, stagingIndex, "UOM"), _
             CellText(stagingTable, stagingIndex, "LOCATION"), _
-            CellText(stagingTable, stagingIndex, "LOT_NUMBER"), conditionValue, returnReason)
+            CellText(stagingTable, stagingIndex, "LOT_NUMBER"), conditionValue)
         If aggregateIndexes.Exists(aggregateGroupKey) Then
             aggregateIndex = CLng(aggregateIndexes(aggregateGroupKey))
             SetCellValue aggregateTable, aggregateIndex, "QUANTITY", _
                 CellNumber(aggregateTable, aggregateIndex, "QUANTITY") + _
                 CellNumber(stagingTable, stagingIndex, "QUANTITY")
+            SetCellText aggregateTable, aggregateIndex, "REF_NUMBER", _
+                AppendDistinctReceivingValue( _
+                    CellText(aggregateTable, aggregateIndex, "REF_NUMBER"), _
+                    CellText(stagingTable, stagingIndex, "REF_NUMBER"))
+            SetCellText aggregateTable, aggregateIndex, "RETURN_REASON", _
+                AppendDistinctReceivingValue( _
+                    CellText(aggregateTable, aggregateIndex, "RETURN_REASON"), returnReason)
         Else
             aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
             aggregateIndexes.Add aggregateGroupKey, aggregateIndex
@@ -856,20 +866,14 @@ End Sub
 Public Sub SyncQuantityFromStaging(ByVal stagingRecordIndex As Long, _
                                    ByVal newQty As Double)
     Dim stagingTable As ListObject
-    Dim aggregateTable As ListObject
-    Dim systemKey As String
-    Dim aggregateIndex As Long
+    Dim rebuildReport As String
 
     If stagingRecordIndex <= 0 Then Exit Sub
     Set stagingTable = FindTable(Application.ActiveWorkbook, TABLE_STAGING)
-    Set aggregateTable = FindTable(Application.ActiveWorkbook, TABLE_AGGREGATE)
-    If stagingTable Is Nothing Or aggregateTable Is Nothing Then Exit Sub
+    If stagingTable Is Nothing Then Exit Sub
     If stagingRecordIndex > stagingTable.ListRows.Count Then Exit Sub
-    systemKey = CellText(stagingTable, stagingRecordIndex, "System_Key")
-    If systemKey = "" Then Exit Sub
-    aggregateIndex = FindTableRecord(aggregateTable, "System_Key", systemKey)
-    If aggregateIndex = 0 Then Exit Sub
-    SetCellValue aggregateTable, aggregateIndex, "QUANTITY", newQty
+    SetCellValue stagingTable, stagingRecordIndex, "QUANTITY", newQty
+    Call RebuildAggregationForWorkbook(Application.ActiveWorkbook, rebuildReport)
 End Sub
 
 Public Function NzDbl(ByVal valueIn As Variant) As Double
@@ -962,20 +966,41 @@ Private Function NormalizeReceivingCondition(ByVal conditionValue As String) As 
 End Function
 
 Private Function BuildReceivingAggregateGroupKey(ByVal receiptType As String, _
-                                                 ByVal refNumber As String, _
                                                  ByVal itemCode As String, _
+                                                 ByVal uomValue As String, _
                                                  ByVal locationValue As String, _
                                                  ByVal lotNumber As String, _
-                                                 ByVal conditionValue As String, _
-                                                 ByVal returnReason As String) As String
+                                                 ByVal conditionValue As String) As String
     BuildReceivingAggregateGroupKey = _
         UCase$(Trim$(receiptType)) & Chr$(30) & _
-        UCase$(Trim$(refNumber)) & Chr$(30) & _
         UCase$(Trim$(itemCode)) & Chr$(30) & _
+        UCase$(Trim$(uomValue)) & Chr$(30) & _
         UCase$(Trim$(locationValue)) & Chr$(30) & _
         UCase$(Trim$(lotNumber)) & Chr$(30) & _
-        UCase$(Trim$(conditionValue)) & Chr$(30) & _
-        UCase$(Trim$(returnReason))
+        UCase$(Trim$(conditionValue))
+End Function
+
+Private Function AppendDistinctReceivingValue(ByVal existingValues As String, _
+                                               ByVal valueToAdd As String) As String
+    Dim candidate As Variant
+
+    existingValues = Trim$(existingValues)
+    valueToAdd = Trim$(valueToAdd)
+    If valueToAdd = "" Then
+        AppendDistinctReceivingValue = existingValues
+        Exit Function
+    End If
+    For Each candidate In Split(existingValues, ",")
+        If StrComp(Trim$(CStr(candidate)), valueToAdd, vbTextCompare) = 0 Then
+            AppendDistinctReceivingValue = existingValues
+            Exit Function
+        End If
+    Next candidate
+    If existingValues = "" Then
+        AppendDistinctReceivingValue = valueToAdd
+    Else
+        AppendDistinctReceivingValue = existingValues & ", " & valueToAdd
+    End If
 End Function
 
 Private Function ResolveReceivingWorkbook(Optional ByVal preferredWb As Workbook = Nothing) As Workbook

@@ -1213,7 +1213,8 @@ try {
         "DESCRIPTION" = "Receive Widget"; "RECEIVED" = 0; "TOTAL INV" = 10; "LAST EDITED" = ""; "TOTAL INV LAST EDIT" = ""; "TIMESTAMP" = ""
     }
     Add-ListObjectRow -ListObject $loReceivedTally -Values @{
-        "REF_NUMBER" = "REF-LIVE-001"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7;
+        "REF_NUMBER" = "REF-LIVE-001"; "RECEIPT_TYPE" = "RECEIPT"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7;
+        "UOM" = "EA"; "LOCATION" = "A1"; "LOT_NUMBER" = ""; "Condition" = "GOOD"; "RETURN_REASON" = "";
         "System_Key" = "SYS-LIVE-REC-NEW"; "ITEM_CODE" = "SKU-REC"; "Source_System_Key" = "SYS-LIVE-REC-SOURCE";
         "EventId" = "EVT-LIVE-REC-001"; "WorkflowState" = "STAGED"
     }
