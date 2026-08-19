@@ -987,6 +987,41 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function TestStageProtectedDispositionActionForWorkbook(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    If operatorWb Is Nothing Then
+        TestStageProtectedDispositionActionForWorkbook = "FAIL|Operator workbook is required."
+        Exit Function
+    End If
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    InitializeFromReceiving
+    mTabs.Value = 1
+    ApplyReceivingTab
+    If mLstReceiveItems.ListCount = 0 Then
+        TestStageProtectedDispositionActionForWorkbook = "FAIL|No return item choices."
+        Exit Function
+    End If
+    mLstReceiveItems.ListIndex = 0
+    LoadSelectedReceiveItemDetails
+    mTxtRef.Value = "RETURN-TEST"
+    mTxtQty.Value = "1"
+    mCboDisposition.Value = "RETURN"
+    mTxtReturnReason.Value = "TEST RETURN"
+    operatorWb.Worksheets("ReceivedTally").Protect
+    mBtnAdd_Click
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    TestStageProtectedDispositionActionForWorkbook = "FAIL|" & CStr(mTxtStatus.Text)
+    Exit Function
+Failed:
+    On Error Resume Next
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    On Error GoTo 0
+    TestStageProtectedDispositionActionForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function TestReceivingSearchAndHeaderContract() As String
     Dim aligned As Boolean
 

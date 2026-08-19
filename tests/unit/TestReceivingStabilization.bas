@@ -1,6 +1,16 @@
 Attribute VB_Name = "TestReceivingStabilization"
 Option Explicit
 
+Private mLastTestFailure As String
+
+Public Sub ClearLastTestFailure()
+    mLastTestFailure = vbNullString
+End Sub
+
+Public Function GetLastTestFailure() As String
+    GetLastTestFailure = mLastTestFailure
+End Function
+
 Public Function TestReceivingWorkflowState_UsesOrderedTransitions() As Long
     Dim result As String
 
@@ -390,27 +400,27 @@ Public Function TestReceivingReturns_StagesExistingDispositionIdentityThroughFor
     Dim report As String
     Dim contractResult As String
     Dim actionResult As String
+    Dim protectedResult As String
 
     Set wb = Application.Workbooks.Add
     On Error GoTo CleanExit
     If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
     Set inventoryTable = FindTableReceivingTest(wb, "invSys")
     Set stagingTable = FindTableReceivingTest(wb, "ReceivedTally")
-    Do While stagingTable.ListRows.Count < 2
-        stagingTable.ListRows.Add
-    Loop
+    If Not stagingTable.DataBodyRange Is Nothing Then stagingTable.DataBodyRange.Delete
     Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-DISPOSITION-DAMAGED"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-DISPOSITION"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Disposition Item"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "CLEARVIEW"
-    SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 100
-    SetValueReceivingTest inventoryTable, sourceRecord.Index, "TOTAL INV", 100
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 2
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "TOTAL INV", 2
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "Condition", "DAMAGED"
 
     contractResult = modTS_Received.RunReceivingReturnsTabContractForTest(wb)
     actionResult = modTS_Received.RunReceivingInboundReturnFormActionForTest(wb)
+    protectedResult = modTS_Received.RunReceivingProtectedDispositionFormActionForTest(wb)
     If Left$(contractResult, 3) = "OK|" _
        And InStr(1, contractResult, "DispositionVisible=True", vbBinaryCompare) > 0 _
        And InStr(1, contractResult, "DispositionDefault=RETURN", vbBinaryCompare) > 0 _
@@ -421,12 +431,20 @@ Public Function TestReceivingReturns_StagesExistingDispositionIdentityThroughFor
        And StrComp(ValueReceivingTest(stagingTable, 1, "RECEIPT_TYPE"), "RETURN", vbBinaryCompare) = 0 _
        And StrComp(ValueReceivingTest(stagingTable, 1, "System_Key"), "SYS-DISPOSITION-DAMAGED", vbBinaryCompare) = 0 _
        And StrComp(ValueReceivingTest(stagingTable, 1, "Source_System_Key"), "SYS-DISPOSITION-DAMAGED", vbBinaryCompare) = 0 _
-       And StrComp(ValueReceivingTest(stagingTable, 1, "Condition"), "DAMAGED", vbBinaryCompare) = 0 Then
+       And StrComp(ValueReceivingTest(stagingTable, 1, "Condition"), "DAMAGED", vbBinaryCompare) = 0 _
+       And InStr(1, protectedResult, "FAIL|Inventory disposition staging failed: Stage=", vbBinaryCompare) > 0 _
+       And InStr(1, protectedResult, "; Error=", vbBinaryCompare) > 0 _
+       And InStr(1, protectedResult, "; Source=", vbBinaryCompare) > 0 Then
         TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction = 1
+    Else
+        mLastTestFailure = "Contract=" & contractResult & _
+                           " | Action=" & actionResult & _
+                           " | Protected=" & protectedResult
     End If
 
 CleanExit:
     On Error Resume Next
+    wb.Worksheets("ReceivedTally").Unprotect
     wb.Close SaveChanges:=False
     Set wb = Nothing
     On Error GoTo 0

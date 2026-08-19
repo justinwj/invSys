@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "2bcd0c7624ca3f3b6524d2c831afba77dc6ed0a5103a7b354c8dfe182d78e20b",
-                          "maintenanceCandidatesSha256":  "de28dc269161ba509e82a32e9e525ad6da1b30741dc66830c63b9b051d24317d"
+                          "implementationManifestSha256":  "da87dba0ceb621ed06a12312da2dfbe7d92bc71ddd3427c96090c6ac78df3fd7",
+                          "maintenanceCandidatesSha256":  "e9312e03d44baa268aff32af171754f887e65655d64df2c97de58d9941890983"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -224,14 +224,14 @@
                                                   "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
                                                   "componentName":  "frmReceiving",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1041,
+                                                  "baselineLineCount":  1076,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1463,
+                                                  "baselineLineCount":  1543,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -19390,6 +19390,7 @@
                                                   "TestRunConfirmWritesActionForWorkbook",
                                                   "TestSearchInventoryCount",
                                                   "TestStageInboundReturnActionForWorkbook",
+                                                  "TestStageProtectedDispositionActionForWorkbook",
                                                   "UserForm_Activate",
                                                   "UserForm_Initialize",
                                                   "UserForm_QueryClose",
@@ -19459,6 +19460,7 @@
                                                   "PopulateAggregateRecord",
                                                   "RebuildAggregation",
                                                   "RebuildAggregationForWorkbook",
+                                                  "ReceivingErrorSource",
                                                   "ReceivingFormInitializeSmokeForWorkbook",
                                                   "ReceivingInventoryLotNumber",
                                                   "RecordConfirmWritesResult",
@@ -19466,6 +19468,7 @@
                                                   "ResolveReceivingWorkbook",
                                                   "RunReceivingConfirmWritesFormActionForTest",
                                                   "RunReceivingInboundReturnFormActionForTest",
+                                                  "RunReceivingProtectedDispositionFormActionForTest",
                                                   "RunReceivingPurchasingTabContractForTest",
                                                   "RunReceivingRefreshFormActionForTest",
                                                   "RunReceivingReturnsTabContractForTest",

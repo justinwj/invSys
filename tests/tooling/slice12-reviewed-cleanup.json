@@ -12,8 +12,8 @@
   },
   "approvedProcedureGrowth": {
     "slice": "Plan 022 Slice 4q",
-    "ceiling": 4698,
-    "rationale": "Outbound RETURN/DUMP requires exact-System_Key allocation, exact-entity balance validation, and distinct packaged event routing. The new procedures keep those contracts typed and independently testable while all component, candidate, duplicate-body, and dynamic-call ratchets remain improved.",
+    "ceiling": 4701,
+    "rationale": "Outbound RETURN/DUMP exact-System_Key handling and the live Add Disposition failure required an event-isolated form-action diagnostic boundary plus sanitized stage-level error context. The three additional procedures exercise the same protected-write handler while component, candidate, duplicate-body, and dynamic-call ratchets remain improved.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4qDisposition.ps1",
       "tests/unit/TestReceivingStabilization.bas:TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",

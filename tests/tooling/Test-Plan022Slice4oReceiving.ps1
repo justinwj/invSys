@@ -28,10 +28,11 @@ $checks = @(
     [pscustomobject]@{
         Name = "Receiving.ReturnsIsOperational"
         Passed = ($receivingForm -match 'tabReturns') -and
-            ($receivingForm -match 'Add Return') -and
-            ($receivingForm -match 'Return reason') -and
+            ($receivingForm -match 'Add Disposition') -and
+            ($receivingForm -match 'Disposition reason') -and
+            ($receivingForm -match 'RETURN,DUMP') -and
             ($receivingModule -match 'RunReceivingReturnsTabContractForTest')
-        Contract = "Receiving exposes an operational inbound Returns page through a public testable form action boundary."
+        Contract = "Receiving exposes operational RETURN/DUMP disposition actions through a public testable form action boundary."
     },
     [pscustomobject]@{
         Name = "Receiving.RefreshRebuildsAggregate"

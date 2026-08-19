@@ -206,6 +206,15 @@ Public Function RunReceivingInboundReturnFormActionForTest(ByVal operatorWb As W
     Unload frm
 End Function
 
+Public Function RunReceivingProtectedDispositionFormActionForTest(ByVal operatorWb As Workbook) As String
+    Dim frm As frmReceiving
+
+    Set frm = New frmReceiving
+    RunReceivingProtectedDispositionFormActionForTest = _
+        frm.TestStageProtectedDispositionActionForWorkbook(operatorWb)
+    Unload frm
+End Function
+
 Public Function RunReceivingSearchAndHeaderContractTest() As String
     On Error GoTo Failed
 
@@ -714,6 +723,12 @@ Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook,
     Dim lastSystemKey As String
     Dim aggregateReport As String
     Dim allocationCount As Long
+    Dim failureStage As String
+    Dim previousEvents As Boolean
+    Dim eventStateCaptured As Boolean
+    Dim errorNumber As Long
+    Dim errorSource As String
+    Dim errorDescription As String
 
     refNumber = Trim$(refNumber)
     selectedSystemKey = Trim$(selectedSystemKey)
@@ -729,6 +744,7 @@ Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook,
     End If
     If dispositionReason = "" Then report = "Disposition reason is required.": Exit Function
 
+    failureStage = "resolve Receiving inventory and staging tables"
     Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
     Set stagingTable = FindTable(targetWb, TABLE_STAGING)
     Set aggregateTable = FindTable(targetWb, TABLE_AGGREGATE)
@@ -736,10 +752,12 @@ Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook,
         report = "Receiving inventory or staging tables are missing."
         Exit Function
     End If
+    failureStage = "resolve selected inventory entity"
     If selectedSystemKey <> "" Then selectedIndex = FindTableRecord(inventoryTable, "System_Key", selectedSystemKey)
     If selectedIndex = 0 And itemCodeValue <> "" Then selectedIndex = FindTableRecord(inventoryTable, "ITEM_CODE", itemCodeValue)
     If selectedIndex = 0 Then report = "The selected inventory item is no longer available.": Exit Function
 
+    failureStage = "read selected inventory group"
     itemCode = CellText(inventoryTable, selectedIndex, "ITEM_CODE")
     uomValue = CellText(inventoryTable, selectedIndex, "UOM")
     locationValue = CellText(inventoryTable, selectedIndex, "LOCATION")
@@ -747,6 +765,7 @@ Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook,
     conditionValue = NormalizeReceivingCondition(CellText(inventoryTable, selectedIndex, "Condition"))
     If conditionValue = "" Then conditionValue = "GOOD"
 
+    failureStage = "calculate exact available inventory"
     For rowIndex = 1 To inventoryTable.ListRows.Count
         If InventoryRowMatchesDispositionGroup(inventoryTable, rowIndex, itemCode, uomValue, _
                                                locationValue, lotNumber, conditionValue) Then
@@ -760,34 +779,51 @@ Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook,
         Exit Function
     End If
 
+    previousEvents = Application.EnableEvents
+    eventStateCaptured = True
+    Application.EnableEvents = False
     remainingQty = qty
     Do While remainingQty > 0.0000001
+        failureStage = "select exact inventory allocation"
         nextIndex = NextDispositionInventoryRecord(inventoryTable, stagingTable, itemCode, uomValue, _
                                                    locationValue, lotNumber, conditionValue, lastSystemKey)
         If nextIndex = 0 Then
             report = "Unable to allocate disposition quantity across exact inventory entities."
-            Exit Function
+            GoTo CleanExit
         End If
         availableQty = DispositionAvailableForInventoryRow(inventoryTable, nextIndex, stagingTable)
         allocationQty = availableQty
         If allocationQty > remainingQty Then allocationQty = remainingQty
+        failureStage = "stage exact inventory allocation"
         If Not StageDispositionAllocation(stagingTable, inventoryTable, nextIndex, refNumber, _
-                                          allocationQty, dispositionType, dispositionReason, report) Then Exit Function
+                                          allocationQty, dispositionType, dispositionReason, report) Then GoTo CleanExit
         allocationCount = allocationCount + 1
         remainingQty = remainingQty - allocationQty
         lastSystemKey = CellText(inventoryTable, nextIndex, "System_Key")
     Loop
 
+    failureStage = "rebuild disposition aggregate"
     If Not RebuildAggregationForWorkbook(targetWb, aggregateReport) Then
         report = aggregateReport
-        Exit Function
+        GoTo CleanExit
     End If
     report = "Staged " & dispositionType & " of " & Format$(qty, "0.###") & " " & uomValue & _
              " across " & CStr(allocationCount) & " exact inventory allocation(s)."
     StageInventoryDispositionForWorkbook = True
+CleanExit:
+    On Error Resume Next
+    If eventStateCaptured Then Application.EnableEvents = previousEvents
+    On Error GoTo 0
     Exit Function
 Failed:
-    report = "Inventory disposition staging failed: " & Err.Description
+    errorNumber = Err.Number
+    errorSource = Err.Source
+    errorDescription = Err.Description
+    report = "Inventory disposition staging failed: Stage=" & failureStage & _
+             "; Error=" & CStr(errorNumber) & _
+             "; Source=" & ReceivingErrorSource(errorSource) & _
+             "; Description=" & errorDescription
+    Resume CleanExit
 End Function
 
 Private Function StageDispositionAllocation(ByVal stagingTable As ListObject, _
@@ -798,14 +834,22 @@ Private Function StageDispositionAllocation(ByVal stagingTable As ListObject, _
                                             ByVal dispositionType As String, _
                                             ByVal dispositionReason As String, _
                                             ByRef report As String) As Boolean
+    On Error GoTo Failed
+
     Dim stagingIndex As Long
+    Dim stagingRecord As ListRow
     Dim systemKey As String
     Dim eventId As String
     Dim locationValue As String
     Dim lotNumber As String
     Dim conditionValue As String
     Dim itemName As String
+    Dim failureStage As String
+    Dim errorNumber As Long
+    Dim errorSource As String
+    Dim errorDescription As String
 
+    failureStage = "read exact inventory allocation"
     systemKey = CellText(inventoryTable, inventoryIndex, "System_Key")
     locationValue = CellText(inventoryTable, inventoryIndex, "LOCATION")
     lotNumber = ReceivingInventoryLotNumber(inventoryTable, inventoryIndex)
@@ -814,14 +858,20 @@ Private Function StageDispositionAllocation(ByVal stagingTable As ListObject, _
     itemName = CellText(inventoryTable, inventoryIndex, "ITEM")
     If itemName = "" Then itemName = CellText(inventoryTable, inventoryIndex, "ItemName")
 
+    failureStage = "find existing disposition staging row"
     stagingIndex = FindExistingStagingRecord(stagingTable, refNumber, systemKey, locationValue, _
                                              lotNumber, conditionValue, dispositionType, dispositionReason)
     If stagingIndex > 0 Then
+        failureStage = "update disposition staging quantity"
         SetCellValue stagingTable, stagingIndex, "QUANTITY", _
                      CellNumber(stagingTable, stagingIndex, "QUANTITY") + qty
     Else
+        failureStage = "create disposition event identity"
         eventId = modRoleEventWriter.CreateSystemKey()
-        stagingIndex = FirstBlankOrNewRecord(stagingTable).Index
+        failureStage = "add disposition staging row"
+        Set stagingRecord = FirstBlankOrNewRecord(stagingTable)
+        stagingIndex = stagingRecord.Index
+        failureStage = "populate disposition staging row"
         SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
         SetCellText stagingTable, stagingIndex, "RECEIPT_TYPE", dispositionType
         SetCellText stagingTable, stagingIndex, "ITEMS", itemName
@@ -839,6 +889,15 @@ Private Function StageDispositionAllocation(ByVal stagingTable As ListObject, _
         SetCellText stagingTable, stagingIndex, "WorkflowState", "STAGED"
     End If
     StageDispositionAllocation = True
+    Exit Function
+Failed:
+    errorNumber = Err.Number
+    errorSource = Err.Source
+    errorDescription = Err.Description
+    report = "Inventory disposition staging failed: Stage=" & failureStage & _
+             "; Error=" & CStr(errorNumber) & _
+             "; Source=" & ReceivingErrorSource(errorSource) & _
+             "; Description=" & errorDescription
 End Function
 
 Private Function InventoryRowMatchesDispositionGroup(ByVal inventoryTable As ListObject, _
@@ -848,13 +907,13 @@ Private Function InventoryRowMatchesDispositionGroup(ByVal inventoryTable As Lis
                                                      ByVal locationValue As String, _
                                                      ByVal lotNumber As String, _
                                                      ByVal conditionValue As String) As Boolean
-    InventoryRowMatchesDispositionGroup = _
-        (StrComp(CellText(inventoryTable, rowIndex, "ITEM_CODE"), itemCode, vbTextCompare) = 0) And _
-        (StrComp(CellText(inventoryTable, rowIndex, "UOM"), uomValue, vbTextCompare) = 0) And _
-        (StrComp(CellText(inventoryTable, rowIndex, "LOCATION"), locationValue, vbTextCompare) = 0) And _
-        (StrComp(ReceivingInventoryLotNumber(inventoryTable, rowIndex), lotNumber, vbTextCompare) = 0) And _
-        (StrComp(NormalizeReceivingCondition(CellText(inventoryTable, rowIndex, "Condition")), _
-                 conditionValue, vbTextCompare) = 0)
+    If StrComp(CellText(inventoryTable, rowIndex, "ITEM_CODE"), itemCode, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(CellText(inventoryTable, rowIndex, "UOM"), uomValue, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(CellText(inventoryTable, rowIndex, "LOCATION"), locationValue, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(ReceivingInventoryLotNumber(inventoryTable, rowIndex), lotNumber, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(NormalizeReceivingCondition(CellText(inventoryTable, rowIndex, "Condition")), _
+               conditionValue, vbTextCompare) <> 0 Then Exit Function
+    InventoryRowMatchesDispositionGroup = True
 End Function
 
 Private Function DispositionAvailableForInventoryRow(ByVal inventoryTable As ListObject, _
@@ -1099,6 +1158,9 @@ Public Sub HandleReceivingSheetChange(ByVal target As Range)
     Dim changedCells As Range
     Dim cell As Range
     Dim recordIndex As Long
+    Dim targetWb As Workbook
+    Dim previousEvents As Boolean
+    Dim eventStateCaptured As Boolean
 
     If target Is Nothing Then Exit Sub
     Set stagingTable = target.ListObject
@@ -1109,24 +1171,33 @@ Public Sub HandleReceivingSheetChange(ByVal target As Range)
     Set changedCells = Application.Intersect(target, qtyColumn.DataBodyRange)
     If changedCells Is Nothing Then Exit Sub
 
+    Set targetWb = stagingTable.Parent.Parent
+    previousEvents = Application.EnableEvents
+    eventStateCaptured = True
+    Application.EnableEvents = False
     For Each cell In changedCells.Cells
         recordIndex = cell.Row - stagingTable.DataBodyRange.Row + 1
-        SyncQuantityFromStaging recordIndex, NzDbl(cell.Value)
+        SyncQuantityFromStaging recordIndex, NzDbl(cell.Value), targetWb
     Next cell
 CleanExit:
+    On Error Resume Next
+    If eventStateCaptured Then Application.EnableEvents = previousEvents
+    On Error GoTo 0
 End Sub
 
 Public Sub SyncQuantityFromStaging(ByVal stagingRecordIndex As Long, _
-                                   ByVal newQty As Double)
+                                   ByVal newQty As Double, _
+                                   Optional ByVal targetWb As Workbook = Nothing)
     Dim stagingTable As ListObject
     Dim rebuildReport As String
 
     If stagingRecordIndex <= 0 Then Exit Sub
-    Set stagingTable = FindTable(Application.ActiveWorkbook, TABLE_STAGING)
+    If targetWb Is Nothing Then Set targetWb = Application.ActiveWorkbook
+    Set stagingTable = FindTable(targetWb, TABLE_STAGING)
     If stagingTable Is Nothing Then Exit Sub
     If stagingRecordIndex > stagingTable.ListRows.Count Then Exit Sub
     SetCellValue stagingTable, stagingRecordIndex, "QUANTITY", newQty
-    Call RebuildAggregationForWorkbook(Application.ActiveWorkbook, rebuildReport)
+    Call RebuildAggregationForWorkbook(targetWb, rebuildReport)
 End Sub
 
 Public Function NzDbl(ByVal valueIn As Variant) As Double
@@ -1216,6 +1287,15 @@ Private Function NormalizeReceivingCondition(ByVal conditionValue As String) As 
         Case "GOOD", "BAD", "DAMAGED", "EXPIRED", "REJECTED"
             NormalizeReceivingCondition = conditionValue
     End Select
+End Function
+
+Private Function ReceivingErrorSource(ByVal errorSource As String) As String
+    errorSource = Replace$(errorSource, vbCr, " ")
+    errorSource = Replace$(errorSource, vbLf, " ")
+    errorSource = Replace$(errorSource, ";", ",")
+    errorSource = Trim$(errorSource)
+    If errorSource = "" Then errorSource = "(none)"
+    ReceivingErrorSource = errorSource
 End Function
 
 Private Function ReceivingInventoryLotNumber(ByVal inventoryTable As ListObject, _
