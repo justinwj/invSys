@@ -315,13 +315,19 @@ Public Function TestReceivingReturns_StagesThroughFormAction() As Long
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "RETURNS"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 1
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "TOTAL INV", 1
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "Condition", "DAMAGED"
 
     result = modTS_Received.RunReceivingInboundReturnFormActionForTest(wb)
     If Left$(result, 3) = "OK|" _
        And InStr(1, result, "StagedRows=1", vbBinaryCompare) > 0 _
        And InStr(1, result, "ReceiptType=RETURN", vbBinaryCompare) > 0 _
-       And InStr(1, result, "Condition=BAD", vbBinaryCompare) > 0 _
-       And InStr(1, result, "Reason=TEST RETURN", vbBinaryCompare) > 0 Then
+       And InStr(1, result, "Condition=DAMAGED", vbBinaryCompare) > 0 _
+       And InStr(1, result, "Reason=TEST RETURN", vbBinaryCompare) > 0 _
+       And StrComp(ValueReceivingTest(FindTableReceivingTest(wb, "ReceivedTally"), 1, "System_Key"), _
+                   "SYS-SOURCE-RETURN", vbBinaryCompare) = 0 _
+       And StrComp(ValueReceivingTest(FindTableReceivingTest(wb, "ReceivedTally"), 1, "Source_System_Key"), _
+                   "SYS-SOURCE-RETURN", vbBinaryCompare) = 0 Then
         TestReceivingReturns_StagesThroughFormAction = 1
     End If
 
@@ -367,6 +373,53 @@ Public Function TestReceivingStage_MixedConditionCreatesDistinctEntities() As Lo
        And StrComp(ValueReceivingTest(stagingTable, 1, "Condition"), "GOOD", vbBinaryCompare) = 0 _
        And StrComp(ValueReceivingTest(stagingTable, 2, "Condition"), "BAD", vbBinaryCompare) = 0 Then
         TestReceivingStage_MixedConditionCreatesDistinctEntities = 1
+    End If
+
+CleanExit:
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    Set wb = Nothing
+    On Error GoTo 0
+End Function
+
+Public Function TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction() As Long
+    Dim wb As Workbook
+    Dim inventoryTable As ListObject
+    Dim stagingTable As ListObject
+    Dim sourceRecord As ListRow
+    Dim report As String
+    Dim contractResult As String
+    Dim actionResult As String
+
+    Set wb = Application.Workbooks.Add
+    On Error GoTo CleanExit
+    If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
+    Set inventoryTable = FindTableReceivingTest(wb, "invSys")
+    Set stagingTable = FindTableReceivingTest(wb, "ReceivedTally")
+    Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-DISPOSITION-DAMAGED"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-DISPOSITION"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM", "Disposition Item"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "UOM", "EA"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "LOCATION", "CLEARVIEW"
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "QtyAvailable", 100
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "TOTAL INV", 100
+    SetValueReceivingTest inventoryTable, sourceRecord.Index, "Condition", "DAMAGED"
+
+    contractResult = modTS_Received.RunReceivingReturnsTabContractForTest(wb)
+    actionResult = modTS_Received.RunReceivingInboundReturnFormActionForTest(wb)
+    If Left$(contractResult, 3) = "OK|" _
+       And InStr(1, contractResult, "DispositionVisible=True", vbBinaryCompare) > 0 _
+       And InStr(1, contractResult, "DispositionDefault=RETURN", vbBinaryCompare) > 0 _
+       And InStr(1, contractResult, "DispositionOptions=RETURN,DUMP", vbBinaryCompare) > 0 _
+       And InStr(1, contractResult, "ReceiptEventType=RETURN", vbBinaryCompare) > 0 _
+       And Left$(actionResult, 3) = "OK|" _
+       And TableRecordCountReceivingTest(stagingTable) = 1 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "RECEIPT_TYPE"), "RETURN", vbBinaryCompare) = 0 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "System_Key"), "SYS-DISPOSITION-DAMAGED", vbBinaryCompare) = 0 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "Source_System_Key"), "SYS-DISPOSITION-DAMAGED", vbBinaryCompare) = 0 _
+       And StrComp(ValueReceivingTest(stagingTable, 1, "Condition"), "DAMAGED", vbBinaryCompare) = 0 Then
+        TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction = 1
     End If
 
 CleanExit:

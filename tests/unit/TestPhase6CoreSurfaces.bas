@@ -10602,6 +10602,82 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey() As Long
+    Dim rootPath As String
+    Dim wbInv As Workbook
+    Dim evt As Object
+    Dim loEntities As ListObject
+    Dim loLog As ListObject
+    Dim rowDamaged As Long
+    Dim rowGood As Long
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim failureReason As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_inventory_disposition")
+    On Error GoTo CleanFail
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH122", Array("SKU-DISPOSITION"))
+    If wbInv Is Nothing Then failureReason = "Canonical inventory workbook was not created.": GoTo CleanExit
+
+    Set evt = CreateReceiveEventForTest("EVT-DISP-DAMAGED", "WH122", "S22", "user1", "SKU-DISPOSITION", 100, "CLEARVIEW", "seed damaged")
+    evt("Condition") = "DAMAGED"
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-001", statusOut, errorCode, errorMessage) Then
+        failureReason = "DAMAGED seed failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+    Set evt = CreateReceiveEventForTest("EVT-DISP-GOOD", "WH122", "S22", "user1", "SKU-DISPOSITION", 100, "CLEARVIEW", "seed good")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-002", statusOut, errorCode, errorMessage) Then
+        failureReason = "GOOD seed failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set evt = CreateDispositionEventForTest("EVT-DISP-RETURN", "RETURN", "SYS-EVT-DISP-DAMAGED", 50, "DAMAGED")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-003", statusOut, errorCode, errorMessage) Then
+        failureReason = "RETURN apply failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+    Set evt = CreateDispositionEventForTest("EVT-DISP-DUMP", "DUMP", "SYS-EVT-DISP-DAMAGED", 25, "DAMAGED")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-004", statusOut, errorCode, errorMessage) Then
+        failureReason = "DUMP apply failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set loEntities = FindTableByName(wbInv, "tblInventoryEntities")
+    Set loLog = FindTableByName(wbInv, "tblInventoryLog")
+    rowDamaged = FindRowByColumnValueInTable(loEntities, "System_Key", "SYS-EVT-DISP-DAMAGED")
+    rowGood = FindRowByColumnValueInTable(loEntities, "System_Key", "SYS-EVT-DISP-GOOD")
+    If rowDamaged = 0 Or rowGood = 0 Then failureReason = "Disposition changed or lost durable identity.": GoTo CleanExit
+    If CDbl(GetTableValue(loEntities, rowDamaged, "QtyOnHand")) <> 25 Then failureReason = "DAMAGED quantity was not depleted to 25.": GoTo CleanExit
+    If CDbl(GetTableValue(loEntities, rowGood, "QtyOnHand")) <> 100 Then failureReason = "GOOD quantity changed during DAMAGED disposition.": GoTo CleanExit
+    If SumInventoryLogQtyDeltaForTest(loLog, "RETURN", "SKU-DISPOSITION") <> -50 Then failureReason = "RETURN audit delta was not -50.": GoTo CleanExit
+    If SumInventoryLogQtyDeltaForTest(loLog, "DUMP", "SKU-DISPOSITION") <> -25 Then failureReason = "DUMP audit delta was not -25.": GoTo CleanExit
+
+    Set evt = CreateDispositionEventForTest("EVT-DISP-OVERDRAW", "RETURN", "SYS-EVT-DISP-DAMAGED", 26, "DAMAGED")
+    errorCode = "": errorMessage = ""
+    If modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-005", statusOut, errorCode, errorMessage) Then
+        failureReason = "Exact-key overdraw was accepted."
+        GoTo CleanExit
+    End If
+    If StrComp(errorCode, "INSUFFICIENT_ENTITY_INVENTORY", vbBinaryCompare) <> 0 Then
+        failureReason = "Exact-key overdraw returned " & errorCode & " instead of INSUFFICIENT_ENTITY_INVENTORY."
+        GoTo CleanExit
+    End If
+
+    TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey = 1
+
+CleanExit:
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        Debug.Print "TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey: " & failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Private Function GetTableValue(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
     Dim colIndex As Long
 
@@ -12882,6 +12958,32 @@ Private Function CreateReceiveEventForTest(ByVal eventId As String, _
     evt("AttributesJson") = ""
     evt("Note") = noteVal
     Set CreateReceiveEventForTest = evt
+End Function
+
+Private Function CreateDispositionEventForTest(ByVal eventId As String, _
+                                               ByVal eventType As String, _
+                                               ByVal systemKey As String, _
+                                               ByVal qty As Double, _
+                                               ByVal conditionValue As String) As Object
+    Dim evt As Object
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = eventType
+    evt("CreatedAtUTC") = Now
+    evt("WarehouseId") = "WH122"
+    evt("StationId") = "S22"
+    evt("UserId") = "user1"
+    evt("SourceInbox") = "phase6-disposition-inbox"
+    evt("System_Key") = systemKey
+    evt("SKU") = "SKU-DISPOSITION"
+    evt("Qty") = qty
+    evt("Location") = "CLEARVIEW"
+    evt("Condition") = conditionValue
+    evt("AttributesJson") = ""
+    evt("Note") = eventType & " disposition test"
+    Set CreateDispositionEventForTest = evt
 End Function
 
 Private Function CreatePayloadEventForTest(ByVal eventId As String, _

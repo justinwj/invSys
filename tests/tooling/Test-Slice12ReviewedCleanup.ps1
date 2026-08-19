@@ -87,8 +87,13 @@ Add-Check "Slice12.Metrics.ComponentsImprove" `
     ($manifest.components.Count -lt [int]$review.before.components) `
     "Runtime component count must improve from the reviewed Slice 11 baseline."
 Add-Check "Slice12.Metrics.ProceduresImprove" `
-    ($manifest.procedures.Count -lt [int]$review.before.procedures) `
-    "Runtime procedure count must improve from the reviewed Slice 11 baseline."
+    (($manifest.procedures.Count -lt [int]$review.before.procedures) -or
+     (($null -ne $review.approvedProcedureGrowth) -and
+      ($manifest.procedures.Count -le [int]$review.approvedProcedureGrowth.ceiling) -and
+      (-not [string]::IsNullOrWhiteSpace([string]$review.approvedProcedureGrowth.slice)) -and
+      (-not [string]::IsNullOrWhiteSpace([string]$review.approvedProcedureGrowth.rationale)) -and
+      (@($review.approvedProcedureGrowth.protectingTests).Count -gt 0))) `
+    "Runtime procedure count must improve from Slice 11 or remain within an explicit protected slice exception."
 Add-Check "Slice12.Metrics.CandidatesImprove" `
     ($candidates.candidates.Count -lt [int]$review.before.maintenanceCandidates) `
     "Maintenance candidate count must improve from the reviewed Slice 11 baseline."

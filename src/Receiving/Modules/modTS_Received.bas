@@ -331,6 +331,7 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
     Dim qtyText As String
     Dim locationValue As String
     Dim conditionValue As String
+    Dim lotNumber As String
     Dim descriptionValue As String
     Dim vendorValue As String
     Dim groupKey As String
@@ -343,7 +344,7 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
 
     searchText = LCase$(Trim$(filterText))
     sourceValues = inventoryTable.DataBodyRange.Value2
-    ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 9)
+    ReDim outputValues(1 To UBound(sourceValues, 1), 1 To 10)
     Set groupIndex = CreateObject("Scripting.Dictionary")
     groupIndex.CompareMode = vbTextCompare
     For recordIndex = 1 To UBound(sourceValues, 1)
@@ -356,6 +357,7 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
         If qtyText = "" Then qtyText = CellText(inventoryTable, recordIndex, "TOTAL INV")
         If IsNumeric(qtyText) Then qtyValue = CDbl(qtyText) Else qtyValue = 0
         locationValue = CellText(inventoryTable, recordIndex, "LOCATION")
+        lotNumber = ReceivingInventoryLotNumber(inventoryTable, recordIndex)
         conditionValue = UCase$(CellText(inventoryTable, recordIndex, "Condition"))
         If conditionValue = "" Then conditionValue = "GOOD"
         descriptionValue = CellText(inventoryTable, recordIndex, "DESCRIPTION")
@@ -363,7 +365,7 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
         If systemKey = "" Or itemCode = "" Then GoTo NextInventoryRecord
 
         groupKey = UCase$(itemCode) & Chr$(30) & UCase$(uomValue) & Chr$(30) & _
-                   UCase$(locationValue) & Chr$(30) & conditionValue
+                   UCase$(locationValue) & Chr$(30) & UCase$(lotNumber) & Chr$(30) & conditionValue
         If groupIndex.Exists(groupKey) Then
             outputValues(CLng(groupIndex(groupKey)), 5) = _
                 CDbl(outputValues(CLng(groupIndex(groupKey)), 5)) + qtyValue
@@ -376,9 +378,10 @@ Public Function LoadReceivingFormInventoryForWorkbook(ByVal operatorWb As Workbo
             outputValues(outputIndex, 4) = uomValue
             outputValues(outputIndex, 5) = qtyValue
             outputValues(outputIndex, 6) = locationValue
-            outputValues(outputIndex, 7) = conditionValue
-            outputValues(outputIndex, 8) = descriptionValue
-            outputValues(outputIndex, 9) = vendorValue
+            outputValues(outputIndex, 7) = lotNumber
+            outputValues(outputIndex, 8) = conditionValue
+            outputValues(outputIndex, 9) = descriptionValue
+            outputValues(outputIndex, 10) = vendorValue
         End If
 NextInventoryRecord:
     Next recordIndex
@@ -389,29 +392,31 @@ NextInventoryRecord:
         If CDbl(outputValues(recordIndex, 5)) <= 0 Then GoTo NextGroupedCount
         searchableText = LCase$(CStr(outputValues(recordIndex, 2)) & " " & _
                                     CStr(outputValues(recordIndex, 3)) & " " & _
-                                    CStr(outputValues(recordIndex, 6)) & " " & _
-                                    CStr(outputValues(recordIndex, 7)) & " " & _
-                                    CStr(outputValues(recordIndex, 8)) & " " & _
-                                    CStr(outputValues(recordIndex, 9)))
+                                     CStr(outputValues(recordIndex, 6)) & " " & _
+                                     CStr(outputValues(recordIndex, 7)) & " " & _
+                                     CStr(outputValues(recordIndex, 8)) & " " & _
+                                     CStr(outputValues(recordIndex, 9)) & " " & _
+                                     CStr(outputValues(recordIndex, 10)))
         If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then _
             matchedIndex = matchedIndex + 1
 NextGroupedCount:
     Next recordIndex
     If matchedIndex = 0 Then Exit Function
 
-    ReDim trimmedValues(1 To matchedIndex, 1 To 9)
+    ReDim trimmedValues(1 To matchedIndex, 1 To 10)
     matchedIndex = 0
     For recordIndex = 1 To outputIndex
         If CDbl(outputValues(recordIndex, 5)) <= 0 Then GoTo NextGroupedCopy
         searchableText = LCase$(CStr(outputValues(recordIndex, 2)) & " " & _
                                     CStr(outputValues(recordIndex, 3)) & " " & _
-                                    CStr(outputValues(recordIndex, 6)) & " " & _
-                                    CStr(outputValues(recordIndex, 7)) & " " & _
-                                    CStr(outputValues(recordIndex, 8)) & " " & _
-                                    CStr(outputValues(recordIndex, 9)))
+                                     CStr(outputValues(recordIndex, 6)) & " " & _
+                                     CStr(outputValues(recordIndex, 7)) & " " & _
+                                     CStr(outputValues(recordIndex, 8)) & " " & _
+                                     CStr(outputValues(recordIndex, 9)) & " " & _
+                                     CStr(outputValues(recordIndex, 10)))
         If searchText = "" Or InStr(1, searchableText, searchText, vbTextCompare) > 0 Then
             matchedIndex = matchedIndex + 1
-            For fieldIndex = 1 To 9
+            For fieldIndex = 1 To 10
                 trimmedValues(matchedIndex, fieldIndex) = outputValues(recordIndex, fieldIndex)
             Next fieldIndex
         End If
@@ -587,19 +592,25 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     If refNumber = "" Then report = "Ref number is required.": Exit Function
     If sourceSystemKey = "" And itemCodeValue = "" Then report = "Select an inventory item first.": Exit Function
     If qty <= 0 Then report = "Quantity must be greater than zero.": Exit Function
-    conditionValue = NormalizeReceivingCondition(conditionValue)
-    If conditionValue = "" Then report = "Choose a valid receiving condition.": Exit Function
     receiptType = UCase$(Trim$(receiptType))
     If receiptType = "" Then receiptType = "RECEIPT"
-    If receiptType <> "RECEIPT" And receiptType <> "RETURN" Then
-        report = "Receiving type must be RECEIPT or RETURN."
+    If receiptType <> "RECEIPT" And receiptType <> "RETURN" And receiptType <> "DUMP" Then
+        report = "Receiving type must be RECEIPT, RETURN, or DUMP."
         Exit Function
     End If
     returnReason = Trim$(returnReason)
-    If receiptType = "RETURN" And returnReason = "" Then
-        report = "Return reason is required."
+    If receiptType <> "RECEIPT" And returnReason = "" Then
+        report = "Disposition reason is required."
         Exit Function
     End If
+    If receiptType = "RETURN" Or receiptType = "DUMP" Then
+        StageReceivingFormItemForWorkbook = StageInventoryDispositionForWorkbook( _
+            targetWb, refNumber, sourceSystemKey, itemCodeValue, qty, report, _
+            receiptType, returnReason)
+        Exit Function
+    End If
+    conditionValue = NormalizeReceivingCondition(conditionValue)
+    If conditionValue = "" Then report = "Choose a valid receiving condition.": Exit Function
 
     Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
     Set stagingTable = FindTable(targetWb, TABLE_STAGING)
@@ -673,6 +684,237 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     Exit Function
 Failed:
     report = "Receiving staging failed: " & Err.Description
+End Function
+
+Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook, _
+                                                      ByVal refNumber As String, _
+                                                      ByVal selectedSystemKey As String, _
+                                                      ByVal itemCodeValue As String, _
+                                                      ByVal qty As Double, _
+                                                      ByRef report As String, _
+                                                      ByVal dispositionType As String, _
+                                                      ByVal dispositionReason As String) As Boolean
+    On Error GoTo Failed
+
+    Dim inventoryTable As ListObject
+    Dim stagingTable As ListObject
+    Dim aggregateTable As ListObject
+    Dim selectedIndex As Long
+    Dim rowIndex As Long
+    Dim nextIndex As Long
+    Dim allocationQty As Double
+    Dim availableQty As Double
+    Dim totalAvailable As Double
+    Dim remainingQty As Double
+    Dim itemCode As String
+    Dim uomValue As String
+    Dim locationValue As String
+    Dim lotNumber As String
+    Dim conditionValue As String
+    Dim lastSystemKey As String
+    Dim aggregateReport As String
+    Dim allocationCount As Long
+
+    refNumber = Trim$(refNumber)
+    selectedSystemKey = Trim$(selectedSystemKey)
+    itemCodeValue = Trim$(itemCodeValue)
+    dispositionType = UCase$(Trim$(dispositionType))
+    dispositionReason = Trim$(dispositionReason)
+    If targetWb Is Nothing Then report = "Receiving workbook was not provided.": Exit Function
+    If refNumber = "" Then report = "Disposition reference is required.": Exit Function
+    If qty <= 0 Then report = "Quantity must be greater than zero.": Exit Function
+    If dispositionType <> "RETURN" And dispositionType <> "DUMP" Then
+        report = "Disposition must be RETURN or DUMP."
+        Exit Function
+    End If
+    If dispositionReason = "" Then report = "Disposition reason is required.": Exit Function
+
+    Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
+    Set stagingTable = FindTable(targetWb, TABLE_STAGING)
+    Set aggregateTable = FindTable(targetWb, TABLE_AGGREGATE)
+    If inventoryTable Is Nothing Or stagingTable Is Nothing Or aggregateTable Is Nothing Then
+        report = "Receiving inventory or staging tables are missing."
+        Exit Function
+    End If
+    If selectedSystemKey <> "" Then selectedIndex = FindTableRecord(inventoryTable, "System_Key", selectedSystemKey)
+    If selectedIndex = 0 And itemCodeValue <> "" Then selectedIndex = FindTableRecord(inventoryTable, "ITEM_CODE", itemCodeValue)
+    If selectedIndex = 0 Then report = "The selected inventory item is no longer available.": Exit Function
+
+    itemCode = CellText(inventoryTable, selectedIndex, "ITEM_CODE")
+    uomValue = CellText(inventoryTable, selectedIndex, "UOM")
+    locationValue = CellText(inventoryTable, selectedIndex, "LOCATION")
+    lotNumber = ReceivingInventoryLotNumber(inventoryTable, selectedIndex)
+    conditionValue = NormalizeReceivingCondition(CellText(inventoryTable, selectedIndex, "Condition"))
+    If conditionValue = "" Then conditionValue = "GOOD"
+
+    For rowIndex = 1 To inventoryTable.ListRows.Count
+        If InventoryRowMatchesDispositionGroup(inventoryTable, rowIndex, itemCode, uomValue, _
+                                               locationValue, lotNumber, conditionValue) Then
+            totalAvailable = totalAvailable + DispositionAvailableForInventoryRow( _
+                inventoryTable, rowIndex, stagingTable)
+        End If
+    Next rowIndex
+    If totalAvailable + 0.0000001 < qty Then
+        report = "Disposition quantity exceeds available inventory for the selected item, location, lot, and Condition. Available=" & _
+                 Format$(totalAvailable, "0.###") & "; Requested=" & Format$(qty, "0.###") & "."
+        Exit Function
+    End If
+
+    remainingQty = qty
+    Do While remainingQty > 0.0000001
+        nextIndex = NextDispositionInventoryRecord(inventoryTable, stagingTable, itemCode, uomValue, _
+                                                   locationValue, lotNumber, conditionValue, lastSystemKey)
+        If nextIndex = 0 Then
+            report = "Unable to allocate disposition quantity across exact inventory entities."
+            Exit Function
+        End If
+        availableQty = DispositionAvailableForInventoryRow(inventoryTable, nextIndex, stagingTable)
+        allocationQty = availableQty
+        If allocationQty > remainingQty Then allocationQty = remainingQty
+        If Not StageDispositionAllocation(stagingTable, inventoryTable, nextIndex, refNumber, _
+                                          allocationQty, dispositionType, dispositionReason, report) Then Exit Function
+        allocationCount = allocationCount + 1
+        remainingQty = remainingQty - allocationQty
+        lastSystemKey = CellText(inventoryTable, nextIndex, "System_Key")
+    Loop
+
+    If Not RebuildAggregationForWorkbook(targetWb, aggregateReport) Then
+        report = aggregateReport
+        Exit Function
+    End If
+    report = "Staged " & dispositionType & " of " & Format$(qty, "0.###") & " " & uomValue & _
+             " across " & CStr(allocationCount) & " exact inventory allocation(s)."
+    StageInventoryDispositionForWorkbook = True
+    Exit Function
+Failed:
+    report = "Inventory disposition staging failed: " & Err.Description
+End Function
+
+Private Function StageDispositionAllocation(ByVal stagingTable As ListObject, _
+                                            ByVal inventoryTable As ListObject, _
+                                            ByVal inventoryIndex As Long, _
+                                            ByVal refNumber As String, _
+                                            ByVal qty As Double, _
+                                            ByVal dispositionType As String, _
+                                            ByVal dispositionReason As String, _
+                                            ByRef report As String) As Boolean
+    Dim stagingIndex As Long
+    Dim systemKey As String
+    Dim eventId As String
+    Dim locationValue As String
+    Dim lotNumber As String
+    Dim conditionValue As String
+    Dim itemName As String
+
+    systemKey = CellText(inventoryTable, inventoryIndex, "System_Key")
+    locationValue = CellText(inventoryTable, inventoryIndex, "LOCATION")
+    lotNumber = ReceivingInventoryLotNumber(inventoryTable, inventoryIndex)
+    conditionValue = NormalizeReceivingCondition(CellText(inventoryTable, inventoryIndex, "Condition"))
+    If conditionValue = "" Then conditionValue = "GOOD"
+    itemName = CellText(inventoryTable, inventoryIndex, "ITEM")
+    If itemName = "" Then itemName = CellText(inventoryTable, inventoryIndex, "ItemName")
+
+    stagingIndex = FindExistingStagingRecord(stagingTable, refNumber, systemKey, locationValue, _
+                                             lotNumber, conditionValue, dispositionType, dispositionReason)
+    If stagingIndex > 0 Then
+        SetCellValue stagingTable, stagingIndex, "QUANTITY", _
+                     CellNumber(stagingTable, stagingIndex, "QUANTITY") + qty
+    Else
+        eventId = modRoleEventWriter.CreateSystemKey()
+        stagingIndex = FirstBlankOrNewRecord(stagingTable).Index
+        SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
+        SetCellText stagingTable, stagingIndex, "RECEIPT_TYPE", dispositionType
+        SetCellText stagingTable, stagingIndex, "ITEMS", itemName
+        SetCellValue stagingTable, stagingIndex, "QUANTITY", qty
+        SetCellText stagingTable, stagingIndex, "UOM", CellText(inventoryTable, inventoryIndex, "UOM")
+        SetCellText stagingTable, stagingIndex, "VENDOR", CellText(inventoryTable, inventoryIndex, "VENDOR(s)")
+        SetCellText stagingTable, stagingIndex, "LOCATION", locationValue
+        SetCellText stagingTable, stagingIndex, "LOT_NUMBER", lotNumber
+        SetCellText stagingTable, stagingIndex, "Condition", conditionValue
+        SetCellText stagingTable, stagingIndex, "RETURN_REASON", dispositionReason
+        SetCellText stagingTable, stagingIndex, "System_Key", systemKey
+        SetCellText stagingTable, stagingIndex, "ITEM_CODE", CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
+        SetCellText stagingTable, stagingIndex, "Source_System_Key", systemKey
+        SetCellText stagingTable, stagingIndex, "EventId", eventId
+        SetCellText stagingTable, stagingIndex, "WorkflowState", "STAGED"
+    End If
+    StageDispositionAllocation = True
+End Function
+
+Private Function InventoryRowMatchesDispositionGroup(ByVal inventoryTable As ListObject, _
+                                                     ByVal rowIndex As Long, _
+                                                     ByVal itemCode As String, _
+                                                     ByVal uomValue As String, _
+                                                     ByVal locationValue As String, _
+                                                     ByVal lotNumber As String, _
+                                                     ByVal conditionValue As String) As Boolean
+    InventoryRowMatchesDispositionGroup = _
+        (StrComp(CellText(inventoryTable, rowIndex, "ITEM_CODE"), itemCode, vbTextCompare) = 0) And _
+        (StrComp(CellText(inventoryTable, rowIndex, "UOM"), uomValue, vbTextCompare) = 0) And _
+        (StrComp(CellText(inventoryTable, rowIndex, "LOCATION"), locationValue, vbTextCompare) = 0) And _
+        (StrComp(ReceivingInventoryLotNumber(inventoryTable, rowIndex), lotNumber, vbTextCompare) = 0) And _
+        (StrComp(NormalizeReceivingCondition(CellText(inventoryTable, rowIndex, "Condition")), _
+                 conditionValue, vbTextCompare) = 0)
+End Function
+
+Private Function DispositionAvailableForInventoryRow(ByVal inventoryTable As ListObject, _
+                                                     ByVal rowIndex As Long, _
+                                                     ByVal stagingTable As ListObject) As Double
+    Dim qtyText As String
+    Dim availableQty As Double
+    Dim systemKey As String
+
+    qtyText = CellText(inventoryTable, rowIndex, "QtyAvailable")
+    If qtyText = "" Then qtyText = CellText(inventoryTable, rowIndex, "TOTAL INV")
+    If IsNumeric(qtyText) Then availableQty = CDbl(qtyText)
+    systemKey = CellText(inventoryTable, rowIndex, "System_Key")
+    availableQty = availableQty - StagedDispositionQtyForSystemKey(stagingTable, systemKey)
+    If availableQty > 0 Then DispositionAvailableForInventoryRow = availableQty
+End Function
+
+Private Function StagedDispositionQtyForSystemKey(ByVal stagingTable As ListObject, _
+                                                  ByVal systemKey As String) As Double
+    Dim rowIndex As Long
+    Dim stagedType As String
+
+    If stagingTable Is Nothing Or stagingTable.DataBodyRange Is Nothing Then Exit Function
+    For rowIndex = 1 To stagingTable.ListRows.Count
+        stagedType = UCase$(CellText(stagingTable, rowIndex, "RECEIPT_TYPE"))
+        If (stagedType = "RETURN" Or stagedType = "DUMP") _
+           And StrComp(CellText(stagingTable, rowIndex, "Source_System_Key"), _
+                       systemKey, vbBinaryCompare) = 0 Then
+            StagedDispositionQtyForSystemKey = StagedDispositionQtyForSystemKey + _
+                CellNumber(stagingTable, rowIndex, "QUANTITY")
+        End If
+    Next rowIndex
+End Function
+
+Private Function NextDispositionInventoryRecord(ByVal inventoryTable As ListObject, _
+                                                ByVal stagingTable As ListObject, _
+                                                ByVal itemCode As String, _
+                                                ByVal uomValue As String, _
+                                                ByVal locationValue As String, _
+                                                ByVal lotNumber As String, _
+                                                ByVal conditionValue As String, _
+                                                ByVal afterSystemKey As String) As Long
+    Dim rowIndex As Long
+    Dim candidateKey As String
+    Dim selectedKey As String
+
+    For rowIndex = 1 To inventoryTable.ListRows.Count
+        If InventoryRowMatchesDispositionGroup(inventoryTable, rowIndex, itemCode, uomValue, _
+                                               locationValue, lotNumber, conditionValue) Then
+            candidateKey = CellText(inventoryTable, rowIndex, "System_Key")
+            If candidateKey <> "" _
+               And StrComp(candidateKey, afterSystemKey, vbBinaryCompare) > 0 _
+               And DispositionAvailableForInventoryRow(inventoryTable, rowIndex, stagingTable) > 0 Then
+                If selectedKey = "" Or StrComp(candidateKey, selectedKey, vbBinaryCompare) < 0 Then
+                    selectedKey = candidateKey
+                    NextDispositionInventoryRecord = rowIndex
+                End If
+            End If
+        End If
+    Next rowIndex
 End Function
 
 Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
@@ -963,6 +1205,36 @@ Private Function NormalizeReceivingCondition(ByVal conditionValue As String) As 
         Case "GOOD", "BAD", "DAMAGED", "EXPIRED", "REJECTED"
             NormalizeReceivingCondition = conditionValue
     End Select
+End Function
+
+Private Function ReceivingInventoryLotNumber(ByVal inventoryTable As ListObject, _
+                                             ByVal rowIndex As Long) As String
+    ReceivingInventoryLotNumber = CellText(inventoryTable, rowIndex, "LOT_NUMBER")
+    If ReceivingInventoryLotNumber = "" Then
+        ReceivingInventoryLotNumber = ExtractReceivingJsonString( _
+            CellText(inventoryTable, rowIndex, "AttributesJson"), "LOT_NUMBER")
+    End If
+End Function
+
+Private Function ExtractReceivingJsonString(ByVal jsonText As String, _
+                                            ByVal propertyName As String) As String
+    Dim propertyToken As String
+    Dim propertyPos As Long
+    Dim colonPos As Long
+    Dim valueStart As Long
+    Dim valueEnd As Long
+
+    jsonText = Trim$(jsonText)
+    propertyToken = Chr$(34) & propertyName & Chr$(34)
+    propertyPos = InStr(1, jsonText, propertyToken, vbTextCompare)
+    If propertyPos = 0 Then Exit Function
+    colonPos = InStr(propertyPos + Len(propertyToken), jsonText, ":", vbBinaryCompare)
+    If colonPos = 0 Then Exit Function
+    valueStart = InStr(colonPos + 1, jsonText, Chr$(34), vbBinaryCompare)
+    If valueStart = 0 Then Exit Function
+    valueEnd = InStr(valueStart + 1, jsonText, Chr$(34), vbBinaryCompare)
+    If valueEnd = 0 Then Exit Function
+    ExtractReceivingJsonString = Mid$(jsonText, valueStart + 1, valueEnd - valueStart - 1)
 End Function
 
 Private Function BuildReceivingAggregateGroupKey(ByVal receiptType As String, _

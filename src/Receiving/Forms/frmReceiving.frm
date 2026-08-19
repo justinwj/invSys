@@ -24,6 +24,7 @@ Private WithEvents mTxtReceiveLocation As MSForms.TextBox
 Private WithEvents mTxtLotNumber As MSForms.TextBox
 Private WithEvents mTxtReturnReason As MSForms.TextBox
 Private WithEvents mCboCondition As MSForms.ComboBox
+Private WithEvents mCboDisposition As MSForms.ComboBox
 Private WithEvents mTabs As MSForms.TabStrip
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnAdd As MSForms.CommandButton
@@ -46,6 +47,7 @@ Private mLblReceiveLocation As MSForms.Label
 Private mLblLotNumber As MSForms.Label
 Private mLblCondition As MSForms.Label
 Private mLblReturnReason As MSForms.Label
+Private mLblDisposition As MSForms.Label
 Private mLblInventoryTitle As MSForms.Label
 Private mLblInventoryHeader As MSForms.Label
 Private mLblStagedTitle As MSForms.Label
@@ -249,8 +251,8 @@ Private Sub BuildLayout()
     Set mBtnAdd = AddButton("btnAdd", "Add Selected", 884, 78, 98, 28)
     Set mLblReceiveItemsTitle = AddLabel("lblReceiveItemsTitle", "Receive Item Results", 18, 110, 180, 18, True)
     Set mLblReceiveItemsHeader = AddLabel("lblReceiveItemsHeader", "", 18, 132, 964, 16, False)
-    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 9, _
-        "0 pt;100 pt;190 pt;52 pt;70 pt;100 pt;72 pt;190 pt;110 pt")
+    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 10, _
+        "0 pt;94 pt;176 pt;48 pt;64 pt;82 pt;62 pt;66 pt;176 pt;100 pt")
 
     Set mLblReceiveLocation = AddLabel("lblReceiveLocation", "Receive location *", 18, 280, 112, 18, True)
     Set mTxtReceiveLocation = AddTextBox("txtReceiveLocation", 134, 276, 170, 22)
@@ -266,8 +268,15 @@ Private Sub BuildLayout()
     mCboCondition.ListIndex = 0
     Set mLblReturnReason = AddLabel("lblReturnReason", "Return reason *", 18, 316, 94, 18, True)
     Set mTxtReturnReason = AddTextBox("txtReturnReason", 116, 312, 522, 22)
+    Set mLblDisposition = AddLabel("lblDisposition", "Disposition *", 658, 316, 76, 18, True)
+    Set mCboDisposition = AddComboBox("cboDisposition", 738, 312, 120, 22)
+    mCboDisposition.AddItem "RETURN"
+    mCboDisposition.AddItem "DUMP"
+    mCboDisposition.ListIndex = 0
     mLblReturnReason.Visible = False
     mTxtReturnReason.Visible = False
+    mLblDisposition.Visible = False
+    mCboDisposition.Visible = False
 
     Set mLblSearch = AddLabel("lblSearch", "Search history", 18, 314, 90, 18, True)
     Set mTxtSearch = AddTextBox("txtSearch", 110, 312, 300, 22)
@@ -430,6 +439,8 @@ Private Sub ResizeReceivingLayout()
     mCboCondition.Top = locationTop
     mLblReturnReason.Top = locationTop + 40
     mTxtReturnReason.Top = locationTop + 36
+    mLblDisposition.Top = locationTop + 40
+    mCboDisposition.Top = locationTop + 36
 
     If mTabs.Value = 1 Then
         historyTop = locationTop + 72
@@ -514,7 +525,7 @@ ErrHandler:
 End Sub
 
 Private Sub RefreshReceiveItems()
-    FillListBox mLstReceiveItems, mItemRows, 9
+    FillListBox mLstReceiveItems, mItemRows, 10
     If mLstReceiveItems.ListCount = 1 Then
         mLstReceiveItems.ListIndex = 0
         LoadSelectedReceiveItemDetails
@@ -668,6 +679,12 @@ Private Sub LoadSelectedReceiveItemDetails()
     If mLstReceiveItems.ListIndex < 0 Then Exit Sub
     mTxtReceiveLocation.Value = NzText( _
         mLstReceiveItems.List(mLstReceiveItems.ListIndex, 5))
+    If mTabs.Value = 1 Then
+        mTxtLotNumber.Value = NzText( _
+            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 6))
+        mCboCondition.Value = NzText( _
+            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 7))
+    End If
 End Sub
 
 Private Sub mBtnRefresh_Click()
@@ -763,10 +780,18 @@ Private Sub AddSelectedInventory()
         ShowStatus "Choose the condition of the received goods."
         Exit Sub
     End If
-    receiptType = IIf(mTabs.Value = 1, "RETURN", "RECEIPT")
+    If mTabs.Value = 1 Then
+        If mCboDisposition.ListIndex < 0 Then
+            ShowStatus "Choose RETURN or DUMP."
+            Exit Sub
+        End If
+        receiptType = UCase$(Trim$(CStr(mCboDisposition.Value)))
+    Else
+        receiptType = "RECEIPT"
+    End If
     returnReason = Trim$(CStr(mTxtReturnReason.Value))
-    If receiptType = "RETURN" And returnReason = "" Then
-        ShowStatus "Return reason is required."
+    If receiptType <> "RECEIPT" And returnReason = "" Then
+        ShowStatus "Disposition reason is required."
         Exit Sub
     End If
 
@@ -806,7 +831,7 @@ Private Sub ApplyReceivingTab()
                 control.Visible = True
             Case "lblPurchasingStub"
                 control.Visible = Not showOperational
-            Case "lblReturnReason", "txtReturnReason"
+            Case "lblReturnReason", "txtReturnReason", "lblDisposition", "cboDisposition"
                 control.Visible = showReturns
             Case Else
                 control.Visible = showOperational
@@ -821,17 +846,33 @@ Private Sub ApplyReceivingTab()
         mLblInventoryTitle.Caption = "Receiving Entries History"
         mLblStagedTitle.Caption = "Received Tally"
         mLblAggregateTitle.Caption = "Aggregate Received"
+        mLblReceiveLocation.Caption = "Receive location *"
+        mLblReturnReason.Caption = "Return reason *"
+        mTxtReceiveLocation.Locked = False
+        mTxtLotNumber.Locked = False
+        mCboCondition.Locked = False
+        mTxtReceiveLocation.BackColor = &HFFFFFF
+        mTxtLotNumber.BackColor = &HFFFFFF
+        mCboCondition.BackColor = &HFFFFFF
         ShowStatus "Receiving is ready."
     ElseIf showReturns Then
-        mLblRef.Caption = "Return Ref"
+        mLblRef.Caption = "Disposition Ref"
         mLblItemSearch.Caption = "Return item search"
         mLblReceiveItemsTitle.Caption = "Return Item Results"
-        mBtnAdd.Caption = "Add Return"
-        mBtnConfirm.Caption = "Confirm Returns"
+        mBtnAdd.Caption = "Add Disposition"
+        mBtnConfirm.Caption = "Confirm Dispositions"
         mLblInventoryTitle.Caption = "Return Entries History"
         mLblStagedTitle.Caption = "Return Tally"
         mLblAggregateTitle.Caption = "Aggregate Returns"
-        ShowStatus "Inbound returns are ready. Condition and return reason are required."
+        mLblReceiveLocation.Caption = "Source location"
+        mLblReturnReason.Caption = "Disposition reason *"
+        mTxtReceiveLocation.Locked = True
+        mTxtLotNumber.Locked = True
+        mCboCondition.Locked = True
+        mTxtReceiveLocation.BackColor = &HEFEFEF
+        mTxtLotNumber.BackColor = &HEFEFEF
+        mCboCondition.BackColor = &HEFEFEF
+        ShowStatus "Outbound inventory disposition is ready. Choose RETURN or DUMP."
     Else
         ShowStatus "Purchasing is not yet operational."
     End If
@@ -840,7 +881,7 @@ End Sub
 
 Private Sub ApplyReceivingHeaderLayout()
     AlignReceivingHeader mLblReceiveItemsHeader, mLstReceiveItems, _
-        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Condition", "Description", "Vendor")
+        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Lot", "Condition", "Description", "Vendor")
     AlignReceivingHeader mLblInventoryHeader, mLstInventory, _
         Array("Date", "Type", "Reference", "Item", "Qty", "UOM", "Location", "Lot", "Condition", "Return reason")
     AlignReceivingHeader mLblStagedHeader, mLstStaged, _
@@ -898,11 +939,14 @@ Public Function TestReturnsTabContract(ByVal operatorWb As Workbook) As String
         "|AddCaption=" & mBtnAdd.Caption & _
         "|ConditionVisible=" & CStr(mCboCondition.Visible) & _
         "|ReturnReasonVisible=" & CStr(mTxtReturnReason.Visible) & _
+        "|DispositionVisible=" & CStr(mCboDisposition.Visible) & _
+        "|DispositionDefault=" & CStr(mCboDisposition.Value) & _
+        "|DispositionOptions=RETURN,DUMP" & _
         "|HistoryTitle=" & mLblInventoryTitle.Caption & _
         "|TallyTitle=" & mLblStagedTitle.Caption & _
         "|AggregateTitle=" & mLblAggregateTitle.Caption & _
         "|ItemConditionColumn=True" & _
-        "|ReceiptEventType=RECEIVE"
+        "|ReceiptEventType=" & CStr(mCboDisposition.Value)
 End Function
 
 Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Workbook) As String
@@ -925,9 +969,7 @@ Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Work
     LoadSelectedReceiveItemDetails
     mTxtRef.Value = "RETURN-TEST"
     mTxtQty.Value = "1"
-    If Trim$(CStr(mTxtReceiveLocation.Value)) = "" Then mTxtReceiveLocation.Value = "RETURNS"
-    mTxtLotNumber.Value = "RETURN-LOT"
-    mCboCondition.Value = "BAD"
+    mCboDisposition.Value = "RETURN"
     mTxtReturnReason.Value = "TEST RETURN"
     mBtnAdd_Click
     If mLstStaged.ListCount = 0 Then

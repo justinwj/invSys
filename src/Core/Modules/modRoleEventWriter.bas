@@ -9,6 +9,8 @@ Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
 Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
 Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
 Private Const ROLE_EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Private Const ROLE_EVENT_TYPE_RETURN As String = "RETURN"
+Private Const ROLE_EVENT_TYPE_DUMP As String = "DUMP"
 Private Const ROLE_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const ROLE_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const ROLE_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -523,7 +525,7 @@ Public Function DescribeInboxPendingRows(ByVal eventType As String, _
     openedTransient = Not WorkbookWasAlreadyOpenRole(openPaths, wbInbox)
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -666,6 +668,7 @@ Public Function QueueReceiveEventBatchServer(ByVal warehouseId As String, _
     Dim systemKey As String
     Dim sku As String
     Dim locationValue As String
+    Dim eventType As String
 
     acceptedCount = 0
     If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
@@ -696,6 +699,14 @@ Public Function QueueReceiveEventBatchServer(ByVal warehouseId As String, _
                 Exit Function
             End If
             eventId = Trim$(CStr(payload("EventID")))
+            eventType = ROLE_EVENT_TYPE_RECEIVE
+            If payload.Exists("EventType") Then eventType = UCase$(Trim$(CStr(payload("EventType"))))
+            Select Case eventType
+                Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
+                Case Else
+                    errorMessage = "Receiving batch row EventType must be RECEIVE, RETURN, or DUMP."
+                    Exit Function
+            End Select
             systemKey = Trim$(CStr(payload("System_Key")))
             sku = Trim$(CStr(payload("SKU")))
             locationValue = Trim$(CStr(payload("Location")))
@@ -714,7 +725,7 @@ Public Function QueueReceiveEventBatchServer(ByVal warehouseId As String, _
                 Exit Function
             End If
             Set rowValues = BuildInboxRowValuesRole( _
-                eventId, "", "", ROLE_EVENT_TYPE_RECEIVE, Now, resolvedWh, resolvedSt, _
+                eventId, "", "", eventType, Now, resolvedWh, resolvedSt, _
                 resolvedUser, "", sku, qtyValue, locationValue, _
                 Trim$(CStr(payload("Note"))), "", "", "", systemKey, _
                 Trim$(CStr(payload("Condition"))), Trim$(CStr(payload("AttributesJson"))))
@@ -1119,7 +1130,7 @@ Private Function QueueEventCore(ByVal eventType As String, _
     If openedTransient Then HideWorkbookWindowsRole wbInbox
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -1531,6 +1542,8 @@ End Function
 Private Function ShouldStageEventLocallyRole(ByVal eventType As String) As Boolean
     Select Case UCase$(Trim$(eventType))
         Case ROLE_EVENT_TYPE_RECEIVE, _
+             ROLE_EVENT_TYPE_RETURN, _
+             ROLE_EVENT_TYPE_DUMP, _
              ROLE_EVENT_TYPE_SHIP, _
              ROLE_EVENT_TYPE_SHIP_RESERVE, _
              ROLE_EVENT_TYPE_SHIP_RELEASE, _
@@ -1680,7 +1693,7 @@ Private Function MergeRowsIntoNasInboxRole(ByVal rows As Collection, _
     If openedTransient Then HideWorkbookWindowsRole wbInbox
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, schemaReport) Then
                 report = schemaReport
                 GoTo CleanExit
@@ -2615,7 +2628,7 @@ End Function
 
 Private Function InboxWorkbookNameRole(ByVal eventType As String, ByVal stationId As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             InboxWorkbookNameRole = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameRole = "invSys.Inbox.Shipping." & stationId & ".xlsb"
@@ -2627,7 +2640,7 @@ End Function
 
 Private Function InboxTableNameRole(ByVal eventType As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             InboxTableNameRole = TABLE_INBOX_RECEIVE
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxTableNameRole = TABLE_INBOX_SHIP
@@ -2639,7 +2652,7 @@ End Function
 
 Private Function CapabilityForEventTypeRole(ByVal eventType As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             CapabilityForEventTypeRole = "RECEIVE_POST"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             CapabilityForEventTypeRole = "SHIP_POST"

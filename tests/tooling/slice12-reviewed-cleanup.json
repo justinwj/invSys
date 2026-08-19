@@ -10,6 +10,17 @@
     "unresolvedDynamicCalls": 48,
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
+  "approvedProcedureGrowth": {
+    "slice": "Plan 022 Slice 4q",
+    "ceiling": 4698,
+    "rationale": "Outbound RETURN/DUMP requires exact-System_Key allocation, exact-entity balance validation, and distinct packaged event routing. The new procedures keep those contracts typed and independently testable while all component, candidate, duplicate-body, and dynamic-call ratchets remain improved.",
+    "protectingTests": [
+      "tests/tooling/Test-Plan022Slice4qDisposition.ps1",
+      "tests/unit/TestReceivingStabilization.bas:TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",
+      "tests/unit/TestPhase6CoreSurfaces.bas:TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey",
+      "tools/validate_plan022_slice4o_packaged.ps1"
+    ]
+  },
   "protectingTests": [
     "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
     "tests/tooling/Test-Slice5BehaviorLocks.ps1",

@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4686
+- Procedures: 4698
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -435,6 +435,7 @@
 | TestIdentifiersMatch_UsesTokenOverlap | TEST_ENTRY | tests/unit/TestCoreItemSearch.bas |
 | TestInventoryApply_ProductionConsumeRejectsNegativeInventory | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestInventoryApply_ShipRejectsNegativeInventory | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestInventoryDomain_DiagnosticDisablesLegacyDirectWrites | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestInventoryDomain_LegacyLogDeletionBridgeIsNoOp | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestInventoryPublisher_PublishesSnapshotForOpenInventoryWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -537,6 +538,7 @@
 | TestReceivingPurchasingTab_IsVisibleAndReadOnly | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReadiness_StatusPanelRendersForKnownBadWorkbook | TEST_ENTRY | tests/integration/test_ReceivingReadiness.bas |
 | TestReceivingRefresh_RebuildsCompleteAggregate | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReturns_StagesThroughFormAction | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingReturns_UsesReturnTitlesAndConditionColumn | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingRoleFlow_QueuesAndProcessesEvent | TEST_ENTRY | tests/unit/TestPhase3RoleFlows.bas |

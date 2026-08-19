@@ -9,6 +9,8 @@ Public Const INBOX_STATUS_POISON As String = "POISON"
 Private Const PROC_APPLY_STATUS_APPLIED As String = "APPLIED"
 Private Const PROC_APPLY_STATUS_SKIP_DUP As String = "SKIP_DUP"
 Private Const PROC_EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Private Const PROC_EVENT_TYPE_RETURN As String = "RETURN"
+Private Const PROC_EVENT_TYPE_DUMP As String = "DUMP"
 Private Const PROC_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const PROC_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const PROC_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -928,7 +930,7 @@ End Function
 
 Private Function InboxWorkbookNameProcessor(ByVal eventType As String, ByVal stationId As String) As String
     Select Case UCase$(SafeTrimProcessor(eventType))
-        Case PROC_EVENT_TYPE_RECEIVE
+        Case PROC_EVENT_TYPE_RECEIVE, PROC_EVENT_TYPE_RETURN, PROC_EVENT_TYPE_DUMP
             InboxWorkbookNameProcessor = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameProcessor = "invSys.Inbox.Shipping." & stationId & ".xlsb"
@@ -1134,7 +1136,7 @@ End Sub
 
 Private Function CapabilityForEventType(ByVal eventType As String) As String
     Select Case UCase$(SafeTrimProcessor(eventType))
-        Case PROC_EVENT_TYPE_RECEIVE
+        Case PROC_EVENT_TYPE_RECEIVE, PROC_EVENT_TYPE_RETURN, PROC_EVENT_TYPE_DUMP
             CapabilityForEventType = "RECEIVE_POST"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             CapabilityForEventType = "SHIP_POST"

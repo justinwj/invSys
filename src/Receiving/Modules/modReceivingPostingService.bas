@@ -199,7 +199,8 @@ Private Function BuildValidatedStates(ByVal stagingTable As ListObject, _
             CellText(stagingTable, rowIndex, "LOCATION"), _
             BuildEventNote(stagingTable, rowIndex), _
             CellText(stagingTable, rowIndex, "Condition"), _
-            BuildReceivingAttributesJson(stagingTable, rowIndex), stateValue
+            BuildReceivingAttributesJson(stagingTable, rowIndex), stateValue, _
+            EventTypeForReceiptType(CellText(stagingTable, rowIndex, "RECEIPT_TYPE"))
 
         Select Case state.CurrentState
             Case state.StateStaged
@@ -253,7 +254,8 @@ End Function
 
 Private Function BuildReceivingQueueJson(ByVal state As cReceivingWorkflowState) As String
     BuildReceivingQueueJson = _
-        "{""EventID"":""" & EscapeJsonReceiving(state.EventId) & _
+        "{""EventType"":""" & EscapeJsonReceiving(state.EventType) & _
+        """,""EventID"":""" & EscapeJsonReceiving(state.EventId) & _
         """,""System_Key"":""" & EscapeJsonReceiving(state.SystemKey) & _
         """,""SKU"":""" & EscapeJsonReceiving(state.Sku) & _
         """,""Qty"":" & Replace$(CStr(state.Qty), Application.DecimalSeparator, ".") & _
@@ -261,6 +263,16 @@ Private Function BuildReceivingQueueJson(ByVal state As cReceivingWorkflowState)
         """,""Note"":""" & EscapeJsonReceiving(state.Note) & _
         """,""Condition"":""" & EscapeJsonReceiving(state.ConditionValue) & _
         """,""AttributesJson"":""" & EscapeJsonReceiving(state.AttributesJson) & """}"
+End Function
+
+Private Function EventTypeForReceiptType(ByVal receiptType As String) As String
+    receiptType = UCase$(Trim$(receiptType))
+    Select Case receiptType
+        Case "RETURN", "DUMP"
+            EventTypeForReceiptType = receiptType
+        Case Else
+            EventTypeForReceiptType = "RECEIVE"
+    End Select
 End Function
 
 Private Sub WriteWorkflowState(ByVal targetTable As ListObject, _

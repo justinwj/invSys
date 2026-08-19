@@ -5,6 +5,8 @@ Public Const APPLY_STATUS_APPLIED As String = "APPLIED"
 Public Const APPLY_STATUS_SKIP_DUP As String = "SKIP_DUP"
 
 Public Const EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Public Const EVENT_TYPE_RETURN As String = "RETURN"
+Public Const EVENT_TYPE_DUMP As String = "DUMP"
 Public Const EVENT_TYPE_SHIP As String = "SHIP"
 Public Const EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Public Const EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -440,6 +442,8 @@ Private Function BuildApplyLines(ByVal evt As Object, _
     Select Case eventType
         Case EVENT_TYPE_RECEIVE
             Set BuildApplyLines = BuildReceiveLines(evt, wb, errorCode, errorMessage)
+        Case EVENT_TYPE_RETURN, EVENT_TYPE_DUMP
+            Set BuildApplyLines = BuildDispositionLines(evt, wb, eventType, errorCode, errorMessage)
         Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_ADMIN_INVENTORY_ADJUST, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED, EVENT_TYPE_INVENTORY_CREATE
             Set BuildApplyLines = BuildPayloadLines(evt, wb, eventType, errorCode, errorMessage)
         Case Else
@@ -805,6 +809,105 @@ Private Function InventoryLogEventExistsApply(ByVal wb As Workbook, ByVal eventI
         If StrComp(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "EventID")), eventId, vbTextCompare) = 0 Then
             InventoryLogEventExistsApply = True
             Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function BuildDispositionLines(ByVal evt As Object, _
+                                       ByVal wb As Workbook, _
+                                       ByVal eventType As String, _
+                                       ByRef errorCode As String, _
+                                       ByRef errorMessage As String) As Collection
+    Dim loLog As ListObject
+    Dim lineItem As Object
+    Dim systemKey As String
+    Dim sku As String
+    Dim locationValue As String
+    Dim conditionValue As String
+    Dim entitySku As String
+    Dim entityLocation As String
+    Dim entityCondition As String
+    Dim entityAttributes As String
+    Dim qty As Double
+    Dim currentQty As Double
+
+    systemKey = GetEventString(evt, "System_Key")
+    sku = GetEventString(evt, "SKU")
+    locationValue = GetEventString(evt, "Location")
+    conditionValue = UCase$(GetEventString(evt, "Condition"))
+    If systemKey = "" Then
+        errorCode = "INVALID_SYSTEM_KEY"
+        errorMessage = eventType & " requires the exact existing System_Key."
+        Exit Function
+    End If
+    If sku = "" Then
+        errorCode = "INVALID_SKU"
+        errorMessage = eventType & " requires SKU."
+        Exit Function
+    End If
+    If Not TryGetEventDouble(evt, "Qty", qty) Or qty <= 0 Then
+        errorCode = "INVALID_QTY"
+        errorMessage = eventType & " Qty must be greater than zero."
+        Exit Function
+    End If
+
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    If Not ResolveEntityStateFromLogApply(loLog, systemKey, currentQty, entitySku, _
+                                         entityLocation, entityCondition, entityAttributes) Then
+        errorCode = "SYSTEM_KEY_NOT_FOUND"
+        errorMessage = eventType & " target System_Key was not found."
+        Exit Function
+    End If
+    If StrComp(entitySku, sku, vbTextCompare) <> 0 _
+       Or StrComp(entityLocation, locationValue, vbTextCompare) <> 0 _
+       Or StrComp(entityCondition, conditionValue, vbTextCompare) <> 0 Then
+        errorCode = "ENTITY_ATTRIBUTE_MISMATCH"
+        errorMessage = eventType & " must preserve the target entity's SKU, Location, and Condition."
+        Exit Function
+    End If
+    If currentQty + 0.0000001 < qty Then
+        errorCode = "INSUFFICIENT_ENTITY_INVENTORY"
+        errorMessage = eventType & " would overdraw System_Key '" & systemKey & "'. Current=" & _
+                       Format$(currentQty, "0.###") & "; Requested=" & Format$(qty, "0.###") & "."
+        Exit Function
+    End If
+
+    Set BuildDispositionLines = New Collection
+    Set lineItem = CreateObject("Scripting.Dictionary")
+    lineItem.CompareMode = vbTextCompare
+    lineItem("System_Key") = systemKey
+    lineItem("SKU") = entitySku
+    lineItem("QtyDelta") = -qty
+    lineItem("Location") = entityLocation
+    lineItem("Condition") = entityCondition
+    lineItem("AttributesJson") = entityAttributes
+    lineItem("Note") = GetEventString(evt, "Note")
+    BuildDispositionLines.Add lineItem
+End Function
+
+Private Function ResolveEntityStateFromLogApply(ByVal loLog As ListObject, _
+                                                ByVal systemKey As String, _
+                                                ByRef qtyOnHand As Double, _
+                                                ByRef sku As String, _
+                                                ByRef locationValue As String, _
+                                                ByRef conditionValue As String, _
+                                                ByRef attributesJson As String) As Boolean
+    Dim rowIndex As Long
+
+    If loLog Is Nothing Or loLog.DataBodyRange Is Nothing Then Exit Function
+    For rowIndex = 1 To loLog.ListRows.Count
+        If StrComp(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "System_Key")), _
+                   systemKey, vbBinaryCompare) = 0 Then
+            ResolveEntityStateFromLogApply = True
+            qtyOnHand = qtyOnHand + NzDblApply(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU")) <> "" Then _
+                sku = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location")) <> "" Then _
+                locationValue = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")) <> "" Then _
+                conditionValue = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson")) <> "" Then _
+                attributesJson = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson"))
         End If
     Next rowIndex
 End Function
@@ -1879,6 +1982,8 @@ Private Sub ResolveLatestMovementValuesApply(ByVal latestEventType As Object, _
             receivedOut = qty
         Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE
             shipmentsOut = qty
+        Case EVENT_TYPE_RETURN, EVENT_TYPE_DUMP
+            usedOut = Abs(qty)
         Case EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX
             madeOut = qty
         Case EVENT_TYPE_PROD_CONSUME

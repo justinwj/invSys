@@ -765,7 +765,9 @@ try {
         "TestReceivingStabilization.TestReceivingStage_MixedConditionCreatesDistinctEntities",
         "TestReceivingStabilization.TestReceivingReturns_UsesReturnTitlesAndConditionColumn",
         "TestPhase6CoreSurfaces.TestConfigAuthRead_HealthySchemasRemainSaved",
-        "TestPhase6CoreSurfaces.TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves"
+        "TestPhase6CoreSurfaces.TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves",
+        "TestReceivingStabilization.TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",
+        "TestPhase6CoreSurfaces.TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey"
     )
 
     $totalAvailableTests = $allTests.Count

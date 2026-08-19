@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 964
-- Reviewed candidates: 966
+- Scanner candidates: 965
+- Reviewed candidates: 967
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -11,7 +11,7 @@
 
 | Workstream | Candidates | Scope |
 |---|---:|---|
-| RECEIVING | 32 | Receiving-owned forms, services, and role package source. |
+| RECEIVING | 33 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
@@ -41,17 +41,18 @@
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
-| src/Core/Modules/modProcessor.bas | Core | 1448 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 3016 |
+| src/Core/Modules/modProcessor.bas | Core | 1450 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 3029 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
 | src/Core/Modules/modWarehouseSync.bas | Core | 1696 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2318 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2423 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4902 |
 | src/Production/Modules/mProduction.bas | Production | 12928 |
-| src/Receiving/Modules/modTS_Received.bas | Receiving | 1180 |
+| src/Receiving/Forms/frmReceiving.frm | Receiving | 1041 |
+| src/Receiving/Modules/modTS_Received.bas | Receiving | 1452 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
 
@@ -773,6 +774,7 @@
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionIngredientPaletteRuntimeRoundTrip | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionInventoryPickerPrefersCanonicalRuntime | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| module-size:src_Receiving_Forms_frmReceiving.frm:frmReceiving | RECEIVING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received | RECEIVING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_NewWorkbook | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Receiving_ClassModules_cReceivingAppEvents.cls:cReceivingAppEvents.App_SheetChange | RECEIVING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |

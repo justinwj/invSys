@@ -30,7 +30,7 @@ function Set-TableValue([object]$Table, [int]$RowIndex, [string]$ColumnName, [ob
 
 $repo = (Resolve-Path $RepoRoot).Path
 $packages = Join-Path $repo $PackageRoot
-$resultPath = Join-Path $repo "tests/integration/plan022_slice4o_packaged_results.md"
+$resultPath = Join-Path $repo "tests/integration/plan022_slice4q_packaged_results.md"
 $excel = $null
 $core = $null
 $operations = $null
@@ -63,14 +63,17 @@ try {
     Set-TableValue $inventory 1 "ITEM" "Packaged Return Item"
     Set-TableValue $inventory 1 "UOM" "EA"
     Set-TableValue $inventory 1 "LOCATION" "RETURNS"
-    Set-TableValue $inventory 1 "QtyAvailable" 2
-    Set-TableValue $inventory 1 "Condition" "GOOD"
+    Set-TableValue $inventory 1 "QtyAvailable" 100
+    Set-TableValue $inventory 1 "TOTAL INV" 100
+    Set-TableValue $inventory 1 "Condition" "DAMAGED"
 
     $contract = [string]$excel.Run("'" + $operations.Name + "'!modTS_Received.RunReceivingReturnsTabContractForTest", $operator)
     $checks.Add([pscustomobject]@{
         Name = "Packaged.ReturnsTabContract"
         Passed = $contract.StartsWith("OK|") -and $contract.Contains("Selected=Returns") -and
-            $contract.Contains("AddCaption=Add Return") -and $contract.Contains("ReceiptEventType=RECEIVE") -and
+            $contract.Contains("AddCaption=Add Disposition") -and $contract.Contains("ReceiptEventType=RETURN") -and
+            $contract.Contains("DispositionVisible=True") -and $contract.Contains("DispositionDefault=RETURN") -and
+            $contract.Contains("DispositionOptions=RETURN,DUMP") -and
             $contract.Contains("HistoryTitle=Return Entries History") -and
             $contract.Contains("TallyTitle=Return Tally") -and
             $contract.Contains("AggregateTitle=Aggregate Returns") -and
@@ -80,8 +83,8 @@ try {
 
     $returnAction = [string]$excel.Run("'" + $operations.Name + "'!modTS_Received.RunReceivingInboundReturnFormActionForTest", $operator)
     $checks.Add([pscustomobject]@{
-        Name = "Packaged.InboundReturnFormAction"
-        Passed = $returnAction.StartsWith("OK|") -and $returnAction.Contains("ReceiptType=RETURN") -and $returnAction.Contains("Condition=BAD") -and $returnAction.Contains("Reason=TEST RETURN")
+        Name = "Packaged.OutboundDispositionFormAction"
+        Passed = $returnAction.StartsWith("OK|") -and $returnAction.Contains("ReceiptType=RETURN") -and $returnAction.Contains("Condition=DAMAGED") -and $returnAction.Contains("Reason=TEST RETURN")
         Detail = $returnAction
     })
 
@@ -95,10 +98,10 @@ try {
     Set-TableValue $staging 2 "UOM" "EA"
     Set-TableValue $staging 2 "VENDOR" ""
     Set-TableValue $staging 2 "LOCATION" "RETURNS"
-    Set-TableValue $staging 2 "LOT_NUMBER" "RETURN-LOT"
-    Set-TableValue $staging 2 "Condition" "BAD"
+    Set-TableValue $staging 2 "LOT_NUMBER" ""
+    Set-TableValue $staging 2 "Condition" "DAMAGED"
     Set-TableValue $staging 2 "RETURN_REASON" "TEST RETURN"
-    Set-TableValue $staging 2 "System_Key" "SYS-PACKAGED-RETURN-SECOND"
+    Set-TableValue $staging 2 "System_Key" "SYS-PACKAGED-RETURN"
     Set-TableValue $staging 2 "ITEM_CODE" "SKU-PACKAGED-RETURN"
     Set-TableValue $staging 2 "Source_System_Key" "SYS-PACKAGED-RETURN"
     Set-TableValue $staging 2 "EventId" "EVT-PACKAGED-RETURN-SECOND"
@@ -106,12 +109,15 @@ try {
     $aggregateRebuilt = [bool]$excel.Run("'" + $operations.Name + "'!modTS_Received.RebuildAggregationForWorkbook", $operator)
     $stagingOk = ($null -ne $staging) -and ($staging.ListRows.Count -eq 2) -and
         ([string]$staging.ListColumns.Item("RECEIPT_TYPE").DataBodyRange.Cells.Item(1, 1).Value2 -eq "RETURN") -and
-        ([string]$staging.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "BAD")
+        ([string]$staging.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "DAMAGED") -and
+        ([string]$staging.ListColumns.Item("System_Key").DataBodyRange.Cells.Item(1, 1).Value2 -eq "SYS-PACKAGED-RETURN") -and
+        ([string]$staging.ListColumns.Item("Source_System_Key").DataBodyRange.Cells.Item(1, 1).Value2 -eq "SYS-PACKAGED-RETURN")
     $aggregateOk = ($null -ne $aggregate) -and ($aggregate.ListRows.Count -eq 1) -and
         ([string]$aggregate.ListColumns.Item("RETURN_REASON").DataBodyRange.Cells.Item(1, 1).Value2 -eq "TEST RETURN") -and
         ([double]$aggregate.ListColumns.Item("QUANTITY").DataBodyRange.Cells.Item(1, 1).Value2 -eq 3) -and
         ([string]$aggregate.ListColumns.Item("REF_NUMBER").DataBodyRange.Cells.Item(1, 1).Value2 -eq "RETURN-TEST, RETURN-SECOND") -and
-        ([string]$aggregate.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "BAD")
+        ([string]$aggregate.ListColumns.Item("Condition").DataBodyRange.Cells.Item(1, 1).Value2 -eq "DAMAGED") -and
+        ([string]$aggregate.ListColumns.Item("System_Key").DataBodyRange.Cells.Item(1, 1).Value2 -eq "SYS-PACKAGED-RETURN")
     $aggregateDetail = "Rebuilt=$aggregateRebuilt; Rows=$($aggregate.ListRows.Count); Ref=$([string]$aggregate.ListColumns.Item('REF_NUMBER').DataBodyRange.Cells.Item(1, 1).Value2); Qty=$([string]$aggregate.ListColumns.Item('QUANTITY').DataBodyRange.Cells.Item(1, 1).Value2); Condition=$([string]$aggregate.ListColumns.Item('Condition').DataBodyRange.Cells.Item(1, 1).Value2); Reason=$([string]$aggregate.ListColumns.Item('RETURN_REASON').DataBodyRange.Cells.Item(1, 1).Value2)"
     $checks.Add([pscustomobject]@{ Name = "Packaged.ReturnProjection"; Passed = $stagingOk -and $aggregateRebuilt -and $aggregateOk; Detail = $aggregateDetail })
 
@@ -138,7 +144,7 @@ finally {
 $passed = @($checks | Where-Object Passed).Count
 $failed = $checks.Count - $passed
 $lines = @(
-    "# Plan 022 Slice 4o Packaged Results",
+    "# Plan 022 Slice 4q Packaged Results",
     "",
     "- Passed: $passed",
     "- Failed: $failed",

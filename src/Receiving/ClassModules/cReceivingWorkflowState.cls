@@ -24,6 +24,7 @@ Private mLocation As String
 Private mNote As String
 Private mCondition As String
 Private mAttributesJson As String
+Private mEventType As String
 Private mState As String
 
 Public Sub Initialize(ByVal systemKey As String, _
@@ -34,7 +35,8 @@ Public Sub Initialize(ByVal systemKey As String, _
                       ByVal note As String, _
                       Optional ByVal conditionValue As String = "GOOD", _
                       Optional ByVal attributesJson As String = "", _
-                      Optional ByVal restoredState As String = STATE_STAGED)
+                      Optional ByVal restoredState As String = STATE_STAGED, _
+                      Optional ByVal eventType As String = "RECEIVE")
     mSystemKey = Trim$(systemKey)
     mEventId = Trim$(eventId)
     mSku = Trim$(sku)
@@ -44,6 +46,8 @@ Public Sub Initialize(ByVal systemKey As String, _
     mCondition = UCase$(Trim$(conditionValue))
     If mCondition = "" Then mCondition = "GOOD"
     mAttributesJson = Trim$(attributesJson)
+    mEventType = UCase$(Trim$(eventType))
+    If mEventType = "" Then mEventType = "RECEIVE"
     mState = NormalizeState(restoredState)
 End Sub
 
@@ -114,6 +118,10 @@ Public Property Get AttributesJson() As String
     AttributesJson = mAttributesJson
 End Property
 
+Public Property Get EventType() As String
+    EventType = mEventType
+End Property
+
 Public Property Get CurrentState() As String
     CurrentState = mState
 End Property
@@ -151,6 +159,12 @@ Private Sub ValidatePayload()
         Err.Raise vbObjectError + 7662, "cReceivingWorkflowState.ValidatePayload", _
                   "Receiving quantity must be greater than zero."
     End If
+    Select Case mEventType
+        Case "RECEIVE", "RETURN", "DUMP"
+        Case Else
+            Err.Raise vbObjectError + 7664, "cReceivingWorkflowState.ValidatePayload", _
+                      "Receiving workflow event type must be RECEIVE, RETURN, or DUMP."
+    End Select
 End Sub
 
 Private Sub RequireState(ByVal expectedState As String, ByVal memberName As String)

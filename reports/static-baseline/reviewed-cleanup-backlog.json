@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "d580c990a468ad148127faf4032791c3271f306e2b4144bbccc6a27aa713b93a",
-                          "maintenanceCandidatesSha256":  "0a39f453311d6e3c4608a894ebbd17064ea96e8e4e0d6b21f71f347d7745215a"
+                          "implementationManifestSha256":  "34ea6f2f5e76fa66c974f53b2c458b9369e8bc8593b230a7a1ae081c0589f8ec",
+                          "maintenanceCandidatesSha256":  "79fa1edf0d87be4d5adf32994429a080ba826093c044584b98ca357a3797d628"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  964,
-                    "reviewedCandidateCount":  966,
+                    "scannerCandidateCount":  965,
+                    "reviewedCandidateCount":  967,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  32,
+                            "candidateCount":  33,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -154,14 +154,14 @@
                                                   "sourcePath":  "src/Core/Modules/modProcessor.bas",
                                                   "componentName":  "modProcessor",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1448,
+                                                  "baselineLineCount":  1450,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  3016,
+                                                  "baselineLineCount":  3029,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -196,7 +196,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2318,
+                                                  "baselineLineCount":  2423,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -221,10 +221,17 @@
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
+                                                  "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
+                                                  "componentName":  "frmReceiving",
+                                                  "packageKey":  "Receiving",
+                                                  "baselineLineCount":  1041,
+                                                  "growthAllowedWithoutException":  false
+                                              },
+                                              {
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1180,
+                                                  "baselineLineCount":  1452,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -14143,6 +14150,7 @@
                                                   "BuildApplyLines",
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
+                                                  "BuildDispositionLines",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -14197,6 +14205,7 @@
                                                   "RebuildInventoryProjectionsForWorkbook",
                                                   "RefreshInvSysFromCanonicalRuntime",
                                                   "RefreshLedgerStatus",
+                                                  "ResolveEntityStateFromLogApply",
                                                   "ResolveFileStampApply",
                                                   "ResolveInventoryWorkbook",
                                                   "ResolveInvSysSkuApply",
@@ -19321,6 +19330,83 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "module-size:src_Receiving_Forms_frmReceiving.frm:frmReceiving",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "AddButton",
+                                                  "AddComboBox",
+                                                  "AddLabel",
+                                                  "AddListBox",
+                                                  "AddSelectedInventory",
+                                                  "AddTextBox",
+                                                  "AlignReceivingHeader",
+                                                  "ApplyReceivingHeaderLayout",
+                                                  "ApplyReceivingTab",
+                                                  "BuildLayout",
+                                                  "BuildReceivingHeaderCaption",
+                                                  "CountManagedItemChoices",
+                                                  "DefaultReceiptId",
+                                                  "FillInventoryList",
+                                                  "FillListBox",
+                                                  "FilterInventoryRows",
+                                                  "InitializeFromReceiving",
+                                                  "LoadHistoryCache",
+                                                  "LoadInventoryCache",
+                                                  "LoadSelectedReceiveItemDetails",
+                                                  "MaxDoubleReceiving",
+                                                  "mBtnAdd_Click",
+                                                  "mBtnClear_Click",
+                                                  "mBtnClose_Click",
+                                                  "mBtnConfirm_Click",
+                                                  "mBtnRefresh_Click",
+                                                  "mLstReceiveItems_Click",
+                                                  "mTabs_Change",
+                                                  "mTxtItemSearch_Change",
+                                                  "mTxtSearch_Change",
+                                                  "NormalizeSearchText",
+                                                  "NzText",
+                                                  "RefreshAllViews",
+                                                  "RefreshClicked",
+                                                  "RefreshInventory",
+                                                  "RefreshReceiveItems",
+                                                  "RefreshStaging",
+                                                  "ResizeReceivingLayout",
+                                                  "ResolveOperatorWorkbook",
+                                                  "SetOperatorWorkbook",
+                                                  "ShowStatus",
+                                                  "TestInitializeForWorkbook",
+                                                  "TestPurchasingTabContract",
+                                                  "TestReceiptIdSeparatedFromReference",
+                                                  "TestReceivingSearchAndHeaderContract",
+                                                  "TestRefreshInventoryActionForWorkbook",
+                                                  "TestReturnsTabContract",
+                                                  "TestRunConfirmWritesActionForWorkbook",
+                                                  "TestSearchInventoryCount",
+                                                  "TestStageInboundReturnActionForWorkbook",
+                                                  "UserForm_Activate",
+                                                  "UserForm_Initialize",
+                                                  "UserForm_QueryClose",
+                                                  "UserForm_Resize",
+                                                  "UserForm_Terminate"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm"
+                                           ],
+                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
+                       },
+                       {
                            "id":  "module-size:src_Receiving_Modules_modTS_Received.bas:modTS_Received",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "SPLIT_MODULE",
@@ -19341,9 +19427,11 @@
                                                   "ColumnIndex",
                                                   "ConfirmWrites",
                                                   "DeleteReceivingActionButton",
+                                                  "DispositionAvailableForInventoryRow",
                                                   "EnforceReceivingSupportSheetsHidden",
                                                   "EnsureGeneratedButtons",
                                                   "EnsureReceivingButtons",
+                                                  "ExtractReceivingJsonString",
                                                   "FindExistingStagingRecord",
                                                   "FindTable",
                                                   "FindTableRecord",
@@ -19352,6 +19440,7 @@
                                                   "HandleReceivingSelectionChange",
                                                   "HandleReceivingSheetChange",
                                                   "InitializeReceivingUiForWorkbook",
+                                                  "InventoryRowMatchesDispositionGroup",
                                                   "IsReceivingLauncherFormReusable",
                                                   "LastConfirmWritesStatus",
                                                   "LastConfirmWritesSucceeded",
@@ -19363,6 +19452,7 @@
                                                   "LoadReceivingFormTableForWorkbook",
                                                   "LoadReceivingItemChoicesForWorkbook",
                                                   "LoadReceivingStagingViewForWorkbook",
+                                                  "NextDispositionInventoryRecord",
                                                   "NormalizeReceivingCondition",
                                                   "NotifyReceivingLauncherFormTerminating",
                                                   "NzDbl",
@@ -19370,6 +19460,7 @@
                                                   "RebuildAggregation",
                                                   "RebuildAggregationForWorkbook",
                                                   "ReceivingFormInitializeSmokeForWorkbook",
+                                                  "ReceivingInventoryLotNumber",
                                                   "RecordConfirmWritesResult",
                                                   "RefreshReceivingUiForWorkbook",
                                                   "ResolveReceivingWorkbook",
@@ -19384,6 +19475,9 @@
                                                   "ShowReceivingDynamicItemSearch",
                                                   "ShowReceivingForm",
                                                   "ShowReceivingMessage",
+                                                  "StagedDispositionQtyForSystemKey",
+                                                  "StageDispositionAllocation",
+                                                  "StageInventoryDispositionForWorkbook",
                                                   "StageReceivingFormItemForWorkbook",
                                                   "SyncQuantityFromStaging",
                                                   "VariantArrayRowCount",
