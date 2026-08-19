@@ -43,6 +43,15 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
         report = "Receiving staging or log tables are missing."
         Exit Function
     End If
+    For rowIndex = stagingTable.ListRows.Count To 1 Step -1
+        If CellText(stagingTable, rowIndex, "System_Key") = "" _
+           And CellText(stagingTable, rowIndex, "ITEM_CODE") = "" _
+           And CellText(stagingTable, rowIndex, "REF_NUMBER") = "" _
+           And CellText(stagingTable, rowIndex, "EventId") = "" _
+           And Abs(CellNumber(stagingTable, rowIndex, "QUANTITY")) < 0.0000001 Then
+            stagingTable.ListRows(rowIndex).Delete
+        End If
+    Next rowIndex
     If stagingTable.DataBodyRange Is Nothing Then
         report = "ReceivedTally has no rows to confirm."
         Exit Function

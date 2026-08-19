@@ -67,6 +67,9 @@ try {
     Set-TableValue $inventory 1 "TOTAL INV" 100
     Set-TableValue $inventory 1 "Condition" "DAMAGED"
 
+    $staging = Find-ListObject $operator "ReceivedTally"
+    while ($staging.ListRows.Count -lt 2) { [void]$staging.ListRows.Add() }
+
     $contract = [string]$excel.Run("'" + $operations.Name + "'!modTS_Received.RunReceivingReturnsTabContractForTest", $operator)
     $checks.Add([pscustomobject]@{
         Name = "Packaged.ReturnsTabContract"
@@ -88,7 +91,6 @@ try {
         Detail = $returnAction
     })
 
-    $staging = Find-ListObject $operator "ReceivedTally"
     $aggregate = Find-ListObject $operator "AggregateReceived"
     $secondRow = $staging.ListRows.Add()
     Set-TableValue $staging 2 "REF_NUMBER" "RETURN-SECOND"

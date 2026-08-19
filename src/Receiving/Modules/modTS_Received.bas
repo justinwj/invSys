@@ -943,6 +943,17 @@ Public Function RebuildAggregationForWorkbook(ByVal targetWb As Workbook, _
         Exit Function
     End If
     If Not aggregateTable.DataBodyRange Is Nothing Then aggregateTable.DataBodyRange.Delete
+    If Not stagingTable.DataBodyRange Is Nothing Then
+        For stagingIndex = stagingTable.ListRows.Count To 1 Step -1
+            If CellText(stagingTable, stagingIndex, "System_Key") = "" _
+               And CellText(stagingTable, stagingIndex, "ITEM_CODE") = "" _
+               And CellText(stagingTable, stagingIndex, "REF_NUMBER") = "" _
+               And CellText(stagingTable, stagingIndex, "EventId") = "" _
+               And Abs(CellNumber(stagingTable, stagingIndex, "QUANTITY")) < 0.0000001 Then
+                stagingTable.ListRows(stagingIndex).Delete
+            End If
+        Next stagingIndex
+    End If
     If stagingTable.DataBodyRange Is Nothing Then
         report = "OK|Rows=0"
         RebuildAggregationForWorkbook = True

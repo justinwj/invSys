@@ -52,7 +52,7 @@
 | src/Production/Forms/frmProduction.frm | Production | 4902 |
 | src/Production/Modules/mProduction.bas | Production | 12928 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1041 |
-| src/Receiving/Modules/modTS_Received.bas | Receiving | 1452 |
+| src/Receiving/Modules/modTS_Received.bas | Receiving | 1463 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
 

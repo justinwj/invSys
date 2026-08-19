@@ -396,6 +396,9 @@ Public Function TestReceivingReturns_StagesExistingDispositionIdentityThroughFor
     If Not modRoleWorkbookSurfaces.EnsureReceivingWorkbookSurface(wb, report) Then GoTo CleanExit
     Set inventoryTable = FindTableReceivingTest(wb, "invSys")
     Set stagingTable = FindTableReceivingTest(wb, "ReceivedTally")
+    Do While stagingTable.ListRows.Count < 2
+        stagingTable.ListRows.Add
+    Loop
     Set sourceRecord = FirstBlankOrNewReceivingTest(inventoryTable)
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "System_Key", "SYS-DISPOSITION-DAMAGED"
     SetValueReceivingTest inventoryTable, sourceRecord.Index, "ITEM_CODE", "SKU-DISPOSITION"

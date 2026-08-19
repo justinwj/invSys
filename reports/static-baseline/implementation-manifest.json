@@ -5389,7 +5389,7 @@
                            "name":  "modReceivingPostingService",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Receiving/Modules/modReceivingPostingService.bas",
-                           "lineCount":  491,
+                           "lineCount":  500,
                            "procedureNames":  [
                                                   "AppendReceivedLog",
                                                   "BuildEventNote",
@@ -5422,7 +5422,7 @@
                            "name":  "modTS_Received",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
-                           "lineCount":  1452,
+                           "lineCount":  1463,
                            "procedureNames":  [
                                                   "AppendDistinctReceivingValue",
                                                   "BuildReceivingAggregateGroupKey",
@@ -90213,13 +90213,15 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  11,
-                           "endLine":  118,
-                           "lineCount":  108,
+                           "endLine":  127,
+                           "lineCount":  117,
                            "directCalls":  [
                                                "AppendReceivedLog",
                                                "BuildReceivingQueueJson",
                                                "BuildValidatedStates",
                                                "CanCurrentUserPerformCapability",
+                                               "CellNumber",
+                                               "CellText",
                                                "ClearReceivingStaging",
                                                "CurrentState",
                                                "FindTableReceivingService",
@@ -90252,8 +90254,8 @@
                            "name":  "ClearReceivingStaging",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  120,
-                           "endLine":  128,
+                           "startLine":  129,
+                           "endLine":  137,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -90273,8 +90275,8 @@
                            "name":  "ReceivingWorkflowContractProbe",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  130,
-                           "endLine":  172,
+                           "startLine":  139,
+                           "endLine":  181,
                            "lineCount":  43,
                            "directCalls":  [
                                                "CurrentState",
@@ -90303,8 +90305,8 @@
                            "name":  "BuildValidatedStates",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  174,
-                           "endLine":  223,
+                           "startLine":  183,
+                           "endLine":  232,
                            "lineCount":  50,
                            "directCalls":  [
                                                "Add",
@@ -90340,8 +90342,8 @@
                            "name":  "BuildReceivingAttributesJson",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  225,
-                           "endLine":  244,
+                           "startLine":  234,
+                           "endLine":  253,
                            "lineCount":  20,
                            "directCalls":  [
                                                "CellText",
@@ -90362,8 +90364,8 @@
                            "name":  "EscapeJsonReceiving",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  246,
-                           "endLine":  253,
+                           "startLine":  255,
+                           "endLine":  262,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -90383,8 +90385,8 @@
                            "name":  "BuildReceivingQueueJson",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  255,
-                           "endLine":  266,
+                           "startLine":  264,
+                           "endLine":  275,
                            "lineCount":  12,
                            "directCalls":  [
                                                "AttributesJson",
@@ -90413,8 +90415,8 @@
                            "name":  "EventTypeForReceiptType",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  268,
-                           "endLine":  276,
+                           "startLine":  277,
+                           "endLine":  285,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -90434,8 +90436,8 @@
                            "name":  "WriteWorkflowState",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  278,
-                           "endLine":  284,
+                           "startLine":  287,
+                           "endLine":  293,
                            "lineCount":  7,
                            "directCalls":  [
                                                "CurrentState",
@@ -90458,8 +90460,8 @@
                            "name":  "WriteWorkflowStateBySystemKey",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  286,
-                           "endLine":  293,
+                           "startLine":  295,
+                           "endLine":  302,
                            "lineCount":  8,
                            "directCalls":  [
                                                "FindTableRow",
@@ -90481,8 +90483,8 @@
                            "name":  "AppendReceivedLog",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  295,
-                           "endLine":  329,
+                           "startLine":  304,
+                           "endLine":  338,
                            "lineCount":  35,
                            "directCalls":  [
                                                "CellText",
@@ -90512,8 +90514,8 @@
                            "name":  "BuildEventNote",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  331,
-                           "endLine":  352,
+                           "startLine":  340,
+                           "endLine":  361,
                            "lineCount":  22,
                            "directCalls":  [
                                                "CellText"
@@ -90533,8 +90535,8 @@
                            "name":  "FindTableReceivingService",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  354,
-                           "endLine":  369,
+                           "startLine":  363,
+                           "endLine":  378,
                            "lineCount":  16,
                            "directCalls":  [
 
@@ -90554,8 +90556,8 @@
                            "name":  "RequiredColumnsPresent",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  371,
-                           "endLine":  381,
+                           "startLine":  380,
+                           "endLine":  390,
                            "lineCount":  11,
                            "directCalls":  [
                                                "FindColumnReceivingService"
@@ -90575,8 +90577,8 @@
                            "name":  "FindColumnReceivingService",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  383,
-                           "endLine":  394,
+                           "startLine":  392,
+                           "endLine":  403,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -90596,8 +90598,8 @@
                            "name":  "CellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  396,
-                           "endLine":  407,
+                           "startLine":  405,
+                           "endLine":  416,
                            "lineCount":  12,
                            "directCalls":  [
                                                "FindColumnReceivingService"
@@ -90617,8 +90619,8 @@
                            "name":  "CellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  409,
-                           "endLine":  420,
+                           "startLine":  418,
+                           "endLine":  429,
                            "lineCount":  12,
                            "directCalls":  [
                                                "FindColumnReceivingService"
@@ -90638,8 +90640,8 @@
                            "name":  "SetCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  422,
-                           "endLine":  427,
+                           "startLine":  431,
+                           "endLine":  436,
                            "lineCount":  6,
                            "directCalls":  [
                                                "SetCellValue"
@@ -90659,8 +90661,8 @@
                            "name":  "SetCellValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  429,
-                           "endLine":  441,
+                           "startLine":  438,
+                           "endLine":  450,
                            "lineCount":  13,
                            "directCalls":  [
                                                "FindColumnReceivingService"
@@ -90680,8 +90682,8 @@
                            "name":  "FindTableRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  443,
-                           "endLine":  463,
+                           "startLine":  452,
+                           "endLine":  472,
                            "lineCount":  21,
                            "directCalls":  [
                                                "FindColumnReceivingService"
@@ -90701,8 +90703,8 @@
                            "name":  "FirstBlankOrNewRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  465,
-                           "endLine":  479,
+                           "startLine":  474,
+                           "endLine":  488,
                            "lineCount":  15,
                            "directCalls":  [
                                                "Add"
@@ -90722,8 +90724,8 @@
                            "name":  "WorkbookIsOpenReceivingService",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  481,
-                           "endLine":  491,
+                           "startLine":  490,
+                           "endLine":  500,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -91496,8 +91498,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  920,
-                           "endLine":  1015,
-                           "lineCount":  96,
+                           "endLine":  1026,
+                           "lineCount":  107,
                            "directCalls":  [
                                                "Add",
                                                "AppendDistinctReceivingValue",
@@ -91529,8 +91531,8 @@
                            "name":  "RebuildAggregation",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1017,
-                           "endLine":  1026,
+                           "startLine":  1028,
+                           "endLine":  1037,
                            "lineCount":  10,
                            "directCalls":  [
                                                "RebuildAggregationForWorkbook",
@@ -91552,8 +91554,8 @@
                            "name":  "ClearReceivingFormStagingForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1028,
-                           "endLine":  1035,
+                           "startLine":  1039,
+                           "endLine":  1046,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ClearReceivingStaging",
@@ -91574,8 +91576,8 @@
                            "name":  "ClearReceivingFormStaging",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1037,
-                           "endLine":  1043,
+                           "startLine":  1048,
+                           "endLine":  1054,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ClearReceivingFormStagingForWorkbook",
@@ -91596,8 +91598,8 @@
                            "name":  "ConfirmWrites",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1045,
-                           "endLine":  1060,
+                           "startLine":  1056,
+                           "endLine":  1071,
                            "lineCount":  16,
                            "directCalls":  [
                                                "ExecuteConfirmWrites",
@@ -91619,8 +91621,8 @@
                            "name":  "RecordConfirmWritesResult",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1062,
-                           "endLine":  1065,
+                           "startLine":  1073,
+                           "endLine":  1076,
                            "lineCount":  4,
                            "directCalls":  [
                                                "Succeeded"
@@ -91640,8 +91642,8 @@
                            "name":  "LastConfirmWritesSucceeded",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1067,
-                           "endLine":  1069,
+                           "startLine":  1078,
+                           "endLine":  1080,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -91661,8 +91663,8 @@
                            "name":  "LastConfirmWritesStatus",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1071,
-                           "endLine":  1073,
+                           "startLine":  1082,
+                           "endLine":  1084,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -91682,8 +91684,8 @@
                            "name":  "ShowReceivingDynamicItemSearch",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1075,
-                           "endLine":  1077,
+                           "startLine":  1086,
+                           "endLine":  1088,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -91703,8 +91705,8 @@
                            "name":  "HandleReceivingSelectionChange",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1079,
-                           "endLine":  1081,
+                           "startLine":  1090,
+                           "endLine":  1092,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -91724,8 +91726,8 @@
                            "name":  "HandleReceivingSheetChange",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1083,
-                           "endLine":  1106,
+                           "startLine":  1094,
+                           "endLine":  1117,
                            "lineCount":  24,
                            "directCalls":  [
                                                "NzDbl",
@@ -91746,8 +91748,8 @@
                            "name":  "SyncQuantityFromStaging",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  1108,
-                           "endLine":  1119,
+                           "startLine":  1119,
+                           "endLine":  1130,
                            "lineCount":  12,
                            "directCalls":  [
                                                "FindTable",
@@ -91769,8 +91771,8 @@
                            "name":  "NzDbl",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1121,
-                           "endLine":  1124,
+                           "startLine":  1132,
+                           "endLine":  1135,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -91790,8 +91792,8 @@
                            "name":  "PopulateAggregateRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1126,
-                           "endLine":  1167,
+                           "startLine":  1137,
+                           "endLine":  1178,
                            "lineCount":  42,
                            "directCalls":  [
                                                "CellText",
@@ -91817,8 +91819,8 @@
                            "name":  "FindExistingStagingRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1169,
-                           "endLine":  1199,
+                           "startLine":  1180,
+                           "endLine":  1210,
                            "lineCount":  31,
                            "directCalls":  [
                                                "CellText",
@@ -91840,8 +91842,8 @@
                            "name":  "NormalizeReceivingCondition",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1201,
-                           "endLine":  1208,
+                           "startLine":  1212,
+                           "endLine":  1219,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ConditionValue"
@@ -91861,8 +91863,8 @@
                            "name":  "ReceivingInventoryLotNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1210,
-                           "endLine":  1217,
+                           "startLine":  1221,
+                           "endLine":  1228,
                            "lineCount":  8,
                            "directCalls":  [
                                                "CellText",
@@ -91884,8 +91886,8 @@
                            "name":  "ExtractReceivingJsonString",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1219,
-                           "endLine":  1238,
+                           "startLine":  1230,
+                           "endLine":  1249,
                            "lineCount":  20,
                            "directCalls":  [
 
@@ -91905,8 +91907,8 @@
                            "name":  "BuildReceivingAggregateGroupKey",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1240,
-                           "endLine":  1253,
+                           "startLine":  1251,
+                           "endLine":  1264,
                            "lineCount":  14,
                            "directCalls":  [
                                                "ConditionValue",
@@ -91927,8 +91929,8 @@
                            "name":  "AppendDistinctReceivingValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1255,
-                           "endLine":  1276,
+                           "startLine":  1266,
+                           "endLine":  1287,
                            "lineCount":  22,
                            "directCalls":  [
 
@@ -91948,8 +91950,8 @@
                            "name":  "ResolveReceivingWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1278,
-                           "endLine":  1285,
+                           "startLine":  1289,
+                           "endLine":  1296,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -91969,8 +91971,8 @@
                            "name":  "WorkbookSheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1287,
-                           "endLine":  1293,
+                           "startLine":  1298,
+                           "endLine":  1304,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -91990,8 +91992,8 @@
                            "name":  "FindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1295,
-                           "endLine":  1306,
+                           "startLine":  1306,
+                           "endLine":  1317,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -92011,8 +92013,8 @@
                            "name":  "FindTableRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1308,
-                           "endLine":  1324,
+                           "startLine":  1319,
+                           "endLine":  1335,
                            "lineCount":  17,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -92032,8 +92034,8 @@
                            "name":  "FirstBlankOrNewRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1326,
-                           "endLine":  1345,
+                           "startLine":  1337,
+                           "endLine":  1356,
                            "lineCount":  20,
                            "directCalls":  [
                                                "Add"
@@ -92053,8 +92055,8 @@
                            "name":  "ColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1347,
-                           "endLine":  1358,
+                           "startLine":  1358,
+                           "endLine":  1369,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -92074,8 +92076,8 @@
                            "name":  "CellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1360,
-                           "endLine":  1371,
+                           "startLine":  1371,
+                           "endLine":  1382,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -92095,8 +92097,8 @@
                            "name":  "CellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1373,
-                           "endLine":  1380,
+                           "startLine":  1384,
+                           "endLine":  1391,
                            "lineCount":  8,
                            "directCalls":  [
                                                "CellText"
@@ -92116,8 +92118,8 @@
                            "name":  "SetCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1382,
-                           "endLine":  1387,
+                           "startLine":  1393,
+                           "endLine":  1398,
                            "lineCount":  6,
                            "directCalls":  [
                                                "SetCellValue"
@@ -92137,8 +92139,8 @@
                            "name":  "SetCellValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1389,
-                           "endLine":  1401,
+                           "startLine":  1400,
+                           "endLine":  1412,
                            "lineCount":  13,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -92158,8 +92160,8 @@
                            "name":  "CanHideWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1403,
-                           "endLine":  1412,
+                           "startLine":  1414,
+                           "endLine":  1423,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -92179,8 +92181,8 @@
                            "name":  "EnsureReceivingButtons",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1414,
-                           "endLine":  1436,
+                           "startLine":  1425,
+                           "endLine":  1447,
                            "lineCount":  23,
                            "directCalls":  [
                                                "DeleteReceivingActionButton"
@@ -92200,8 +92202,8 @@
                            "name":  "DeleteReceivingActionButton",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1438,
-                           "endLine":  1443,
+                           "startLine":  1449,
+                           "endLine":  1454,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -92221,8 +92223,8 @@
                            "name":  "ShowReceivingMessage",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1445,
-                           "endLine":  1452,
+                           "startLine":  1456,
+                           "endLine":  1463,
                            "lineCount":  8,
                            "directCalls":  [
                                                "QuietUiIsActive"
