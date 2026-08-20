@@ -2466,6 +2466,9 @@ End Function
 
 Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber As Long, Optional ByRef report As String = "") As Boolean
     Dim completionStep As String
+    Dim quietStarted As Boolean
+    Dim failureNumber As Long
+    Dim failureDescription As String
 
     On Error GoTo ErrHandler
 
@@ -2525,8 +2528,12 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
 
     completionStep = "executing the typed Production completion service"
     Dim completionResult As cProductionCompletionResult
+    modUiQuiet.BeginQuietUi wsProd.Parent
+    quietStarted = True
     Set completionResult = modProductionCompletionService.ExecuteProductionSession( _
         wsProd.Parent, productionSession, errNotes)
+    modUiQuiet.EndQuietUi
+    quietStarted = False
 
     completionStep = "restoring completed output values after inventory refresh"
     RestoreProductionOutputCompletionValues loOut, pendingOutputValues
@@ -2556,11 +2563,18 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
     CompleteProductionRunAfterCheckInForOutput = True
     report = "ConsumeEvent=" & consumeEventId & "; CompleteEvent=" & completeEventId
     If errNotes <> "" Then report = report & "; " & errNotes
+    report = report & vbCrLf & _
+             "Persistence summary: Production inbox events saved; processor durability saves retained."
     Exit Function
 
 ErrHandler:
+    failureNumber = Err.Number
+    failureDescription = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
     report = "CompleteProductionRunAfterCheckInForOutput failed while " & completionStep & _
-        ": " & CStr(Err.Number) & " - " & Err.Description
+        ": " & CStr(failureNumber) & " - " & failureDescription
 End Function
 
 Public Function CompleteProductionRunAfterCheckInForOutputResult(ByVal outputRowNumber As Long) As String

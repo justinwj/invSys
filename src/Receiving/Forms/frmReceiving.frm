@@ -716,7 +716,7 @@ Private Sub mBtnConfirm_Click()
         mTxtRef.Value = ""
         mTxtReceiptId.Value = DefaultReceiptId()
         RefreshAllViews
-        statusMessage = "Confirm Writes finished; staged receiving rows cleared."
+        statusMessage = "Confirm Writes finished; staged receiving rows cleared." & vbCrLf & report
     Else
         RefreshAllViews
         statusMessage = "Confirm Writes did not complete; staged receiving rows were kept. " & report

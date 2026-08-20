@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-20T19:24:08Z",
+    "generatedAtUtc":  "2026-08-20T19:53:07Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "1cbf82e7bc5afc687b7badebe6d57295dbe98fc4d3752b9e08bf1b1b62abffc1",
-                          "maintenanceCandidatesSha256":  "711cbde90ab870532a6b12b89cffe66e76b0b6695d1a7608177f04e1b483afa0"
+                          "implementationManifestSha256":  "916237ec91a340091f3073a8206cae2eb2a7b44e48a466a5c087e6242aac87d1",
+                          "maintenanceCandidatesSha256":  "2a8616ef122f461033896505fc08cb71dcd608e075e197692a077255b4cb0588"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -147,7 +147,7 @@
                                                   "sourcePath":  "src/Core/Modules/modOperatorReadModel.bas",
                                                   "componentName":  "modOperatorReadModel",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1917,
+                                                  "baselineLineCount":  1909,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  12928,
+                                                  "baselineLineCount":  12942,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -10278,6 +10278,7 @@
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -13395,6 +13396,7 @@
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -18450,6 +18452,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
@@ -19953,6 +19956,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],

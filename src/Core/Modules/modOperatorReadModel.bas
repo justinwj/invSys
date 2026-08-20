@@ -438,7 +438,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     Dim batchMs As Long
     Dim surfaceMs As Long
     Dim refreshMs As Long
-    Dim publishReport As String
     Dim stagingReport As String
     Dim stagingStationId As String
 
@@ -483,12 +482,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
         GoTo CleanExit
     End If
     queuedWorkHandled = BatchReportHandledQueuedRowsReadModel(processedCount, batchReport)
-    If processedCount > 0 Then
-        If Not modInventoryDomainBridge.PublishInventorySnapshotBridge(resolvedWarehouseId, Nothing, publishReport) Then
-            If publishReport = "" Then publishReport = "Snapshot publish failed."
-        End If
-    End If
-
     segmentTimer = Timer
     If FindListObjectReadModel(wb, TABLE_INVSYS) Is Nothing _
        And FindListObjectReadModel(wb, "invSysData_Shipping") Is Nothing _
@@ -509,7 +502,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     If PerfIsTransactionActiveSafeReadModel() Then MarkSegmentSafeReadModel "LocalReadModelRefresh"
 
     report = "Processed=" & CStr(processedCount) & "; StagingReport=" & stagingReport & "; BatchReport=" & batchReport
-    If publishReport <> "" Then report = report & "; PublishWarning=" & publishReport
     report = report & "; RefreshReport=" & refreshReport & "; " & _
              FormatRuntimeTimingReadModel(ElapsedMillisecondsReadModel(totalTimer), batchMs, surfaceMs, refreshMs)
     LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefresh|Workbook=" & wb.Name & "|WarehouseId=" & resolvedWarehouseId & "|Processed=" & CStr(processedCount) & "|StagingReport=" & stagingReport & "|BatchReport=" & batchReport & "|RefreshReport=" & refreshReport & "|TotalMs=" & CStr(ElapsedMillisecondsReadModel(totalTimer)) & "|BatchMs=" & CStr(batchMs) & "|SurfaceMs=" & CStr(surfaceMs) & "|RefreshMs=" & CStr(refreshMs)

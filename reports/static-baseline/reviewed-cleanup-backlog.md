@@ -1,7 +1,7 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-20T19:24:08Z
+- Baseline: 2026-08-20T19:53:07Z
 - Scanner candidates: 964
 - Reviewed candidates: 966
 - Approved deletions: 0
@@ -40,7 +40,7 @@
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
-| src/Core/Modules/modOperatorReadModel.bas | Core | 1917 |
+| src/Core/Modules/modOperatorReadModel.bas | Core | 1909 |
 | src/Core/Modules/modProcessor.bas | Core | 1450 |
 | src/Core/Modules/modRoleEventWriter.bas | Core | 3029 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
@@ -50,7 +50,7 @@
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2423 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 4902 |
-| src/Production/Modules/mProduction.bas | Production | 12928 |
+| src/Production/Modules/mProduction.bas | Production | 12942 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1132 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3014 |

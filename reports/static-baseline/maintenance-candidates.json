@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-20T19:24:08Z",
+    "generatedAtUtc":  "2026-08-20T19:53:07Z",
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4702,
-                     "lineCount":  103381,
+                     "lineCount":  103399,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -8722,6 +8722,7 @@
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -9708,6 +9709,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "reviewRequired":  true
@@ -10458,6 +10460,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
@@ -15200,6 +15203,7 @@
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",

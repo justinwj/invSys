@@ -1,7 +1,7 @@
 # invSys VBA Maintenance Candidates
 
 - Schema: 1.0.0
-- Generated: 2026-08-20T19:24:08Z
+- Generated: 2026-08-20T19:53:07Z
 - Total candidates: 964
 - Duplicate-body groups: 184
 - Unresolved dynamic calls: 47

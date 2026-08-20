@@ -24,6 +24,7 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
     Dim runtimeReport As String
     Dim queuedWorkHandled As Boolean
     Dim queuedCount As Long
+    Dim persistenceSummary As String
 
     If operatorWb Is Nothing Then
         report = "Receiving operator workbook was not provided."
@@ -119,6 +120,17 @@ Public Function ExecuteConfirmWrites(ByVal operatorWb As Workbook, _
     report = "OK|State=READY|Lines=" & CStr(states.Count) & _
              "|Queued=" & CStr(queuedCount) & _
              "|ProcessorApplied=True|SnapshotRefreshed=True|StagingCleared=True"
+    If queuedCount > 0 Then
+        persistenceSummary = "receiving inbox batch saved"
+    Else
+        persistenceSummary = "previously submitted receiving inbox retained"
+    End If
+    If queuedWorkHandled Then
+        persistenceSummary = persistenceSummary & "; processor durability saves retained"
+    Else
+        persistenceSummary = persistenceSummary & "; no new processor write required"
+    End If
+    report = report & vbCrLf & "Persistence summary: " & persistenceSummary & "."
     ExecuteConfirmWrites = True
     Exit Function
 
