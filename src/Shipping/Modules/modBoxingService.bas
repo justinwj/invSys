@@ -64,6 +64,11 @@ Public Function SaveBoxDesign(ByVal operatorWb As Workbook, _
                               ByVal versionLabel As String, _
                               ByVal statusText As String, _
                               ByRef report As String) As Boolean
+    On Error GoTo Fail
+
+    Dim quietStarted As Boolean
+    Dim failureReason As String
+
     If operatorWb Is Nothing Then
         report = "The captured Shipping operator workbook was not provided."
         Exit Function
@@ -77,11 +82,23 @@ Public Function SaveBoxDesign(ByVal operatorWb As Workbook, _
         Exit Function
     End If
 
+    modUiQuiet.BeginQuietUi operatorWb
+    quietStarted = True
     modTS_Shipments.CommitBoxBuilderFormState _
         boxName, boxUom, boxLocation, boxDescription, componentRows, _
         saveAction, versionLabel, statusText, operatorWb
+    modUiQuiet.EndQuietUi
+    quietStarted = False
     report = "Box design action completed."
     SaveBoxDesign = True
+    Exit Function
+
+Fail:
+    failureReason = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    report = "Box design action failed: " & failureReason
 End Function
 
 Public Function DeleteBoxDesignVersion(ByVal operatorWb As Workbook, _
@@ -142,7 +159,11 @@ Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
                                    ByVal componentRows As Variant, _
                                    ByVal actionText As String, _
                                    ByRef report As String) As Boolean
+    On Error GoTo Fail
+
     Dim syncCompleted As Boolean
+    Dim quietStarted As Boolean
+    Dim failureReason As String
 
     If operatorWb Is Nothing Then
         report = "The captured Shipping operator workbook was not provided."
@@ -152,10 +173,22 @@ Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
         report = "SHIP_POST capability is required."
         Exit Function
     End If
+    modUiQuiet.BeginQuietUi operatorWb
+    quietStarted = True
     PostBoxMakerAction = modTS_Shipments.CommitBoxMakerFormAction( _
         packageSystemKey, boxName, boxUom, boxLocation, boxDescription, _
         versionLabel, boxQty, componentRows, report, actionText, _
         syncCompleted, Empty, operatorWb)
+    modUiQuiet.EndQuietUi
+    quietStarted = False
+    Exit Function
+
+Fail:
+    failureReason = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    report = "Box Maker action failed: " & failureReason
 End Function
 
 Public Function RunRelease1BoxingActionForTest(ByVal operatorWb As Workbook, _

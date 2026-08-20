@@ -1,23 +1,21 @@
 # Phase 6 Visible Packaged Validation Results
 
-- Date: 2026-03-22 11:21:55
+- Date: 2026-08-20 01:26:20
 - Deploy root: C:\Users\Justin\repos\invSys_fork\deploy\current
-- Runtime root override: C:\Users\Justin\AppData\Local\Temp\invsys-phase6-visible-b00bf87421ba4ec78a14f8bb9d4f6566
+- Runtime root override: C:\Users\Justin\AppData\Local\Temp\invsys-phase6-visible-b317c99520ee4a0d8cc535df56f164f2
 - Excel visible: true
-- Pause seconds per workbook: 1
-- Passed: 37
-- Failed: 0
+- Pause seconds per workbook: 0
+- Passed: 32
+- Failed: 2
 
 | Check | Result | Detail |
 |---|---|---|
 | invSys.Core.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Core.xlam |
 | invSys.Inventory.Domain.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Inventory.Domain.xlam |
 | invSys.Designs.Domain.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Designs.Domain.xlam |
-| invSys.Receiving.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Receiving.xlam |
-| invSys.Shipping.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Shipping.xlam |
-| invSys.Production.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Production.xlam |
+| invSys.Operations.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Operations.xlam |
 | invSys.Admin.xlam.Open | PASS | Opened from C:\Users\Justin\repos\invSys_fork\deploy\current\invSys.Admin.xlam |
-| Core.RuntimeRootOverride | PASS | C:\Users\Justin\AppData\Local\Temp\invsys-phase6-visible-b00bf87421ba4ec78a14f8bb9d4f6566 |
+| Core.RuntimeRootOverride | PASS | C:\Users\Justin\AppData\Local\Temp\invsys-phase6-visible-b317c99520ee4a0d8cc535df56f164f2 |
 | Receiving.RevealWorkbook | PASS | IsAddin=False for visible inspection. |
 | Receiving.SafeMacro | PASS | modTS_Received.EnsureGeneratedButtons |
 | Receiving.Sheet.ReceivedTally | PASS | ReceivedTally |
@@ -27,9 +25,8 @@
 | Shipping.RevealWorkbook | PASS | IsAddin=False for visible inspection. |
 | Shipping.SafeMacro | PASS | modTS_Shipments.InitializeShipmentsUI |
 | Shipping.Sheet.ShipmentsTally | PASS | ShipmentsTally |
-| Shipping.Sheet.ShippingBOM | PASS | ShippingBOM |
-| Shipping.Sheet.AggregateBoxBOM_Log | PASS | AggregateBoxBOM_Log |
-| Shipping.Sheet.AggregatePackages_Log | PASS | AggregatePackages_Log |
+| Shipping.Sheet.AggregateBoxBOM_Log | FAIL | AggregateBoxBOM_Log |
+| Shipping.Sheet.AggregatePackages_Log | FAIL | AggregatePackages_Log |
 | Shipping.Activate.ShipmentsTally | PASS | Activated for visible inspection. |
 | Production.RevealWorkbook | PASS | IsAddin=False for visible inspection. |
 | Production.SafeMacro | PASS | mProduction.InitializeProductionUI |

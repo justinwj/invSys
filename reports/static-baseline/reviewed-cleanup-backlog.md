@@ -53,8 +53,8 @@
 | src/Production/Modules/mProduction.bas | Production | 12928 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1132 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
-| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2988 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22165 |
+| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2998 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22289 |
 
 ## Reviewed candidates
 
@@ -884,7 +884,7 @@
 | duplicate:f2f565dab8ad2067:FormatBoxMakerQuantityText+FormatQuantity | SHIPPING | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Shipping_Forms_frmShipmentsTally.frm:frmShipmentsTally | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildSelectedShipmentRowsDeltas | SHIPPING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BuildSelectedShipmentRowsDeltas | SHIPPING | SPLIT_MODULE | MEDIUM | PLANNED |
 | procedure-size:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.ShipmentsFormCommitLine | SHIPPING | SPLIT_MODULE | MEDIUM | PLANNED |
 | reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_NewWorkbook | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Shipping_ClassModules_cShippingAppEvents.cls:cShippingAppEvents.App_SheetActivate | SHIPPING | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |

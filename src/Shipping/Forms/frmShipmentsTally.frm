@@ -1529,6 +1529,8 @@ Private Sub CommitCurrentLine(ByVal actionName As String)
     Dim displayedAvailableQty As String
     Dim displayedNasQty As String
     Dim operatorWb As Workbook
+    Dim quietStarted As Boolean
+    Dim failureReason As String
     Dim startedAt As Single
     Dim elapsedMs As Long
 
@@ -1549,6 +1551,8 @@ Private Sub CommitCurrentLine(ByVal actionName As String)
     displayedAvailableQty = SelectedShippableProjectedInventoryText()
     displayedNasQty = SelectedShippableNasInventoryText()
     Set operatorWb = ResolveOperatorWorkbook()
+    modUiQuiet.BeginQuietUi operatorWb
+    quietStarted = True
     TLap "CommitCurrentLine resolved selected row/operator"
     ok = modTS_Shipments.ShipmentsFormCommitLine("SHIP", _
                                                  actionName, _
@@ -1571,10 +1575,16 @@ Private Sub CommitCurrentLine(ByVal actionName As String)
     report = AppendTiming(report, elapsedMs)
     If TimingSummary() <> "" Then report = report & vbCrLf & TimingSummary()
     RefreshAfterAction report, ok
+    modUiQuiet.EndQuietUi
+    quietStarted = False
     Exit Sub
 
 FailSoft:
-    ShowStatus "Shipment row action failed: " & Err.Description
+    failureReason = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    ShowStatus "Shipment row action failed: " & failureReason
 End Sub
 
 Private Function SelectedShippableNasInventoryText() As String

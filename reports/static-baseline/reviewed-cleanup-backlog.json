@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "c2c9f1568936704ad7f625ae15c10d8a03a14fb2dcc0c83438fd1f52d5f9d3c2",
-                          "maintenanceCandidatesSha256":  "20d2d5e9592540889eeedffa086749e1f5a178bcd33fea8c754612ad190a5964"
+                          "implementationManifestSha256":  "b192a254a31a95413fbb3cd93f500e9d50e801d9b28e896e5bf7ccfd227fe674",
+                          "maintenanceCandidatesSha256":  "e1193ab3d304cb989a5b874ebe5ad7f56c0971b470e61e84562c6815f33953b6"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -238,14 +238,14 @@
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  2988,
+                                                  "baselineLineCount":  2998,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  22165,
+                                                  "baselineLineCount":  22289,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -22408,6 +22408,7 @@
                                                   "ApplyItemToBoxBuilder",
                                                   "ApplyMadeDeltasLocal",
                                                   "ApplyMadeToInventoryDeltasLocal",
+                                                  "ApplyShipmentDeltasBySystemKey",
                                                   "ApplyShipmentDeltasLocal",
                                                   "ApplyShipmentNasOverrideToInvRow",
                                                   "ApplyShipmentQtyDeltaBySystemKey",
@@ -23100,7 +23101,7 @@
                            "disposition":  "SPLIT_MODULE",
                            "scannerConfidence":  "MEDIUM",
                            "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "reviewStatus":  "PLANNED",
                            "workstream":  "SHIPPING",
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
@@ -23111,7 +23112,7 @@
                                            ],
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4sShippingExactKey.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
@@ -23134,6 +23135,7 @@
                                            ],
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4sShippingExactKey.ps1",
                                                    "tests/tooling/Test-R1FinalControlAcceptance.ps1"
                                                ],
                            "deletionApproved":  false,

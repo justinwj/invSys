@@ -4320,6 +4320,8 @@ Private Function BuildCanonicalRuntimeInventoryPickerItems(ByVal wbInv As Workbo
     Dim cEntitySku As Long
     Dim cQty As Long
     Dim cEntityLoc As Long
+    Dim availableQty As Double
+    Dim seenSystemKeys As Object
 
     If wbInv Is Nothing Then Exit Function
     Set loCatalog = FindListObjectByNameShipping(wbInv, "tblSkuCatalog")
@@ -4338,6 +4340,9 @@ Private Function BuildCanonicalRuntimeInventoryPickerItems(ByVal wbInv As Workbo
     cQty = ColumnIndex(loEntities, "QtyOnHand")
     cEntityLoc = ColumnIndex(loEntities, "Location")
     If cCatalogSku = 0 Or cItem = 0 Or cSystemKey = 0 Or cEntitySku = 0 Then Exit Function
+
+    Set seenSystemKeys = CreateObject("Scripting.Dictionary")
+    seenSystemKeys.CompareMode = vbTextCompare
 
     Set catalogBySku = CreateObject("Scripting.Dictionary")
     catalogBySku.CompareMode = vbTextCompare
@@ -4366,6 +4371,11 @@ Private Function BuildCanonicalRuntimeInventoryPickerItems(ByVal wbInv As Workbo
         systemKey = Trim$(NzStr(entityRows(r, cSystemKey)))
         sku = Trim$(NzStr(entityRows(r, cEntitySku)))
         If systemKey = "" Or sku = "" Then GoTo NextEntity
+        availableQty = 0#
+        If cQty > 0 Then availableQty = NzDbl(entityRows(r, cQty))
+        If availableQty <= 0 Then GoTo NextEntity
+        If seenSystemKeys.Exists(systemKey) Then GoTo NextEntity
+        seenSystemKeys.Add systemKey, True
         If catalogBySku.Exists(sku) Then
             metadata = catalogBySku(sku)
         Else
@@ -4381,7 +4391,7 @@ Private Function BuildCanonicalRuntimeInventoryPickerItems(ByVal wbInv As Workbo
         If locationValue = "" Then locationValue = metadata(3)
         result(outRow, 5) = locationValue
         result(outRow, 6) = metadata(4)
-        If cQty > 0 Then result(outRow, 7) = NzDbl(entityRows(r, cQty))
+        result(outRow, 7) = availableQty
 NextEntity:
     Next r
 
@@ -13583,6 +13593,9 @@ Private Function BuildShippingInventoryPickerItems(ByVal lo As ListObject) As Va
     Dim c As Long
     Dim outRow As Long
     Dim itemName As String
+    Dim systemKey As String
+    Dim availableQty As Double
+    Dim seenSystemKeys As Object
 
     If lo Is Nothing Then Exit Function
     If lo.DataBodyRange Is Nothing Then Exit Function
@@ -13596,24 +13609,33 @@ Private Function BuildShippingInventoryPickerItems(ByVal lo As ListObject) As Va
     cTotalInv = ColumnIndex(lo, "TOTAL INV")
     If cSystemKey = 0 Or cItem = 0 Then Exit Function
 
+    Set seenSystemKeys = CreateObject("Scripting.Dictionary")
+    seenSystemKeys.CompareMode = vbTextCompare
+
     src = To2DArrayShipping(lo.DataBodyRange.Value)
     ReDim result(1 To UBound(src, 1), 1 To 7)
     For r = 1 To UBound(src, 1)
+        systemKey = Trim$(NzStr(src(r, cSystemKey)))
         itemName = Trim$(NzStr(src(r, cItem)))
-        If itemName <> "" Then
-            outRow = outRow + 1
-            result(outRow, 1) = NzStr(src(r, cSystemKey))
-            If cCode > 0 Then
-                result(outRow, 2) = NzStr(src(r, cCode))
-            Else
-                result(outRow, 2) = itemName
-            End If
-            result(outRow, 3) = itemName
-            If cUom > 0 Then result(outRow, 4) = NzStr(src(r, cUom))
-            If cLoc > 0 Then result(outRow, 5) = NzStr(src(r, cLoc))
-            If cDesc > 0 Then result(outRow, 6) = NzStr(src(r, cDesc))
-            If cTotalInv > 0 Then result(outRow, 7) = NzDbl(src(r, cTotalInv)) Else result(outRow, 7) = ""
+        availableQty = 0#
+        If cTotalInv > 0 Then availableQty = NzDbl(src(r, cTotalInv))
+        If systemKey = "" Or itemName = "" Then GoTo NextPickerRow
+        If availableQty <= 0 Then GoTo NextPickerRow
+        If seenSystemKeys.Exists(systemKey) Then GoTo NextPickerRow
+        seenSystemKeys.Add systemKey, True
+        outRow = outRow + 1
+        result(outRow, 1) = systemKey
+        If cCode > 0 Then
+            result(outRow, 2) = NzStr(src(r, cCode))
+        Else
+            result(outRow, 2) = itemName
         End If
+        result(outRow, 3) = itemName
+        If cUom > 0 Then result(outRow, 4) = NzStr(src(r, cUom))
+        If cLoc > 0 Then result(outRow, 5) = NzStr(src(r, cLoc))
+        If cDesc > 0 Then result(outRow, 6) = NzStr(src(r, cDesc))
+        result(outRow, 7) = availableQty
+NextPickerRow:
     Next r
 
     If outRow = 0 Then Exit Function
@@ -21261,7 +21283,11 @@ Private Function ApplyShipmentDeltasLocal(invLo As ListObject, deltas As Collect
     Dim colShip As Long: colShip = ColumnIndex(invLo, "SHIPMENTS")
     Dim colRow As Long: colRow = ColumnIndex(invLo, "ROW")
     Dim colLastEdited As Long: colLastEdited = ColumnIndex(invLo, "LAST EDITED")
-    If colTotal = 0 Or colShip = 0 Or colRow = 0 Then
+    If colRow = 0 Then
+        ApplyShipmentDeltasLocal = ApplyShipmentDeltasBySystemKey(invLo, deltas, errNotes)
+        Exit Function
+    End If
+    If colTotal = 0 Or colShip = 0 Then
         errNotes = "invSys table missing TOTAL INV/SHIPMENTS/ROW columns."
         ApplyShipmentDeltasLocal = -1
         Exit Function
@@ -21318,6 +21344,104 @@ NextValidate:
         ApplyShipmentDeltasLocal = ApplyShipmentDeltasLocal + qtyVal
 NextApply:
     Next delta
+End Function
+
+Private Function ApplyShipmentDeltasBySystemKey(ByVal invLo As ListObject, _
+                                                 ByVal deltas As Collection, _
+                                                 ByRef errNotes As String) As Double
+    Dim colTotal As Long
+    Dim colShip As Long
+    Dim colLastEdited As Long
+    Dim requiredByKey As Object
+    Dim availableOverrideByKey As Object
+    Dim delta As Variant
+    Dim key As Variant
+    Dim systemKey As String
+    Dim qtyValue As Double
+    Dim currentTotal As Double
+    Dim currentShip As Double
+    Dim availableQty As Double
+    Dim floorQty As Double
+    Dim orderableQty As Double
+    Dim invRow As ListRow
+    Dim shipCell As Range
+
+    ApplyShipmentDeltasBySystemKey = -1
+    errNotes = ""
+    colTotal = ColumnIndex(invLo, "TOTAL INV")
+    colShip = ColumnIndex(invLo, "SHIPMENTS")
+    colLastEdited = ColumnIndex(invLo, "LAST EDITED")
+    If colTotal = 0 Or colShip = 0 Then
+        errNotes = "invSys table missing TOTAL INV/SHIPMENTS columns."
+        Exit Function
+    End If
+
+    Set requiredByKey = CreateObject("Scripting.Dictionary")
+    requiredByKey.CompareMode = vbTextCompare
+    Set availableOverrideByKey = CreateObject("Scripting.Dictionary")
+    availableOverrideByKey.CompareMode = vbTextCompare
+    For Each delta In deltas
+        If Not delta.Exists("System_Key") Then
+            errNotes = "Managed shipment reserve delta is missing System_Key."
+            Exit Function
+        End If
+        systemKey = Trim$(NzStr(delta("System_Key")))
+        qtyValue = NzDbl(delta("QTY"))
+        If systemKey = "" Or qtyValue <= 0 Then
+            errNotes = "Managed shipment reserve delta has invalid identity or quantity."
+            Exit Function
+        End If
+        If requiredByKey.Exists(systemKey) Then
+            requiredByKey(systemKey) = NzDbl(requiredByKey(systemKey)) + qtyValue
+        Else
+            requiredByKey.Add systemKey, qtyValue
+        End If
+        If delta.Exists("AVAILABLE_OVERRIDE") Then
+            If Not availableOverrideByKey.Exists(systemKey) Then _
+                availableOverrideByKey.Add systemKey, 0#
+            If NzDbl(delta("AVAILABLE_OVERRIDE")) > NzDbl(availableOverrideByKey(systemKey)) Then _
+                availableOverrideByKey(systemKey) = NzDbl(delta("AVAILABLE_OVERRIDE"))
+        End If
+    Next delta
+
+    For Each key In requiredByKey.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        If invRow Is Nothing Then
+            errNotes = "System_Key '" & CStr(key) & "' was not found in invSys."
+            Exit Function
+        End If
+        qtyValue = NzDbl(requiredByKey(key))
+        currentTotal = NzDbl(invRow.Range.Cells(1, colTotal).Value)
+        currentShip = NzDbl(invRow.Range.Cells(1, colShip).Value)
+        availableQty = currentTotal - currentShip
+        If availableQty < 0 Then availableQty = 0
+        If availableOverrideByKey.Exists(CStr(key)) Then
+            If NzDbl(availableOverrideByKey(key)) > availableQty Then _
+                availableQty = NzDbl(availableOverrideByKey(key))
+        End If
+        floorQty = ShipmentInventoryFloorQty(invLo, invRow)
+        orderableQty = availableQty - floorQty
+        If orderableQty < 0 Then orderableQty = 0
+        If qtyValue > availableQty + 0.0000001 Then
+            errNotes = "System_Key '" & CStr(key) & "' has insufficient available inventory."
+            Exit Function
+        End If
+        If qtyValue > orderableQty + 0.0000001 Then
+            errNotes = "System_Key '" & CStr(key) & "' has insufficient inventory above floor " & _
+                       Format$(floorQty, "0.###") & "."
+            Exit Function
+        End If
+    Next key
+
+    ApplyShipmentDeltasBySystemKey = 0
+    For Each key In requiredByKey.Keys
+        Set invRow = FindInvListRowBySystemKey(invLo, CStr(key))
+        qtyValue = NzDbl(requiredByKey(key))
+        Set shipCell = invRow.Range.Cells(1, colShip)
+        shipCell.Value = NzDbl(shipCell.Value) + qtyValue
+        If colLastEdited > 0 Then invRow.Range.Cells(1, colLastEdited).Value = Now
+        ApplyShipmentDeltasBySystemKey = ApplyShipmentDeltasBySystemKey + qtyValue
+    Next key
 End Function
 
 Private Function ShipmentDeltaInventoryRow(ByVal invLo As ListObject, ByVal delta As Object, ByVal rowVal As Long) As ListRow

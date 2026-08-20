@@ -606,6 +606,7 @@ try {
         "TestPhase6CoreSurfaces.TestBoxBuilderForm_InitializesWithActiveArchiveFilters",
         "TestPhase6CoreSurfaces.TestBoxMakerProjectedComponentInventory_SubtractsRequirementFromNas",
         "TestPhase6CoreSurfaces.TestShippingCommitLine_MergesPostedSameRefBoxVersionCarrier",
+        "TestPhase6CoreSurfaces.TestShippingAdd_CurrentSchemaReservesBySystemKey",
         "TestPhase6CoreSurfaces.TestShippingBoard_TwoAddsSameRefBoxVersionCarrierShowOneRow",
         "TestPhase6CoreSurfaces.TestShippingAdd_DefaultsOrderToWarehouseArea",
         "TestPhase6CoreSurfaces.TestShippingAdd_BlankCarrierRequiresCarrier",

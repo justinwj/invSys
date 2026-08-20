@@ -6,6 +6,7 @@ Private mQuietOwnerKey As String
 Private mPrevScreenUpdating As Boolean
 Private mPrevEnableEvents As Boolean
 Private mPrevDisplayAlerts As Boolean
+Private mPrevDisplayStatusBar As Boolean
 Private mPrevCalculation As XlCalculation
 
 Public Sub BeginQuietUi(Optional ByVal ownerWb As Workbook = Nothing)
@@ -14,11 +15,13 @@ Public Sub BeginQuietUi(Optional ByVal ownerWb As Workbook = Nothing)
         mPrevScreenUpdating = Application.ScreenUpdating
         mPrevEnableEvents = Application.EnableEvents
         mPrevDisplayAlerts = Application.DisplayAlerts
+        mPrevDisplayStatusBar = Application.DisplayStatusBar
         mPrevCalculation = Application.Calculation
 
         Application.ScreenUpdating = False
         Application.EnableEvents = False
         Application.DisplayAlerts = False
+        Application.DisplayStatusBar = False
         Application.Calculation = xlCalculationManual
     End If
     mQuietDepth = mQuietDepth + 1
@@ -35,6 +38,7 @@ Public Sub EndQuietUi()
     If mQuietDepth = 0 Then
         On Error Resume Next
         Application.Calculation = mPrevCalculation
+        Application.DisplayStatusBar = mPrevDisplayStatusBar
         Application.DisplayAlerts = mPrevDisplayAlerts
         Application.EnableEvents = mPrevEnableEvents
         Application.ScreenUpdating = mPrevScreenUpdating

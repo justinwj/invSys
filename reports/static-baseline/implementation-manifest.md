@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 150
-- Procedures: 4701
+- Procedures: 4702
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -604,6 +604,7 @@
 | TestShippingAdd_BlankCarrierRequiresCarrier | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_BlocksWhenFloorWouldBeBreached | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_ComposesActiveReservationWithPendingSentOverlay | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestShippingAdd_CurrentSchemaReservesBySystemKey | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_DefaultsOrderToWarehouseArea | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_MergingExistingReservedRowAppliesOnlyDelta | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestShippingAdd_MergingExistingReservedRowRepairsStaleProjectedDisplay | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |

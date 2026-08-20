@@ -10602,6 +10602,72 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestShippingAdd_CurrentSchemaReservesBySystemKey() As Long
+    Dim rootPath As String
+    Dim currentUser As String
+    Dim wbOps As Workbook
+    Dim report As String
+    Dim failureReason As String
+    Dim loInv As ListObject
+    Dim loShip As ListObject
+    Dim ok As Boolean
+    Dim inventoryRowIndex As Long
+    Dim systemKey As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_ship_add_system_key")
+    currentUser = "calvin"
+    systemKey = "SYS-SKU-EXACT-ADD"
+
+    On Error GoTo CleanFail
+    If Not PrepareShippingPostSessionForTest(rootPath, "WH-SYSKEY", "S-SYSKEY", currentUser, failureReason) Then GoTo CleanExit
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loShip = FindTableByName(wbOps, "ShipmentsTally")
+    If loInv Is Nothing Or loShip Is Nothing Then
+        failureReason = "Shipping current-schema tables were not created."
+        GoTo CleanExit
+    End If
+    If GetTableColumnIndexForTest(loInv, "ROW") <> 0 Or _
+       GetTableColumnIndexForTest(loShip, "ROW") <> 0 Then
+        failureReason = "Managed Shipping test surfaces unexpectedly exposed ROW."
+        GoTo CleanExit
+    End If
+
+    AddInvSysSeedRow loInv, 0, "SKU-EXACT-ADD", "Exact Key Box", "EA", "CLEARVIEW", 10
+    inventoryRowIndex = loInv.ListRows.Count
+    wbOps.Activate
+    ok = RunShippingCommitLineForTest( _
+        "SHIP", "ADD", 0, "REF-EXACT-ADD", "Exact Key Box", 2, systemKey, _
+        "EA", "CLEARVIEW", "v1", "UPS", report, 10, 10)
+    If Not ok Then
+        failureReason = "Current-schema Shipping Add failed: " & report
+        GoTo CleanExit
+    End If
+    If Abs(NzDblForTest(GetTableValue(loInv, inventoryRowIndex, "SHIPMENTS")) - 2#) > 0.0000001 Then
+        failureReason = "Shipping Add did not reserve 2 units on the exact System_Key inventory entity."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loShip, 1, "System_Key")), systemKey, vbBinaryCompare) <> 0 Then
+        failureReason = "The staged shipment row did not preserve the selected System_Key."
+        GoTo CleanExit
+    End If
+
+    TestShippingAdd_CurrentSchemaReservesBySystemKey = 1
+
+CleanExit:
+    CloseWorkbookIfOpen wbOps
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7210, "TestShippingAdd_CurrentSchemaReservesBySystemKey", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Public Function TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey() As Long
     Dim rootPath As String
     Dim wbInv As Workbook
@@ -11739,7 +11805,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                               ByVal refNumber As String, _
                                               ByVal itemName As String, _
                                               ByVal qtyValue As Double, _
-                                              ByVal rowValue As Long, _
+                                              ByVal systemKey As Variant, _
                                               ByVal uomValue As String, _
                                               ByVal locationValue As String, _
                                               ByVal descriptionValue As String, _
@@ -11752,8 +11818,11 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
     Dim noShippables As Variant
     Dim resultText As String
     Dim tabPos As Long
+    Dim effectiveSystemKey As String
 
     Set targetWb = ActiveWorkbook
+    effectiveSystemKey = ResolveShippingCommitSystemKeyForTest( _
+        targetWb, itemName, systemKey)
     macroName = ShippingMacroNameForTest("ShipmentsFormCommitLineTraceForTest")
     If Not targetWb Is Nothing Then targetWb.Activate
     If IsMissing(displayedAvailableQty) Then
@@ -11764,7 +11833,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -11777,7 +11846,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -11793,7 +11862,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -12362,6 +12431,39 @@ Private Function RunShippingProjectedOverlayTextForTest(ByVal packageRow As Long
     If Not targetWb Is Nothing Then targetWb.Activate
     RunShippingProjectedOverlayTextForTest = CStr(Application.Run(macroName, packageRow, versionLabel, backendText))
     If Not targetWb Is Nothing Then targetWb.Activate
+End Function
+
+Private Function ResolveShippingCommitSystemKeyForTest(ByVal targetWb As Workbook, _
+                                                        ByVal itemName As String, _
+                                                        ByVal suppliedIdentity As Variant) As String
+    Dim suppliedText As String
+    Dim loInv As ListObject
+    Dim cItem As Long
+    Dim cSystemKey As Long
+    Dim r As Long
+
+    suppliedText = Trim$(CStr(suppliedIdentity))
+    ResolveShippingCommitSystemKeyForTest = suppliedText
+    If suppliedText = "" Or Not IsNumeric(suppliedIdentity) Then Exit Function
+    If targetWb Is Nothing Then Exit Function
+
+    Set loInv = FindTableByName(targetWb, "invSys")
+    If loInv Is Nothing Then Exit Function
+    If loInv.DataBodyRange Is Nothing Then Exit Function
+    cItem = GetTableColumnIndexForTest(loInv, "ITEM")
+    cSystemKey = GetTableColumnIndexForTest(loInv, "System_Key")
+    If cItem = 0 Or cSystemKey = 0 Then Exit Function
+
+    For r = 1 To loInv.DataBodyRange.Rows.Count
+        If StrComp(Trim$(CStr(loInv.DataBodyRange.Cells(r, cItem).Value)), _
+                   Trim$(itemName), vbTextCompare) = 0 Then
+            suppliedText = Trim$(CStr(loInv.DataBodyRange.Cells(r, cSystemKey).Value))
+            If suppliedText <> "" Then
+                ResolveShippingCommitSystemKeyForTest = suppliedText
+                Exit Function
+            End If
+        End If
+    Next r
 End Function
 
 Private Function RunShippingSystemKeyProjectedOverlayTextForTest(ByVal systemKey As String, _
