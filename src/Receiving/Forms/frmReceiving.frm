@@ -54,6 +54,8 @@ Private mLblStagedTitle As MSForms.Label
 Private mLblStagedHeader As MSForms.Label
 Private mLblAggregateTitle As MSForms.Label
 Private mLblAggregateHeader As MSForms.Label
+Private mLblAggregateReferences As MSForms.Label
+Private mTxtAggregateReferences As MSForms.TextBox
 Private mLblPurchasingStub As MSForms.Label
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
@@ -297,6 +299,13 @@ Private Sub BuildLayout()
     Set mLblAggregateHeader = AddLabel("lblAggregateHeader", "", 560, 554, 420, 16, False)
     Set mLstAggregate = AddListBox("lstAggregate", 560, 572, 422, 190, 10, _
         "72 pt;54 pt;76 pt;130 pt;42 pt;50 pt;65 pt;60 pt;62 pt;120 pt")
+    Set mLblAggregateReferences = AddLabel("lblAggregateReferences", "Selected references", 560, 704, 130, 16, True)
+    Set mTxtAggregateReferences = AddTextBox("txtAggregateReferences", 560, 722, 422, 40)
+    mTxtAggregateReferences.Locked = True
+    mTxtAggregateReferences.MultiLine = True
+    mTxtAggregateReferences.WordWrap = True
+    mTxtAggregateReferences.ScrollBars = fmScrollBarsVertical
+    mTxtAggregateReferences.BackColor = &HFFFFFF
 
     Set mBtnConfirm = AddButton("btnConfirm", "Confirm Writes", 18, 780, 110, 30)
     Set mBtnClear = AddButton("btnClear", "Clear", 136, 780, 72, 30)
@@ -413,6 +422,7 @@ Private Sub ResizeReceivingLayout()
     Dim extraHeight As Double
     Dim locationTop As Double
     Dim historyTop As Double
+    Dim aggregateListH As Double
 
     margin = 18
     layoutW = MaxDoubleReceiving(RECEIVING_BASE_WIDTH - 20, Me.InsideWidth)
@@ -479,7 +489,14 @@ Private Sub ResizeReceivingLayout()
     mLstAggregate.Left = mLblAggregateTitle.Left
     mLstAggregate.Top = bottomTop
     mLstAggregate.Width = rightW
-    mLstAggregate.Height = bottomH
+    aggregateListH = MaxDoubleReceiving(86, bottomH - 60)
+    mLstAggregate.Height = aggregateListH
+    mLblAggregateReferences.Left = mLstAggregate.Left
+    mLblAggregateReferences.Top = mLstAggregate.Top + mLstAggregate.Height + 4
+    mTxtAggregateReferences.Left = mLstAggregate.Left
+    mTxtAggregateReferences.Top = mLblAggregateReferences.Top + 16
+    mTxtAggregateReferences.Width = rightW
+    mTxtAggregateReferences.Height = MaxDoubleReceiving(34, bottomH - aggregateListH - 20)
 
     buttonTop = layoutH - 72
     statusTop = layoutH - 38
@@ -567,6 +584,12 @@ Private Sub RefreshStaging()
     FillListBox mLstAggregate, _
         modTS_Received.LoadReceivingAggregateViewForWorkbook( _
             ResolveOperatorWorkbook()), 10
+    If mLstAggregate.ListCount > 0 Then
+        mLstAggregate.ListIndex = 0
+        ShowSelectedAggregateReferences
+    Else
+        ClearAggregateReferenceDetail
+    End If
     Exit Sub
 ErrHandler:
     ShowStatus "Receiving staging refresh failed: " & Err.Description
@@ -706,6 +729,11 @@ Private Sub mBtnConfirm_Click()
     Dim statusMessage As String
 
     mLastConfirmQuietActive = False
+    If mTabs.Value = 1 Then
+        ShowPersistencePending "Saving inventory dispositions to the warehouse server..."
+    Else
+        ShowPersistencePending "Saving received inventory to the warehouse server..."
+    End If
     modUiQuiet.BeginQuietUi mOperatorWorkbook
     quietStarted = True
     mLastConfirmQuietActive = modUiQuiet.QuietUiIsActive()
@@ -729,6 +757,23 @@ CleanExit:
     If quietStarted Then modUiQuiet.EndQuietUi
     On Error GoTo 0
     ShowStatus statusMessage
+End Sub
+
+Private Sub mLstAggregate_Click()
+    ShowSelectedAggregateReferences
+End Sub
+
+Private Sub ShowSelectedAggregateReferences()
+    If mTxtAggregateReferences Is Nothing Or mLstAggregate Is Nothing Then Exit Sub
+    If mLstAggregate.ListIndex < 0 Then
+        ClearAggregateReferenceDetail
+    Else
+        mTxtAggregateReferences.Text = CStr(mLstAggregate.List(mLstAggregate.ListIndex, 0))
+    End If
+End Sub
+
+Private Sub ClearAggregateReferenceDetail()
+    If Not mTxtAggregateReferences Is Nothing Then mTxtAggregateReferences.Text = vbNullString
 End Sub
 
 Private Sub mBtnClear_Click()
@@ -1101,6 +1146,12 @@ End Function
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub
     mTxtStatus.Text = messageText
+End Sub
+
+Private Sub ShowPersistencePending(ByVal messageText As String)
+    ShowStatus messageText
+    Me.Repaint
+    DoEvents
 End Sub
 
 Private Function DefaultReceiptId() As String

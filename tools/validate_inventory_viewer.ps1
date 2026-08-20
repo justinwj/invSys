@@ -67,6 +67,25 @@ try {
         -CurrentUserIds @($testUser) -CredentialHash $testPinHash
     $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
         -WarehouseId $warehouseId -SkuRows @("SKU-SHIP", "SKU-SUGAR", "SKU-COMP")
+    $inventoryLog = $inventoryWb.Worksheets.Item("InventoryLog").ListObjects.Item("tblInventoryLog")
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-RECEIVE"
+        "AppliedSeq" = 4
+        "EventType" = "RECEIVE"
+        "OccurredAtUTC" = [datetime]::UtcNow
+        "AppliedAtUTC" = [datetime]::UtcNow
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-RECEIVE"
+        "SKU" = "SKU-SHIP"
+        "QtyDelta" = 2
+        "Location" = "DOCK"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=BOL-VIEWER;Item=Viewer Shipment Item;UOM=each"
+    }
+    $inventoryWb.Save()
     $opened.Add($configWb) | Out-Null
     $opened.Add($authWb) | Out-Null
     $opened.Add($inventoryWb) | Out-Null
@@ -121,6 +140,8 @@ try {
     $filterReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerFilterForTest" `
         -Arguments @("SKU-SHIP"))
+    $eventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.CloseInventoryViewerForTest")
     $snapshotHashAfter = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
@@ -134,6 +155,10 @@ try {
         $filterReport -match '(?:^|\|)VisibleRows=1(?:\||$)' -and
         $filterReport -match '(?:^|\|)Generation=1(?:\||$)'
     $snapshotUnchanged = $snapshotHashBefore -eq $snapshotHashAfter
+    $eventsOk = $eventsReport -match '^OK\|' -and
+        $eventsReport -match '(?:^|\|)VisibleRows=1(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
 
     $facts.ConfigLoaded = $configLoaded
     $facts.AuthLoaded = $authLoaded
@@ -144,14 +169,16 @@ try {
     $facts.FirstActionRows = if ($firstOk) { 3 } else { 0 }
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
+    $facts.EventsVisibleRows = if ($eventsOk) { 1 } else { 0 }
+    $facts.EventsReadOnly = $eventsOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
 
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
-        $firstOk -and $secondReused -and $filterOk -and $snapshotUnchanged
+        $firstOk -and $secondReused -and $filterOk -and $eventsOk -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded three snapshot levels, reused one form generation, filtered locally to one row, and left the snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded inventory and one published Receipt event, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

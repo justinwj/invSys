@@ -1551,6 +1551,7 @@ Private Sub CommitCurrentLine(ByVal actionName As String)
     displayedAvailableQty = SelectedShippableProjectedInventoryText()
     displayedNasQty = SelectedShippableNasInventoryText()
     Set operatorWb = ResolveOperatorWorkbook()
+    ShowPersistencePending "Saving shipment row changes to the warehouse server..."
     modUiQuiet.BeginQuietUi operatorWb
     quietStarted = True
     TLap "CommitCurrentLine resolved selected row/operator"
@@ -1948,6 +1949,7 @@ Private Sub mBtnSend_Click()
     TLap "Shipments Sent click start"
     previousPointer = Me.MousePointer
     Me.MousePointer = fmMousePointerHourGlass
+    ShowPersistencePending "Saving shipment events and refreshing warehouse inventory..."
     modUiQuiet.BeginQuietUi mOperatorWorkbook
     quietStarted = True
     startedAt = Timer
@@ -2003,6 +2005,9 @@ Private Sub RunShippingAction(ByVal stageOnly As Boolean)
     End If
     previousPointer = Me.MousePointer
     Me.MousePointer = fmMousePointerHourGlass
+    ShowPersistencePending IIf(stageOnly, _
+        "Saving selected rows to Shipments...", _
+        "Saving shipment events and refreshing warehouse inventory...")
     modUiQuiet.BeginQuietUi ResolveOperatorWorkbook()
     quietStarted = True
     startedAt = Timer
@@ -2972,6 +2977,12 @@ Private Sub ShowStatus(ByVal message As String)
     On Error Resume Next
     mTxtStatus.SelStart = 0
     On Error GoTo 0
+End Sub
+
+Private Sub ShowPersistencePending(ByVal messageText As String)
+    ShowStatus messageText
+    Me.Repaint
+    DoEvents
 End Sub
 
 Private Function NzText(ByVal value As Variant) As String

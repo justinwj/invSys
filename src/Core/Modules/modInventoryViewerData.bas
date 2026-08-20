@@ -2,6 +2,7 @@ Attribute VB_Name = "modInventoryViewerData"
 Option Explicit
 
 Private Const SNAPSHOT_TABLE As String = "tblInventorySnapshot"
+Private Const SNAPSHOT_EVENT_TABLE As String = "tblInventoryEvents"
 
 Public Function LoadCurrentInventoryViewerData() As String
     Dim warehouseId As String
@@ -109,6 +110,125 @@ FailLoad:
     LoadCurrentInventoryViewerData = "FAIL" & vbTab & _
         "Inventory Viewer could not read the published snapshot: " & Err.Description
     Resume CleanExit
+End Function
+
+Public Function LoadCurrentInventoryEventViewerData() As String
+    Dim warehouseId As String
+    Dim snapshotName As String
+    Dim snapshotWasOpen As Boolean
+    Dim snapshotWb As Workbook
+    Dim eventTable As ListObject
+    Dim rowIndex As Long
+    Dim eventType As String
+    Dim friendlyType As String
+    Dim noteText As String
+    Dim referenceText As String
+    Dim itemText As String
+    Dim resultText As String
+    Dim visibleCount As Long
+
+    On Error GoTo FailLoad
+    If Not modAuth.IsSignedIn() Then
+        LoadCurrentInventoryEventViewerData = "FAIL" & vbTab & "Sign in to invSys before opening Inventory Viewer."
+        Exit Function
+    End If
+    warehouseId = Trim$(modNasConnection.GetCurrentTargetWarehouseId())
+    If warehouseId = "" Then
+        LoadCurrentInventoryEventViewerData = "FAIL" & vbTab & "Select a warehouse before opening Inventory Viewer."
+        Exit Function
+    End If
+
+    snapshotName = warehouseId & ".invSys.Snapshot.Inventory.xlsb"
+    snapshotWasOpen = ViewerWorkbookNameIsOpen(snapshotName)
+    Set snapshotWb = modWarehouseSync.ResolveSnapshotWorkbook(warehouseId, "", Nothing, False)
+    If snapshotWb Is Nothing Then
+        LoadCurrentInventoryEventViewerData = "FAIL" & vbTab & "No published inventory snapshot is available."
+        Exit Function
+    End If
+    Set eventTable = ViewerFindTable(snapshotWb, SNAPSHOT_EVENT_TABLE)
+    If eventTable Is Nothing Then
+        LoadCurrentInventoryEventViewerData = "FAIL" & vbTab & _
+            "The published snapshot does not yet contain the Events projection. Refresh warehouse inventory, then try again."
+        GoTo CleanExit
+    End If
+
+    resultText = "OK" & vbTab & ViewerEscape(warehouseId) & vbTab & Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbTab & "0"
+    If Not eventTable.DataBodyRange Is Nothing Then
+        For rowIndex = eventTable.ListRows.Count To 1 Step -1
+            eventType = UCase$(ViewerCellText(eventTable, rowIndex, "EventType"))
+            friendlyType = ViewerFriendlyEventType(eventType)
+            If friendlyType <> "" Then
+                noteText = ViewerCellText(eventTable, rowIndex, "Note")
+                referenceText = ViewerFirstNoteToken(noteText, Array("Reference", "Ref", "PO", "BOL", "ReceiptId", "DispositionRef"))
+                itemText = ViewerFirstNoteToken(noteText, Array("Item", "Box", "Package"))
+                If itemText = "" Then itemText = ViewerCellText(eventTable, rowIndex, "SKU")
+                visibleCount = visibleCount + 1
+                resultText = resultText & vbCrLf & _
+                    ViewerEscape(ViewerFirstNonBlank(ViewerCellText(eventTable, rowIndex, "AppliedAtUTC"), ViewerCellText(eventTable, rowIndex, "OccurredAtUTC"))) & vbTab & _
+                    ViewerEscape(friendlyType) & vbTab & ViewerEscape(referenceText) & vbTab & ViewerEscape(itemText) & vbTab & _
+                    ViewerEscape(ViewerCellText(eventTable, rowIndex, "QtyDelta")) & vbTab & vbTab & _
+                    ViewerEscape(ViewerCellText(eventTable, rowIndex, "Location")) & vbTab & _
+                    ViewerEscape(ViewerCellText(eventTable, rowIndex, "Condition")) & vbTab & _
+                    ViewerEscape(ViewerCellText(eventTable, rowIndex, "UserId")) & vbTab & ViewerEscape(noteText)
+            End If
+        Next rowIndex
+    End If
+    resultText = Replace(resultText, vbTab & "0" & vbCrLf, vbTab & CStr(visibleCount) & vbCrLf, 1, 1)
+    If visibleCount = 0 Then resultText = Left$(resultText, InStrRev(resultText, vbTab)) & CStr(visibleCount)
+    LoadCurrentInventoryEventViewerData = resultText
+
+CleanExit:
+    On Error Resume Next
+    If Not snapshotWb Is Nothing Then
+        If Not snapshotWasOpen Then snapshotWb.Close SaveChanges:=False
+    End If
+    On Error GoTo 0
+    Exit Function
+
+FailLoad:
+    LoadCurrentInventoryEventViewerData = "FAIL" & vbTab & _
+        "Inventory Viewer could not read the published Events projection: " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function ViewerFriendlyEventType(ByVal eventType As String) As String
+    Select Case UCase$(Trim$(eventType))
+        Case "RECEIVE": ViewerFriendlyEventType = "Receipt"
+        Case "RETURN": ViewerFriendlyEventType = "Return"
+        Case "DUMP": ViewerFriendlyEventType = "Dump"
+        Case "BOX_BUILD": ViewerFriendlyEventType = "Box Made"
+        Case "BOX_UNBOX": ViewerFriendlyEventType = "Box Unboxed"
+        Case "SHIP": ViewerFriendlyEventType = "Shipped"
+        Case "SHIP_RESERVE": ViewerFriendlyEventType = "Shipment Held"
+        Case "SHIP_RELEASE": ViewerFriendlyEventType = "Shipment Released"
+    End Select
+End Function
+
+Private Function ViewerFirstNoteToken(ByVal noteText As String, ByVal tokenNames As Variant) As String
+    Dim tokenName As Variant
+    For Each tokenName In tokenNames
+        ViewerFirstNoteToken = ViewerNoteToken(noteText, CStr(tokenName))
+        If ViewerFirstNoteToken <> "" Then Exit Function
+    Next tokenName
+End Function
+
+Private Function ViewerNoteToken(ByVal noteText As String, ByVal tokenName As String) As String
+    Dim parts As Variant
+    Dim part As Variant
+    Dim prefix As String
+    prefix = LCase$(Trim$(tokenName)) & "="
+    parts = Split(noteText, ";")
+    For Each part In parts
+        If LCase$(Left$(Trim$(CStr(part)), Len(prefix))) = prefix Then
+            ViewerNoteToken = Trim$(Mid$(Trim$(CStr(part)), Len(prefix) + 1))
+            Exit Function
+        End If
+    Next part
+End Function
+
+Private Function ViewerFirstNonBlank(ByVal firstValue As String, ByVal secondValue As String) As String
+    ViewerFirstNonBlank = Trim$(firstValue)
+    If ViewerFirstNonBlank = "" Then ViewerFirstNonBlank = Trim$(secondValue)
 End Function
 
 Private Function ViewerWorkbookNameIsOpen(ByVal workbookName As String) As Boolean

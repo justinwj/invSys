@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-20T19:53:07Z",
+    "generatedAtUtc":  "2026-08-20T21:48:35Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "916237ec91a340091f3073a8206cae2eb2a7b44e48a466a5c087e6242aac87d1",
-                          "maintenanceCandidatesSha256":  "2a8616ef122f461033896505fc08cb71dcd608e075e197692a077255b4cb0588"
+                          "implementationManifestSha256":  "34043eec7a388e7cf92b445817b7add90ddfd7589c866b32c2df8c01c7074d0c",
+                          "maintenanceCandidatesSha256":  "f102db8b05da4e03c15e0c3f7aae4b926b6d498e5e8df715ac085c5f8e59405f"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  964,
-                    "reviewedCandidateCount":  966,
+                    "scannerCandidateCount":  968,
+                    "reviewedCandidateCount":  970,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -22,7 +22,7 @@
     "workstreams":  [
                         {
                             "name":  "RECEIVING",
-                            "candidateCount":  33,
+                            "candidateCount":  34,
                             "reason":  "Receiving-owned forms, services, and role package source."
                         },
                         {
@@ -37,7 +37,7 @@
                         },
                         {
                             "name":  "SHARED_OPERATIONS",
-                            "candidateCount":  63,
+                            "candidateCount":  64,
                             "reason":  "Cross-role or future invSys.Operations packaging work."
                         },
                         {
@@ -57,7 +57,7 @@
                         },
                         {
                             "name":  "DEVELOPER_TOOLING",
-                            "candidateCount":  13,
+                            "candidateCount":  15,
                             "reason":  "Build, scan, report, and other developer-only tooling."
                         },
                         {
@@ -161,7 +161,7 @@
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  3029,
+                                                  "baselineLineCount":  3058,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -182,7 +182,7 @@
                                                   "sourcePath":  "src/Core/Modules/modWarehouseSync.bas",
                                                   "componentName":  "modWarehouseSync",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1696,
+                                                  "baselineLineCount":  1753,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -210,7 +210,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  4902,
+                                                  "baselineLineCount":  4913,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -224,7 +224,7 @@
                                                   "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
                                                   "componentName":  "frmReceiving",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1132,
+                                                  "baselineLineCount":  1183,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -238,14 +238,14 @@
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  3014,
+                                                  "baselineLineCount":  3025,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  22327,
+                                                  "baselineLineCount":  22440,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -9766,6 +9766,7 @@
                                                   "ApplyServerSignOutRole",
                                                   "ArchiveStagingFileRole",
                                                   "AuthStatusMessageRole",
+                                                  "BeginServerConnectionProgressRole",
                                                   "BuildInboxRowValuesRole",
                                                   "BuildPayloadJson",
                                                   "BuildPayloadJsonFromCollection",
@@ -9786,6 +9787,7 @@
                                                   "DescribeInboxPendingRows",
                                                   "DescribeLocalStagedInboxRows",
                                                   "DictionaryToJson",
+                                                  "EndServerConnectionProgressRole",
                                                   "EnsureContextResolved",
                                                   "EnsureCurrentRoleWriteAllowed",
                                                   "EnsureFolderExistsRole",
@@ -10113,6 +10115,7 @@
                                                   "EnsureLocationTotalsSync",
                                                   "EnsureOutboxSchema",
                                                   "EnsureSnapshotEntrySync",
+                                                  "EnsureSnapshotEventSchema",
                                                   "EnsureSnapshotSchema",
                                                   "EnsureTableSheetEditableSync",
                                                   "EnsureWorksheetEditableSync",
@@ -10165,6 +10168,7 @@
                                                   "TableRowIsBlankSync",
                                                   "WorkbookWasAlreadyOpenSync",
                                                   "WorksheetNameInSetSync",
+                                                  "WriteSnapshotEventRows",
                                                   "WriteSnapshotRows"
                                               ],
                            "sourcePaths":  [
@@ -13253,7 +13257,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -13807,6 +13811,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerEventsForTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "modInventoryViewer",
+                           "procedureNames":  [
+                                                  "RunInventoryViewerEventsForTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Modules/modInventoryViewer.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerFilterForTest",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -13910,6 +13937,29 @@
                            "componentName":  "frmInventoryViewer",
                            "procedureNames":  [
                                                   "mBtnRefresh_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mTabs_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "mTabs_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Operations/Forms/frmInventoryViewer.frm"
@@ -15921,6 +15971,7 @@
                                                   "SetRowValue",
                                                   "SetRunAllocationVisualState",
                                                   "SetRunLocationForActionTest",
+                                                  "ShowPersistencePending",
                                                   "ShowStatus",
                                                   "StoreRunAllocationOverride",
                                                   "StoreRunBaseQty",
@@ -19356,6 +19407,7 @@
                                                   "ApplyReceivingTab",
                                                   "BuildLayout",
                                                   "BuildReceivingHeaderCaption",
+                                                  "ClearAggregateReferenceDetail",
                                                   "CountManagedItemChoices",
                                                   "DefaultReceiptId",
                                                   "FillInventoryList",
@@ -19371,6 +19423,7 @@
                                                   "mBtnClose_Click",
                                                   "mBtnConfirm_Click",
                                                   "mBtnRefresh_Click",
+                                                  "mLstAggregate_Click",
                                                   "mLstReceiveItems_Click",
                                                   "mTabs_Change",
                                                   "mTxtItemSearch_Change",
@@ -19385,6 +19438,8 @@
                                                   "ResizeReceivingLayout",
                                                   "ResolveOperatorWorkbook",
                                                   "SetOperatorWorkbook",
+                                                  "ShowPersistencePending",
+                                                  "ShowSelectedAggregateReferences",
                                                   "ShowStatus",
                                                   "TestInitializeForWorkbook",
                                                   "TestPurchasingTabContract",
@@ -19957,6 +20012,7 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4vReceivingProductionPersistenceFeedback.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1",
                                                    "tests/tooling/Test-Slice10ReceivingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
@@ -19982,6 +20038,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Receiving_Forms_frmReceiving.frm:frmReceiving.mLstAggregate_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "RECEIVING",
+                           "componentName":  "frmReceiving",
+                           "procedureNames":  [
+                                                  "mLstAggregate_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Receiving/Forms/frmReceiving.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -21168,6 +21247,33 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:7444d28ce2f2a809:ShowPersistencePending+ShowPersistencePending+ShowPersistencePending",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "SHARED_OPERATIONS",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "ShowPersistencePending",
+                                                  "ShowPersistencePending",
+                                                  "ShowPersistencePending"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm",
+                                               "src/Receiving/Forms/frmReceiving.frm",
+                                               "src/Shipping/Forms/frmShipmentsTally.frm"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "duplicate:77c1bbac8c506d7f:AppendNote+AppendNote+AppendNoteShip",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
@@ -22336,6 +22442,7 @@
                                                   "ShippableNasSnapshot",
                                                   "ShippableRowsLoaded",
                                                   "ShouldShowShippingActionPopup",
+                                                  "ShowPersistencePending",
                                                   "ShowStatus",
                                                   "SingleSelectedListTableRow",
                                                   "TestBoxingLayoutAfterResize",
@@ -22399,6 +22506,8 @@
                                                   "AddVersionInventoryDeltaShipping",
                                                   "AllowExcelRefreshToSettle",
                                                   "AppendAggregateRowFromInventory",
+                                                  "AppendBoxDesignViewerEvents",
+                                                  "AppendHeldShipmentViewerEvents",
                                                   "AppendHistoryTokenShipping",
                                                   "AppendNote",
                                                   "AppendReadinessRows",
@@ -22737,6 +22846,7 @@
                                                   "LoadShippableVersionInventoryCore",
                                                   "LoadShippingBomPackagePickerItems",
                                                   "LoadShippingComponentPickerItems",
+                                                  "LoadShippingViewerSupplementEvents",
                                                   "LogShippingChanges",
                                                   "MarkShippingReservationRows",
                                                   "MatchingShippingBomVersion",
@@ -23024,6 +23134,8 @@
                                                   "ShippingTabbedNavigationSmokeForWorkbook",
                                                   "ShippingToTotalInv",
                                                   "ShippingVersionAvailabilityOverride",
+                                                  "ShippingViewerEscape",
+                                                  "ShippingViewerEventRow",
                                                   "ShouldIncludeBoxBuilderPackage",
                                                   "ShouldRefreshShippingBomBeforePicker",
                                                   "ShowShippingDynamicItemSearch",
@@ -25883,6 +25995,7 @@
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1",
                                                    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],

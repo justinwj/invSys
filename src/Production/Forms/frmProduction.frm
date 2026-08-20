@@ -3530,6 +3530,7 @@ Private Sub CompleteProductionRun()
 
     ApplySelectedProductionOutput
     BindOperatorWorkbookForRun
+    ShowPersistencePending "Saving the completed production run to the warehouse server..."
     completionResult = CStr(mProduction.CompleteProductionRunAfterCheckInForOutputResult(outputRowNumber))
     reportSeparator = InStr(1, completionResult, vbTab, vbBinaryCompare)
     If reportSeparator > 0 Then
@@ -4474,6 +4475,12 @@ Private Sub ShowStatus(ByVal messageText As String)
     mTxtStatus.Text = messageText
 End Sub
 
+Private Sub ShowPersistencePending(ByVal messageText As String)
+    ShowStatus messageText
+    Me.Repaint
+    DoEvents
+End Sub
+
 Private Function NzStr(ByVal value As Variant) As String
     If IsError(value) Then Exit Function
     If IsNull(value) Then Exit Function
@@ -4517,6 +4524,7 @@ Private Sub mBtnBuilderSave_Click()
     WriteRecipeHeaderFromForm
     WriteSelectedRecipeBuilderLineFromForm False
     BindOperatorWorkbookForRun
+    ShowPersistencePending "Saving the recipe to warehouse storage..."
     mProduction.BtnSaveRecipe
     RefreshRecipeLists
     RefreshBuilderLines
@@ -4537,6 +4545,7 @@ End Sub
 Private Sub mBtnBuilderFormulas_Click()
     WriteRecipeHeaderFromForm
     BindOperatorWorkbookForRun
+    ShowPersistencePending "Saving recipe formulas to warehouse storage..."
     mProduction.BtnSaveFormulas
     ShowStatus "Save Formulas completed."
 End Sub
@@ -4567,6 +4576,7 @@ Private Sub mBtnBuilderRelease_Click()
               "Production Designs") <> vbYes Then Exit Sub
 
     BindOperatorWorkbookForRun
+    ShowPersistencePending "Publishing the released recipe design..."
     releaseReport = NzStr(mProduction.ReleaseRecipeForProduction(recipeId))
     RefreshRecipeLists
     ShowStatus releaseReport
@@ -4749,6 +4759,7 @@ End Sub
 
 Private Sub mBtnAssignSave_Click()
     BindOperatorWorkbookForRun
+    ShowPersistencePending "Saving acceptable inventory assignments..."
     mProduction.BtnSavePalette
     RefreshAllowedItems
     ShowStatus "Save Assignment completed. " & NzStr(mProduction.GetPaletteSaveDiagnostic())

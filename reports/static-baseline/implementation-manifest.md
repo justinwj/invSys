@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-20T19:53:07Z
+- Generated: 2026-08-20T21:48:35Z
 - Packages: 6
 - Components: 150
-- Procedures: 4702
+- Procedures: 4729
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 47
 
@@ -227,6 +227,7 @@
 | mCmbUom_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbWarehouse_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstAggregate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstAssignIngredients_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstAssignRecipes_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstBoxBuilderDesigns_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -255,6 +256,7 @@
 | mOptArchiveRetireDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | MouseProc | WINDOWS_CALLBACK | src/Core/Modules/MouseScroll.bas |
 | mPages_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTabs_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtBoxBuilderSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtConfirmPin_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

@@ -140,6 +140,11 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
     Dim statusCode As NasStatusCode
     Dim requireNasTarget As Boolean
     Dim requireStationInbox As Boolean
+    Dim progressStarted As Boolean
+    Dim previousCursor As XlMousePointer
+    Dim previousStatusBar As Variant
+
+    On Error GoTo ConnectionError
 
     requireNasTarget = CapabilityRequiresNasTargetRole(requiredCapability)
     requireStationInbox = CapabilityRequiresStationInboxRole(requiredCapability)
@@ -149,11 +154,13 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
             Set target = modNasConnection.GetCurrentTarget()
             modRibbonRuntimeStatus.InvalidateWarehouseTargets
             modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
-            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then GoTo CleanExit
         End If
         GoTo ConnectionFailed
     End If
 
+    BeginServerConnectionProgressRole previousCursor, previousStatusBar
+    progressStarted = True
     If modNasConnection.ConnectKnownWarehouseServer(connectedRoot, statusText, True) Then
         Set target = ResolveConnectedRoleWarehouseTarget(connectedRoot, requireNasTarget, requireStationInbox, statusCode)
         modRibbonRuntimeStatus.InvalidateWarehouseTargets
@@ -165,15 +172,19 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
                    "Use Send To to choose the NAS warehouse. If it is not listed, use Admin > View Warehouses to inspect the server root.", _
                    vbExclamation, "invSys Warehouse Storage"
         End If
-        Exit Sub
+        GoTo CleanExit
     End If
 
+    If progressStarted Then
+        EndServerConnectionProgressRole previousCursor, previousStatusBar
+        progressStarted = False
+    End If
     If ShouldPromptForServerCredentialsRole(statusText) Then
         If modNasConnection.ShowWarehouseConnectionPromptForTarget(ServerCredentialPromptRole(statusText), requireStationInbox) Then
             Set target = modNasConnection.GetCurrentTarget()
             modRibbonRuntimeStatus.InvalidateWarehouseTargets
             modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
-            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then GoTo CleanExit
         End If
     End If
 
@@ -185,6 +196,28 @@ ConnectionFailed:
            "Status: " & ValueOrPlaceholderRole(statusText) & vbCrLf & vbCrLf & _
            "Use Admin/setup to add or repair the warehouse server root, then try Connect Server again.", _
            vbExclamation, "invSys Warehouse Storage"
+CleanExit:
+    If progressStarted Then EndServerConnectionProgressRole previousCursor, previousStatusBar
+    Exit Sub
+
+ConnectionError:
+    statusText = Err.Description
+    Resume ConnectionFailed
+End Sub
+
+Private Sub BeginServerConnectionProgressRole(ByRef previousCursor As XlMousePointer, _
+                                              ByRef previousStatusBar As Variant)
+    previousCursor = Application.Cursor
+    previousStatusBar = Application.StatusBar
+    Application.Cursor = xlWait
+    Application.StatusBar = "Server Sign In: connecting to warehouse storage..."
+    DoEvents
+End Sub
+
+Private Sub EndServerConnectionProgressRole(ByVal previousCursor As XlMousePointer, _
+                                            ByVal previousStatusBar As Variant)
+    Application.Cursor = previousCursor
+    Application.StatusBar = previousStatusBar
 End Sub
 
 Private Function ManualServerCredentialPromptRole() As String

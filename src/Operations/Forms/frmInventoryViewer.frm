@@ -18,6 +18,7 @@ Option Explicit
 Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
+Private WithEvents mTabs As MSForms.TabStrip
 Private mLstInventory As MSForms.ListBox
 Private mLblTitle As MSForms.Label
 Private mLblHeaders As MSForms.Label
@@ -28,6 +29,7 @@ Private mRows As Variant
 Private mBuilt As Boolean
 Private mResizeInitialized As Boolean
 Private mGeneration As Long
+Private mColumnCount As Long
 
 Private Sub UserForm_Initialize()
     BuildLayout
@@ -60,16 +62,28 @@ Public Sub SetGeneration(ByVal generation As Long)
 End Sub
 
 Public Sub RefreshInventory()
-    Dim payload As String
+    If Not mBuilt Then BuildLayout
+    mColumnCount = 6
+    LoadViewerPayload modInventoryViewerData.LoadCurrentInventoryViewerData(), "inventory level(s)"
+End Sub
+
+Public Sub RefreshEvents()
+    Dim publishedPayload As String
+    If Not mBuilt Then BuildLayout
+    mColumnCount = 10
+    publishedPayload = modInventoryViewerData.LoadCurrentInventoryEventViewerData()
+    LoadViewerPayload modInventoryViewer.LoadInventoryViewerEvents(publishedPayload), "event(s)"
+End Sub
+
+Private Sub LoadViewerPayload(ByVal payload As String, ByVal rowLabel As String)
     Dim lines As Variant
     Dim header As Variant
     Dim dataRows() As Variant
     Dim fields As Variant
     Dim rowIndex As Long
+    Dim columnIndex As Long
     Dim dataIndex As Long
 
-    If Not mBuilt Then BuildLayout
-    payload = modInventoryViewerData.LoadCurrentInventoryViewerData()
     lines = Split(payload, vbCrLf)
     header = Split(CStr(lines(0)), vbTab)
     If UBound(header) < 1 Or StrComp(CStr(header(0)), "OK", vbTextCompare) <> 0 Then
@@ -84,18 +98,15 @@ Public Sub RefreshInventory()
     End If
 
     If UBound(lines) >= 1 Then
-        ReDim dataRows(1 To UBound(lines), 1 To 6)
+        ReDim dataRows(1 To UBound(lines), 1 To mColumnCount)
         For rowIndex = 1 To UBound(lines)
             If Trim$(CStr(lines(rowIndex))) <> "" Then
                 fields = Split(CStr(lines(rowIndex)), vbTab)
-                If UBound(fields) >= 5 Then
+                If UBound(fields) >= mColumnCount - 1 Then
                     dataIndex = dataIndex + 1
-                    dataRows(dataIndex, 1) = ViewerUnescape(CStr(fields(0)))
-                    dataRows(dataIndex, 2) = ViewerUnescape(CStr(fields(1)))
-                    dataRows(dataIndex, 3) = ViewerUnescape(CStr(fields(2)))
-                    dataRows(dataIndex, 4) = ViewerUnescape(CStr(fields(3)))
-                    dataRows(dataIndex, 5) = ViewerUnescape(CStr(fields(4)))
-                    dataRows(dataIndex, 6) = ViewerUnescape(CStr(fields(5)))
+                    For columnIndex = 1 To mColumnCount
+                        dataRows(dataIndex, columnIndex) = ViewerUnescape(CStr(fields(columnIndex - 1)))
+                    Next columnIndex
                 End If
             End If
         Next rowIndex
@@ -105,10 +116,10 @@ Public Sub RefreshInventory()
     ElseIf dataIndex = UBound(dataRows, 1) Then
         mRows = dataRows
     Else
-        mRows = TrimViewerRows(dataRows, dataIndex)
+        mRows = TrimViewerRows(dataRows, dataIndex, mColumnCount)
     End If
     RenderRows Trim$(CStr(mTxtSearch.Value))
-    mLblStatus.Caption = CStr(dataIndex) & " inventory level(s). Snapshot read at " & CStr(header(2)) & "."
+    mLblStatus.Caption = CStr(dataIndex) & " " & rowLabel & ". Published data read at " & CStr(header(2)) & "."
 End Sub
 
 Public Function TestReport() As String
@@ -126,19 +137,36 @@ Public Function TestApplySearch(ByVal filterText As String) As String
         "|Generation=" & CStr(mGeneration)
 End Function
 
+Public Function TestEventsReport() As String
+    If Not mBuilt Then BuildLayout
+    mTabs.Value = 1
+    ApplyViewerTab
+    TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
+        "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
+        "|Columns=" & CStr(mLstInventory.ColumnCount) & _
+        "|ReadOnly=True|Generation=" & CStr(mGeneration)
+End Function
+
 Private Sub BuildLayout()
     If mBuilt Then Exit Sub
     Me.Width = 860
     Me.Height = 535
 
-    Set mLblTitle = AddLabel("lblTitle", "Current inventory levels", 12, 12, 360, 22, True)
-    Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 740, 10, 92, 28)
-    AddLabel "lblSearch", "Search", 12, 50, 76, 18, True
-    Set mTxtSearch = AddTextBox("txtSearch", 92, 46, 740, 24)
+    Set mTabs = Me.Controls.Add("Forms.TabStrip.1", "tabsInventoryViewer", True)
+    With mTabs
+        .Move 12, 8, 820, 24
+        .Tabs.Add "tabInventory", "Inventory"
+        .Tabs.Add "tabEvents", "Events"
+        .Value = 0
+    End With
+    Set mLblTitle = AddLabel("lblTitle", "Current inventory levels", 12, 40, 360, 22, True)
+    Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 740, 38, 92, 28)
+    AddLabel "lblSearch", "Search", 12, 78, 76, 18, True
+    Set mTxtSearch = AddTextBox("txtSearch", 92, 74, 740, 24)
     Set mLblHeaders = AddLabel("lblHeaders", _
         "Item Code                         Item                                  UOM       Quantity       Location                  Condition", _
-        12, 82, 820, 18, True)
-    Set mLstInventory = AddListBox("lstInventory", 12, 104, 820, 350)
+        12, 110, 820, 18, True)
+    Set mLstInventory = AddListBox("lstInventory", 12, 132, 820, 322)
     With mLstInventory
         .ColumnCount = 6
         .ColumnWidths = "135 pt;190 pt;52 pt;72 pt;120 pt;74 pt"
@@ -149,6 +177,7 @@ Private Sub BuildLayout()
 
     Set mLayout = modOperationsLayout.OperationsAnchorManager()
     mLayout.ConfigureForForm Me, 720, 430
+    mLayout.RegisterControl mTabs, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mLblTitle, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mBtnRefresh, OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mTxtSearch, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
@@ -157,6 +186,29 @@ Private Sub BuildLayout()
     mLayout.RegisterControl mLblStatus, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
     mLayout.RegisterControl mBtnClose, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
     mBuilt = True
+    ApplyViewerTab
+End Sub
+
+Private Sub mTabs_Change()
+    ApplyViewerTab
+End Sub
+
+Private Sub ApplyViewerTab()
+    If mTabs Is Nothing Then Exit Sub
+    mTxtSearch.Value = vbNullString
+    If mTabs.Value = 1 Then
+        mLblTitle.Caption = "Inventory and shipping events"
+        mLblHeaders.Caption = "Date                 Event             Reference        Item                    Qty      UOM    Location       Condition    User          Details"
+        mLstInventory.ColumnCount = 10
+        mLstInventory.ColumnWidths = "105 pt;82 pt;92 pt;130 pt;52 pt;46 pt;82 pt;72 pt;72 pt;190 pt"
+        RefreshEvents
+    Else
+        mLblTitle.Caption = "Current inventory levels"
+        mLblHeaders.Caption = "Item Code                         Item                                  UOM       Quantity       Location                  Condition"
+        mLstInventory.ColumnCount = 6
+        mLstInventory.ColumnWidths = "135 pt;190 pt;52 pt;72 pt;120 pt;74 pt"
+        RefreshInventory
+    End If
 End Sub
 
 Private Sub mTxtSearch_Change()
@@ -164,7 +216,11 @@ Private Sub mTxtSearch_Change()
 End Sub
 
 Private Sub mBtnRefresh_Click()
-    RefreshInventory
+    If mTabs.Value = 1 Then
+        RefreshEvents
+    Else
+        RefreshInventory
+    End If
 End Sub
 
 Private Sub mBtnClose_Click()
@@ -182,7 +238,7 @@ Private Sub RenderRows(ByVal filterText As String)
     For rowIndex = LBound(mRows, 1) To UBound(mRows, 1)
         matches = (filterText = "")
         If Not matches Then
-            For columnIndex = 1 To 6
+            For columnIndex = 1 To mColumnCount
                 If InStr(1, LCase$(CStr(mRows(rowIndex, columnIndex))), filterText, vbTextCompare) > 0 Then
                     matches = True
                     Exit For
@@ -191,21 +247,21 @@ Private Sub RenderRows(ByVal filterText As String)
         End If
         If matches Then
             mLstInventory.AddItem CStr(mRows(rowIndex, 1))
-            For columnIndex = 2 To 6
+            For columnIndex = 2 To mColumnCount
                 mLstInventory.List(mLstInventory.ListCount - 1, columnIndex - 1) = CStr(mRows(rowIndex, columnIndex))
             Next columnIndex
         End If
     Next rowIndex
 End Sub
 
-Private Function TrimViewerRows(ByVal sourceRows As Variant, ByVal rowCount As Long) As Variant
+Private Function TrimViewerRows(ByVal sourceRows As Variant, ByVal rowCount As Long, ByVal columnCount As Long) As Variant
     Dim resultRows() As Variant
     Dim rowIndex As Long
     Dim columnIndex As Long
 
-    ReDim resultRows(1 To rowCount, 1 To 6)
+    ReDim resultRows(1 To rowCount, 1 To columnCount)
     For rowIndex = 1 To rowCount
-        For columnIndex = 1 To 6
+        For columnIndex = 1 To columnCount
             resultRows(rowIndex, columnIndex) = sourceRows(rowIndex, columnIndex)
         Next columnIndex
     Next rowIndex

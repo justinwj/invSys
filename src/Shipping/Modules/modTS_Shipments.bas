@@ -4412,6 +4412,130 @@ FailSoft:
     BuildCanonicalRuntimeInventoryPickerItems = Empty
 End Function
 
+Public Function LoadShippingViewerSupplementEvents() As String
+    Dim warehouseId As String
+    Dim resultText As String
+    Dim rowCount As Long
+
+    warehouseId = CurrentShippingWarehouseIdForLocalState()
+    resultText = "OK" & vbTab & ShippingViewerEscape(warehouseId) & vbTab & _
+        Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbTab & "0"
+    AppendBoxDesignViewerEvents resultText, rowCount
+    AppendHeldShipmentViewerEvents resultText, rowCount
+    If rowCount > 0 Then
+        resultText = Replace(resultText, vbTab & "0" & vbCrLf, vbTab & CStr(rowCount) & vbCrLf, 1, 1)
+    Else
+        resultText = Left$(resultText, InStrRev(resultText, vbTab)) & "0"
+    End If
+    LoadShippingViewerSupplementEvents = resultText
+End Function
+
+Private Sub AppendBoxDesignViewerEvents(ByRef resultText As String, ByRef rowCount As Long)
+    Dim wb As Workbook
+    Dim loBom As ListObject
+    Dim target As WarehouseTarget
+    Dim workbookPath As String
+    Dim openedTransient As Boolean
+    Dim values As Variant
+    Dim seen As Object
+    Dim rowIndex As Long
+    Dim packageKey As String
+    Dim alternative As String
+    Dim uniqueKey As String
+    Dim itemText As String
+    Dim uomText As String
+    Dim locationText As String
+    Dim updatedText As String
+    Dim userText As String
+
+    On Error GoTo CleanExit
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then Exit Sub
+    workbookPath = NormalizeFolderPathShipping(target.RuntimeRoot) & "\" & _
+        Trim$(target.WarehouseId) & ".invSys.Data.ShippingBOM.xlsb"
+    Set wb = FindOpenWorkbookByFullNameShipping(workbookPath)
+    If wb Is Nothing Then Set wb = OpenWorkbookHiddenShipping(workbookPath, True, openedTransient, False)
+    If wb Is Nothing Then GoTo CleanExit
+    Set loBom = FindListObjectByNameShipping(wb, TABLE_CANONICAL_SHIPPING_BOM)
+    If loBom Is Nothing Or loBom.DataBodyRange Is Nothing Then GoTo CleanExit
+    values = To2DArrayShipping(loBom.DataBodyRange.Value)
+    Set seen = CreateObject("Scripting.Dictionary")
+    For rowIndex = 1 To UBound(values, 1)
+        packageKey = Trim$(NzStr(values(rowIndex, ColumnIndex(loBom, "PackageSystemKey"))))
+        itemText = Trim$(NzStr(values(rowIndex, ColumnIndex(loBom, "PackageItem"))))
+        alternative = Trim$(NzStr(values(rowIndex, ColumnIndex(loBom, "BomVersionLabel"))))
+        uniqueKey = LCase$(packageKey & Chr$(30) & alternative)
+        If itemText <> "" And Not seen.Exists(uniqueKey) Then
+            seen.Add uniqueKey, True
+            uomText = NzStr(values(rowIndex, ColumnIndex(loBom, "PackageUOM")))
+            locationText = NzStr(values(rowIndex, ColumnIndex(loBom, "PackageLocation")))
+            updatedText = NzStr(values(rowIndex, ColumnIndex(loBom, "UpdatedAtUTC")))
+            userText = NzStr(values(rowIndex, ColumnIndex(loBom, "UpdatedBy")))
+            rowCount = rowCount + 1
+            resultText = resultText & vbCrLf & ShippingViewerEventRow(updatedText, "BOX_DESIGNED", alternative, _
+                itemText, "", uomText, locationText, "", userText, "Alternative=" & alternative)
+        End If
+    Next rowIndex
+CleanExit:
+    On Error Resume Next
+    If openedTransient And Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+Private Sub AppendHeldShipmentViewerEvents(ByRef resultText As String, ByRef rowCount As Long)
+    Dim holdPath As String
+    Dim fileNumber As Integer
+    Dim lineText As String
+    Dim parts As Variant
+    Dim occurredText As String
+
+    On Error GoTo CleanExit
+    holdPath = PersistentHoldRowsPath()
+    If holdPath = "" Or Len(Dir$(holdPath, vbNormal)) = 0 Then Exit Sub
+    occurredText = Format$(FileDateTime(holdPath), "yyyy-mm-dd hh:nn:ss")
+    fileNumber = FreeFile
+    Open holdPath For Input As #fileNumber
+    Do While Not EOF(fileNumber)
+        Line Input #fileNumber, lineText
+        If Trim$(lineText) <> "" Then
+            parts = Split(lineText, vbTab)
+            If UBound(parts) >= 8 Then
+                rowCount = rowCount + 1
+                resultText = resultText & vbCrLf & ShippingViewerEventRow(occurredText, "SHIP_HELD", _
+                    UnescapeHoldField(CStr(parts(0))), UnescapeHoldField(CStr(parts(1))), _
+                    UnescapeHoldField(CStr(parts(2))), UnescapeHoldField(CStr(parts(4))), _
+                    UnescapeHoldField(CStr(parts(5))), "", "", _
+                    "Carrier=" & UnescapeHoldField(CStr(parts(8))) & "; " & UnescapeHoldField(CStr(parts(6))))
+            End If
+        End If
+    Loop
+CleanExit:
+    On Error Resume Next
+    If fileNumber <> 0 Then Close #fileNumber
+    On Error GoTo 0
+End Sub
+
+Private Function ShippingViewerEventRow(ByVal occurredText As String, ByVal eventType As String, _
+                                        ByVal referenceText As String, ByVal itemText As String, _
+                                        ByVal qtyText As String, ByVal uomText As String, _
+                                        ByVal locationText As String, ByVal conditionText As String, _
+                                        ByVal userText As String, ByVal detailsText As String) As String
+    ShippingViewerEventRow = ShippingViewerEscape(occurredText) & vbTab & _
+        ShippingViewerEscape(eventType) & vbTab & ShippingViewerEscape(referenceText) & vbTab & _
+        ShippingViewerEscape(itemText) & vbTab & ShippingViewerEscape(qtyText) & vbTab & _
+        ShippingViewerEscape(uomText) & vbTab & ShippingViewerEscape(locationText) & vbTab & _
+        ShippingViewerEscape(conditionText) & vbTab & ShippingViewerEscape(userText) & vbTab & _
+        ShippingViewerEscape(detailsText)
+End Function
+
+Private Function ShippingViewerEscape(ByVal valueText As String) As String
+    valueText = Replace(valueText, "\", "\\")
+    valueText = Replace(valueText, vbTab, "\t")
+    valueText = Replace(valueText, vbCr, "\r")
+    valueText = Replace(valueText, vbLf, "\n")
+    ShippingViewerEscape = valueText
+End Function
+
 Public Function ResolveBoxingInventorySystemKeyForSku( _
                                     ByVal operatorWb As Workbook, _
                                     ByVal itemCode As String) As String

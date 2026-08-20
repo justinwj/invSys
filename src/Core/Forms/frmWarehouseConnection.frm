@@ -202,10 +202,12 @@ Private Function AddCheckBox(ByVal controlName As String, _
 End Function
 
 Private Sub mBtnConnect_Click()
+    On Error GoTo ConnectFailed
     Dim statusCode As NasStatusCode
     Dim rootPath As String
     Dim userName As String
     Dim passwordText As String
+    Dim previousCursor As XlMousePointer
 
     rootPath = Trim$(CStr(mTxtRoot.Value))
     userName = Trim$(CStr(mTxtUser.Value))
@@ -215,7 +217,13 @@ Private Sub mBtnConnect_Click()
         Exit Sub
     End If
 
+    ShowStatus "Connecting to warehouse storage. Windows may briefly show Excel as busy while the NAS authenticates...", COLOR_INFO
+    previousCursor = Application.Cursor
+    Application.Cursor = xlWait
+    Me.Repaint
+    DoEvents
     statusCode = modNasConnection.ConnectNasRootWithCredentials(rootPath, userName, passwordText)
+    Application.Cursor = previousCursor
     mTxtPassword.Value = vbNullString
     If statusCode = NAS_OK Then
         ShowStatus "Storage connected. Scan the root, select a warehouse, then continue to invSys sign-in.", COLOR_SUCCESS
@@ -223,6 +231,11 @@ Private Sub mBtnConnect_Click()
     Else
         ShowStatus modNasConnection.GetConnectionStatus(), COLOR_ERROR
     End If
+    Exit Sub
+
+ConnectFailed:
+    Application.Cursor = previousCursor
+    ShowStatus "Warehouse storage connection failed: " & Err.Description, COLOR_ERROR
 End Sub
 
 Private Sub mBtnScan_Click()
@@ -280,6 +293,9 @@ Private Sub ScanRoot()
         Exit Sub
     End If
 
+    ShowStatus "Scanning the connected warehouse root...", COLOR_INFO
+    Me.Repaint
+    DoEvents
     statusCode = modNasConnection.TryRevalidateRememberedRoot(rootPath)
     If statusCode <> NAS_OK Then
         ShowStatus modNasConnection.GetConnectionStatus(), COLOR_WARNING
