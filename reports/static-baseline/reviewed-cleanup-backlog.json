@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "da87dba0ceb621ed06a12312da2dfbe7d92bc71ddd3427c96090c6ac78df3fd7",
-                          "maintenanceCandidatesSha256":  "e9312e03d44baa268aff32af171754f887e65655d64df2c97de58d9941890983"
+                          "implementationManifestSha256":  "c2c9f1568936704ad7f625ae15c10d8a03a14fb2dcc0c83438fd1f52d5f9d3c2",
+                          "maintenanceCandidatesSha256":  "20d2d5e9592540889eeedffa086749e1f5a178bcd33fea8c754612ad190a5964"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -224,14 +224,14 @@
                                                   "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
                                                   "componentName":  "frmReceiving",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1076,
+                                                  "baselineLineCount":  1132,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Receiving/Modules/modTS_Received.bas",
                                                   "componentName":  "modTS_Received",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1543,
+                                                  "baselineLineCount":  1575,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {

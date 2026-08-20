@@ -593,6 +593,13 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     Dim uomValue As String
     Dim locationValue As String
     Dim vendorValue As String
+    Dim stagingRecord As ListRow
+    Dim failureStage As String
+    Dim previousEvents As Boolean
+    Dim eventStateCaptured As Boolean
+    Dim errorNumber As Long
+    Dim errorSource As String
+    Dim errorDescription As String
 
     refNumber = Trim$(refNumber)
     sourceSystemKey = Trim$(sourceSystemKey)
@@ -621,6 +628,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     conditionValue = NormalizeReceivingCondition(conditionValue)
     If conditionValue = "" Then report = "Choose a valid receiving condition.": Exit Function
 
+    failureStage = "resolve Receiving inventory and staging tables"
     Set inventoryTable = FindTable(targetWb, TABLE_INVENTORY)
     Set stagingTable = FindTable(targetWb, TABLE_STAGING)
     Set aggregateTable = FindTable(targetWb, TABLE_AGGREGATE)
@@ -629,6 +637,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
         Exit Function
     End If
 
+    failureStage = "resolve selected inventory entity"
     If sourceSystemKey <> "" Then
         inventoryIndex = FindTableRecord(inventoryTable, "System_Key", sourceSystemKey)
     End If
@@ -640,6 +649,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
         Exit Function
     End If
 
+    failureStage = "read selected inventory entity"
     sourceSystemKey = CellText(inventoryTable, inventoryIndex, "System_Key")
     itemCode = CellText(inventoryTable, inventoryIndex, "ITEM_CODE")
     itemName = CellText(inventoryTable, inventoryIndex, "ITEM")
@@ -651,18 +661,28 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     lotNumber = Trim$(lotNumber)
     If locationValue = "" Then report = "Receive location is required.": Exit Function
 
+    previousEvents = Application.EnableEvents
+    eventStateCaptured = True
+    Application.EnableEvents = False
+
+    failureStage = "find existing receipt staging row"
     stagingIndex = FindExistingStagingRecord( _
         stagingTable, refNumber, sourceSystemKey, locationValue, lotNumber, _
         conditionValue, receiptType, returnReason)
     If stagingIndex > 0 Then
+        failureStage = "update receipt staging quantity"
         receivingSystemKey = CellText(stagingTable, stagingIndex, "System_Key")
         eventId = CellText(stagingTable, stagingIndex, "EventId")
         SetCellValue stagingTable, stagingIndex, "QUANTITY", _
                      CellNumber(stagingTable, stagingIndex, "QUANTITY") + qty
     Else
+        failureStage = "create receipt event identity"
         receivingSystemKey = modRoleEventWriter.CreateSystemKey()
         eventId = modRoleEventWriter.CreateSystemKey()
-        stagingIndex = FirstBlankOrNewRecord(stagingTable).Index
+        failureStage = "add receipt staging row"
+        Set stagingRecord = FirstBlankOrNewRecord(stagingTable)
+        stagingIndex = stagingRecord.Index
+        failureStage = "populate receipt staging row"
         SetCellText stagingTable, stagingIndex, "REF_NUMBER", refNumber
         SetCellText stagingTable, stagingIndex, "RECEIPT_TYPE", receiptType
         SetCellText stagingTable, stagingIndex, "ITEMS", itemName
@@ -680,6 +700,7 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
         SetCellText stagingTable, stagingIndex, "WorkflowState", "STAGED"
     End If
 
+    failureStage = "populate receipt aggregate"
     aggregateIndex = FindTableRecord(aggregateTable, "System_Key", receivingSystemKey)
     If aggregateIndex = 0 Then aggregateIndex = FirstBlankOrNewRecord(aggregateTable).Index
     PopulateAggregateRecord aggregateTable, aggregateIndex, inventoryTable, inventoryIndex, _
@@ -690,9 +711,20 @@ Public Function StageReceivingFormItemForWorkbook(ByVal targetWb As Workbook, _
     report = "Staged " & CStr(qty) & " " & uomValue & " of " & itemName & _
              "; System_Key=" & receivingSystemKey
     StageReceivingFormItemForWorkbook = True
+CleanExit:
+    On Error Resume Next
+    If eventStateCaptured Then Application.EnableEvents = previousEvents
+    On Error GoTo 0
     Exit Function
 Failed:
-    report = "Receiving staging failed: " & Err.Description
+    errorNumber = Err.Number
+    errorSource = Err.Source
+    errorDescription = Err.Description
+    report = "Receiving staging failed: Stage=" & failureStage & _
+             "; Error=" & CStr(errorNumber) & _
+             "; Source=" & ReceivingErrorSource(errorSource) & _
+             "; Description=" & errorDescription
+    Resume CleanExit
 End Function
 
 Public Function StageInventoryDispositionForWorkbook(ByVal targetWb As Workbook, _

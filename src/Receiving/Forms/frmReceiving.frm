@@ -63,6 +63,7 @@ Private mBuilt As Boolean
 Private mLoading As Boolean
 Private mResizeInitialized As Boolean
 Private mResizing As Boolean
+Private mLastConfirmQuietActive As Boolean
 
 Private Const RECEIVING_BASE_WIDTH As Double = 1020
 Private Const RECEIVING_BASE_HEIGHT As Double = 900
@@ -196,7 +197,9 @@ Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbo
     TestRunConfirmWritesActionForWorkbook = _
         "Succeeded=" & CStr(modTS_Received.LastConfirmWritesSucceeded()) & _
         "; Status=" & modTS_Received.LastConfirmWritesStatus() & _
-        "; BoundWorkbook=" & mOperatorWorkbook.Name
+        "; BoundWorkbook=" & mOperatorWorkbook.Name & _
+        "; QuietDuring=" & CStr(mLastConfirmQuietActive) & _
+        "; QuietRestored=" & CStr(Not modUiQuiet.QuietUiIsActive())
 End Function
 
 Public Function TestPurchasingTabContract(ByVal operatorWb As Workbook) As String
@@ -699,7 +702,13 @@ Private Sub mBtnConfirm_Click()
     On Error GoTo ErrHandler
     Dim report As String
     Dim succeeded As Boolean
+    Dim quietStarted As Boolean
+    Dim statusMessage As String
 
+    mLastConfirmQuietActive = False
+    modUiQuiet.BeginQuietUi mOperatorWorkbook
+    quietStarted = True
+    mLastConfirmQuietActive = modUiQuiet.QuietUiIsActive()
     succeeded = modReceivingPostingService.ExecuteConfirmWrites( _
         mOperatorWorkbook, report)
     modTS_Received.RecordConfirmWritesResult succeeded, report
@@ -707,14 +716,19 @@ Private Sub mBtnConfirm_Click()
         mTxtRef.Value = ""
         mTxtReceiptId.Value = DefaultReceiptId()
         RefreshAllViews
-        ShowStatus "Confirm Writes finished; staged receiving rows cleared."
+        statusMessage = "Confirm Writes finished; staged receiving rows cleared."
     Else
         RefreshAllViews
-        ShowStatus "Confirm Writes did not complete; staged receiving rows were kept. " & report
+        statusMessage = "Confirm Writes did not complete; staged receiving rows were kept. " & report
     End If
-    Exit Sub
+    GoTo CleanExit
 ErrHandler:
-    ShowStatus "Confirm Writes failed: " & Err.Description
+    statusMessage = "Confirm Writes failed: " & Err.Description
+CleanExit:
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    ShowStatus statusMessage
 End Sub
 
 Private Sub mBtnClear_Click()
@@ -952,6 +966,9 @@ End Function
 Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Workbook) As String
     On Error GoTo Failed
 
+    Dim protectedReceiptStatus As String
+    Dim receiptStatus As String
+
     If operatorWb Is Nothing Then
         TestStageInboundReturnActionForWorkbook = "FAIL|Operator workbook is required."
         Exit Function
@@ -959,6 +976,42 @@ Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Work
     If Not mBuilt Then BuildLayout
     SetOperatorWorkbook operatorWb
     InitializeFromReceiving
+
+    mTabs.Value = 0
+    ApplyReceivingTab
+    If mLstReceiveItems.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|No receipt item choices."
+        Exit Function
+    End If
+    mLstReceiveItems.ListIndex = 0
+    LoadSelectedReceiveItemDetails
+    mTxtRef.Value = "RECEIPT-TEST"
+    mTxtQty.Value = "1"
+    mCboCondition.Value = "GOOD"
+    operatorWb.Worksheets("ReceivedTally").Protect
+    mBtnAdd_Click
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    protectedReceiptStatus = CStr(mTxtStatus.Text)
+    If InStr(1, protectedReceiptStatus, _
+             "Receiving staging failed: Stage=", vbBinaryCompare) = 0 _
+       Or InStr(1, protectedReceiptStatus, "; Error=", vbBinaryCompare) = 0 _
+       Or InStr(1, protectedReceiptStatus, "; Source=", vbBinaryCompare) = 0 Then
+        TestStageInboundReturnActionForWorkbook = _
+            "FAIL|ProtectedReceipt=" & protectedReceiptStatus
+        Exit Function
+    End If
+    modTS_Received.ClearReceivingFormStagingForWorkbook operatorWb
+    RefreshStaging
+
+    mBtnAdd_Click
+    receiptStatus = CStr(mTxtStatus.Text)
+    If mLstStaged.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|ReceiptAction=" & receiptStatus
+        Exit Function
+    End If
+    modTS_Received.ClearReceivingFormStagingForWorkbook operatorWb
+    RefreshStaging
+
     mTabs.Value = 1
     ApplyReceivingTab
     If mLstReceiveItems.ListCount = 0 Then
@@ -976,7 +1029,7 @@ Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Work
         TestStageInboundReturnActionForWorkbook = "FAIL|" & CStr(mTxtStatus.Text)
     Else
         TestStageInboundReturnActionForWorkbook = _
-            "OK|StagedRows=" & CStr(mLstStaged.ListCount) & _
+            "OK|ReceiptAction=True|StagedRows=" & CStr(mLstStaged.ListCount) & _
             "|ReceiptType=" & NzText(mLstStaged.List(0, 1)) & _
             "|Condition=" & NzText(mLstStaged.List(0, 8)) & _
             "|Reason=" & NzText(mLstStaged.List(0, 9))
@@ -985,6 +1038,9 @@ Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Work
 Failed:
     TestStageInboundReturnActionForWorkbook = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    On Error Resume Next
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    On Error GoTo 0
 End Function
 
 Public Function TestStageProtectedDispositionActionForWorkbook(ByVal operatorWb As Workbook) As String

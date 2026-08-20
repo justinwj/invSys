@@ -40,6 +40,22 @@ $checks = @(
         Contract = "A multi-line receipt queues through one server-inbox save boundary."
     },
     [pscustomobject]@{
+        Name = "Receiving.ReceiptStagingIsEventIsolated"
+        Passed = ($receivingModule -match 'failureStage = "find existing receipt staging row"') -and
+            ($receivingModule -match 'failureStage = "populate receipt aggregate"') -and
+            ($receivingModule -match 'Receiving staging failed: Stage=') -and
+            ($receivingModule -match 'If eventStateCaptured Then Application.EnableEvents = previousEvents')
+        Contract = "Add Selected stages a complete receipt row and aggregate with Excel events isolated, restores prior event state, and reports the exact failing stage."
+    },
+    [pscustomobject]@{
+        Name = "Receiving.ConfirmUsesQuietUiBoundary"
+        Passed = ($receivingForm -match 'modUiQuiet.BeginQuietUi mOperatorWorkbook') -and
+            ($receivingForm -match 'If quietStarted Then modUiQuiet.EndQuietUi') -and
+            ($receivingForm -match 'QuietDuring=') -and
+            ($receivingForm -match 'QuietRestored=')
+        Contract = "The real Confirm Writes form handler suppresses repeated Excel save UI and restores the prior application UI state."
+    },
+    [pscustomobject]@{
         Name = "Processor.PersistenceIsBatched"
         Passed = ($processor -match 'EventPersistenceSaves=') -and
             ($processor -match 'AppendEventsToOutboxBatch')

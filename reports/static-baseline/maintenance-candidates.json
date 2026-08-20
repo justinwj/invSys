@@ -5,7 +5,7 @@
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4701,
-                     "lineCount":  103068,
+                     "lineCount":  103156,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
