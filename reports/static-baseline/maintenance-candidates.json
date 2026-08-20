@@ -5,7 +5,7 @@
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4702,
-                     "lineCount":  103327,
+                     "lineCount":  103349,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -8721,6 +8721,7 @@
                                                    "tests/integration/prove_wan_wh1_setup.bas",
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -11209,6 +11210,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
@@ -15196,6 +15198,7 @@
                                                    "tests/integration/prove_wan_wh1_setup.bas",
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -19651,23 +19654,6 @@
                            "componentName":  "modTS_Shipments",
                            "procedureNames":  [
                                                   "BtnSendHold"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnShipmentsSent",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnShipmentsSent"
                                               ],
                            "sourcePaths":  [
                                                "src/Shipping/Modules/modTS_Shipments.bas"

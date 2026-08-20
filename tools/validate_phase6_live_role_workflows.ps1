@@ -1328,9 +1328,12 @@ try {
         "ITEMS" = "Ship Widget"; "QUANTITY" = 5; "System_Key" = "SYS-LIVE-SHIP"; "UOM" = "EA"; "LOCATION" = "DOCK";
         "DESCRIPTION" = "Ship Widget"; "AREA" = "Shipments"; "CARRIER" = "UPS"
     }
+    $shipCanonicalBeforeQty = [double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV")
+    $shipRequestedQty = [double](Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName "QUANTITY")
+    $shipExpectedCanonicalQty = $shipCanonicalBeforeQty - $shipRequestedQty
     $shipToShipmentsPreflightOk = ((Get-RowCountSafe $loShipments) -eq 1) `
-        -and ([double](Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName "QUANTITY") -eq 5) `
-        -and ([double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV") -eq 20)
+        -and ($shipRequestedQty -eq 5) `
+        -and ($shipCanonicalBeforeQty -eq 20)
     Add-ResultRow -Rows $resultRows -Check "Shipping.Form.Stage" -Passed $shipToShipmentsPreflightOk -Detail "ShipmentRows=$(Get-RowCountSafe $loShipments); ShipSystemKey=$((Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName 'System_Key')); ShipQty=$((Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName 'QUANTITY')); InvSystemKey=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'System_Key')); InvCode=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'ITEM_CODE')); InvTOTAL_INV=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'TOTAL INV'))"
 
     $shipInboxBefore = Get-RowCountSafe $loInboxShip
@@ -1358,6 +1361,9 @@ try {
     $shipBoundOk = $shipSentReport.Contains("BoundWorkbook=$([string]$wbShip.Name)")
     $shipLocalOk = $shipSentReport.Contains("Shipments sent:") -and $shipBoundOk -and ($shipmentRowsAfter -eq 0)
     Add-ResultRow -Rows $resultRows -Check "Shipping.FormAction.ShipmentsSent.CapturedWorkbook" -Passed $shipLocalOk -Detail "Report=$shipSentReport; ShipmentRows=$shipmentRowsAfter; SHIPMENTS=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'SHIPMENTS'))"
+
+    $shipCanonicalVisibleQty = [double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV")
+    Add-ResultRow -Rows $resultRows -Check "Shipping.FormAction.ShipmentsSent.CanonicalReadModel" -Passed ($shipCanonicalVisibleQty -eq $shipExpectedCanonicalQty) -Detail "ExpectedTOTAL_INV=$shipExpectedCanonicalQty; ActualTOTAL_INV=$shipCanonicalVisibleQty; Report=$shipSentReport"
 
     $shipInboxAfter = Get-RowCountSafe $loInboxShip
     $shipQueuedRow = 0

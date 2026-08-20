@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "b192a254a31a95413fbb3cd93f500e9d50e801d9b28e896e5bf7ccfd227fe674",
-                          "maintenanceCandidatesSha256":  "e1193ab3d304cb989a5b874ebe5ad7f56c0971b470e61e84562c6815f33953b6"
+                          "implementationManifestSha256":  "d2828b5027ab7a9175b1bd97b5b9c88f161f6b41574b9b4308cae55f859f5b64",
+                          "maintenanceCandidatesSha256":  "b054ec5f70f1f703089654375728940d1c7acb097aaa46bfc4fd79bca8cd49e2"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  965,
-                    "reviewedCandidateCount":  967,
+                    "scannerCandidateCount":  964,
+                    "reviewedCandidateCount":  966,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -32,7 +32,7 @@
                         },
                         {
                             "name":  "SHIPPING",
-                            "candidateCount":  157,
+                            "candidateCount":  156,
                             "reason":  "Shipping and Boxing forms, services, and role package source."
                         },
                         {
@@ -238,14 +238,14 @@
                                                   "sourcePath":  "src/Shipping/Forms/frmShipmentsTally.frm",
                                                   "componentName":  "frmShipmentsTally",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  2998,
+                                                  "baselineLineCount":  3014,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  22289,
+                                                  "baselineLineCount":  22295,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -10277,6 +10277,7 @@
                                                    "tests/integration/prove_wan_wh1_setup.bas",
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -13393,6 +13394,7 @@
                                                    "tests/integration/prove_wan_wh1_setup.bas",
                                                    "tests/integration/prove_wan_wh2_setup.bas",
                                                    "tests/integration/test_ConfirmWrites_Tester.bas",
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/unit/TestAdminConsole.bas",
                                                    "tests/unit/TestCoreProcessor.bas",
                                                    "tests/unit/TestPhase3RoleFlows.bas",
@@ -24108,29 +24110,6 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
-                           "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnShipmentsSent",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "SHIPPING",
-                           "componentName":  "modTS_Shipments",
-                           "procedureNames":  [
-                                                  "BtnShipmentsSent"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Shipping/Modules/modTS_Shipments.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnSwitchToBoxMaker",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -25897,6 +25876,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
                                                    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],

@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 965
-- Reviewed candidates: 967
+- Scanner candidates: 964
+- Reviewed candidates: 966
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -13,7 +13,7 @@
 |---|---:|---|
 | RECEIVING | 33 | Receiving-owned forms, services, and role package source. |
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
-| SHIPPING | 157 | Shipping and Boxing forms, services, and role package source. |
+| SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 63 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 289 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
@@ -53,8 +53,8 @@
 | src/Production/Modules/mProduction.bas | Production | 12928 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1132 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
-| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 2998 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22289 |
+| src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3014 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22295 |
 
 ## Reviewed candidates
 
@@ -928,7 +928,6 @@
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnDeleteBoxVersion | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnReturnHold | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnSendHold | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnShipmentsSent | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnSwitchToBoxMaker | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToggleBuilder | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Shipping_Modules_modTS_Shipments.bas:modTS_Shipments.BtnToShipments | SHIPPING | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

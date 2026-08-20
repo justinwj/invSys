@@ -2,7 +2,7 @@
 
 - Schema: 1.0.0
 - Generated: 2026-08-16T20:00:00Z
-- Total candidates: 965
+- Total candidates: 964
 - Duplicate-body groups: 184
 - Unresolved dynamic calls: 47
 
@@ -939,7 +939,6 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnDeleteBoxVersion | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnReturnHold | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnSendHold | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
-| UNRESOLVED | MEDIUM | modTS_Shipments | BtnShipmentsSent | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnSwitchToBoxMaker | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnToggleBuilder | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modTS_Shipments | BtnToShipments | No direct, dynamic-root, or test reference was found, but public visibility requires review. |

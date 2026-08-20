@@ -1501,8 +1501,6 @@ Public Sub BtnShipmentsSent()
     ElseIf runtimeReport <> "" Then
         AppendNote errNotes, runtimeReport
     End If
-    ClearShipmentStageAfterRefresh ws.Parent, deltas
-
     Dim msg As String
     msg = "Finalized " & Format$(shippedTotal, "0.###") & " shipments."
     If SHIPMENTS_SENT_DEDUCTS_TOTALINV Then
@@ -7999,11 +7997,13 @@ Private Function RunShippingRuntimeQueueRefresh(ByVal wb As Workbook, _
     Dim stationId As String
     Dim stagingReport As String
     Dim batchReport As String
-    Dim publishReport As String
+    Dim refreshReport As String
     Dim processedCount As Long
     Dim totalTimer As Single
     Dim batchTimer As Single
+    Dim refreshTimer As Single
     Dim batchMs As Long
+    Dim refreshMs As Long
     Dim stagingOk As Boolean
 
     If wb Is Nothing Then
@@ -8038,16 +8038,22 @@ Private Function RunShippingRuntimeQueueRefresh(ByVal wb As Workbook, _
         Exit Function
     End If
 
-    If processedCount > 0 Then
-        If Not modInventoryDomainBridge.PublishInventorySnapshotBridge(resolvedWarehouseId, Nothing, publishReport) Then
-            If publishReport = "" Then publishReport = "Snapshot publish failed."
-        End If
+    refreshTimer = Timer
+    If Not ShipmentsFormRefreshReadModelForWorkbook(wb, refreshReport, resolvedWarehouseId) Then
+        refreshMs = ElapsedMillisecondsShipping(refreshTimer)
+        report = "RunBatch processed queued shipping work, but the operator read-model refresh failed. " & _
+                 "StagingReport=" & stagingReport & " BatchReport=" & batchReport & _
+                 " RefreshReport=" & refreshReport & "; " & _
+                 FormatShippingRuntimeTiming(ElapsedMillisecondsShipping(totalTimer), batchMs, refreshMs)
+        Exit Function
     End If
+    refreshMs = ElapsedMillisecondsShipping(refreshTimer)
 
     report = "Processed=" & CStr(processedCount) & "; StagingReport=" & stagingReport & "; BatchReport=" & batchReport
     If Not stagingOk Then report = report & "; StagingWarning=Local staged shipping rows could not be merged before runtime processing."
-    If publishReport <> "" Then report = report & "; PublishWarning=" & publishReport
-    report = report & "; " & FormatShippingRuntimeTiming(ElapsedMillisecondsShipping(totalTimer), batchMs, 0)
+    If Trim$(refreshReport) <> "" And StrComp(Trim$(refreshReport), "OK", vbTextCompare) <> 0 Then _
+        report = report & "; RefreshReport=" & refreshReport
+    report = report & "; " & FormatShippingRuntimeTiming(ElapsedMillisecondsShipping(totalTimer), batchMs, refreshMs)
     RunShippingRuntimeQueueRefresh = True
     Exit Function
 

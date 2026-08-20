@@ -1959,6 +1959,8 @@ Private Sub mBtnSend_Click()
     LoadShipmentState mOperatorWorkbook
     TLap "Shipments Sent load shipment state"
     If ok Then mTxtRef.Value = vbNullString
+    If ok Then LoadShippables mOperatorWorkbook
+    If ok Then TLap "Shipments Sent reload canonical shippables"
     If ok Then RefreshProjectedShippableInventory
     If ok Then TLap "Shipments Sent refresh projected"
     If ok Then ArmAutoSync
@@ -2191,14 +2193,28 @@ End Function
 Public Function TestRunShipmentsSentActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        ByVal carrierValue As String, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
+    Dim visibleNas As String
+    Dim visibleProjected As String
+    Dim visibleLocked As String
+
     SetOperatorWorkbook operatorWb
     InitializeFromShipping True
     mTxtCarrier.Value = carrierValue
     If Not activatedWb Is Nothing Then activatedWb.Activate
     mBtnSend_Click
+    If Not mLstShippables Is Nothing Then
+        If mLstShippables.ListCount > 0 Then
+            visibleNas = NzText(mLstShippables.List(0, 2))
+            visibleProjected = NzText(mLstShippables.List(0, 3))
+            visibleLocked = NzText(mLstShippables.List(0, 4))
+        End If
+    End If
     TestRunShipmentsSentActionForWorkbook = _
         "Status=" & mTxtStatus.Text & _
-        "; BoundWorkbook=" & mOperatorWorkbook.Name
+        "; BoundWorkbook=" & mOperatorWorkbook.Name & _
+        "; VisibleNas=" & visibleNas & _
+        "; VisibleProjected=" & visibleProjected & _
+        "; VisibleLocked=" & visibleLocked
 End Function
 
 Private Sub EvictOrphanedActiveOverlays()
