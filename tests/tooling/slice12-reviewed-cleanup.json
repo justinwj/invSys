@@ -11,11 +11,13 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slice 4q",
-    "ceiling": 4701,
-    "rationale": "Outbound RETURN/DUMP exact-System_Key handling and the live Add Disposition failure required an event-isolated form-action diagnostic boundary plus sanitized stage-level error context. The three additional procedures exercise the same protected-write handler while component, candidate, duplicate-body, and dynamic-call ratchets remain improved.",
+    "slice": "Plan 022 Slices 4q-4u",
+    "ceiling": 4702,
+    "rationale": "Outbound RETURN/DUMP diagnostics and the Shipping canonical post-send refresh required protected form-action boundaries. Slice 4u keeps the already-established 4702-procedure baseline unchanged while batching reservation persistence and consolidating operator feedback; component, candidate, duplicate-body, and dynamic-call ratchets remain improved.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4qDisposition.ps1",
+      "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+      "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
       "tests/unit/TestReceivingStabilization.bas:TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",
       "tests/unit/TestPhase6CoreSurfaces.bas:TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey",
       "tools/validate_plan022_slice4o_packaged.ps1"

@@ -9029,6 +9029,8 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
     Dim rowWasNew As Boolean
     Dim rowWasBlank As Boolean
     Dim reservationWarning As String
+    Dim persistenceInboxSaved As Boolean
+    Dim persistenceReservationSaved As Boolean
 
     actionName = UCase$(Trim$(actionName))
     isHold = (UCase$(Trim$(targetName)) = "HOLD")
@@ -9076,11 +9078,14 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
                     GoTo CleanExit
                 End If
                 SyncSingleVersionInventoryOverlayFromInvSysRows invLo, lo, singleRow
-                If Not QueueShipmentsReleaseEvent(releaseDeltas, errNotes, releaseEventId) Then
+                If QueueShipmentsReleaseEvent(releaseDeltas, errNotes, releaseEventId) Then
+                    persistenceInboxSaved = True
+                Else
                     If errNotes <> "" Then AppendNote report, errNotes
                     errNotes = ""
                 End If
                 If Not MarkShippingReservationRows(lo, singleRow, SHIP_RESERVATION_RELEASED, releaseEventId, report) Then GoTo CleanExit
+                persistenceReservationSaved = True
             End If
             ' Projected Inv is derived from the active Shipments row. Once the
             ' row is removed, its persisted compatibility overlay must not keep
@@ -9097,6 +9102,7 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
             PersistActiveShipmentRowsLocal lo
         End If
         report = "Removed shipment row."
+        AppendShippingPersistenceSummary report, persistenceInboxSaved, persistenceReservationSaved
         ShipmentsFormCommitLine = True
         GoTo CleanExit
     End If
@@ -9189,6 +9195,7 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
             report = errNotes
             GoTo CleanExit
         End If
+        persistenceInboxSaved = True
         releasedTotal = ApplyShipmentReleaseDeltasLocal(invLo, releaseDeltas, errNotes, True)
         If releasedTotal < 0 Then
             If errNotes = "" Then errNotes = "Unable to release the existing reservation locally."
@@ -9197,6 +9204,7 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
         End If
         SyncSingleVersionInventoryOverlayFromInvSysRows invLo, lo, singleRow
         If Not MarkShippingReservationRows(lo, singleRow, SHIP_RESERVATION_RELEASED, releaseEventId, report) Then GoTo CleanExit
+        persistenceReservationSaved = True
         WriteValue lr, COL_SHIPMENT_RESERVE_EVENT_ID, vbNullString
         WriteValue lr, "AREA", "Warehouse"
     End If
@@ -9255,8 +9263,10 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
         RegisterDeltaSystemKeyInventoryOverlay systemKey, descriptionValue, _
             qtyDelta, displayedAvailableQty, existingQtyValue, displayedNasQty
         WriteValue lr, COL_SHIPMENT_RESERVE_EVENT_ID, existingReserveEventId
-        If Not UpsertShippingReservationForRow(lo, lr.Index, existingReserveEventId, report) Then
+        If Not UpsertShippingReservationRows(lo, Array(lr.Index), existingReserveEventId, report) Then
             If report = "" Then report = "Warning: local quantity delta was applied, but the shipping reservation ledger was not refreshed."
+        Else
+            persistenceReservationSaved = True
         End If
     ElseIf Not isHold And Not preserveExistingReservation Then
         singleRow = Array(lr.Index)
@@ -9288,10 +9298,13 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
             If Trim$(rollbackNotes) <> "" Then report = report & vbCrLf & "Local rollback warning: " & rollbackNotes
             GoTo CleanExit
         End If
-        If Not UpsertShippingReservationForRow(lo, lr.Index, reserveEventId, report) Then
+        persistenceInboxSaved = True
+        If Not UpsertShippingReservationRows(lo, Array(lr.Index), reserveEventId, report) Then
             reservationWarning = Trim$(report)
             If reservationWarning = "" Then reservationWarning = "Reservation event queued and local lock applied, but the reservation ledger was not refreshed."
             report = ""
+        Else
+            persistenceReservationSaved = True
         End If
         ApplyStageVersionInventoryOverlayFromRows invLo, lo, singleRow
         WriteValue lr, COL_SHIPMENT_RESERVE_EVENT_ID, reserveEventId
@@ -9313,6 +9326,7 @@ Public Function ShipmentsFormCommitLine(ByVal targetName As String, _
     End If
     If reserveEventId <> "" Then report = report & vbCrLf & "Locked " & Format$(reservedTotal, "0.###") & " package(s) for shipment." & vbCrLf & "Reserve EventID: " & reserveEventId
     If reservationWarning <> "" Then AppendNote report, "Warning: " & reservationWarning
+    AppendShippingPersistenceSummary report, persistenceInboxSaved, persistenceReservationSaved
     ShipmentsFormCommitLine = True
 
 CleanExit:
@@ -9749,27 +9763,6 @@ End Sub
 Private Function ShipmentRowIndexCount(ByVal rowIndexes As Variant) As Long
     If IsEmpty(rowIndexes) Then Exit Function
     ShipmentRowIndexCount = UBound(rowIndexes) - LBound(rowIndexes) + 1
-End Function
-
-Private Function ForEachShipmentReservationUpsert(ByVal loShip As ListObject, _
-                                                  ByVal rowIndexes As Variant, _
-                                                  ByVal reserveEventId As String, _
-                                                  ByRef report As String) As Boolean
-    Dim i As Long
-    Dim rowIndex As Long
-
-    ForEachShipmentReservationUpsert = True
-    If loShip Is Nothing Then Exit Function
-    If IsEmpty(rowIndexes) Then Exit Function
-    For i = LBound(rowIndexes) To UBound(rowIndexes)
-        rowIndex = CLng(rowIndexes(i))
-        If rowIndex >= 1 And rowIndex <= loShip.ListRows.Count Then
-            If Not UpsertShippingReservationForRow(loShip, rowIndex, reserveEventId, report) Then
-                ForEachShipmentReservationUpsert = False
-                Exit Function
-            End If
-        End If
-    Next i
 End Function
 
 Private Function ShipmentRowsByReserveState(ByVal loShip As ListObject, ByVal rowIndexes As Variant, ByVal requireReserve As Boolean) As Variant
@@ -12128,6 +12121,8 @@ Public Function ShipmentsFormRunToShipmentsRows(ByVal rowIndexes As Variant, _
     Dim reservedRows As Variant
     Dim alreadyReservedCount As Long
     Dim locallyLockedCount As Long
+    Dim persistenceInboxSaved As Boolean
+    Dim persistenceReservationSaved As Boolean
 
     Set ws = SheetExists(SHEET_SHIPMENTS)
     If ws Is Nothing Then
@@ -12199,6 +12194,7 @@ Public Function ShipmentsFormRunToShipmentsRows(ByVal rowIndexes As Variant, _
         report = errNotes
         GoTo CleanExit
     End If
+    persistenceInboxSaved = True
 
     PrepareShipmentStageLogEntries invLo, deltas, shipLogs
     stagedTotal = ApplyShipmentDeltasLocal(invLo, deltas, errNotes)
@@ -12212,7 +12208,8 @@ Public Function ShipmentsFormRunToShipmentsRows(ByVal rowIndexes As Variant, _
     If locallyLockedCount > 0 Then SetShipmentRowsArea loShip, locallyLockedRows, "Shipments", carrierValue
     If reserveEventId <> "" Then
         SetShipmentRowsReserveEventId loShip, rowsNeedingReserve, reserveEventId
-        If Not ForEachShipmentReservationUpsert(loShip, rowsNeedingReserve, reserveEventId, report) Then GoTo CleanExit
+        If Not UpsertShippingReservationRows(loShip, rowsNeedingReserve, reserveEventId, report) Then GoTo CleanExit
+        persistenceReservationSaved = True
     End If
     ApplyStageVersionInventoryOverlayFromRows invLo, loShip, rowsNeedingReserve
     InvalidateAggregates True
@@ -12223,6 +12220,7 @@ Public Function ShipmentsFormRunToShipmentsRows(ByVal rowIndexes As Variant, _
     If alreadyReservedCount + locallyLockedCount > 0 Then report = report & vbCrLf & CStr(alreadyReservedCount + locallyLockedCount) & " selected row(s) were already locked."
     If Trim$(carrierValue) <> "" Then report = report & vbCrLf & "Carrier: " & Trim$(carrierValue)
     If reserveEventId <> "" Then report = report & vbCrLf & "Reserve EventID: " & reserveEventId
+    AppendShippingPersistenceSummary report, persistenceInboxSaved, persistenceReservationSaved
     ShipmentsFormRunToShipmentsRows = True
 
 CleanExit:
@@ -12258,6 +12256,8 @@ Public Function ShipmentsFormRunShipmentsSentRows(ByVal rowIndexes As Variant, _
     Dim allSentDeltas As Collection
     Dim runtimeReport As String
     Dim runtimeProcessed As Boolean
+    Dim persistenceReservationSaved As Boolean
+    Dim processorPersistenceSaves As Long
 
     If Not skipAuthForTest Then
         If Not modRoleUiAccess.CanCurrentUserPerformCapability("SHIP_POST", "", "", "", errNotes) Then
@@ -12331,12 +12331,14 @@ Public Function ShipmentsFormRunShipmentsSentRows(ByVal rowIndexes As Variant, _
     End If
     AppendSentShipmentRowsLocal loShip, rowIndexes
     If Not MarkShippingReservationRows(loShip, rowIndexes, SHIP_RESERVATION_COMPLETED, vbNullString, report) Then GoTo CleanExit
+    persistenceReservationSaved = True
     DeleteShipmentRows loShip, rowIndexes
     InvalidateAggregates True
     PersistActiveShipmentRowsLocal loShip
     ClearInstructionStaging ws
     If shipLogs.Count > 0 Then LogShippingChanges "AggregatePackages_Log", shipLogs
     runtimeProcessed = RunShippingRuntimeQueueRefresh(ws.Parent, ResolveCurrentShippingWarehouseId(), runtimeReport)
+    If runtimeProcessed Then processorPersistenceSaves = ShippingRuntimeReportMetric(runtimeReport, "EventPersistenceSaves")
     If Not runtimeProcessed Then
         If runtimeReport = "" Then runtimeReport = "Local shipment post succeeded, but runtime processing or read-model refresh did not complete cleanly."
         AppendNote errNotes, runtimeReport
@@ -12355,6 +12357,7 @@ Public Function ShipmentsFormRunShipmentsSentRows(ByVal rowIndexes As Variant, _
     End If
     If queuedEventId = "" Then report = report & vbCrLf & _
         "Server inventory was reserved at To Shipments; Shipments Sent completed the reservation and is waiting for processor/log catch-up."
+    AppendShippingPersistenceSummary report, (queuedEventId <> ""), persistenceReservationSaved, processorPersistenceSaves
     If errNotes <> "" Then report = report & vbCrLf & vbCrLf & "Warnings:" & vbCrLf & errNotes
     ShipmentsFormRunShipmentsSentRows = True
 
@@ -17239,23 +17242,29 @@ CleanFail:
     If openedTransient Then CloseWorkbookNoSaveShipping wb
 End Function
 
-Private Function UpsertShippingReservationForRow(ByVal loShip As ListObject, _
-                                                 ByVal rowIndex As Long, _
-                                                 ByVal reserveEventId As String, _
-                                                 ByRef report As String) As Boolean
+Private Function UpsertShippingReservationRows(ByVal loShip As ListObject, _
+                                                ByVal rowIndexes As Variant, _
+                                                ByVal reserveEventId As String, _
+                                                ByRef report As String) As Boolean
     On Error GoTo FailSoft
 
     Dim wb As Workbook
     Dim lo As ListObject
     Dim openedTransient As Boolean
     Dim target As WarehouseTarget
-    Dim lr As ListRow
-    Dim lineId As String
     Dim sourceWorkbook As String
     Dim nowText As String
+    Dim i As Long
+    Dim rowIndex As Long
+    Dim wroteAny As Boolean
+    Dim lr As ListRow
+    Dim lineId As String
 
     If loShip Is Nothing Then Exit Function
-    If rowIndex <= 0 Or rowIndex > loShip.ListRows.Count Then Exit Function
+    If IsEmpty(rowIndexes) Then
+        UpsertShippingReservationRows = True
+        Exit Function
+    End If
     Set target = modNasConnection.GetCurrentTarget()
     If target Is Nothing Then
         report = "A connected warehouse target is required before locking shipment inventory."
@@ -17263,40 +17272,45 @@ Private Function UpsertShippingReservationForRow(ByVal loShip As ListObject, _
     End If
 
     If Not OpenCurrentShippingReservationsWorkbook(True, wb, lo, openedTransient, report) Then Exit Function
-    lineId = Trim$(ShipmentRowText(loShip, rowIndex, COL_SHIPMENT_LINE_ID))
-    If lineId = "" Then lineId = EnsureShipmentLineId(loShip, rowIndex)
-    Set lr = FindShippingReservationRow(lo, reserveEventId, lineId)
-    If lr Is Nothing Then Set lr = lo.ListRows.Add
-
     sourceWorkbook = ""
     On Error Resume Next
     sourceWorkbook = loShip.Parent.Parent.FullName
     On Error GoTo FailSoft
     nowText = Format$(Now, "yyyy-mm-dd hh:nn:ss")
 
-    WriteValue lr, "ReservationID", ShippingReservationId(lineId, reserveEventId)
-    WriteValue lr, "Status", SHIP_RESERVATION_ACTIVE
-    WriteValue lr, "WarehouseId", Trim$(target.WarehouseId)
-    WriteValue lr, "StationId", Trim$(target.StationId)
-    WriteValue lr, "UserId", modRoleEventWriter.ResolveCurrentUserId()
-    WriteValue lr, "LineID", lineId
-    WriteValue lr, "EventID", Trim$(reserveEventId)
-    WriteValue lr, "RefNumber", ShipmentRowText(loShip, rowIndex, "REF_NUMBER")
-    WriteValue lr, "ItemName", ShipmentRowText(loShip, rowIndex, "ITEMS")
-    WriteValue lr, "PackageSystemKey", ShipmentRowText(loShip, rowIndex, "System_Key")
-    WriteValue lr, "Version", NormalizeBoxBomVersionLabelShipping(ShipmentRowText(loShip, rowIndex, "DESCRIPTION"))
-    WriteValue lr, "Qty", NzDbl(ShipmentRowText(loShip, rowIndex, "QUANTITY"))
-    WriteValue lr, "UOM", ShipmentRowText(loShip, rowIndex, "UOM")
-    WriteValue lr, "Location", ShipmentRowText(loShip, rowIndex, "LOCATION")
-    WriteValue lr, "SourceWorkbook", sourceWorkbook
-    If Trim$(NzStr(ReadListRowValue(lr, "CreatedAtUTC"))) = "" Then WriteValue lr, "CreatedAtUTC", nowText
-    WriteValue lr, "UpdatedAtUTC", nowText
-    WriteValue lr, "ReleasedAtUTC", vbNullString
-    WriteValue lr, "CompletedAtUTC", vbNullString
-    WriteValue lr, "ReleaseEventID", vbNullString
+    For i = LBound(rowIndexes) To UBound(rowIndexes)
+        rowIndex = CLng(rowIndexes(i))
+        If rowIndex >= 1 And rowIndex <= loShip.ListRows.Count Then
+            lineId = Trim$(ShipmentRowText(loShip, rowIndex, COL_SHIPMENT_LINE_ID))
+            If lineId = "" Then lineId = EnsureShipmentLineId(loShip, rowIndex)
+            Set lr = FindShippingReservationRow(lo, reserveEventId, lineId)
+            If lr Is Nothing Then Set lr = lo.ListRows.Add
 
-    wb.Save
-    UpsertShippingReservationForRow = True
+            WriteValue lr, "ReservationID", ShippingReservationId(lineId, reserveEventId)
+            WriteValue lr, "Status", SHIP_RESERVATION_ACTIVE
+            WriteValue lr, "WarehouseId", Trim$(target.WarehouseId)
+            WriteValue lr, "StationId", Trim$(target.StationId)
+            WriteValue lr, "UserId", modRoleEventWriter.ResolveCurrentUserId()
+            WriteValue lr, "LineID", lineId
+            WriteValue lr, "EventID", Trim$(reserveEventId)
+            WriteValue lr, "RefNumber", ShipmentRowText(loShip, rowIndex, "REF_NUMBER")
+            WriteValue lr, "ItemName", ShipmentRowText(loShip, rowIndex, "ITEMS")
+            WriteValue lr, "PackageSystemKey", ShipmentRowText(loShip, rowIndex, "System_Key")
+            WriteValue lr, "Version", NormalizeBoxBomVersionLabelShipping(ShipmentRowText(loShip, rowIndex, "DESCRIPTION"))
+            WriteValue lr, "Qty", NzDbl(ShipmentRowText(loShip, rowIndex, "QUANTITY"))
+            WriteValue lr, "UOM", ShipmentRowText(loShip, rowIndex, "UOM")
+            WriteValue lr, "Location", ShipmentRowText(loShip, rowIndex, "LOCATION")
+            WriteValue lr, "SourceWorkbook", sourceWorkbook
+            If Trim$(NzStr(ReadListRowValue(lr, "CreatedAtUTC"))) = "" Then WriteValue lr, "CreatedAtUTC", nowText
+            WriteValue lr, "UpdatedAtUTC", nowText
+            WriteValue lr, "ReleasedAtUTC", vbNullString
+            WriteValue lr, "CompletedAtUTC", vbNullString
+            WriteValue lr, "ReleaseEventID", vbNullString
+            wroteAny = True
+        End If
+    Next i
+    If wroteAny Then wb.Save
+    UpsertShippingReservationRows = True
 
 CleanExit:
     If openedTransient Then CloseWorkbookNoSaveShipping wb
@@ -21927,6 +21941,24 @@ Private Sub AppendNote(ByRef target As String, ByVal text As String)
     Else
         target = text
     End If
+End Sub
+
+Private Sub AppendShippingPersistenceSummary(ByRef report As String, _
+                                             ByVal inboxSaved As Boolean, _
+                                             ByVal reservationLedgerSaved As Boolean, _
+                                             Optional ByVal processorDurabilitySaves As Long = 0)
+    Dim detail As String
+
+    If inboxSaved Then detail = "warehouse inbox saved"
+    If reservationLedgerSaved Then
+        If detail <> "" Then detail = detail & "; "
+        detail = detail & "reservation ledger saved"
+    End If
+    If processorDurabilitySaves > 0 Then
+        If detail <> "" Then detail = detail & "; "
+        detail = detail & "processor durability saves=" & CStr(processorDurabilitySaves)
+    End If
+    If detail <> "" Then AppendNote report, "Persistence summary: " & detail & "."
 End Sub
 
 Private Function infovalue(info As Object, field As String) As Variant

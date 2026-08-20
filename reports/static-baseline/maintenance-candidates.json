@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-16T20:00:00Z",
+    "generatedAtUtc":  "2026-08-20T19:24:08Z",
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4702,
-                     "lineCount":  103349,
+                     "lineCount":  103381,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  184
@@ -11211,6 +11211,7 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
@@ -14469,6 +14470,7 @@
                                                   "AppendNote",
                                                   "AppendReadinessRows",
                                                   "AppendSentShipmentRowsLocal",
+                                                  "AppendShippingPersistenceSummary",
                                                   "AppendSyncMessage",
                                                   "ApplyBoxBomReadOnlyColumnFormatting",
                                                   "ApplyBoxBomVersionStatusValidation",
@@ -14733,7 +14735,6 @@
                                                   "FirstOpenShippingInventoryWorkbookWithLog",
                                                   "FlattenStatusText",
                                                   "ForceCheckboxCaption",
-                                                  "ForEachShipmentReservationUpsert",
                                                   "FormatBoxMakerQuantityText",
                                                   "FormatBoxMakerReadOnlyColumn",
                                                   "FormatCurrentInventoryColumn",
@@ -15118,7 +15119,7 @@
                                                   "UnregisterBoxMakerFormAutoSync",
                                                   "UnregisterShipmentsFormAutoSync",
                                                   "UpdateInvSysRow",
-                                                  "UpsertShippingReservationForRow",
+                                                  "UpsertShippingReservationRows",
                                                   "UseExistingInventoryEnabled",
                                                   "ValidateApplyShipmentsSentRowsInventoryFromCurrentWorkbook",
                                                   "ValidateBoxesMadeFromCurrentWorkbook",
@@ -15325,6 +15326,7 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4sShippingExactKey.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-R1FinalControlAcceptance.ps1"
                                                ],
                            "reviewRequired":  true

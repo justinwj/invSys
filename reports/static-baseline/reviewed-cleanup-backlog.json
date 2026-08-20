@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-16T20:00:00Z",
+    "generatedAtUtc":  "2026-08-20T19:24:08Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "d2828b5027ab7a9175b1bd97b5b9c88f161f6b41574b9b4308cae55f859f5b64",
-                          "maintenanceCandidatesSha256":  "b054ec5f70f1f703089654375728940d1c7acb097aaa46bfc4fd79bca8cd49e2"
+                          "implementationManifestSha256":  "1cbf82e7bc5afc687b7badebe6d57295dbe98fc4d3752b9e08bf1b1b62abffc1",
+                          "maintenanceCandidatesSha256":  "711cbde90ab870532a6b12b89cffe66e76b0b6695d1a7608177f04e1b483afa0"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -245,7 +245,7 @@
                                                   "sourcePath":  "src/Shipping/Modules/modTS_Shipments.bas",
                                                   "componentName":  "modTS_Shipments",
                                                   "packageKey":  "Shipping",
-                                                  "baselineLineCount":  22295,
+                                                  "baselineLineCount":  22327,
                                                   "growthAllowedWithoutException":  false
                                               }
                                           ]
@@ -22399,6 +22399,7 @@
                                                   "AppendNote",
                                                   "AppendReadinessRows",
                                                   "AppendSentShipmentRowsLocal",
+                                                  "AppendShippingPersistenceSummary",
                                                   "AppendSyncMessage",
                                                   "ApplyBoxBomReadOnlyColumnFormatting",
                                                   "ApplyBoxBomVersionStatusValidation",
@@ -22663,7 +22664,6 @@
                                                   "FirstOpenShippingInventoryWorkbookWithLog",
                                                   "FlattenStatusText",
                                                   "ForceCheckboxCaption",
-                                                  "ForEachShipmentReservationUpsert",
                                                   "FormatBoxMakerQuantityText",
                                                   "FormatBoxMakerReadOnlyColumn",
                                                   "FormatCurrentInventoryColumn",
@@ -23048,7 +23048,7 @@
                                                   "UnregisterBoxMakerFormAutoSync",
                                                   "UnregisterShipmentsFormAutoSync",
                                                   "UpdateInvSysRow",
-                                                  "UpsertShippingReservationForRow",
+                                                  "UpsertShippingReservationRows",
                                                   "UseExistingInventoryEnabled",
                                                   "ValidateApplyShipmentsSentRowsInventoryFromCurrentWorkbook",
                                                   "ValidateBoxesMadeFromCurrentWorkbook",
@@ -23138,6 +23138,7 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4sShippingExactKey.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-R1FinalControlAcceptance.ps1"
                                                ],
                            "deletionApproved":  false,
@@ -25877,6 +25878,7 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
                                                    "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
