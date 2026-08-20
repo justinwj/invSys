@@ -138,11 +138,19 @@ Public Function TestApplySearch(ByVal filterText As String) As String
 End Function
 
 Public Function TestEventsReport() As String
+    Dim removeRows As Long
+    Dim rowIndex As Long
     If Not mBuilt Then BuildLayout
     mTabs.Value = 1
     ApplyViewerTab
+    For rowIndex = 0 To mLstInventory.ListCount - 1
+        If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Remove", vbTextCompare) = 0 Then
+            removeRows = removeRows + 1
+        End If
+    Next rowIndex
     TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
         "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
+        "|RemoveRows=" & CStr(removeRows) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _
         "|ReadOnly=True|Generation=" & CStr(mGeneration)
 End Function

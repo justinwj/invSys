@@ -85,6 +85,23 @@ try {
         "AttributesJson" = "{}"
         "Note" = "Reference=BOL-VIEWER;Item=Viewer Shipment Item;UOM=each"
     }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-SHIP-REMOVE"
+        "AppliedSeq" = 5
+        "EventType" = "SHIP_RELEASE"
+        "OccurredAtUTC" = [datetime]::UtcNow
+        "AppliedAtUTC" = [datetime]::UtcNow
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-LIVE-SHIP"
+        "SKU" = "SKU-SHIP"
+        "QtyDelta" = 0
+        "Location" = "DOCK"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=SHIP-REMOVE-VIEWER;Item=Viewer Shipment Item;UOM=each"
+    }
     $inventoryWb.Save()
     $opened.Add($configWb) | Out-Null
     $opened.Add($authWb) | Out-Null
@@ -156,7 +173,8 @@ try {
         $filterReport -match '(?:^|\|)Generation=1(?:\||$)'
     $snapshotUnchanged = $snapshotHashBefore -eq $snapshotHashAfter
     $eventsOk = $eventsReport -match '^OK\|' -and
-        $eventsReport -match '(?:^|\|)VisibleRows=1(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
 
@@ -169,7 +187,8 @@ try {
     $facts.FirstActionRows = if ($firstOk) { 3 } else { 0 }
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
-    $facts.EventsVisibleRows = if ($eventsOk) { 1 } else { 0 }
+    $facts.EventsVisibleRows = if ($eventsOk) { 2 } else { 0 }
+    $facts.RemoveEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
 
@@ -178,7 +197,7 @@ try {
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
         $firstOk -and $secondReused -and $filterOk -and $eventsOk -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded inventory and one published Receipt event, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded inventory plus published Receipt and Shipping Remove events, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

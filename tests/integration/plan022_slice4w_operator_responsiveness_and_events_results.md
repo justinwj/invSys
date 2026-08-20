@@ -1,6 +1,6 @@
 ﻿# Plan 022 Slice 4w Operator Responsiveness and Events Results
 
-- Passed: 5
+- Passed: 6
 - Failed: 0
 
 | Check | Result | Contract |
@@ -9,4 +9,5 @@
 | Receiving.AggregateReferenceDetail | PASS | The fixed-height aggregate list retains one-line rows while a dedicated multiline detail surface shows every concatenated reference and clears with staging. |
 | Viewer.Events.ReadOnlyTab | PASS | Inventory Viewer exposes a read-only Events tab covering canonical inventory events plus current box-design and held-shipment activity. |
 | Viewer.Events.PublishedProjection | PASS | Viewer event history is read from the published snapshot projection rather than making the form a canonical writer or authority. |
+| Viewer.Events.RemoveRelease | PASS | Shipping Remove releases locked inventory through SHIP_RELEASE and the operator-facing Events view labels that event Remove. |
 | OperatorPersistence.PendingStatus | PASS | Receiving/Returns and Shipping render their own saving-to-server status before required persistence begins; Office-native progress UI remains separate. |

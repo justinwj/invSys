@@ -1,7 +1,7 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-20T21:48:35Z
+- Baseline: 2026-08-20T22:43:24Z
 - Scanner candidates: 968
 - Reviewed candidates: 970
 - Approved deletions: 0
@@ -42,7 +42,7 @@
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1909 |
 | src/Core/Modules/modProcessor.bas | Core | 1450 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 3058 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 3062 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
@@ -54,7 +54,7 @@
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
-| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22440 |
+| src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22451 |
 
 ## Reviewed candidates
 

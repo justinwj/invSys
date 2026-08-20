@@ -11,10 +11,11 @@
 - FirstActionRows: 3
 - RepeatedLaunchReusedGeneration: True
 - FilterVisibleRows: 1
-- EventsVisibleRows: 1
+- EventsVisibleRows: 2
+- RemoveEventsVisible: True
 - EventsReadOnly: True
 - SnapshotHashUnchanged: True
 
 ## Observed result
 
-The public Operations Viewer action loaded inventory and one published Receipt event, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged.
+The public Operations Viewer action loaded inventory plus published Receipt and Shipping Remove events, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged.

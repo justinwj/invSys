@@ -75,6 +75,12 @@ $checks = @(
         Contract = "Viewer event history is read from the published snapshot projection rather than making the form a canonical writer or authority."
     },
     [pscustomobject]@{
+        Check = "Viewer.Events.RemoveRelease"
+        Passed = ($viewerData -match 'Case\s+"SHIP_RELEASE"\s*:\s*ViewerFriendlyEventType\s*=\s*"Remove"') -and
+            ($shippingService -match 'EVENT_TYPE_SHIP_RELEASE')
+        Contract = "Shipping Remove releases locked inventory through SHIP_RELEASE and the operator-facing Events view labels that event Remove."
+    },
+    [pscustomobject]@{
         Check = "OperatorPersistence.PendingStatus"
         Passed = ($receivingConfirm -match 'ShowPersistencePending') -and
             ($receivingConfirm -match 'ExecuteConfirmWrites') -and
