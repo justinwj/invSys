@@ -2244,7 +2244,7 @@
                            "name":  "modInventoryViewerData",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Core/Modules/modInventoryViewerData.bas",
-                           "lineCount":  304,
+                           "lineCount":  303,
                            "procedureNames":  [
                                                   "LoadCurrentInventoryEventViewerData",
                                                   "LoadCurrentInventoryViewerData",
@@ -4116,7 +4116,7 @@
                            "name":  "frmInventoryViewer",
                            "kind":  "FORM",
                            "sourcePath":  "src/Operations/Forms/frmInventoryViewer.frm",
-                           "lineCount":  476,
+                           "lineCount":  481,
                            "procedureNames":  [
                                                   "AddButton",
                                                   "AddLabel",
@@ -38046,8 +38046,8 @@
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  201,
-                           "endLine":  212,
-                           "lineCount":  12,
+                           "endLine":  211,
+                           "lineCount":  11,
                            "directCalls":  [
                                                "EventType"
                                            ],
@@ -38066,8 +38066,8 @@
                            "name":  "ViewerFirstNoteToken",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  214,
-                           "endLine":  220,
+                           "startLine":  213,
+                           "endLine":  219,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ViewerNoteToken"
@@ -38087,8 +38087,8 @@
                            "name":  "ViewerNoteToken",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  222,
-                           "endLine":  234,
+                           "startLine":  221,
+                           "endLine":  233,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -38108,8 +38108,8 @@
                            "name":  "ViewerFirstNonBlank",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  236,
-                           "endLine":  239,
+                           "startLine":  235,
+                           "endLine":  238,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -38129,8 +38129,8 @@
                            "name":  "ViewerWorkbookNameIsOpen",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  241,
-                           "endLine":  250,
+                           "startLine":  240,
+                           "endLine":  249,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -38150,8 +38150,8 @@
                            "name":  "ViewerFindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  252,
-                           "endLine":  262,
+                           "startLine":  251,
+                           "endLine":  261,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -38171,8 +38171,8 @@
                            "name":  "ViewerColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  264,
-                           "endLine":  274,
+                           "startLine":  263,
+                           "endLine":  273,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -38192,8 +38192,8 @@
                            "name":  "ViewerCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  276,
-                           "endLine":  287,
+                           "startLine":  275,
+                           "endLine":  286,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -38214,8 +38214,8 @@
                            "name":  "ViewerCellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  289,
-                           "endLine":  296,
+                           "startLine":  288,
+                           "endLine":  295,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ViewerCellText"
@@ -38235,8 +38235,8 @@
                            "name":  "ViewerEscape",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  298,
-                           "endLine":  304,
+                           "startLine":  297,
+                           "endLine":  303,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -66817,8 +66817,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  150,
-                           "endLine":  186,
-                           "lineCount":  37,
+                           "endLine":  191,
+                           "lineCount":  42,
                            "directCalls":  [
                                                "BuildLayout",
                                                "mBtnRefresh_Click"
@@ -66838,8 +66838,8 @@
                            "name":  "BuildLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  188,
-                           "endLine":  277,
+                           "startLine":  193,
+                           "endLine":  282,
                            "lineCount":  90,
                            "directCalls":  [
                                                "Add",
@@ -66867,8 +66867,8 @@
                            "name":  "mTabs_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  279,
-                           "endLine":  281,
+                           "startLine":  284,
+                           "endLine":  286,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ApplyViewerTab"
@@ -66889,8 +66889,8 @@
                            "name":  "ApplyViewerTab",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  283,
-                           "endLine":  305,
+                           "startLine":  288,
+                           "endLine":  310,
                            "lineCount":  23,
                            "directCalls":  [
                                                "RefreshEvents",
@@ -66911,8 +66911,8 @@
                            "name":  "mTxtSearch_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  307,
-                           "endLine":  309,
+                           "startLine":  312,
+                           "endLine":  314,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RenderRows"
@@ -66933,8 +66933,8 @@
                            "name":  "mBtnRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  311,
-                           "endLine":  317,
+                           "startLine":  316,
+                           "endLine":  322,
                            "lineCount":  7,
                            "directCalls":  [
                                                "RefreshEvents",
@@ -66958,8 +66958,8 @@
                            "name":  "mBtnClose_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  319,
-                           "endLine":  321,
+                           "startLine":  324,
+                           "endLine":  326,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -66985,8 +66985,8 @@
                            "name":  "RenderRows",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  323,
-                           "endLine":  408,
+                           "startLine":  328,
+                           "endLine":  413,
                            "lineCount":  86,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -67006,8 +67006,8 @@
                            "name":  "TrimViewerRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  410,
-                           "endLine":  422,
+                           "startLine":  415,
+                           "endLine":  427,
                            "lineCount":  13,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -67027,8 +67027,8 @@
                            "name":  "ViewerUnescape",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  424,
-                           "endLine":  430,
+                           "startLine":  429,
+                           "endLine":  435,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -67048,8 +67048,8 @@
                            "name":  "AddLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  432,
-                           "endLine":  445,
+                           "startLine":  437,
+                           "endLine":  450,
                            "lineCount":  14,
                            "directCalls":  [
                                                "Add"
@@ -67069,8 +67069,8 @@
                            "name":  "AddTextBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  447,
-                           "endLine":  454,
+                           "startLine":  452,
+                           "endLine":  459,
                            "lineCount":  8,
                            "directCalls":  [
                                                "Add"
@@ -67090,8 +67090,8 @@
                            "name":  "AddListBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  456,
-                           "endLine":  463,
+                           "startLine":  461,
+                           "endLine":  468,
                            "lineCount":  8,
                            "directCalls":  [
                                                "Add"
@@ -67111,8 +67111,8 @@
                            "name":  "AddButton",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  465,
-                           "endLine":  476,
+                           "startLine":  470,
+                           "endLine":  481,
                            "lineCount":  12,
                            "directCalls":  [
                                                "Add"

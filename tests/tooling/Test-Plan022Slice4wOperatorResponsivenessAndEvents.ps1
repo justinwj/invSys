@@ -136,6 +136,12 @@ $checks = @(
         Contract = "Shipping Remove releases locked inventory through SHIP_RELEASE and the operator-facing Events view labels that event Remove."
     },
     [pscustomobject]@{
+        Check = "Viewer.Events.ExcludesInternalReservation"
+        Passed = ($viewerData -notmatch 'Case\s+"SHIP_RESERVE"\s*:\s*ViewerFriendlyEventType\s*=\s*"Shipment Held"') -and
+            ($viewerEventsTest -match 'ShipmentHeldRows=')
+        Contract = "An ordinary Shipping Add may write an internal SHIP_RESERVE row, but the operator-facing Events view does not misreport that zero-delta reservation as Shipment Held; actual held-shipment supplements remain visible."
+    },
+    [pscustomobject]@{
         Check = "OperatorPersistence.PendingStatus"
         Passed = ($receivingConfirm -match 'ShowPersistencePending') -and
             ($receivingConfirm -match 'ExecuteConfirmWrites') -and

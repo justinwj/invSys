@@ -206,7 +206,6 @@ Private Function ViewerFriendlyEventType(ByVal eventType As String) As String
         Case "BOX_BUILD": ViewerFriendlyEventType = "Box Made"
         Case "BOX_UNBOX": ViewerFriendlyEventType = "Box Unboxed"
         Case "SHIP": ViewerFriendlyEventType = "Shipped"
-        Case "SHIP_RESERVE": ViewerFriendlyEventType = "Shipment Held"
         Case "SHIP_RELEASE": ViewerFriendlyEventType = "Remove"
     End Select
 End Function

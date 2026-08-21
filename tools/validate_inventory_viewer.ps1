@@ -150,6 +150,23 @@ try {
         "AttributesJson" = "{}"
         "Note" = "Reference=DUMP-VIEWER;Item=Viewer Shipment Item;UOM=each"
     }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-INTERNAL-RESERVE"
+        "AppliedSeq" = 8
+        "EventType" = "SHIP_RESERVE"
+        "OccurredAtUTC" = $fixtureNow.AddHours(-10).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddHours(-10).ToOADate()
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-LIVE-SHIP"
+        "SKU" = "SKU-SHIP"
+        "QtyDelta" = 0
+        "Location" = "DOCK"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=SHIP-ADD-VIEWER;Item=Viewer Shipment Item;UOM=each;IO=RESERVED"
+    }
     $inventoryWb.Save()
     $opened.Add($configWb) | Out-Null
     $opened.Add($authWb) | Out-Null
@@ -277,6 +294,7 @@ try {
         $eventsReport -match '(?:^|\|)ReadableDates=4(?:\||$)' -and
         $eventsReport -match '(?:^|\|)FirstReference=DUMP-VIEWER(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ShipmentHeldRows=0(?:\||$)' -and
         $eventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RangeControlVisible=True(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
@@ -318,6 +336,7 @@ try {
     $facts.ViewerTabCaptions = if ($eventsOk) { "Inventory,Events" } else { "Unexpected" }
     $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
+    $facts.InternalReservationHidden = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.RollingDateFilters = $dateFiltersOk
     $facts.RememberedRangeAfterReopen = $rememberedRangeOk
@@ -341,7 +360,7 @@ try {
         $invalidRememberedFallbackOk -and
         $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, excluded the internal SHIP_RESERVE fixture from the operator-action log, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

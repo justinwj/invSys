@@ -1,6 +1,6 @@
 ﻿# Plan 022 Slice 4w Operator Responsiveness and Events Results
 
-- Passed: 11
+- Passed: 12
 - Failed: 0
 
 | Check | Result | Contract |
@@ -15,4 +15,5 @@
 | Viewer.Events.RemembersDateFilter | PASS | A valid applied Event range is stored as a per-Windows-user Operations preference and restored when the public Viewer action creates a new form instance. |
 | Viewer.Events.PublishedProjection | PASS | Viewer event history is read from the published snapshot projection rather than making the form a canonical writer or authority. |
 | Viewer.Events.RemoveRelease | PASS | Shipping Remove releases locked inventory through SHIP_RELEASE and the operator-facing Events view labels that event Remove. |
+| Viewer.Events.ExcludesInternalReservation | PASS | An ordinary Shipping Add may write an internal SHIP_RESERVE row, but the operator-facing Events view does not misreport that zero-delta reservation as Shipment Held; actual held-shipment supplements remain visible. |
 | OperatorPersistence.PendingStatus | PASS | Receiving/Returns and Shipping render their own saving-to-server status before required persistence begins; Office-native progress UI remains separate. |
