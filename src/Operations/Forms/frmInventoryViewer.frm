@@ -141,6 +141,7 @@ Public Function TestEventsReport() As String
     Dim removeRows As Long
     Dim readableDates As Long
     Dim rowIndex As Long
+    Dim firstDate As String
     Dim firstReference As String
     If Not mBuilt Then BuildLayout
     mTabs.Value = 1
@@ -154,13 +155,17 @@ Public Function TestEventsReport() As String
             readableDates = readableDates + 1
         End If
     Next rowIndex
-    If mLstInventory.ListCount > 0 Then firstReference = CStr(mLstInventory.List(0, 2))
+    If mLstInventory.ListCount > 0 Then
+        firstDate = CStr(mLstInventory.List(0, 0))
+        firstReference = CStr(mLstInventory.List(0, 2))
+    End If
     TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
         "|TabCount=" & CStr(mTabs.Tabs.Count) & _
         "|TabCaptions=" & mTabs.Tabs(0).Caption & "," & mTabs.Tabs(1).Caption & _
         "|SelectedTab=" & mTabs.Tabs(mTabs.Value).Caption & _
         "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
         "|ReadableDates=" & CStr(readableDates) & _
+        "|FirstDate=" & firstDate & _
         "|FirstReference=" & firstReference & _
         "|RemoveRows=" & CStr(removeRows) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _

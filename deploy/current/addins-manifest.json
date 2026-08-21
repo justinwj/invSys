@@ -1,13 +1,13 @@
 {
     "schemaVersion":  "1.0.0",
     "packageSetVersion":  "R1-5",
-    "generatedUtc":  "2026-08-21T06:36:37Z",
+    "generatedUtc":  "2026-08-21T17:12:37Z",
     "packages":  [
                      {
                          "name":  "invSys.Core.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  886576,
-                         "sha256":  "7e4d94f731cc5e8a6c97890c6e54249aa53af42fa8595b29d579f1043d8de5e7"
+                         "sizeBytes":  886850,
+                         "sha256":  "9a64153df404697eda8be181636cdeafa3d7f20a97ca961bc523fcf27a9aeb3a"
                      },
                      {
                          "name":  "invSys.Inventory.Domain.xlam",
@@ -24,8 +24,8 @@
                      {
                          "name":  "invSys.Operations.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  1483457,
-                         "sha256":  "10118f0d9f55981a1220eb041994a0e53925453cd30366432db1189f529da005"
+                         "sizeBytes":  1484541,
+                         "sha256":  "eda502bba7673ccc186fd31240b3e4fcc242ca2b2e5375eabc52b273e1dffedc"
                      },
                      {
                          "name":  "invSys.Admin.xlam",

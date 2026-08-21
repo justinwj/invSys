@@ -72,8 +72,8 @@ try {
         "EventID" = "EVT-VIEWER-RECEIVE"
         "AppliedSeq" = 4
         "EventType" = "RECEIVE"
-        "OccurredAtUTC" = [datetime]::UtcNow
-        "AppliedAtUTC" = [datetime]::UtcNow
+        "OccurredAtUTC" = 46255.4
+        "AppliedAtUTC" = 46255.4
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -89,8 +89,8 @@ try {
         "EventID" = "EVT-VIEWER-SHIP-REMOVE"
         "AppliedSeq" = 5
         "EventType" = "SHIP_RELEASE"
-        "OccurredAtUTC" = [datetime]::UtcNow
-        "AppliedAtUTC" = [datetime]::UtcNow
+        "OccurredAtUTC" = 46255.41
+        "AppliedAtUTC" = 46255.41
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -168,8 +168,8 @@ try {
         "EventID" = "EVT-VIEWER-NEW-RECEIVE"
         "AppliedSeq" = 6
         "EventType" = "RECEIVE"
-        "OccurredAtUTC" = [datetime]::UtcNow
-        "AppliedAtUTC" = [datetime]::UtcNow
+        "OccurredAtUTC" = 46255.42
+        "AppliedAtUTC" = 46255.42
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -240,6 +240,8 @@ try {
     $facts.EventsReadOnly = $eventsOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
     $facts.NewPublicationChangedSnapshot = $snapshotAdvanced
+    if (-not $eventsOk) { $facts.InitialEventsReport = $eventsReport }
+    if (-not $refreshedEventsOk) { $facts.RefreshedEventsReport = $refreshedEventsReport }
 
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
