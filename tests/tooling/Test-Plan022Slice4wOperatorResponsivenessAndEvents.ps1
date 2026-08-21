@@ -33,6 +33,7 @@ $receivingAggregateClick = Procedure-Text $receivingForm "mLstAggregate_Click"
 $viewerBuild = Procedure-Text $viewerForm "BuildLayout"
 $viewerTab = Procedure-Text $viewerForm "ApplyViewerTab"
 $viewerRefreshEvents = Procedure-Text $viewerForm "RefreshEvents"
+$viewerEventsTest = Procedure-Text $viewerForm "TestEventsReport"
 $shippingCommit = Procedure-Text $shippingForm "CommitCurrentLine"
 $shippingSend = Procedure-Text $shippingForm "mBtnSend_Click"
 $snapshotAction = Procedure-Text $warehouseSync "GenerateWarehouseSnapshot"
@@ -57,14 +58,23 @@ $checks = @(
     },
     [pscustomobject]@{
         Check = "Viewer.Events.ReadOnlyTab"
-        Passed = ($viewerBuild -match 'Tabs\.Add\s+"tabInventory"') -and
-            ($viewerBuild -match 'Tabs\.Add\s+"tabEvents"') -and
+        Passed = ($viewerBuild -match 'Tabs\(0\)\.Caption\s*=\s*"Inventory"') -and
+            ($viewerBuild -match 'Tabs\(1\)\.Caption\s*=\s*"Events"') -and
             ($viewerTab -match 'RefreshEvents') -and
             ($viewerRefreshEvents -match 'LoadCurrentInventoryEventViewerData') -and
             ($viewerController -match 'LoadShippingViewerSupplementEvents') -and
             ($shippingService -match 'BOX_DESIGNED') -and
             ($shippingService -match 'SHIP_HELD')
         Contract = "Inventory Viewer exposes a read-only Events tab covering canonical inventory events plus current box-design and held-shipment activity."
+    },
+    [pscustomobject]@{
+        Check = "Viewer.Tabs.ExactlyInventoryAndEvents"
+        Passed = ($viewerBuild -notmatch 'Tabs\.Add\s+"tabInventory"') -and
+            ($viewerBuild -notmatch 'Tabs\.Add\s+"tabEvents"') -and
+            ($viewerEventsTest -match 'TabCount=') -and
+            ($viewerEventsTest -match 'TabCaptions=') -and
+            ($viewerEventsTest -match 'SelectedTab=')
+        Contract = "The runtime Viewer does not append duplicate placeholder pages, exposes exactly Inventory and Events, and its public Events action selects the operator-visible Events tab."
     },
     [pscustomobject]@{
         Check = "Viewer.Events.PublishedProjection"

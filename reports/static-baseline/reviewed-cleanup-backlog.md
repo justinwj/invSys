@@ -1,7 +1,7 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-20T22:43:24Z
+- Baseline: 2026-08-21T06:37:42Z
 - Scanner candidates: 968
 - Reviewed candidates: 970
 - Approved deletions: 0

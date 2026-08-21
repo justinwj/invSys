@@ -1,7 +1,7 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "implementation-manifest",
-    "generatedAtUtc":  "2026-08-20T22:43:24Z",
+    "generatedAtUtc":  "2026-08-21T06:37:42Z",
     "sourceRoot":  "src",
     "packages":  [
                      {
@@ -4116,7 +4116,7 @@
                            "name":  "frmInventoryViewer",
                            "kind":  "FORM",
                            "sourcePath":  "src/Operations/Forms/frmInventoryViewer.frm",
-                           "lineCount":  331,
+                           "lineCount":  334,
                            "procedureNames":  [
                                                   "AddButton",
                                                   "AddLabel",
@@ -66816,8 +66816,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  140,
-                           "endLine":  156,
-                           "lineCount":  17,
+                           "endLine":  159,
+                           "lineCount":  20,
                            "directCalls":  [
                                                "ApplyViewerTab",
                                                "BuildLayout"
@@ -66837,8 +66837,8 @@
                            "name":  "BuildLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  158,
-                           "endLine":  198,
+                           "startLine":  161,
+                           "endLine":  201,
                            "lineCount":  41,
                            "directCalls":  [
                                                "Add",
@@ -66866,8 +66866,8 @@
                            "name":  "mTabs_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  200,
-                           "endLine":  202,
+                           "startLine":  203,
+                           "endLine":  205,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ApplyViewerTab"
@@ -66888,8 +66888,8 @@
                            "name":  "ApplyViewerTab",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  204,
-                           "endLine":  220,
+                           "startLine":  207,
+                           "endLine":  223,
                            "lineCount":  17,
                            "directCalls":  [
                                                "RefreshEvents",
@@ -66910,8 +66910,8 @@
                            "name":  "mTxtSearch_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  222,
-                           "endLine":  224,
+                           "startLine":  225,
+                           "endLine":  227,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RenderRows"
@@ -66932,8 +66932,8 @@
                            "name":  "mBtnRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  226,
-                           "endLine":  232,
+                           "startLine":  229,
+                           "endLine":  235,
                            "lineCount":  7,
                            "directCalls":  [
                                                "RefreshEvents",
@@ -66957,8 +66957,8 @@
                            "name":  "mBtnClose_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  234,
-                           "endLine":  236,
+                           "startLine":  237,
+                           "endLine":  239,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -66984,8 +66984,8 @@
                            "name":  "RenderRows",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  238,
-                           "endLine":  263,
+                           "startLine":  241,
+                           "endLine":  266,
                            "lineCount":  26,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -67005,8 +67005,8 @@
                            "name":  "TrimViewerRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  265,
-                           "endLine":  277,
+                           "startLine":  268,
+                           "endLine":  280,
                            "lineCount":  13,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -67026,8 +67026,8 @@
                            "name":  "ViewerUnescape",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  279,
-                           "endLine":  285,
+                           "startLine":  282,
+                           "endLine":  288,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -67047,8 +67047,8 @@
                            "name":  "AddLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  287,
-                           "endLine":  300,
+                           "startLine":  290,
+                           "endLine":  303,
                            "lineCount":  14,
                            "directCalls":  [
                                                "Add"
@@ -67068,8 +67068,8 @@
                            "name":  "AddTextBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  302,
-                           "endLine":  309,
+                           "startLine":  305,
+                           "endLine":  312,
                            "lineCount":  8,
                            "directCalls":  [
                                                "Add"
@@ -67089,8 +67089,8 @@
                            "name":  "AddListBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  311,
-                           "endLine":  318,
+                           "startLine":  314,
+                           "endLine":  321,
                            "lineCount":  8,
                            "directCalls":  [
                                                "Add"
@@ -67110,8 +67110,8 @@
                            "name":  "AddButton",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  320,
-                           "endLine":  331,
+                           "startLine":  323,
+                           "endLine":  334,
                            "lineCount":  12,
                            "directCalls":  [
                                                "Add"
@@ -120910,6 +120910,12 @@
                                "entryPoint":  "TestCompletionDeltasFromStagedRows",
                                "testPaths":  [
                                                  "tests/unit/TestPhase6RoleSurfaces.bas"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "TestEventsReport",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                              ]
                            },
                            {

@@ -173,6 +173,10 @@ try {
         $filterReport -match '(?:^|\|)Generation=1(?:\||$)'
     $snapshotUnchanged = $snapshotHashBefore -eq $snapshotHashAfter
     $eventsOk = $eventsReport -match '^OK\|' -and
+        $eventsReport -match '(?:^|\|)TabCount=2(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)SelectedTab=Events(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)Title=Inventory and shipping events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
@@ -188,6 +192,9 @@ try {
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
     $facts.EventsVisibleRows = if ($eventsOk) { 2 } else { 0 }
+    $facts.ViewerTabCount = if ($eventsOk) { 2 } else { 0 }
+    $facts.ViewerTabCaptions = if ($eventsOk) { "Inventory,Events" } else { "Unexpected" }
+    $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged

@@ -12,6 +12,9 @@
 - RepeatedLaunchReusedGeneration: True
 - FilterVisibleRows: 1
 - EventsVisibleRows: 2
+- ViewerTabCount: 2
+- ViewerTabCaptions: Inventory,Events
+- SelectedViewerTab: Events
 - RemoveEventsVisible: True
 - EventsReadOnly: True
 - SnapshotHashUnchanged: True

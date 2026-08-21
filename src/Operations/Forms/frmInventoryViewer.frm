@@ -149,6 +149,9 @@ Public Function TestEventsReport() As String
         End If
     Next rowIndex
     TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
+        "|TabCount=" & CStr(mTabs.Tabs.Count) & _
+        "|TabCaptions=" & mTabs.Tabs(0).Caption & "," & mTabs.Tabs(1).Caption & _
+        "|SelectedTab=" & mTabs.Tabs(mTabs.Value).Caption & _
         "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
         "|RemoveRows=" & CStr(removeRows) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _
@@ -163,8 +166,8 @@ Private Sub BuildLayout()
     Set mTabs = Me.Controls.Add("Forms.TabStrip.1", "tabsInventoryViewer", True)
     With mTabs
         .Move 12, 8, 820, 24
-        .Tabs.Add "tabInventory", "Inventory"
-        .Tabs.Add "tabEvents", "Events"
+        .Tabs(0).Caption = "Inventory"
+        .Tabs(1).Caption = "Events"
         .Value = 0
     End With
     Set mLblTitle = AddLabel("lblTitle", "Current inventory levels", 12, 40, 360, 22, True)
