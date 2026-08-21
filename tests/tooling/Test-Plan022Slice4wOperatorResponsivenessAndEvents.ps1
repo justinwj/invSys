@@ -112,6 +112,16 @@ $checks = @(
         Contract = "The operator-visible Events Refresh action combines text search with All, rolling Day/Week/Month, or a typed positive whole-number-of-days filter; Inventory remains unfiltered."
     },
     [pscustomobject]@{
+        Check = "Viewer.Events.RemembersDateFilter"
+        Passed = ($viewerForm -match 'SETTINGS_EVENT_RANGE') -and
+            ($viewerBuild -match 'GetSetting\(') -and
+            ($viewerForm -match 'InventoryViewerEventRange') -and
+            ($viewerRenderRows -match 'SaveSetting\s+SETTINGS_APP') -and
+            ($viewerEventsTest -match 'EventRange=') -and
+            ($viewerController -match 'CloseInventoryViewerForTest')
+        Contract = "A valid applied Event range is stored as a per-Windows-user Operations preference and restored when the public Viewer action creates a new form instance."
+    },
+    [pscustomobject]@{
         Check = "Viewer.Events.PublishedProjection"
         Passed = ($snapshotAction -match 'WriteSnapshotEventRows') -and
             ($warehouseSync -match 'tblInventoryEvents') -and

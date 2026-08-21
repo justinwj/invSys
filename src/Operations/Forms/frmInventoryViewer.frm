@@ -15,6 +15,10 @@ Attribute VB_Exposed = False
 '@RuntimeStubUserFormCode
 Option Explicit
 
+Private Const SETTINGS_APP As String = "invSys"
+Private Const SETTINGS_SECTION_OPERATIONS As String = "Operations"
+Private Const SETTINGS_EVENT_RANGE As String = "InventoryViewerEventRange"
+
 Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
@@ -182,6 +186,9 @@ Public Function TestEventsReport(Optional ByVal rangeText As String = "") As Str
 End Function
 
 Private Sub BuildLayout()
+    Dim rememberedRange As String
+    Dim numericRange As Double
+
     If mBuilt Then Exit Sub
     Me.Width = 860
     Me.Height = 535
@@ -199,6 +206,34 @@ Private Sub BuildLayout()
     Set mTxtSearch = AddTextBox("txtSearch", 92, 74, 740, 24)
     Set mLblEventRange = AddLabel("lblEventRange", "Event range", 12, 110, 96, 18, True)
     Set mCboEventRange = Me.Controls.Add("Forms.ComboBox.1", "cboEventRange", True)
+    On Error Resume Next
+    rememberedRange = Trim$(GetSetting(SETTINGS_APP, SETTINGS_SECTION_OPERATIONS, SETTINGS_EVENT_RANGE, "All"))
+    On Error GoTo 0
+    Select Case UCase$(rememberedRange)
+        Case "ALL"
+            rememberedRange = "All"
+        Case "DAY"
+            rememberedRange = "Day"
+        Case "WEEK"
+            rememberedRange = "Week"
+        Case "MONTH"
+            rememberedRange = "Month"
+        Case Else
+            If IsNumeric(rememberedRange) Then
+                On Error Resume Next
+                Err.Clear
+                numericRange = CDbl(rememberedRange)
+                If Err.Number <> 0 Then numericRange = 0
+                On Error GoTo 0
+                If numericRange > 0 And numericRange = Fix(numericRange) And numericRange <= 36500 Then
+                    rememberedRange = CStr(CLng(numericRange))
+                Else
+                    rememberedRange = "All"
+                End If
+            Else
+                rememberedRange = "All"
+            End If
+    End Select
     With mCboEventRange
         .Move 112, 104, 150, 24
         .Style = fmStyleDropDownCombo
@@ -207,7 +242,7 @@ Private Sub BuildLayout()
         .AddItem "Day"
         .AddItem "Week"
         .AddItem "Month"
-        .Value = "All"
+        .Value = rememberedRange
     End With
     Set mLblEventRangeHelp = AddLabel("lblEventRangeHelp", _
         "Choose Day, Week, Month, or type a whole number of days; select Refresh to apply.", _
@@ -295,25 +330,34 @@ Private Sub RenderRows(ByVal filterText As String)
     Dim eventDateValue As Date
     Dim hasEventDateFilter As Boolean
     Dim numericRange As Double
+    Dim storedRange As String
 
     mLstInventory.Clear
     mLblStatus.Caption = mLoadStatus
-    If IsEmpty(mRows) Then Exit Sub
     If mTabs.Value = 1 Then
         rangeText = UCase$(Trim$(CStr(mCboEventRange.Value)))
         Select Case rangeText
             Case "", "ALL"
+                storedRange = "All"
             Case "DAY"
                 eventDays = 1
+                storedRange = "Day"
             Case "WEEK"
                 eventDays = 7
+                storedRange = "Week"
             Case "MONTH"
                 eventDays = 30
+                storedRange = "Month"
             Case Else
                 If IsNumeric(rangeText) Then
+                    On Error Resume Next
+                    Err.Clear
                     numericRange = CDbl(rangeText)
+                    If Err.Number <> 0 Then numericRange = 0
+                    On Error GoTo 0
                     If numericRange > 0 And numericRange = Fix(numericRange) And numericRange <= 36500 Then
                         eventDays = CLng(numericRange)
+                        storedRange = CStr(eventDays)
                     End If
                 End If
                 If eventDays = 0 Then
@@ -321,11 +365,16 @@ Private Sub RenderRows(ByVal filterText As String)
                     Exit Sub
                 End If
         End Select
+        mCboEventRange.Value = storedRange
+        On Error Resume Next
+        SaveSetting SETTINGS_APP, SETTINGS_SECTION_OPERATIONS, SETTINGS_EVENT_RANGE, storedRange
+        On Error GoTo 0
         If eventDays > 0 Then
             hasEventDateFilter = True
             eventCutoff = DateAdd("d", -eventDays, Now)
         End If
     End If
+    If IsEmpty(mRows) Then Exit Sub
     filterText = LCase$(Trim$(filterText))
     For rowIndex = LBound(mRows, 1) To UBound(mRows, 1)
         matches = (filterText = "")

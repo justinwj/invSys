@@ -2,7 +2,7 @@
 
 - Schema: 1.0.0
 - Generated: 2026-08-21T17:14:52Z
-- Total candidates: 966
+- Total candidates: 965
 - Duplicate-body groups: 185
 - Unresolved dynamic calls: 47
 
@@ -871,7 +871,6 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | UNRESOLVED | MEDIUM | modInvMan | DeductUsed_Click | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modInvMan | ReAddBulkLogEntries | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modInvMan | RemoveLastBulkLogEntries | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
-| UNRESOLVED | MEDIUM | modInventoryViewer | CloseInventoryViewerForTest | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modInventoryViewer | RunInventoryViewerActionForTest | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modInventoryViewer | RunInventoryViewerFilterForTest | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modOperationsInit | OperationsShadowStartupForTest | No direct, dynamic-root, or test reference was found, but public visibility requires review. |

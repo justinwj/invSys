@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-21T17:14:52Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "3a636c288af22f94d713c8c052f6a5895e9e5765d349949139694796b50e3ba5",
-                          "maintenanceCandidatesSha256":  "50ae9398c2def9f90e11cc786696f8771f4280d3e07eac63bf861901d3dc57ce"
+                          "implementationManifestSha256":  "71ebaadea83d81b60e0f569676dc6aa0d57286c7373d72dee4a63f323a6e25f0",
+                          "maintenanceCandidatesSha256":  "0f0529152390378d12431e433646cf847504948b9effa30da338f811d9f1d42c"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  966,
-                    "reviewedCandidateCount":  968,
+                    "scannerCandidateCount":  965,
+                    "reviewedCandidateCount":  967,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -57,7 +57,7 @@
                         },
                         {
                             "name":  "DEVELOPER_TOOLING",
-                            "candidateCount":  14,
+                            "candidateCount":  13,
                             "reason":  "Build, scan, report, and other developer-only tooling."
                         },
                         {
@@ -13740,29 +13740,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Protect the public action, replace the same-project string dispatch with a direct typed call, and rescan."
-                       },
-                       {
-                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.CloseInventoryViewerForTest",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "DEVELOPER_TOOLING",
-                           "componentName":  "modInventoryViewer",
-                           "procedureNames":  [
-                                                  "CloseInventoryViewerForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Operations/Modules/modInventoryViewer.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerActionForTest",

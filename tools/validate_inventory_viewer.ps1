@@ -49,8 +49,21 @@ $facts = [ordered]@{}
 $passed = $false
 $detail = ""
 $step = "startup"
+$preferenceRegistryPath = "HKCU:\Software\VB and VBA Program Settings\invSys\Operations"
+$preferenceName = "InventoryViewerEventRange"
+$preferenceExisted = $false
+$preferenceBefore = ""
+$preferenceItem = Get-ItemProperty -LiteralPath $preferenceRegistryPath `
+    -Name $preferenceName -ErrorAction SilentlyContinue
+if ($null -ne $preferenceItem) {
+    $preferenceExisted = $true
+    $preferenceBefore = [string]$preferenceItem.PSObject.Properties[$preferenceName].Value
+}
 
 try {
+    New-Item -Path $preferenceRegistryPath -Force | Out-Null
+    Set-ItemProperty -LiteralPath $preferenceRegistryPath -Name $preferenceName `
+        -Value "invalid-test-range" -Type String
     New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
     $step = "start isolated Excel"
     $excel = New-Object -ComObject Excel.Application
@@ -235,6 +248,12 @@ try {
         -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("14"))
     $allEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("All"))
+    $rememberedSetupReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("14"))
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.CloseInventoryViewerForTest")
+    $reopenedRememberedReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.CloseInventoryViewerForTest")
     $snapshotHashAfter = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
@@ -262,6 +281,7 @@ try {
         $eventsReport -match '(?:^|\|)RangeControlVisible=True(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
+    $invalidRememberedFallbackOk = $eventsReport -match '(?:^|\|)EventRange=All(?:\||$)'
     $refreshedEventsOk = $refreshedEventsReport -match '^OK\|' -and
         $refreshedEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
         $refreshedEventsReport -match '(?:^|\|)ReadableDates=5(?:\||$)' -and
@@ -276,6 +296,10 @@ try {
         $customEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
         $allEventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
         $allEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)'
+    $rememberedRangeOk = $rememberedSetupReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
+        $reopenedRememberedReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
+        $reopenedRememberedReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $reopenedRememberedReport -match '(?:^|\|)Generation=2(?:\||$)'
 
     $facts.ConfigLoaded = $configLoaded
     $facts.AuthLoaded = $authLoaded
@@ -296,6 +320,8 @@ try {
     $facts.RemoveEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.RollingDateFilters = $dateFiltersOk
+    $facts.RememberedRangeAfterReopen = $rememberedRangeOk
+    $facts.InvalidRememberedRangeFallsBackToAll = $invalidRememberedFallbackOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
     $facts.NewPublicationChangedSnapshot = $snapshotAdvanced
     if (-not $eventsOk) { $facts.InitialEventsReport = $eventsReport }
@@ -303,14 +329,19 @@ try {
     if (-not $dateFiltersOk) {
         $facts.DateFilterReports = "Day=$dayEventsReport; Week=$weekEventsReport; Month=$monthEventsReport; Custom=$customEventsReport; All=$allEventsReport"
     }
+    if (-not $rememberedRangeOk) {
+        $facts.RememberedRangeReports = "Setup=$rememberedSetupReport; Reopened=$reopenedRememberedReport"
+    }
 
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
         $firstOk -and $secondReused -and $filterOk -and $eventsOk -and
-        $refreshedEventsOk -and $dateFiltersOk -and $snapshotAdvanced -and $snapshotUnchanged
+        $refreshedEventsOk -and $dateFiltersOk -and $rememberedRangeOk -and
+        $invalidRememberedFallbackOk -and
+        $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, reused one form generation, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }
@@ -341,6 +372,14 @@ finally {
     if ($null -ne $excel) {
         try { $excel.Quit() } catch {}
         Release-ComObject $excel
+    }
+    if ($preferenceExisted) {
+        New-Item -Path $preferenceRegistryPath -Force | Out-Null
+        Set-ItemProperty -LiteralPath $preferenceRegistryPath -Name $preferenceName `
+            -Value $preferenceBefore -Type String
+    } elseif (Test-Path -LiteralPath $preferenceRegistryPath) {
+        Remove-ItemProperty -LiteralPath $preferenceRegistryPath -Name $preferenceName `
+            -ErrorAction SilentlyContinue
     }
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $resolvedRuntime = [IO.Path]::GetFullPath($runtimeRoot)

@@ -5,7 +5,7 @@
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4729,
-                     "lineCount":  104063,
+                     "lineCount":  104112,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  185
@@ -18528,23 +18528,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/InventoryDomain/Modules/modInvMan.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.CloseInventoryViewerForTest",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modInventoryViewer",
-                           "procedureNames":  [
-                                                  "CloseInventoryViewerForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Operations/Modules/modInventoryViewer.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [
