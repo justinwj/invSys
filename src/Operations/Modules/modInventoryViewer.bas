@@ -103,12 +103,12 @@ Public Function RunInventoryViewerFilterForTest(ByVal filterText As String) As S
     End If
 End Function
 
-Public Function RunInventoryViewerEventsForTest() As String
+Public Function RunInventoryViewerEventsForTest(Optional ByVal rangeText As String = "") As String
     If mInventoryViewer Is Nothing Then OpenInventoryViewer
     If mInventoryViewer Is Nothing Then
         RunInventoryViewerEventsForTest = "FAIL|FormNotOpen"
     Else
-        RunInventoryViewerEventsForTest = mInventoryViewer.TestEventsReport()
+        RunInventoryViewerEventsForTest = mInventoryViewer.TestEventsReport(rangeText)
     End If
 End Function
 

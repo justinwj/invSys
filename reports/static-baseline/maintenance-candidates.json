@@ -5,7 +5,7 @@
     "baseline":  {
                      "componentCount":  150,
                      "procedureCount":  4729,
-                     "lineCount":  103984,
+                     "lineCount":  104063,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  47,
                      "duplicateBodyCandidateCount":  185
@@ -5906,7 +5906,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -9150,7 +9150,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10518,7 +10518,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -11218,7 +11218,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -18559,23 +18559,6 @@
                            "componentName":  "modInventoryViewer",
                            "procedureNames":  [
                                                   "RunInventoryViewerActionForTest"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Operations/Modules/modInventoryViewer.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Operations_Modules_modInventoryViewer.bas:modInventoryViewer.RunInventoryViewerEventsForTest",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modInventoryViewer",
-                           "procedureNames":  [
-                                                  "RunInventoryViewerEventsForTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Operations/Modules/modInventoryViewer.bas"

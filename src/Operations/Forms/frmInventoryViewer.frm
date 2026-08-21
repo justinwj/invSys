@@ -19,10 +19,13 @@ Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
 Private WithEvents mTabs As MSForms.TabStrip
+Private mCboEventRange As MSForms.ComboBox
 Private mLstInventory As MSForms.ListBox
 Private mLblTitle As MSForms.Label
 Private mLblHeaders As MSForms.Label
 Private mLblStatus As MSForms.Label
+Private mLblEventRange As MSForms.Label
+Private mLblEventRangeHelp As MSForms.Label
 Private mLayout As cOperationsAnchorManager
 Private mWarehouseId As String
 Private mRows As Variant
@@ -30,6 +33,7 @@ Private mBuilt As Boolean
 Private mResizeInitialized As Boolean
 Private mGeneration As Long
 Private mColumnCount As Long
+Private mLoadStatus As String
 
 Private Sub UserForm_Initialize()
     BuildLayout
@@ -90,10 +94,11 @@ Private Sub LoadViewerPayload(ByVal payload As String, ByVal rowLabel As String)
         mRows = Empty
         mLstInventory.Clear
         If UBound(header) >= 1 Then
-            mLblStatus.Caption = ViewerUnescape(CStr(header(1)))
+            mLoadStatus = ViewerUnescape(CStr(header(1)))
         Else
-            mLblStatus.Caption = "Inventory snapshot could not be loaded."
+            mLoadStatus = "Inventory snapshot could not be loaded."
         End If
+        mLblStatus.Caption = mLoadStatus
         Exit Sub
     End If
 
@@ -118,8 +123,9 @@ Private Sub LoadViewerPayload(ByVal payload As String, ByVal rowLabel As String)
     Else
         mRows = TrimViewerRows(dataRows, dataIndex, mColumnCount)
     End If
+    mLoadStatus = CStr(dataIndex) & " " & rowLabel & ". Published data read at " & CStr(header(2)) & "."
+    mLblStatus.Caption = mLoadStatus
     RenderRows Trim$(CStr(mTxtSearch.Value))
-    mLblStatus.Caption = CStr(dataIndex) & " " & rowLabel & ". Published data read at " & CStr(header(2)) & "."
 End Sub
 
 Public Function TestReport() As String
@@ -137,7 +143,7 @@ Public Function TestApplySearch(ByVal filterText As String) As String
         "|Generation=" & CStr(mGeneration)
 End Function
 
-Public Function TestEventsReport() As String
+Public Function TestEventsReport(Optional ByVal rangeText As String = "") As String
     Dim removeRows As Long
     Dim readableDates As Long
     Dim rowIndex As Long
@@ -145,6 +151,7 @@ Public Function TestEventsReport() As String
     Dim firstReference As String
     If Not mBuilt Then BuildLayout
     mTabs.Value = 1
+    If Trim$(rangeText) <> "" Then mCboEventRange.Value = rangeText
     mBtnRefresh_Click
     For rowIndex = 0 To mLstInventory.ListCount - 1
         If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Remove", vbTextCompare) = 0 Then
@@ -168,6 +175,8 @@ Public Function TestEventsReport() As String
         "|FirstDate=" & firstDate & _
         "|FirstReference=" & firstReference & _
         "|RemoveRows=" & CStr(removeRows) & _
+        "|EventRange=" & CStr(mCboEventRange.Value) & _
+        "|RangeControlVisible=" & CStr(mCboEventRange.Visible) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _
         "|ReadOnly=True|Generation=" & CStr(mGeneration)
 End Function
@@ -188,10 +197,25 @@ Private Sub BuildLayout()
     Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 740, 38, 92, 28)
     AddLabel "lblSearch", "Search", 12, 78, 76, 18, True
     Set mTxtSearch = AddTextBox("txtSearch", 92, 74, 740, 24)
+    Set mLblEventRange = AddLabel("lblEventRange", "Event range", 12, 110, 96, 18, True)
+    Set mCboEventRange = Me.Controls.Add("Forms.ComboBox.1", "cboEventRange", True)
+    With mCboEventRange
+        .Move 112, 104, 150, 24
+        .Style = fmStyleDropDownCombo
+        .MatchRequired = False
+        .AddItem "All"
+        .AddItem "Day"
+        .AddItem "Week"
+        .AddItem "Month"
+        .Value = "All"
+    End With
+    Set mLblEventRangeHelp = AddLabel("lblEventRangeHelp", _
+        "Choose Day, Week, Month, or type a whole number of days; select Refresh to apply.", _
+        276, 110, 556, 18, False)
     Set mLblHeaders = AddLabel("lblHeaders", _
         "Item Code                         Item                                  UOM       Quantity       Location                  Condition", _
-        12, 110, 820, 18, True)
-    Set mLstInventory = AddListBox("lstInventory", 12, 132, 820, 322)
+        12, 140, 820, 18, True)
+    Set mLstInventory = AddListBox("lstInventory", 12, 162, 820, 292)
     With mLstInventory
         .ColumnCount = 6
         .ColumnWidths = "135 pt;190 pt;52 pt;72 pt;120 pt;74 pt"
@@ -206,6 +230,9 @@ Private Sub BuildLayout()
     mLayout.RegisterControl mLblTitle, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mBtnRefresh, OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mTxtSearch, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLblEventRange, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mCboEventRange, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLblEventRangeHelp, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mLblHeaders, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mLstInventory, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
     mLayout.RegisterControl mLblStatus, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
@@ -222,12 +249,18 @@ Private Sub ApplyViewerTab()
     If mTabs Is Nothing Then Exit Sub
     mTxtSearch.Value = vbNullString
     If mTabs.Value = 1 Then
+        mLblEventRange.Visible = True
+        mCboEventRange.Visible = True
+        mLblEventRangeHelp.Visible = True
         mLblTitle.Caption = "Inventory and shipping events"
         mLblHeaders.Caption = "Date                 Event             Reference        Item                    Qty      UOM    Location       Condition    User          Details"
         mLstInventory.ColumnCount = 10
         mLstInventory.ColumnWidths = "105 pt;82 pt;92 pt;130 pt;52 pt;46 pt;82 pt;72 pt;72 pt;190 pt"
         RefreshEvents
     Else
+        mLblEventRange.Visible = False
+        mCboEventRange.Visible = False
+        mLblEventRangeHelp.Visible = False
         mLblTitle.Caption = "Current inventory levels"
         mLblHeaders.Caption = "Item Code                         Item                                  UOM       Quantity       Location                  Condition"
         mLstInventory.ColumnCount = 6
@@ -256,9 +289,43 @@ Private Sub RenderRows(ByVal filterText As String)
     Dim rowIndex As Long
     Dim columnIndex As Long
     Dim matches As Boolean
+    Dim rangeText As String
+    Dim eventDays As Long
+    Dim eventCutoff As Date
+    Dim eventDateValue As Date
+    Dim hasEventDateFilter As Boolean
+    Dim numericRange As Double
 
     mLstInventory.Clear
+    mLblStatus.Caption = mLoadStatus
     If IsEmpty(mRows) Then Exit Sub
+    If mTabs.Value = 1 Then
+        rangeText = UCase$(Trim$(CStr(mCboEventRange.Value)))
+        Select Case rangeText
+            Case "", "ALL"
+            Case "DAY"
+                eventDays = 1
+            Case "WEEK"
+                eventDays = 7
+            Case "MONTH"
+                eventDays = 30
+            Case Else
+                If IsNumeric(rangeText) Then
+                    numericRange = CDbl(rangeText)
+                    If numericRange > 0 And numericRange = Fix(numericRange) And numericRange <= 36500 Then
+                        eventDays = CLng(numericRange)
+                    End If
+                End If
+                If eventDays = 0 Then
+                    mLblStatus.Caption = "Enter All, Day, Week, Month, or a whole number from 1 to 36500, then select Refresh."
+                    Exit Sub
+                End If
+        End Select
+        If eventDays > 0 Then
+            hasEventDateFilter = True
+            eventCutoff = DateAdd("d", -eventDays, Now)
+        End If
+    End If
     filterText = LCase$(Trim$(filterText))
     For rowIndex = LBound(mRows, 1) To UBound(mRows, 1)
         matches = (filterText = "")
@@ -270,6 +337,14 @@ Private Sub RenderRows(ByVal filterText As String)
                 End If
             Next columnIndex
         End If
+        If matches And hasEventDateFilter Then
+            If IsDate(CStr(mRows(rowIndex, 1))) Then
+                eventDateValue = CDate(CStr(mRows(rowIndex, 1)))
+                matches = (eventDateValue >= eventCutoff And eventDateValue <= Now)
+            Else
+                matches = False
+            End If
+        End If
         If matches Then
             mLstInventory.AddItem CStr(mRows(rowIndex, 1))
             For columnIndex = 2 To mColumnCount
@@ -277,6 +352,10 @@ Private Sub RenderRows(ByVal filterText As String)
             Next columnIndex
         End If
     Next rowIndex
+    If hasEventDateFilter Then
+        mLblStatus.Caption = mLoadStatus & " Showing " & CStr(mLstInventory.ListCount) & _
+            " event(s) in the rolling " & CStr(eventDays) & "-day window."
+    End If
 End Sub
 
 Private Function TrimViewerRows(ByVal sourceRows As Variant, ByVal rowCount As Long, ByVal columnCount As Long) As Variant

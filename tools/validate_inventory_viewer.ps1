@@ -68,12 +68,13 @@ try {
     $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
         -WarehouseId $warehouseId -SkuRows @("SKU-SHIP", "SKU-SUGAR", "SKU-COMP")
     $inventoryLog = $inventoryWb.Worksheets.Item("InventoryLog").ListObjects.Item("tblInventoryLog")
+    $fixtureNow = [DateTime]::Now.AddMinutes(-2)
     Add-ListObjectRow -ListObject $inventoryLog -Values @{
         "EventID" = "EVT-VIEWER-RECEIVE"
         "AppliedSeq" = 4
         "EventType" = "RECEIVE"
-        "OccurredAtUTC" = 46255.4
-        "AppliedAtUTC" = 46255.4
+        "OccurredAtUTC" = $fixtureNow.AddDays(-40).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddDays(-40).ToOADate()
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -86,11 +87,28 @@ try {
         "Note" = "Reference=BOL-VIEWER;Item=Viewer Shipment Item;UOM=each"
     }
     Add-ListObjectRow -ListObject $inventoryLog -Values @{
-        "EventID" = "EVT-VIEWER-SHIP-REMOVE"
+        "EventID" = "EVT-VIEWER-RETURN"
         "AppliedSeq" = 5
+        "EventType" = "RETURN"
+        "OccurredAtUTC" = $fixtureNow.AddDays(-20).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddDays(-20).ToOADate()
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-RETURN"
+        "SKU" = "SKU-SHIP"
+        "QtyDelta" = -1
+        "Location" = "DOCK"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=RETURN-VIEWER;Item=Viewer Shipment Item;UOM=each"
+    }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-SHIP-REMOVE"
+        "AppliedSeq" = 6
         "EventType" = "SHIP_RELEASE"
-        "OccurredAtUTC" = 46255.41
-        "AppliedAtUTC" = 46255.41
+        "OccurredAtUTC" = $fixtureNow.AddDays(-6).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddDays(-6).ToOADate()
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -101,6 +119,23 @@ try {
         "Condition" = "GOOD"
         "AttributesJson" = "{}"
         "Note" = "Reference=SHIP-REMOVE-VIEWER;Item=Viewer Shipment Item;UOM=each"
+    }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-DUMP"
+        "AppliedSeq" = 7
+        "EventType" = "DUMP"
+        "OccurredAtUTC" = $fixtureNow.AddHours(-12).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddHours(-12).ToOADate()
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-DUMP"
+        "SKU" = "SKU-SHIP"
+        "QtyDelta" = -1
+        "Location" = "DOCK"
+        "Condition" = "DAMAGED"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=DUMP-VIEWER;Item=Viewer Shipment Item;UOM=each"
     }
     $inventoryWb.Save()
     $opened.Add($configWb) | Out-Null
@@ -166,10 +201,10 @@ try {
     $refreshInventoryLog = $refreshInventoryWb.Worksheets.Item("InventoryLog").ListObjects.Item("tblInventoryLog")
     Add-ListObjectRow -ListObject $refreshInventoryLog -Values @{
         "EventID" = "EVT-VIEWER-NEW-RECEIVE"
-        "AppliedSeq" = 6
+        "AppliedSeq" = 8
         "EventType" = "RECEIVE"
-        "OccurredAtUTC" = 46255.42
-        "AppliedAtUTC" = 46255.42
+        "OccurredAtUTC" = [DateTime]::Now.AddMinutes(-1).ToOADate()
+        "AppliedAtUTC" = [DateTime]::Now.AddMinutes(-1).ToOADate()
         "WarehouseId" = $warehouseId
         "StationId" = $stationId
         "UserId" = $testUser
@@ -190,6 +225,16 @@ try {
     $snapshotHashPublished = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
     $refreshedEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
+    $dayEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("Day"))
+    $weekEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("Week"))
+    $monthEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("Month"))
+    $customEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("14"))
+    $allEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest" -Arguments @("All"))
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.CloseInventoryViewerForTest")
     $snapshotHashAfter = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
@@ -209,16 +254,28 @@ try {
         $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)SelectedTab=Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Title=Inventory and shipping events(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)ReadableDates=2(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)FirstReference=SHIP-REMOVE-VIEWER(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)VisibleRows=4(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ReadableDates=4(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)FirstReference=DUMP-VIEWER(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)RangeControlVisible=True(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
     $refreshedEventsOk = $refreshedEventsReport -match '^OK\|' -and
-        $refreshedEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
-        $refreshedEventsReport -match '(?:^|\|)ReadableDates=3(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)ReadableDates=5(?:\||$)' -and
         $refreshedEventsReport -match '(?:^|\|)FirstReference=BOL-VIEWER-NEW(?:\||$)'
+    $dateFiltersOk = $dayEventsReport -match '(?:^|\|)EventRange=Day(?:\||$)' -and
+        $dayEventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
+        $weekEventsReport -match '(?:^|\|)EventRange=Week(?:\||$)' -and
+        $weekEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $monthEventsReport -match '(?:^|\|)EventRange=Month(?:\||$)' -and
+        $monthEventsReport -match '(?:^|\|)VisibleRows=4(?:\||$)' -and
+        $customEventsReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
+        $customEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $allEventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
+        $allEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)'
 
     $facts.ConfigLoaded = $configLoaded
     $facts.AuthLoaded = $authLoaded
@@ -229,8 +286,8 @@ try {
     $facts.FirstActionRows = if ($firstOk) { 3 } else { 0 }
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
-    $facts.EventsVisibleRows = if ($eventsOk) { 2 } else { 0 }
-    $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 3 } else { 0 }
+    $facts.EventsVisibleRows = if ($eventsOk) { 4 } else { 0 }
+    $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 5 } else { 0 }
     $facts.NewestPublishedReference = if ($refreshedEventsOk) { "BOL-VIEWER-NEW" } else { "Unexpected" }
     $facts.ReadableEventDates = $eventsOk -and $refreshedEventsOk
     $facts.ViewerTabCount = if ($eventsOk) { 2 } else { 0 }
@@ -238,18 +295,22 @@ try {
     $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
+    $facts.RollingDateFilters = $dateFiltersOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
     $facts.NewPublicationChangedSnapshot = $snapshotAdvanced
     if (-not $eventsOk) { $facts.InitialEventsReport = $eventsReport }
     if (-not $refreshedEventsOk) { $facts.RefreshedEventsReport = $refreshedEventsReport }
+    if (-not $dateFiltersOk) {
+        $facts.DateFilterReports = "Day=$dayEventsReport; Week=$weekEventsReport; Month=$monthEventsReport; Custom=$customEventsReport; All=$allEventsReport"
+    }
 
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
         $firstOk -and $secondReused -and $filterOk -and $eventsOk -and
-        $refreshedEventsOk -and $snapshotAdvanced -and $snapshotUnchanged
+        $refreshedEventsOk -and $dateFiltersOk -and $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, reused one form generation, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, reused one form generation, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

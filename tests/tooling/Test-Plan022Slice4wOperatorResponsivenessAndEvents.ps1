@@ -35,6 +35,8 @@ $viewerBuild = Procedure-Text $viewerForm "BuildLayout"
 $viewerTab = Procedure-Text $viewerForm "ApplyViewerTab"
 $viewerRefreshEvents = Procedure-Text $viewerForm "RefreshEvents"
 $viewerEventsTest = Procedure-Text $viewerForm "TestEventsReport"
+$viewerRenderRows = Procedure-Text $viewerForm "RenderRows"
+$viewerEventsAction = Procedure-Text $viewerController "RunInventoryViewerEventsForTest"
 $shippingCommit = Procedure-Text $shippingForm "CommitCurrentLine"
 $shippingSend = Procedure-Text $shippingForm "mBtnSend_Click"
 $snapshotAction = Procedure-Text $warehouseSync "GenerateWarehouseSnapshot"
@@ -91,6 +93,23 @@ $checks = @(
             ($viewerEventsTest -match 'ReadableDates=') -and
             ($viewerEventsTest -match 'FirstReference=')
         Contract = "Events renders readable timestamps and the public Events refresh reports the newly published first event rather than retaining stale rows."
+    },
+    [pscustomobject]@{
+        Check = "Viewer.Events.RollingDateFilters"
+        Passed = ($viewerForm -match 'mCboEventRange') -and
+            ($viewerBuild -match '\.AddItem\s+"All"') -and
+            ($viewerBuild -match '\.AddItem\s+"Day"') -and
+            ($viewerBuild -match '\.AddItem\s+"Week"') -and
+            ($viewerBuild -match '\.AddItem\s+"Month"') -and
+            ($viewerRenderRows -match 'Case\s+"DAY"') -and
+            ($viewerRenderRows -match 'Case\s+"WEEK"') -and
+            ($viewerRenderRows -match 'Case\s+"MONTH"') -and
+            ($viewerRenderRows -match 'IsNumeric') -and
+            ($viewerRenderRows -match 'DateAdd\("d"') -and
+            ($viewerEventsTest -match 'rangeText') -and
+            ($viewerEventsTest -match 'mBtnRefresh_Click') -and
+            ($viewerEventsAction -match 'rangeText')
+        Contract = "The operator-visible Events Refresh action combines text search with All, rolling Day/Week/Month, or a typed positive whole-number-of-days filter; Inventory remains unfiltered."
     },
     [pscustomobject]@{
         Check = "Viewer.Events.PublishedProjection"
