@@ -21,6 +21,7 @@ $roleWriter = Read-Source "src/Core/Modules/modRoleEventWriter.bas"
 $warehouseSync = Read-Source "src/Core/Modules/modWarehouseSync.bas"
 $viewerData = Read-Source "src/Core/Modules/modInventoryViewerData.bas"
 $viewerForm = Read-Source "src/Operations/Forms/frmInventoryViewer.frm"
+$operationsAnchors = Read-Source "src/Operations/ClassModules/cOperationsAnchorManager.cls"
 $viewerController = Read-Source "src/Operations/Modules/modInventoryViewer.bas"
 $receivingForm = Read-Source "src/Receiving/Forms/frmReceiving.frm"
 $shippingForm = Read-Source "src/Shipping/Forms/frmShipmentsTally.frm"
@@ -75,6 +76,21 @@ $checks = @(
             ($viewerEventsTest -match 'TabCaptions=') -and
             ($viewerEventsTest -match 'SelectedTab=')
         Contract = "The runtime Viewer does not append duplicate placeholder pages, exposes exactly Inventory and Events, and its public Events action selects the operator-visible Events tab."
+    },
+    [pscustomobject]@{
+        Check = "Viewer.Layout.GuardsNativeWindowState"
+        Passed = ($operationsAnchors -match 'GetUserFormWindowHandle') -and
+            ($operationsAnchors -match 'IsIconic') -and ($operationsAnchors -match 'IsZoomed') -and
+            ($operationsAnchors -match 'ApplyMinimumFormSize') -and
+            ($operationsAnchors -match 'Err\.Number\s*=\s*384')
+        Contract = "Operations anchoring skips native form-size enforcement while minimized or maximized and contains residual run-time error 384 without disabling restored-state layout."
+    },
+    [pscustomobject]@{
+        Check = "Viewer.Events.ReadableTimestampRefresh"
+        Passed = ($viewerData -match 'Format\$\(CDate\(CDbl\(eventDateText\)\),\s*"yyyy-mm-dd hh:nn:ss"\)') -and
+            ($viewerEventsTest -match 'ReadableDates=') -and
+            ($viewerEventsTest -match 'FirstReference=')
+        Contract = "Events renders readable timestamps and the public Events refresh reports the newly published first event rather than retaining stale rows."
     },
     [pscustomobject]@{
         Check = "Viewer.Events.PublishedProjection"

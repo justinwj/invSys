@@ -124,6 +124,7 @@ Public Function LoadCurrentInventoryEventViewerData() As String
     Dim noteText As String
     Dim referenceText As String
     Dim itemText As String
+    Dim eventDateText As String
     Dim resultText As String
     Dim visibleCount As Long
 
@@ -162,9 +163,15 @@ Public Function LoadCurrentInventoryEventViewerData() As String
                 referenceText = ViewerFirstNoteToken(noteText, Array("Reference", "Ref", "PO", "BOL", "ReceiptId", "DispositionRef"))
                 itemText = ViewerFirstNoteToken(noteText, Array("Item", "Box", "Package"))
                 If itemText = "" Then itemText = ViewerCellText(eventTable, rowIndex, "SKU")
+                eventDateText = ViewerFirstNonBlank(ViewerCellText(eventTable, rowIndex, "AppliedAtUTC"), ViewerCellText(eventTable, rowIndex, "OccurredAtUTC"))
+                If IsNumeric(eventDateText) Then
+                    eventDateText = Format$(CDate(CDbl(eventDateText)), "yyyy-mm-dd hh:nn:ss")
+                ElseIf IsDate(eventDateText) Then
+                    eventDateText = Format$(CDate(eventDateText), "yyyy-mm-dd hh:nn:ss")
+                End If
                 visibleCount = visibleCount + 1
                 resultText = resultText & vbCrLf & _
-                    ViewerEscape(ViewerFirstNonBlank(ViewerCellText(eventTable, rowIndex, "AppliedAtUTC"), ViewerCellText(eventTable, rowIndex, "OccurredAtUTC"))) & vbTab & _
+                    ViewerEscape(eventDateText) & vbTab & _
                     ViewerEscape(friendlyType) & vbTab & ViewerEscape(referenceText) & vbTab & ViewerEscape(itemText) & vbTab & _
                     ViewerEscape(ViewerCellText(eventTable, rowIndex, "QtyDelta")) & vbTab & vbTab & _
                     ViewerEscape(ViewerCellText(eventTable, rowIndex, "Location")) & vbTab & _

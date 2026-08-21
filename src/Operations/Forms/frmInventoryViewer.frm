@@ -139,20 +139,29 @@ End Function
 
 Public Function TestEventsReport() As String
     Dim removeRows As Long
+    Dim readableDates As Long
     Dim rowIndex As Long
+    Dim firstReference As String
     If Not mBuilt Then BuildLayout
     mTabs.Value = 1
-    ApplyViewerTab
+    mBtnRefresh_Click
     For rowIndex = 0 To mLstInventory.ListCount - 1
         If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Remove", vbTextCompare) = 0 Then
             removeRows = removeRows + 1
         End If
+        If Trim$(CStr(mLstInventory.List(rowIndex, 0))) <> "" And _
+           Not IsNumeric(Trim$(CStr(mLstInventory.List(rowIndex, 0)))) Then
+            readableDates = readableDates + 1
+        End If
     Next rowIndex
+    If mLstInventory.ListCount > 0 Then firstReference = CStr(mLstInventory.List(0, 2))
     TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
         "|TabCount=" & CStr(mTabs.Tabs.Count) & _
         "|TabCaptions=" & mTabs.Tabs(0).Caption & "," & mTabs.Tabs(1).Caption & _
         "|SelectedTab=" & mTabs.Tabs(mTabs.Value).Caption & _
         "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
+        "|ReadableDates=" & CStr(readableDates) & _
+        "|FirstReference=" & firstReference & _
         "|RemoveRows=" & CStr(removeRows) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _
         "|ReadOnly=True|Generation=" & CStr(mGeneration)

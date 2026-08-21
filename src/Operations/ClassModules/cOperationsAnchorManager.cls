@@ -9,6 +9,14 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
+#If VBA7 Then
+    Private Declare PtrSafe Function IsIconic Lib "user32" (ByVal hwnd As LongPtr) As Long
+    Private Declare PtrSafe Function IsZoomed Lib "user32" (ByVal hwnd As LongPtr) As Long
+#Else
+    Private Declare Function IsIconic Lib "user32" (ByVal hwnd As Long) As Long
+    Private Declare Function IsZoomed Lib "user32" (ByVal hwnd As Long) As Long
+#End If
+
 Private mForm As Object
 Private mItems As Collection
 Private mMinWidth As Double
@@ -44,6 +52,11 @@ End Sub
 
 Public Sub ApplyAnchoredLayout()
     Dim item As cOperationsAnchorItem
+#If VBA7 Then
+    Dim formHwnd As LongPtr
+#Else
+    Dim formHwnd As Long
+#End If
 
     If mApplying Then Exit Sub
     If mForm Is Nothing Then Exit Sub
@@ -51,7 +64,10 @@ Public Sub ApplyAnchoredLayout()
 
     On Error GoTo CleanFail
     mApplying = True
-    ApplyMinimumFormSize
+    formHwnd = modUserFormResizeWin.GetUserFormWindowHandle(mForm)
+    If formHwnd = 0 Or (IsIconic(formHwnd) = 0 And IsZoomed(formHwnd) = 0) Then
+        ApplyMinimumFormSize
+    End If
     For Each item In mItems
         item.ApplyAnchoredControl
     Next item
@@ -61,6 +77,7 @@ CleanExit:
     Exit Sub
 
 CleanFail:
+    If Err.Number = 384 Then Resume CleanExit
     mApplying = False
     Err.Raise Err.Number, Err.Source, Err.Description
 End Sub

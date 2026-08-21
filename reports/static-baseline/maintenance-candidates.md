@@ -1,8 +1,8 @@
 # invSys VBA Maintenance Candidates
 
 - Schema: 1.0.0
-- Generated: 2026-08-21T06:37:42Z
-- Total candidates: 968
+- Generated: 2026-08-21T16:56:19Z
+- Total candidates: 967
 - Duplicate-body groups: 185
 - Unresolved dynamic calls: 47
 
@@ -827,7 +827,6 @@ Scanner output is review evidence only. It never authorizes automatic deletion.
 | UNRESOLVED | MEDIUM | modUR_UndoRedo | RedoLastAction | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modUR_UndoRedo | UndoLastAction | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modUserFormResizeWin | DiagnoseUserFormWindowStyle | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
-| UNRESOLVED | MEDIUM | modUserFormResizeWin | GetUserFormWindowHandle | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modUtils | ClearExcelClipboardState | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modWarehouseRetire | RequireReAuth | No direct, dynamic-root, or test reference was found, but public visibility requires review. |
 | UNRESOLVED | MEDIUM | modWarehouseSync | AppendEventToOutbox | No direct, dynamic-root, or test reference was found, but public visibility requires review. |

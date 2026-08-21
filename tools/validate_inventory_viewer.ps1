@@ -159,6 +159,37 @@ try {
         -Arguments @("SKU-SHIP"))
     $eventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
+
+    $step = "publish a newer event and refresh the open Events page"
+    $refreshInventoryWb = $excel.Workbooks.Open($inventoryPath)
+    $opened.Add($refreshInventoryWb) | Out-Null
+    $refreshInventoryLog = $refreshInventoryWb.Worksheets.Item("InventoryLog").ListObjects.Item("tblInventoryLog")
+    Add-ListObjectRow -ListObject $refreshInventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-NEW-RECEIVE"
+        "AppliedSeq" = 6
+        "EventType" = "RECEIVE"
+        "OccurredAtUTC" = [datetime]::UtcNow
+        "AppliedAtUTC" = [datetime]::UtcNow
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-NEW-RECEIVE"
+        "SKU" = "SKU-COMP"
+        "QtyDelta" = 7
+        "Location" = "DOCK"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=BOL-VIEWER-NEW;Item=New Viewer Receipt;UOM=each"
+    }
+    $refreshInventoryWb.Save()
+    $newSnapshotCreated = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+        -MacroName "modWarehouseSync.GenerateWarehouseSnapshot" `
+        -Arguments @($warehouseId, $refreshInventoryWb, $snapshotPath))
+    if (-not $newSnapshotCreated) { throw "The newer isolated event snapshot was not created." }
+    $refreshInventoryWb.Close($true)
+    $snapshotHashPublished = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
+    $refreshedEventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
     [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.CloseInventoryViewerForTest")
     $snapshotHashAfter = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash
@@ -171,16 +202,23 @@ try {
     $filterOk = $filterReport -match '^OK\|' -and
         $filterReport -match '(?:^|\|)VisibleRows=1(?:\||$)' -and
         $filterReport -match '(?:^|\|)Generation=1(?:\||$)'
-    $snapshotUnchanged = $snapshotHashBefore -eq $snapshotHashAfter
+    $snapshotAdvanced = $snapshotHashBefore -ne $snapshotHashPublished
+    $snapshotUnchanged = $snapshotHashPublished -eq $snapshotHashAfter
     $eventsOk = $eventsReport -match '^OK\|' -and
         $eventsReport -match '(?:^|\|)TabCount=2(?:\||$)' -and
         $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)SelectedTab=Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Title=Inventory and shipping events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ReadableDates=2(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)FirstReference=SHIP-REMOVE-VIEWER(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
+    $refreshedEventsOk = $refreshedEventsReport -match '^OK\|' -and
+        $refreshedEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)ReadableDates=3(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)FirstReference=BOL-VIEWER-NEW(?:\||$)'
 
     $facts.ConfigLoaded = $configLoaded
     $facts.AuthLoaded = $authLoaded
@@ -192,19 +230,24 @@ try {
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
     $facts.EventsVisibleRows = if ($eventsOk) { 2 } else { 0 }
+    $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 3 } else { 0 }
+    $facts.NewestPublishedReference = if ($refreshedEventsOk) { "BOL-VIEWER-NEW" } else { "Unexpected" }
+    $facts.ReadableEventDates = $eventsOk -and $refreshedEventsOk
     $facts.ViewerTabCount = if ($eventsOk) { 2 } else { 0 }
     $facts.ViewerTabCaptions = if ($eventsOk) { "Inventory,Events" } else { "Unexpected" }
     $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
+    $facts.NewPublicationChangedSnapshot = $snapshotAdvanced
 
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
-        $firstOk -and $secondReused -and $filterOk -and $eventsOk -and $snapshotUnchanged
+        $firstOk -and $secondReused -and $filterOk -and $eventsOk -and
+        $refreshedEventsOk -and $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded inventory plus published Receipt and Shipping Remove events, reused one form generation, filtered locally, kept Events read-only, and left the snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, refreshed the already-open Events page to show a newly published receipt first, reused one form generation, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-21T06:37:42Z
-- Scanner candidates: 968
-- Reviewed candidates: 970
+- Baseline: 2026-08-21T16:56:19Z
+- Scanner candidates: 967
+- Reviewed candidates: 969
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -15,7 +15,7 @@
 | PRODUCTION | 130 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 289 | Headless shared runtime and developer-support source in Core. |
+| CORE | 288 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 62 | Inventory and Designs Domain authority source. |
 | ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 15 | Build, scan, report, and other developer-only tooling. |
@@ -505,7 +505,6 @@
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.RedoLastAction | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.UndoLastAction | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.DiagnoseUserFormWindowStyle | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_modUserFormResizeWin.bas:modUserFormResizeWin.GetUserFormWindowHandle | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUtils.bas:modUtils.ClearExcelClipboardState | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.RequireReAuth | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modWarehouseRetire.bas:modWarehouseRetire.ResolveCurrentAdminUserRetire | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
