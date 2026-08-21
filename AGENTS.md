@@ -54,10 +54,11 @@ From the code-repository root, resolve and read in this order:
 3. the normative specification named by that pointer;
 4. `../invSys_docs/expert guidance docs/CURRENT.md`;
 5. the implementation plan named by that pointer;
-6. `../invSys_docs/last handoff/CURRENT.md`;
-7. the handoff named by that pointer, if one exists;
-8. additional applicable `AGENTS.md` files; and
-9. the current Git branch, status, and existing uncommitted changes in both
+6. `../invSys_docs/0 plan docs/xlam_invSys/invSys-Controls-v1.md`;
+7. `../invSys_docs/last handoff/CURRENT.md`;
+8. the handoff named by that pointer, if one exists;
+9. additional applicable `AGENTS.md` files; and
+10. the current Git branch, status, and existing uncommitted changes in both
    repositories.
 
 To determine additional applicable `AGENTS.md` files for a target file, start
@@ -72,6 +73,13 @@ inspected.
 The current plan applies to Receiving, Production, Boxing, Shipping, shared
 Operations packaging, developer tooling, and related Domain/Core work according
 to its declared scope.
+
+`../invSys_docs/0 plan docs/xlam_invSys/invSys-Controls-v1.md` is the maintained
+control catalog and user-acceptance record. Update it whenever a form or Ribbon
+control, displayed wording, reachability, sizing behavior, workflow contract,
+or visible acceptance status changes. It is subordinate to the normative
+specification and current implementation plan and must not be used to redefine
+architecture silently.
 
 Prefer the local repositories. Use GitHub only when remote state, PR state, or
 review information must be verified.
