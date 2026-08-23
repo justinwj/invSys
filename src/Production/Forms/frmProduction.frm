@@ -4470,6 +4470,54 @@ Public Function TestBatchScaleContract() As String
     End If
 End Function
 
+Public Function TestReusableProductionSurfaceContract() As String
+    Dim pageCaptions As String
+    Dim pageIndex As Long
+    Dim hasProcessDesigner As Boolean
+    Dim hasRecipeDesigner As Boolean
+    Dim hasIngredientsAssignment As Boolean
+    Dim hasRunList As Boolean
+    Dim hasRunTree As Boolean
+    Dim hasLegacyBuilder As Boolean
+
+    If Not mBuilt Then BuildLayout
+    For pageIndex = 0 To mPages.Pages.Count - 1
+        If pageCaptions <> "" Then pageCaptions = pageCaptions & ","
+        pageCaptions = pageCaptions & CStr(mPages.Pages(pageIndex).Caption)
+        Select Case Trim$(CStr(mPages.Pages(pageIndex).Caption))
+            Case "Process Designer": hasProcessDesigner = True
+            Case "Recipe Designer": hasRecipeDesigner = True
+            Case "Ingredients Assignment": hasIngredientsAssignment = True
+            Case "Production Run - List": hasRunList = True
+            Case "Production Run - Tree": hasRunTree = True
+            Case "Recipe Builder": hasLegacyBuilder = True
+        End Select
+    Next pageIndex
+
+    If mPages.Pages.Count = 5 _
+       And hasProcessDesigner _
+       And hasRecipeDesigner _
+       And hasIngredientsAssignment _
+       And hasRunList _
+       And hasRunTree _
+       And Not hasLegacyBuilder Then
+        TestReusableProductionSurfaceContract = _
+            "OK|Pages=5|ProcessDesigner=True|RecipeDesigner=True|" & _
+            "IngredientsAssignment=True|RunList=True|RunTreeExperimental=True|" & _
+            "LegacyRecipeBuilder=False"
+    Else
+        TestReusableProductionSurfaceContract = _
+            "FAIL|Pages=" & CStr(mPages.Pages.Count) & _
+            "|Captions=" & pageCaptions & _
+            "|ProcessDesigner=" & CStr(hasProcessDesigner) & _
+            "|RecipeDesigner=" & CStr(hasRecipeDesigner) & _
+            "|IngredientsAssignment=" & CStr(hasIngredientsAssignment) & _
+            "|RunList=" & CStr(hasRunList) & _
+            "|RunTreeExperimental=" & CStr(hasRunTree) & _
+            "|LegacyRecipeBuilder=" & CStr(hasLegacyBuilder)
+    End If
+End Function
+
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub
     mTxtStatus.Text = messageText

@@ -312,6 +312,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunReusableProductionSurfaceContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionSurfaceContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionSurfaceContractTest = _
+            frmProduction.TestReusableProductionSurfaceContract()
+    End If
+    Exit Function
+
+Failed:
+    RunReusableProductionSurfaceContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
                                                   ByVal requestedHeight As Double, _
                                                   Optional ByVal pageIndex As Long = 2) As String

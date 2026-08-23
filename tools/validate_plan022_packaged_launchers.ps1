@@ -5,7 +5,7 @@ param(
     [string]$OutputDirectory = "reports/runtime/plan022-slice0",
     [ValidateSet("", "Receiving", "Production", "Shipping")]
     [string]$CallbackFilter = "",
-    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout")]
+    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionDesignRed")]
     [string]$WorkbookState = "NoEligible"
 )
 
@@ -513,6 +513,14 @@ if ($WorkbookState -eq "ShippingLayout") {
         throw "ShippingLayout supports only -CallbackFilter Shipping."
     }
 }
+if ($WorkbookState -eq "ProductionDesignRed") {
+    if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
+        $callbacks = @($callbacks | Where-Object { $_.Name -eq "Production" })
+    }
+    elseif ($CallbackFilter -ne "Production") {
+        throw "ProductionDesignRed supports only -CallbackFilter Production."
+    }
+}
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -619,7 +627,7 @@ try {
 
     $currentStep = "prepare workbook state"
     [IO.File]::WriteAllText($progressPath, $currentStep)
-    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout")) {
+    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionDesignRed")) {
         if ($null -ne $inventoryWb) {
             $inventoryWb.Close($true)
         }
@@ -978,7 +986,7 @@ try {
                 [string]::IsNullOrWhiteSpace($secondCapture.Error) -and
                 $secondText -notmatch "(?i)(failed|automation error)"
         }
-        elseif ($WorkbookState -eq "NoEligible") {
+        elseif ($WorkbookState -in @("NoEligible", "ProductionDesignRed")) {
             $workflowControlReport = ""
             $workflowControlPassed = $true
             $secondBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
@@ -997,6 +1005,18 @@ try {
                     $workflowControlReport -match '(?:^|\|)Max=1000%(?:\||$)' -and
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
+                if ($WorkbookState -eq "ProductionDesignRed") {
+                    $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionSurfaceContractTest")
+                    $productionDesignPassed = $productionDesignReport -match '^OK\|' -and
+                        $productionDesignReport -match '(?:^|\|)Pages=5(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)ProcessDesigner=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)RecipeDesigner=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)LegacyRecipeBuilder=False(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
+                    $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
+                }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {
                 $observedText += " || SECOND_LAUNCH=" + (@($secondCapture.WindowText) -join " // ")
@@ -1092,6 +1112,9 @@ finally {
     elseif ($WorkbookState -eq "ShippingLayout") {
         "# Plan 022 Slices 4g-4h Shipping Layout Evidence"
     }
+    elseif ($WorkbookState -eq "ProductionDesignRed") {
+        "# Plan 022 Slice 4x Packaged Reusable Production RED Evidence"
+    }
     else {
         "# Plan 022 Slice 0 Packaged Launcher Evidence"
     }
@@ -1127,6 +1150,9 @@ finally {
     }
     elseif ($WorkbookState -eq "ReceivingFormClosed") {
         "receiving-launcher-formclosed.md"
+    }
+    elseif ($WorkbookState -eq "ProductionDesignRed") {
+        "production-reusable-design-red.md"
     }
     else {
         "packaged-launcher-$($WorkbookState.ToLowerInvariant()).md"

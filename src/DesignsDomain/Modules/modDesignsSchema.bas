@@ -6,12 +6,28 @@ Private Const SHEET_LINES As String = "DesignLines"
 Private Const SHEET_EVENTS As String = "DesignEvents"
 Private Const SHEET_APPLIED As String = "AppliedDesignEvents"
 Private Const SHEET_LOCKS As String = "Locks"
+Private Const SHEET_PROCESSES As String = "Processes"
+Private Const SHEET_PROCESS_REQUIREMENTS As String = "ProcessRequirements"
+Private Const SHEET_PROCESS_ALTERNATIVES As String = "ProcessAlternatives"
+Private Const SHEET_PROCESS_OUTPUTS As String = "ProcessOutputs"
+Private Const SHEET_PROCESS_INSTRUCTIONS As String = "ProcessInstructions"
+Private Const SHEET_RECIPES As String = "Recipes"
+Private Const SHEET_RECIPE_PROCESSES As String = "RecipeProcesses"
+Private Const SHEET_RECIPE_CONNECTIONS As String = "RecipeConnections"
 
 Private Const TABLE_DESIGNS As String = "tblDesigns"
 Private Const TABLE_LINES As String = "tblDesignLines"
 Private Const TABLE_EVENTS As String = "tblDesignEvents"
 Private Const TABLE_APPLIED As String = "tblAppliedDesignEvents"
 Private Const TABLE_LOCKS As String = "tblLocks"
+Private Const TABLE_PROCESSES As String = "tblProcesses"
+Private Const TABLE_PROCESS_REQUIREMENTS As String = "tblProcessRequirements"
+Private Const TABLE_PROCESS_ALTERNATIVES As String = "tblProcessIngredientAlternatives"
+Private Const TABLE_PROCESS_OUTPUTS As String = "tblProcessOutputs"
+Private Const TABLE_PROCESS_INSTRUCTIONS As String = "tblProcessInstructions"
+Private Const TABLE_RECIPES As String = "tblRecipes"
+Private Const TABLE_RECIPE_PROCESSES As String = "tblRecipeProcesses"
+Private Const TABLE_RECIPE_CONNECTIONS As String = "tblRecipeConnections"
 
 Public Function EnsureDesignsSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                     Optional ByRef report As String = "") As Boolean
@@ -33,6 +49,14 @@ Public Function EnsureDesignsSchema(Optional ByVal targetWb As Workbook = Nothin
     EnsureDesignEventsTable wb
     EnsureAppliedDesignEventsTable wb
     EnsureDesignLocksTable wb
+    EnsureProcessesTable wb
+    EnsureProcessRequirementsTable wb
+    EnsureProcessAlternativesTable wb
+    EnsureProcessOutputsTable wb
+    EnsureProcessInstructionsTable wb
+    EnsureRecipesTable wb
+    EnsureRecipeProcessesTable wb
+    EnsureRecipeConnectionsTable wb
     report = "OK"
     EnsureDesignsSchema = True
     Exit Function
@@ -61,6 +85,30 @@ Public Function ValidateDesignsSchema(ByVal targetWb As Workbook) As String
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_LOCKS, _
         Array("LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", "ExpiresAtUTC", "HeartbeatAtUTC", "Status"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESSES, _
+        Array("ProcessId", "ProcessVersion", "ProcessName", "Status", "SourceEventID"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_REQUIREMENTS, _
+        Array("ProcessId", "ProcessVersion", "RequirementId", "RequirementName", "Qty", "Percent", "YieldBasis", "UOM"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_ALTERNATIVES, _
+        Array("ProcessId", "ProcessVersion", "RequirementId", "AlternativeOrdinal", "ITEM_CODE"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_OUTPUTS, _
+        Array("ProcessId", "ProcessVersion", "OutputId", "OutputName", "ITEM_CODE", "Qty", "Percent", "YieldBasis", "UOM"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_INSTRUCTIONS, _
+        Array("ProcessId", "ProcessVersion", "InstructionOrdinal", "Instruction"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_RECIPES, _
+        Array("RecipeId", "RecipeVersion", "RecipeName", "Status", "SourceEventID"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_RECIPE_PROCESSES, _
+        Array("RecipeId", "RecipeVersion", "ProcessNodeId", "ProcessId", "ProcessVersion", "ExecutionOrdinal"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_RECIPE_CONNECTIONS, _
+        Array("RecipeId", "RecipeVersion", "FromProcessNodeId", "FromOutputId", "ToProcessNodeId", "ToRequirementId", "Qty", "Percent", "UOM"))
 End Function
 
 Private Sub EnsureDesignsTable(ByVal wb As Workbook)
@@ -79,7 +127,8 @@ End Sub
 Private Sub EnsureDesignEventsTable(ByVal wb As Workbook)
     EnsureTable wb, SHEET_EVENTS, TABLE_EVENTS, Array( _
         "EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
-        "WarehouseId", "StationId", "UserId", "DesignId", "DesignVersion", "PayloadJson", "Note")
+        "WarehouseId", "StationId", "UserId", "DefinitionType", "DefinitionId", _
+        "DefinitionVersion", "DesignId", "DesignVersion", "PayloadJson", "Note")
 End Sub
 
 Private Sub EnsureAppliedDesignEventsTable(ByVal wb As Workbook)
@@ -91,6 +140,55 @@ Private Sub EnsureDesignLocksTable(ByVal wb As Workbook)
     EnsureTable wb, SHEET_LOCKS, TABLE_LOCKS, Array( _
         "LockName", "OwnerStationId", "OwnerUserId", "RunId", "AcquiredAtUTC", _
         "ExpiresAtUTC", "HeartbeatAtUTC", "Status")
+End Sub
+
+Private Sub EnsureProcessesTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_PROCESSES, TABLE_PROCESSES, Array( _
+        "ProcessId", "ProcessVersion", "ProcessName", "Description", "Status", _
+        "CreatedAtUTC", "CreatedByUserId", "ReleasedAtUTC", "ReleasedByUserId", _
+        "ObsoletedAtUTC", "ObsoletedByUserId", "SourceEventID")
+End Sub
+
+Private Sub EnsureProcessRequirementsTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_PROCESS_REQUIREMENTS, TABLE_PROCESS_REQUIREMENTS, Array( _
+        "ProcessId", "ProcessVersion", "RequirementId", "RequirementName", _
+        "Qty", "Percent", "YieldBasis", "UOM")
+End Sub
+
+Private Sub EnsureProcessAlternativesTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_PROCESS_ALTERNATIVES, TABLE_PROCESS_ALTERNATIVES, Array( _
+        "ProcessId", "ProcessVersion", "RequirementId", "AlternativeOrdinal", "ITEM_CODE")
+End Sub
+
+Private Sub EnsureProcessOutputsTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_PROCESS_OUTPUTS, TABLE_PROCESS_OUTPUTS, Array( _
+        "ProcessId", "ProcessVersion", "OutputId", "OutputName", "ITEM_CODE", _
+        "ComponentDesignId", "ComponentDesignVersion", "Qty", "Percent", _
+        "YieldBasis", "UOM")
+End Sub
+
+Private Sub EnsureProcessInstructionsTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_PROCESS_INSTRUCTIONS, TABLE_PROCESS_INSTRUCTIONS, Array( _
+        "ProcessId", "ProcessVersion", "InstructionOrdinal", "Instruction")
+End Sub
+
+Private Sub EnsureRecipesTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_RECIPES, TABLE_RECIPES, Array( _
+        "RecipeId", "RecipeVersion", "RecipeName", "Description", "Status", _
+        "CreatedAtUTC", "CreatedByUserId", "ReleasedAtUTC", "ReleasedByUserId", _
+        "ObsoletedAtUTC", "ObsoletedByUserId", "SourceEventID")
+End Sub
+
+Private Sub EnsureRecipeProcessesTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_RECIPE_PROCESSES, TABLE_RECIPE_PROCESSES, Array( _
+        "RecipeId", "RecipeVersion", "ProcessNodeId", "ProcessId", _
+        "ProcessVersion", "ExecutionOrdinal")
+End Sub
+
+Private Sub EnsureRecipeConnectionsTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_RECIPE_CONNECTIONS, TABLE_RECIPE_CONNECTIONS, Array( _
+        "RecipeId", "RecipeVersion", "FromProcessNodeId", "FromOutputId", _
+        "ToProcessNodeId", "ToRequirementId", "Qty", "Percent", "UOM")
 End Sub
 
 Private Sub EnsureTable(ByVal wb As Workbook, ByVal sheetName As String, _
@@ -134,7 +232,10 @@ Private Sub FormatDesignIdentityColumns(ByVal lo As ListObject)
             Case "EVENTID", "UNDOOFEVENTID", "WAREHOUSEID", "STATIONID", "USERID", _
                  "DESIGNID", "DESIGNVERSION", "COMPONENTSKU", "COMPONENTDESIGNID", _
                  "COMPONENTDESIGNVERSION", "SOURCEEVENTID", "RUNID", "OWNERSTATIONID", _
-                 "OWNERUSERID"
+                 "OWNERUSERID", "DEFINITIONID", "DEFINITIONVERSION", "PROCESSID", _
+                 "PROCESSVERSION", "RECIPEID", "RECIPEVERSION", "PROCESSNODEID", _
+                 "REQUIREMENTID", "OUTPUTID", "FROMPROCESSNODEID", "FROMOUTPUTID", _
+                 "TOPROCESSNODEID", "TOREQUIREMENTID", "ITEM_CODE"
                 lc.Range.NumberFormat = "@"
         End Select
     Next lc
