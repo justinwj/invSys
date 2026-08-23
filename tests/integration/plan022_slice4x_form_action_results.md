@@ -35,5 +35,6 @@ intermediate consumption, retained co-products, and correlated processor
 persistence. The co-product is defined as 20% of a 10-unit yield basis and
 remains 2 units at 100% scale. The public Viewer action separately proves the published
 **Production Input Consumed** and **Production Output Created** rows without
-changing the snapshot. Dedicated-NAS visible acceptance and a clean-session
-saved-workbook restart remain open.
+changing the snapshot. Clean-session saved-workbook restart is GREEN in
+`plan022_slice4x_restart_results.md`; dedicated-NAS visible acceptance remains
+open.

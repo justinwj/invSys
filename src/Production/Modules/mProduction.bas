@@ -358,6 +358,25 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunReusableProductionRestartActionContractTest( _
+    ByVal recipeId As String, ByVal recipeVersion As String, _
+    ByVal expectedWorkbookFullName As String) As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionRestartActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionRestartActionContractTest = _
+            frmProduction.TestReusableProductionRestartActionContract( _
+                recipeId, recipeVersion, expectedWorkbookFullName)
+    End If
+    Exit Function
+Failed:
+    RunReusableProductionRestartActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
                                                   ByVal requestedHeight As Double, _
                                                   Optional ByVal pageIndex As Long = 2) As String

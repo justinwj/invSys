@@ -3,7 +3,7 @@
 - Date: 2026-08-23
 - Runtime: isolated generated warehouse; not dedicated-NAS acceptance
 - Public entry: `mProduction.BtnOpenProductionForm`
-- Final focused report: `reports/runtime/plan022-slice4x-final-green/production-reusable-production.md` (ignored machine/runtime evidence)
+- Final focused report: `reports/runtime/plan022-slice4x-restart-green2/production-reusable-production.md` (ignored machine/runtime evidence)
 
 ## D13 trace
 
@@ -46,9 +46,10 @@ one **Production Output Created** row and an unchanged snapshot hash.
 | Deterministic maintenance baseline | 19/19 |
 | Reviewed cleanup/ratchets | 13/13 |
 
-Final maintenance metrics are 152 components, 4,985 procedures, 1,033 scanner
+Final maintenance metrics are 152 components, 4,987 procedures, 1,033 scanner
 candidates, 8 literal `Application.Run` targets, 45 unresolved dynamic calls,
 and 189 duplicate-body groups. The deliberate Slice 4x surface growth and four
 named wrapper groups have a bounded protecting-test exception; late binding
-does not regress. Dedicated-NAS visible Production acceptance and a
-clean-session saved-workbook restart remain open.
+does not regress. The clean-session saved-workbook restart is recorded
+separately in `plan022_slice4x_restart_results.md`; dedicated-NAS visible
+Production acceptance remains open.

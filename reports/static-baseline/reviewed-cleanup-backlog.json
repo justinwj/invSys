@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "19f2723c2a26b2b67e9ba76e05e8f19cd0393145dac9497d25f50bb7322d9e38",
-                          "maintenanceCandidatesSha256":  "85b716142d9fec6bed7f9557995fa69824fdf72ef259752017db90ae8f13079f"
+                          "implementationManifestSha256":  "25bf1f0069febfb4857f6b9c746eb779ea2024d2a629c1aa00711d9934bb4130",
+                          "maintenanceCandidatesSha256":  "63a3b825d2bb1c43979875f2e5182e97a2d3224bf7b82211327c16987e721360"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  7393,
+                                                  "baselineLineCount":  7438,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +231,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13002,
+                                                  "baselineLineCount":  13021,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16219,6 +16219,7 @@
                                                   "TestRecipeBuilderSelectUom",
                                                   "TestRecipeBuilderUomCatalogContains",
                                                   "TestReusableProductionFormActionContract",
+                                                  "TestReusableProductionRestartActionContract",
                                                   "TestReusableProductionRunActionContract",
                                                   "TestReusableProductionSurfaceContract",
                                                   "TestRunPaletteCanonicalItemCodeStorage",
@@ -16726,6 +16727,7 @@
                                                   "RowCountCacheKey",
                                                   "RunProductionBatchScaleContractTest",
                                                   "RunReusableProductionFormActionContractTest",
+                                                  "RunReusableProductionRestartActionContractTest",
                                                   "RunReusableProductionRunActionContractTest",
                                                   "RunReusableProductionSurfaceContractTest",
                                                   "SafeProcessKey",
@@ -19107,7 +19109,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

@@ -24,8 +24,8 @@
   "approvedProcedureGrowth": {
     "slice": "Plan 022 Slice 4x",
     "baseline": 4729,
-    "ceiling": 4985,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, and same-handler packaged tests add 256 protected procedures. The legacy List-run preservation fix adds diagnostics but no procedure. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
+    "ceiling": 4987,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, same-handler packaged tests, and bounded clean-restart probe add 258 protected procedures. The legacy List-run preservation fix adds diagnostics but no procedure. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
@@ -63,14 +63,14 @@
     {
       "source": "src/Production/Forms/frmProduction.frm",
       "baseline": 4913,
-      "ceiling": 7393,
-      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; bounded same-handler diagnostics protect the preserved legacy two-batch regression, and percentage records require an explicit positive yield basis."
+      "ceiling": 7438,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; bounded same-handler diagnostics protect the preserved legacy two-batch regression, percentage records require an explicit positive yield basis, and the clean-restart probe invokes the real Run List Load handler."
     },
     {
       "source": "src/Production/Modules/mProduction.bas",
       "baseline": 12942,
-      "ceiling": 13002,
-      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run test entry points and converts automation-only faults into actionable test results."
+      "ceiling": 13021,
+      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run/restart test entry points and converts automation-only faults into actionable test results."
     },
     {
       "source": "src/Production/Modules/modProductionReusableRun.bas",
@@ -82,7 +82,8 @@
   "approvedModuleGrowthProtectingTests": [
     "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
-    "tools/validate_slice9_production_layout.ps1"
+    "tools/validate_slice9_production_layout.ps1",
+    "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"
   ],
   "retainedPriorGrowthProtectingTests": [
     "tests/tooling/Test-Plan022Slice4qDisposition.ps1",

@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  152,
-                     "procedureCount":  4985,
-                     "lineCount":  109778,
+                     "procedureCount":  4987,
+                     "lineCount":  109842,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -9870,7 +9870,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14837,6 +14837,7 @@
                                                   "TestRecipeBuilderSelectUom",
                                                   "TestRecipeBuilderUomCatalogContains",
                                                   "TestReusableProductionFormActionContract",
+                                                  "TestReusableProductionRestartActionContract",
                                                   "TestReusableProductionRunActionContract",
                                                   "TestReusableProductionSurfaceContract",
                                                   "TestRunPaletteCanonicalItemCodeStorage",
@@ -15332,6 +15333,7 @@
                                                   "RowCountCacheKey",
                                                   "RunProductionBatchScaleContractTest",
                                                   "RunReusableProductionFormActionContractTest",
+                                                  "RunReusableProductionRestartActionContractTest",
                                                   "RunReusableProductionRunActionContractTest",
                                                   "RunReusableProductionSurfaceContractTest",
                                                   "SafeProcessKey",

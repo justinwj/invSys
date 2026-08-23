@@ -539,6 +539,9 @@ $stateWb = $null
 $inventoryWb = $null
 $canonicalPaths = @()
 $canonicalHashesBefore = @{}
+$reusableRecipeId = ""
+$reusableRecipeVersion = "2"
+$productionOperatorPath = ""
 
 try {
     [IO.File]::WriteAllText($progressPath, "create runtime root")
@@ -1056,6 +1059,9 @@ try {
                         $productionRunReport -match '(?:^|\|)PercentageYieldBasis=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
+                    if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
+                        $reusableRecipeId = [string]$Matches[1]
+                    }
                 }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {
@@ -1067,6 +1073,14 @@ try {
                     [StringComparison]::OrdinalIgnoreCase
                 )
             }).Count
+            if ($WorkbookState -eq "ProductionReusable" -and $stationLocalCount -eq 1) {
+                $productionOperatorPath = [string](@($newWorkbookPaths | Where-Object {
+                    [IO.Path]::GetFullPath($_).StartsWith(
+                        [IO.Path]::GetFullPath($operatorRoot),
+                        [StringComparison]::OrdinalIgnoreCase
+                    )
+                })[0])
+            }
             $passed = $operatorRootOverrideSet -and
                 $stationLocalCount -eq 1 -and
                 $secondNewWorkbooks.Count -eq 0 -and
@@ -1134,6 +1148,146 @@ try {
         Add-Evidence -Rows $evidence -Callback $callback.Macro `
             -Expected $callback.Expected -Passed $passed -Observed $observedText
         [IO.File]::WriteAllText($progressPath, "completed " + $callback.Macro)
+    }
+
+    if ($WorkbookState -eq "ProductionReusable") {
+        $currentStep = "restart reusable Production in a clean Excel process"
+        [IO.File]::WriteAllText($progressPath, $currentStep)
+        if ([string]::IsNullOrWhiteSpace($reusableRecipeId)) {
+            throw "The first Production session did not report its released reusable Recipe identity."
+        }
+        if ([string]::IsNullOrWhiteSpace($productionOperatorPath) -or
+            -not (Test-Path -LiteralPath $productionOperatorPath -PathType Leaf)) {
+            throw "The first Production session did not create its saved station-local operator workbook."
+        }
+
+        for ($workbookIndex = [int]$excel.Workbooks.Count; $workbookIndex -ge 1; $workbookIndex--) {
+            $restartWb = $null
+            try {
+                $restartWb = $excel.Workbooks.Item($workbookIndex)
+                if (-not [string]::IsNullOrWhiteSpace([string]$restartWb.Path) -and
+                    -not [bool]$restartWb.IsAddin) {
+                    $restartWb.Save()
+                }
+                $restartWb.Close($false)
+            }
+            catch {}
+            Release-ComObject $restartWb
+        }
+        try { $excel.Quit() } catch {}
+        Release-ComObject $excel
+        $excel = $null
+        if ($excelProcessId -gt 0) {
+            Start-Sleep -Milliseconds 750
+            $firstProcess = Get-Process -Id $excelProcessId -ErrorAction SilentlyContinue
+            if ($null -ne $firstProcess -and $firstProcess.ProcessName -eq "EXCEL") {
+                Stop-Process -Id $excelProcessId -Force
+            }
+        }
+
+        $opened = New-Object 'System.Collections.Generic.List[object]'
+        $packages = @{}
+        $excel = New-Object -ComObject Excel.Application
+        $excelProcessId = Get-ExcelProcessId $excel
+        $excel.Visible = $true
+        $excel.DisplayAlerts = $false
+        $excel.EnableEvents = $true
+        $excel.AutomationSecurity = 1
+        foreach ($packageName in $packageNames) {
+            $packagePath = Join-Path $deployPath $packageName
+            $packageWb = $excel.Workbooks.Open($packagePath)
+            $opened.Add($packageWb) | Out-Null
+            $packages[$packageName] = $packageWb
+        }
+
+        $coreName = [string]$packages["invSys.Core.xlam"].Name
+        $operationsName = [string]$packages["invSys.Operations.xlam"].Name
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" -Arguments @($runtimeRoot))
+        $restartConfigLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modConfig.LoadConfig" -Arguments @($warehouseId, $stationId))
+        $restartAuthLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modAuth.LoadAuth" -Arguments @($warehouseId))
+        $restartTargetResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modNasConnection.SelectWarehouseTargetForAutomation" `
+            -Arguments @($runtimeRoot, $runtimeRoot, $stationId, $true))
+        $restartTargetPathsSet = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modNasConnection.SetCurrentTargetPathsForTest" `
+            -Arguments @($testHubRoot, $runtimeRoot))
+        $restartOperatorOverrideSet = [bool](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $coreName `
+            -MacroName "modWarehouseBootstrap.SetLocalOperatorRootOverrideForAutomation" `
+            -Arguments @($operatorRoot))
+        $restartSignInResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modAuth.SignInCurrentTargetForAutomation" `
+            -Arguments @($testUser, $testPin, "PROD_POST"))
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+            -MacroName "modOperationsInit.Auto_Open")
+
+        $restartBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartCapture = Invoke-PackagedCallback -Excel $excel `
+            -WorkbookName $operationsName -MacroName "mProduction.BtnOpenProductionForm"
+        $restartAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartNewWorkbooks = @(
+            $restartAfterNames | Where-Object { $_ -notin $restartBeforeNames }
+        )
+        $restartNewOperatorWorkbooks = New-Object 'System.Collections.Generic.List[string]'
+        $restartOperatorFullName = ""
+        foreach ($restartName in $restartNewWorkbooks) {
+            try {
+                $candidateFullName = [string]$excel.Workbooks.Item($restartName).FullName
+                if ([IO.Path]::GetFullPath($candidateFullName).StartsWith(
+                        [IO.Path]::GetFullPath($operatorRoot),
+                        [StringComparison]::OrdinalIgnoreCase)) {
+                    $restartNewOperatorWorkbooks.Add($candidateFullName) | Out-Null
+                    $restartOperatorFullName = $candidateFullName
+                }
+            }
+            catch {}
+        }
+        $restartSameOperatorWorkbook = -not [string]::IsNullOrWhiteSpace($restartOperatorFullName) -and
+            [string]::Equals(
+                [IO.Path]::GetFullPath($restartOperatorFullName),
+                [IO.Path]::GetFullPath($productionOperatorPath),
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        $probeBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $productionRestartReport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "mProduction.RunReusableProductionRestartActionContractTest" `
+            -Arguments @($reusableRecipeId, $reusableRecipeVersion, $productionOperatorPath))
+        $probeAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartProbeNewWorkbooks = @(
+            $probeAfterNames | Where-Object { $_ -notin $probeBeforeNames }
+        ).Count
+        $restartOperatorFileCount = @(
+            Get-ChildItem -LiteralPath $operatorRoot `
+                -Filter "*.Production.Operator.xlsm" -File -Recurse `
+                -ErrorAction SilentlyContinue
+        ).Count
+        $restartPassed = $restartConfigLoaded -and $restartAuthLoaded -and
+            $restartTargetResult.StartsWith('OK|') -and $restartTargetPathsSet -and
+            $restartOperatorOverrideSet -and $restartSignInResult.StartsWith('OK|') -and
+            [string]::IsNullOrWhiteSpace($restartCapture.Error) -and
+            $restartNewOperatorWorkbooks.Count -eq 1 -and $restartSameOperatorWorkbook -and
+            $restartOperatorFileCount -eq 1 -and $restartProbeNewWorkbooks -eq 0 -and
+            $productionRestartReport -match '^OK\|' -and
+            $productionRestartReport -match '(?:^|\|)RecipeFound=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)Loaded=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)SameWorkbook=True(?:\||$)'
+        $restartObserved = "PRODUCTION_RESTART=" + $productionRestartReport +
+            " || RestartSameOperatorWorkbook=" + $restartSameOperatorWorkbook +
+            " || RestartNewWorkbooks=" + $restartNewWorkbooks.Count +
+            " || RestartNewOperatorWorkbooks=" + $restartNewOperatorWorkbooks.Count +
+            " || ProbeNewWorkbooks=" + $restartProbeNewWorkbooks +
+            " || OperatorFiles=" + $restartOperatorFileCount
+        if (-not [string]::IsNullOrWhiteSpace($restartCapture.Error)) {
+            $restartObserved += " || COM_ERROR=" + $restartCapture.Error
+        }
+        Add-Evidence -Rows $evidence `
+            -Callback "mProduction.BtnOpenProductionForm [clean restart]" `
+            -Expected "A new Excel process reuses the saved Production workbook and loads the persisted exact released Recipe through the Run List handler." `
+            -Passed $restartPassed -Observed $restartObserved
     }
 }
 catch {

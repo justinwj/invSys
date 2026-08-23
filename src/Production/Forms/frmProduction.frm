@@ -6398,6 +6398,51 @@ Failed:
     Resume CleanExit
 End Function
 
+Public Function TestReusableProductionRestartActionContract( _
+    ByVal recipeId As String, ByVal recipeVersion As String, _
+    ByVal expectedWorkbookFullName As String) As String
+    On Error GoTo Failed
+
+    Dim rowIndex As Long
+    Dim boundWorkbookFullName As String
+    Dim sameWorkbook As Boolean
+
+    If Not mBuilt Then BuildLayout
+    If Not mOperatorWorkbook Is Nothing Then
+        boundWorkbookFullName = mOperatorWorkbook.FullName
+    End If
+    sameWorkbook = (boundWorkbookFullName <> "" And _
+        StrComp(boundWorkbookFullName, expectedWorkbookFullName, vbTextCompare) = 0)
+
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstLoaderRecipes, recipeId, recipeVersion)
+    If rowIndex < 0 Then
+        TestReusableProductionRestartActionContract = _
+            "FAIL|RecipeFound=False|RecipeId=" & recipeId & _
+            "|Version=" & recipeVersion & "|SameWorkbook=" & CStr(sameWorkbook)
+        Exit Function
+    End If
+
+    mLstLoaderRecipes.ListIndex = rowIndex
+    mBtnLoaderLoad_Click
+    If Not modProductionReusableRun.ReusableRunIsLoaded() Then
+        TestReusableProductionRestartActionContract = _
+            "FAIL|RecipeFound=True|Loaded=False|RecipeId=" & recipeId & _
+            "|Version=" & recipeVersion & "|SameWorkbook=" & CStr(sameWorkbook) & _
+            "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+        Exit Function
+    End If
+
+    TestReusableProductionRestartActionContract = _
+        "OK|RecipeFound=True|Loaded=True|RecipeId=" & recipeId & _
+        "|Version=" & recipeVersion & "|SameWorkbook=" & CStr(sameWorkbook) & _
+        "|BoundWorkbook=" & boundWorkbookFullName
+    Exit Function
+Failed:
+    TestReusableProductionRestartActionContract = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Private Function CreateReusableRunRawInventory(ByRef runLocation As String, _
                                                ByRef systemKeyOut As String, _
                                                ByRef startingQtyOut As Double, _

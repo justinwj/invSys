@@ -50,9 +50,9 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1555 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 7393 |
+| src/Production/Forms/frmProduction.frm | Production | 7438 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13002 |
+| src/Production/Modules/mProduction.bas | Production | 13021 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
