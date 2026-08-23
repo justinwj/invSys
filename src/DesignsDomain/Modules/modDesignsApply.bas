@@ -837,11 +837,11 @@ Private Function RecipePayloadHasCycle(ByVal payload As Collection) As Boolean
     RecipePayloadHasCycle = (processed.Count < nodes.Count)
 End Function
 
-Private Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
-                                               ByVal recipeId As String, _
-                                               ByVal recipeVersion As String, _
-                                               ByRef errorCode As String, _
-                                               ByRef errorMessage As String) As Boolean
+Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
+                                              ByVal recipeId As String, _
+                                              ByVal recipeVersion As String, _
+                                              ByRef errorCode As String, _
+                                              ByRef errorMessage As String) As Boolean
     Dim loNodes As ListObject
     Dim loConnections As ListObject
     Dim loRequirements As ListObject
