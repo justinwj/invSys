@@ -10,20 +10,87 @@
     "unresolvedDynamicCalls": 48,
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
-  "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slices 4q-4w",
-    "ceiling": 4729,
-    "rationale": "Outbound RETURN/DUMP diagnostics, Shipping canonical post-send refresh, responsive persistence feedback, the published read-only Inventory Events projection, and full aggregate-reference display required protected form-action and projection boundaries. Components, candidates, duplicate-body groups, and dynamic-call ratchets remain improved.",
+  "approvedComponentGrowth": {
+    "slice": "Plan 022 Slice 4x",
+    "baseline": 150,
+    "ceiling": 152,
+    "rationale": "The approved Architecture v4.11 D15 redesign adds one typed reusable-design controller and one typed reusable-run controller to the packaged Operations project; no legacy package or parallel authority was added.",
     "protectingTests": [
-      "tests/tooling/Test-Plan022Slice4qDisposition.ps1",
-      "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
-      "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
-      "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1",
-      "tests/unit/TestReceivingStabilization.bas:TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",
-      "tests/unit/TestPhase6CoreSurfaces.bas:TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey",
-      "tools/validate_plan022_slice4o_packaged.ps1"
+      "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
+      "tools/validate_phase6_packaged_ribbon.ps1"
     ]
   },
+  "approvedProcedureGrowth": {
+    "slice": "Plan 022 Slice 4x",
+    "baseline": 4729,
+    "ceiling": 4985,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, and same-handler packaged tests add 256 protected procedures. The legacy List-run preservation fix adds diagnostics but no procedure. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
+    "protectingTests": [
+      "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+      "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
+      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
+      "tools/validate_phase6_packaged_ribbon.ps1"
+    ]
+  },
+  "approvedCandidateGrowth": {
+    "slice": "Plan 022 Slice 4x",
+    "baseline": 965,
+    "ceiling": 1033,
+    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, and their exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
+    "protectingTests": [
+      "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable"
+    ]
+  },
+  "approvedDuplicateGrowth": {
+    "slice": "Plan 022 Slice 4x",
+    "baseline": 185,
+    "ceiling": 189,
+    "rationale": "Four scanner-normalized wrapper groups are retained deliberately: paired Process/Recipe refresh callbacks, paired New/Clear callbacks for each editor, and two primitive Inventory Domain query bridges. Each remains a distinct public or operator callback contract.",
+    "candidateIds": [
+      "duplicate:c49b4f330f2d62b6:mBtnProcessRefresh_Click+mBtnRecipeRefresh_Click",
+      "duplicate:c5bfeafcf39158b9:mBtnProcessClear_Click+mBtnProcessNew_Click",
+      "duplicate:ce00c44eb8121fc7:mBtnRecipeClear_Click+mBtnRecipeNew_Click",
+      "duplicate:d1c75ef0a4fceded:ListAvailableInventoryEntitiesBridge+ListInventoryPickerItemsBridge"
+    ],
+    "protectingTests": [
+      "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable"
+    ]
+  },
+  "approvedModuleGrowth": [
+    {
+      "source": "src/Production/Forms/frmProduction.frm",
+      "baseline": 4913,
+      "ceiling": 7393,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; bounded same-handler diagnostics protect the preserved legacy two-batch regression, and percentage records require an explicit positive yield basis."
+    },
+    {
+      "source": "src/Production/Modules/mProduction.bas",
+      "baseline": 12942,
+      "ceiling": 13002,
+      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run test entry points and converts automation-only faults into actionable test results."
+    },
+    {
+      "source": "src/Production/Modules/modProductionReusableRun.bas",
+      "baseline": 0,
+      "ceiling": 1098,
+      "rationale": "The typed run controller owns graph loading, exact-key allocation, stale revalidation, ordered events, percentage/yield-basis scaling, and two-batch state outside the already oversized form/controller."
+    }
+  ],
+  "approvedModuleGrowthProtectingTests": [
+    "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+    "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
+    "tools/validate_slice9_production_layout.ps1"
+  ],
+  "retainedPriorGrowthProtectingTests": [
+    "tests/tooling/Test-Plan022Slice4qDisposition.ps1",
+    "tests/tooling/Test-Plan022Slice4tShippingPostSend.ps1",
+    "tests/tooling/Test-Plan022Slice4uShippingPersistenceFeedback.ps1",
+    "tests/tooling/Test-Plan022Slice4wOperatorResponsivenessAndEvents.ps1"
+    ]
+  ,
   "protectingTests": [
     "tests/tooling/Test-Slice11ShippingBoxingStabilization.ps1",
     "tests/tooling/Test-Slice5BehaviorLocks.ps1",

@@ -1,12 +1,12 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-21T17:14:52Z
+- Generated: 2026-08-16T20:00:00Z
 - Packages: 6
-- Components: 150
-- Procedures: 4729
+- Components: 152
+- Procedures: 4985
 - Literal Application.Run targets: 8
-- Unresolved dynamic calls: 47
+- Unresolved dynamic calls: 45
 
 ## Packages
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| Operations | invSys_Operations | invSys.Operations.xlam | 36 |
+| Operations | invSys_Operations | invSys.Operations.xlam | 38 |
 | OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 0 |
 
 ## Dynamic roots
@@ -175,6 +175,46 @@
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpen_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpenReceiving_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessInstructionAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessInstructionDown_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessInstructionRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessInstructionUp_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessInstructionUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessLoad_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessNew_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessObsolete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessOutputAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessOutputDown_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessOutputRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessOutputUp_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessOutputUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRelease_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRequirementAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRequirementDown_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRequirementRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRequirementUp_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessRequirementUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessReuse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessValidate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeAddProcess_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeAutoOrder_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeConnect_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeDisconnect_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeLoad_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeMoveDown_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeMoveUp_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeNew_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeObsolete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeRelease_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeRemoveProcess_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeUpdateConnection_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnRecipeValidate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -216,6 +256,8 @@
 | mCboDemoDataSet_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkRoamingStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkUseExisting_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbConnectionFromNode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbConnectionToNode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_AfterUpdate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -240,7 +282,12 @@
 | mLstHold_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstLoaderLines_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstManagerOutput_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstProcesses_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstProcessInstructions_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstProcessOutputs_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstProcessRequirements_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstReceiveItems_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstRecipeConnections_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunPalette_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunTree_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstShipments_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -479,8 +526,12 @@
 | TestOpenOrCreateConfigWorkbookRuntime_ReusesReadOnlyConfigWithoutMutation | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestOpenUserManagement_WithoutWorkbookArgTargetsActiveWorkbook | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestPrecedence_StationOverridesWarehouse | TEST_ENTRY | tests/unit/TestCoreConfig.bas |
+| TestProcessLifecycle_ReleasesObsoletesAndReusesVersions | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestProcessObsolete_RejectsReleasedRecipeDependency | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestProcessor_DiscoversClosedConfiguredStationInboxWorkbook | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
+| TestProcessSave_AppliesReusableMultiOutputDefinition | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestProcessSave_RejectsDefinitionWithoutOutput | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestProductionCheckIn_StagesBySystemKeyWithoutMutatingInventory | TEST_ENTRY | tests/unit/TestProductionSessionService.bas |
 | TestProductionCompleteRun_BuildsDeltasFromStagedRowsWithoutInvSysData | TEST_ENTRY | tests/unit/TestPhase6RoleSurfaces.bas |
 | TestProductionCompleteRun_ConsumesCheckedInputsAndAddsRealOutput | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -550,6 +601,13 @@
 | TestReceivingWorkflowState_PreservesEventIdentity | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingWorkflowState_RejectsMissingSystemKey | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
 | TestReceivingWorkflowState_UsesOrderedTransitions | TEST_ENTRY | tests/unit/TestReceivingStabilization.bas |
+| TestRecipeLifecycle_ReleasesValidGraphAndThenObsoletes | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeRelease_RejectsContradictoryExecutionOrder | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeRelease_RejectsIncompatibleConnection | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeRelease_RejectsMissingOrUnreleasedProcessVersion | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeRelease_RejectsOutputOverallocation | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeRelease_RejectsUnresolvedExternalRequirement | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestRecipeSave_RejectsCircularProcessGraph | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestRefreshInventoryReadModel_MissingSharePointSnapshotMarksCachedWithoutMutatingLocalTables | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRefreshInventoryReadModel_MissingSnapshotMarksStaleWithoutMutatingReceivingTally | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRefreshInventoryReadModelFromCache_PreservesLocalStagingAndLogs | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -572,6 +630,11 @@
 | TestRetireSourceWarehouse_SharePointUnavailableDoesNotBlockRetirement | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesRetirementMarker | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
 | TestRetireSourceWarehouse_WritesValidTombstoneJson | TEST_ENTRY | tests/unit/TestWarehouseRetireLifecycle.bas |
+| TestReusableProcessQueries_BridgeListsReleasedAndReturnsVersionReadOnly | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestReusableProductionQueries_CoreDomainBridgeRoundTripsPrimitiveResults | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestReusableProductionQueries_OperationsPrimitiveBridgeUsesCoreAuthority | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestReusableProductionSchema_CreatesProcessRecipeProjections | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
+| TestReusableRecipeQueries_BridgeListsReleasedGraphAndValidatesReadOnly | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestRibbonSessionLabels_DisconnectedUseExplicitNames | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
 | TestRoleWriteCurrent_AllowsSignedInReceivePost | TEST_ENTRY | tests/unit/TestPhase6CoreSurfaces.bas |
@@ -672,6 +735,7 @@
 | TestShouldDefaultShippableForRole_UsesRoleDefaults | TEST_ENTRY | tests/unit/TestCoreItemSearch.bas |
 | TestTesterBundle_EndToEnd | TEST_ENTRY | tests/integration/test_TesterBundle.bas |
 | TestTesterSetup_EndToEnd | TEST_ENTRY | tests/integration/test_TesterSetup.bas |
+| TestValidateReleasedRecipe_BridgeRejectsDraftWithoutMutation | TEST_ENTRY | tests/unit/TestDesignsDomain.bas |
 | TestValidateRetireMigrateSpec_RejectsEmptySourceWarehouseId | TEST_ENTRY | tests/unit/test_RetireMigrateSpec.bas |
 | TestValidateRetireMigrateSpec_RejectsEqualSourceAndTarget | TEST_ENTRY | tests/unit/test_RetireMigrateSpec.bas |
 | TestValidateRetireMigrateSpec_RejectsInvalidArchiveDestPath | TEST_ENTRY | tests/unit/test_RetireMigrateSpec.bas |

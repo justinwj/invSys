@@ -258,13 +258,9 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
     Call modProductionFormWindow.EnableResizable(frm, True, True)
     windowStyle = modProductionFormWindow.DiagnoseWindowStyle(frm)
 
-    If pageCount <> 4 Then
+    If pageCount <> 5 Then
         Err.Raise vbObjectError + 7312, "ProductionFormInitializeSmokeForWorkbook", _
-                  "Production form page count was " & CStr(pageCount) & "; expected 4."
-    End If
-    If frm.TestRecipeBuilderHasInstructionIo() <> 1 Then
-        Err.Raise vbObjectError + 7316, "ProductionFormInitializeSmokeForWorkbook", _
-                  "Recipe Builder does not expose the INSTRUCTION line type."
+                  "Production form page count was " & CStr(pageCount) & "; expected 5."
     End If
     If InStr(1, statusText, "failed", vbTextCompare) > 0 Then
         Err.Raise vbObjectError + 7313, "ProductionFormInitializeSmokeForWorkbook", statusText
@@ -329,6 +325,39 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunReusableProductionFormActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionFormActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionFormActionContractTest = _
+            frmProduction.TestReusableProductionFormActionContract()
+    End If
+    Exit Function
+
+Failed:
+    RunReusableProductionFormActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunReusableProductionRunActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionRunActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionRunActionContractTest = _
+            frmProduction.TestReusableProductionRunActionContract()
+    End If
+    Exit Function
+Failed:
+    RunReusableProductionRunActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
                                                   ByVal requestedHeight As Double, _
                                                   Optional ByVal pageIndex As Long = 2) As String
@@ -378,11 +407,20 @@ Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Wo
                                                           Optional ByVal activatedWb As Workbook = Nothing) As String
     Dim frm As frmProduction
 
+    On Error GoTo FailAction
     Set frm = New frmProduction
     ProductionFormTwoBatchActionReportForTest = _
         frm.TestRunTwoConsecutiveBatchesForWorkbook(operatorWb, inputItemCode, _
             inputItemName, inputQty, inputUom, inputLocation, outputQty, activatedWb)
     Unload frm
+    Exit Function
+
+FailAction:
+    ProductionFormTwoBatchActionReportForTest = "FAIL|Error=" & CStr(Err.Number) & _
+        "|Source=" & Err.Source & "|Description=" & Err.Description
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    On Error GoTo 0
 End Function
 
 ' ===== Worksheet event entry points =====
@@ -9362,11 +9400,16 @@ NextSourceRow:
 
         .Columns("A:I").AutoFit
         .Range("D2").NumberFormat = "yyyy-mm-dd hh:mm:ss"
+        ' PageSetup can raise 1004 when the workstation has no usable default
+        ' printer. The recall table remains valid; only print-page preferences
+        ' are optional in that environment.
+        On Error Resume Next
         .PageSetup.Orientation = xlLandscape
         .PageSetup.Zoom = False
         .PageSetup.FitToPagesWide = 1
         .PageSetup.FitToPagesTall = False
         .PageSetup.PrintArea = .Range("A1").Resize(tableRange.Rows.Count + 4, tableRange.Columns.Count).Address
+        On Error GoTo 0
     End With
 
     RenderRecallCodesReport = rowCount

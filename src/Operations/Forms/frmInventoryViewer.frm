@@ -150,6 +150,8 @@ End Function
 Public Function TestEventsReport(Optional ByVal rangeText As String = "") As String
     Dim removeRows As Long
     Dim shipmentHeldRows As Long
+    Dim productionInputRows As Long
+    Dim productionOutputRows As Long
     Dim readableDates As Long
     Dim rowIndex As Long
     Dim firstDate As String
@@ -164,6 +166,12 @@ Public Function TestEventsReport(Optional ByVal rangeText As String = "") As Str
         End If
         If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Shipment Held", vbTextCompare) = 0 Then
             shipmentHeldRows = shipmentHeldRows + 1
+        End If
+        If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Production Input Consumed", vbTextCompare) = 0 Then
+            productionInputRows = productionInputRows + 1
+        End If
+        If StrComp(Trim$(CStr(mLstInventory.List(rowIndex, 1))), "Production Output Created", vbTextCompare) = 0 Then
+            productionOutputRows = productionOutputRows + 1
         End If
         If Trim$(CStr(mLstInventory.List(rowIndex, 0))) <> "" And _
            Not IsNumeric(Trim$(CStr(mLstInventory.List(rowIndex, 0)))) Then
@@ -184,6 +192,8 @@ Public Function TestEventsReport(Optional ByVal rangeText As String = "") As Str
         "|FirstReference=" & firstReference & _
         "|RemoveRows=" & CStr(removeRows) & _
         "|ShipmentHeldRows=" & CStr(shipmentHeldRows) & _
+        "|ProductionInputRows=" & CStr(productionInputRows) & _
+        "|ProductionOutputRows=" & CStr(productionOutputRows) & _
         "|EventRange=" & CStr(mCboEventRange.Value) & _
         "|RangeControlVisible=" & CStr(mCboEventRange.Visible) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _

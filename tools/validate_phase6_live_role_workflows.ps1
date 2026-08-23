@@ -896,16 +896,22 @@ function New-InventoryWorkbook {
         "SKU-SHIP" = 20
         "SKU-SUGAR" = 100
         "SKU-COMP" = 10
+        "SKU-RUN-RAW" = 20
+        "SKU-RUN-STALE" = 6
     }
     $seedLocations = @{
         "SKU-SHIP" = "DOCK"
         "SKU-SUGAR" = "BIN-A"
         "SKU-COMP" = "LINE"
+        "SKU-RUN-RAW" = "LINE"
+        "SKU-RUN-STALE" = "LINE"
     }
     $seedSystemKeys = @{
         "SKU-SHIP" = "SYS-LIVE-SHIP"
         "SKU-SUGAR" = "SYS-LIVE-SUGAR"
         "SKU-COMP" = "SYS-LIVE-COMP"
+        "SKU-RUN-RAW" = "SYS-LIVE-PRODUCTION-RUN-RAW"
+        "SKU-RUN-STALE" = "SYS-LIVE-PRODUCTION-RUN-STALE"
     }
     $seedSeq = 0
     foreach ($sku in $SkuRows) {

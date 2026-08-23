@@ -166,6 +166,98 @@ NextCatalogRow:
 CleanFail:
 End Function
 
+Public Function ListAvailableInventoryEntities(Optional ByVal filterText As String = "", _
+                                               Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+
+    Dim wb As Workbook
+    Dim loEntities As ListObject
+    Dim loCatalog As ListObject
+    Dim entityRows As Variant
+    Dim result() As Variant
+    Dim trimmed() As Variant
+    Dim r As Long
+    Dim c As Long
+    Dim catalogRow As Long
+    Dim outRow As Long
+    Dim systemKey As String
+    Dim sku As String
+    Dim itemCode As String
+    Dim itemName As String
+    Dim uom As String
+    Dim description As String
+    Dim qtyOnHand As Double
+    Dim locationValue As String
+    Dim conditionValue As String
+    Dim inventoryState As String
+    Dim attributesJson As String
+    Dim haystack As String
+
+    Set wb = modInventoryApply.ResolveInventoryWorkbook("", inventoryWb)
+    If wb Is Nothing Then Exit Function
+    Set loEntities = FindInventoryQueryTable(wb, "tblInventoryEntities")
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
+    Set loCatalog = FindInventoryQueryTable(wb, "tblSkuCatalog")
+    entityRows = loEntities.DataBodyRange.Value2
+    ReDim result(1 To UBound(entityRows, 1), 1 To 10)
+    filterText = LCase$(Trim$(filterText))
+
+    For r = 1 To UBound(entityRows, 1)
+        systemKey = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "System_Key"))
+        sku = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "SKU"))
+        qtyOnHand = NzInventoryQueryNumber(entityRows(r, InventoryQueryColumn(loEntities, "QtyOnHand")))
+        locationValue = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "Location"))
+        conditionValue = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "Condition"))
+        inventoryState = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "InventoryState"))
+        attributesJson = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "AttributesJson"))
+        If systemKey = "" Or sku = "" Or qtyOnHand <= 0 Then GoTo NextEntity
+        If inventoryState <> "" And StrComp(inventoryState, "ACTIVE", vbTextCompare) <> 0 Then GoTo NextEntity
+
+        catalogRow = FindInventoryQueryRow(loCatalog, "SKU", sku)
+        If catalogRow > 0 Then
+            itemCode = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM_CODE")))
+            itemName = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM")))
+            uom = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "UOM")))
+            description = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "DESCRIPTION")))
+        Else
+            itemCode = sku
+            itemName = sku
+            uom = ""
+            description = ""
+        End If
+        If itemCode = "" Then itemCode = sku
+        If itemName = "" Then itemName = itemCode
+        haystack = LCase$(systemKey & " " & sku & " " & itemCode & " " & itemName & " " & _
+                          uom & " " & locationValue & " " & conditionValue & " " & description)
+        If filterText <> "" Then
+            If InStr(1, haystack, filterText, vbTextCompare) = 0 Then GoTo NextEntity
+        End If
+
+        outRow = outRow + 1
+        result(outRow, 1) = systemKey
+        result(outRow, 2) = sku
+        result(outRow, 3) = itemCode
+        result(outRow, 4) = itemName
+        result(outRow, 5) = uom
+        result(outRow, 6) = qtyOnHand
+        result(outRow, 7) = locationValue
+        result(outRow, 8) = conditionValue
+        result(outRow, 9) = inventoryState
+        result(outRow, 10) = attributesJson
+NextEntity:
+    Next r
+
+    If outRow = 0 Then Exit Function
+    ReDim trimmed(1 To outRow, 1 To 10)
+    For r = 1 To outRow
+        For c = 1 To 10
+            trimmed(r, c) = result(r, c)
+        Next c
+    Next r
+    ListAvailableInventoryEntities = trimmed
+CleanFail:
+End Function
+
 Private Sub AddInventoryPickerResultRow(ByRef result() As Variant, ByRef outRow As Long, _
                                         ByVal systemKey As String, ByVal itemName As String, _
                                         ByVal uom As String, ByVal qtyOnHand As Variant, _

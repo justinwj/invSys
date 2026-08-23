@@ -232,7 +232,7 @@ try {
     foreach ($case in $cases) {
         Write-Host ("Geometry case: " + $case.Name)
         $pageReports = New-Object System.Collections.Generic.List[string]
-        for ($pageIndex = 0; $pageIndex -lt 4; $pageIndex++) {
+        for ($pageIndex = 0; $pageIndex -lt 5; $pageIndex++) {
             Write-Host ("  Page " + $pageIndex)
             $report = [string]$excel.Run(
                 $showMacro, $case.Width, $case.Height, [int]$pageIndex)
@@ -250,7 +250,7 @@ try {
         $geometryRows.Add([pscustomobject]@{
             Case = $case.Name
             Requested = "$($case.Width)x$($case.Height)"
-            Pages = 4
+            Pages = 5
             Report = $report
             Screenshot = "slice9-layout/$($case.Screenshot)"
         })
@@ -282,7 +282,7 @@ try {
     $nativeRows.Add([pscustomobject]@{ Action = "Maximize"; Passed = $maximized })
     if (-not $maximized) { throw "Production form did not enter the maximized state." }
 
-    for ($pageIndex = 0; $pageIndex -lt 4; $pageIndex++) {
+    for ($pageIndex = 0; $pageIndex -lt 5; $pageIndex++) {
         Write-Host ("  Maximized page " + $pageIndex)
         $maximizedReport = [string]$excel.Run($currentMacro, [int]$pageIndex)
         Assert-HealthyGeometryReport -Name "maximized/page-$pageIndex" -Report $maximizedReport

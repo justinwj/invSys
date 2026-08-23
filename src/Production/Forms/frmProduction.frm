@@ -43,6 +43,93 @@ Private WithEvents mBtnLineMoveUp As MSForms.CommandButton
 Private WithEvents mBtnLineMoveDown As MSForms.CommandButton
 Private WithEvents mBtnLineUomAdd As MSForms.CommandButton
 
+Private WithEvents mLstProcesses As MSForms.ListBox
+Private WithEvents mBtnProcessRefresh As MSForms.CommandButton
+Private WithEvents mBtnProcessNew As MSForms.CommandButton
+Private WithEvents mBtnProcessLoad As MSForms.CommandButton
+Private WithEvents mBtnProcessReuse As MSForms.CommandButton
+Private WithEvents mBtnProcessValidate As MSForms.CommandButton
+Private WithEvents mBtnProcessSave As MSForms.CommandButton
+Private WithEvents mBtnProcessRelease As MSForms.CommandButton
+Private WithEvents mBtnProcessObsolete As MSForms.CommandButton
+Private WithEvents mBtnProcessClear As MSForms.CommandButton
+Private WithEvents mBtnProcessRequirementAdd As MSForms.CommandButton
+Private WithEvents mBtnProcessRequirementUpdate As MSForms.CommandButton
+Private WithEvents mBtnProcessRequirementRemove As MSForms.CommandButton
+Private WithEvents mBtnProcessRequirementUp As MSForms.CommandButton
+Private WithEvents mBtnProcessRequirementDown As MSForms.CommandButton
+Private WithEvents mBtnProcessOutputAdd As MSForms.CommandButton
+Private WithEvents mBtnProcessOutputUpdate As MSForms.CommandButton
+Private WithEvents mBtnProcessOutputRemove As MSForms.CommandButton
+Private WithEvents mBtnProcessOutputUp As MSForms.CommandButton
+Private WithEvents mBtnProcessOutputDown As MSForms.CommandButton
+Private WithEvents mBtnProcessInstructionAdd As MSForms.CommandButton
+Private WithEvents mBtnProcessInstructionUpdate As MSForms.CommandButton
+Private WithEvents mBtnProcessInstructionRemove As MSForms.CommandButton
+Private WithEvents mBtnProcessInstructionUp As MSForms.CommandButton
+Private WithEvents mBtnProcessInstructionDown As MSForms.CommandButton
+Private mTxtProcessName As MSForms.TextBox
+Private mTxtProcessId As MSForms.TextBox
+Private mTxtProcessVersion As MSForms.TextBox
+Private mTxtProcessDescription As MSForms.TextBox
+Private WithEvents mLstProcessRequirements As MSForms.ListBox
+Private mTxtRequirementId As MSForms.TextBox
+Private mTxtRequirementName As MSForms.TextBox
+Private mTxtRequirementQty As MSForms.TextBox
+Private mTxtRequirementPercent As MSForms.TextBox
+Private mTxtRequirementYieldBasis As MSForms.TextBox
+Private mTxtRequirementUom As MSForms.TextBox
+Private WithEvents mLstProcessOutputs As MSForms.ListBox
+Private mTxtProcessOutputId As MSForms.TextBox
+Private mTxtProcessOutputName As MSForms.TextBox
+Private mTxtProcessOutputItemCode As MSForms.TextBox
+Private mTxtProcessOutputDesignId As MSForms.TextBox
+Private mTxtProcessOutputDesignVersion As MSForms.TextBox
+Private mTxtProcessOutputQty As MSForms.TextBox
+Private mTxtProcessOutputPercent As MSForms.TextBox
+Private mTxtProcessOutputYieldBasis As MSForms.TextBox
+Private mTxtProcessOutputUom As MSForms.TextBox
+Private WithEvents mLstProcessInstructions As MSForms.ListBox
+Private mTxtProcessInstruction As MSForms.TextBox
+
+Private WithEvents mLstRecipes As MSForms.ListBox
+Private WithEvents mLstReleasedProcesses As MSForms.ListBox
+Private WithEvents mLstRecipeNodes As MSForms.ListBox
+Private WithEvents mLstRecipeConnections As MSForms.ListBox
+Private WithEvents mLstRecipeValidation As MSForms.ListBox
+Private WithEvents mBtnRecipeRefresh As MSForms.CommandButton
+Private WithEvents mBtnRecipeNew As MSForms.CommandButton
+Private WithEvents mBtnRecipeLoad As MSForms.CommandButton
+Private WithEvents mBtnRecipeAddProcess As MSForms.CommandButton
+Private WithEvents mBtnRecipeRemoveProcess As MSForms.CommandButton
+Private WithEvents mBtnRecipeConnect As MSForms.CommandButton
+Private WithEvents mBtnRecipeUpdateConnection As MSForms.CommandButton
+Private WithEvents mBtnRecipeDisconnect As MSForms.CommandButton
+Private WithEvents mBtnRecipeMoveUp As MSForms.CommandButton
+Private WithEvents mBtnRecipeMoveDown As MSForms.CommandButton
+Private WithEvents mBtnRecipeAutoOrder As MSForms.CommandButton
+Private WithEvents mBtnRecipeValidate As MSForms.CommandButton
+Private WithEvents mBtnRecipeSave As MSForms.CommandButton
+Private WithEvents mBtnRecipeRelease As MSForms.CommandButton
+Private WithEvents mBtnRecipeObsolete As MSForms.CommandButton
+Private WithEvents mBtnRecipeClear As MSForms.CommandButton
+Private mTxtReusableRecipeName As MSForms.TextBox
+Private mTxtReusableRecipeId As MSForms.TextBox
+Private mTxtReusableRecipeVersion As MSForms.TextBox
+Private mTxtReusableRecipeDescription As MSForms.TextBox
+Private WithEvents mCmbConnectionFromNode As MSForms.ComboBox
+Private WithEvents mCmbConnectionOutput As MSForms.ComboBox
+Private WithEvents mCmbConnectionToNode As MSForms.ComboBox
+Private WithEvents mCmbConnectionRequirement As MSForms.ComboBox
+Private mTxtConnectionQty As MSForms.TextBox
+Private mTxtConnectionPercent As MSForms.TextBox
+Private mTxtConnectionUom As MSForms.TextBox
+Private mProcessAlternatives As Collection
+Private mReusableActionTestInProgress As Boolean
+Private mReusableTestSourceId As String
+Private mReusableTestSinkId As String
+Private mReusableTestRecipeId As String
+
 Private WithEvents mLstAssignRecipes As MSForms.ListBox
 Private WithEvents mLstAssignIngredients As MSForms.ListBox
 Private WithEvents mTxtInventorySearch As MSForms.TextBox
@@ -115,6 +202,7 @@ Private mRunSplitOverrides As Object
 Private mRunBaseQtyByKey As Object
 Private mUpdatingPaletteInputs As Boolean
 Private mPaletteInputSource As String
+Private mCheckRowsDiagnostic As String
 Private mRunProcessByKey As Object
 Private mRunItemCodeByKey As Object
 Private mBuilderLineTableRows() As Long
@@ -328,38 +416,52 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
     Dim splitInput As MSForms.TextBox
     Dim qtyInput As MSForms.TextBox
     Dim choiceIndex As Long
+    Dim actionStage As String
 
+    On Error GoTo FailAction
+    actionStage = "BuildLayout"
     If Not mBuilt Then BuildLayout
+    actionStage = "BindWorkbook"
     SetOperatorWorkbook operatorWb
 
     For batchNumber = 1 To 2
+        actionStage = "PrepareChoice"
         If Not PrepareRunChoiceForActionTest(inputItemCode, inputItemName, inputQty, _
                                              inputUom, inputLocation) Then
             TestRunTwoConsecutiveBatchesForWorkbook = _
                 "FAIL|Batch=" & CStr(batchNumber) & "|Prepare|" & TestStatusText()
             Exit Function
         End If
+        actionStage = "ActivateAlternateWorkbook"
         If Not activatedWb Is Nothing Then activatedWb.Activate
+        actionStage = "SetLocation"
         SetRunLocationForActionTest inputLocation
+        actionStage = "BuildRunTree"
         BuildRunTreeFromPaletteList
+        actionStage = "ResolvePalette"
         Set activeChoices = ActiveRunPaletteList()
+        actionStage = "ResolveChoice"
         choiceIndex = FirstSelectableRunChoice(activeChoices)
         If choiceIndex < 0 Then
             TestRunTwoConsecutiveBatchesForWorkbook = _
                 "FAIL|Batch=" & CStr(batchNumber) & "|Prepare|No selectable inventory choice."
             Exit Function
         End If
+        actionStage = "SelectChoice"
         activeChoices.ListIndex = choiceIndex
         If activeChoices Is mLstRunTree Then
             mLstRunTree_Click
         Else
             mLstRunPalette_Click
         End If
+        actionStage = "ResolveInputs"
         Set splitInput = ActiveRunSplitTextBox()
         Set qtyInput = ActiveRunQtyTextBox()
         splitInput.Text = "100"
         qtyInput.Text = CStr(inputQty)
+        actionStage = "ApplyPalette"
         mBtnRunApplyPalette_Click
+        actionStage = "CheckIn"
         mBtnManagerCheckIn_Click
         batchStatus = TestStatusText()
         If InStr(1, batchStatus, "Checked in ", vbTextCompare) = 0 Then
@@ -368,15 +470,18 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
             Exit Function
         End If
 
+        actionStage = "RefreshManager"
         RefreshManagerState
         If mLstManagerOutput.ListCount = 0 Then
             TestRunTwoConsecutiveBatchesForWorkbook = _
                 "FAIL|Batch=" & CStr(batchNumber) & "|OutputMissing|" & TestStatusText()
             Exit Function
         End If
+        actionStage = "SelectOutput"
         mLstManagerOutput.ListIndex = 0
         mLstManagerOutput_Click
         mTxtOutputReal.Text = CStr(outputQty)
+        actionStage = "CompleteRun"
         mBtnManagerApplyOutput_Click
         batchStatus = TestStatusText()
         If InStr(1, batchStatus, "Production run completed.", vbTextCompare) = 0 Then
@@ -384,11 +489,20 @@ Public Function TestRunTwoConsecutiveBatchesForWorkbook(ByVal operatorWb As Work
                 "FAIL|Batch=" & CStr(batchNumber) & "|Complete|" & batchStatus
             Exit Function
         End If
-        If batchNumber = 1 Then mBtnManagerNext_Click
+        If batchNumber = 1 Then
+            actionStage = "NextBatch"
+            mBtnManagerNext_Click
+        End If
     Next batchNumber
 
     TestRunTwoConsecutiveBatchesForWorkbook = _
         "OK|Batches=2|BoundWorkbook=" & mOperatorWorkbook.Name
+    Exit Function
+
+FailAction:
+    TestRunTwoConsecutiveBatchesForWorkbook = "FAIL|Batch=" & CStr(batchNumber) & _
+        "|Stage=" & actionStage & "|Error=" & CStr(Err.Number) & _
+        "|Source=" & Err.Source & "|Description=" & Err.Description
 End Function
 
 Private Sub SetRunLocationForActionTest(ByVal locationValue As String)
@@ -770,18 +884,20 @@ Private Sub BuildLayout()
         .Width = 1070
         .Height = 575
     End With
-    Do While mPages.Pages.Count < 4
+    Do While mPages.Pages.Count < 5
         mPages.Pages.Add
     Loop
-    mPages.Pages(0).Caption = "Recipe Builder"
-    mPages.Pages(1).Caption = "Ingredients Assignment"
-    mPages.Pages(2).Caption = "Production Run - List"
-    mPages.Pages(3).Caption = "Production Run - Tree"
+    mPages.Pages(0).Caption = "Process Designer"
+    mPages.Pages(1).Caption = "Recipe Designer"
+    mPages.Pages(2).Caption = "Ingredients Assignment"
+    mPages.Pages(3).Caption = "Production Run - List"
+    mPages.Pages(4).Caption = "Production Run - Tree"
 
-    BuildRecipeBuilderPage mPages.Pages(0)
-    BuildAssignmentPage mPages.Pages(1)
-    BuildLoaderPage mPages.Pages(2)
-    BuildRunTreePage mPages.Pages(3)
+    BuildProcessDesignerPage mPages.Pages(0)
+    BuildRecipeDesignerPage mPages.Pages(1)
+    BuildAssignmentPage mPages.Pages(2)
+    BuildLoaderPage mPages.Pages(3)
+    BuildRunTreePage mPages.Pages(4)
 
     Set mTxtStatus = Me.Controls.Add("Forms.TextBox.1", "txtProductionStatus", True)
     With mTxtStatus
@@ -799,6 +915,129 @@ Private Sub BuildLayout()
     ConfigureProductionAnchors
     mBuilt = True
     ResizeProductionLayout
+End Sub
+
+Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
+    AddLabel pg, "Saved Processes", 12, 8, 130, 16
+    Set mLstProcesses = AddList(pg, "lstProcesses", 12, 26, 260, 110, 6, _
+        "70 pt;35 pt;95 pt;0 pt;55 pt;0 pt")
+    Set mBtnProcessRefresh = AddButton(pg, "btnProcessRefresh", "Refresh", 12, 140, 60, 22)
+    Set mBtnProcessNew = AddButton(pg, "btnProcessNew", "New Process", 76, 140, 82, 22)
+    Set mBtnProcessLoad = AddButton(pg, "btnProcessLoad", "Load", 162, 140, 50, 22)
+    Set mBtnProcessReuse = AddButton(pg, "btnProcessReuse", "Reuse as New Version", 216, 140, 120, 22)
+
+    AddLabel pg, "Process Name", 290, 8, 85, 16
+    Set mTxtProcessName = AddText(pg, "txtProcessName", 290, 26, 205, 22)
+    AddLabel pg, "Process ID", 505, 8, 70, 16
+    Set mTxtProcessId = AddText(pg, "txtProcessId", 505, 26, 145, 22)
+    AddLabel pg, "Version", 660, 8, 55, 16
+    Set mTxtProcessVersion = AddText(pg, "txtProcessVersion", 660, 26, 55, 22)
+    AddLabel pg, "Description", 290, 54, 80, 16
+    Set mTxtProcessDescription = AddText(pg, "txtProcessDescription", 290, 72, 425, 64)
+    mTxtProcessDescription.MultiLine = True
+
+    Set mBtnProcessValidate = AddButton(pg, "btnProcessValidate", "Validate", 740, 12, 86, 24)
+    Set mBtnProcessSave = AddButton(pg, "btnProcessSave", "Save Draft", 834, 12, 86, 24)
+    Set mBtnProcessRelease = AddButton(pg, "btnProcessRelease", "Release", 928, 12, 86, 24)
+    Set mBtnProcessObsolete = AddButton(pg, "btnProcessObsolete", "Obsolete", 740, 44, 86, 24)
+    Set mBtnProcessClear = AddButton(pg, "btnProcessClear", "Clear", 834, 44, 86, 24)
+
+    AddLabel pg, "Requirements", 12, 174, 100, 16
+    Set mLstProcessRequirements = AddList(pg, "lstProcessRequirements", 12, 192, 315, 128, 7, _
+        "50 pt;78 pt;38 pt;38 pt;52 pt;42 pt;0 pt")
+    AddLabel pg, "ID / Name / Qty / % / Basis / UOM", 12, 324, 230, 16
+    Set mTxtRequirementId = AddText(pg, "txtRequirementId", 12, 342, 50, 22)
+    Set mTxtRequirementName = AddText(pg, "txtRequirementName", 66, 342, 91, 22)
+    Set mTxtRequirementQty = AddText(pg, "txtRequirementQty", 161, 342, 38, 22)
+    Set mTxtRequirementPercent = AddText(pg, "txtRequirementPercent", 203, 342, 38, 22)
+    Set mTxtRequirementYieldBasis = AddText(pg, "txtRequirementYieldBasis", 245, 342, 42, 22)
+    Set mTxtRequirementUom = AddText(pg, "txtRequirementUom", 291, 342, 36, 22)
+    Set mBtnProcessRequirementAdd = AddButton(pg, "btnProcessRequirementAdd", "Add", 12, 372, 52, 22)
+    Set mBtnProcessRequirementUpdate = AddButton(pg, "btnProcessRequirementUpdate", "Update", 68, 372, 58, 22)
+    Set mBtnProcessRequirementRemove = AddButton(pg, "btnProcessRequirementRemove", "Remove", 130, 372, 58, 22)
+    Set mBtnProcessRequirementUp = AddButton(pg, "btnProcessRequirementUp", "Up", 192, 372, 42, 22)
+    Set mBtnProcessRequirementDown = AddButton(pg, "btnProcessRequirementDown", "Down", 238, 372, 52, 22)
+
+    AddLabel pg, "Outputs (at least one)", 340, 174, 150, 16
+    Set mLstProcessOutputs = AddList(pg, "lstProcessOutputs", 340, 192, 390, 128, 9, _
+        "48 pt;68 pt;56 pt;0 pt;0 pt;38 pt;38 pt;50 pt;38 pt")
+    AddLabel pg, "ID / Name / Item / Design / Ver / Qty / % / Basis / UOM", 340, 324, 340, 16
+    Set mTxtProcessOutputId = AddText(pg, "txtProcessOutputId", 340, 342, 48, 22)
+    Set mTxtProcessOutputName = AddText(pg, "txtProcessOutputName", 392, 342, 67, 22)
+    Set mTxtProcessOutputItemCode = AddText(pg, "txtProcessOutputItemCode", 463, 342, 56, 22)
+    Set mTxtProcessOutputDesignId = AddText(pg, "txtProcessOutputDesignId", 523, 342, 48, 22)
+    Set mTxtProcessOutputDesignVersion = AddText(pg, "txtProcessOutputDesignVersion", 575, 342, 31, 22)
+    Set mTxtProcessOutputQty = AddText(pg, "txtProcessOutputQty", 610, 342, 36, 22)
+    Set mTxtProcessOutputPercent = AddText(pg, "txtProcessOutputPercent", 650, 342, 36, 22)
+    Set mTxtProcessOutputYieldBasis = AddText(pg, "txtProcessOutputYieldBasis", 690, 342, 40, 22)
+    Set mTxtProcessOutputUom = AddText(pg, "txtProcessOutputUom", 694, 370, 36, 22)
+    Set mBtnProcessOutputAdd = AddButton(pg, "btnProcessOutputAdd", "Add", 340, 372, 52, 22)
+    Set mBtnProcessOutputUpdate = AddButton(pg, "btnProcessOutputUpdate", "Update", 396, 372, 58, 22)
+    Set mBtnProcessOutputRemove = AddButton(pg, "btnProcessOutputRemove", "Remove", 458, 372, 58, 22)
+    Set mBtnProcessOutputUp = AddButton(pg, "btnProcessOutputUp", "Up", 520, 372, 42, 22)
+    Set mBtnProcessOutputDown = AddButton(pg, "btnProcessOutputDown", "Down", 566, 372, 52, 22)
+
+    AddLabel pg, "Instructions", 744, 174, 100, 16
+    Set mLstProcessInstructions = AddList(pg, "lstProcessInstructions", 744, 192, 286, 128, 2, "35 pt;235 pt")
+    Set mTxtProcessInstruction = AddText(pg, "txtProcessInstruction", 744, 342, 286, 50)
+    mTxtProcessInstruction.MultiLine = True
+    Set mBtnProcessInstructionAdd = AddButton(pg, "btnProcessInstructionAdd", "Add", 744, 400, 52, 22)
+    Set mBtnProcessInstructionUpdate = AddButton(pg, "btnProcessInstructionUpdate", "Update", 800, 400, 58, 22)
+    Set mBtnProcessInstructionRemove = AddButton(pg, "btnProcessInstructionRemove", "Remove", 862, 400, 58, 22)
+    Set mBtnProcessInstructionUp = AddButton(pg, "btnProcessInstructionUp", "Up", 924, 400, 42, 22)
+    Set mBtnProcessInstructionDown = AddButton(pg, "btnProcessInstructionDown", "Down", 970, 400, 52, 22)
+    Set mProcessAlternatives = New Collection
+End Sub
+
+Private Sub BuildRecipeDesignerPage(ByVal pg As MSForms.Page)
+    AddLabel pg, "Saved Recipes", 12, 8, 120, 16
+    Set mLstRecipes = AddList(pg, "lstRecipes", 12, 26, 260, 105, 6, "70 pt;35 pt;95 pt;0 pt;55 pt;0 pt")
+    Set mBtnRecipeRefresh = AddButton(pg, "btnRecipeRefresh", "Refresh", 12, 136, 60, 22)
+    Set mBtnRecipeNew = AddButton(pg, "btnRecipeNew", "New Recipe", 76, 136, 78, 22)
+    Set mBtnRecipeLoad = AddButton(pg, "btnRecipeLoad", "Load", 158, 136, 50, 22)
+    AddLabel pg, "Recipe Name", 290, 8, 80, 16
+    Set mTxtReusableRecipeName = AddText(pg, "txtReusableRecipeName", 290, 26, 205, 22)
+    AddLabel pg, "Recipe ID", 505, 8, 65, 16
+    Set mTxtReusableRecipeId = AddText(pg, "txtReusableRecipeId", 505, 26, 145, 22)
+    AddLabel pg, "Version", 660, 8, 55, 16
+    Set mTxtReusableRecipeVersion = AddText(pg, "txtReusableRecipeVersion", 660, 26, 55, 22)
+    AddLabel pg, "Description", 290, 54, 80, 16
+    Set mTxtReusableRecipeDescription = AddText(pg, "txtReusableRecipeDescription", 290, 72, 425, 60)
+    mTxtReusableRecipeDescription.MultiLine = True
+    Set mBtnRecipeValidate = AddButton(pg, "btnRecipeValidate", "Validate Recipe", 740, 12, 96, 24)
+    Set mBtnRecipeSave = AddButton(pg, "btnRecipeSave", "Save Draft", 844, 12, 82, 24)
+    Set mBtnRecipeRelease = AddButton(pg, "btnRecipeRelease", "Release", 934, 12, 82, 24)
+    Set mBtnRecipeObsolete = AddButton(pg, "btnRecipeObsolete", "Obsolete", 740, 44, 82, 24)
+    Set mBtnRecipeClear = AddButton(pg, "btnRecipeClear", "Clear", 830, 44, 82, 24)
+
+    AddLabel pg, "Released Processes", 12, 174, 130, 16
+    Set mLstReleasedProcesses = AddList(pg, "lstReleasedProcesses", 12, 192, 260, 118, 6, _
+        "65 pt;35 pt;85 pt;0 pt;50 pt;0 pt")
+    Set mBtnRecipeAddProcess = AddButton(pg, "btnRecipeAddProcess", "Add Process", 12, 316, 82, 22)
+    AddLabel pg, "Recipe Process Nodes", 290, 174, 150, 16
+    Set mLstRecipeNodes = AddList(pg, "lstRecipeNodes", 290, 192, 250, 118, 5, "45 pt;65 pt;35 pt;70 pt;25 pt")
+    Set mBtnRecipeRemoveProcess = AddButton(pg, "btnRecipeRemoveProcess", "Remove Process", 290, 316, 92, 22)
+    Set mBtnRecipeMoveUp = AddButton(pg, "btnRecipeMoveUp", "Move Up", 386, 316, 65, 22)
+    Set mBtnRecipeMoveDown = AddButton(pg, "btnRecipeMoveDown", "Move Down", 455, 316, 72, 22)
+    Set mBtnRecipeAutoOrder = AddButton(pg, "btnRecipeAutoOrder", "Auto Order", 455, 344, 72, 22)
+
+    AddLabel pg, "Connections", 555, 174, 90, 16
+    Set mLstRecipeConnections = AddList(pg, "lstRecipeConnections", 555, 192, 475, 118, 7, _
+        "55 pt;55 pt;55 pt;65 pt;45 pt;45 pt;45 pt")
+    AddLabel pg, "From / Output / To / Requirement / Qty / % / UOM", 555, 314, 340, 16
+    Set mCmbConnectionFromNode = AddCombo(pg, "cmbConnectionFromNode", 555, 332, 68, 22)
+    Set mCmbConnectionOutput = AddCombo(pg, "cmbConnectionOutput", 627, 332, 75, 22)
+    Set mCmbConnectionToNode = AddCombo(pg, "cmbConnectionToNode", 706, 332, 68, 22)
+    Set mCmbConnectionRequirement = AddCombo(pg, "cmbConnectionRequirement", 778, 332, 92, 22)
+    Set mTxtConnectionQty = AddText(pg, "txtConnectionQty", 874, 332, 42, 22)
+    Set mTxtConnectionPercent = AddText(pg, "txtConnectionPercent", 920, 332, 42, 22)
+    Set mTxtConnectionUom = AddText(pg, "txtConnectionUom", 966, 332, 52, 22)
+    Set mBtnRecipeConnect = AddButton(pg, "btnRecipeConnect", "Connect", 555, 362, 62, 22)
+    Set mBtnRecipeUpdateConnection = AddButton(pg, "btnRecipeUpdateConnection", "Update", 621, 362, 62, 22)
+    Set mBtnRecipeDisconnect = AddButton(pg, "btnRecipeDisconnect", "Disconnect", 687, 362, 70, 22)
+
+    AddLabel pg, "Validation", 12, 390, 90, 16
+    Set mLstRecipeValidation = AddList(pg, "lstRecipeValidation", 12, 408, 1018, 100, 2, "80 pt;900 pt")
 End Sub
 
 Private Sub BuildRecipeBuilderPage(ByVal pg As MSForms.Page)
@@ -855,22 +1094,22 @@ Private Sub BuildRecipeBuilderPage(ByVal pg As MSForms.Page)
 End Sub
 
 Private Sub BuildAssignmentPage(ByVal pg As MSForms.Page)
-    AddLabel pg, "Recipes", 12, 12, 160, 16
+    AddLabel pg, "Processes", 12, 12, 160, 16
     Set mLstAssignRecipes = AddList(pg, "lstAssignRecipes", 12, 32, 300, 180, 3, "0 pt;130 pt;150 pt")
-    Set mBtnAssignRecipe = AddButton(pg, "btnAssignRecipe", "Select Recipe", 12, 220, 140, 24)
+    Set mBtnAssignRecipe = AddButton(pg, "btnAssignRecipe", "Select Process", 12, 220, 140, 24)
     Set mBtnAssignRefresh = AddButton(pg, "btnAssignRefresh", "Refresh", 172, 220, 140, 24)
 
-    AddLabel pg, "Recipe Ingredients", 330, 12, 180, 16
+    AddLabel pg, "Ingredient Requirements", 330, 12, 180, 16
     Set mLstAssignIngredients = AddList(pg, "lstAssignIngredients", 330, 32, 340, 212, 7, "0 pt;135 pt;45 pt;70 pt;55 pt;45 pt;45 pt")
-    Set mBtnAssignIngredient = AddButton(pg, "btnAssignIngredient", "Select Ingredient", 690, 32, 150, 24)
-    Set mBtnAssignSave = AddButton(pg, "btnAssignSave", "Save Assignment", 690, 64, 150, 24)
+    Set mBtnAssignIngredient = AddButton(pg, "btnAssignIngredient", "Select Requirement", 690, 32, 150, 24)
+    Set mBtnAssignSave = AddButton(pg, "btnAssignSave", "Save Alternatives", 690, 64, 150, 24)
     Set mBtnAssignClear = AddButton(pg, "btnAssignClear", "Clear", 690, 96, 150, 24)
 
     AddLabel pg, "Search Inventory", 12, 262, 130, 16
     Set mTxtInventorySearch = AddText(pg, "txtInventorySearch", 130, 258, 230, 22)
     Set mBtnAssignAdd = AddButton(pg, "btnAssignAdd", "Add Acceptable", 380, 258, 150, 24)
     Set mBtnAssignRemove = AddButton(pg, "btnAssignRemove", "Remove Row", 548, 258, 122, 24)
-    AddLabel pg, "Inventory", 12, 292, 120, 16
+    AddLabel pg, "Managed Items", 12, 292, 120, 16
     Set mLstAssignInventory = AddList(pg, "lstAssignInventory", 12, 312, 510, 208, 7, "45 pt;145 pt;45 pt;58 pt;65 pt;130 pt;0 pt")
     AddLabel pg, "Acceptable Items", 540, 292, 150, 16
     Set mLstAssignAllowed = AddList(pg, "lstAssignAllowed", 540, 312, 490, 208, 7, "45 pt;160 pt;45 pt;170 pt;0 pt;0 pt;0 pt")
@@ -1042,10 +1281,25 @@ Private Sub ConfigureProductionAnchors()
                                         OPERATIONS_ANCHOR_BOTTOM
     mLayout.RegisterControl mBtnClose, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
 
-    ConfigureRecipeBuilderAnchors
+    ConfigureReusableDesignerAnchors
     ConfigureAssignmentAnchors
     ConfigureRunListAnchors
     ConfigureRunTreeAnchors
+End Sub
+
+Private Sub ConfigureReusableDesignerAnchors()
+    mLayout.RegisterControl mLstProcesses, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtProcessDescription, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLstProcessRequirements, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstProcessOutputs, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLstProcessInstructions, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtProcessInstruction, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstRecipes, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtReusableRecipeDescription, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLstReleasedProcesses, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstRecipeNodes, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstRecipeConnections, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLstRecipeValidation, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
 End Sub
 
 Private Sub ConfigureRecipeBuilderAnchors()
@@ -1108,7 +1362,7 @@ Private Sub ConfigureRunListAnchors()
     mLayout.RegisterControl mBtnManagerRefresh, leftBottom
     mLayout.RegisterControl mBtnManagerNext, leftBottom
     mLayout.RegisterControl mBtnManagerPrint, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
-    AddCaptionAnchors mPages.Pages(2), "Real Output", leftBottom
+    AddCaptionAnchors mPages.Pages(3), "Real Output", leftBottom
 End Sub
 
 Private Sub ConfigureRunTreeAnchors()
@@ -1365,24 +1619,38 @@ Private Function ControlExistsByName(ByVal parent As Object, ByVal controlName A
 End Function
 
 Private Sub RefreshAllViews()
-    RefreshRecipeLists
-    RefreshBuilderHeader
-    RefreshBuilderLines
-    RefreshAssignmentState
+    RefreshReusableDesignLists
+    RefreshReusableAssignmentState
     RefreshLoaderState
     RefreshManagerState
 End Sub
 
 Private Sub RefreshRecipeLists()
+    RefreshReusableDesignLists
+End Sub
+
+Private Sub RefreshReusableDesignLists()
+    Dim processes As Variant
+    Dim releasedProcesses As Variant
     Dim recipes As Variant
     Dim releasedRecipes As Variant
 
-    BindOperatorWorkbookForRun
-    recipes = mProduction.LoadRecipeList()
-    releasedRecipes = mProduction.LoadReleasedRecipeList()
-    FillListFromArray mLstBuilderRecipes, recipes
-    FillListFromArray mLstAssignRecipes, recipes
+    processes = modOperationsPrimitiveBridge.ListProcesses("")
+    releasedProcesses = modOperationsPrimitiveBridge.ListProcesses("RELEASED")
+    recipes = modOperationsPrimitiveBridge.ListRecipes("")
+    releasedRecipes = modOperationsPrimitiveBridge.ListRecipes("RELEASED")
+    FillListFromArray mLstProcesses, processes
+    FillListFromArray mLstReleasedProcesses, releasedProcesses
+    FillListFromArray mLstRecipes, recipes
+    FillListFromArray mLstAssignRecipes, processes
     FillListFromArray mLstLoaderRecipes, releasedRecipes
+End Sub
+
+Private Sub RefreshReusableAssignmentState()
+    If mLstAssignIngredients Is Nothing Then Exit Sub
+    mLstAssignIngredients.Clear
+    mLstAssignAllowed.Clear
+    RefreshInventoryList
 End Sub
 
 Private Sub RefreshBuilderHeader()
@@ -2225,7 +2493,7 @@ End Sub
 
 Private Function ActiveRunLocation() As String
     If Not mPages Is Nothing Then
-        If mPages.Value = 3 Then
+        If mPages.Value = 4 Then
             ActiveRunLocation = ComboText(mCmbTreeRunLocation)
             If ActiveRunLocation <> "" Then Exit Function
         End If
@@ -2236,7 +2504,7 @@ End Function
 
 Private Function ActiveRunProcess() As String
     If Not mPages Is Nothing Then
-        If mPages.Value = 3 Then
+        If mPages.Value = 4 Then
             ActiveRunProcess = ComboText(mCmbTreeRunProcess)
             If ActiveRunProcess <> "" Then Exit Function
         End If
@@ -3433,31 +3701,57 @@ End Function
 Private Sub CheckInProductionRun()
     Dim usedPayloadJson As String
     Dim stagedTotal As Double
+    Dim reusableReport As String
+    Dim checkInStage As String
 
+    On Error GoTo FailCheckIn
+    checkInStage = "ReusableState"
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        If modProductionReusableRun.CheckInReusableRun(ActiveRunLocation(), reusableReport) Then
+            RefreshReusableRunControls False
+        End If
+        ShowStatus reusableReport
+        Exit Sub
+    End If
+
+    checkInStage = "LoaderSelection"
     If mLstLoaderLines.ListIndex >= 0 Then
         mLstLoaderLines.ListIndex = -1
         RefreshRunPaletteState
     End If
+    checkInStage = "PalettePresence"
     If mLstRunPalette Is Nothing Or mLstRunPalette.ListCount = 0 Then
         ShowStatus "Load a recipe and choose acceptable inventory before checking inventory into Production."
         Exit Sub
     End If
+    checkInStage = "LocationCleanup"
     ClearMismatchedRunLocationAllocations
+    checkInStage = "AllocationCompleteness"
     If Not ValidateRunAllocationsComplete() Then Exit Sub
+    checkInStage = "AllocationLocations"
     If Not ValidateRunAllocationLocations() Then Exit Sub
 
+    checkInStage = "BuildPayload"
     usedPayloadJson = BuildRunUsedPayloadJson(stagedTotal)
     If stagedTotal <= 0 Then
         ShowStatus "No inventory was checked in. Enter allocation quantities first."
         Exit Sub
     End If
+    checkInStage = "WriteCheckRows"
     If Not WriteProductionCheckRowsFromRunPalette() Then
-        ShowStatus "Check In failed. The Inventory Check list could not be updated. Refresh Production Run before completing."
+        ShowStatus "Check In failed. The Inventory Check list could not be updated. " & _
+            "Refresh Production Run before completing. " & mCheckRowsDiagnostic
         Exit Sub
     End If
 
+    checkInStage = "RefreshManager"
     RefreshManagerState
     ShowStatus "Checked in " & FormatRunNumber(stagedTotal) & " units to Production. Complete Run will consume these checked-in quantities."
+    Exit Sub
+
+FailCheckIn:
+    ShowStatus "Check In failed at " & checkInStage & ": " & CStr(Err.Number) & _
+        " - " & Err.Description
 End Sub
 
 Private Sub CompleteProductionRun()
@@ -3473,6 +3767,17 @@ Private Sub CompleteProductionRun()
     Dim reportSeparator As Long
     Dim enteredRealOutput As String
     Dim lo As ListObject
+    Dim reusableReport As String
+
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        ShowPersistencePending "Saving the reusable Process run to the warehouse server..."
+        If modProductionReusableRun.CompleteReusableRun(ActiveRunLocation(), reusableReport) Then
+            ResetInventoryCache
+            RefreshReusableRunControls True
+        End If
+        ShowStatus reusableReport
+        Exit Sub
+    End If
 
     If Not HasProductionCheckRows() Then
         ShowStatus "Check inventory into Production before completing the run."
@@ -3836,14 +4141,21 @@ Private Function WriteProductionCheckRowsFromRunPalette() As Boolean
     Dim entry As Variant
     Dim key As Variant
     Dim outRow As Long
+    Dim writeStage As String
 
+    On Error GoTo FailWrite
+    mCheckRowsDiagnostic = ""
+    writeStage = "ResolveCheckTable"
     Set lo = ProductionTable(TABLE_MANAGER_CHECK)
     If lo Is Nothing Then Exit Function
+    writeStage = "CreateAggregate"
     Set agg = CreateObject("Scripting.Dictionary")
 
+    writeStage = "AggregatePalette"
     For i = 0 To mLstRunPalette.ListCount - 1
         rowVal = Trim$(NzStr(mLstRunPalette.List(i, 3)))
         itemCode = Trim$(RunItemCodeFromList(mLstRunPalette, i))
+        writeStage = "ResolveSystemKey.Row" & CStr(i + 1)
         systemKey = ResolveRunSystemKey(itemCode, NzStr(mLstRunPalette.List(i, 4)), _
                                         NzStr(mLstRunPalette.List(i, 9)))
         If systemKey = "" Then Exit Function
@@ -3868,8 +4180,11 @@ NextChoice:
     Next i
 
     If agg.Count = 0 Then Exit Function
+    writeStage = "ClearCheckTable"
     ClearTableContentsKeepRows lo
+    writeStage = "EnsureCheckRows"
     If Not EnsureTableRows(lo, MaxLongLocal(agg.Count, CurrentRecipeRowBudget())) Then Exit Function
+    writeStage = "WriteCheckRows"
     For Each key In agg.Keys
         outRow = outRow + 1
         entry = agg(key)
@@ -3881,12 +4196,18 @@ NextChoice:
         SetCellByHeader lo, outRow, "TOTAL INV", NzStr(entry(4))
     Next key
     WriteProductionCheckRowsFromRunPalette = True
+    Exit Function
+
+FailWrite:
+    mCheckRowsDiagnostic = "Stage=" & writeStage & "; Error=" & CStr(Err.Number) & _
+        " - " & Err.Description
 End Function
 
 Private Function ResolveRunSystemKey(ByVal itemCode As String, _
                                      ByVal itemName As String, _
                                      ByVal locationValue As String) As String
     Dim lo As ListObject
+    Dim entities As Variant
     Dim cSystemKey As Long
     Dim cItemCode As Long
     Dim cItem As Long
@@ -3897,30 +4218,57 @@ Private Function ResolveRunSystemKey(ByVal itemCode As String, _
     Dim locationMatches As Boolean
 
     Set lo = InventoryTable()
-    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
-    cSystemKey = ProductionColumnIndex(lo, "System_Key")
-    cItemCode = ProductionColumnIndex(lo, "ITEM_CODE")
-    If cItemCode = 0 Then cItemCode = ProductionColumnIndex(lo, "SKU")
-    cItem = ProductionColumnIndex(lo, "ITEM")
-    If cItem = 0 Then cItem = ProductionColumnIndex(lo, "ItemName")
-    cLocation = ProductionColumnIndex(lo, "LOCATION")
-    If cSystemKey = 0 Then Exit Function
+    If Not lo Is Nothing Then
+        If Not lo.DataBodyRange Is Nothing Then
+            cSystemKey = ProductionColumnIndex(lo, "System_Key")
+            cItemCode = ProductionColumnIndex(lo, "ITEM_CODE")
+            If cItemCode = 0 Then cItemCode = ProductionColumnIndex(lo, "SKU")
+            cItem = ProductionColumnIndex(lo, "ITEM")
+            If cItem = 0 Then cItem = ProductionColumnIndex(lo, "ItemName")
+            cLocation = ProductionColumnIndex(lo, "LOCATION")
+            If cSystemKey > 0 Then
+                For r = 1 To lo.ListRows.Count
+                    codeMatches = False
+                    If Trim$(itemCode) <> "" And cItemCode > 0 Then
+                        codeMatches = (StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItemCode).Value)), _
+                                                   Trim$(itemCode), vbTextCompare) = 0)
+                    End If
+                    nameMatches = False
+                    If Trim$(itemName) <> "" And cItem > 0 Then
+                        nameMatches = (StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItem).Value)), _
+                                                   Trim$(itemName), vbTextCompare) = 0)
+                    End If
+                    locationMatches = True
+                    If Trim$(locationValue) <> "" And cLocation > 0 Then
+                        locationMatches = (StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cLocation).Value)), _
+                                                       Trim$(locationValue), vbTextCompare) = 0)
+                    End If
+                    If (codeMatches Or nameMatches) And locationMatches Then
+                        ResolveRunSystemKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cSystemKey).Value))
+                        If ResolveRunSystemKey <> "" Then Exit Function
+                    End If
+                Next r
+            End If
+        End If
+    End If
 
-    For r = 1 To lo.ListRows.Count
-        codeMatches = (Trim$(itemCode) <> "" And cItemCode > 0 And _
-                       StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItemCode).Value)), _
-                               Trim$(itemCode), vbTextCompare) = 0)
-        nameMatches = (Trim$(itemName) <> "" And cItem > 0 And _
-                       StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cItem).Value)), _
-                               Trim$(itemName), vbTextCompare) = 0)
-        locationMatches = (Trim$(locationValue) = "" Or cLocation = 0 Or _
-                           StrComp(Trim$(NzStr(lo.DataBodyRange.Cells(r, cLocation).Value)), _
-                                   Trim$(locationValue), vbTextCompare) = 0)
+    On Error GoTo CleanFail
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge(itemCode)
+    If Not IsArray(entities) Then Exit Function
+    For r = LBound(entities, 1) To UBound(entities, 1)
+        codeMatches = (Trim$(itemCode) <> "" And _
+                       (StrComp(Trim$(NzStr(entities(r, 3))), Trim$(itemCode), vbTextCompare) = 0 Or _
+                        StrComp(Trim$(NzStr(entities(r, 2))), Trim$(itemCode), vbTextCompare) = 0))
+        nameMatches = (Trim$(itemName) <> "" And _
+                       StrComp(Trim$(NzStr(entities(r, 4))), Trim$(itemName), vbTextCompare) = 0)
+        locationMatches = (Trim$(locationValue) = "" Or _
+                           StrComp(Trim$(NzStr(entities(r, 7))), Trim$(locationValue), vbTextCompare) = 0)
         If (codeMatches Or nameMatches) And locationMatches Then
-            ResolveRunSystemKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cSystemKey).Value))
+            ResolveRunSystemKey = Trim$(NzStr(entities(r, 1)))
             If ResolveRunSystemKey <> "" Then Exit Function
         End If
     Next r
+CleanFail:
 End Function
 
 Private Function RunChoiceWouldExceedInventory(ByVal listIndex As Long, ByVal qtyVal As Double) As Boolean
@@ -3941,7 +4289,11 @@ Private Function NzDblLocal(ByVal value As Variant) As Double
 End Function
 
 Private Function CurrentRecipeRowBudget() As Long
-    CurrentRecipeRowBudget = CLng(Val(NormalizeRecipeRowBudgetText(mTxtRecipeRowBudget.Text)))
+    If mTxtRecipeRowBudget Is Nothing Then
+        CurrentRecipeRowBudget = PRODUCTION_DEFAULT_ROW_BUDGET
+    Else
+        CurrentRecipeRowBudget = CLng(Val(NormalizeRecipeRowBudgetText(mTxtRecipeRowBudget.Text)))
+    End If
 End Function
 
 Private Function NormalizeRecipeRowBudgetText(ByVal valueText As String) As String
@@ -4006,6 +4358,50 @@ Private Sub ApplySelectedRunPaletteSplit()
     Dim newTotalPct As Double
     Dim runLoc As String
     Dim invLoc As String
+    Dim reusableReport As String
+    Dim requiredQty As Double
+    Dim allocationApplied As Boolean
+
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        If mLstRunPalette.ListIndex < 0 Then
+            ShowStatus "Select an acceptable exact inventory entity first."
+            Exit Sub
+        End If
+        idx = mLstRunPalette.ListIndex
+        splitText = Trim$(mTxtPaletteSplit.Text)
+        qtyText = Trim$(mTxtPaletteQty.Text)
+        requiredQty = modProductionReusableRun.ReusableRunRequirementQty( _
+            NzStr(mLstRunPalette.List(idx, 0)), NzStr(mLstRunPalette.List(idx, 1)))
+        If qtyText <> "" Then
+            If Not TryParseNonNegativeRunNumber(qtyText, qtyVal, "Quantity") Then Exit Sub
+            If requiredQty > 0 Then splitVal = qtyVal / requiredQty * 100#
+        ElseIf splitText <> "" Then
+            If Not TryParseNonNegativeRunNumber(splitText, splitVal, "% of Requirement") Then Exit Sub
+            qtyVal = requiredQty * splitVal / 100#
+        Else
+            ShowStatus "Enter % of Requirement or Qty first."
+            Exit Sub
+        End If
+        If ActiveRunLocation() = "" Then
+            ShowStatus "Choose a production run location before allocating inventory."
+            Exit Sub
+        End If
+        If StrComp(ActiveRunLocation(), NzStr(mLstRunPalette.List(idx, 9)), vbTextCompare) <> 0 Then
+            ShowStatus "Allocation rejected. Inventory is at " & NzStr(mLstRunPalette.List(idx, 9)) & _
+                       "; production run location is " & ActiveRunLocation() & "."
+            Exit Sub
+        End If
+        allocationApplied = modProductionReusableRun.ApplyReusableRunAllocation( _
+            CStr(mLstRunPalette.List(idx, 0)), CStr(mLstRunPalette.List(idx, 1)), _
+            CStr(mLstRunPalette.List(idx, 3)), CDbl(qtyVal), reusableReport)
+        If allocationApplied Then
+            mTxtPaletteSplit.Text = FormatRunNumber(splitVal)
+            mTxtPaletteQty.Text = FormatRunNumber(qtyVal)
+            RefreshReusableRunControls False
+        End If
+        ShowStatus reusableReport
+        Exit Sub
+    End If
 
     Set lst = ActiveRunPaletteList()
     If lst Is Nothing Then Exit Sub
@@ -4196,7 +4592,7 @@ End Function
 
 Private Function ActiveRunPaletteList() As MSForms.ListBox
     If Not mPages Is Nothing Then
-        If mPages.Value = 3 Then
+        If mPages.Value = 4 Then
             Set ActiveRunPaletteList = mLstRunTree
             Exit Function
         End If
@@ -4206,7 +4602,7 @@ End Function
 
 Private Function ActiveRunSplitTextBox() As MSForms.TextBox
     If Not mPages Is Nothing Then
-        If mPages.Value = 3 Then
+        If mPages.Value = 4 Then
             Set ActiveRunSplitTextBox = mTxtTreePaletteSplit
             Exit Function
         End If
@@ -4216,7 +4612,7 @@ End Function
 
 Private Function ActiveRunQtyTextBox() As MSForms.TextBox
     If Not mPages Is Nothing Then
-        If mPages.Value = 3 Then
+        If mPages.Value = 4 Then
             Set ActiveRunQtyTextBox = mTxtTreePaletteQty
             Exit Function
         End If
@@ -4348,6 +4744,20 @@ Private Sub BindOperatorWorkbookForRun()
 End Sub
 
 Private Sub mBtnApplyBatchScale_Click()
+    Dim scalePercent As Double
+    Dim scaleReport As String
+
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        If Not TryParseBatchScalePercent(mTxtBatchScalePercent.Text, scalePercent, scaleReport) Then
+            ShowStatus scaleReport
+            Exit Sub
+        End If
+        If modProductionReusableRun.ApplyReusableRunScale(scalePercent, scaleReport) Then
+            RefreshReusableRunControls False
+        End If
+        ShowStatus scaleReport
+        Exit Sub
+    End If
     If mLstLoaderRecipes.ListIndex < 0 Then
         ShowStatus "Select a recipe, enter Batch scale %, then click Apply Scale."
         Exit Sub
@@ -4444,6 +4854,1026 @@ Private Function ScaleProductionTableColumn(ByVal lo As ListObject, _
     Next rowIndex
 End Function
 
+Private Sub ClearProcessDraft(Optional ByVal createIdentity As Boolean = True)
+    mTxtProcessName.Text = ""
+    mTxtProcessId.Text = ""
+    mTxtProcessVersion.Text = ""
+    mTxtProcessDescription.Text = ""
+    mLstProcessRequirements.Clear
+    mLstProcessOutputs.Clear
+    mLstProcessInstructions.Clear
+    Set mProcessAlternatives = New Collection
+    ClearRequirementEditor
+    ClearOutputEditor
+    mTxtProcessInstruction.Text = ""
+    If createIdentity Then
+        mTxtProcessId.Text = "PROC-" & UCase$(Left$(Replace$(BuildFormGuid(), "-", ""), 12))
+        mTxtProcessVersion.Text = "1"
+    End If
+End Sub
+
+Private Sub ClearRequirementEditor()
+    mTxtRequirementId.Text = ""
+    mTxtRequirementName.Text = ""
+    mTxtRequirementQty.Text = ""
+    mTxtRequirementPercent.Text = ""
+    mTxtRequirementYieldBasis.Text = ""
+    mTxtRequirementUom.Text = ""
+End Sub
+
+Private Sub ClearOutputEditor()
+    mTxtProcessOutputId.Text = ""
+    mTxtProcessOutputName.Text = ""
+    mTxtProcessOutputItemCode.Text = ""
+    mTxtProcessOutputDesignId.Text = ""
+    mTxtProcessOutputDesignVersion.Text = ""
+    mTxtProcessOutputQty.Text = ""
+    mTxtProcessOutputPercent.Text = ""
+    mTxtProcessOutputYieldBasis.Text = ""
+    mTxtProcessOutputUom.Text = ""
+End Sub
+
+Private Sub LoadSelectedProcessDefinition(ByVal reuseAsNewVersion As Boolean)
+    Dim idx As Long
+
+    idx = mLstProcesses.ListIndex
+    If idx < 0 Then
+        ShowStatus "Select a saved Process first."
+        Exit Sub
+    End If
+    LoadProcessDefinitionIntoDesigner NzStr(mLstProcesses.List(idx, 0)), _
+        NzStr(mLstProcesses.List(idx, 1)), reuseAsNewVersion
+End Sub
+
+Private Function LoadProcessDefinitionIntoDesigner(ByVal processId As String, _
+                                                   ByVal processVersion As String, _
+                                                   ByVal reuseAsNewVersion As Boolean) As Boolean
+    Dim jsonText As String
+    Dim parseReport As String
+    Dim records As Collection
+    Dim record As Object
+    Dim rowIndex As Long
+
+    jsonText = modOperationsPrimitiveBridge.GetProcessVersion(processId, processVersion)
+    Set records = modProductionReusableDesigns.ParseReusableDefinitionRecords(jsonText, parseReport)
+    If records Is Nothing Then
+        ShowStatus "Process load failed: " & parseReport
+        Exit Function
+    End If
+    ClearProcessDraft False
+    For Each record In records
+        Select Case UCase$(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"))
+            Case "PROCESS"
+                mTxtProcessId.Text = modProductionReusableDesigns.ReusableRecordText(record, "ProcessId")
+                mTxtProcessVersion.Text = modProductionReusableDesigns.ReusableRecordText(record, "ProcessVersion")
+                mTxtProcessName.Text = modProductionReusableDesigns.ReusableRecordText(record, "ProcessName")
+                mTxtProcessDescription.Text = modProductionReusableDesigns.ReusableRecordText(record, "Description")
+            Case "REQUIREMENT"
+                rowIndex = AddProcessRequirementRecord(record)
+            Case "ALTERNATIVE"
+                mProcessAlternatives.Add CloneReusableRecord(record)
+            Case "OUTPUT"
+                rowIndex = AddProcessOutputRecord(record)
+            Case "INSTRUCTION"
+                mLstProcessInstructions.AddItem modProductionReusableDesigns.ReusableRecordText(record, "InstructionOrdinal")
+                mLstProcessInstructions.List(mLstProcessInstructions.ListCount - 1, 1) = _
+                    modProductionReusableDesigns.ReusableRecordText(record, "Instruction")
+        End Select
+    Next record
+    If reuseAsNewVersion Then
+        mTxtProcessVersion.Text = modProductionReusableDesigns.NextReusableDefinitionVersion(processId, True)
+        ShowStatus "Reused Process " & processId & " as draft version " & mTxtProcessVersion.Text & "."
+    Else
+        ShowStatus "Loaded Process " & processId & " version " & processVersion & "."
+    End If
+    LoadProcessDefinitionIntoDesigner = True
+End Function
+
+Private Function AddProcessRequirementRecord(ByVal record As Object) As Long
+    mLstProcessRequirements.AddItem modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
+    AddProcessRequirementRecord = mLstProcessRequirements.ListCount - 1
+    With mLstProcessRequirements
+        .List(AddProcessRequirementRecord, 1) = modProductionReusableDesigns.ReusableRecordText(record, "RequirementName")
+        .List(AddProcessRequirementRecord, 2) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+        .List(AddProcessRequirementRecord, 3) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+        .List(AddProcessRequirementRecord, 4) = modProductionReusableDesigns.ReusableRecordText(record, "YieldBasis")
+        .List(AddProcessRequirementRecord, 5) = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+    End With
+End Function
+
+Private Function AddProcessOutputRecord(ByVal record As Object) As Long
+    mLstProcessOutputs.AddItem modProductionReusableDesigns.ReusableRecordText(record, "OutputId")
+    AddProcessOutputRecord = mLstProcessOutputs.ListCount - 1
+    With mLstProcessOutputs
+        .List(AddProcessOutputRecord, 1) = modProductionReusableDesigns.ReusableRecordText(record, "OutputName")
+        .List(AddProcessOutputRecord, 2) = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
+        .List(AddProcessOutputRecord, 3) = modProductionReusableDesigns.ReusableRecordText(record, "ComponentDesignId")
+        .List(AddProcessOutputRecord, 4) = modProductionReusableDesigns.ReusableRecordText(record, "ComponentDesignVersion")
+        .List(AddProcessOutputRecord, 5) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+        .List(AddProcessOutputRecord, 6) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+        .List(AddProcessOutputRecord, 7) = modProductionReusableDesigns.ReusableRecordText(record, "YieldBasis")
+        .List(AddProcessOutputRecord, 8) = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+    End With
+End Function
+
+Private Function CloneReusableRecord(ByVal source As Object) As Object
+    Dim target As Object
+    Dim key As Variant
+
+    Set target = CreateObject("Scripting.Dictionary")
+    target.CompareMode = vbTextCompare
+    For Each key In source.Keys
+        target(CStr(key)) = source(key)
+    Next key
+    Set CloneReusableRecord = target
+End Function
+
+Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
+    Dim idx As Long
+
+    If Trim$(mTxtRequirementId.Text) = "" Or Trim$(mTxtRequirementName.Text) = "" Or _
+       Trim$(mTxtRequirementUom.Text) = "" Then
+        ShowStatus "A requirement needs ID, name, and UOM."
+        Exit Sub
+    End If
+    If Not PositiveTextValue(mTxtRequirementQty.Text) And Not PositiveTextValue(mTxtRequirementPercent.Text) Then
+        ShowStatus "A requirement needs a positive quantity or percentage."
+        Exit Sub
+    End If
+    If PositiveTextValue(mTxtRequirementPercent.Text) _
+       And Not PositiveTextValue(mTxtRequirementYieldBasis.Text) Then
+        ShowStatus "A percentage requirement needs a positive yield basis."
+        Exit Sub
+    End If
+    idx = mLstProcessRequirements.ListIndex
+    If Not updateExisting Or idx < 0 Then
+        mLstProcessRequirements.AddItem ""
+        idx = mLstProcessRequirements.ListCount - 1
+    End If
+    With mLstProcessRequirements
+        .List(idx, 0) = Trim$(mTxtRequirementId.Text)
+        .List(idx, 1) = Trim$(mTxtRequirementName.Text)
+        .List(idx, 2) = Trim$(mTxtRequirementQty.Text)
+        .List(idx, 3) = Trim$(mTxtRequirementPercent.Text)
+        .List(idx, 4) = Trim$(mTxtRequirementYieldBasis.Text)
+        .List(idx, 5) = Trim$(mTxtRequirementUom.Text)
+        .ListIndex = idx
+    End With
+    ShowStatus "Requirement staged in the Process draft."
+End Sub
+
+Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
+    Dim idx As Long
+
+    If Trim$(mTxtProcessOutputId.Text) = "" Or Trim$(mTxtProcessOutputName.Text) = "" Or _
+       Trim$(mTxtProcessOutputItemCode.Text) = "" Or Trim$(mTxtProcessOutputUom.Text) = "" Then
+        ShowStatus "An output needs ID, name, item code, and UOM."
+        Exit Sub
+    End If
+    If Not PositiveTextValue(mTxtProcessOutputQty.Text) And Not PositiveTextValue(mTxtProcessOutputPercent.Text) Then
+        ShowStatus "An output needs a positive quantity or percentage."
+        Exit Sub
+    End If
+    If PositiveTextValue(mTxtProcessOutputPercent.Text) _
+       And Not PositiveTextValue(mTxtProcessOutputYieldBasis.Text) Then
+        ShowStatus "A percentage output needs a positive yield basis."
+        Exit Sub
+    End If
+    idx = mLstProcessOutputs.ListIndex
+    If Not updateExisting Or idx < 0 Then
+        mLstProcessOutputs.AddItem ""
+        idx = mLstProcessOutputs.ListCount - 1
+    End If
+    With mLstProcessOutputs
+        .List(idx, 0) = Trim$(mTxtProcessOutputId.Text)
+        .List(idx, 1) = Trim$(mTxtProcessOutputName.Text)
+        .List(idx, 2) = Trim$(mTxtProcessOutputItemCode.Text)
+        .List(idx, 3) = Trim$(mTxtProcessOutputDesignId.Text)
+        .List(idx, 4) = Trim$(mTxtProcessOutputDesignVersion.Text)
+        .List(idx, 5) = Trim$(mTxtProcessOutputQty.Text)
+        .List(idx, 6) = Trim$(mTxtProcessOutputPercent.Text)
+        .List(idx, 7) = Trim$(mTxtProcessOutputYieldBasis.Text)
+        .List(idx, 8) = Trim$(mTxtProcessOutputUom.Text)
+        .ListIndex = idx
+    End With
+    ShowStatus "Output staged in the Process draft."
+End Sub
+
+Private Function PositiveTextValue(ByVal textValue As String) As Boolean
+    If Trim$(textValue) = "" Or Not IsNumeric(textValue) Then Exit Function
+    PositiveTextValue = (CDbl(textValue) > 0)
+End Function
+
+Private Sub RemoveSelectedListRow(ByVal listControl As MSForms.ListBox)
+    If listControl Is Nothing Then Exit Sub
+    If listControl.ListIndex >= 0 Then listControl.RemoveItem listControl.ListIndex
+End Sub
+
+Private Sub MoveSelectedListRow(ByVal listControl As MSForms.ListBox, ByVal direction As Long)
+    Dim sourceIndex As Long
+    Dim targetIndex As Long
+    Dim columnIndex As Long
+    Dim tempValue As Variant
+
+    If listControl Is Nothing Then Exit Sub
+    sourceIndex = listControl.ListIndex
+    targetIndex = sourceIndex + direction
+    If sourceIndex < 0 Or targetIndex < 0 Or targetIndex >= listControl.ListCount Then Exit Sub
+    For columnIndex = 0 To listControl.ColumnCount - 1
+        tempValue = listControl.List(sourceIndex, columnIndex)
+        listControl.List(sourceIndex, columnIndex) = listControl.List(targetIndex, columnIndex)
+        listControl.List(targetIndex, columnIndex) = tempValue
+    Next columnIndex
+    listControl.ListIndex = targetIndex
+    RenumberInstructionOrdinals
+End Sub
+
+Private Sub RenumberInstructionOrdinals()
+    Dim i As Long
+    If mLstProcessInstructions Is Nothing Then Exit Sub
+    For i = 0 To mLstProcessInstructions.ListCount - 1
+        mLstProcessInstructions.List(i, 0) = CStr(i + 1)
+    Next i
+End Sub
+
+Private Function ValidateProcessDraft(ByRef report As String) As Boolean
+    Dim i As Long
+
+    If Trim$(mTxtProcessId.Text) = "" Or Trim$(mTxtProcessVersion.Text) = "" Or _
+       Trim$(mTxtProcessName.Text) = "" Then
+        report = "Process ID, version, and name are required."
+        Exit Function
+    End If
+    If mLstProcessOutputs.ListCount = 0 Then
+        report = "Every Process must declare at least one output."
+        Exit Function
+    End If
+    For i = 0 To mLstProcessRequirements.ListCount - 1
+        If Trim$(NzStr(mLstProcessRequirements.List(i, 0))) = "" Or _
+           Trim$(NzStr(mLstProcessRequirements.List(i, 1))) = "" Or _
+           Trim$(NzStr(mLstProcessRequirements.List(i, 5))) = "" Then
+            report = "Each Process requirement requires identity, name, and UOM."
+            Exit Function
+        End If
+        If Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 2))) _
+           And Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 3))) Then
+            report = "Each Process requirement requires a positive quantity or percentage."
+            Exit Function
+        End If
+        If PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 3))) _
+           And Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 4))) Then
+            report = "A percentage Process requirement requires a positive yield basis."
+            Exit Function
+        End If
+    Next i
+    For i = 0 To mLstProcessOutputs.ListCount - 1
+        If Trim$(NzStr(mLstProcessOutputs.List(i, 0))) = "" Or _
+           Trim$(NzStr(mLstProcessOutputs.List(i, 1))) = "" Or _
+           Trim$(NzStr(mLstProcessOutputs.List(i, 2))) = "" Or _
+           Trim$(NzStr(mLstProcessOutputs.List(i, 8))) = "" Then
+            report = "Each Process output requires identity, name, item code, and UOM."
+            Exit Function
+        End If
+        If Not PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 5))) _
+           And Not PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 6))) Then
+            report = "Each Process output requires a positive quantity or percentage."
+            Exit Function
+        End If
+        If PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 6))) _
+           And Not PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 7))) Then
+            report = "A percentage Process output requires a positive yield basis."
+            Exit Function
+        End If
+    Next i
+    report = "Process draft is valid with " & CStr(mLstProcessRequirements.ListCount) & _
+             " requirement(s), " & CStr(mLstProcessOutputs.ListCount) & _
+             " output(s), and " & CStr(mLstProcessInstructions.ListCount) & " instruction(s)."
+    ValidateProcessDraft = True
+End Function
+
+Private Function BuildProcessPayload() As String
+    Dim records As New Collection
+    Dim record As Object
+    Dim alternative As Variant
+    Dim i As Long
+
+    Set record = NewReusableRecord("PROCESS")
+    record("ProcessName") = Trim$(mTxtProcessName.Text)
+    record("Description") = Trim$(mTxtProcessDescription.Text)
+    records.Add record
+    For i = 0 To mLstProcessRequirements.ListCount - 1
+        Set record = NewReusableRecord("REQUIREMENT")
+        record("RequirementId") = NzStr(mLstProcessRequirements.List(i, 0))
+        record("RequirementName") = NzStr(mLstProcessRequirements.List(i, 1))
+        AddNumericReusableField record, "Qty", NzStr(mLstProcessRequirements.List(i, 2))
+        AddNumericReusableField record, "Percent", NzStr(mLstProcessRequirements.List(i, 3))
+        record("YieldBasis") = NzStr(mLstProcessRequirements.List(i, 4))
+        record("UOM") = NzStr(mLstProcessRequirements.List(i, 5))
+        records.Add record
+    Next i
+    If Not mProcessAlternatives Is Nothing Then
+        For Each alternative In mProcessAlternatives
+            records.Add CloneReusableRecord(alternative)
+        Next alternative
+    End If
+    For i = 0 To mLstProcessOutputs.ListCount - 1
+        Set record = NewReusableRecord("OUTPUT")
+        record("OutputId") = NzStr(mLstProcessOutputs.List(i, 0))
+        record("OutputName") = NzStr(mLstProcessOutputs.List(i, 1))
+        record("ITEM_CODE") = NzStr(mLstProcessOutputs.List(i, 2))
+        record("ComponentDesignId") = NzStr(mLstProcessOutputs.List(i, 3))
+        record("ComponentDesignVersion") = NzStr(mLstProcessOutputs.List(i, 4))
+        AddNumericReusableField record, "Qty", NzStr(mLstProcessOutputs.List(i, 5))
+        AddNumericReusableField record, "Percent", NzStr(mLstProcessOutputs.List(i, 6))
+        record("YieldBasis") = NzStr(mLstProcessOutputs.List(i, 7))
+        record("UOM") = NzStr(mLstProcessOutputs.List(i, 8))
+        records.Add record
+    Next i
+    For i = 0 To mLstProcessInstructions.ListCount - 1
+        Set record = NewReusableRecord("INSTRUCTION")
+        record("InstructionOrdinal") = i + 1
+        record("Instruction") = NzStr(mLstProcessInstructions.List(i, 1))
+        records.Add record
+    Next i
+    BuildProcessPayload = modProductionJson.BuildJsonArray(records)
+End Function
+
+Private Function NewReusableRecord(ByVal recordType As String) As Object
+    Dim record As Object
+    Set record = CreateObject("Scripting.Dictionary")
+    record.CompareMode = vbTextCompare
+    record("RecordType") = recordType
+    Set NewReusableRecord = record
+End Function
+
+Private Sub AddNumericReusableField(ByVal record As Object, ByVal fieldName As String, _
+                                    ByVal textValue As String)
+    If Trim$(textValue) <> "" And IsNumeric(textValue) Then record(fieldName) = CDbl(textValue)
+End Sub
+
+Private Function SubmitProcessAction(ByVal eventType As String, _
+                                     Optional ByVal payloadJson As String = "") As Boolean
+    Dim report As String
+    Dim quietStarted As Boolean
+
+    On Error GoTo Failed
+    If Not mOperatorWorkbook Is Nothing Then
+        modOperationsPrimitiveBridge.BeginQuietUiForWorkbook mOperatorWorkbook.Name
+        quietStarted = True
+    End If
+    ShowPersistencePending "Applying Process lifecycle action to warehouse storage..."
+    SubmitProcessAction = modProductionReusableDesigns.SubmitReusableDesignEvent( _
+        eventType, Trim$(mTxtProcessId.Text), Trim$(mTxtProcessVersion.Text), _
+        payloadJson, "Production Process Designer", report)
+    If quietStarted Then modUiQuiet.EndQuietUi
+    RefreshReusableDesignLists
+    ShowStatus report
+    Exit Function
+Failed:
+    If quietStarted Then modUiQuiet.EndQuietUi
+    ShowStatus "Process action failed: " & Err.Description
+End Function
+
+Private Sub ClearRecipeDraft(Optional ByVal createIdentity As Boolean = True)
+    mTxtReusableRecipeName.Text = ""
+    mTxtReusableRecipeId.Text = ""
+    mTxtReusableRecipeVersion.Text = ""
+    mTxtReusableRecipeDescription.Text = ""
+    mLstRecipeNodes.Clear
+    mLstRecipeConnections.Clear
+    mLstRecipeValidation.Clear
+    ClearConnectionEditor
+    If createIdentity Then
+        mTxtReusableRecipeId.Text = "RECIPE-" & UCase$(Left$(Replace$(BuildFormGuid(), "-", ""), 12))
+        mTxtReusableRecipeVersion.Text = "1"
+    End If
+End Sub
+
+Private Sub ClearConnectionEditor()
+    mCmbConnectionFromNode.Clear
+    mCmbConnectionOutput.Clear
+    mCmbConnectionToNode.Clear
+    mCmbConnectionRequirement.Clear
+    mTxtConnectionQty.Text = ""
+    mTxtConnectionPercent.Text = ""
+    mTxtConnectionUom.Text = ""
+End Sub
+
+Private Sub LoadSelectedRecipeDefinition()
+    Dim idx As Long
+    idx = mLstRecipes.ListIndex
+    If idx < 0 Then
+        ShowStatus "Select a saved Recipe first."
+        Exit Sub
+    End If
+    LoadRecipeDefinitionIntoDesigner NzStr(mLstRecipes.List(idx, 0)), _
+        NzStr(mLstRecipes.List(idx, 1))
+End Sub
+
+Private Function LoadRecipeDefinitionIntoDesigner(ByVal recipeId As String, _
+                                                  ByVal recipeVersion As String) As Boolean
+    Dim jsonText As String
+    Dim parseReport As String
+    Dim records As Collection
+    Dim record As Object
+    Dim rowIndex As Long
+
+    jsonText = modOperationsPrimitiveBridge.GetRecipeGraph(recipeId, recipeVersion)
+    Set records = modProductionReusableDesigns.ParseReusableDefinitionRecords(jsonText, parseReport)
+    If records Is Nothing Then
+        ShowStatus "Recipe load failed: " & parseReport
+        Exit Function
+    End If
+    ClearRecipeDraft False
+    For Each record In records
+        Select Case UCase$(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"))
+            Case "RECIPE"
+                mTxtReusableRecipeId.Text = modProductionReusableDesigns.ReusableRecordText(record, "RecipeId")
+                mTxtReusableRecipeVersion.Text = modProductionReusableDesigns.ReusableRecordText(record, "RecipeVersion")
+                mTxtReusableRecipeName.Text = modProductionReusableDesigns.ReusableRecordText(record, "RecipeName")
+                mTxtReusableRecipeDescription.Text = modProductionReusableDesigns.ReusableRecordText(record, "Description")
+            Case "PROCESS_NODE"
+                mLstRecipeNodes.AddItem modProductionReusableDesigns.ReusableRecordText(record, "ProcessNodeId")
+                rowIndex = mLstRecipeNodes.ListCount - 1
+                mLstRecipeNodes.List(rowIndex, 1) = modProductionReusableDesigns.ReusableRecordText(record, "ProcessId")
+                mLstRecipeNodes.List(rowIndex, 2) = modProductionReusableDesigns.ReusableRecordText(record, "ProcessVersion")
+                mLstRecipeNodes.List(rowIndex, 3) = ProcessNameForIdentity( _
+                    mLstRecipeNodes.List(rowIndex, 1), mLstRecipeNodes.List(rowIndex, 2))
+                mLstRecipeNodes.List(rowIndex, 4) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "ExecutionOrdinal"))
+            Case "CONNECTION"
+                mLstRecipeConnections.AddItem modProductionReusableDesigns.ReusableRecordText(record, "FromProcessNodeId")
+                rowIndex = mLstRecipeConnections.ListCount - 1
+                mLstRecipeConnections.List(rowIndex, 1) = modProductionReusableDesigns.ReusableRecordText(record, "FromOutputId")
+                mLstRecipeConnections.List(rowIndex, 2) = modProductionReusableDesigns.ReusableRecordText(record, "ToProcessNodeId")
+                mLstRecipeConnections.List(rowIndex, 3) = modProductionReusableDesigns.ReusableRecordText(record, "ToRequirementId")
+                mLstRecipeConnections.List(rowIndex, 4) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+                mLstRecipeConnections.List(rowIndex, 5) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+                mLstRecipeConnections.List(rowIndex, 6) = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+        End Select
+    Next record
+    RefreshConnectionNodeCombos
+    ShowStatus "Loaded Recipe " & recipeId & " version " & recipeVersion & "."
+    LoadRecipeDefinitionIntoDesigner = True
+End Function
+
+Private Function ProcessNameForIdentity(ByVal processId As String, ByVal processVersion As String) As String
+    Dim rows As Variant
+    Dim r As Long
+
+    rows = modOperationsPrimitiveBridge.ListProcesses("")
+    If Not IsArray(rows) Then Exit Function
+    On Error GoTo NoRows
+    For r = LBound(rows, 1) To UBound(rows, 1)
+        If StrComp(NzStr(rows(r, 1)), processId, vbTextCompare) = 0 _
+           And StrComp(NzStr(rows(r, 2)), processVersion, vbTextCompare) = 0 Then
+            ProcessNameForIdentity = NzStr(rows(r, 3))
+            Exit Function
+        End If
+    Next r
+NoRows:
+End Function
+
+Private Sub AddSelectedReleasedProcessToRecipe()
+    Dim idx As Long
+    Dim rowIndex As Long
+    Dim nodeId As String
+
+    idx = mLstReleasedProcesses.ListIndex
+    If idx < 0 Then
+        ShowStatus "Select a released Process first."
+        Exit Sub
+    End If
+    nodeId = NextRecipeNodeId()
+    mLstRecipeNodes.AddItem nodeId
+    rowIndex = mLstRecipeNodes.ListCount - 1
+    mLstRecipeNodes.List(rowIndex, 1) = NzStr(mLstReleasedProcesses.List(idx, 0))
+    mLstRecipeNodes.List(rowIndex, 2) = NzStr(mLstReleasedProcesses.List(idx, 1))
+    mLstRecipeNodes.List(rowIndex, 3) = NzStr(mLstReleasedProcesses.List(idx, 2))
+    mLstRecipeNodes.List(rowIndex, 4) = CStr(rowIndex + 1)
+    mLstRecipeNodes.ListIndex = rowIndex
+    RefreshConnectionNodeCombos
+    ShowStatus "Added released Process as Recipe node " & nodeId & "."
+End Sub
+
+Private Function NextRecipeNodeId() As String
+    Dim candidate As Long
+    candidate = mLstRecipeNodes.ListCount + 1
+    Do While RecipeNodeIndex("N" & CStr(candidate)) >= 0
+        candidate = candidate + 1
+    Loop
+    NextRecipeNodeId = "N" & CStr(candidate)
+End Function
+
+Private Function RecipeNodeIndex(ByVal nodeId As String) As Long
+    Dim i As Long
+    RecipeNodeIndex = -1
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        If StrComp(NzStr(mLstRecipeNodes.List(i, 0)), nodeId, vbTextCompare) = 0 Then
+            RecipeNodeIndex = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Sub RemoveSelectedRecipeNode()
+    Dim nodeId As String
+    Dim i As Long
+
+    If mLstRecipeNodes.ListIndex < 0 Then Exit Sub
+    nodeId = NzStr(mLstRecipeNodes.List(mLstRecipeNodes.ListIndex, 0))
+    For i = mLstRecipeConnections.ListCount - 1 To 0 Step -1
+        If StrComp(NzStr(mLstRecipeConnections.List(i, 0)), nodeId, vbTextCompare) = 0 _
+           Or StrComp(NzStr(mLstRecipeConnections.List(i, 2)), nodeId, vbTextCompare) = 0 Then
+            mLstRecipeConnections.RemoveItem i
+        End If
+    Next i
+    mLstRecipeNodes.RemoveItem mLstRecipeNodes.ListIndex
+    RenumberRecipeExecutionOrder
+    RefreshConnectionNodeCombos
+End Sub
+
+Private Sub RenumberRecipeExecutionOrder()
+    Dim i As Long
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        mLstRecipeNodes.List(i, 4) = CStr(i + 1)
+    Next i
+End Sub
+
+Private Sub RefreshConnectionNodeCombos()
+    Dim i As Long
+    Dim selectedFrom As String
+    Dim selectedTo As String
+
+    selectedFrom = ComboText(mCmbConnectionFromNode)
+    selectedTo = ComboText(mCmbConnectionToNode)
+    mLoading = True
+    mCmbConnectionFromNode.Clear
+    mCmbConnectionToNode.Clear
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        mCmbConnectionFromNode.AddItem NzStr(mLstRecipeNodes.List(i, 0))
+        mCmbConnectionToNode.AddItem NzStr(mLstRecipeNodes.List(i, 0))
+    Next i
+    SelectComboText mCmbConnectionFromNode, selectedFrom
+    SelectComboText mCmbConnectionToNode, selectedTo
+    If mCmbConnectionFromNode.ListIndex < 0 And mCmbConnectionFromNode.ListCount > 0 Then mCmbConnectionFromNode.ListIndex = 0
+    If mCmbConnectionToNode.ListIndex < 0 And mCmbConnectionToNode.ListCount > 1 Then mCmbConnectionToNode.ListIndex = 1
+    mLoading = False
+    RefreshConnectionOutputChoices
+    RefreshConnectionRequirementChoices
+End Sub
+
+Private Sub SelectComboText(ByVal combo As MSForms.ComboBox, ByVal textValue As String)
+    Dim i As Long
+    For i = 0 To combo.ListCount - 1
+        If StrComp(NzStr(combo.List(i)), textValue, vbTextCompare) = 0 Then
+            combo.ListIndex = i
+            Exit Sub
+        End If
+    Next i
+End Sub
+
+Private Sub RefreshConnectionOutputChoices()
+    FillConnectionRecordChoices mCmbConnectionOutput, ComboText(mCmbConnectionFromNode), "OUTPUT", "OutputId"
+End Sub
+
+Private Sub RefreshConnectionRequirementChoices()
+    FillConnectionRecordChoices mCmbConnectionRequirement, ComboText(mCmbConnectionToNode), "REQUIREMENT", "RequirementId"
+End Sub
+
+Private Sub FillConnectionRecordChoices(ByVal combo As MSForms.ComboBox, ByVal nodeId As String, _
+                                        ByVal recordType As String, ByVal idField As String)
+    Dim nodeIndex As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim report As String
+    Dim jsonText As String
+
+    combo.Clear
+    nodeIndex = RecipeNodeIndex(nodeId)
+    If nodeIndex < 0 Then Exit Sub
+    jsonText = modOperationsPrimitiveBridge.GetProcessVersion( _
+        NzStr(mLstRecipeNodes.List(nodeIndex, 1)), NzStr(mLstRecipeNodes.List(nodeIndex, 2)))
+    Set records = modProductionReusableDesigns.ParseReusableDefinitionRecords(jsonText, report)
+    If records Is Nothing Then Exit Sub
+    For Each record In records
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                recordType, vbTextCompare) = 0 Then
+            combo.AddItem modProductionReusableDesigns.ReusableRecordText(record, idField)
+        End If
+    Next record
+    If combo.ListCount > 0 Then combo.ListIndex = 0
+End Sub
+
+Private Sub WriteConnectionEditorToList(ByVal updateExisting As Boolean)
+    Dim idx As Long
+
+    If ComboText(mCmbConnectionFromNode) = "" Or ComboText(mCmbConnectionOutput) = "" Or _
+       ComboText(mCmbConnectionToNode) = "" Or ComboText(mCmbConnectionRequirement) = "" Then
+        ShowStatus "A connection needs source/output and downstream/requirement selections."
+        Exit Sub
+    End If
+    If StrComp(ComboText(mCmbConnectionFromNode), ComboText(mCmbConnectionToNode), vbTextCompare) = 0 Then
+        ShowStatus "A Process output cannot connect back to the same Recipe node."
+        Exit Sub
+    End If
+    If Not PositiveTextValue(mTxtConnectionQty.Text) And Not PositiveTextValue(mTxtConnectionPercent.Text) Then
+        ShowStatus "A connection needs a positive quantity or percentage."
+        Exit Sub
+    End If
+    idx = mLstRecipeConnections.ListIndex
+    If Not updateExisting Or idx < 0 Then
+        mLstRecipeConnections.AddItem ""
+        idx = mLstRecipeConnections.ListCount - 1
+    End If
+    With mLstRecipeConnections
+        .List(idx, 0) = ComboText(mCmbConnectionFromNode)
+        .List(idx, 1) = ComboText(mCmbConnectionOutput)
+        .List(idx, 2) = ComboText(mCmbConnectionToNode)
+        .List(idx, 3) = ComboText(mCmbConnectionRequirement)
+        .List(idx, 4) = Trim$(mTxtConnectionQty.Text)
+        .List(idx, 5) = Trim$(mTxtConnectionPercent.Text)
+        .List(idx, 6) = Trim$(mTxtConnectionUom.Text)
+        .ListIndex = idx
+    End With
+    ShowStatus "Recipe connection staged."
+End Sub
+
+Private Function ValidateRecipeDraft(ByRef report As String, _
+                                     Optional ByVal requireResolved As Boolean = False) As Boolean
+    Dim i As Long
+    Dim fromIndex As Long
+    Dim toIndex As Long
+
+    mLstRecipeValidation.Clear
+    If Trim$(mTxtReusableRecipeId.Text) = "" Or Trim$(mTxtReusableRecipeVersion.Text) = "" Or _
+       Trim$(mTxtReusableRecipeName.Text) = "" Then
+        report = "Recipe ID, version, and name are required."
+        AddRecipeValidationIssue "IDENTITY", report
+        Exit Function
+    End If
+    If mLstRecipeNodes.ListCount = 0 Then
+        report = "Every Recipe must select at least one released Process version."
+        AddRecipeValidationIssue "PROCESS_REQUIRED", report
+        Exit Function
+    End If
+    For i = 0 To mLstRecipeConnections.ListCount - 1
+        fromIndex = RecipeNodeIndex(NzStr(mLstRecipeConnections.List(i, 0)))
+        toIndex = RecipeNodeIndex(NzStr(mLstRecipeConnections.List(i, 2)))
+        If fromIndex < 0 Or toIndex < 0 Then
+            report = "A connection references a missing Process node."
+            AddRecipeValidationIssue "MISSING_NODE", report
+            Exit Function
+        End If
+        If CLng(Val(NzStr(mLstRecipeNodes.List(fromIndex, 4)))) >= _
+           CLng(Val(NzStr(mLstRecipeNodes.List(toIndex, 4)))) Then
+            report = "Execution order must place each source Process before its downstream Process."
+            AddRecipeValidationIssue "EXECUTION_ORDER", report
+            Exit Function
+        End If
+    Next i
+    If Not RecipeGraphIsAcyclic() Then
+        report = "Recipe Process connections contain a circular dependency."
+        AddRecipeValidationIssue "CIRCULAR_DEPENDENCY", report
+        Exit Function
+    End If
+    If requireResolved And Not RecipeRequirementsResolved(report) Then
+        AddRecipeValidationIssue "UNRESOLVED_INPUT", report
+        Exit Function
+    End If
+    report = "Recipe graph is valid: nodes=" & CStr(mLstRecipeNodes.ListCount) & _
+             "; connections=" & CStr(mLstRecipeConnections.ListCount) & "."
+    AddRecipeValidationIssue "OK", report
+    ValidateRecipeDraft = True
+End Function
+
+Private Sub AddRecipeValidationIssue(ByVal code As String, ByVal detail As String)
+    mLstRecipeValidation.AddItem code
+    mLstRecipeValidation.List(mLstRecipeValidation.ListCount - 1, 1) = detail
+End Sub
+
+Private Function RecipeGraphIsAcyclic() As Boolean
+    Dim indegree As Object
+    Dim processed As Object
+    Dim i As Long
+    Dim changed As Boolean
+    Dim nodeId As String
+    Dim sourceId As String
+    Dim targetId As String
+    Dim processedCount As Long
+    Dim edgeIndex As Long
+
+    Set indegree = CreateObject("Scripting.Dictionary")
+    indegree.CompareMode = vbTextCompare
+    Set processed = CreateObject("Scripting.Dictionary")
+    processed.CompareMode = vbTextCompare
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        indegree(NzStr(mLstRecipeNodes.List(i, 0))) = 0
+    Next i
+    For i = 0 To mLstRecipeConnections.ListCount - 1
+        targetId = NzStr(mLstRecipeConnections.List(i, 2))
+        If indegree.Exists(targetId) Then indegree(targetId) = CLng(indegree(targetId)) + 1
+    Next i
+    Do
+        changed = False
+        For i = 0 To mLstRecipeNodes.ListCount - 1
+            nodeId = NzStr(mLstRecipeNodes.List(i, 0))
+            If Not processed.Exists(nodeId) And CLng(indegree(nodeId)) = 0 Then
+                processed(nodeId) = True
+                processedCount = processedCount + 1
+                changed = True
+                For edgeIndex = 0 To mLstRecipeConnections.ListCount - 1
+                    sourceId = NzStr(mLstRecipeConnections.List(edgeIndex, 0))
+                    targetId = NzStr(mLstRecipeConnections.List(edgeIndex, 2))
+                    If StrComp(sourceId, nodeId, vbTextCompare) = 0 And indegree.Exists(targetId) Then
+                        indegree(targetId) = CLng(indegree(targetId)) - 1
+                    End If
+                Next edgeIndex
+            End If
+        Next i
+    Loop While changed
+    RecipeGraphIsAcyclic = (processedCount = mLstRecipeNodes.ListCount)
+End Function
+
+Private Function RecipeRequirementsResolved(ByRef report As String) As Boolean
+    Dim nodeIndex As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim reqId As String
+    Dim parseReport As String
+
+    For nodeIndex = 0 To mLstRecipeNodes.ListCount - 1
+        Set records = ProcessRecordsForRecipeNode(nodeIndex, parseReport)
+        If records Is Nothing Then
+            report = parseReport
+            Exit Function
+        End If
+        For Each record In records
+            If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                    "REQUIREMENT", vbTextCompare) = 0 Then
+                reqId = modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
+                If Not RecipeHasIncomingRequirement(NzStr(mLstRecipeNodes.List(nodeIndex, 0)), reqId) _
+                   And Not ProcessRecordsHaveAlternative(records, reqId) Then
+                    report = "Unresolved requirement " & reqId & " on Process node " & _
+                             NzStr(mLstRecipeNodes.List(nodeIndex, 0)) & "."
+                    Exit Function
+                End If
+            End If
+        Next record
+    Next nodeIndex
+    RecipeRequirementsResolved = True
+End Function
+
+Private Function ProcessRecordsForRecipeNode(ByVal nodeIndex As Long, _
+                                             ByRef report As String) As Collection
+    Dim jsonText As String
+    jsonText = modOperationsPrimitiveBridge.GetProcessVersion( _
+        NzStr(mLstRecipeNodes.List(nodeIndex, 1)), NzStr(mLstRecipeNodes.List(nodeIndex, 2)))
+    Set ProcessRecordsForRecipeNode = _
+        modProductionReusableDesigns.ParseReusableDefinitionRecords(jsonText, report)
+End Function
+
+Private Function RecipeHasIncomingRequirement(ByVal nodeId As String, ByVal requirementId As String) As Boolean
+    Dim i As Long
+    For i = 0 To mLstRecipeConnections.ListCount - 1
+        If StrComp(NzStr(mLstRecipeConnections.List(i, 2)), nodeId, vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstRecipeConnections.List(i, 3)), requirementId, vbTextCompare) = 0 Then
+            RecipeHasIncomingRequirement = True
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ProcessRecordsHaveAlternative(ByVal records As Collection, _
+                                               ByVal requirementId As String) As Boolean
+    Dim record As Object
+    For Each record In records
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                "ALTERNATIVE", vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RequirementId"), _
+                requirementId, vbTextCompare) = 0 Then
+            ProcessRecordsHaveAlternative = True
+            Exit Function
+        End If
+    Next record
+End Function
+
+Private Function BuildRecipePayload() As String
+    Dim records As New Collection
+    Dim record As Object
+    Dim i As Long
+
+    Set record = NewReusableRecord("RECIPE")
+    record("RecipeName") = Trim$(mTxtReusableRecipeName.Text)
+    record("Description") = Trim$(mTxtReusableRecipeDescription.Text)
+    records.Add record
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        Set record = NewReusableRecord("PROCESS_NODE")
+        record("ProcessNodeId") = NzStr(mLstRecipeNodes.List(i, 0))
+        record("ProcessId") = NzStr(mLstRecipeNodes.List(i, 1))
+        record("ProcessVersion") = NzStr(mLstRecipeNodes.List(i, 2))
+        record("ExecutionOrdinal") = i + 1
+        records.Add record
+    Next i
+    For i = 0 To mLstRecipeConnections.ListCount - 1
+        Set record = NewReusableRecord("CONNECTION")
+        record("FromProcessNodeId") = NzStr(mLstRecipeConnections.List(i, 0))
+        record("FromOutputId") = NzStr(mLstRecipeConnections.List(i, 1))
+        record("ToProcessNodeId") = NzStr(mLstRecipeConnections.List(i, 2))
+        record("ToRequirementId") = NzStr(mLstRecipeConnections.List(i, 3))
+        AddNumericReusableField record, "Qty", NzStr(mLstRecipeConnections.List(i, 4))
+        AddNumericReusableField record, "Percent", NzStr(mLstRecipeConnections.List(i, 5))
+        record("UOM") = NzStr(mLstRecipeConnections.List(i, 6))
+        records.Add record
+    Next i
+    BuildRecipePayload = modProductionJson.BuildJsonArray(records)
+End Function
+
+Private Function SubmitRecipeAction(ByVal eventType As String, _
+                                    Optional ByVal payloadJson As String = "") As Boolean
+    Dim report As String
+    Dim quietStarted As Boolean
+
+    On Error GoTo Failed
+    If Not mOperatorWorkbook Is Nothing Then
+        modOperationsPrimitiveBridge.BeginQuietUiForWorkbook mOperatorWorkbook.Name
+        quietStarted = True
+    End If
+    ShowPersistencePending "Applying Recipe lifecycle action to warehouse storage..."
+    SubmitRecipeAction = modProductionReusableDesigns.SubmitReusableDesignEvent( _
+        eventType, Trim$(mTxtReusableRecipeId.Text), Trim$(mTxtReusableRecipeVersion.Text), _
+        payloadJson, "Production Recipe Designer", report)
+    If quietStarted Then modUiQuiet.EndQuietUi
+    RefreshReusableDesignLists
+    ShowStatus report
+    Exit Function
+Failed:
+    If quietStarted Then modUiQuiet.EndQuietUi
+    ShowStatus "Recipe action failed: " & Err.Description
+End Function
+
+Private Sub SelectReusableAssignmentProcess()
+    Dim idx As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim jsonText As String
+    Dim parseReport As String
+    Dim rowIndex As Long
+
+    idx = mLstAssignRecipes.ListIndex
+    If idx < 0 Then
+        ShowStatus "Select a Process version first."
+        Exit Sub
+    End If
+    jsonText = modOperationsPrimitiveBridge.GetProcessVersion( _
+        NzStr(mLstAssignRecipes.List(idx, 0)), NzStr(mLstAssignRecipes.List(idx, 1)))
+    Set records = modProductionReusableDesigns.ParseReusableDefinitionRecords(jsonText, parseReport)
+    If records Is Nothing Then
+        ShowStatus "Process requirements could not be loaded: " & parseReport
+        Exit Sub
+    End If
+    mLstAssignIngredients.Clear
+    Set mProcessAlternatives = New Collection
+    For Each record In records
+        Select Case UCase$(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"))
+            Case "REQUIREMENT"
+                mLstAssignIngredients.AddItem modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
+                rowIndex = mLstAssignIngredients.ListCount - 1
+                mLstAssignIngredients.List(rowIndex, 1) = modProductionReusableDesigns.ReusableRecordText(record, "RequirementName")
+                mLstAssignIngredients.List(rowIndex, 2) = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+                mLstAssignIngredients.List(rowIndex, 3) = NzStr(mLstAssignRecipes.List(idx, 2))
+                mLstAssignIngredients.List(rowIndex, 4) = "REQUIREMENT"
+                mLstAssignIngredients.List(rowIndex, 5) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+                mLstAssignIngredients.List(rowIndex, 6) = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+            Case "ALTERNATIVE"
+                mProcessAlternatives.Add CloneReusableRecord(record)
+        End Select
+    Next record
+    RefreshReusableAllowedItems
+    ShowStatus "Selected Process " & NzStr(mLstAssignRecipes.List(idx, 0)) & _
+               " version " & NzStr(mLstAssignRecipes.List(idx, 1)) & "."
+End Sub
+
+Private Sub SelectReusableAssignmentRequirement()
+    If mLstAssignIngredients.ListIndex < 0 Then
+        ShowStatus "Select an ingredient requirement first."
+    Else
+        RefreshReusableAllowedItems
+        ShowStatus "Selected requirement " & NzStr(mLstAssignIngredients.List(mLstAssignIngredients.ListIndex, 0)) & "."
+    End If
+End Sub
+
+Private Sub RefreshReusableAllowedItems()
+    Dim alternative As Variant
+    Dim requirementId As String
+    Dim rowIndex As Long
+
+    mLstAssignAllowed.Clear
+    If mLstAssignIngredients.ListIndex >= 0 Then _
+        requirementId = NzStr(mLstAssignIngredients.List(mLstAssignIngredients.ListIndex, 0))
+    If mProcessAlternatives Is Nothing Then Exit Sub
+    For Each alternative In mProcessAlternatives
+        If requirementId = "" Or StrComp(modProductionReusableDesigns.ReusableRecordText( _
+                alternative, "RequirementId"), requirementId, vbTextCompare) = 0 Then
+            mLstAssignAllowed.AddItem modProductionReusableDesigns.ReusableRecordText(alternative, "RequirementId")
+            rowIndex = mLstAssignAllowed.ListCount - 1
+            mLstAssignAllowed.List(rowIndex, 1) = modProductionReusableDesigns.ReusableRecordText(alternative, "ITEM_CODE")
+            mLstAssignAllowed.List(rowIndex, 6) = modProductionReusableDesigns.ReusableRecordText(alternative, "ITEM_CODE")
+        End If
+    Next alternative
+End Sub
+
+Private Sub AddReusableInventoryAlternative()
+    Dim inventoryIndex As Long
+    Dim requirementId As String
+    Dim itemCode As String
+    Dim alternative As Object
+    Dim existing As Variant
+
+    If mLstAssignIngredients.ListIndex < 0 Then
+        ShowStatus "Select an ingredient requirement first."
+        Exit Sub
+    End If
+    inventoryIndex = mLstAssignInventory.ListIndex
+    If inventoryIndex < 0 Then
+        ShowStatus "Select a managed item first."
+        Exit Sub
+    End If
+    requirementId = NzStr(mLstAssignIngredients.List(mLstAssignIngredients.ListIndex, 0))
+    itemCode = NzStr(mLstAssignInventory.List(inventoryIndex, 6))
+    If itemCode = "" Then
+        ShowStatus "The selected inventory row has no managed item code."
+        Exit Sub
+    End If
+    For Each existing In mProcessAlternatives
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(existing, "RequirementId"), _
+                requirementId, vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(existing, "ITEM_CODE"), _
+                itemCode, vbTextCompare) = 0 Then
+            ShowStatus "That acceptable item is already assigned."
+            Exit Sub
+        End If
+    Next existing
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = requirementId
+    alternative("ITEM_CODE") = itemCode
+    mProcessAlternatives.Add alternative
+    RefreshReusableAllowedItems
+    ShowStatus "Added acceptable managed item " & itemCode & "."
+End Sub
+
+Private Sub RemoveReusableInventoryAlternative()
+    Dim visibleIndex As Long
+    Dim requirementId As String
+    Dim itemCode As String
+    Dim i As Long
+
+    visibleIndex = mLstAssignAllowed.ListIndex
+    If visibleIndex < 0 Then Exit Sub
+    requirementId = NzStr(mLstAssignAllowed.List(visibleIndex, 0))
+    itemCode = NzStr(mLstAssignAllowed.List(visibleIndex, 1))
+    For i = mProcessAlternatives.Count To 1 Step -1
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(mProcessAlternatives(i), _
+                "RequirementId"), requirementId, vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(mProcessAlternatives(i), _
+                "ITEM_CODE"), itemCode, vbTextCompare) = 0 Then
+            mProcessAlternatives.Remove i
+            Exit For
+        End If
+    Next i
+    RefreshReusableAllowedItems
+End Sub
+
+Private Function SaveReusableAssignments() As Boolean
+    Dim processIndex As Long
+    Dim sourceId As String
+    Dim sourceVersion As String
+    Dim preserved As New Collection
+    Dim alternative As Variant
+    Dim report As String
+
+    processIndex = mLstAssignRecipes.ListIndex
+    If processIndex < 0 Then
+        ShowStatus "Select a Process version first."
+        Exit Function
+    End If
+    For Each alternative In mProcessAlternatives
+        preserved.Add CloneReusableRecord(alternative)
+    Next alternative
+    sourceId = NzStr(mLstAssignRecipes.List(processIndex, 0))
+    sourceVersion = NzStr(mLstAssignRecipes.List(processIndex, 1))
+    If Not LoadProcessDefinitionIntoDesigner(sourceId, sourceVersion, True) Then Exit Function
+    Set mProcessAlternatives = preserved
+    If Not ValidateProcessDraft(report) Then
+        ShowStatus report
+        Exit Function
+    End If
+    SaveReusableAssignments = SubmitProcessAction("PROCESS_SAVE", BuildProcessPayload())
+    If SaveReusableAssignments Then
+        ShowStatus "Acceptable alternatives saved as Process " & sourceId & _
+                   " version " & mTxtProcessVersion.Text & "."
+    End If
+End Function
+
 Public Function TestBatchScaleContract() As String
     Dim parsed As Double
     Dim report As String
@@ -4518,6 +5948,589 @@ Public Function TestReusableProductionSurfaceContract() As String
     End If
 End Function
 
+Public Function TestReusableProductionFormActionContract() As String
+    Dim requiredControls As Variant
+    Dim controlName As Variant
+    Dim missingControls As String
+    Dim boundWorkbookName As String
+
+    If Not mBuilt Then BuildLayout
+    If Not mOperatorWorkbook Is Nothing Then boundWorkbookName = mOperatorWorkbook.Name
+    requiredControls = Array( _
+        "btnProcessSave", "btnProcessRelease", "btnProcessObsolete", "btnProcessReuse", _
+        "btnRecipeAddProcess", "btnRecipeConnect", "btnRecipeMoveUp", _
+        "btnRecipeSave", "btnRecipeRelease", "btnRecipeObsolete", _
+        "btnAssignSave")
+
+    For Each controlName In requiredControls
+        If Not ProductionPageControlExists(CStr(controlName)) Then
+            If missingControls <> "" Then missingControls = missingControls & ","
+            missingControls = missingControls & CStr(controlName)
+        End If
+    Next controlName
+
+    If boundWorkbookName = "" Then
+        TestReusableProductionFormActionContract = "FAIL|BoundWorkbook=Missing"
+    ElseIf missingControls <> "" Then
+        TestReusableProductionFormActionContract = _
+            "FAIL|BoundWorkbook=" & boundWorkbookName & _
+            "|MissingControls=" & missingControls & _
+            "|HandlersExercised=False"
+    Else
+        TestReusableProductionFormActionContract = _
+            ExerciseReusableProductionFormActions(boundWorkbookName)
+    End If
+End Function
+
+Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName As String) As String
+    On Error GoTo Failed
+
+    Dim token As String
+    Dim sourceId As String
+    Dim sinkId As String
+    Dim recipeId As String
+    Dim rowIndex As Long
+    Dim processSaved As Boolean
+    Dim processReleased As Boolean
+    Dim processObsoleted As Boolean
+    Dim processReused As Boolean
+    Dim alternativesSaved As Boolean
+    Dim recipeConnected As Boolean
+    Dim recipeOrdered As Boolean
+    Dim recipeSaved As Boolean
+    Dim recipeReleased As Boolean
+    Dim recipeObsoleted As Boolean
+
+    mReusableActionTestInProgress = True
+    token = UCase$(Right$(CleanControlName(BuildFormGuid()), 10))
+    sourceId = "PROC-SRC-" & token
+    sinkId = "PROC-SINK-" & token
+    recipeId = "RECIPE-" & token
+
+    ClearProcessDraft False
+    mTxtProcessId.Text = sourceId
+    mTxtProcessVersion.Text = "1"
+    mTxtProcessName.Text = "Reusable Source " & token
+    mTxtProcessOutputId.Text = "OUT-A"
+    mTxtProcessOutputName.Text = "Source Output"
+    mTxtProcessOutputItemCode.Text = "SKU-SOURCE-" & token
+    mTxtProcessOutputQty.Text = "5"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    mTxtProcessInstruction.Text = "Produce the reusable source output."
+    mBtnProcessInstructionAdd_Click
+    mBtnProcessSave_Click
+    processSaved = (InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) > 0)
+    If Not processSaved Then GoTo ActionFailed
+    mBtnProcessRelease_Click
+    processReleased = (InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) > 0)
+    If Not processReleased Then GoTo ActionFailed
+
+    rowIndex = FindIdentityListRow(mLstProcesses, sourceId, "1")
+    If rowIndex < 0 Then GoTo ActionFailed
+    mLstProcesses.ListIndex = rowIndex
+    mBtnProcessReuse_Click
+    processReused = (Trim$(mTxtProcessVersion.Text) = "2")
+    If Not processReused Then GoTo ActionFailed
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo ActionFailed
+    mBtnProcessObsolete_Click
+    processObsoleted = (InStr(1, TestStatusText(), " is OBSOLETE", vbTextCompare) > 0)
+    If Not processObsoleted Then GoTo ActionFailed
+
+    ClearProcessDraft False
+    mTxtProcessId.Text = sinkId
+    mTxtProcessVersion.Text = "1"
+    mTxtProcessName.Text = "Reusable Sink " & token
+    mTxtRequirementId.Text = "REQ-B"
+    mTxtRequirementName.Text = "Source ingredient"
+    mTxtRequirementQty.Text = "5"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    mTxtProcessOutputId.Text = "OUT-B"
+    mTxtProcessOutputName.Text = "Finished Output"
+    mTxtProcessOutputItemCode.Text = "SKU-FINISHED-" & token
+    mTxtProcessOutputQty.Text = "5"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo ActionFailed
+
+    rowIndex = FindIdentityListRow(mLstAssignRecipes, sinkId, "1")
+    If rowIndex < 0 Then GoTo ActionFailed
+    mLstAssignRecipes.ListIndex = rowIndex
+    mLstAssignRecipes_Click
+    If mLstAssignIngredients.ListCount = 0 Then GoTo ActionFailed
+    mLstAssignIngredients.ListIndex = 0
+    mLstAssignIngredients_Click
+    mLstAssignInventory.Clear
+    mLstAssignInventory.AddItem "SYS-ACTION-" & token
+    mLstAssignInventory.List(0, 1) = "Acceptable source ingredient"
+    mLstAssignInventory.List(0, 2) = "LB"
+    mLstAssignInventory.List(0, 6) = "SKU-SOURCE-" & token
+    mLstAssignInventory.ListIndex = 0
+    mBtnAssignAdd_Click
+    If mLstAssignAllowed.ListCount = 0 Then GoTo ActionFailed
+    mBtnAssignSave_Click
+    alternativesSaved = (InStr(1, TestStatusText(), "Acceptable alternatives saved", vbTextCompare) > 0)
+    If Not alternativesSaved Then GoTo ActionFailed
+    mBtnProcessRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo ActionFailed
+
+    ClearRecipeDraft False
+    mTxtReusableRecipeId.Text = recipeId
+    mTxtReusableRecipeVersion.Text = "1"
+    mTxtReusableRecipeName.Text = "Reusable Recipe " & token
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, sourceId, "1")
+    If rowIndex < 0 Then GoTo ActionFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, sinkId, "2")
+    If rowIndex < 0 Then GoTo ActionFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    If mLstRecipeNodes.ListCount <> 2 Then GoTo ActionFailed
+
+    SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(0, 0))
+    mCmbConnectionFromNode_Change
+    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
+    mCmbConnectionToNode_Change
+    SelectComboText mCmbConnectionOutput, "OUT-A"
+    SelectComboText mCmbConnectionRequirement, "REQ-B"
+    mTxtConnectionQty.Text = "5"
+    mTxtConnectionUom.Text = "LB"
+    mBtnRecipeConnect_Click
+    recipeConnected = (mLstRecipeConnections.ListCount = 1)
+    If Not recipeConnected Then GoTo ActionFailed
+    mLstRecipeNodes.ListIndex = 0
+    mBtnRecipeMoveDown_Click
+    mBtnRecipeAutoOrder_Click
+    recipeOrdered = (StrComp(NzStr(mLstRecipeNodes.List(0, 1)), sourceId, vbTextCompare) = 0)
+    If Not recipeOrdered Then GoTo ActionFailed
+    mBtnRecipeSave_Click
+    recipeSaved = (InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) > 0)
+    If Not recipeSaved Then GoTo ActionFailed
+    mBtnRecipeRelease_Click
+    recipeReleased = (InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) > 0)
+    If Not recipeReleased Then GoTo ActionFailed
+    mBtnRecipeObsolete_Click
+    recipeObsoleted = (InStr(1, TestStatusText(), " is OBSOLETE", vbTextCompare) > 0)
+    If Not recipeObsoleted Then GoTo ActionFailed
+
+    mReusableTestSourceId = sourceId
+    mReusableTestSinkId = sinkId
+    mReusableTestRecipeId = recipeId
+
+    ExerciseReusableProductionFormActions = _
+        "OK|BoundWorkbook=" & boundWorkbookName & _
+        "|ProcessSaved=" & CStr(processSaved) & _
+        "|ProcessReleased=" & CStr(processReleased) & _
+        "|ProcessObsoleted=" & CStr(processObsoleted) & _
+        "|ProcessReused=" & CStr(processReused) & _
+        "|RecipeConnected=" & CStr(recipeConnected) & _
+        "|RecipeOrdered=" & CStr(recipeOrdered) & _
+        "|RecipeSaved=" & CStr(recipeSaved) & _
+        "|RecipeReleased=" & CStr(recipeReleased) & _
+        "|RecipeObsoleted=" & CStr(recipeObsoleted) & _
+        "|AlternativesSaved=" & CStr(alternativesSaved)
+CleanExit:
+    mReusableActionTestInProgress = False
+    Exit Function
+
+ActionFailed:
+    ExerciseReusableProductionFormActions = "FAIL|BoundWorkbook=" & boundWorkbookName & _
+        "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    GoTo CleanExit
+Failed:
+    ExerciseReusableProductionFormActions = "FAIL|" & CStr(Err.Number) & "|" & Err.Description & _
+        "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    Resume CleanExit
+End Function
+
+Public Function TestReusableProductionRunActionContract() As String
+    On Error GoTo Failed
+
+    Dim setupReport As String
+    Dim rowIndex As Long
+    Dim alternative As Object
+    Dim rawSystemKey As String
+    Dim rawStartQty As Double
+    Dim runLocation As String
+    Dim scaleMin As Boolean
+    Dim scaleDefault As Boolean
+    Dim scaleMax As Boolean
+    Dim exactInputKeys As Boolean
+    Dim distinctOutputKeys As Boolean
+    Dim intermediateConsumed As Boolean
+    Dim coProductRemaining As Boolean
+    Dim checkedIn As Boolean
+    Dim completed As Boolean
+    Dim refreshed As Boolean
+    Dim nextBatch As Boolean
+    Dim sourceNodeId As String
+    Dim sinkNodeId As String
+    Dim firstBatchKeys As Object
+    Dim secondBatchKeys As Object
+    Dim key As Variant
+    Dim i As Long
+    Dim fixtureStage As String
+    Dim staleSystemKey As String
+    Dim staleStartQty As Double
+    Dim insufficiencyRejected As Boolean
+    Dim staleRejected As Boolean
+
+    mReusableActionTestInProgress = True
+    If mReusableTestSourceId = "" Then
+        setupReport = ExerciseReusableProductionFormActions(IIf(mOperatorWorkbook Is Nothing, _
+            "", mOperatorWorkbook.Name))
+        If Left$(setupReport, 3) <> "OK|" Then
+            TestReusableProductionRunActionContract = "FAIL|Fixture=" & setupReport
+            GoTo CleanExit
+        End If
+    End If
+
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstProcesses, mReusableTestSourceId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstProcesses.ListIndex = rowIndex
+    mBtnProcessReuse_Click
+    mTxtRequirementId.Text = "REQ-RAW"
+    mTxtRequirementName.Text = "Raw inventory"
+    mTxtRequirementQty.Text = "5"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = "REQ-RAW"
+    alternative("ITEM_CODE") = "SKU-RUN-RAW"
+    mProcessAlternatives.Add alternative
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = "REQ-RAW"
+    alternative("ITEM_CODE") = "SKU-RUN-STALE"
+    mProcessAlternatives.Add alternative
+    mTxtProcessOutputId.Text = "OUT-CO"
+    mTxtProcessOutputName.Text = "Co Product"
+    mTxtProcessOutputItemCode.Text = "SKU-RUN-CO"
+    mTxtProcessOutputQty.Text = ""
+    mTxtProcessOutputPercent.Text = "20"
+    mTxtProcessOutputYieldBasis.Text = "10"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
+    mBtnProcessRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo FixtureFailed
+
+    ClearRecipeDraft False
+    mTxtReusableRecipeId.Text = mReusableTestRecipeId
+    mTxtReusableRecipeVersion.Text = "2"
+    mTxtReusableRecipeName.Text = "Reusable Multi-output Run Recipe"
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, mReusableTestSourceId, "3")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, mReusableTestSinkId, "2")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(0, 0))
+    mCmbConnectionFromNode_Change
+    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
+    mCmbConnectionToNode_Change
+    SelectComboText mCmbConnectionOutput, "OUT-A"
+    SelectComboText mCmbConnectionRequirement, "REQ-B"
+    mTxtConnectionQty.Text = "5"
+    mTxtConnectionUom.Text = "LB"
+    mBtnRecipeConnect_Click
+    mBtnRecipeSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
+    mBtnRecipeRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo FixtureFailed
+
+    fixtureStage = "CreateRawInventory"
+    If mCmbRunLocation.ListCount > 0 Then
+        runLocation = NzStr(mCmbRunLocation.List(0))
+    Else
+        runLocation = "PRODUCTION"
+        mCmbRunLocation.AddItem runLocation
+        mCmbTreeRunLocation.AddItem runLocation
+    End If
+    If Not CreateReusableRunRawInventory(runLocation, rawSystemKey, rawStartQty, setupReport) Then GoTo FixtureFailed
+    If Not ResolveReusableRunFixtureEntity("SKU-RUN-STALE", runLocation, _
+            staleSystemKey, staleStartQty, setupReport) Then GoTo FixtureFailed
+
+    fixtureStage = "LoadRecipe"
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstLoaderRecipes, mReusableTestRecipeId, "2")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstLoaderRecipes.ListIndex = rowIndex
+    mBtnLoaderLoad_Click
+    If Not modProductionReusableRun.ReusableRunIsLoaded() Then GoTo FixtureFailed
+    For i = 0 To mLstLoaderLines.ListCount - 1
+        If InStr(1, NzStr(mLstLoaderLines.List(i, 0)), "Source", vbTextCompare) > 0 Then _
+            sourceNodeId = NzStr(mLstLoaderLines.List(i, 1))
+        If InStr(1, NzStr(mLstLoaderLines.List(i, 0)), "Sink", vbTextCompare) > 0 Then _
+            sinkNodeId = NzStr(mLstLoaderLines.List(i, 1))
+    Next i
+    If sourceNodeId = "" Or sinkNodeId = "" Then GoTo FixtureFailed
+
+    fixtureStage = "ScaleBounds"
+    mTxtBatchScalePercent.Text = "0.001"
+    mBtnApplyBatchScale_Click
+    scaleMin = (Abs(modProductionReusableRun.ReusableRunScalePercent() - 0.001) < 0.00000001)
+    mTxtBatchScalePercent.Text = "1000"
+    mBtnApplyBatchScale_Click
+    scaleMax = (Abs(modProductionReusableRun.ReusableRunScalePercent() - 1000#) < 0.00000001)
+    mTxtBatchScalePercent.Text = "100"
+    mBtnApplyBatchScale_Click
+    scaleDefault = (Abs(modProductionReusableRun.ReusableRunScalePercent() - 100#) < 0.00000001)
+    If Not scaleMin Or Not scaleDefault Or Not scaleMax Then GoTo FixtureFailed
+
+    fixtureStage = "SufficiencyAndStale"
+    SelectComboText mCmbRunLocation, runLocation
+    mCmbRunLocation_Change
+    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(staleSystemKey)
+    If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
+    mTxtPaletteQty.Text = CStr(staleStartQty + 1#)
+    mBtnRunApplyPalette_Click
+    insufficiencyRejected = (InStr(1, TestStatusText(), "exceeds the scaled requirement", vbTextCompare) > 0 _
+        Or InStr(1, TestStatusText(), "exceeds exact entity availability", vbTextCompare) > 0)
+    If Not insufficiencyRejected Then GoTo FixtureFailed
+    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(staleSystemKey)
+    mTxtPaletteQty.Text = "5"
+    mBtnRunApplyPalette_Click
+    If Not ConsumeReusableRunFixtureEntity(staleSystemKey, "SKU-RUN-STALE", 3#, runLocation, setupReport) Then GoTo FixtureFailed
+    mBtnManagerCheckIn_Click
+    staleRejected = (InStr(1, TestStatusText(), "Stale allocation rejected", vbTextCompare) > 0)
+    If Not staleRejected Then GoTo FixtureFailed
+    mTxtBatchScalePercent.Text = "100"
+    mBtnApplyBatchScale_Click
+
+    fixtureStage = "Batch1Allocate"
+    SelectComboText mCmbRunLocation, runLocation
+    mCmbRunLocation_Change
+    If mLstRunPalette.ListCount = 0 Then GoTo FixtureFailed
+    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(rawSystemKey)
+    If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
+    mTxtPaletteSplit.Text = "100"
+    mTxtPaletteQty.Text = "5"
+    mBtnRunApplyPalette_Click
+    exactInputKeys = (mLstRunPalette.ListIndex >= 0 Or _
+                      FindReusablePaletteSystemKey(rawSystemKey) >= 0)
+    fixtureStage = "Batch1CheckIn"
+    mBtnManagerCheckIn_Click
+    checkedIn = modProductionReusableRun.ReusableRunIsCheckedIn()
+    If Not checkedIn Then GoTo FixtureFailed
+    fixtureStage = "Batch1Complete"
+    mBtnManagerApplyOutput_Click
+    completed = modProductionReusableRun.ReusableRunIsCompleted()
+    If Not completed Then GoTo FixtureFailed
+    Set firstBatchKeys = CaptureReusableOutputKeys()
+    If firstBatchKeys.Count <> 3 Then GoTo FixtureFailed
+    intermediateConsumed = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-A"))) < 0.0000001)
+    coProductRemaining = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-CO")) - 2#) < 0.0000001)
+    exactInputKeys = exactInputKeys And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 5#)) < 0.0000001)
+    fixtureStage = "RefreshAndNext"
+    mBtnManagerRefresh_Click
+    refreshed = (InStr(1, TestStatusText(), "refreshed", vbTextCompare) > 0)
+    mBtnManagerNext_Click
+    nextBatch = (modProductionReusableRun.ReusableRunBatchNumber() = 2 And _
+                 Not modProductionReusableRun.ReusableRunIsCheckedIn())
+    If Not nextBatch Then GoTo FixtureFailed
+
+    fixtureStage = "Batch2Allocate"
+    SelectComboText mCmbRunLocation, runLocation
+    mCmbRunLocation_Change
+    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(rawSystemKey)
+    If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
+    mTxtPaletteSplit.Text = "100"
+    mTxtPaletteQty.Text = "5"
+    mBtnRunApplyPalette_Click
+    fixtureStage = "Batch2CheckIn"
+    mBtnManagerCheckIn_Click
+    If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then GoTo FixtureFailed
+    fixtureStage = "Batch2Complete"
+    mBtnManagerApplyOutput_Click
+    If Not modProductionReusableRun.ReusableRunIsCompleted() Then GoTo FixtureFailed
+    Set secondBatchKeys = CaptureReusableOutputKeys()
+    If secondBatchKeys.Count <> 3 Then GoTo FixtureFailed
+    distinctOutputKeys = True
+    For Each key In secondBatchKeys.Keys
+        If firstBatchKeys.Exists(CStr(key)) Then distinctOutputKeys = False
+    Next key
+    distinctOutputKeys = distinctOutputKeys And (firstBatchKeys.Count + secondBatchKeys.Count = 6)
+    intermediateConsumed = intermediateConsumed And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-A"))) < 0.0000001)
+    coProductRemaining = coProductRemaining And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-CO")) - 2#) < 0.0000001)
+    exactInputKeys = exactInputKeys And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 10#)) < 0.0000001)
+
+    TestReusableProductionRunActionContract = _
+        "OK|ReusableRecipe=" & mReusableTestRecipeId & _
+        "|Version=2|Batches=2|ScaleMin=" & CStr(scaleMin) & _
+        "|ScaleDefault=" & CStr(scaleDefault) & "|ScaleMax=" & CStr(scaleMax) & _
+        "|ExactInputKeys=" & CStr(exactInputKeys) & _
+        "|InsufficiencyRejected=" & CStr(insufficiencyRejected) & _
+        "|StaleRejected=" & CStr(staleRejected) & _
+        "|DistinctOutputKeys=" & CStr(distinctOutputKeys) & _
+        "|IntermediateConsumed=" & CStr(intermediateConsumed) & _
+        "|CoProductRemaining=" & CStr(coProductRemaining) & _
+        "|PercentageYieldBasis=" & CStr(coProductRemaining) & _
+        "|CheckedIn=" & CStr(checkedIn) & "|Completed=" & CStr(completed) & _
+        "|Refreshed=" & CStr(refreshed) & "|NextBatch=" & CStr(nextBatch)
+CleanExit:
+    mReusableActionTestInProgress = False
+    Exit Function
+FixtureFailed:
+    TestReusableProductionRunActionContract = "FAIL|FixtureStage=" & fixtureStage & _
+        "|Setup=" & Replace$(Replace$(setupReport, vbCr, " "), vbLf, " ") & _
+        "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    GoTo CleanExit
+Failed:
+    TestReusableProductionRunActionContract = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function CreateReusableRunRawInventory(ByRef runLocation As String, _
+                                               ByRef systemKeyOut As String, _
+                                               ByRef startingQtyOut As Double, _
+                                               ByRef report As String) As Boolean
+    CreateReusableRunRawInventory = ResolveReusableRunFixtureEntity( _
+        "SKU-RUN-RAW", runLocation, systemKeyOut, startingQtyOut, report)
+End Function
+
+Private Function ResolveReusableRunFixtureEntity(ByVal itemCode As String, _
+                                                 ByRef runLocation As String, _
+                                                 ByRef systemKeyOut As String, _
+                                                 ByRef startingQtyOut As Double, _
+                                                 ByRef report As String) As Boolean
+    Dim entities As Variant
+    Dim r As Long
+    Dim entityLocation As String
+    Dim inventoryWb As Workbook
+    Dim rebuildReport As String
+
+    Set inventoryWb = modInventoryDomainBridge.ResolveInventoryWorkbookBridge("")
+    If Not inventoryWb Is Nothing Then
+        If Not modInventoryDomainBridge.EnsureInventorySchemaBridge(inventoryWb, rebuildReport) Then
+            report = rebuildReport
+            Exit Function
+        End If
+        If Not modInventoryDomainBridge.RebuildInventoryProjectionsBridge(inventoryWb, rebuildReport) Then
+            report = rebuildReport
+            Exit Function
+        End If
+    End If
+
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge(itemCode)
+    If IsArray(entities) Then
+        For r = LBound(entities, 1) To UBound(entities, 1)
+            If StrComp(Trim$(NzStr(entities(r, 2))), itemCode, vbTextCompare) = 0 _
+               Or StrComp(Trim$(NzStr(entities(r, 3))), itemCode, vbTextCompare) = 0 Then
+                systemKeyOut = Trim$(NzStr(entities(r, 1)))
+                If IsNumeric(entities(r, 6)) Then startingQtyOut = CDbl(entities(r, 6))
+                entityLocation = Trim$(NzStr(entities(r, 7)))
+                If entityLocation <> "" And StrComp(entityLocation, runLocation, vbTextCompare) <> 0 Then
+                    SelectComboText mCmbRunLocation, entityLocation
+                    runLocation = entityLocation
+                End If
+                report = "Raw exact-key inventory fixture resolved."
+                ResolveReusableRunFixtureEntity = (systemKeyOut <> "" And startingQtyOut > 0#)
+                Exit Function
+            End If
+        Next r
+    End If
+    report = "Exact-key inventory fixture " & itemCode & " is not available."
+End Function
+
+Private Function ConsumeReusableRunFixtureEntity(ByVal systemKey As String, _
+                                                 ByVal itemCode As String, _
+                                                 ByVal qty As Double, _
+                                                 ByVal runLocation As String, _
+                                                 ByRef report As String) As Boolean
+    Dim items As New Collection
+    Dim item As Object
+    Dim eventId As String
+    Dim queueError As String
+    Dim processorReport As String
+    Dim appliedCount As Long
+
+    Set item = modProductionJson.CreateProductionDeltaPayloadItem( _
+        systemKey, itemCode, qty, runLocation, "Reusable run stale-allocation fixture", "USED")
+    items.Add item
+    If Not modRoleEventWriter.QueuePayloadEventCurrent("PROD_CONSUME", "", _
+            modProductionJson.BuildJsonArray(items), "Reusable run stale-allocation fixture", _
+            eventId, queueError) Then
+        report = queueError
+        Exit Function
+    End If
+    appliedCount = modProcessor.RunBatch(modConfig.GetWarehouseId(), 0, processorReport)
+    If appliedCount < 1 Then
+        report = processorReport
+        Exit Function
+    End If
+    report = "Stale allocation fixture consumed exact entity."
+    ConsumeReusableRunFixtureEntity = True
+End Function
+
+Private Function FindReusablePaletteSystemKey(ByVal systemKey As String) As Long
+    Dim i As Long
+    FindReusablePaletteSystemKey = -1
+    For i = 0 To mLstRunPalette.ListCount - 1
+        If StrComp(NzStr(mLstRunPalette.List(i, 3)), systemKey, vbTextCompare) = 0 Then
+            FindReusablePaletteSystemKey = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function CaptureReusableOutputKeys() As Object
+    Dim result As Object
+    Dim i As Long
+    Dim systemKey As String
+    Set result = CreateObject("Scripting.Dictionary")
+    result.CompareMode = vbTextCompare
+    For i = 0 To mLstManagerOutput.ListCount - 1
+        systemKey = Trim$(NzStr(mLstManagerOutput.List(i, 7)))
+        If systemKey <> "" Then result(systemKey) = True
+    Next i
+    Set CaptureReusableOutputKeys = result
+End Function
+
+Private Function FindIdentityListRow(ByVal listControl As MSForms.ListBox, _
+                                     ByVal definitionId As String, _
+                                     ByVal definitionVersion As String) As Long
+    Dim i As Long
+    FindIdentityListRow = -1
+    If listControl Is Nothing Then Exit Function
+    For i = 0 To listControl.ListCount - 1
+        If StrComp(NzStr(listControl.List(i, 0)), definitionId, vbTextCompare) = 0 _
+           And StrComp(NzStr(listControl.List(i, 1)), definitionVersion, vbTextCompare) = 0 Then
+            FindIdentityListRow = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ProductionPageControlExists(ByVal controlName As String) As Boolean
+    Dim pageIndex As Long
+
+    If mPages Is Nothing Then Exit Function
+    For pageIndex = 0 To mPages.Pages.Count - 1
+        If ControlExistsByName(mPages.Pages(pageIndex), controlName) Then
+            ProductionPageControlExists = True
+            Exit Function
+        End If
+    Next pageIndex
+End Function
+
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub
     mTxtStatus.Text = messageText
@@ -4535,6 +6548,310 @@ Private Function NzStr(ByVal value As Variant) As String
     If IsEmpty(value) Then Exit Function
     NzStr = CStr(value)
 End Function
+
+Private Sub mLstProcesses_Click()
+    If mLoading Then Exit Sub
+    If mLstProcesses.ListIndex < 0 Then Exit Sub
+    ShowStatus "Selected Process " & NzStr(mLstProcesses.List(mLstProcesses.ListIndex, 0)) & _
+               " version " & NzStr(mLstProcesses.List(mLstProcesses.ListIndex, 1)) & "."
+End Sub
+
+Private Sub mBtnProcessRefresh_Click()
+    RefreshReusableDesignLists
+    ShowStatus "Process Designer refreshed."
+End Sub
+
+Private Sub mBtnProcessNew_Click()
+    ClearProcessDraft True
+    ShowStatus "New Process draft started."
+End Sub
+
+Private Sub mBtnProcessLoad_Click()
+    LoadSelectedProcessDefinition False
+End Sub
+
+Private Sub mBtnProcessReuse_Click()
+    LoadSelectedProcessDefinition True
+End Sub
+
+Private Sub mBtnProcessValidate_Click()
+    Dim report As String
+    Call ValidateProcessDraft(report)
+    ShowStatus report
+End Sub
+
+Private Sub mBtnProcessSave_Click()
+    Dim report As String
+    If Not ValidateProcessDraft(report) Then
+        ShowStatus report
+        Exit Sub
+    End If
+    SubmitProcessAction "PROCESS_SAVE", BuildProcessPayload()
+End Sub
+
+Private Sub mBtnProcessRelease_Click()
+    If Not mReusableActionTestInProgress Then
+        If MsgBox("Release this immutable Process version?", vbQuestion Or vbYesNo Or vbDefaultButton2, _
+                  "Process Designer") <> vbYes Then Exit Sub
+    End If
+    SubmitProcessAction "PROCESS_RELEASE"
+End Sub
+
+Private Sub mBtnProcessObsolete_Click()
+    If Not mReusableActionTestInProgress Then
+        If MsgBox("Obsolete this Process version?", vbExclamation Or vbYesNo Or vbDefaultButton2, _
+                  "Process Designer") <> vbYes Then Exit Sub
+    End If
+    SubmitProcessAction "PROCESS_OBSOLETE"
+End Sub
+
+Private Sub mBtnProcessClear_Click()
+    ClearProcessDraft True
+    ShowStatus "Process Designer cleared."
+End Sub
+
+Private Sub mLstProcessRequirements_Click()
+    Dim idx As Long
+    idx = mLstProcessRequirements.ListIndex
+    If idx < 0 Then Exit Sub
+    mTxtRequirementId.Text = NzStr(mLstProcessRequirements.List(idx, 0))
+    mTxtRequirementName.Text = NzStr(mLstProcessRequirements.List(idx, 1))
+    mTxtRequirementQty.Text = NzStr(mLstProcessRequirements.List(idx, 2))
+    mTxtRequirementPercent.Text = NzStr(mLstProcessRequirements.List(idx, 3))
+    mTxtRequirementYieldBasis.Text = NzStr(mLstProcessRequirements.List(idx, 4))
+    mTxtRequirementUom.Text = NzStr(mLstProcessRequirements.List(idx, 5))
+End Sub
+
+Private Sub mBtnProcessRequirementAdd_Click()
+    WriteRequirementEditorToList False
+End Sub
+
+Private Sub mBtnProcessRequirementUpdate_Click()
+    WriteRequirementEditorToList True
+End Sub
+
+Private Sub mBtnProcessRequirementRemove_Click()
+    RemoveSelectedListRow mLstProcessRequirements
+    ClearRequirementEditor
+End Sub
+
+Private Sub mBtnProcessRequirementUp_Click()
+    MoveSelectedListRow mLstProcessRequirements, -1
+End Sub
+
+Private Sub mBtnProcessRequirementDown_Click()
+    MoveSelectedListRow mLstProcessRequirements, 1
+End Sub
+
+Private Sub mLstProcessOutputs_Click()
+    Dim idx As Long
+    idx = mLstProcessOutputs.ListIndex
+    If idx < 0 Then Exit Sub
+    mTxtProcessOutputId.Text = NzStr(mLstProcessOutputs.List(idx, 0))
+    mTxtProcessOutputName.Text = NzStr(mLstProcessOutputs.List(idx, 1))
+    mTxtProcessOutputItemCode.Text = NzStr(mLstProcessOutputs.List(idx, 2))
+    mTxtProcessOutputDesignId.Text = NzStr(mLstProcessOutputs.List(idx, 3))
+    mTxtProcessOutputDesignVersion.Text = NzStr(mLstProcessOutputs.List(idx, 4))
+    mTxtProcessOutputQty.Text = NzStr(mLstProcessOutputs.List(idx, 5))
+    mTxtProcessOutputPercent.Text = NzStr(mLstProcessOutputs.List(idx, 6))
+    mTxtProcessOutputYieldBasis.Text = NzStr(mLstProcessOutputs.List(idx, 7))
+    mTxtProcessOutputUom.Text = NzStr(mLstProcessOutputs.List(idx, 8))
+End Sub
+
+Private Sub mBtnProcessOutputAdd_Click()
+    WriteOutputEditorToList False
+End Sub
+
+Private Sub mBtnProcessOutputUpdate_Click()
+    WriteOutputEditorToList True
+End Sub
+
+Private Sub mBtnProcessOutputRemove_Click()
+    RemoveSelectedListRow mLstProcessOutputs
+    ClearOutputEditor
+End Sub
+
+Private Sub mBtnProcessOutputUp_Click()
+    MoveSelectedListRow mLstProcessOutputs, -1
+End Sub
+
+Private Sub mBtnProcessOutputDown_Click()
+    MoveSelectedListRow mLstProcessOutputs, 1
+End Sub
+
+Private Sub mLstProcessInstructions_Click()
+    If mLstProcessInstructions.ListIndex >= 0 Then _
+        mTxtProcessInstruction.Text = NzStr(mLstProcessInstructions.List(mLstProcessInstructions.ListIndex, 1))
+End Sub
+
+Private Sub mBtnProcessInstructionAdd_Click()
+    If Trim$(mTxtProcessInstruction.Text) = "" Then Exit Sub
+    mLstProcessInstructions.AddItem CStr(mLstProcessInstructions.ListCount + 1)
+    mLstProcessInstructions.List(mLstProcessInstructions.ListCount - 1, 1) = Trim$(mTxtProcessInstruction.Text)
+End Sub
+
+Private Sub mBtnProcessInstructionUpdate_Click()
+    If mLstProcessInstructions.ListIndex >= 0 Then _
+        mLstProcessInstructions.List(mLstProcessInstructions.ListIndex, 1) = Trim$(mTxtProcessInstruction.Text)
+End Sub
+
+Private Sub mBtnProcessInstructionRemove_Click()
+    RemoveSelectedListRow mLstProcessInstructions
+    RenumberInstructionOrdinals
+End Sub
+
+Private Sub mBtnProcessInstructionUp_Click()
+    MoveSelectedListRow mLstProcessInstructions, -1
+End Sub
+
+Private Sub mBtnProcessInstructionDown_Click()
+    MoveSelectedListRow mLstProcessInstructions, 1
+End Sub
+
+Private Sub mBtnRecipeRefresh_Click()
+    RefreshReusableDesignLists
+    ShowStatus "Recipe Designer refreshed."
+End Sub
+
+Private Sub mBtnRecipeNew_Click()
+    ClearRecipeDraft True
+    ShowStatus "New Recipe draft started."
+End Sub
+
+Private Sub mBtnRecipeLoad_Click()
+    LoadSelectedRecipeDefinition
+End Sub
+
+Private Sub mBtnRecipeAddProcess_Click()
+    AddSelectedReleasedProcessToRecipe
+End Sub
+
+Private Sub mBtnRecipeRemoveProcess_Click()
+    RemoveSelectedRecipeNode
+End Sub
+
+Private Sub mBtnRecipeConnect_Click()
+    WriteConnectionEditorToList False
+End Sub
+
+Private Sub mBtnRecipeUpdateConnection_Click()
+    WriteConnectionEditorToList True
+End Sub
+
+Private Sub mBtnRecipeDisconnect_Click()
+    RemoveSelectedListRow mLstRecipeConnections
+End Sub
+
+Private Sub mBtnRecipeMoveUp_Click()
+    MoveSelectedListRow mLstRecipeNodes, -1
+    RenumberRecipeExecutionOrder
+    RefreshConnectionNodeCombos
+End Sub
+
+Private Sub mBtnRecipeMoveDown_Click()
+    MoveSelectedListRow mLstRecipeNodes, 1
+    RenumberRecipeExecutionOrder
+    RefreshConnectionNodeCombos
+End Sub
+
+Private Sub mBtnRecipeAutoOrder_Click()
+    AutoOrderRecipeNodes
+End Sub
+
+Private Sub mBtnRecipeValidate_Click()
+    Dim report As String
+    Call ValidateRecipeDraft(report, True)
+    ShowStatus report
+End Sub
+
+Private Sub mBtnRecipeSave_Click()
+    Dim report As String
+    If Not ValidateRecipeDraft(report, False) Then
+        ShowStatus report
+        Exit Sub
+    End If
+    SubmitRecipeAction "RECIPE_SAVE", BuildRecipePayload()
+End Sub
+
+Private Sub mBtnRecipeRelease_Click()
+    Dim report As String
+    If Not ValidateRecipeDraft(report, True) Then
+        ShowStatus report
+        Exit Sub
+    End If
+    If Not mReusableActionTestInProgress Then
+        If MsgBox("Release this immutable Recipe version?", vbQuestion Or vbYesNo Or vbDefaultButton2, _
+                  "Recipe Designer") <> vbYes Then Exit Sub
+    End If
+    SubmitRecipeAction "RECIPE_RELEASE"
+End Sub
+
+Private Sub mBtnRecipeObsolete_Click()
+    If Not mReusableActionTestInProgress Then
+        If MsgBox("Obsolete this Recipe version?", vbExclamation Or vbYesNo Or vbDefaultButton2, _
+                  "Recipe Designer") <> vbYes Then Exit Sub
+    End If
+    SubmitRecipeAction "RECIPE_OBSOLETE"
+End Sub
+
+Private Sub mBtnRecipeClear_Click()
+    ClearRecipeDraft True
+    ShowStatus "Recipe Designer cleared."
+End Sub
+
+Private Sub mCmbConnectionFromNode_Change()
+    If mLoading Then Exit Sub
+    RefreshConnectionOutputChoices
+End Sub
+
+Private Sub mCmbConnectionToNode_Change()
+    If mLoading Then Exit Sub
+    RefreshConnectionRequirementChoices
+End Sub
+
+Private Sub mLstRecipeConnections_Click()
+    Dim idx As Long
+    idx = mLstRecipeConnections.ListIndex
+    If idx < 0 Then Exit Sub
+    SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeConnections.List(idx, 0))
+    RefreshConnectionOutputChoices
+    SelectComboText mCmbConnectionOutput, NzStr(mLstRecipeConnections.List(idx, 1))
+    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeConnections.List(idx, 2))
+    RefreshConnectionRequirementChoices
+    SelectComboText mCmbConnectionRequirement, NzStr(mLstRecipeConnections.List(idx, 3))
+    mTxtConnectionQty.Text = NzStr(mLstRecipeConnections.List(idx, 4))
+    mTxtConnectionPercent.Text = NzStr(mLstRecipeConnections.List(idx, 5))
+    mTxtConnectionUom.Text = NzStr(mLstRecipeConnections.List(idx, 6))
+End Sub
+
+Private Sub AutoOrderRecipeNodes()
+    Dim pass As Long
+    Dim i As Long
+    Dim fromIndex As Long
+    Dim toIndex As Long
+    Dim changed As Boolean
+
+    For pass = 1 To mLstRecipeNodes.ListCount * mLstRecipeNodes.ListCount
+        changed = False
+        For i = 0 To mLstRecipeConnections.ListCount - 1
+            fromIndex = RecipeNodeIndex(NzStr(mLstRecipeConnections.List(i, 0)))
+            toIndex = RecipeNodeIndex(NzStr(mLstRecipeConnections.List(i, 2)))
+            If fromIndex >= toIndex And fromIndex >= 0 And toIndex >= 0 Then
+                mLstRecipeNodes.ListIndex = fromIndex
+                MoveSelectedListRow mLstRecipeNodes, -1
+                changed = True
+            End If
+        Next i
+        If Not changed Then Exit For
+    Next pass
+    RenumberRecipeExecutionOrder
+    RefreshConnectionNodeCombos
+    If RecipeGraphIsAcyclic() Then
+        ShowStatus "Recipe execution order updated."
+    Else
+        ShowStatus "Auto Order cannot resolve a circular dependency."
+    End If
+End Sub
 
 Private Sub mLstBuilderRecipes_Click()
     If mLoading Then Exit Sub
@@ -4673,12 +6990,12 @@ End Sub
 
 Private Sub mLstAssignRecipes_Click()
     If mLoading Then Exit Sub
-    SelectAssignmentRecipeFromList
+    SelectReusableAssignmentProcess
 End Sub
 
 Private Sub mLstAssignIngredients_Click()
     If mLoading Then Exit Sub
-    SelectAssignmentIngredientFromList
+    SelectReusableAssignmentRequirement
 End Sub
 
 Private Sub mTxtInventorySearch_Change()
@@ -4691,6 +7008,10 @@ Private Sub mCmbRunLocation_Change()
 
     If mLoading Then Exit Sub
     SyncRunLocationCombo mCmbRunLocation, mCmbTreeRunLocation
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        RefreshReusableRunControls False
+        Exit Sub
+    End If
     ClearMismatchedRunLocationAllocations clearedCount
     If clearedCount > 0 Then ShowStatus "Cleared " & CStr(clearedCount) & " allocation(s) that were not at the selected production run location."
 End Sub
@@ -4700,6 +7021,10 @@ Private Sub mCmbTreeRunLocation_Change()
 
     If mLoading Then Exit Sub
     SyncRunLocationCombo mCmbTreeRunLocation, mCmbRunLocation
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        RefreshReusableRunControls False
+        Exit Sub
+    End If
     ClearMismatchedRunLocationAllocations clearedCount
     If clearedCount > 0 Then ShowStatus "Cleared " & CStr(clearedCount) & " allocation(s) that were not at the selected production run location."
 End Sub
@@ -4784,39 +7109,35 @@ End Sub
 
 Private Sub mBtnAssignRefresh_Click()
     ResetInventoryCache
-    RefreshRecipeLists
-    RefreshAssignmentState
+    RefreshReusableDesignLists
+    RefreshReusableAssignmentState
     ShowStatus "Ingredients Assignment refreshed."
 End Sub
 
 Private Sub mBtnAssignRecipe_Click()
-    SelectAssignmentRecipeFromList
+    SelectReusableAssignmentProcess
 End Sub
 
 Private Sub mBtnAssignIngredient_Click()
-    SelectAssignmentIngredientFromList
+    SelectReusableAssignmentRequirement
 End Sub
 
 Private Sub mBtnAssignAdd_Click()
-    AddSelectedInventoryToAllowed
+    AddReusableInventoryAlternative
 End Sub
 
 Private Sub mBtnAssignRemove_Click()
-    RemoveSelectedAllowedRow
+    RemoveReusableInventoryAlternative
 End Sub
 
 Private Sub mBtnAssignSave_Click()
-    BindOperatorWorkbookForRun
-    ShowPersistencePending "Saving acceptable inventory assignments..."
-    mProduction.BtnSavePalette
-    RefreshAllowedItems
-    ShowStatus "Save Assignment completed. " & NzStr(mProduction.GetPaletteSaveDiagnostic())
+    SaveReusableAssignments
 End Sub
 
 Private Sub mBtnAssignClear_Click()
-    BindOperatorWorkbookForRun
-    mProduction.BtnClearPaletteBuilder
-    RefreshAssignmentState
+    mLstAssignIngredients.Clear
+    mLstAssignAllowed.Clear
+    Set mProcessAlternatives = New Collection
     ShowStatus "Ingredients Assignment cleared."
 End Sub
 
@@ -4824,6 +7145,13 @@ Private Sub mBtnLoaderRefresh_Click()
     Dim refreshReport As String
     Dim refreshed As Boolean
 
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        ResetInventoryCache
+        RefreshRecipeLists
+        RefreshReusableRunControls True
+        ShowStatus "Reusable Production Run inventory refreshed from the exact entity projection."
+        Exit Sub
+    End If
     refreshed = RefreshProductionInventoryReadModel(refreshReport)
     ResetInventoryCache
     RefreshRecipeLists
@@ -4838,17 +7166,103 @@ Private Sub mBtnLoaderRefresh_Click()
 End Sub
 
 Private Sub mBtnLoaderLoad_Click()
-    LoadSelectedRecipeIntoLoader
+    If mLstLoaderRecipes.ListIndex >= 0 Then
+        If Not LoadReusableRecipeIntoRun( _
+                NzStr(mLstLoaderRecipes.List(mLstLoaderRecipes.ListIndex, 0)), _
+                NzStr(mLstLoaderRecipes.List(mLstLoaderRecipes.ListIndex, 1))) Then Exit Sub
+    Else
+        ShowStatus "Select a released Recipe version first."
+    End If
+End Sub
+
+Private Function LoadReusableRecipeIntoRun(ByVal recipeId As String, _
+                                           ByVal recipeVersion As String) As Boolean
+    Dim scalePercent As Double
+    Dim report As String
+
+    If Not TryParseBatchScalePercent(mTxtBatchScalePercent.Text, scalePercent, report) Then
+        ShowStatus report
+        Exit Function
+    End If
+    If Not modProductionReusableRun.LoadReleasedReusableRecipe( _
+            recipeId, recipeVersion, scalePercent, report) Then
+        ShowStatus report
+        Exit Function
+    End If
+    RefreshReusableRunControls False
+    ShowStatus report
+    LoadReusableRecipeIntoRun = True
+End Function
+
+Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
+    Dim loaderRows As Variant
+    Dim paletteRows As Variant
+    Dim checkRows As Variant
+    Dim outputRows As Variant
+    Dim i As Long
+    Dim processName As String
+    Dim locationName As String
+
+    If Not modProductionReusableRun.ReusableRunIsLoaded() Then Exit Sub
+    If refreshInventory Then ResetInventoryCache
+    mLoading = True
+    loaderRows = modProductionReusableRun.ReusableRunLoaderRows()
+    paletteRows = modProductionReusableRun.ReusableRunPaletteRows(ActiveRunLocation())
+    checkRows = modProductionReusableRun.ReusableRunManagerCheckRows()
+    outputRows = modProductionReusableRun.ReusableRunOutputRows()
+    FillListFromArray mLstLoaderLines, loaderRows
+    FillListFromArray mLstRunPalette, paletteRows
+    FillListFromArray mLstManagerCheck, checkRows
+    FillListFromArray mLstManagerOutput, outputRows
+
+    mCmbRunProcess.Clear
+    mCmbTreeRunProcess.Clear
+    For i = 0 To mLstLoaderLines.ListCount - 1
+        processName = NzStr(mLstLoaderLines.List(i, 0))
+        AddUniqueComboItem mCmbRunProcess, processName
+        AddUniqueComboItem mCmbTreeRunProcess, processName
+    Next i
+    If mCmbRunProcess.ListCount > 0 Then mCmbRunProcess.ListIndex = 0
+    If mCmbTreeRunProcess.ListCount > 0 Then mCmbTreeRunProcess.ListIndex = 0
+    For i = 0 To mLstRunPalette.ListCount - 1
+        locationName = NzStr(mLstRunPalette.List(i, 9))
+        AddUniqueComboItem mCmbRunLocation, locationName
+        AddUniqueComboItem mCmbTreeRunLocation, locationName
+    Next i
+    mLoading = False
+End Sub
+
+Private Sub AddUniqueComboItem(ByVal comboControl As MSForms.ComboBox, ByVal itemText As String)
+    Dim i As Long
+    itemText = Trim$(itemText)
+    If comboControl Is Nothing Or itemText = "" Then Exit Sub
+    For i = 0 To comboControl.ListCount - 1
+        If StrComp(NzStr(comboControl.List(i)), itemText, vbTextCompare) = 0 Then Exit Sub
+    Next i
+    comboControl.AddItem itemText
 End Sub
 
 Private Sub mLstLoaderLines_Click()
     If mLoading Then Exit Sub
     If mLstLoaderLines.ListIndex < 0 Then Exit Sub
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        ShowStatus "Loaded Process line: " & NzStr(mLstLoaderLines.List(mLstLoaderLines.ListIndex, 3))
+        Exit Sub
+    End If
     RefreshRunPaletteState
     ShowStatus "Acceptable inventory filtered for: " & NzStr(mLstLoaderLines.List(mLstLoaderLines.ListIndex, 3))
 End Sub
 
 Private Sub mBtnLoaderClear_Click()
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        modProductionReusableRun.ClearReusableRun
+        mLstLoaderLines.Clear
+        mLstRunPalette.Clear
+        mLstManagerCheck.Clear
+        mLstManagerOutput.Clear
+        ShowStatus "Reusable Production Run cleared."
+        Exit Sub
+    End If
     BindOperatorWorkbookForRun
     mProduction.BtnClearRecipeChooser
     RefreshLoaderState
@@ -4904,6 +7318,12 @@ Private Sub mBtnManagerRefresh_Click()
     Dim refreshReport As String
     Dim refreshed As Boolean
 
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        RefreshReusableRunControls True
+        ShowStatus "Reusable Production Run inventory refreshed from the exact entity projection."
+        Exit Sub
+    End If
+
     refreshed = RefreshProductionInventoryReadModel(refreshReport)
     ResetInventoryCache
     RefreshLoaderState
@@ -4918,6 +7338,7 @@ End Sub
 
 Private Sub mLstManagerOutput_Click()
     If mLoading Then Exit Sub
+    If modProductionReusableRun.ReusableRunIsLoaded() Then Exit Sub
     LoadSelectedProductionOutput
 End Sub
 
@@ -4932,16 +7353,27 @@ End Sub
 Private Sub mCmbRunProcess_Change()
     If mLoading Then Exit Sub
     SyncRunProcessCombo mCmbRunProcess, mCmbTreeRunProcess
+    If modProductionReusableRun.ReusableRunIsLoaded() Then Exit Sub
     RefreshRunPaletteState
 End Sub
 
 Private Sub mCmbTreeRunProcess_Change()
     If mLoading Then Exit Sub
     SyncRunProcessCombo mCmbTreeRunProcess, mCmbRunProcess
+    If modProductionReusableRun.ReusableRunIsLoaded() Then Exit Sub
     RefreshRunPaletteState
 End Sub
 
 Private Sub mBtnManagerNext_Click()
+    Dim reusableReport As String
+
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        If modProductionReusableRun.BeginNextReusableBatch(reusableReport) Then
+            RefreshReusableRunControls True
+        End If
+        ShowStatus reusableReport
+        Exit Sub
+    End If
     BindOperatorWorkbookForRun
     mProduction.BtnNextBatch
     ResetInventoryCache

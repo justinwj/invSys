@@ -386,7 +386,27 @@ Private Function ValidateProcessSavePayload(ByVal payload As Collection, _
         Exit Function
     End If
     For Each item In payload
-        If StrComp(PayloadText(item, "RecordType"), "OUTPUT", vbTextCompare) = 0 Then
+        If StrComp(PayloadText(item, "RecordType"), "REQUIREMENT", vbTextCompare) = 0 Then
+            If PayloadText(item, "RequirementId") = "" _
+               Or PayloadText(item, "RequirementName") = "" _
+               Or PayloadText(item, "UOM") = "" Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "Each Process requirement requires identity, name, and UOM."
+                Exit Function
+            End If
+            If Not PayloadPositiveNumber(item, "Qty") _
+               And Not PayloadPositiveNumber(item, "Percent") Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "Each Process requirement requires a positive quantity or percentage."
+                Exit Function
+            End If
+            If PayloadPositiveNumber(item, "Percent") _
+               And Not PayloadPositiveNumber(item, "YieldBasis") Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "A percentage Process requirement requires a positive yield basis."
+                Exit Function
+            End If
+        ElseIf StrComp(PayloadText(item, "RecordType"), "OUTPUT", vbTextCompare) = 0 Then
             outputCount = outputCount + 1
             If PayloadText(item, "OutputId") = "" _
                Or PayloadText(item, "OutputName") = "" _
@@ -400,6 +420,12 @@ Private Function ValidateProcessSavePayload(ByVal payload As Collection, _
                And Not PayloadPositiveNumber(item, "Percent") Then
                 errorCode = "INVALID_PROCESS_OUTPUT"
                 errorMessage = "Each Process output requires a positive quantity or percentage."
+                Exit Function
+            End If
+            If PayloadPositiveNumber(item, "Percent") _
+               And Not PayloadPositiveNumber(item, "YieldBasis") Then
+                errorCode = "INVALID_PROCESS_OUTPUT"
+                errorMessage = "A percentage Process output requires a positive yield basis."
                 Exit Function
             End If
         End If

@@ -262,6 +262,16 @@ Private Function RunInventoryDomainMacro3(ByVal macroName As String, ByVal arg0 
     RunInventoryDomainMacro3 = RunInventoryDomainMacroFallback3(macroName, arg0, arg1, arg2)
 End Function
 
+Public Function ListAvailableInventoryEntitiesBridge(Optional ByVal filterText As String = "", _
+                                                     Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+    If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge("")
+    If inventoryWb Is Nothing Then Exit Function
+    ListAvailableInventoryEntitiesBridge = RunInventoryDomainMacro2( _
+        "modInventoryBridgeApi.ListAvailableInventoryEntitiesBridgeResult", filterText, inventoryWb)
+CleanFail:
+End Function
+
 Private Function ResolveInventoryDomainMacroName(ByVal macroName As String) As String
     Dim hostName As String
 

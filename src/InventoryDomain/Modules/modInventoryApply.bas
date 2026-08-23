@@ -596,7 +596,9 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         End If
 QtyAccepted:
         rawItem("SKU") = sku
-        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_INVENTORY_CREATE Or eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
+        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_INVENTORY_CREATE Or _
+           eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Or _
+           eventType = EVENT_TYPE_PROD_COMPLETE Then
             EnsureSkuCatalogFromPayloadLineApply wb, rawItem
         End If
         If Not ValidateSkuExists(wb, sku) Then

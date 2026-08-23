@@ -167,6 +167,40 @@ try {
         "AttributesJson" = "{}"
         "Note" = "Reference=SHIP-ADD-VIEWER;Item=Viewer Shipment Item;UOM=each;IO=RESERVED"
     }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-PROD-CONSUME"
+        "AppliedSeq" = 9
+        "EventType" = "PROD_CONSUME"
+        "OccurredAtUTC" = $fixtureNow.AddHours(-8).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddHours(-8).ToOADate()
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-PROD-INPUT"
+        "SKU" = "SKU-SUGAR"
+        "QtyDelta" = -2
+        "Location" = "LINE"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=PROD-INPUT-VIEWER;Item=Viewer Production Input;UOM=LB;RunId=RUN-VIEWER"
+    }
+    Add-ListObjectRow -ListObject $inventoryLog -Values @{
+        "EventID" = "EVT-VIEWER-PROD-COMPLETE"
+        "AppliedSeq" = 10
+        "EventType" = "PROD_COMPLETE"
+        "OccurredAtUTC" = $fixtureNow.AddHours(-6).ToOADate()
+        "AppliedAtUTC" = $fixtureNow.AddHours(-6).ToOADate()
+        "WarehouseId" = $warehouseId
+        "StationId" = $stationId
+        "UserId" = $testUser
+        "System_Key" = "SYS-VIEWER-PROD-OUTPUT"
+        "SKU" = "SKU-COMP"
+        "QtyDelta" = 2
+        "Location" = "LINE"
+        "Condition" = "GOOD"
+        "AttributesJson" = "{}"
+        "Note" = "Reference=PROD-OUTPUT-VIEWER;Item=Viewer Production Output;UOM=LB;RunId=RUN-VIEWER"
+    }
     $inventoryWb.Save()
     $opened.Add($configWb) | Out-Null
     $opened.Add($authWb) | Out-Null
@@ -290,33 +324,35 @@ try {
         $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)SelectedTab=Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Title=Inventory and shipping events(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)VisibleRows=4(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)ReadableDates=4(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)FirstReference=DUMP-VIEWER(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)VisibleRows=6(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ReadableDates=6(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)FirstReference=PROD-OUTPUT-VIEWER(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ShipmentHeldRows=0(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ProductionInputRows=1(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)ProductionOutputRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RangeControlVisible=True(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Columns=10(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadOnly=True(?:\||$)'
     $invalidRememberedFallbackOk = $eventsReport -match '(?:^|\|)EventRange=All(?:\||$)'
     $refreshedEventsOk = $refreshedEventsReport -match '^OK\|' -and
-        $refreshedEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
-        $refreshedEventsReport -match '(?:^|\|)ReadableDates=5(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)VisibleRows=7(?:\||$)' -and
+        $refreshedEventsReport -match '(?:^|\|)ReadableDates=7(?:\||$)' -and
         $refreshedEventsReport -match '(?:^|\|)FirstReference=BOL-VIEWER-NEW(?:\||$)'
     $dateFiltersOk = $dayEventsReport -match '(?:^|\|)EventRange=Day(?:\||$)' -and
-        $dayEventsReport -match '(?:^|\|)VisibleRows=2(?:\||$)' -and
+        $dayEventsReport -match '(?:^|\|)VisibleRows=4(?:\||$)' -and
         $weekEventsReport -match '(?:^|\|)EventRange=Week(?:\||$)' -and
-        $weekEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $weekEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
         $monthEventsReport -match '(?:^|\|)EventRange=Month(?:\||$)' -and
-        $monthEventsReport -match '(?:^|\|)VisibleRows=4(?:\||$)' -and
+        $monthEventsReport -match '(?:^|\|)VisibleRows=6(?:\||$)' -and
         $customEventsReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
-        $customEventsReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $customEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
         $allEventsReport -match '(?:^|\|)EventRange=All(?:\||$)' -and
-        $allEventsReport -match '(?:^|\|)VisibleRows=5(?:\||$)'
+        $allEventsReport -match '(?:^|\|)VisibleRows=7(?:\||$)'
     $rememberedRangeOk = $rememberedSetupReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
         $reopenedRememberedReport -match '(?:^|\|)EventRange=14(?:\||$)' -and
-        $reopenedRememberedReport -match '(?:^|\|)VisibleRows=3(?:\||$)' -and
+        $reopenedRememberedReport -match '(?:^|\|)VisibleRows=5(?:\||$)' -and
         $reopenedRememberedReport -match '(?:^|\|)Generation=2(?:\||$)'
 
     $facts.ConfigLoaded = $configLoaded
@@ -328,8 +364,8 @@ try {
     $facts.FirstActionRows = if ($firstOk) { 3 } else { 0 }
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
-    $facts.EventsVisibleRows = if ($eventsOk) { 4 } else { 0 }
-    $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 5 } else { 0 }
+    $facts.EventsVisibleRows = if ($eventsOk) { 6 } else { 0 }
+    $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 7 } else { 0 }
     $facts.NewestPublishedReference = if ($refreshedEventsOk) { "BOL-VIEWER-NEW" } else { "Unexpected" }
     $facts.ReadableEventDates = $eventsOk -and $refreshedEventsOk
     $facts.ViewerTabCount = if ($eventsOk) { 2 } else { 0 }
@@ -337,6 +373,8 @@ try {
     $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
     $facts.InternalReservationHidden = $eventsOk
+    $facts.ProductionInputEventsVisible = $eventsOk
+    $facts.ProductionOutputEventsVisible = $eventsOk
     $facts.EventsReadOnly = $eventsOk
     $facts.RollingDateFilters = $dateFiltersOk
     $facts.RememberedRangeAfterReopen = $rememberedRangeOk
@@ -360,7 +398,7 @@ try {
         $invalidRememberedFallbackOk -and
         $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded readable Receipt and Shipping Remove events, excluded the internal SHIP_RESERVE fixture from the operator-action log, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action loaded readable Receipt, Production input/output, and Shipping Remove events, excluded the internal SHIP_RESERVE fixture from the operator-action log, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

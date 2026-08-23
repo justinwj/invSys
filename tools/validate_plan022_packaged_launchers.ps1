@@ -5,7 +5,7 @@ param(
     [string]$OutputDirectory = "reports/runtime/plan022-slice0",
     [ValidateSet("", "Receiving", "Production", "Shipping")]
     [string]$CallbackFilter = "",
-    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionDesignRed")]
+    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")]
     [string]$WorkbookState = "NoEligible"
 )
 
@@ -513,12 +513,12 @@ if ($WorkbookState -eq "ShippingLayout") {
         throw "ShippingLayout supports only -CallbackFilter Shipping."
     }
 }
-if ($WorkbookState -eq "ProductionDesignRed") {
+if ($WorkbookState -eq "ProductionReusable") {
     if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
         $callbacks = @($callbacks | Where-Object { $_.Name -eq "Production" })
     }
     elseif ($CallbackFilter -ne "Production") {
-        throw "ProductionDesignRed supports only -CallbackFilter Production."
+        throw "ProductionReusable supports only -CallbackFilter Production."
     }
 }
 $packageNames = @(
@@ -563,6 +563,11 @@ try {
     if ($WorkbookState -eq "ReceivingDurability") {
         $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
             -WarehouseId $warehouseId -SkuRows @("SKU-R1-DURABILITY")
+        $opened.Add($inventoryWb) | Out-Null
+    }
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
+            -WarehouseId $warehouseId -SkuRows @("SKU-RUN-RAW", "SKU-RUN-STALE")
         $opened.Add($inventoryWb) | Out-Null
     }
 
@@ -627,7 +632,7 @@ try {
 
     $currentStep = "prepare workbook state"
     [IO.File]::WriteAllText($progressPath, $currentStep)
-    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionDesignRed")) {
+    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")) {
         if ($null -ne $inventoryWb) {
             $inventoryWb.Close($true)
         }
@@ -986,7 +991,7 @@ try {
                 [string]::IsNullOrWhiteSpace($secondCapture.Error) -and
                 $secondText -notmatch "(?i)(failed|automation error)"
         }
-        elseif ($WorkbookState -in @("NoEligible", "ProductionDesignRed")) {
+        elseif ($WorkbookState -in @("NoEligible", "ProductionReusable")) {
             $workflowControlReport = ""
             $workflowControlPassed = $true
             $secondBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
@@ -1005,7 +1010,7 @@ try {
                     $workflowControlReport -match '(?:^|\|)Max=1000%(?:\||$)' -and
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
-                if ($WorkbookState -eq "ProductionDesignRed") {
+                if ($WorkbookState -eq "ProductionReusable") {
                     $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionSurfaceContractTest")
@@ -1016,6 +1021,41 @@ try {
                         $productionDesignReport -match '(?:^|\|)LegacyRecipeBuilder=False(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
                     $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
+
+                    $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionFormActionContractTest")
+                    $productionActionPassed = $productionActionReport -match '^OK\|' -and
+                        $productionActionReport -match '(?:^|\|)ProcessSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessReleased=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessObsoleted=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessReused=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOrdered=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeReleased=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeObsoleted=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
+                    $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
+
+                    $productionRunReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionRunActionContractTest")
+                    $productionRunPassed = $productionRunReport -match '^OK\|' -and
+                        $productionRunReport -match '(?:^|\|)Batches=2(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleMin=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleDefault=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleMax=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ExactInputKeys=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)InsufficiencyRejected=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)StaleRejected=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)DistinctOutputKeys=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)IntermediateConsumed=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)CoProductRemaining=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)PercentageYieldBasis=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
+                    $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                 }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {
@@ -1112,8 +1152,8 @@ finally {
     elseif ($WorkbookState -eq "ShippingLayout") {
         "# Plan 022 Slices 4g-4h Shipping Layout Evidence"
     }
-    elseif ($WorkbookState -eq "ProductionDesignRed") {
-        "# Plan 022 Slice 4x Packaged Reusable Production RED Evidence"
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        "# Plan 022 Slice 4x Packaged Reusable Production Evidence"
     }
     else {
         "# Plan 022 Slice 0 Packaged Launcher Evidence"
@@ -1151,8 +1191,8 @@ finally {
     elseif ($WorkbookState -eq "ReceivingFormClosed") {
         "receiving-launcher-formclosed.md"
     }
-    elseif ($WorkbookState -eq "ProductionDesignRed") {
-        "production-reusable-design-red.md"
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        "production-reusable-production.md"
     }
     else {
         "packaged-launcher-$($WorkbookState.ToLowerInvariant()).md"

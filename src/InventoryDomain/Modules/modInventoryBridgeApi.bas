@@ -114,6 +114,12 @@ Public Function ListInventoryPickerItemsBridgeResult(Optional ByVal filterText A
     ListInventoryPickerItemsBridgeResult = modInventoryQueries.ListInventoryPickerItems(filterText, inventoryWb)
 End Function
 
+Public Function ListAvailableInventoryEntitiesBridgeResult(Optional ByVal filterText As String = "", _
+                                                           Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    ListAvailableInventoryEntitiesBridgeResult = _
+        modInventoryQueries.ListAvailableInventoryEntities(filterText, inventoryWb)
+End Function
+
 Public Function DiagnoseInventoryDomainBridgeResult() As String
     DiagnoseInventoryDomainBridgeResult = modInventoryInit.DiagnoseInventoryDomain()
 End Function

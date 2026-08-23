@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-21T17:14:52Z
-- Scanner candidates: 965
-- Reviewed candidates: 967
+- Baseline: 2026-08-16T20:00:00Z
+- Scanner candidates: 1033
+- Reviewed candidates: 1035
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,11 +12,11 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 130 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 196 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 288 | Headless shared runtime and developer-support source in Core. |
-| DOMAINS | 62 | Inventory and Designs Domain authority source. |
+| CORE | 286 | Headless shared runtime and developer-support source in Core. |
+| DOMAINS | 66 | Inventory and Designs Domain authority source. |
 | ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
@@ -41,16 +41,18 @@
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1909 |
-| src/Core/Modules/modProcessor.bas | Core | 1450 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 3062 |
+| src/Core/Modules/modProcessor.bas | Core | 1460 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 3082 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2423 |
+| src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1555 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 4913 |
-| src/Production/Modules/mProduction.bas | Production | 12942 |
+| src/Production/Forms/frmProduction.frm | Production | 7393 |
+| src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
+| src/Production/Modules/mProduction.bas | Production | 13002 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -349,6 +351,7 @@
 | duplicate:c990451daf1a5c4e:ValueOrPlaceholderAdmin+ValueOrPlaceholderRole | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:ca8fc9d6ecc1395e:MarkSegmentSafeProcessor+MarkSegmentSafeReadModel | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:cb03f7231efc13eb:EnsureFolderRecursiveBootstrap+EnsureFolderRecursiveRuntime | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:d1c75ef0a4fceded:ListAvailableInventoryEntitiesBridge+ListInventoryPickerItemsBridge | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:d76f6961c6422589:FindOpenWorkbookByNameProcessor+FindWorkbookByNameDiagnostics | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:e81a794c7ff1e693:FindListObjectByNameReconcile+FindListObjectByNameRole+FindTableByNameTesterSetup | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:ec3112627b3a9115:GetParentInsideHeightLocal+GetParentInsideWidthLocal | CORE | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -369,11 +372,9 @@
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.ApplyDesignEventBridge:8f95c6821182 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.DiagnoseDesignsDomainBridge:e69098cd7a9e | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.EnsureDesignsSchemaBridge:8962b13d30f4 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.GetDesignBOMBridge:cd337e71b550 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.GetDesignBOMForStatusBridge:0552a86a29de | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
-| dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.ListDesignsBridge:819ec43c93f4 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.RebuildDesignProjectionsBridge:1bab8aaa2ee1 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.ResolveDesignsWorkbookBridge:efb8e55f8fef | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
+| dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.RunDesignsQueryBridge:2e429a47555d | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modDesignsDomainBridge.bas:modDesignsDomainBridge.ValidateDesignsSchemaBridge:7bd79c8dd494 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RunInventoryDomainMacroFallback0:296c47317d9a | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
 | dynamic-call:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RunInventoryDomainMacroFallback0:c25f47d20f73 | CORE | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
@@ -458,7 +459,6 @@
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.GetInventoryLocationBalancesBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.GetInventoryOnHandQtyBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.ReAddBulkLogEntriesBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
-| reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RebuildInventoryProjectionsBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.RemoveLastBulkLogEntriesBridge | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.ResolveInventoryWorkbookBridgeIsResolved | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modInventoryDomainBridge.bas:modInventoryDomainBridge.WorkbookHasListObjectLocal | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -584,14 +584,17 @@
 | duplicate:84e2366b8ff1ffcf:FileExistsApply+FileExistsPublisher | DOMAINS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:c708ab524ddb0c6a:ResolveWarehouseIdFromConfigWorkbookNamePublisher+ResolveWarehouseIdFromInventoryWorkbookNamePublisher | DOMAINS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | dynamic-call:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ScheduleSourceWorkbookSyncBridgeResult:dc5bb2cf96f7 | DOMAINS | UNRESOLVED | LOW | MANUAL_INVESTIGATION |
+| module-size:src_DesignsDomain_Modules_modDesignsApply.bas:modDesignsApply | DOMAINS | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply | DOMAINS | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_InventoryDomain_Modules_modInvMan.bas:modInvMan | DOMAINS | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_DesignsDomain_Modules_modDesignsApply.bas:modDesignsApply.ValidateRecipeReleaseContract | DOMAINS | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ApplyDesignEventBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.DiagnoseDesignsDomainBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.EnsureDesignsSchemaBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.GetBOMBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.GetBOMForStatusBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ListDesignsBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ReadDesignsQueryBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.RebuildDesignProjectionsBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ResolveDesignsWorkbookBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ValidateDesignsSchemaBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -607,6 +610,7 @@
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.EnsureInventorySchemaBridgeSuccess | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.GetLocationBalancesBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.GetOnHandQtyBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ListAvailableInventoryEntitiesBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.PublishInventorySnapshotBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ReAddBulkLogEntriesBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.RebuildInventoryProjectionsBridgeEncoded | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -645,8 +649,13 @@
 | root:src_InventoryDomain_Modules_modInventoryInit.bas:modInventoryInit.Auto_Open | DOMAINS | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | duplicate:55a9c7cd01824ef3:IsInputIoValue+IsOutputIoValue | PRODUCTION | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:60ceced4bf495b7f:FindAvailablePaletteRange+FindAvailableRecipeChooserRange | PRODUCTION | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:c49b4f330f2d62b6:mBtnProcessRefresh_Click+mBtnRecipeRefresh_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:c5bfeafcf39158b9:mBtnProcessClear_Click+mBtnProcessNew_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
+| duplicate:ce00c44eb8121fc7:mBtnRecipeClear_Click+mBtnRecipeNew_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Forms_frmProduction.frm:frmProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| module-size:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_mProduction.bas:mProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestReusableProductionRunActionContract | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.BuildPaletteTablesForRecipeChooser | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.LogProductionOutputToProductionLog | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -658,16 +667,24 @@
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookActivate | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookBeforeClose | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_ClassModules_cProductionAppEvents.cls:cProductionAppEvents.App_WorkbookOpen | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.AddSelectedInventoryToAllowed | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.BuildRecipeBuilderPage | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.ClearProductionCheckRows | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.ConfigureRecipeBuilderAnchors | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.MoveLabelByCaption | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.PositionColumnHeaders | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.PrepareProductionOutput | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.RemoveSelectedAllowedRow | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Forms_frmProduction.frm:frmProduction.SelectAssignmentRecipeFromList | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ReusableRunLastSummary | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnLoadRecipe | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnPrepareProductionOutput | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnRemoveRecipeProcessTables | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.BtnSavePalette | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnShowSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToMade | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnToUsed | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -689,10 +706,13 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ExpandSpanForTable | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GenerateRecipeIdForCurrentWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GenerateRecipeIdForWorkbookName | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteSaveDiagnostic | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GetPaletteTableContextInfo | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.GetProductionBandTables | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.HsvToRgb | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.InitializeProductionUI | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeList | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.LoadReleasedRecipeList | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.OutputCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProcessCheckboxChanged | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ProductionFormInitializeSmokeForWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -702,6 +722,9 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RestoreMadeStageColumns | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionFormActionContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionRunActionContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionSurfaceContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ShowProductionLayoutForValidation | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelected | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.TestHandlePaletteRecipeSelectedStage | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -739,10 +762,52 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerNext_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerPrint_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnManagerRefresh_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessInstructionAdd_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessInstructionDown_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessInstructionRemove_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessInstructionUp_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessInstructionUpdate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessLoad_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessNew_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessObsolete_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessOutputAdd_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessOutputDown_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessOutputRemove_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessOutputUp_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessOutputUpdate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRefresh_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRelease_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRequirementAdd_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRequirementDown_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRequirementRemove_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRequirementUp_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessRequirementUpdate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessReuse_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessSave_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessValidate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAutoOrder_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeConnect_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeDisconnect_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeLoad_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeMoveDown_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeMoveUp_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeNew_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeObsolete_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeRefresh_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeRelease_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeRemoveProcess_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeSave_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeUpdateConnection_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeValidate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRunApplyPalette_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRunTreeApplyPalette_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRunTreeCollapseAll_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRunTreeExpandAll_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionFromNode_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionToNode_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbLineIo_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbRunLocation_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbRunProcess_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -754,6 +819,11 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstBuilderRecipes_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstLoaderLines_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstManagerOutput_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcesses_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessInstructions_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessOutputs_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessRequirements_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRecipeConnections_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRunPalette_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRunTree_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mTxtInventorySearch_Change | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
