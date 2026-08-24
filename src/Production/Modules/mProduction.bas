@@ -325,6 +325,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunProcessWorksheetRoundTripContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetRoundTripContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetRoundTripContractTest = _
+            frmProduction.TestProcessWorksheetRoundTripContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetRoundTripContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionFormActionContractTest() As String
     On Error GoTo Failed
 
@@ -1364,6 +1381,11 @@ End Function
 
 '@TestOnlyBegin
 Public Function TestNextBase36RecipeId(ByVal usedIds As Variant) As String
+    TestNextBase36RecipeId = NextBase36Identifier(usedIds)
+End Function
+'@TestOnlyEnd
+
+Public Function NextBase36Identifier(ByVal usedIds As Variant) As String
     Dim used As Object
     Dim i As Long
     Dim candidateValue As Long
@@ -1378,12 +1400,24 @@ Public Function TestNextBase36RecipeId(ByVal usedIds As Variant) As String
     For candidateValue = 1 To 46655
         candidateId = ToBase36RecipeId(candidateValue)
         If Not used.Exists(candidateId) Then
-            TestNextBase36RecipeId = candidateId
+            NextBase36Identifier = candidateId
             Exit Function
         End If
     Next candidateValue
 End Function
-'@TestOnlyEnd
+
+Public Function IsBase36Identifier(ByVal valueText As String) As Boolean
+    Dim index As Long
+    Dim currentChar As String
+
+    valueText = UCase$(Trim$(valueText))
+    If Len(valueText) <> 3 Or valueText = "000" Then Exit Function
+    For index = 1 To 3
+        currentChar = Mid$(valueText, index, 1)
+        If InStr(1, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", currentChar, vbBinaryCompare) = 0 Then Exit Function
+    Next index
+    IsBase36Identifier = True
+End Function
 
 Public Function GenerateRecipeIdForCurrentWorkbook() As String
     GenerateRecipeIdForCurrentWorkbook = GenerateRecipeId()

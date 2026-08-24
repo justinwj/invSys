@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAtUtc": "2026-07-27T20:00:00Z",
+  "reviewedAtUtc": "2026-08-24T05:15:00Z",
   "before": {
     "components": 169,
     "procedures": 4690,
@@ -11,36 +11,39 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedComponentGrowth": {
-    "slice": "Plan 022 Slice 4x",
+    "slice": "Plan 022 Slices 4x and 4y",
     "baseline": 150,
-    "ceiling": 152,
-    "rationale": "The approved Architecture v4.11 D15 redesign adds one typed reusable-design controller and one typed reusable-run controller to the packaged Operations project; no legacy package or parallel authority was added.",
+    "ceiling": 153,
+    "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project; no legacy package or parallel authority was added.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
-      "tools/validate_phase6_packaged_ribbon.ps1"
+      "tools/validate_phase6_packaged_ribbon.ps1",
+      "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
     ]
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slice 4x",
+    "slice": "Plan 022 Slices 4x and 4y",
     "baseline": 4729,
-    "ceiling": 4987,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, same-handler packaged tests, and bounded clean-restart probe add 258 protected procedures. The legacy List-run preservation fix adds diagnostics but no procedure. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
+    "ceiling": 5019,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, captured-workbook Process worksheet transaction, same-handler packaged tests, and bounded clean-restart probes add protected procedures. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
-      "tools/validate_phase6_packaged_ribbon.ps1"
+      "tools/validate_phase6_packaged_ribbon.ps1",
+      "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
     ]
   },
   "approvedCandidateGrowth": {
-    "slice": "Plan 022 Slice 4x",
+    "slice": "Plan 022 Slices 4x and 4y",
     "baseline": 965,
-    "ceiling": 1033,
-    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, and their exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
+    "ceiling": 1035,
+    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, captured-workbook worksheet controller, and their exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
-      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable"
+      "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
+      "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
     ]
   },
   "approvedDuplicateGrowth": {
@@ -63,24 +66,31 @@
     {
       "source": "src/Production/Forms/frmProduction.frm",
       "baseline": 4913,
-      "ceiling": 7438,
-      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; bounded same-handler diagnostics protect the preserved legacy two-batch regression, percentage records require an explicit positive yield basis, and the clean-restart probe invokes the real Run List Load handler."
+      "ceiling": 7761,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slice 4y adds locked generated identities plus the real Process worksheet toggle handler and clean-restart round-trip diagnostics."
     },
     {
       "source": "src/Production/Modules/mProduction.bas",
       "baseline": 12942,
-      "ceiling": 13021,
-      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run/restart test entry points and converts automation-only faults into actionable test results."
+      "ceiling": 13055,
+      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run/worksheet/restart test entry points, owns the shared three-character Base-36 generator and validator, and converts automation-only faults into actionable test results."
     },
     {
       "source": "src/Production/Modules/modProductionReusableRun.bas",
       "baseline": 0,
       "ceiling": 1098,
       "rationale": "The typed run controller owns graph loading, exact-key allocation, stale revalidation, ordered events, percentage/yield-basis scaling, and two-batch state outside the already oversized form/controller."
+    },
+    {
+      "source": "src/Production/Modules/modProductionProcessWorksheet.bas",
+      "baseline": 0,
+      "ceiling": 720,
+      "rationale": "The cohesive typed worksheet controller owns the captured-workbook Process staging table, structured percentage formulas, mixed-UOM validation, safe retrieve/delete lifecycle, and clean-restart discovery without creating a second Designs authority."
     }
   ],
   "approvedModuleGrowthProtectingTests": [
     "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
+    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
     "tools/validate_slice9_production_layout.ps1",
     "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"

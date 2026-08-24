@@ -1025,6 +1025,23 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
                     $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
 
+                    $processWorksheetReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetRoundTripContractTest")
+                    $processWorksheetPassed = $processWorksheetReport -match '^OK\|' -and
+                        $processWorksheetReport -match '(?:^|\|)ProcessIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RequirementIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)OutputIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)IdentityControlsLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)WorksheetHandler=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)MixedUomRejected=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)TableRemoved=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RestartTablePrepared=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
+                    $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
+
                     $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionFormActionContractTest")
@@ -1274,7 +1291,9 @@ try {
             $productionRestartReport -match '^OK\|' -and
             $productionRestartReport -match '(?:^|\|)RecipeFound=True(?:\||$)' -and
             $productionRestartReport -match '(?:^|\|)Loaded=True(?:\||$)' -and
-            $productionRestartReport -match '(?:^|\|)SameWorkbook=True(?:\||$)'
+            $productionRestartReport -match '(?:^|\|)SameWorkbook=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)WorksheetRediscovered=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)WorksheetRetrieved=True(?:\||$)'
         $restartObserved = "PRODUCTION_RESTART=" + $productionRestartReport +
             " || RestartSameOperatorWorkbook=" + $restartSameOperatorWorkbook +
             " || RestartNewWorkbooks=" + $restartNewWorkbooks.Count +

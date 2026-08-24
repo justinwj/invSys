@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1033
-- Reviewed candidates: 1035
+- Scanner candidates: 1035
+- Reviewed candidates: 1037
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 196 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 198 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 286 | Headless shared runtime and developer-support source in Core. |
@@ -50,9 +50,9 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1555 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 7438 |
+| src/Production/Forms/frmProduction.frm | Production | 7761 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13021 |
+| src/Production/Modules/mProduction.bas | Production | 13055 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -656,6 +656,7 @@
 | module-size:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_mProduction.bas:mProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestReusableProductionRunActionContract | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet.ReadProcessDraftFromWorksheet | PRODUCTION | SPLIT_MODULE | MEDIUM | PLANNED |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.BuildPaletteTablesForRecipeChooser | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.LogProductionOutputToProductionLog | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -786,6 +787,7 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessReuse_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessSave_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessValidate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheet_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAutoOrder_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -894,7 +896,7 @@
 | duplicate:2f6790461dcf5201:UserForm_Initialize+UserForm_Initialize+UserForm_Initialize | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:2fb6a140cb21ffb2:CloseWorkbookNoSaveProduction+CloseWorkbookQuietlyTester | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:2fd6555d3906b37b:HideInventoryBridgeWorkbookWindows+HideWorkbookWindowsAuth+HideWorkbookWindowsConfig+HideWorkbookWindowsPublisher+HideWorkbookWindowsShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| duplicate:30348d523aeda395:NzStrShip+TextValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| duplicate:30348d523aeda395:CellText+NzStrShip+TextValue | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:30d52035e2b7a1cb:EventTypeListedRole+HistoryEventTypeListedShipping | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | duplicate:34b806497e2edfb4:UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate+UserForm_Activate | SHARED_OPERATIONS | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:356e460465775137:Init+Init+Init+Init | SHARED_OPERATIONS | REPLACE_DUPLICATE | MEDIUM | REQUIRES_PROTECTING_TEST |

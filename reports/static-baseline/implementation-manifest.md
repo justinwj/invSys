@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
-- Components: 152
-- Procedures: 4987
+- Components: 153
+- Procedures: 5019
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| Operations | invSys_Operations | invSys.Operations.xlam | 38 |
+| Operations | invSys_Operations | invSys.Operations.xlam | 39 |
 | OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 0 |
 
 ## Dynamic roots
@@ -199,6 +199,7 @@
 | mBtnProcessReuse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessValidate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessWorksheet_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRecipeAddProcess_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRecipeAutoOrder_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRecipeClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

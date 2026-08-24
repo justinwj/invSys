@@ -53,6 +53,7 @@ Private WithEvents mBtnProcessSave As MSForms.CommandButton
 Private WithEvents mBtnProcessRelease As MSForms.CommandButton
 Private WithEvents mBtnProcessObsolete As MSForms.CommandButton
 Private WithEvents mBtnProcessClear As MSForms.CommandButton
+Private WithEvents mBtnProcessWorksheet As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementAdd As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementUpdate As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementRemove As MSForms.CommandButton
@@ -207,6 +208,7 @@ Private mRunProcessByKey As Object
 Private mRunItemCodeByKey As Object
 Private mBuilderLineTableRows() As Long
 Private mBuilderLineTableRowCount As Long
+Private mProcessWorksheetTableName As String
 
 Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
 Private Const PRODUCTION_MIN_WIDTH As Double = 1110
@@ -279,10 +281,21 @@ Private Sub UserForm_Terminate()
 End Sub
 
 Public Sub SetOperatorWorkbook(ByVal wb As Workbook)
+    Dim worksheetReport As String
+
     If IsUsableWorkbook(wb) Then
         Set mOperatorWorkbook = wb
         mOperatorWorkbookCaptured = True
         mProduction.BindProductionOperatorWorkbook wb
+        If modProductionProcessWorksheet.FindOutstandingProcessWorksheetTable( _
+            wb, mProcessWorksheetTableName, worksheetReport) Then
+            If Not mBtnProcessWorksheet Is Nothing Then _
+                mBtnProcessWorksheet.Caption = "Retrieve Process from Sheet"
+        Else
+            mProcessWorksheetTableName = ""
+            If Not mBtnProcessWorksheet Is Nothing Then _
+                mBtnProcessWorksheet.Caption = "Edit Process on Sheet"
+        End If
     End If
 End Sub
 
@@ -930,8 +943,10 @@ Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
     Set mTxtProcessName = AddText(pg, "txtProcessName", 290, 26, 205, 22)
     AddLabel pg, "Process ID", 505, 8, 70, 16
     Set mTxtProcessId = AddText(pg, "txtProcessId", 505, 26, 145, 22)
+    mTxtProcessId.Locked = True
     AddLabel pg, "Version", 660, 8, 55, 16
     Set mTxtProcessVersion = AddText(pg, "txtProcessVersion", 660, 26, 55, 22)
+    mTxtProcessVersion.Locked = True
     AddLabel pg, "Description", 290, 54, 80, 16
     Set mTxtProcessDescription = AddText(pg, "txtProcessDescription", 290, 72, 425, 64)
     mTxtProcessDescription.MultiLine = True
@@ -941,12 +956,14 @@ Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
     Set mBtnProcessRelease = AddButton(pg, "btnProcessRelease", "Release", 928, 12, 86, 24)
     Set mBtnProcessObsolete = AddButton(pg, "btnProcessObsolete", "Obsolete", 740, 44, 86, 24)
     Set mBtnProcessClear = AddButton(pg, "btnProcessClear", "Clear", 834, 44, 86, 24)
+    Set mBtnProcessWorksheet = AddButton(pg, "btnProcessWorksheet", "Edit Process on Sheet", 928, 44, 102, 24)
 
     AddLabel pg, "Requirements", 12, 174, 100, 16
     Set mLstProcessRequirements = AddList(pg, "lstProcessRequirements", 12, 192, 315, 128, 7, _
         "50 pt;78 pt;38 pt;38 pt;52 pt;42 pt;0 pt")
-    AddLabel pg, "ID / Name / Qty / % / Basis / UOM", 12, 324, 230, 16
+    AddLabel pg, "ID / Name / Qty / % / Batch basis qty / UOM", 12, 324, 300, 16
     Set mTxtRequirementId = AddText(pg, "txtRequirementId", 12, 342, 50, 22)
+    mTxtRequirementId.Locked = True
     Set mTxtRequirementName = AddText(pg, "txtRequirementName", 66, 342, 91, 22)
     Set mTxtRequirementQty = AddText(pg, "txtRequirementQty", 161, 342, 38, 22)
     Set mTxtRequirementPercent = AddText(pg, "txtRequirementPercent", 203, 342, 38, 22)
@@ -961,8 +978,9 @@ Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Outputs (at least one)", 340, 174, 150, 16
     Set mLstProcessOutputs = AddList(pg, "lstProcessOutputs", 340, 192, 390, 128, 9, _
         "48 pt;68 pt;56 pt;0 pt;0 pt;38 pt;38 pt;50 pt;38 pt")
-    AddLabel pg, "ID / Name / Item / Design / Ver / Qty / % / Basis / UOM", 340, 324, 340, 16
+    AddLabel pg, "ID / Name / Item / Design / Ver / Qty / % / Yield basis qty / UOM", 340, 324, 390, 16
     Set mTxtProcessOutputId = AddText(pg, "txtProcessOutputId", 340, 342, 48, 22)
+    mTxtProcessOutputId.Locked = True
     Set mTxtProcessOutputName = AddText(pg, "txtProcessOutputName", 392, 342, 67, 22)
     Set mTxtProcessOutputItemCode = AddText(pg, "txtProcessOutputItemCode", 463, 342, 56, 22)
     Set mTxtProcessOutputDesignId = AddText(pg, "txtProcessOutputDesignId", 523, 342, 48, 22)
@@ -999,8 +1017,10 @@ Private Sub BuildRecipeDesignerPage(ByVal pg As MSForms.Page)
     Set mTxtReusableRecipeName = AddText(pg, "txtReusableRecipeName", 290, 26, 205, 22)
     AddLabel pg, "Recipe ID", 505, 8, 65, 16
     Set mTxtReusableRecipeId = AddText(pg, "txtReusableRecipeId", 505, 26, 145, 22)
+    mTxtReusableRecipeId.Locked = True
     AddLabel pg, "Version", 660, 8, 55, 16
     Set mTxtReusableRecipeVersion = AddText(pg, "txtReusableRecipeVersion", 660, 26, 55, 22)
+    mTxtReusableRecipeVersion.Locked = True
     AddLabel pg, "Description", 290, 54, 80, 16
     Set mTxtReusableRecipeDescription = AddText(pg, "txtReusableRecipeDescription", 290, 72, 425, 60)
     mTxtReusableRecipeDescription.MultiLine = True
@@ -4867,13 +4887,13 @@ Private Sub ClearProcessDraft(Optional ByVal createIdentity As Boolean = True)
     ClearOutputEditor
     mTxtProcessInstruction.Text = ""
     If createIdentity Then
-        mTxtProcessId.Text = "PROC-" & UCase$(Left$(Replace$(BuildFormGuid(), "-", ""), 12))
+        mTxtProcessId.Text = NextListBase36Id(mLstProcesses, 0)
         mTxtProcessVersion.Text = "1"
     End If
 End Sub
 
 Private Sub ClearRequirementEditor()
-    mTxtRequirementId.Text = ""
+    mTxtRequirementId.Text = NextListBase36Id(mLstProcessRequirements, 0)
     mTxtRequirementName.Text = ""
     mTxtRequirementQty.Text = ""
     mTxtRequirementPercent.Text = ""
@@ -4882,7 +4902,7 @@ Private Sub ClearRequirementEditor()
 End Sub
 
 Private Sub ClearOutputEditor()
-    mTxtProcessOutputId.Text = ""
+    mTxtProcessOutputId.Text = NextListBase36Id(mLstProcessOutputs, 0)
     mTxtProcessOutputName.Text = ""
     mTxtProcessOutputItemCode.Text = ""
     mTxtProcessOutputDesignId.Text = ""
@@ -4976,6 +4996,47 @@ Private Function AddProcessOutputRecord(ByVal record As Object) As Long
     End With
 End Function
 
+Private Function LoadProcessPayloadIntoDesigner(ByVal processId As String, _
+                                                ByVal processVersion As String, _
+                                                ByVal processName As String, _
+                                                ByVal description As String, _
+                                                ByVal payloadJson As String, _
+                                                ByRef report As String) As Boolean
+    Dim records As Collection
+    Dim record As Object
+    Dim parseReport As String
+
+    Set records = modProductionReusableDesigns.ParseReusableDefinitionRecords(payloadJson, parseReport)
+    If records Is Nothing Then
+        report = parseReport
+        Exit Function
+    End If
+    ClearProcessDraft False
+    mTxtProcessId.Text = processId
+    mTxtProcessVersion.Text = processVersion
+    mTxtProcessName.Text = processName
+    mTxtProcessDescription.Text = description
+    For Each record In records
+        Select Case UCase$(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"))
+            Case "REQUIREMENT"
+                AddProcessRequirementRecord record
+            Case "ALTERNATIVE"
+                mProcessAlternatives.Add CloneReusableRecord(record)
+            Case "OUTPUT"
+                AddProcessOutputRecord record
+            Case "INSTRUCTION"
+                mLstProcessInstructions.AddItem _
+                    modProductionReusableDesigns.ReusableRecordText(record, "InstructionOrdinal")
+                mLstProcessInstructions.List(mLstProcessInstructions.ListCount - 1, 1) = _
+                    modProductionReusableDesigns.ReusableRecordText(record, "Instruction")
+        End Select
+    Next record
+    ClearRequirementEditor
+    ClearOutputEditor
+    report = "Process worksheet draft loaded into Process Designer."
+    LoadProcessPayloadIntoDesigner = True
+End Function
+
 Private Function CloneReusableRecord(ByVal source As Object) As Object
     Dim target As Object
     Dim key As Variant
@@ -4991,6 +5052,16 @@ End Function
 Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
     Dim idx As Long
 
+    idx = mLstProcessRequirements.ListIndex
+    If Not updateExisting Or idx < 0 Then
+        If Trim$(mTxtRequirementId.Text) = "" _
+           Or ListIdentityExists(mLstProcessRequirements, 0, mTxtRequirementId.Text) Then
+            mTxtRequirementId.Text = NextListBase36Id(mLstProcessRequirements, 0)
+        End If
+    Else
+        mTxtRequirementId.Text = NzStr(mLstProcessRequirements.List(idx, 0))
+    End If
+
     If Trim$(mTxtRequirementId.Text) = "" Or Trim$(mTxtRequirementName.Text) = "" Or _
        Trim$(mTxtRequirementUom.Text) = "" Then
         ShowStatus "A requirement needs ID, name, and UOM."
@@ -5002,10 +5073,9 @@ Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
     End If
     If PositiveTextValue(mTxtRequirementPercent.Text) _
        And Not PositiveTextValue(mTxtRequirementYieldBasis.Text) Then
-        ShowStatus "A percentage requirement needs a positive yield basis."
+        ShowStatus "A percentage requirement needs a positive batch basis quantity."
         Exit Sub
     End If
-    idx = mLstProcessRequirements.ListIndex
     If Not updateExisting Or idx < 0 Then
         mLstProcessRequirements.AddItem ""
         idx = mLstProcessRequirements.ListCount - 1
@@ -5019,11 +5089,22 @@ Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
         .List(idx, 5) = Trim$(mTxtRequirementUom.Text)
         .ListIndex = idx
     End With
+    If Not updateExisting Then ClearRequirementEditor
     ShowStatus "Requirement staged in the Process draft."
 End Sub
 
 Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
     Dim idx As Long
+
+    idx = mLstProcessOutputs.ListIndex
+    If Not updateExisting Or idx < 0 Then
+        If Trim$(mTxtProcessOutputId.Text) = "" _
+           Or ListIdentityExists(mLstProcessOutputs, 0, mTxtProcessOutputId.Text) Then
+            mTxtProcessOutputId.Text = NextListBase36Id(mLstProcessOutputs, 0)
+        End If
+    Else
+        mTxtProcessOutputId.Text = NzStr(mLstProcessOutputs.List(idx, 0))
+    End If
 
     If Trim$(mTxtProcessOutputId.Text) = "" Or Trim$(mTxtProcessOutputName.Text) = "" Or _
        Trim$(mTxtProcessOutputItemCode.Text) = "" Or Trim$(mTxtProcessOutputUom.Text) = "" Then
@@ -5039,7 +5120,6 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
         ShowStatus "A percentage output needs a positive yield basis."
         Exit Sub
     End If
-    idx = mLstProcessOutputs.ListIndex
     If Not updateExisting Or idx < 0 Then
         mLstProcessOutputs.AddItem ""
         idx = mLstProcessOutputs.ListCount - 1
@@ -5056,8 +5136,40 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
         .List(idx, 8) = Trim$(mTxtProcessOutputUom.Text)
         .ListIndex = idx
     End With
+    If Not updateExisting Then ClearOutputEditor
     ShowStatus "Output staged in the Process draft."
 End Sub
+
+Private Function NextListBase36Id(ByVal listControl As MSForms.ListBox, _
+                                  ByVal identityColumn As Long) As String
+    Dim usedIds() As String
+    Dim rowIndex As Long
+
+    If listControl Is Nothing Or listControl.ListCount = 0 Then
+        NextListBase36Id = mProduction.NextBase36Identifier(Array(""))
+        Exit Function
+    End If
+    ReDim usedIds(0 To listControl.ListCount - 1)
+    For rowIndex = 0 To listControl.ListCount - 1
+        usedIds(rowIndex) = NzStr(listControl.List(rowIndex, identityColumn))
+    Next rowIndex
+    NextListBase36Id = mProduction.NextBase36Identifier(usedIds)
+End Function
+
+Private Function ListIdentityExists(ByVal listControl As MSForms.ListBox, _
+                                    ByVal identityColumn As Long, _
+                                    ByVal identityValue As String) As Boolean
+    Dim rowIndex As Long
+
+    If listControl Is Nothing Then Exit Function
+    For rowIndex = 0 To listControl.ListCount - 1
+        If StrComp(Trim$(NzStr(listControl.List(rowIndex, identityColumn))), _
+                   Trim$(identityValue), vbTextCompare) = 0 Then
+            ListIdentityExists = True
+            Exit Function
+        End If
+    Next rowIndex
+End Function
 
 Private Function PositiveTextValue(ByVal textValue As String) As Boolean
     If Trim$(textValue) = "" Or Not IsNumeric(textValue) Then Exit Function
@@ -5122,7 +5234,7 @@ Private Function ValidateProcessDraft(ByRef report As String) As Boolean
         End If
         If PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 3))) _
            And Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 4))) Then
-            report = "A percentage Process requirement requires a positive yield basis."
+            report = "A percentage Process requirement requires a positive batch basis quantity."
             Exit Function
         End If
     Next i
@@ -5244,7 +5356,7 @@ Private Sub ClearRecipeDraft(Optional ByVal createIdentity As Boolean = True)
     mLstRecipeValidation.Clear
     ClearConnectionEditor
     If createIdentity Then
-        mTxtReusableRecipeId.Text = "RECIPE-" & UCase$(Left$(Replace$(BuildFormGuid(), "-", ""), 12))
+        mTxtReusableRecipeId.Text = NextListBase36Id(mLstRecipes, 0)
         mTxtReusableRecipeVersion.Text = "1"
     End If
 End Sub
@@ -5948,6 +6060,120 @@ Public Function TestReusableProductionSurfaceContract() As String
     End If
 End Function
 
+Public Function TestProcessWorksheetRoundTripContract() As String
+    Dim processIdGenerated As Boolean
+    Dim recipeIdGenerated As Boolean
+    Dim requirementIdGenerated As Boolean
+    Dim outputIdGenerated As Boolean
+    Dim identityControlsLocked As Boolean
+    Dim worksheetControlVisible As Boolean
+    Dim worksheetHandlerReached As Boolean
+    Dim formulaEvidence As String
+    Dim formulaCorrect As Boolean
+    Dim mixedUomRejected As Boolean
+    Dim tableRemoved As Boolean
+    Dim repeatRoundTrip As Boolean
+    Dim restartTablePrepared As Boolean
+    Dim actionReport As String
+    Dim boundWorkbookName As String
+
+    If Not mBuilt Then BuildLayout
+    If Not mOperatorWorkbook Is Nothing Then boundWorkbookName = mOperatorWorkbook.Name
+
+    mBtnProcessNew_Click
+    processIdGenerated = mProduction.IsBase36Identifier(mTxtProcessId.Text)
+    identityControlsLocked = mTxtProcessId.Locked And mTxtProcessVersion.Locked
+
+    mTxtRequirementName.Text = "Sugar"
+    mTxtRequirementQty.Text = "100"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    If mLstProcessRequirements.ListCount > 0 Then
+        requirementIdGenerated = mProduction.IsBase36Identifier( _
+            NzStr(mLstProcessRequirements.List(mLstProcessRequirements.ListCount - 1, 0)))
+    End If
+
+    mTxtProcessOutputName.Text = "Finished Product"
+    mTxtProcessOutputItemCode.Text = "SKU-FINISHED"
+    mTxtProcessOutputQty.Text = "100"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    If mLstProcessOutputs.ListCount > 0 Then
+        outputIdGenerated = mProduction.IsBase36Identifier( _
+            NzStr(mLstProcessOutputs.List(mLstProcessOutputs.ListCount - 1, 0)))
+    End If
+
+    mBtnRecipeNew_Click
+    recipeIdGenerated = mProduction.IsBase36Identifier(mTxtReusableRecipeId.Text)
+    identityControlsLocked = identityControlsLocked And _
+        mTxtReusableRecipeId.Locked And mTxtReusableRecipeVersion.Locked
+
+    worksheetControlVisible = Not mBtnProcessWorksheet Is Nothing
+    If worksheetControlVisible Then
+        ClearProcessDraft True
+        mTxtProcessName.Text = "Formula Worksheet Process"
+        mBtnProcessWorksheet_Click
+        If Trim$(mProcessWorksheetTableName) <> "" Then
+            Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+                mOperatorWorkbook, mProcessWorksheetTableName, True, actionReport)
+            mBtnProcessWorksheet_Click
+            mixedUomRejected = (Trim$(mProcessWorksheetTableName) <> "") And _
+                (InStr(1, TestStatusText(), "one compatible UOM", vbTextCompare) > 0)
+            Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+                mOperatorWorkbook, mProcessWorksheetTableName, False, actionReport)
+            formulaEvidence = modProductionProcessWorksheet.ReadFormulaEvidenceForTest( _
+                mOperatorWorkbook, mProcessWorksheetTableName)
+            formulaCorrect = formulaEvidence Like _
+                "OK|Basis=611.2|Sugar=16.4|Flour=32.7|BakingPowder=1.8|Water=49.1|Total=100.0"
+            mBtnProcessWorksheet_Click
+            tableRemoved = (Trim$(mProcessWorksheetTableName) = "") And _
+                (mLstProcessRequirements.ListCount = 4) And _
+                (mLstProcessOutputs.ListCount = 1)
+            If tableRemoved Then
+                mBtnProcessWorksheet_Click
+                If Trim$(mProcessWorksheetTableName) <> "" Then
+                    mBtnProcessWorksheet_Click
+                    repeatRoundTrip = (Trim$(mProcessWorksheetTableName) = "")
+                End If
+            End If
+            If repeatRoundTrip Then
+                mBtnProcessWorksheet_Click
+                restartTablePrepared = (Trim$(mProcessWorksheetTableName) <> "")
+            End If
+        End If
+        worksheetHandlerReached = mixedUomRejected And formulaCorrect And _
+            tableRemoved And repeatRoundTrip And restartTablePrepared
+    End If
+
+    If boundWorkbookName <> "" And processIdGenerated And recipeIdGenerated _
+       And requirementIdGenerated And outputIdGenerated And identityControlsLocked _
+       And worksheetControlVisible And worksheetHandlerReached Then
+        TestProcessWorksheetRoundTripContract = _
+            "OK|BoundWorkbook=" & boundWorkbookName & _
+            "|ProcessIdGenerated=True|RecipeIdGenerated=True" & _
+            "|RequirementIdGenerated=True|OutputIdGenerated=True" & _
+            "|IdentityControlsLocked=True|WorksheetHandler=True" & _
+            "|MixedUomRejected=True|Formula=" & formulaEvidence & _
+            "|TableRemoved=True|RepeatRoundTrip=True|RestartTablePrepared=True"
+    Else
+        TestProcessWorksheetRoundTripContract = _
+            "FAIL|BoundWorkbook=" & boundWorkbookName & _
+            "|ProcessIdGenerated=" & CStr(processIdGenerated) & _
+            "|RecipeIdGenerated=" & CStr(recipeIdGenerated) & _
+            "|RequirementIdGenerated=" & CStr(requirementIdGenerated) & _
+            "|OutputIdGenerated=" & CStr(outputIdGenerated) & _
+            "|IdentityControlsLocked=" & CStr(identityControlsLocked) & _
+            "|WorksheetControl=" & CStr(worksheetControlVisible) & _
+            "|WorksheetHandler=" & CStr(worksheetHandlerReached) & _
+            "|MixedUomRejected=" & CStr(mixedUomRejected) & _
+            "|Formula=" & formulaEvidence & _
+            "|TableRemoved=" & CStr(tableRemoved) & _
+            "|RepeatRoundTrip=" & CStr(repeatRoundTrip) & _
+            "|RestartTablePrepared=" & CStr(restartTablePrepared) & _
+            "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    End If
+End Function
+
 Public Function TestReusableProductionFormActionContract() As String
     Dim requiredControls As Variant
     Dim controlName As Variant
@@ -6406,6 +6632,8 @@ Public Function TestReusableProductionRestartActionContract( _
     Dim rowIndex As Long
     Dim boundWorkbookFullName As String
     Dim sameWorkbook As Boolean
+    Dim worksheetRediscovered As Boolean
+    Dim worksheetRetrieved As Boolean
 
     If Not mBuilt Then BuildLayout
     If Not mOperatorWorkbook Is Nothing Then
@@ -6433,9 +6661,27 @@ Public Function TestReusableProductionRestartActionContract( _
         Exit Function
     End If
 
+    worksheetRediscovered = (Trim$(mProcessWorksheetTableName) <> "") And _
+        (StrComp(mBtnProcessWorksheet.Caption, "Retrieve Process from Sheet", vbTextCompare) = 0)
+    If worksheetRediscovered Then
+        mBtnProcessWorksheet_Click
+        worksheetRetrieved = (Trim$(mProcessWorksheetTableName) = "")
+    End If
+    If Not worksheetRediscovered Or Not worksheetRetrieved Then
+        TestReusableProductionRestartActionContract = _
+            "FAIL|RecipeFound=True|Loaded=True|RecipeId=" & recipeId & _
+            "|Version=" & recipeVersion & "|SameWorkbook=" & CStr(sameWorkbook) & _
+            "|WorksheetRediscovered=" & CStr(worksheetRediscovered) & _
+            "|WorksheetRetrieved=" & CStr(worksheetRetrieved) & _
+            "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+        Exit Function
+    End If
+
     TestReusableProductionRestartActionContract = _
         "OK|RecipeFound=True|Loaded=True|RecipeId=" & recipeId & _
         "|Version=" & recipeVersion & "|SameWorkbook=" & CStr(sameWorkbook) & _
+        "|WorksheetRediscovered=" & CStr(worksheetRediscovered) & _
+        "|WorksheetRetrieved=" & CStr(worksheetRetrieved) & _
         "|BoundWorkbook=" & boundWorkbookFullName
     Exit Function
 Failed:
@@ -6653,6 +6899,83 @@ End Sub
 Private Sub mBtnProcessClear_Click()
     ClearProcessDraft True
     ShowStatus "Process Designer cleared."
+End Sub
+
+Private Sub mBtnProcessWorksheet_Click()
+    Dim report As String
+    Dim deleteReport As String
+    Dim processId As String
+    Dim processVersion As String
+    Dim processName As String
+    Dim description As String
+    Dim payloadJson As String
+    Dim oldProcessId As String
+    Dim oldProcessVersion As String
+    Dim oldProcessName As String
+    Dim oldDescription As String
+    Dim oldPayload As String
+    Dim validationReport As String
+    Dim existingRow As Long
+
+    On Error GoTo Failed
+    If mOperatorWorkbook Is Nothing Then
+        ShowStatus "The captured Production operator workbook is unavailable."
+        Exit Sub
+    End If
+
+    If Trim$(mProcessWorksheetTableName) = "" Then
+        If Trim$(mTxtProcessId.Text) = "" Then _
+            mTxtProcessId.Text = NextListBase36Id(mLstProcesses, 0)
+        If Trim$(mTxtProcessVersion.Text) = "" Then mTxtProcessVersion.Text = "1"
+        existingRow = FindIdentityListRow(mLstProcesses, _
+            Trim$(mTxtProcessId.Text), Trim$(mTxtProcessVersion.Text))
+        If existingRow >= 0 Then
+            mTxtProcessVersion.Text = modProductionReusableDesigns.NextReusableDefinitionVersion( _
+                Trim$(mTxtProcessId.Text), True)
+        End If
+        If modProductionProcessWorksheet.SendProcessDraftToWorksheet( _
+            mOperatorWorkbook, Trim$(mTxtProcessId.Text), Trim$(mTxtProcessVersion.Text), _
+            Trim$(mTxtProcessName.Text), Trim$(mTxtProcessDescription.Text), _
+            BuildProcessPayload(), mProcessWorksheetTableName, report) Then
+            mBtnProcessWorksheet.Caption = "Retrieve Process from Sheet"
+        End If
+        ShowStatus report
+        Exit Sub
+    End If
+
+    oldProcessId = Trim$(mTxtProcessId.Text)
+    oldProcessVersion = Trim$(mTxtProcessVersion.Text)
+    oldProcessName = Trim$(mTxtProcessName.Text)
+    oldDescription = Trim$(mTxtProcessDescription.Text)
+    oldPayload = BuildProcessPayload()
+    If Not modProductionProcessWorksheet.ReadProcessDraftFromWorksheet( _
+        mOperatorWorkbook, mProcessWorksheetTableName, processId, processVersion, _
+        processName, description, payloadJson, report) Then
+        ShowStatus report
+        Exit Sub
+    End If
+    If Not LoadProcessPayloadIntoDesigner(processId, processVersion, processName, _
+                                           description, payloadJson, report) Then
+        ShowStatus "Process worksheet retrieval failed: " & report
+        Exit Sub
+    End If
+    If Not ValidateProcessDraft(validationReport) Then
+        Call LoadProcessPayloadIntoDesigner(oldProcessId, oldProcessVersion, _
+            oldProcessName, oldDescription, oldPayload, report)
+        ShowStatus "Process worksheet retrieval failed: " & validationReport
+        Exit Sub
+    End If
+    If Not modProductionProcessWorksheet.DeleteProcessWorksheetTable( _
+        mOperatorWorkbook, mProcessWorksheetTableName, deleteReport) Then
+        ShowStatus validationReport & vbCrLf & deleteReport
+        Exit Sub
+    End If
+    mProcessWorksheetTableName = ""
+    mBtnProcessWorksheet.Caption = "Edit Process on Sheet"
+    ShowStatus validationReport & vbCrLf & deleteReport
+    Exit Sub
+Failed:
+    ShowStatus "Process worksheet action failed: " & Err.Description
 End Sub
 
 Private Sub mLstProcessRequirements_Click()

@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
-                     "componentCount":  152,
-                     "procedureCount":  4987,
-                     "lineCount":  109848,
+                     "componentCount":  153,
+                     "procedureCount":  5019,
+                     "lineCount":  110925,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -2493,16 +2493,18 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrShip+TextValue",
+                           "id":  "duplicate:30348d523aeda395:CellText+NzStrShip+TextValue",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "HIGH",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
+                                                  "CellText",
                                                   "NzStrShip",
                                                   "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation.",
@@ -10386,6 +10388,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheet_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnProcessWorksheet_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -14585,7 +14604,9 @@
                                                   "LayoutParentExtent",
                                                   "LayoutRectanglesOverlap",
                                                   "LineIoValue",
+                                                  "ListIdentityExists",
                                                   "LoadProcessDefinitionIntoDesigner",
+                                                  "LoadProcessPayloadIntoDesigner",
                                                   "LoadRecipeDefinitionIntoDesigner",
                                                   "LoadReusableRecipeIntoRun",
                                                   "LoadSelectedBuilderLine",
@@ -14653,6 +14674,7 @@
                                                   "mBtnProcessReuse_Click",
                                                   "mBtnProcessSave_Click",
                                                   "mBtnProcessValidate_Click",
+                                                  "mBtnProcessWorksheet_Click",
                                                   "mBtnRecipeAddProcess_Click",
                                                   "mBtnRecipeAutoOrder_Click",
                                                   "mBtnRecipeClear_Click",
@@ -14703,6 +14725,7 @@
                                                   "mTxtTreePaletteQty_Change",
                                                   "mTxtTreePaletteSplit_Change",
                                                   "NewReusableRecord",
+                                                  "NextListBase36Id",
                                                   "NextOutputBatchNumberForListIndex",
                                                   "NextRecipeNodeId",
                                                   "NormalizeInventorySearch",
@@ -14826,6 +14849,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessWorksheetRoundTripContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
                                                   "TestProductionOutputDisplayedBatch",
                                                   "TestProductionRunLocationAllowed",
@@ -15185,6 +15209,7 @@
                                                   "InventoryPaletteHeaderList",
                                                   "InventorySystemKeyMatchesOutputName",
                                                   "IsBandManagedTable",
+                                                  "IsBase36Identifier",
                                                   "IsCheckboxShape",
                                                   "IsColorDark",
                                                   "IsInputIoValue",
@@ -15238,6 +15263,7 @@
                                                   "MoveListObjectToAddress",
                                                   "MoveListObjectToRowCol",
                                                   "MoveRecipeBuilderLinesToStaging",
+                                                  "NextBase36Identifier",
                                                   "NextBatchSequenceForProcess",
                                                   "NextRecipeBuilderStartRow",
                                                   "NextRecipeChooserSequence",
@@ -15331,6 +15357,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProductionBatchScaleContractTest",
                                                   "RunReusableProductionFormActionContractTest",
                                                   "RunReusableProductionRestartActionContractTest",
@@ -16544,6 +16571,23 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
 
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "procedure-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet.ReadProcessDraftFromWorksheet",
+                           "candidateType":  "SPLIT_MODULE",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modProductionProcessWorksheet",
+                           "procedureNames":  [
+                                                  "ReadProcessDraftFromWorksheet"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas"
+                                           ],
+                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
                                                ],
                            "reviewRequired":  true
                        },

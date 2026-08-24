@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "c6be8bc592d5f1f33afdd4b8f3c76167ce5758e2c2429ed15de67365967d09cb",
-                          "maintenanceCandidatesSha256":  "eda5974b5df2ee79e1a7ff9a54a280fbcb318f772b8fdfec8b24fdd85c03cc02"
+                          "implementationManifestSha256":  "e807c12a6797ebd96540423dc462d2ef82779e787212e9935b9039f28aedff98",
+                          "maintenanceCandidatesSha256":  "426c905a2097ad0c617f3df2dcd9f78f2beeab8d2bce19bca977e41f0b870a3d"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1033,
-                    "reviewedCandidateCount":  1035,
+                    "scannerCandidateCount":  1035,
+                    "reviewedCandidateCount":  1037,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  196,
+                            "candidateCount":  198,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  7438,
+                                                  "baselineLineCount":  7761,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +231,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13021,
+                                                  "baselineLineCount":  13055,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -15967,7 +15967,9 @@
                                                   "LayoutParentExtent",
                                                   "LayoutRectanglesOverlap",
                                                   "LineIoValue",
+                                                  "ListIdentityExists",
                                                   "LoadProcessDefinitionIntoDesigner",
+                                                  "LoadProcessPayloadIntoDesigner",
                                                   "LoadRecipeDefinitionIntoDesigner",
                                                   "LoadReusableRecipeIntoRun",
                                                   "LoadSelectedBuilderLine",
@@ -16035,6 +16037,7 @@
                                                   "mBtnProcessReuse_Click",
                                                   "mBtnProcessSave_Click",
                                                   "mBtnProcessValidate_Click",
+                                                  "mBtnProcessWorksheet_Click",
                                                   "mBtnRecipeAddProcess_Click",
                                                   "mBtnRecipeAutoOrder_Click",
                                                   "mBtnRecipeClear_Click",
@@ -16085,6 +16088,7 @@
                                                   "mTxtTreePaletteQty_Change",
                                                   "mTxtTreePaletteSplit_Change",
                                                   "NewReusableRecord",
+                                                  "NextListBase36Id",
                                                   "NextOutputBatchNumberForListIndex",
                                                   "NextRecipeNodeId",
                                                   "NormalizeInventorySearch",
@@ -16208,6 +16212,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessWorksheetRoundTripContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
                                                   "TestProductionOutputDisplayedBatch",
                                                   "TestProductionRunLocationAllowed",
@@ -16579,6 +16584,7 @@
                                                   "InventoryPaletteHeaderList",
                                                   "InventorySystemKeyMatchesOutputName",
                                                   "IsBandManagedTable",
+                                                  "IsBase36Identifier",
                                                   "IsCheckboxShape",
                                                   "IsColorDark",
                                                   "IsInputIoValue",
@@ -16632,6 +16638,7 @@
                                                   "MoveListObjectToAddress",
                                                   "MoveListObjectToRowCol",
                                                   "MoveRecipeBuilderLinesToStaging",
+                                                  "NextBase36Identifier",
                                                   "NextBatchSequenceForProcess",
                                                   "NextRecipeBuilderStartRow",
                                                   "NextRecipeChooserSequence",
@@ -16725,6 +16732,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProductionBatchScaleContractTest",
                                                   "RunReusableProductionFormActionContractTest",
                                                   "RunReusableProductionRestartActionContractTest",
@@ -16810,6 +16818,29 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
+                       },
+                       {
+                           "id":  "procedure-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet.ReadProcessDraftFromWorksheet",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "PLANNED",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "modProductionProcessWorksheet",
+                           "procedureNames":  [
+                                                  "ReadProcessDraftFromWorksheet"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas"
+                                           ],
+                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
@@ -19806,6 +19837,29 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheet_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnProcessWorksheet_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -22482,7 +22536,7 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
-                           "id":  "duplicate:30348d523aeda395:NzStrShip+TextValue",
+                           "id":  "duplicate:30348d523aeda395:CellText+NzStrShip+TextValue",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REPLACE_DUPLICATE",
                            "disposition":  "REPLACE_DUPLICATE",
@@ -22492,11 +22546,13 @@
                            "workstream":  "SHARED_OPERATIONS",
                            "componentName":  "modProductionEventCreator",
                            "procedureNames":  [
+                                                  "CellText",
                                                   "NzStrShip",
                                                   "TextValue"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionEventCreator.bas",
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                "src/Shipping/Modules/modShippingEventCreator.bas"
                                            ],
                            "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
