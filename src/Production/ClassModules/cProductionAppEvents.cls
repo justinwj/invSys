@@ -35,6 +35,13 @@ Private Sub App_WorkbookBeforeClose(ByVal Wb As Workbook, Cancel As Boolean)
 End Sub
 
 Private Sub App_SheetSelectionChange(ByVal Sh As Object, ByVal Target As Range)
+    On Error Resume Next
+    If modProductionProcessWorksheet.IsProcessWorksheetItemSearchTarget(Target) Then
+        mProduction.ShowProductionProcessItemSearch Target
+        On Error GoTo 0
+        Exit Sub
+    End If
+    On Error GoTo 0
     If Not modOperationsInit.IsRoleWorksheet( _
             Sh, "Production", "RecipeBuilder") Then Exit Sub
     On Error Resume Next
@@ -51,6 +58,13 @@ Private Sub App_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range
 End Sub
 
 Private Sub App_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    On Error Resume Next
+    If modProductionProcessWorksheet.IsProcessWorksheetTableTarget(Target) Then
+        modProductionProcessWorksheet.RefreshProcessWorksheetManagedColumns Target
+        On Error GoTo 0
+        Exit Sub
+    End If
+    On Error GoTo 0
     If Not modOperationsInit.IsRoleWorksheet( _
             Sh, "Production", "RecipeBuilder") Then Exit Sub
     On Error Resume Next

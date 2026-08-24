@@ -22,10 +22,10 @@ $controls = Read-Text (Join-Path $docs "0 plan docs\xlam_invSys\invSys-Controls-
 $checks = @(
     [pscustomobject]@{ Name = "Docs.NormativeContract"; Pass =
         $spec -match 'exactly\s+three uppercase Base-36\s+characters' -and
-        $spec -match 'Edit Process on Sheet' -and
-        $spec -match 'Batch basis quantity' -and
+        $spec -match 'Create Process Table' -and
+        $spec -match 'Batch basis' -and
         $plan -match 'Slice 4y -- Process formulation worksheet round-trip' -and
-        $controls -match 'btnProcessWorksheet' },
+        $controls -match 'btnProcessWorksheetCreate' },
     [pscustomobject]@{ Name = "Form.GeneratedLockedIds"; Pass =
         $form -match 'mTxtProcessId\.Locked = True' -and
         $form -match 'mTxtReusableRecipeId\.Locked = True' -and
@@ -34,7 +34,8 @@ $checks = @(
         $form -match 'NextListBase36Id' -and
         $controller -match 'Public Function NextBase36Identifier' },
     [pscustomobject]@{ Name = "Form.OperatorHandler"; Pass =
-        $form -match 'Private Sub mBtnProcessWorksheet_Click\(\)' -and
+        $form -match 'Private Sub mBtnProcessWorksheetCreate_Click\(\)' -and
+        $form -match 'Private Sub mBtnProcessWorksheetRetrieve_Click\(\)' -and
         $form -match 'SendProcessDraftToWorksheet' -and
         $form -match 'ReadProcessDraftFromWorksheet' -and
         $form -match 'DeleteProcessWorksheetTable' -and
@@ -54,7 +55,7 @@ $checks = @(
         $worksheet -match 'lo\.Delete' -and
         $form -match 'If Not ValidateProcessDraft\(validationReport\)' -and
         $form -match 'retrieval failed' -and
-        $form -match 'Retrieve Process from Sheet' }
+        $form -match 'Retrieve Selected Process' }
 )
 
 $failed = @($checks | Where-Object { -not $_.Pass })

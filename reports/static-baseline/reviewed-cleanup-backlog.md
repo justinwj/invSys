@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1035
-- Reviewed candidates: 1037
+- Scanner candidates: 1036
+- Reviewed candidates: 1038
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 198 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 199 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 286 | Headless shared runtime and developer-support source in Core. |
@@ -36,7 +36,7 @@
 | src/Admin/Modules/modAdmin.bas | Admin | 1924 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
-| src/Core/ClassModules/cDynItemSearch.cls | Core | 1848 |
+| src/Core/ClassModules/cDynItemSearch.cls | Core | 1865 |
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
@@ -50,9 +50,9 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1555 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 7761 |
+| src/Production/Forms/frmProduction.frm | Production | 8012 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13055 |
+| src/Production/Modules/mProduction.bas | Production | 13081 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -787,7 +787,8 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessReuse_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessSave_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessValidate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
-| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheet_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetCreate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetRetrieve_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAutoOrder_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeClear_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

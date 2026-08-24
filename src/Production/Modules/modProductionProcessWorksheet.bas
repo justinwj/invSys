@@ -3,20 +3,25 @@ Option Explicit
 
 Private Const EDITOR_SHEET As String = "invSys Process Editor"
 Private Const TABLE_PREFIX As String = "invSys_Process_"
-Private Const HEADER_ROW As Long = 6
-Private Const FIRST_DATA_ROW As Long = 7
+Private Const FIRST_TABLE_TOP_ROW As Long = 1
+Private Const TABLE_HEADER_OFFSET As Long = 5
+Private Const TABLE_GAP_ROWS As Long = 6
 
 Private Const COL_RECORD_TYPE As Long = 1
 Private Const COL_ID As Long = 2
 Private Const COL_NAME As Long = 3
-Private Const COL_ITEM_CODE As Long = 4
-Private Const COL_QTY As Long = 5
-Private Const COL_PERCENT As Long = 6
-Private Const COL_BASIS_QTY As Long = 7
-Private Const COL_UOM As Long = 8
-Private Const COL_DESIGN_ID As Long = 9
-Private Const COL_DESIGN_VERSION As Long = 10
-Private Const COL_INSTRUCTION As Long = 11
+Private Const COL_QTY As Long = 4
+Private Const COL_PERCENT As Long = 5
+Private Const COL_BASIS_QTY As Long = 6
+Private Const COL_UOM As Long = 7
+Private Const COL_DESIGN_ID As Long = 8
+Private Const COL_DESIGN_VERSION As Long = 9
+Private Const COL_INSTRUCTION As Long = 10
+Private Const COL_REQUIREMENT_ID As Long = 11
+Private Const COL_ACCEPTABLE_ITEM As Long = 12
+Private Const COL_ACCEPTED_SKU As Long = 13
+
+Private mApplyingManagedColumns As Boolean
 
 Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
                                             ByVal processId As String, _
@@ -28,13 +33,13 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
                                             ByRef report As String) As Boolean
     Dim ws As Worksheet
     Dim lo As ListObject
-    Dim existingName As String
-    Dim existingReport As String
     Dim rows As Collection
     Dim rowCount As Long
     Dim tableRange As Range
     Dim rowIndex As Long
     Dim record As Object
+    Dim tableTopRow As Long
+    Dim tableHeaderRow As Long
 
     On Error GoTo Failed
     If wb Is Nothing Then
@@ -52,12 +57,6 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
         report = "The Process needs a positive generated version before worksheet editing."
         Exit Function
     End If
-    If FindOutstandingProcessWorksheetTable(wb, existingName, existingReport) Then
-        tableName = existingName
-        report = "Retrieve or discard the outstanding Process worksheet table first: " & existingName & "."
-        Exit Function
-    End If
-
     Set rows = BuildWorksheetRows(payloadJson, report)
     If rows Is Nothing Then Exit Function
     AddWorksheetTemplateRows rows
@@ -68,22 +67,23 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     End If
 
     Set ws = EnsureProcessEditorSheet(wb)
-    ClearOwnedEditorSurface ws
-    ws.Range("A1").Value2 = "invSys Process worksheet"
-    ws.Range("A2").Value2 = "Process Name"
-    ws.Range("B2").Value2 = processName
-    ws.Range("D2").Value2 = "Process ID"
-    ws.Range("E2").Value2 = processId
-    ws.Range("G2").Value2 = "Version"
-    ws.Range("H2").Value2 = processVersion
-    ws.Range("A3").Value2 = "Description"
-    ws.Range("B3").Value2 = description
-    ws.Range("A4").Value2 = _
+    tableTopRow = NextProcessTableTopRow(ws)
+    tableHeaderRow = tableTopRow + TABLE_HEADER_OFFSET
+    ws.Cells(tableTopRow, 1).Value2 = "invSys Process worksheet"
+    ws.Cells(tableTopRow + 1, 1).Value2 = "Process Name"
+    ws.Cells(tableTopRow + 1, 2).Value2 = processName
+    ws.Cells(tableTopRow + 1, 4).Value2 = "Process ID"
+    ws.Cells(tableTopRow + 1, 5).Value2 = processId
+    ws.Cells(tableTopRow + 1, 7).Value2 = "Version"
+    ws.Cells(tableTopRow + 1, 8).Value2 = processVersion
+    ws.Cells(tableTopRow + 2, 1).Value2 = "Description"
+    ws.Cells(tableTopRow + 2, 2).Value2 = description
+    ws.Cells(tableTopRow + 3, 1).Value2 = _
         "Enter INPUT quantities in one compatible UOM. Batch basis and percentages calculate automatically."
 
-    WriteWorksheetHeaders ws
-    Set tableRange = ws.Range(ws.Cells(HEADER_ROW, 1), _
-                              ws.Cells(HEADER_ROW + rowCount, COL_INSTRUCTION))
+    WriteWorksheetHeaders ws, tableHeaderRow
+    Set tableRange = ws.Range(ws.Cells(tableHeaderRow, 1), _
+                              ws.Cells(tableHeaderRow + rowCount, COL_ACCEPTED_SKU))
     Set lo = ws.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     tableName = BuildUniqueProcessTableName(wb, processId)
     lo.Name = tableName
@@ -93,13 +93,13 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
         WriteWorksheetRecord lo, rowIndex, record
         rowIndex = rowIndex + 1
     Next record
-    ApplyInputFormulas lo
+    ApplyProcessWorksheetManagedColumns lo
     FormatProcessWorksheet ws, lo
     wb.Save
     ws.Visible = xlSheetVisible
     ws.Activate
     lo.Range.Cells(1, 1).Select
-    report = "Process draft sent to " & tableName & ". Edit the table, then select Retrieve Process from Sheet."
+    report = "Created Process table " & tableName & ". Select a cell in any completed table, then choose Retrieve Selected Process."
     SendProcessDraftToWorksheet = True
     Exit Function
 
@@ -130,7 +130,11 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     Dim recordType As String
     Dim rowId As String
     Dim rowName As String
-    Dim itemCode As String
+    Dim acceptedSku As String
+    Dim acceptableItem As String
+    Dim requirementId As String
+    Dim designId As String
+    Dim designVersion As String
     Dim uom As String
     Dim instructionText As String
     Dim qty As Double
@@ -156,9 +160,11 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
         Exit Function
     End If
     processId = expectedProcessId
-    processVersion = Trim$(CellText(lo.Parent.Range("H2").Value2))
-    processName = Trim$(CellText(lo.Parent.Range("B2").Value2))
-    description = Trim$(CellText(lo.Parent.Range("B3").Value2))
+    ApplyProcessWorksheetManagedColumns lo
+    Application.Calculate
+    processVersion = Trim$(ProcessMetadataValue(lo, 1, 8))
+    processName = Trim$(ProcessMetadataValue(lo, 1, 2))
+    description = Trim$(ProcessMetadataValue(lo, 2, 2))
     If processName = "" Then
         report = "Process Name is required on the worksheet."
         Exit Function
@@ -189,7 +195,9 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
         If Not WorksheetRowHasBusinessData(lo, rowIndex) Then GoTo ContinueRow
         rowId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_ID)))
         rowName = Trim$(WorksheetValue(lo, rowIndex, COL_NAME))
-        itemCode = Trim$(WorksheetValue(lo, rowIndex, COL_ITEM_CODE))
+        acceptedSku = Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTED_SKU))
+        acceptableItem = Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTABLE_ITEM))
+        requirementId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)))
         uom = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_UOM)))
         instructionText = Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION))
         hasQty = TryPositiveWorksheetNumber(WorksheetValue(lo, rowIndex, COL_QTY), qty)
@@ -232,8 +240,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 records.Add record
             Case "OUTPUT"
                 rowId = ResolveWorksheetRowId(rowId, outputIds)
-                If rowName = "" Or itemCode = "" Or uom = "" Then
-                    report = "Each OUTPUT row needs a name, Item Code, and UOM."
+                If rowName = "" Or uom = "" Then
+                    report = "Each OUTPUT row needs a name and UOM."
                     Exit Function
                 End If
                 If Not hasQty And Not hasPercent Then
@@ -250,12 +258,14 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 End If
                 outputIds.Add rowId, True
                 outputRowCount = outputRowCount + 1
+                designId = GeneratedOutputDesignId(processId, rowId)
+                designVersion = processVersion
                 Set record = NewWorksheetRecord("OUTPUT")
                 record("OutputId") = rowId
                 record("OutputName") = rowName
-                record("ITEM_CODE") = itemCode
-                record("ComponentDesignId") = Trim$(WorksheetValue(lo, rowIndex, COL_DESIGN_ID))
-                record("ComponentDesignVersion") = Trim$(WorksheetValue(lo, rowIndex, COL_DESIGN_VERSION))
+                record("ITEM_CODE") = designId
+                record("ComponentDesignId") = designId
+                record("ComponentDesignVersion") = designVersion
                 If hasQty Then record("Qty") = qty
                 If hasPercent Then record("Percent") = percentValue
                 If basisQty > 0 Then record("YieldBasis") = basisQty
@@ -273,13 +283,15 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 record("Instruction") = instructionText
                 records.Add record
             Case "ALTERNATIVE"
-                If rowId = "" Or itemCode = "" Then
-                    report = "Each ALTERNATIVE row needs its Requirement ID and Item Code."
+                If requirementId = "" Then requirementId = rowId
+                If requirementId = "" Or acceptedSku = "" Then
+                    report = "Each ALTERNATIVE row needs its Requirement ID and an Acceptable Managed Item selected from item search."
                     Exit Function
                 End If
                 Set record = NewWorksheetRecord("ALTERNATIVE")
-                record("RequirementId") = rowId
-                record("ITEM_CODE") = itemCode
+                record("RequirementId") = requirementId
+                record("ITEM_CODE") = acceptedSku
+                If acceptableItem <> "" Then record("ItemName") = acceptableItem
                 records.Add record
             Case Else
                 report = "Unknown Process worksheet row type: " & recordType & "."
@@ -326,10 +338,10 @@ Public Function DeleteProcessWorksheetTable(ByVal wb As Workbook, _
         Exit Function
     End If
     Set ws = lo.Parent
+    ClearProcessTableMetadata lo
     lo.Delete
-    ClearOwnedEditorSurface ws
     wb.Save
-    report = "Retrieved Process and removed temporary table " & tableName & "."
+    report = "Retrieved Process and removed selected table " & tableName & "."
     DeleteProcessWorksheetTable = True
     Exit Function
 Failed:
@@ -353,16 +365,118 @@ Public Function FindOutstandingProcessWorksheetTable(ByVal wb As Workbook, _
             End If
         Next lo
     Next ws
-    If foundCount = 1 Then
-        report = "Outstanding Process worksheet table found: " & tableName & "."
+    If foundCount >= 1 Then
+        report = CStr(foundCount) & " Process worksheet table(s) found; selected " & tableName & "."
         FindOutstandingProcessWorksheetTable = True
-    ElseIf foundCount > 1 Then
-        report = "More than one invSys Process worksheet table exists. Remove extras before retrieval."
-        tableName = ""
     Else
-        report = "No outstanding Process worksheet table."
+        report = "No Process worksheet table was found."
     End If
 End Function
+
+Public Function FindSelectedProcessWorksheetTable(ByVal wb As Workbook, _
+                                                   ByRef tableName As String, _
+                                                   ByRef report As String) As Boolean
+    Dim selectedRange As Range
+    Dim lo As ListObject
+
+    tableName = ""
+    If wb Is Nothing Then
+        report = "The captured Production operator workbook is unavailable."
+        Exit Function
+    End If
+    On Error Resume Next
+    Set selectedRange = Application.Selection
+    On Error GoTo 0
+    If selectedRange Is Nothing Then
+        report = "Select a cell inside the Process table to retrieve."
+        Exit Function
+    End If
+    If Not selectedRange.Worksheet.Parent Is wb Then
+        report = "Select a Process table cell in the captured Production workbook."
+        Exit Function
+    End If
+    On Error Resume Next
+    Set lo = selectedRange.ListObject
+    On Error GoTo 0
+    If lo Is Nothing Or Not IsInvSysProcessTable(lo) Then
+        report = "The selected cell is not inside an invSys Process table."
+        Exit Function
+    End If
+    tableName = lo.Name
+    report = "Selected Process table " & tableName & "."
+    FindSelectedProcessWorksheetTable = True
+End Function
+
+Public Function CountProcessWorksheetTables(ByVal wb As Workbook) As Long
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    If wb Is Nothing Then Exit Function
+    For Each ws In wb.Worksheets
+        For Each lo In ws.ListObjects
+            If IsInvSysProcessTable(lo) Then _
+                CountProcessWorksheetTables = CountProcessWorksheetTables + 1
+        Next lo
+    Next ws
+End Function
+
+Public Function SelectProcessWorksheetTableForTest(ByVal wb As Workbook, _
+                                                    ByVal tableName As String) As Boolean
+    Dim lo As ListObject
+
+    Set lo = FindProcessTableByName(wb, tableName)
+    If lo Is Nothing Then Exit Function
+    lo.Parent.Activate
+    lo.DataBodyRange.Cells(1, 1).Select
+    SelectProcessWorksheetTableForTest = True
+End Function
+
+Public Function IsProcessWorksheetTableTarget(ByVal target As Range) As Boolean
+    Dim lo As ListObject
+
+    If target Is Nothing Then Exit Function
+    On Error Resume Next
+    Set lo = target.ListObject
+    On Error GoTo 0
+    IsProcessWorksheetTableTarget = IsInvSysProcessTable(lo)
+End Function
+
+Public Function IsProcessWorksheetItemSearchTarget(ByVal target As Range) As Boolean
+    Dim lo As ListObject
+    Dim targetColumn As ListColumn
+    Dim recordTypeColumn As ListColumn
+    Dim rowIndex As Long
+
+    If target Is Nothing Or target.Cells.CountLarge <> 1 Then Exit Function
+    On Error Resume Next
+    Set lo = target.ListObject
+    On Error GoTo 0
+    If Not IsInvSysProcessTable(lo) Then Exit Function
+    On Error Resume Next
+    Set targetColumn = lo.ListColumns("Acceptable Managed Item")
+    Set recordTypeColumn = lo.ListColumns("Record Type")
+    On Error GoTo 0
+    If targetColumn Is Nothing Or recordTypeColumn Is Nothing Then Exit Function
+    If target.Column <> targetColumn.Range.Column Or target.Row <= lo.HeaderRowRange.Row Then Exit Function
+    rowIndex = target.Row - lo.DataBodyRange.Row + 1
+    If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Function
+    If Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2)) = "" Then _
+        lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2 = "ALTERNATIVE"
+    IsProcessWorksheetItemSearchTarget = _
+        (UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) = "ALTERNATIVE")
+End Function
+
+Public Sub RefreshProcessWorksheetManagedColumns(ByVal target As Range)
+    Dim lo As ListObject
+
+    If mApplyingManagedColumns Then Exit Sub
+    If target Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set lo = target.ListObject
+    On Error GoTo 0
+    If Not IsInvSysProcessTable(lo) Then Exit Sub
+    ApplyProcessWorksheetManagedColumns lo
+End Sub
 
 Public Function PopulateFormulationExampleForTest(ByVal wb As Workbook, _
                                                   ByVal tableName As String, _
@@ -389,10 +503,15 @@ Public Function PopulateFormulationExampleForTest(ByVal wb As Workbook, _
     Next rowIndex
     lo.DataBodyRange.Cells(7, COL_RECORD_TYPE).Value2 = "OUTPUT"
     lo.DataBodyRange.Cells(7, COL_NAME).Value2 = "Finished Formula"
-    lo.DataBodyRange.Cells(7, COL_ITEM_CODE).Value2 = "DEMO-FINISHED-FORMULA"
     lo.DataBodyRange.Cells(7, COL_QTY).Value2 = 611.2
     lo.DataBodyRange.Cells(7, COL_UOM).Value2 = "LB"
-    ApplyInputFormulas lo
+    If lo.ListRows.Count >= 10 Then
+        lo.DataBodyRange.Cells(10, COL_RECORD_TYPE).Value2 = "ALTERNATIVE"
+        lo.DataBodyRange.Cells(10, COL_REQUIREMENT_ID).Value2 = "001"
+        lo.DataBodyRange.Cells(10, COL_ACCEPTABLE_ITEM).Value2 = "Sugar Stock"
+        lo.DataBodyRange.Cells(10, COL_ACCEPTED_SKU).Value2 = "SKU-SUGAR"
+    End If
+    ApplyProcessWorksheetManagedColumns lo
     Application.Calculate
     report = "Example populated."
     PopulateFormulationExampleForTest = True
@@ -432,6 +551,9 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
     Dim rowRecord As Object
     Dim parseReport As String
     Dim recordType As String
+    Dim itemNameBySku As Object
+
+    Set itemNameBySku = BuildManagedItemNameBySku()
 
     Set sourceRecords = modProductionReusableDesigns.ParseReusableDefinitionRecords(payloadJson, parseReport)
     If sourceRecords Is Nothing Then
@@ -452,14 +574,17 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
                 rows.Add rowRecord
             Case "ALTERNATIVE"
                 Set rowRecord = NewWorksheetRecord("ALTERNATIVE")
-                rowRecord("Id") = modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
-                rowRecord("ItemCode") = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
+                rowRecord("RequirementId") = modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
+                rowRecord("AcceptedSku") = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
+                If Not itemNameBySku Is Nothing Then
+                    If itemNameBySku.Exists(rowRecord("AcceptedSku")) Then _
+                        rowRecord("AcceptableItem") = itemNameBySku(rowRecord("AcceptedSku"))
+                End If
                 rows.Add rowRecord
             Case "OUTPUT"
                 Set rowRecord = NewWorksheetRecord("OUTPUT")
                 rowRecord("Id") = modProductionReusableDesigns.ReusableRecordText(record, "OutputId")
                 rowRecord("Name") = modProductionReusableDesigns.ReusableRecordText(record, "OutputName")
-                rowRecord("ItemCode") = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
                 rowRecord("Qty") = modProductionReusableDesigns.ReusableRecordValue(record, "Qty")
                 rowRecord("Percent") = modProductionReusableDesigns.ReusableRecordValue(record, "Percent")
                 rowRecord("BasisQty") = modProductionReusableDesigns.ReusableRecordValue(record, "YieldBasis")
@@ -480,6 +605,7 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
     Dim inputCount As Long
     Dim outputCount As Long
     Dim instructionCount As Long
+    Dim alternativeCount As Long
     Dim usedInputs As Object
     Dim usedOutputs As Object
     Dim record As Object
@@ -502,6 +628,7 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
                 outputCount = outputCount + 1
                 If Trim$(CellText(record("Id"))) <> "" Then usedOutputs(UCase$(Trim$(CellText(record("Id"))))) = True
             Case "INSTRUCTION": instructionCount = instructionCount + 1
+            Case "ALTERNATIVE": alternativeCount = alternativeCount + 1
         End Select
     Next record
 
@@ -521,6 +648,11 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
     Next index
     Set rowRecord = NewWorksheetRecord("INSTRUCTION")
     rows.Add rowRecord
+    addCount = IIf(alternativeCount = 0, 4, 2)
+    For index = 1 To addCount
+        Set rowRecord = NewWorksheetRecord("ALTERNATIVE")
+        rows.Add rowRecord
+    Next index
 End Sub
 
 Private Function NewWorksheetRecord(ByVal recordType As String) As Object
@@ -531,7 +663,6 @@ Private Function NewWorksheetRecord(ByVal recordType As String) As Object
     record("RecordType") = recordType
     record("Id") = ""
     record("Name") = ""
-    record("ItemCode") = ""
     record("Qty") = ""
     record("Percent") = ""
     record("BasisQty") = ""
@@ -539,6 +670,9 @@ Private Function NewWorksheetRecord(ByVal recordType As String) As Object
     record("DesignId") = ""
     record("DesignVersion") = ""
     record("Instruction") = ""
+    record("RequirementId") = ""
+    record("AcceptableItem") = ""
+    record("AcceptedSku") = ""
     Set NewWorksheetRecord = record
 End Function
 
@@ -548,7 +682,6 @@ Private Sub WriteWorksheetRecord(ByVal lo As ListObject, ByVal rowIndex As Long,
         .Cells(rowIndex, COL_RECORD_TYPE).Value2 = record("RecordType")
         .Cells(rowIndex, COL_ID).Value2 = record("Id")
         .Cells(rowIndex, COL_NAME).Value2 = record("Name")
-        .Cells(rowIndex, COL_ITEM_CODE).Value2 = record("ItemCode")
         .Cells(rowIndex, COL_QTY).Value2 = record("Qty")
         .Cells(rowIndex, COL_PERCENT).Value2 = record("Percent")
         .Cells(rowIndex, COL_BASIS_QTY).Value2 = record("BasisQty")
@@ -556,44 +689,107 @@ Private Sub WriteWorksheetRecord(ByVal lo As ListObject, ByVal rowIndex As Long,
         .Cells(rowIndex, COL_DESIGN_ID).Value2 = record("DesignId")
         .Cells(rowIndex, COL_DESIGN_VERSION).Value2 = record("DesignVersion")
         .Cells(rowIndex, COL_INSTRUCTION).Value2 = record("Instruction")
+        .Cells(rowIndex, COL_REQUIREMENT_ID).Value2 = record("RequirementId")
+        .Cells(rowIndex, COL_ACCEPTABLE_ITEM).Value2 = record("AcceptableItem")
+        .Cells(rowIndex, COL_ACCEPTED_SKU).Value2 = record("AcceptedSku")
     End With
 End Sub
 
-Private Sub ApplyInputFormulas(ByVal lo As ListObject)
+Private Sub ApplyProcessWorksheetManagedColumns(ByVal lo As ListObject)
     Dim rowIndex As Long
     Dim recordType As String
-    Dim qty As Double
     Dim priorAutoFill As Boolean
+    Dim priorEvents As Boolean
+    Dim processIdCell As String
+    Dim processVersionCell As String
 
     On Error GoTo CleanExit
     If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    If mApplyingManagedColumns Then Exit Sub
+    mApplyingManagedColumns = True
+    priorEvents = Application.EnableEvents
+    Application.EnableEvents = False
     priorAutoFill = Application.AutoCorrect.AutoFillFormulasInLists
-    Application.AutoCorrect.AutoFillFormulasInLists = False
+    Application.AutoCorrect.AutoFillFormulasInLists = True
+    ApplyRecordTypeValidation lo
+    EnsureWorksheetRowIds lo
+    processIdCell = lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 5).Address(True, True)
+    processVersionCell = lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 8).Address(True, True)
+
+    lo.ListColumns("Basis Qty").DataBodyRange.Formula = _
+        "=IF(UPPER([@[Record Type]])=""INPUT"",IFERROR(SUMIFS([Qty],[Record Type],""INPUT"",[UOM],[@UOM]),""""),"""")"
+    lo.ListColumns("Percent").DataBodyRange.Formula = _
+        "=IF(UPPER([@[Record Type]])=""INPUT"",IFERROR([@Qty]/[@[Basis Qty]]*100,""""),"""")"
+    lo.ListColumns("Design ID").DataBodyRange.Formula = _
+        "=IF(AND(UPPER([@[Record Type]])=""OUTPUT"",[@ID]<>""""),""D-""&" & processIdCell & "&""-""&[@ID],"""")"
+    lo.ListColumns("Design Version").DataBodyRange.Formula = _
+        "=IF(UPPER([@[Record Type]])=""OUTPUT""," & processVersionCell & ","""")"
+
     For rowIndex = 1 To lo.ListRows.Count
         recordType = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_RECORD_TYPE)))
-        If recordType = "INPUT" Or recordType = "REQUIREMENT" Then
-            If TryPositiveWorksheetNumber(WorksheetValue(lo, rowIndex, COL_QTY), qty) Then
-                lo.DataBodyRange.Cells(rowIndex, COL_BASIS_QTY).Formula = _
-                    "=IFERROR(SUMIFS([Qty],[Record Type],""INPUT"",[UOM],[@UOM]),"""")"
-                lo.DataBodyRange.Cells(rowIndex, COL_PERCENT).Formula = _
-                    "=IFERROR([@Qty]/[@[Basis Qty]]*100,"""")"
+        If recordType = "ALTERNATIVE" Then
+            If Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)) = "" Then
+                lo.DataBodyRange.Cells(rowIndex, COL_REQUIREMENT_ID).NumberFormat = "@"
             End If
         End If
     Next rowIndex
 CleanExit:
     On Error Resume Next
     Application.AutoCorrect.AutoFillFormulasInLists = priorAutoFill
+    Application.EnableEvents = priorEvents
+    mApplyingManagedColumns = False
     On Error GoTo 0
 End Sub
 
-Private Sub WriteWorksheetHeaders(ByVal ws As Worksheet)
+Private Sub ApplyRecordTypeValidation(ByVal lo As ListObject)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    With lo.ListColumns("Record Type").DataBodyRange.Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+             Operator:=xlBetween, Formula1:="INPUT,OUTPUT,INSTRUCTION,ALTERNATIVE"
+        .IgnoreBlank = True
+        .InCellDropdown = True
+        .ShowError = True
+        .ErrorTitle = "Choose a Process record type"
+        .ErrorMessage = "Select INPUT, OUTPUT, INSTRUCTION, or ALTERNATIVE."
+    End With
+End Sub
+
+Private Sub EnsureWorksheetRowIds(ByVal lo As ListObject)
+    Dim requirementIds As Object
+    Dim outputIds As Object
+    Dim rowIndex As Long
+    Dim recordType As String
+    Dim rowId As String
+
+    Set requirementIds = CreateObject("Scripting.Dictionary")
+    requirementIds.CompareMode = vbTextCompare
+    Set outputIds = CreateObject("Scripting.Dictionary")
+    outputIds.CompareMode = vbTextCompare
+    For rowIndex = 1 To lo.ListRows.Count
+        recordType = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_RECORD_TYPE)))
+        rowId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_ID)))
+        If recordType = "INPUT" Or recordType = "REQUIREMENT" Then
+            rowId = ResolveWorksheetRowId(rowId, requirementIds)
+            lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
+            requirementIds(rowId) = True
+        ElseIf recordType = "OUTPUT" Then
+            rowId = ResolveWorksheetRowId(rowId, outputIds)
+            lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
+            outputIds(rowId) = True
+        End If
+    Next rowIndex
+End Sub
+
+Private Sub WriteWorksheetHeaders(ByVal ws As Worksheet, ByVal headerRow As Long)
     Dim headers As Variant
     Dim index As Long
 
-    headers = Array("Record Type", "ID", "Name", "Item Code", "Qty", "Percent", _
-                    "Basis Qty", "UOM", "Design ID", "Design Version", "Instruction")
+    headers = Array("Record Type", "ID", "Name", "Qty", "Percent", _
+                    "Basis Qty", "UOM", "Design ID", "Design Version", "Instruction", _
+                    "Requirement ID", "Acceptable Managed Item", "Accepted SKU")
     For index = LBound(headers) To UBound(headers)
-        ws.Cells(HEADER_ROW, index + 1).Value2 = headers(index)
+        ws.Cells(headerRow, index + 1).Value2 = headers(index)
     Next index
 End Sub
 
@@ -601,13 +797,13 @@ Private Sub FormatProcessWorksheet(ByVal ws As Worksheet, ByVal lo As ListObject
     ws.Columns("A").ColumnWidth = 14
     ws.Columns("B").ColumnWidth = 10
     ws.Columns("C").ColumnWidth = 24
-    ws.Columns("D").ColumnWidth = 24
-    ws.Columns("E:G").ColumnWidth = 13
-    ws.Columns("H").ColumnWidth = 10
-    ws.Columns("I:J").ColumnWidth = 16
-    ws.Columns("K").ColumnWidth = 48
-    ws.Range("A1:H1").Font.Bold = True
-    ws.Range("A2:H3").WrapText = True
+    ws.Columns("D:F").ColumnWidth = 13
+    ws.Columns("G").ColumnWidth = 10
+    ws.Columns("H:I").ColumnWidth = 16
+    ws.Columns("J").ColumnWidth = 48
+    ws.Columns("K").ColumnWidth = 14
+    ws.Columns("L").ColumnWidth = 28
+    ws.Columns("M").Hidden = True
     lo.ListColumns("Qty").DataBodyRange.NumberFormat = "0.########"
     lo.ListColumns("Percent").DataBodyRange.NumberFormat = "0.0\%"
     lo.ListColumns("Basis Qty").DataBodyRange.NumberFormat = "0.########"
@@ -624,10 +820,78 @@ Private Function EnsureProcessEditorSheet(ByVal wb As Workbook) As Worksheet
     End If
 End Function
 
-Private Sub ClearOwnedEditorSurface(ByVal ws As Worksheet)
-    If ws Is Nothing Then Exit Sub
-    ws.Range("A1:K500").Clear
+Private Function NextProcessTableTopRow(ByVal ws As Worksheet) As Long
+    Dim lo As ListObject
+    Dim nextRow As Long
+
+    nextRow = FIRST_TABLE_TOP_ROW
+    If ws Is Nothing Then
+        NextProcessTableTopRow = nextRow
+        Exit Function
+    End If
+    For Each lo In ws.ListObjects
+        If IsInvSysProcessTable(lo) Then
+            If lo.Range.Row + lo.Range.Rows.Count + TABLE_GAP_ROWS > nextRow Then _
+                nextRow = lo.Range.Row + lo.Range.Rows.Count + TABLE_GAP_ROWS
+        End If
+    Next lo
+    NextProcessTableTopRow = nextRow
+End Function
+
+Private Function ProcessMetadataValue(ByVal lo As ListObject, _
+                                      ByVal rowOffset As Long, _
+                                      ByVal columnIndex As Long) As String
+    Dim topRow As Long
+
+    If lo Is Nothing Then Exit Function
+    topRow = lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET
+    ProcessMetadataValue = CellText(lo.Parent.Cells(topRow + rowOffset, columnIndex).Value2)
+End Function
+
+Private Sub ClearProcessTableMetadata(ByVal lo As ListObject)
+    Dim topRow As Long
+
+    If lo Is Nothing Then Exit Sub
+    topRow = lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET
+    lo.Parent.Range(lo.Parent.Cells(topRow, 1), _
+                    lo.Parent.Cells(lo.HeaderRowRange.Row - 1, COL_ACCEPTED_SKU)).Clear
 End Sub
+
+Private Function IsInvSysProcessTable(ByVal lo As ListObject) As Boolean
+    If lo Is Nothing Then Exit Function
+    IsInvSysProcessTable = _
+        (LCase$(Left$(lo.Name, Len(TABLE_PREFIX))) = LCase$(TABLE_PREFIX))
+End Function
+
+Private Function GeneratedOutputDesignId(ByVal processId As String, _
+                                         ByVal outputId As String) As String
+    processId = UCase$(Trim$(processId))
+    outputId = UCase$(Trim$(outputId))
+    If processId = "" Or outputId = "" Then Exit Function
+    GeneratedOutputDesignId = "D-" & processId & "-" & outputId
+End Function
+
+Private Function BuildManagedItemNameBySku() As Object
+    Dim pickerRows As Variant
+    Dim result As Object
+    Dim rowIndex As Long
+    Dim sku As String
+    Dim itemName As String
+
+    Set result = CreateObject("Scripting.Dictionary")
+    result.CompareMode = vbTextCompare
+    pickerRows = mProduction.LoadProductionInventoryPickerItems("")
+    If IsEmpty(pickerRows) Or Not IsArray(pickerRows) Then
+        Set BuildManagedItemNameBySku = result
+        Exit Function
+    End If
+    For rowIndex = LBound(pickerRows, 1) To UBound(pickerRows, 1)
+        sku = Trim$(CellText(pickerRows(rowIndex, 7)))
+        itemName = Trim$(CellText(pickerRows(rowIndex, 2)))
+        If sku <> "" And itemName <> "" Then result(sku) = itemName
+    Next rowIndex
+    Set BuildManagedItemNameBySku = result
+End Function
 
 Private Function BuildUniqueProcessTableName(ByVal wb As Workbook, _
                                              ByVal processId As String) As String
@@ -677,12 +941,12 @@ Private Function WorksheetRowHasBusinessData(ByVal lo As ListObject, _
                                              ByVal rowIndex As Long) As Boolean
     WorksheetRowHasBusinessData = _
         (Trim$(WorksheetValue(lo, rowIndex, COL_NAME)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_ITEM_CODE)) <> "") Or _
         (Trim$(WorksheetValue(lo, rowIndex, COL_QTY)) <> "") Or _
         (Trim$(WorksheetValue(lo, rowIndex, COL_UOM)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_DESIGN_ID)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_DESIGN_VERSION)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION)) <> "")
+        (Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION)) <> "") Or _
+        (Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)) <> "") Or _
+        (Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTABLE_ITEM)) <> "") Or _
+        (Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTED_SKU)) <> "")
 End Function
 
 Private Function TryPositiveWorksheetNumber(ByVal valueText As String, _

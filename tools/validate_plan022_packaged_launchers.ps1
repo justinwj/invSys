@@ -1037,10 +1037,25 @@ try {
                         $processWorksheetReport -match '(?:^|\|)WorksheetHandler=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)MixedUomRejected=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)TableRemoved=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RestartTablePrepared=True(?:\||$)'
+                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
+
+                    $productionWorkbenchReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetWorkbenchContractTest")
+                    $productionWorkbenchPassed = $productionWorkbenchReport -match '^OK\|' -and
+                        $productionWorkbenchReport -match '(?:^|\|)SeparateActions=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)MultipleTables=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)SelectedOnly=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)RecordTypeDropdown=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)CalculatedPercent=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)GeneratedDesign=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)ItemCodeRemoved=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)Assignments=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)ItemSearch=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionWorkbenchPassed
+                    $observedText += " || PRODUCTION_PROCESS_WORKBENCH=" + $productionWorkbenchReport
 
                     $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
@@ -1293,7 +1308,10 @@ try {
             $productionRestartReport -match '(?:^|\|)Loaded=True(?:\||$)' -and
             $productionRestartReport -match '(?:^|\|)SameWorkbook=True(?:\||$)' -and
             $productionRestartReport -match '(?:^|\|)WorksheetRediscovered=True(?:\||$)' -and
-            $productionRestartReport -match '(?:^|\|)WorksheetRetrieved=True(?:\||$)'
+            $productionRestartReport -match '(?:^|\|)WorksheetRetrieved=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)MultipleTablesRediscovered=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)SelectedOnly=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)AllRetrieved=True(?:\||$)'
         $restartObserved = "PRODUCTION_RESTART=" + $productionRestartReport +
             " || RestartSameOperatorWorkbook=" + $restartSameOperatorWorkbook +
             " || RestartNewWorkbooks=" + $restartNewWorkbooks.Count +

@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  153,
-                     "procedureCount":  5019,
-                     "lineCount":  110925,
+                     "procedureCount":  5041,
+                     "lineCount":  111497,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10388,19 +10388,38 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheet_Click",
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetCreate_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
                            "componentName":  "frmProduction",
                            "procedureNames":  [
-                                                  "mBtnProcessWorksheet_Click"
+                                                  "mBtnProcessWorksheetCreate_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetRetrieve_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnProcessWorksheetRetrieve_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14674,7 +14693,8 @@
                                                   "mBtnProcessReuse_Click",
                                                   "mBtnProcessSave_Click",
                                                   "mBtnProcessValidate_Click",
-                                                  "mBtnProcessWorksheet_Click",
+                                                  "mBtnProcessWorksheetCreate_Click",
+                                                  "mBtnProcessWorksheetRetrieve_Click",
                                                   "mBtnRecipeAddProcess_Click",
                                                   "mBtnRecipeAutoOrder_Click",
                                                   "mBtnRecipeClear_Click",
@@ -14727,6 +14747,7 @@
                                                   "NewReusableRecord",
                                                   "NextListBase36Id",
                                                   "NextOutputBatchNumberForListIndex",
+                                                  "NextProcessDraftBase36Id",
                                                   "NextRecipeNodeId",
                                                   "NormalizeInventorySearch",
                                                   "NormalizeRecipeRowBudgetText",
@@ -14747,6 +14768,9 @@
                                                   "ProcessNameForIdentity",
                                                   "ProcessRecordsForRecipeNode",
                                                   "ProcessRecordsHaveAlternative",
+                                                  "ProcessWorksheetColumnForTest",
+                                                  "ProcessWorksheetTableExistsForTest",
+                                                  "ProcessWorksheetTableForTest",
                                                   "ProductionColumnIndex",
                                                   "ProductionLogRowMatchesOutput",
                                                   "ProductionLogTable",
@@ -14767,6 +14791,7 @@
                                                   "RefreshInventoryList",
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
+                                                  "RefreshOutputDesignIdentity",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
                                                   "RefreshRecipeLists",
@@ -14850,6 +14875,7 @@
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
                                                   "TestProcessWorksheetRoundTripContract",
+                                                  "TestProcessWorksheetWorkbenchContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
                                                   "TestProductionOutputDisplayedBatch",
                                                   "TestProductionRunLocationAllowed",
@@ -15358,6 +15384,7 @@
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
                                                   "RunProcessWorksheetRoundTripContractTest",
+                                                  "RunProcessWorksheetWorkbenchContractTest",
                                                   "RunProductionBatchScaleContractTest",
                                                   "RunReusableProductionFormActionContractTest",
                                                   "RunReusableProductionRestartActionContractTest",
@@ -15373,6 +15400,7 @@
                                                   "ShowProductionForm",
                                                   "ShowProductionLauncherError",
                                                   "ShowProductionLayoutForValidation",
+                                                  "ShowProductionProcessItemSearch",
                                                   "ShowProductionStatus",
                                                   "SortedKeys",
                                                   "SplitTokens",

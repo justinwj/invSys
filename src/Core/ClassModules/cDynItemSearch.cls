@@ -1474,7 +1474,24 @@ Public Sub CommitSelection()
             If colRec > 0 Then lo.DataBodyRange.Cells(itemRowIdx, colRec).Value = NzStr(RunRoleMacro0("mProduction.GetPaletteRecipeId"))
             If colIng > 0 Then lo.DataBodyRange.Cells(itemRowIdx, colIng).Value = NzStr(RunRoleMacro0("mProduction.GetPaletteIngredientId"))
         Case Else
-            If tblName = "inventorypalette_generated" Or tblName Like "proc_*_palette" Then
+            If tblName Like "invsys_process_*" Then
+                Dim cProcessRecordType As Long
+                Dim cProcessItem As Long
+                Dim cProcessSku As Long
+                cProcessRecordType = ColumnIndex(lo, "Record Type")
+                cProcessItem = ColumnIndex(lo, "Acceptable Managed Item")
+                cProcessSku = ColumnIndex(lo, "Accepted SKU")
+                If rowIdx > 0 Then
+                    If cProcessRecordType > 0 Then
+                        If Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2)) = "" Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2 = "ALTERNATIVE"
+                    End If
+                    If cProcessItem > 0 Then _
+                        lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
+                    If cProcessSku > 0 Then _
+                        lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
+                End If
+            ElseIf tblName = "inventorypalette_generated" Or tblName Like "proc_*_palette" Then
                 Dim palItemRow As Long
                 palItemRow = rowIdx
                 If palItemRow = 0 Then palItemRow = EnsureListObjectRow(lo)

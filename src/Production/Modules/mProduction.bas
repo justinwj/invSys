@@ -72,6 +72,7 @@ Private mRowCountCache As Object
 Private mPaletteTableMeta As Object
 Private mHiddenSystems As Collection
 Private mRecipePicker As Object
+Private mProcessItemPicker As Object
 Private mPickerRouter As Object
 Private mSystemGroupsInit As Boolean
 Private mSystemGroupNames(1 To 4) As String
@@ -342,6 +343,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunProcessWorksheetWorkbenchContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetWorkbenchContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetWorkbenchContractTest = _
+            frmProduction.TestProcessWorksheetWorkbenchContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetWorkbenchContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionFormActionContractTest() As String
     On Error GoTo Failed
 
@@ -465,6 +483,14 @@ Public Sub HandleProductionSelectionChange(ByVal target As Range)
     If Not IsOnProductionSheet(target) Then Exit Sub
     EnsurePickerRouter
     mPickerRouter.HandleSelectionChange target
+End Sub
+
+Public Sub ShowProductionProcessItemSearch(ByVal target As Range)
+    If target Is Nothing Then Exit Sub
+    If Not modProductionProcessWorksheet.IsProcessWorksheetItemSearchTarget(target) Then Exit Sub
+    If mProcessItemPicker Is Nothing Then Set mProcessItemPicker = CreateDynItemSearch()
+    mProcessItemPicker.UseRoleProfile "production"
+    mProcessItemPicker.ShowForCell target
 End Sub
 
 Public Sub HandleProductionBeforeDoubleClick(ByVal target As Range, ByRef Cancel As Boolean)
