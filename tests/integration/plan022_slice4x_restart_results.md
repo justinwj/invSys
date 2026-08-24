@@ -33,3 +33,8 @@ the actual Run List **Load** handler, the second process proves:
 The final rebuilt package remains GREEN at 74/74 packaged XLAM/restart checks
 and 142/142 packaged Ribbon/compile checks. Dedicated-NAS visible Production
 acceptance remains open.
+
+The subsequent dedicated-NAS launcher run exposed a 14/16 write-on-launch RED
+in the canonical Designs workbook. The idempotent schema/save correction and
+final 16/16 GREEN are recorded in
+`plan022_slice4x_nas_launcher_results.md`.

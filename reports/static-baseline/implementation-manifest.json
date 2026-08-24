@@ -3743,7 +3743,7 @@
                            "name":  "modDesignsSchema",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/DesignsDomain/Modules/modDesignsSchema.bas",
-                           "lineCount":  292,
+                           "lineCount":  298,
                            "procedureNames":  [
                                                   "ColumnIndex",
                                                   "EnsureAppliedDesignEventsTable",
@@ -62446,8 +62446,8 @@
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
                            "startLine":  224,
-                           "endLine":  242,
-                           "lineCount":  19,
+                           "endLine":  248,
+                           "lineCount":  25,
                            "directCalls":  [
 
                                            ],
@@ -62466,8 +62466,8 @@
                            "name":  "EnsureWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  244,
-                           "endLine":  252,
+                           "startLine":  250,
+                           "endLine":  258,
                            "lineCount":  9,
                            "directCalls":  [
                                                "Add"
@@ -62487,8 +62487,8 @@
                            "name":  "FindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  254,
-                           "endLine":  263,
+                           "startLine":  260,
+                           "endLine":  269,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -62508,8 +62508,8 @@
                            "name":  "ColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  265,
-                           "endLine":  274,
+                           "startLine":  271,
+                           "endLine":  280,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -62529,8 +62529,8 @@
                            "name":  "ValidateRequiredTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  276,
-                           "endLine":  292,
+                           "startLine":  282,
+                           "endLine":  298,
                            "lineCount":  17,
                            "directCalls":  [
                                                "ColumnIndex",

@@ -18,6 +18,8 @@ function Add-Check([string]$Name, [bool]$Passed, [string]$Contract) {
 
 $productionModule = Read-Source "src\Production\Modules\mProduction.bas"
 $productionForm = Read-Source "src\Production\Forms\frmProduction.frm"
+$designsRuntime = Read-Source "src\DesignsDomain\Modules\modDesignsRuntime.bas"
+$designsSchema = Read-Source "src\DesignsDomain\Modules\modDesignsSchema.bas"
 $validator = Read-Source "tools\validate_plan022_packaged_launchers.ps1"
 $checks = New-Object 'System.Collections.Generic.List[object]'
 
@@ -43,6 +45,17 @@ Add-Check "Production.Restart.ReusesSavedWorkbook" `
      ($validator -match 'RestartSameOperatorWorkbook') -and
      ($validator -match 'RestartNewWorkbooks')) `
     "The second session proves the public launcher reuses the same saved station-local Production workbook without creating another one."
+
+Add-Check "Production.Launch.ReadsDoNotSaveDesignsAuthority" `
+    (($designsRuntime -match 'If Not wb\.ReadOnly And Not wb\.Saved Then wb\.Save') -and
+     ($designsRuntime -notmatch 'If Not wb\.ReadOnly Then wb\.Save')) `
+    "Resolving an already-valid Designs workbook for Production lists must not save or mutate canonical authority merely from form launch."
+
+Add-Check "Production.Launch.SchemaFormattingIsIdempotent" `
+    (($designsSchema -match 'currentFormat\s*=\s*lc\.Range\.NumberFormat') -and
+     ($designsSchema -match 'If IsNull\(currentFormat\) Then') -and
+     ($designsSchema -match 'ElseIf StrComp\(CStr\(currentFormat\), "@", vbBinaryCompare\) <> 0 Then')) `
+    "Repeated schema assurance must not dirty the Designs workbook by reassigning an already-correct text number format."
 
 $passed = @($checks | Where-Object Passed).Count
 $failed = $checks.Count - $passed

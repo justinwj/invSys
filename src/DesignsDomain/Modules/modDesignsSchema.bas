@@ -223,6 +223,7 @@ End Sub
 
 Private Sub FormatDesignIdentityColumns(ByVal lo As ListObject)
     Dim columnName As String
+    Dim currentFormat As Variant
     Dim lc As ListColumn
 
     If lo Is Nothing Then Exit Sub
@@ -236,7 +237,12 @@ Private Sub FormatDesignIdentityColumns(ByVal lo As ListObject)
                  "PROCESSVERSION", "RECIPEID", "RECIPEVERSION", "PROCESSNODEID", _
                  "REQUIREMENTID", "OUTPUTID", "FROMPROCESSNODEID", "FROMOUTPUTID", _
                  "TOPROCESSNODEID", "TOREQUIREMENTID", "ITEM_CODE"
-                lc.Range.NumberFormat = "@"
+                currentFormat = lc.Range.NumberFormat
+                If IsNull(currentFormat) Then
+                    lc.Range.NumberFormat = "@"
+                ElseIf StrComp(CStr(currentFormat), "@", vbBinaryCompare) <> 0 Then
+                    lc.Range.NumberFormat = "@"
+                End If
         End Select
     Next lc
 End Sub
