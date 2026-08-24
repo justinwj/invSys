@@ -2945,10 +2945,14 @@ End Function
 
 Private Sub SetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueIn As Variant)
     Dim idx As Long
+    Dim targetCell As Range
 
     idx = GetColumnIndexRole(lo, columnName)
     If idx = 0 Then Exit Sub
-    lo.DataBodyRange.Cells(rowIndex, idx).Value = valueIn
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, idx)
+    If StrComp(columnName, "DesignId", vbTextCompare) = 0 Then _
+        targetCell.NumberFormat = "@"
+    targetCell.Value2 = valueIn
 End Sub
 
 Private Function GetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant

@@ -20,6 +20,8 @@ Private Const COL_INSTRUCTION As Long = 10
 Private Const COL_REQUIREMENT_ID As Long = 11
 Private Const COL_ACCEPTABLE_ITEM As Long = 12
 Private Const COL_ACCEPTED_SKU As Long = 13
+Private Const FIRST_ALTERNATIVE_PAIR As Long = 1
+Private Const DEFAULT_ALTERNATIVE_PAIRS As Long = 4
 
 Private mApplyingManagedColumns As Boolean
 
@@ -40,6 +42,7 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     Dim record As Object
     Dim tableTopRow As Long
     Dim tableHeaderRow As Long
+    Dim alternativePairCount As Long
 
     On Error GoTo Failed
     If wb Is Nothing Then
@@ -61,6 +64,7 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     If rows Is Nothing Then Exit Function
     AddWorksheetTemplateRows rows
     rowCount = rows.Count
+    alternativePairCount = WorksheetAlternativePairCountForRows(rows)
     If rowCount = 0 Then
         report = "The Process worksheet could not create an editable row set."
         Exit Function
@@ -69,6 +73,7 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     Set ws = EnsureProcessEditorSheet(wb)
     tableTopRow = NextProcessTableTopRow(ws)
     tableHeaderRow = tableTopRow + TABLE_HEADER_OFFSET
+    ws.Cells(tableTopRow + 1, 5).NumberFormat = "@"
     ws.Cells(tableTopRow, 1).Value2 = "invSys Process worksheet"
     ws.Cells(tableTopRow + 1, 1).Value2 = "Process Name"
     ws.Cells(tableTopRow + 1, 2).Value2 = processName
@@ -81,12 +86,14 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     ws.Cells(tableTopRow + 3, 1).Value2 = _
         "Enter INPUT quantities in one compatible UOM. Batch basis and percentages calculate automatically."
 
-    WriteWorksheetHeaders ws, tableHeaderRow
+    WriteWorksheetHeaders ws, tableHeaderRow, alternativePairCount
     Set tableRange = ws.Range(ws.Cells(tableHeaderRow, 1), _
-                              ws.Cells(tableHeaderRow + rowCount, COL_ACCEPTED_SKU))
+                              ws.Cells(tableHeaderRow + rowCount, _
+                                  AlternativeSkuColumnIndex(alternativePairCount)))
     Set lo = ws.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     tableName = BuildUniqueProcessTableName(wb, processId)
     lo.Name = tableName
+    ApplyProcessWorksheetTextIdentityFormats lo
 
     rowIndex = 1
     For Each record In rows
@@ -195,8 +202,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
         If Not WorksheetRowHasBusinessData(lo, rowIndex) Then GoTo ContinueRow
         rowId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_ID)))
         rowName = Trim$(WorksheetValue(lo, rowIndex, COL_NAME))
-        acceptedSku = Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTED_SKU))
-        acceptableItem = Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTABLE_ITEM))
+        acceptedSku = Trim$(WorksheetValueByHeader(lo, rowIndex, "Accepted SKU 1"))
+        acceptableItem = Trim$(WorksheetValueByHeader(lo, rowIndex, "Acceptable Managed Item 1"))
         requirementId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)))
         uom = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_UOM)))
         instructionText = Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION))
@@ -209,6 +216,10 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 rowId = ResolveWorksheetRowId(rowId, requirementIds)
                 If rowName = "" Or uom = "" Then
                     report = "Each INPUT row needs a name and UOM."
+                    Exit Function
+                End If
+                If Not IsConfiguredProcessUom(uom) Then
+                    report = uom & " UOM is not in the Recipe UOM Catalog."
                     Exit Function
                 End If
                 If Not hasQty And Not hasPercent Then
@@ -238,10 +249,15 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 If basisQty > 0 Then record("YieldBasis") = basisQty
                 record("UOM") = uom
                 records.Add record
+                AppendWorksheetAlternativeRecords lo, rowIndex, rowId, records
             Case "OUTPUT"
                 rowId = ResolveWorksheetRowId(rowId, outputIds)
                 If rowName = "" Or uom = "" Then
                     report = "Each OUTPUT row needs a name and UOM."
+                    Exit Function
+                End If
+                If Not IsConfiguredProcessUom(uom) Then
+                    report = uom & " UOM is not in the Recipe UOM Catalog."
                     Exit Function
                 End If
                 If Not hasQty And Not hasPercent Then
@@ -376,10 +392,24 @@ End Function
 Public Function FindSelectedProcessWorksheetTable(ByVal wb As Workbook, _
                                                    ByRef tableName As String, _
                                                    ByRef report As String) As Boolean
-    Dim selectedRange As Range
-    Dim lo As ListObject
+    Dim tableNames As Collection
 
     tableName = ""
+    Set tableNames = FindSelectedProcessWorksheetTables(wb, report)
+    If tableNames Is Nothing Or tableNames.Count = 0 Then Exit Function
+    tableName = CStr(tableNames(1))
+    FindSelectedProcessWorksheetTable = True
+End Function
+
+Public Function FindSelectedProcessWorksheetTables(ByVal wb As Workbook, _
+                                                    ByRef report As String) As Collection
+    Dim selectedRange As Range
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim hit As Range
+    Dim result As New Collection
+    Dim selectedAreaCount As Long
+
     If wb Is Nothing Then
         report = "The captured Production operator workbook is unavailable."
         Exit Function
@@ -388,23 +418,34 @@ Public Function FindSelectedProcessWorksheetTable(ByVal wb As Workbook, _
     Set selectedRange = Application.Selection
     On Error GoTo 0
     If selectedRange Is Nothing Then
-        report = "Select a cell inside the Process table to retrieve."
+        report = "Select one or Ctrl+click cells inside the Process tables to retrieve."
         Exit Function
     End If
     If Not selectedRange.Worksheet.Parent Is wb Then
         report = "Select a Process table cell in the captured Production workbook."
         Exit Function
     End If
-    On Error Resume Next
-    Set lo = selectedRange.ListObject
-    On Error GoTo 0
-    If lo Is Nothing Or Not IsInvSysProcessTable(lo) Then
-        report = "The selected cell is not inside an invSys Process table."
+    selectedAreaCount = selectedRange.Areas.Count
+    For Each ws In wb.Worksheets
+        If ws Is selectedRange.Worksheet Then
+            For Each lo In ws.ListObjects
+                If IsInvSysProcessTable(lo) Then
+                    Set hit = Nothing
+                    On Error Resume Next
+                    Set hit = Application.Intersect(selectedRange, lo.Range)
+                    On Error GoTo 0
+                    If Not hit Is Nothing Then result.Add lo.Name
+                End If
+            Next lo
+        End If
+    Next ws
+    If result.Count = 0 Then
+        report = "The selection does not intersect an invSys Process table."
         Exit Function
     End If
-    tableName = lo.Name
-    report = "Selected Process table " & tableName & "."
-    FindSelectedProcessWorksheetTable = True
+    report = "Selected " & CStr(result.Count) & " Process table(s) across " & _
+        CStr(selectedAreaCount) & " selection area(s)."
+    Set FindSelectedProcessWorksheetTables = result
 End Function
 
 Public Function CountProcessWorksheetTables(ByVal wb As Workbook) As Long
@@ -431,6 +472,49 @@ Public Function SelectProcessWorksheetTableForTest(ByVal wb As Workbook, _
     SelectProcessWorksheetTableForTest = True
 End Function
 
+Public Function SelectProcessWorksheetTablesForTest(ByVal wb As Workbook, _
+                                                     ByVal firstTableName As String, _
+                                                     ByVal secondTableName As String) As Boolean
+    Dim firstTable As ListObject
+    Dim secondTable As ListObject
+    Dim selectedCells As Range
+
+    Set firstTable = FindProcessTableByName(wb, firstTableName)
+    Set secondTable = FindProcessTableByName(wb, secondTableName)
+    If firstTable Is Nothing Or secondTable Is Nothing Then Exit Function
+    If Not firstTable.Parent Is secondTable.Parent Then Exit Function
+    firstTable.Parent.Activate
+    Set selectedCells = Application.Union(firstTable.DataBodyRange.Cells(1, 1), _
+                                          secondTable.DataBodyRange.Cells(1, 1))
+    selectedCells.Select
+    SelectProcessWorksheetTablesForTest = (selectedCells.Areas.Count = 2)
+End Function
+
+Public Function AddAcceptableItemPairToSelectedTable(ByVal wb As Workbook, _
+                                                     ByRef report As String) As Boolean
+    Dim tableName As String
+    Dim lo As ListObject
+    Dim pairNumber As Long
+    Dim itemColumn As ListColumn
+    Dim skuColumn As ListColumn
+
+    If Not FindSelectedProcessWorksheetTable(wb, tableName, report) Then Exit Function
+    Set lo = FindProcessTableByName(wb, tableName)
+    If lo Is Nothing Then Exit Function
+    pairNumber = AlternativePairCount(lo) + 1
+    Set itemColumn = lo.ListColumns.Add
+    itemColumn.Name = "Acceptable Managed Item " & CStr(pairNumber)
+    Set skuColumn = lo.ListColumns.Add
+    skuColumn.Name = "Accepted SKU " & CStr(pairNumber)
+    skuColumn.DataBodyRange.NumberFormat = "@"
+    itemColumn.Range.ColumnWidth = 28
+    skuColumn.Range.EntireColumn.Hidden = True
+    wb.Save
+    report = "Added Acceptable Managed Item " & CStr(pairNumber) & _
+        " to Process table " & tableName & "."
+    AddAcceptableItemPairToSelectedTable = True
+End Function
+
 Public Function IsProcessWorksheetTableTarget(ByVal target As Range) As Boolean
     Dim lo As ListObject
 
@@ -442,10 +526,15 @@ Public Function IsProcessWorksheetTableTarget(ByVal target As Range) As Boolean
 End Function
 
 Public Function IsProcessWorksheetItemSearchTarget(ByVal target As Range) As Boolean
+    IsProcessWorksheetItemSearchTarget = (ProcessAlternativePairNumber(target) > 0)
+End Function
+
+Public Function ProcessAlternativePairNumber(ByVal target As Range) As Long
     Dim lo As ListObject
-    Dim targetColumn As ListColumn
     Dim recordTypeColumn As ListColumn
     Dim rowIndex As Long
+    Dim pairNumber As Long
+    Dim targetColumn As ListColumn
 
     If target Is Nothing Or target.Cells.CountLarge <> 1 Then Exit Function
     On Error Resume Next
@@ -453,17 +542,24 @@ Public Function IsProcessWorksheetItemSearchTarget(ByVal target As Range) As Boo
     On Error GoTo 0
     If Not IsInvSysProcessTable(lo) Then Exit Function
     On Error Resume Next
-    Set targetColumn = lo.ListColumns("Acceptable Managed Item")
     Set recordTypeColumn = lo.ListColumns("Record Type")
     On Error GoTo 0
-    If targetColumn Is Nothing Or recordTypeColumn Is Nothing Then Exit Function
-    If target.Column <> targetColumn.Range.Column Or target.Row <= lo.HeaderRowRange.Row Then Exit Function
+    If recordTypeColumn Is Nothing Or target.Row <= lo.HeaderRowRange.Row Then Exit Function
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+        Set targetColumn = Nothing
+        On Error Resume Next
+        Set targetColumn = lo.ListColumns("Acceptable Managed Item " & CStr(pairNumber))
+        On Error GoTo 0
+        If Not targetColumn Is Nothing Then
+            If target.Column = targetColumn.Range.Column Then Exit For
+        End If
+    Next pairNumber
+    If pairNumber > AlternativePairCount(lo) Then Exit Function
     rowIndex = target.Row - lo.DataBodyRange.Row + 1
     If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Function
-    If Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2)) = "" Then _
-        lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2 = "ALTERNATIVE"
-    IsProcessWorksheetItemSearchTarget = _
-        (UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) = "ALTERNATIVE")
+    If UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) <> "INPUT" _
+       And UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) <> "REQUIREMENT" Then Exit Function
+    ProcessAlternativePairNumber = pairNumber
 End Function
 
 Public Sub RefreshProcessWorksheetManagedColumns(ByVal target As Range)
@@ -505,12 +601,8 @@ Public Function PopulateFormulationExampleForTest(ByVal wb As Workbook, _
     lo.DataBodyRange.Cells(7, COL_NAME).Value2 = "Finished Formula"
     lo.DataBodyRange.Cells(7, COL_QTY).Value2 = 611.2
     lo.DataBodyRange.Cells(7, COL_UOM).Value2 = "LB"
-    If lo.ListRows.Count >= 10 Then
-        lo.DataBodyRange.Cells(10, COL_RECORD_TYPE).Value2 = "ALTERNATIVE"
-        lo.DataBodyRange.Cells(10, COL_REQUIREMENT_ID).Value2 = "001"
-        lo.DataBodyRange.Cells(10, COL_ACCEPTABLE_ITEM).Value2 = "Sugar Stock"
-        lo.DataBodyRange.Cells(10, COL_ACCEPTED_SKU).Value2 = "SKU-SUGAR"
-    End If
+    lo.DataBodyRange.Cells(1, AlternativeItemColumnIndex(1)).Value2 = "Sugar Stock"
+    lo.DataBodyRange.Cells(1, AlternativeSkuColumnIndex(1)).Value2 = "SKU-SUGAR"
     ApplyProcessWorksheetManagedColumns lo
     Application.Calculate
     report = "Example populated."
@@ -573,14 +665,10 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
                 rowRecord("UOM") = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
                 rows.Add rowRecord
             Case "ALTERNATIVE"
-                Set rowRecord = NewWorksheetRecord("ALTERNATIVE")
-                rowRecord("RequirementId") = modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
-                rowRecord("AcceptedSku") = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
-                If Not itemNameBySku Is Nothing Then
-                    If itemNameBySku.Exists(rowRecord("AcceptedSku")) Then _
-                        rowRecord("AcceptableItem") = itemNameBySku(rowRecord("AcceptedSku"))
-                End If
-                rows.Add rowRecord
+                Call AttachAlternativeToRequirementRow(rows, _
+                    modProductionReusableDesigns.ReusableRecordText(record, "RequirementId"), _
+                    modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE"), _
+                    itemNameBySku)
             Case "OUTPUT"
                 Set rowRecord = NewWorksheetRecord("OUTPUT")
                 rowRecord("Id") = modProductionReusableDesigns.ReusableRecordText(record, "OutputId")
@@ -605,7 +693,6 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
     Dim inputCount As Long
     Dim outputCount As Long
     Dim instructionCount As Long
-    Dim alternativeCount As Long
     Dim usedInputs As Object
     Dim usedOutputs As Object
     Dim record As Object
@@ -628,7 +715,6 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
                 outputCount = outputCount + 1
                 If Trim$(CellText(record("Id"))) <> "" Then usedOutputs(UCase$(Trim$(CellText(record("Id"))))) = True
             Case "INSTRUCTION": instructionCount = instructionCount + 1
-            Case "ALTERNATIVE": alternativeCount = alternativeCount + 1
         End Select
     Next record
 
@@ -648,15 +734,11 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
     Next index
     Set rowRecord = NewWorksheetRecord("INSTRUCTION")
     rows.Add rowRecord
-    addCount = IIf(alternativeCount = 0, 4, 2)
-    For index = 1 To addCount
-        Set rowRecord = NewWorksheetRecord("ALTERNATIVE")
-        rows.Add rowRecord
-    Next index
 End Sub
 
 Private Function NewWorksheetRecord(ByVal recordType As String) As Object
     Dim record As Object
+    Dim pairNumber As Long
 
     Set record = CreateObject("Scripting.Dictionary")
     record.CompareMode = vbTextCompare
@@ -671,13 +753,47 @@ Private Function NewWorksheetRecord(ByVal recordType As String) As Object
     record("DesignVersion") = ""
     record("Instruction") = ""
     record("RequirementId") = ""
-    record("AcceptableItem") = ""
-    record("AcceptedSku") = ""
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To DEFAULT_ALTERNATIVE_PAIRS
+        record("AcceptableItem" & CStr(pairNumber)) = ""
+        record("AcceptedSku" & CStr(pairNumber)) = ""
+    Next pairNumber
     Set NewWorksheetRecord = record
 End Function
 
+Private Sub AttachAlternativeToRequirementRow(ByVal rows As Collection, _
+                                              ByVal requirementId As String, _
+                                              ByVal acceptedSku As String, _
+                                              ByVal itemNameBySku As Object)
+    Dim rowRecord As Object
+    Dim pairNumber As Long
+    Dim itemName As String
+
+    requirementId = UCase$(Trim$(requirementId))
+    acceptedSku = Trim$(acceptedSku)
+    If requirementId = "" Or acceptedSku = "" Then Exit Sub
+    If Not itemNameBySku Is Nothing Then
+        If itemNameBySku.Exists(acceptedSku) Then itemName = itemNameBySku(acceptedSku)
+    End If
+    For Each rowRecord In rows
+        If UCase$(Trim$(CellText(rowRecord("RecordType")))) = "INPUT" _
+           And StrComp(Trim$(CellText(rowRecord("Id"))), requirementId, vbTextCompare) = 0 Then
+            For pairNumber = FIRST_ALTERNATIVE_PAIR To 99
+                If Not rowRecord.Exists("AcceptedSku" & CStr(pairNumber)) _
+                   Or Trim$(CellText(rowRecord("AcceptedSku" & CStr(pairNumber)))) = "" Then
+                    rowRecord("AcceptedSku" & CStr(pairNumber)) = acceptedSku
+                    rowRecord("AcceptableItem" & CStr(pairNumber)) = itemName
+                    Exit Sub
+                End If
+            Next pairNumber
+            Exit Sub
+        End If
+    Next rowRecord
+End Sub
+
 Private Sub WriteWorksheetRecord(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                  ByVal record As Object)
+    Dim pairNumber As Long
+
     With lo.DataBodyRange
         .Cells(rowIndex, COL_RECORD_TYPE).Value2 = record("RecordType")
         .Cells(rowIndex, COL_ID).Value2 = record("Id")
@@ -690,8 +806,12 @@ Private Sub WriteWorksheetRecord(ByVal lo As ListObject, ByVal rowIndex As Long,
         .Cells(rowIndex, COL_DESIGN_VERSION).Value2 = record("DesignVersion")
         .Cells(rowIndex, COL_INSTRUCTION).Value2 = record("Instruction")
         .Cells(rowIndex, COL_REQUIREMENT_ID).Value2 = record("RequirementId")
-        .Cells(rowIndex, COL_ACCEPTABLE_ITEM).Value2 = record("AcceptableItem")
-        .Cells(rowIndex, COL_ACCEPTED_SKU).Value2 = record("AcceptedSku")
+        For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+            .Cells(rowIndex, AlternativeItemColumnIndex(pairNumber)).Value2 = _
+                DictionaryText(record, "AcceptableItem" & CStr(pairNumber))
+            .Cells(rowIndex, AlternativeSkuColumnIndex(pairNumber)).Value2 = _
+                DictionaryText(record, "AcceptedSku" & CStr(pairNumber))
+        Next pairNumber
     End With
 End Sub
 
@@ -711,11 +831,15 @@ Private Sub ApplyProcessWorksheetManagedColumns(ByVal lo As ListObject)
     Application.EnableEvents = False
     priorAutoFill = Application.AutoCorrect.AutoFillFormulasInLists
     Application.AutoCorrect.AutoFillFormulasInLists = True
+    ApplyProcessWorksheetTextIdentityFormats lo
     ApplyRecordTypeValidation lo
+    ApplyProcessWorksheetUomValidation lo
     EnsureWorksheetRowIds lo
     processIdCell = lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 5).Address(True, True)
     processVersionCell = lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 8).Address(True, True)
 
+    lo.ListColumns("Requirement ID").DataBodyRange.NumberFormat = "General"
+    lo.ListColumns("Design ID").DataBodyRange.NumberFormat = "General"
     lo.ListColumns("Basis Qty").DataBodyRange.Formula = _
         "=IF(UPPER([@[Record Type]])=""INPUT"",IFERROR(SUMIFS([Qty],[Record Type],""INPUT"",[UOM],[@UOM]),""""),"""")"
     lo.ListColumns("Percent").DataBodyRange.Formula = _
@@ -727,10 +851,10 @@ Private Sub ApplyProcessWorksheetManagedColumns(ByVal lo As ListObject)
 
     For rowIndex = 1 To lo.ListRows.Count
         recordType = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_RECORD_TYPE)))
-        If recordType = "ALTERNATIVE" Then
-            If Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)) = "" Then
-                lo.DataBodyRange.Cells(rowIndex, COL_REQUIREMENT_ID).NumberFormat = "@"
-            End If
+        If recordType = "INPUT" Or recordType = "REQUIREMENT" Then
+            lo.DataBodyRange.Cells(rowIndex, COL_REQUIREMENT_ID).Formula = "=[@ID]"
+        ElseIf recordType <> "ALTERNATIVE" Then
+            lo.DataBodyRange.Cells(rowIndex, COL_REQUIREMENT_ID).ClearContents
         End If
     Next rowIndex
 CleanExit:
@@ -755,6 +879,37 @@ Private Sub ApplyRecordTypeValidation(ByVal lo As ListObject)
     End With
 End Sub
 
+Private Sub ApplyProcessWorksheetTextIdentityFormats(ByVal lo As ListObject)
+    Dim pairNumber As Long
+
+    If lo Is Nothing Then Exit Sub
+    If Not lo.DataBodyRange Is Nothing Then
+        lo.ListColumns("ID").DataBodyRange.NumberFormat = "@"
+        For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+            lo.ListColumns("Accepted SKU " & CStr(pairNumber)).DataBodyRange.NumberFormat = "@"
+        Next pairNumber
+    End If
+    lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 5).NumberFormat = "@"
+End Sub
+
+Private Sub ApplyProcessWorksheetUomValidation(ByVal lo As ListObject)
+    Dim catalogText As String
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    catalogText = Replace$(modUomSettings.GetConfiguredUomsPackedText(), "|", ",")
+    If catalogText = "" Then Exit Sub
+    With lo.ListColumns("UOM").DataBodyRange.Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+             Operator:=xlBetween, Formula1:=catalogText
+        .IgnoreBlank = True
+        .InCellDropdown = True
+        .ShowError = True
+        .ErrorTitle = "Choose a Recipe UOM"
+        .ErrorMessage = "Select a UOM from Settings > Recipe UOM Catalog."
+    End With
+End Sub
+
 Private Sub EnsureWorksheetRowIds(ByVal lo As ListObject)
     Dim requirementIds As Object
     Dim outputIds As Object
@@ -771,29 +926,41 @@ Private Sub EnsureWorksheetRowIds(ByVal lo As ListObject)
         rowId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_ID)))
         If recordType = "INPUT" Or recordType = "REQUIREMENT" Then
             rowId = ResolveWorksheetRowId(rowId, requirementIds)
+            lo.DataBodyRange.Cells(rowIndex, COL_ID).NumberFormat = "@"
             lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
             requirementIds(rowId) = True
         ElseIf recordType = "OUTPUT" Then
             rowId = ResolveWorksheetRowId(rowId, outputIds)
+            lo.DataBodyRange.Cells(rowIndex, COL_ID).NumberFormat = "@"
             lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
             outputIds(rowId) = True
         End If
     Next rowIndex
 End Sub
 
-Private Sub WriteWorksheetHeaders(ByVal ws As Worksheet, ByVal headerRow As Long)
+Private Sub WriteWorksheetHeaders(ByVal ws As Worksheet, ByVal headerRow As Long, _
+                                  ByVal pairCount As Long)
     Dim headers As Variant
     Dim index As Long
+    Dim pairNumber As Long
 
     headers = Array("Record Type", "ID", "Name", "Qty", "Percent", _
                     "Basis Qty", "UOM", "Design ID", "Design Version", "Instruction", _
-                    "Requirement ID", "Acceptable Managed Item", "Accepted SKU")
+                    "Requirement ID")
     For index = LBound(headers) To UBound(headers)
         ws.Cells(headerRow, index + 1).Value2 = headers(index)
     Next index
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To pairCount
+        ws.Cells(headerRow, AlternativeItemColumnIndex(pairNumber)).Value2 = _
+            "Acceptable Managed Item " & CStr(pairNumber)
+        ws.Cells(headerRow, AlternativeSkuColumnIndex(pairNumber)).Value2 = _
+            "Accepted SKU " & CStr(pairNumber)
+    Next pairNumber
 End Sub
 
 Private Sub FormatProcessWorksheet(ByVal ws As Worksheet, ByVal lo As ListObject)
+    Dim pairNumber As Long
+
     ws.Columns("A").ColumnWidth = 14
     ws.Columns("B").ColumnWidth = 10
     ws.Columns("C").ColumnWidth = 24
@@ -802,8 +969,10 @@ Private Sub FormatProcessWorksheet(ByVal ws As Worksheet, ByVal lo As ListObject
     ws.Columns("H:I").ColumnWidth = 16
     ws.Columns("J").ColumnWidth = 48
     ws.Columns("K").ColumnWidth = 14
-    ws.Columns("L").ColumnWidth = 28
-    ws.Columns("M").Hidden = True
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+        lo.ListColumns("Acceptable Managed Item " & CStr(pairNumber)).Range.ColumnWidth = 28
+        lo.ListColumns("Accepted SKU " & CStr(pairNumber)).Range.EntireColumn.Hidden = True
+    Next pairNumber
     lo.ListColumns("Qty").DataBodyRange.NumberFormat = "0.########"
     lo.ListColumns("Percent").DataBodyRange.NumberFormat = "0.0\%"
     lo.ListColumns("Basis Qty").DataBodyRange.NumberFormat = "0.########"
@@ -854,7 +1023,7 @@ Private Sub ClearProcessTableMetadata(ByVal lo As ListObject)
     If lo Is Nothing Then Exit Sub
     topRow = lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET
     lo.Parent.Range(lo.Parent.Cells(topRow, 1), _
-                    lo.Parent.Cells(lo.HeaderRowRange.Row - 1, COL_ACCEPTED_SKU)).Clear
+                    lo.Parent.Cells(lo.HeaderRowRange.Row - 1, lo.Range.Columns.Count)).Clear
 End Sub
 
 Private Function IsInvSysProcessTable(ByVal lo As ListObject) As Boolean
@@ -932,6 +1101,104 @@ Private Function ProcessIdFromTableName(ByVal tableName As String) As String
     ProcessIdFromTableName = UCase$(Left$(suffix, 3))
 End Function
 
+Private Function AlternativeItemColumnIndex(ByVal pairNumber As Long) As Long
+    AlternativeItemColumnIndex = COL_ACCEPTABLE_ITEM + ((pairNumber - 1) * 2)
+End Function
+
+Private Function AlternativeSkuColumnIndex(ByVal pairNumber As Long) As Long
+    AlternativeSkuColumnIndex = COL_ACCEPTED_SKU + ((pairNumber - 1) * 2)
+End Function
+
+Private Function AlternativePairCount(ByVal lo As ListObject) As Long
+    Dim pairNumber As Long
+    Dim col As ListColumn
+
+    If lo Is Nothing Then Exit Function
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To 99
+        On Error Resume Next
+        Err.Clear
+        Set col = Nothing
+        Set col = lo.ListColumns("Acceptable Managed Item " & CStr(pairNumber))
+        On Error GoTo 0
+        If col Is Nothing Then Exit For
+        AlternativePairCount = pairNumber
+    Next pairNumber
+End Function
+
+Private Function WorksheetAlternativePairCountForRows(ByVal rows As Collection) As Long
+    Dim rowRecord As Object
+    Dim pairNumber As Long
+
+    WorksheetAlternativePairCountForRows = DEFAULT_ALTERNATIVE_PAIRS
+    For Each rowRecord In rows
+        For pairNumber = DEFAULT_ALTERNATIVE_PAIRS + 1 To 99
+            If rowRecord.Exists("AcceptedSku" & CStr(pairNumber)) Then
+                If Trim$(DictionaryText(rowRecord, "AcceptedSku" & CStr(pairNumber))) <> "" Then _
+                    WorksheetAlternativePairCountForRows = pairNumber
+            End If
+        Next pairNumber
+    Next rowRecord
+End Function
+
+Private Function DictionaryText(ByVal record As Object, ByVal keyName As String) As String
+    If record Is Nothing Then Exit Function
+    If Not record.Exists(keyName) Then Exit Function
+    DictionaryText = CellText(record(keyName))
+End Function
+
+Private Function WorksheetValueByHeader(ByVal lo As ListObject, _
+                                        ByVal rowIndex As Long, _
+                                        ByVal headerName As String) As String
+    Dim columnIndex As Long
+
+    On Error Resume Next
+    columnIndex = lo.ListColumns(headerName).Index
+    On Error GoTo 0
+    If columnIndex <= 0 Then Exit Function
+    WorksheetValueByHeader = WorksheetValue(lo, rowIndex, columnIndex)
+End Function
+
+Private Function IsConfiguredProcessUom(ByVal uom As String) As Boolean
+    Dim packed As String
+    Dim values As Variant
+    Dim idx As Long
+
+    uom = UCase$(Trim$(uom))
+    If uom = "" Then Exit Function
+    packed = modUomSettings.GetConfiguredUomsPackedText()
+    values = Split(packed, "|")
+    For idx = LBound(values) To UBound(values)
+        If StrComp(Trim$(CStr(values(idx))), uom, vbTextCompare) = 0 Then
+            IsConfiguredProcessUom = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+Private Sub AppendWorksheetAlternativeRecords(ByVal lo As ListObject, _
+                                              ByVal rowIndex As Long, _
+                                              ByVal requirementId As String, _
+                                              ByVal records As Collection)
+    Dim pairNumber As Long
+    Dim acceptedSku As String
+    Dim acceptableItem As String
+    Dim record As Object
+
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+        acceptedSku = Trim$(WorksheetValueByHeader(lo, rowIndex, _
+            "Accepted SKU " & CStr(pairNumber)))
+        acceptableItem = Trim$(WorksheetValueByHeader(lo, rowIndex, _
+            "Acceptable Managed Item " & CStr(pairNumber)))
+        If acceptedSku <> "" Then
+            Set record = NewWorksheetRecord("ALTERNATIVE")
+            record("RequirementId") = requirementId
+            record("ITEM_CODE") = acceptedSku
+            If acceptableItem <> "" Then record("ItemName") = acceptableItem
+            records.Add record
+        End If
+    Next pairNumber
+End Sub
+
 Private Function WorksheetValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                 ByVal columnIndex As Long) As String
     WorksheetValue = CellText(lo.DataBodyRange.Cells(rowIndex, columnIndex).Value2)
@@ -939,14 +1206,23 @@ End Function
 
 Private Function WorksheetRowHasBusinessData(ByVal lo As ListObject, _
                                              ByVal rowIndex As Long) As Boolean
+    Dim pairNumber As Long
+
     WorksheetRowHasBusinessData = _
         (Trim$(WorksheetValue(lo, rowIndex, COL_NAME)) <> "") Or _
         (Trim$(WorksheetValue(lo, rowIndex, COL_QTY)) <> "") Or _
         (Trim$(WorksheetValue(lo, rowIndex, COL_UOM)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTABLE_ITEM)) <> "") Or _
-        (Trim$(WorksheetValue(lo, rowIndex, COL_ACCEPTED_SKU)) <> "")
+        (Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION)) <> "")
+    If WorksheetRowHasBusinessData Then Exit Function
+    For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
+        If Trim$(WorksheetValueByHeader(lo, rowIndex, _
+                "Acceptable Managed Item " & CStr(pairNumber))) <> "" _
+           Or Trim$(WorksheetValueByHeader(lo, rowIndex, _
+                "Accepted SKU " & CStr(pairNumber))) <> "" Then
+            WorksheetRowHasBusinessData = True
+            Exit Function
+        End If
+    Next pairNumber
 End Function
 
 Private Function TryPositiveWorksheetNumber(ByVal valueText As String, _

@@ -46,8 +46,8 @@ $checks = @(
         $form -match 'mTxtProcessOutputDesignId\.Locked = True' -and
         $form -match 'mTxtProcessOutputDesignVersion\.Locked = True' },
     [pscustomobject]@{ Name = "Worksheet.AssignmentItemSearch"; Pass =
-        $worksheet -match 'Acceptable Managed Item' -and
-        $worksheet -match 'Accepted SKU' -and
+        $worksheet -match 'Acceptable Managed Item 1' -and
+        $worksheet -match 'Accepted SKU 1' -and
         $events -match 'IsProcessWorksheetItemSearchTarget' -and
         $picker -match 'invsys_process_' },
     [pscustomobject]@{ Name = "Packaged.SameHandlers"; Pass =

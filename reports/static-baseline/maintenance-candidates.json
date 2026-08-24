@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  153,
-                     "procedureCount":  5041,
-                     "lineCount":  111497,
+                     "procedureCount":  5067,
+                     "lineCount":  112077,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10388,6 +10388,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetAddAlternative_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnProcessWorksheetAddAlternative_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetCreate_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -13219,6 +13236,7 @@
                                                   "BuildInventoryPickerItemsFromTable",
                                                   "CallbackCellIsTableHeader",
                                                   "chkShippable_Click",
+                                                  "CloseSearch",
                                                   "ColumnIndex",
                                                   "ColumnIndexLoose",
                                                   "CommitSelection",
@@ -13243,6 +13261,7 @@
                                                   "IsRowListedInShippingBom",
                                                   "IsRowShippable",
                                                   "IsSearchableOperationalWorkbook",
+                                                  "IsSearchVisible",
                                                   "IsShippingDomainWorkbook",
                                                   "ListObjectHasHeaders",
                                                   "LoadCanonicalManagedInventoryItems",
@@ -13259,6 +13278,7 @@
                                                   "NzDbl",
                                                   "NzLng",
                                                   "NzStr",
+                                                  "ProcessAlternativePairNumber",
                                                   "ResolveInvSysItemNameByRow",
                                                   "ResolveListObjectRowRange",
                                                   "ResolveManagedInventoryTable",
@@ -13730,6 +13750,7 @@
                                                   "AddInboxTargetByPath",
                                                   "BuildConfiguredInboxPathProcessor",
                                                   "BuildInboxEvent",
+                                                  "CanonicalReusableDesignEventIdProcessor",
                                                   "CapabilityForEventType",
                                                   "CaptureOpenWorkbookPathsProcessor",
                                                   "CloseHiddenReadOnlyInventoryWorkbookProcessor",
@@ -14292,6 +14313,7 @@
                                                   "GetRequirementAlternativeInfo",
                                                   "HasReleasedRecipeDependency",
                                                   "IsReusableProductionEvent",
+                                                  "IsTextDesignIdentityColumn",
                                                   "NextDesignAppliedSeq",
                                                   "ParseDesignPayload",
                                                   "ParseJsonObjectDesign",
@@ -14693,6 +14715,7 @@
                                                   "mBtnProcessReuse_Click",
                                                   "mBtnProcessSave_Click",
                                                   "mBtnProcessValidate_Click",
+                                                  "mBtnProcessWorksheetAddAlternative_Click",
                                                   "mBtnProcessWorksheetCreate_Click",
                                                   "mBtnProcessWorksheetRetrieve_Click",
                                                   "mBtnRecipeAddProcess_Click",
@@ -14874,6 +14897,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessWorksheetBulkImportContract",
                                                   "TestProcessWorksheetRoundTripContract",
                                                   "TestProcessWorksheetWorkbenchContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
@@ -14919,6 +14943,74 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "module-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet",
+                           "candidateType":  "SPLIT_MODULE",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modProductionProcessWorksheet",
+                           "procedureNames":  [
+                                                  "AddAcceptableItemPairToSelectedTable",
+                                                  "AddWorksheetTemplateRows",
+                                                  "AlternativeItemColumnIndex",
+                                                  "AlternativePairCount",
+                                                  "AlternativeSkuColumnIndex",
+                                                  "AppendWorksheetAlternativeRecords",
+                                                  "ApplyProcessWorksheetManagedColumns",
+                                                  "ApplyProcessWorksheetTextIdentityFormats",
+                                                  "ApplyProcessWorksheetUomValidation",
+                                                  "ApplyRecordTypeValidation",
+                                                  "AttachAlternativeToRequirementRow",
+                                                  "BuildManagedItemNameBySku",
+                                                  "BuildUniqueProcessTableName",
+                                                  "BuildWorksheetRows",
+                                                  "CellText",
+                                                  "ClearProcessTableMetadata",
+                                                  "CountProcessWorksheetTables",
+                                                  "DeleteProcessWorksheetTable",
+                                                  "DictionaryText",
+                                                  "EnsureProcessEditorSheet",
+                                                  "EnsureWorksheetRowIds",
+                                                  "FindOutstandingProcessWorksheetTable",
+                                                  "FindProcessTableByName",
+                                                  "FindSelectedProcessWorksheetTable",
+                                                  "FindSelectedProcessWorksheetTables",
+                                                  "FormatProcessWorksheet",
+                                                  "GeneratedOutputDesignId",
+                                                  "IsConfiguredProcessUom",
+                                                  "IsInvSysProcessTable",
+                                                  "IsProcessWorksheetItemSearchTarget",
+                                                  "IsProcessWorksheetTableTarget",
+                                                  "NewWorksheetRecord",
+                                                  "NextIdFromDictionary",
+                                                  "NextProcessTableTopRow",
+                                                  "PopulateFormulationExampleForTest",
+                                                  "ProcessAlternativePairNumber",
+                                                  "ProcessIdFromTableName",
+                                                  "ProcessMetadataValue",
+                                                  "ReadFormulaEvidenceForTest",
+                                                  "ReadProcessDraftFromWorksheet",
+                                                  "RefreshProcessWorksheetManagedColumns",
+                                                  "ResolveWorksheetRowId",
+                                                  "SelectProcessWorksheetTableForTest",
+                                                  "SelectProcessWorksheetTablesForTest",
+                                                  "SendProcessDraftToWorksheet",
+                                                  "TryPositiveWorksheetNumber",
+                                                  "WorksheetAlternativePairCountForRows",
+                                                  "WorksheetRowHasBusinessData",
+                                                  "WorksheetValue",
+                                                  "WorksheetValueByHeader",
+                                                  "WriteWorksheetHeaders",
+                                                  "WriteWorksheetRecord"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas"
                                            ],
                            "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
                            "protectingTests":  [
@@ -15093,6 +15185,7 @@
                                                   "ClearUsedStageByItemCode",
                                                   "ClearUsedStageColumns",
                                                   "CloseProductionLayoutValidation",
+                                                  "CloseProductionProcessItemSearchForTest",
                                                   "CloseWorkbookNoSaveProduction",
                                                   "CollectUsedRecipeIdsProduction",
                                                   "ColumnIndex",
@@ -15331,6 +15424,7 @@
                                                   "ProductionLocationForIdentity",
                                                   "ProductionLogEntryExists",
                                                   "ProductionPickerRowsHaveSystemKeys",
+                                                  "ProductionProcessItemSearchVisibleForTest",
                                                   "ProductionRecipeLocalHeaders",
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
@@ -15383,6 +15477,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessWorksheetBulkImportContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProcessWorksheetWorkbenchContractTest",
                                                   "RunProductionBatchScaleContractTest",
@@ -18926,23 +19021,6 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Core/Modules/modRoleUiAccess.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "reviewRequired":  true
-                       },
-                       {
-                           "id":  "reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText",
-                           "candidateType":  "UNRESOLVED",
-                           "confidence":  "MEDIUM",
-                           "componentName":  "modUomSettings",
-                           "procedureNames":  [
-                                                  "GetConfiguredUomsPackedText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modUomSettings.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

@@ -1082,12 +1082,31 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, _
     evt("Location") = GetCellByColumnProcessor(lo, rowIndex, "Location")
     evt("Condition") = GetCellByColumnProcessor(lo, rowIndex, "Condition")
     evt("AttributesJson") = GetCellByColumnProcessor(lo, rowIndex, "AttributesJson")
-    evt("DesignId") = GetCellByColumnProcessor(lo, rowIndex, "DesignId")
+    evt("DesignId") = CanonicalReusableDesignEventIdProcessor( _
+        CStr(evt("EventType")), GetCellByColumnProcessor(lo, rowIndex, "DesignId"))
     evt("DesignVersion") = GetCellByColumnProcessor(lo, rowIndex, "DesignVersion")
     evt("Note") = GetCellByColumnProcessor(lo, rowIndex, "Note")
     evt("PayloadJson") = GetCellByColumnProcessor(lo, rowIndex, "PayloadJson")
     evt("SourceInbox") = workbookName & ":" & tableName
     Set BuildInboxEvent = evt
+End Function
+
+Private Function CanonicalReusableDesignEventIdProcessor(ByVal eventType As String, _
+                                                         ByVal designId As Variant) As String
+    Dim textValue As String
+    Dim numericValue As Long
+
+    textValue = UCase$(SafeTrimProcessor(designId))
+    eventType = UCase$(Trim$(eventType))
+    If (Left$(eventType, 8) = "PROCESS_" Or Left$(eventType, 7) = "RECIPE_") _
+       And Len(textValue) <= 3 And IsNumeric(textValue) Then
+        numericValue = CLng(CDbl(textValue))
+        If numericValue > 0 And numericValue <= 46655 Then
+            CanonicalReusableDesignEventIdProcessor = Right$("000" & CStr(numericValue), 3)
+            Exit Function
+        End If
+    End If
+    CanonicalReusableDesignEventIdProcessor = textValue
 End Function
 
 Private Function GetInboxEventType(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal defaultEventType As String) As String

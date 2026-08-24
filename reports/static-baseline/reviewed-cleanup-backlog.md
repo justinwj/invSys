@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1036
-- Reviewed candidates: 1038
+- Scanner candidates: 1037
+- Reviewed candidates: 1039
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,10 +12,10 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 199 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 201 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
-| CORE | 286 | Headless shared runtime and developer-support source in Core. |
+| CORE | 285 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 66 | Inventory and Designs Domain authority source. |
 | ADMIN | 220 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
@@ -36,23 +36,24 @@
 | src/Admin/Modules/modAdmin.bas | Admin | 1924 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
-| src/Core/ClassModules/cDynItemSearch.cls | Core | 1865 |
+| src/Core/ClassModules/cDynItemSearch.cls | Core | 1890 |
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
 | src/Core/Modules/modOperatorReadModel.bas | Core | 1909 |
-| src/Core/Modules/modProcessor.bas | Core | 1460 |
-| src/Core/Modules/modRoleEventWriter.bas | Core | 3082 |
+| src/Core/Modules/modProcessor.bas | Core | 1479 |
+| src/Core/Modules/modRoleEventWriter.bas | Core | 3086 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
 | src/Core/Modules/modWarehouseRetire.bas | Core | 1658 |
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
-| src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1555 |
+| src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 8012 |
+| src/Production/Forms/frmProduction.frm | Production | 8197 |
+| src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1260 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13081 |
+| src/Production/Modules/mProduction.bas | Production | 13109 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -497,7 +498,6 @@
 | reachability:src_Core_Modules_modRoleUiAccess.bas:modRoleUiAccess.DiagnoseCurrentUserCapability | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modRoleWorkbookSurfaces.bas:modRoleWorkbookSurfaces.EnsureInventoryDomainSupportSurface | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modRuntimeWorkbooks.bas:modRuntimeWorkbooks.WorksheetIsBlankRuntime | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
-| reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.DisableEvents | CORE | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Core_Modules_modUR_Transaction.bas:modUR_Transaction.GetCurrentTransactionID | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Core_Modules_modUR_UndoRedo.bas:modUR_UndoRedo.ClearRedoStack | CORE | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
@@ -653,6 +653,7 @@
 | duplicate:c5bfeafcf39158b9:mBtnProcessClear_Click+mBtnProcessNew_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | duplicate:ce00c44eb8121fc7:mBtnRecipeClear_Click+mBtnRecipeNew_Click | PRODUCTION | REPLACE_DUPLICATE | LOW | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Forms_frmProduction.frm:frmProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| module-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_mProduction.bas:mProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestReusableProductionRunActionContract | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -787,6 +788,7 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessReuse_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessSave_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessValidate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetAddAlternative_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetCreate_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetRetrieve_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnRecipeAddProcess_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

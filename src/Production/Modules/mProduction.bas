@@ -360,6 +360,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunProcessWorksheetBulkImportContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetBulkImportContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetBulkImportContractTest = _
+            frmProduction.TestProcessWorksheetBulkImportContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetBulkImportContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionFormActionContractTest() As String
     On Error GoTo Failed
 
@@ -491,6 +508,17 @@ Public Sub ShowProductionProcessItemSearch(ByVal target As Range)
     If mProcessItemPicker Is Nothing Then Set mProcessItemPicker = CreateDynItemSearch()
     mProcessItemPicker.UseRoleProfile "production"
     mProcessItemPicker.ShowForCell target
+End Sub
+
+Public Function ProductionProcessItemSearchVisibleForTest() As Boolean
+    If mProcessItemPicker Is Nothing Then Exit Function
+    ProductionProcessItemSearchVisibleForTest = _
+        CBool(mProcessItemPicker.IsSearchVisible())
+End Function
+
+Public Sub CloseProductionProcessItemSearchForTest()
+    If mProcessItemPicker Is Nothing Then Exit Sub
+    mProcessItemPicker.CloseSearch
 End Sub
 
 Public Sub HandleProductionBeforeDoubleClick(ByVal target As Range, ByRef Cancel As Boolean)

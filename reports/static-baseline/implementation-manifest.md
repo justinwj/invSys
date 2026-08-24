@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 153
-- Procedures: 5041
+- Procedures: 5067
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -199,6 +199,7 @@
 | mBtnProcessReuse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessSave_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessValidate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnProcessWorksheetAddAlternative_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessWorksheetCreate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessWorksheetRetrieve_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnRecipeAddProcess_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

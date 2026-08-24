@@ -1057,6 +1057,21 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionWorkbenchPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKBENCH=" + $productionWorkbenchReport
 
+                    $productionBulkImportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetBulkImportContractTest")
+                    $productionBulkImportPassed = $productionBulkImportReport -match '^OK\|' -and
+                        $productionBulkImportReport -match '(?:^|\|)TextSafeIds=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)RequirementIds=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)UomCatalog=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)NumberedAlternatives=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)AddedAlternative=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)PickerOpened=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)MultiAreaSelection=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)MultiTableDrafts=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionBulkImportPassed
+                    $observedText += " || PRODUCTION_PROCESS_BULK_IMPORT=" + $productionBulkImportReport
+
                     $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionFormActionContractTest")

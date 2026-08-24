@@ -35,6 +35,18 @@ Public Sub UseRoleProfile(ByVal roleKey As String)
     mRoleProfile = LCase$(Trim$(roleKey))
 End Sub
 
+Public Function IsSearchVisible() As Boolean
+    On Error Resume Next
+    If Not uf Is Nothing Then IsSearchVisible = CBool(uf.Visible)
+    On Error GoTo 0
+End Function
+
+Public Sub CloseSearch()
+    On Error Resume Next
+    If Not uf Is Nothing Then uf.Hide
+    On Error GoTo 0
+End Sub
+
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
     If targetCell Is Nothing Then Exit Sub
@@ -1478,14 +1490,12 @@ Public Sub CommitSelection()
                 Dim cProcessRecordType As Long
                 Dim cProcessItem As Long
                 Dim cProcessSku As Long
+                Dim processPairNumber As Long
                 cProcessRecordType = ColumnIndex(lo, "Record Type")
-                cProcessItem = ColumnIndex(lo, "Acceptable Managed Item")
-                cProcessSku = ColumnIndex(lo, "Accepted SKU")
+                processPairNumber = ProcessAlternativePairNumber(lo, callbackCell)
+                cProcessItem = ColumnIndex(lo, "Acceptable Managed Item " & CStr(processPairNumber))
+                cProcessSku = ColumnIndex(lo, "Accepted SKU " & CStr(processPairNumber))
                 If rowIdx > 0 Then
-                    If cProcessRecordType > 0 Then
-                        If Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2)) = "" Then _
-                            lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2 = "ALTERNATIVE"
-                    End If
                     If cProcessItem > 0 Then _
                         lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
                     If cProcessSku > 0 Then _
@@ -1535,6 +1545,21 @@ Public Sub CommitSelection()
 
     uf.Hide
 End Sub
+
+Private Function ProcessAlternativePairNumber(ByVal lo As ListObject, _
+                                              ByVal targetCell As Range) As Long
+    Dim columnName As String
+    Dim prefix As String
+
+    If lo Is Nothing Or targetCell Is Nothing Then Exit Function
+    prefix = "Acceptable Managed Item "
+    On Error Resume Next
+    columnName = lo.ListColumns(targetCell.Column - lo.Range.Column + 1).Name
+    On Error GoTo 0
+    If Left$(columnName, Len(prefix)) <> prefix Then Exit Function
+    If IsNumeric(Mid$(columnName, Len(prefix) + 1)) Then _
+        ProcessAlternativePairNumber = CLng(Mid$(columnName, Len(prefix) + 1))
+End Function
 
 Private Function NzStr(v As Variant) As String
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Then NzStr = "" Else NzStr = CStr(v)

@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "4eb8e6aa75a5e884eeb3cb8c4b33b7d68e23b37eaed8efdacc6158bce7f2f3bd",
-                          "maintenanceCandidatesSha256":  "325b0814f70130098aa750a716ed4b9ab72d46335382a53644803bd635861d4e"
+                          "implementationManifestSha256":  "e5d49a7bdebfc51b755756a7f8fecb2b3ce82e4ee324e65eaaa37ea37419f644",
+                          "maintenanceCandidatesSha256":  "07ca91dea66398cf7bbb3616fe1f4b74121ba9f7863e7bdf2f801c7fe7cd54fa"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1036,
-                    "reviewedCandidateCount":  1038,
+                    "scannerCandidateCount":  1037,
+                    "reviewedCandidateCount":  1039,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  199,
+                            "candidateCount":  201,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -42,7 +42,7 @@
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  286,
+                            "candidateCount":  285,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
@@ -119,7 +119,7 @@
                                                   "sourcePath":  "src/Core/ClassModules/cDynItemSearch.cls",
                                                   "componentName":  "cDynItemSearch",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1865,
+                                                  "baselineLineCount":  1890,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -154,14 +154,14 @@
                                                   "sourcePath":  "src/Core/Modules/modProcessor.bas",
                                                   "componentName":  "modProcessor",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1460,
+                                                  "baselineLineCount":  1479,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Core/Modules/modRoleEventWriter.bas",
                                                   "componentName":  "modRoleEventWriter",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  3082,
+                                                  "baselineLineCount":  3086,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -196,7 +196,7 @@
                                                   "sourcePath":  "src/DesignsDomain/Modules/modDesignsApply.bas",
                                                   "componentName":  "modDesignsApply",
                                                   "packageKey":  "DesignsDomain",
-                                                  "baselineLineCount":  1555,
+                                                  "baselineLineCount":  1568,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,7 +217,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8012,
+                                                  "baselineLineCount":  8197,
+                                                  "growthAllowedWithoutException":  false
+                                              },
+                                              {
+                                                  "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
+                                                  "componentName":  "modProductionProcessWorksheet",
+                                                  "packageKey":  "Production",
+                                                  "baselineLineCount":  1260,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +238,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13081,
+                                                  "baselineLineCount":  13109,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -9116,6 +9123,7 @@
                                                   "BuildInventoryPickerItemsFromTable",
                                                   "CallbackCellIsTableHeader",
                                                   "chkShippable_Click",
+                                                  "CloseSearch",
                                                   "ColumnIndex",
                                                   "ColumnIndexLoose",
                                                   "CommitSelection",
@@ -9140,6 +9148,7 @@
                                                   "IsRowListedInShippingBom",
                                                   "IsRowShippable",
                                                   "IsSearchableOperationalWorkbook",
+                                                  "IsSearchVisible",
                                                   "IsShippingDomainWorkbook",
                                                   "ListObjectHasHeaders",
                                                   "LoadCanonicalManagedInventoryItems",
@@ -9156,6 +9165,7 @@
                                                   "NzDbl",
                                                   "NzLng",
                                                   "NzStr",
+                                                  "ProcessAlternativePairNumber",
                                                   "ResolveInvSysItemNameByRow",
                                                   "ResolveListObjectRowRange",
                                                   "ResolveManagedInventoryTable",
@@ -9657,6 +9667,7 @@
                                                   "AddInboxTargetByPath",
                                                   "BuildConfiguredInboxPathProcessor",
                                                   "BuildInboxEvent",
+                                                  "CanonicalReusableDesignEventIdProcessor",
                                                   "CapabilityForEventType",
                                                   "CaptureOpenWorkbookPathsProcessor",
                                                   "CloseHiddenReadOnlyInventoryWorkbookProcessor",
@@ -12058,29 +12069,6 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
-                           "id":  "reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.GetConfiguredUomsPackedText",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "CORE",
-                           "componentName":  "modUomSettings",
-                           "procedureNames":  [
-                                                  "GetConfiguredUomsPackedText"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Core/Modules/modUomSettings.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
-                       },
-                       {
                            "id":  "reachability:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.DisableEvents",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
@@ -14109,6 +14097,7 @@
                                                   "GetRequirementAlternativeInfo",
                                                   "HasReleasedRecipeDependency",
                                                   "IsReusableProductionEvent",
+                                                  "IsTextDesignIdentityColumn",
                                                   "NextDesignAppliedSeq",
                                                   "ParseDesignPayload",
                                                   "ParseJsonObjectDesign",
@@ -16037,6 +16026,7 @@
                                                   "mBtnProcessReuse_Click",
                                                   "mBtnProcessSave_Click",
                                                   "mBtnProcessValidate_Click",
+                                                  "mBtnProcessWorksheetAddAlternative_Click",
                                                   "mBtnProcessWorksheetCreate_Click",
                                                   "mBtnProcessWorksheetRetrieve_Click",
                                                   "mBtnRecipeAddProcess_Click",
@@ -16218,6 +16208,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessWorksheetBulkImportContract",
                                                   "TestProcessWorksheetRoundTripContract",
                                                   "TestProcessWorksheetWorkbenchContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
@@ -16263,6 +16254,80 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
+                       },
+                       {
+                           "id":  "module-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "modProductionProcessWorksheet",
+                           "procedureNames":  [
+                                                  "AddAcceptableItemPairToSelectedTable",
+                                                  "AddWorksheetTemplateRows",
+                                                  "AlternativeItemColumnIndex",
+                                                  "AlternativePairCount",
+                                                  "AlternativeSkuColumnIndex",
+                                                  "AppendWorksheetAlternativeRecords",
+                                                  "ApplyProcessWorksheetManagedColumns",
+                                                  "ApplyProcessWorksheetTextIdentityFormats",
+                                                  "ApplyProcessWorksheetUomValidation",
+                                                  "ApplyRecordTypeValidation",
+                                                  "AttachAlternativeToRequirementRow",
+                                                  "BuildManagedItemNameBySku",
+                                                  "BuildUniqueProcessTableName",
+                                                  "BuildWorksheetRows",
+                                                  "CellText",
+                                                  "ClearProcessTableMetadata",
+                                                  "CountProcessWorksheetTables",
+                                                  "DeleteProcessWorksheetTable",
+                                                  "DictionaryText",
+                                                  "EnsureProcessEditorSheet",
+                                                  "EnsureWorksheetRowIds",
+                                                  "FindOutstandingProcessWorksheetTable",
+                                                  "FindProcessTableByName",
+                                                  "FindSelectedProcessWorksheetTable",
+                                                  "FindSelectedProcessWorksheetTables",
+                                                  "FormatProcessWorksheet",
+                                                  "GeneratedOutputDesignId",
+                                                  "IsConfiguredProcessUom",
+                                                  "IsInvSysProcessTable",
+                                                  "IsProcessWorksheetItemSearchTarget",
+                                                  "IsProcessWorksheetTableTarget",
+                                                  "NewWorksheetRecord",
+                                                  "NextIdFromDictionary",
+                                                  "NextProcessTableTopRow",
+                                                  "PopulateFormulationExampleForTest",
+                                                  "ProcessAlternativePairNumber",
+                                                  "ProcessIdFromTableName",
+                                                  "ProcessMetadataValue",
+                                                  "ReadFormulaEvidenceForTest",
+                                                  "ReadProcessDraftFromWorksheet",
+                                                  "RefreshProcessWorksheetManagedColumns",
+                                                  "ResolveWorksheetRowId",
+                                                  "SelectProcessWorksheetTableForTest",
+                                                  "SelectProcessWorksheetTablesForTest",
+                                                  "SendProcessDraftToWorksheet",
+                                                  "TryPositiveWorksheetNumber",
+                                                  "WorksheetAlternativePairCountForRows",
+                                                  "WorksheetRowHasBusinessData",
+                                                  "WorksheetValue",
+                                                  "WorksheetValueByHeader",
+                                                  "WriteWorksheetHeaders",
+                                                  "WriteWorksheetRecord"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas"
                                            ],
                            "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
                            "protectingTests":  [
@@ -16449,6 +16514,7 @@
                                                   "ClearUsedStageByItemCode",
                                                   "ClearUsedStageColumns",
                                                   "CloseProductionLayoutValidation",
+                                                  "CloseProductionProcessItemSearchForTest",
                                                   "CloseWorkbookNoSaveProduction",
                                                   "CollectUsedRecipeIdsProduction",
                                                   "ColumnIndex",
@@ -16687,6 +16753,7 @@
                                                   "ProductionLocationForIdentity",
                                                   "ProductionLogEntryExists",
                                                   "ProductionPickerRowsHaveSystemKeys",
+                                                  "ProductionProcessItemSearchVisibleForTest",
                                                   "ProductionRecipeLocalHeaders",
                                                   "ProductionRecipeRuntimeHeaders",
                                                   "ProductionRecipesWorkbookPath",
@@ -16739,6 +16806,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessWorksheetBulkImportContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProcessWorksheetWorkbenchContractTest",
                                                   "RunProductionBatchScaleContractTest",
@@ -19841,6 +19909,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnProcessWorksheetAddAlternative_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnProcessWorksheetAddAlternative_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

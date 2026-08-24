@@ -55,6 +55,7 @@ Private WithEvents mBtnProcessObsolete As MSForms.CommandButton
 Private WithEvents mBtnProcessClear As MSForms.CommandButton
 Private WithEvents mBtnProcessWorksheetCreate As MSForms.CommandButton
 Private WithEvents mBtnProcessWorksheetRetrieve As MSForms.CommandButton
+Private WithEvents mBtnProcessWorksheetAddAlternative As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementAdd As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementUpdate As MSForms.CommandButton
 Private WithEvents mBtnProcessRequirementRemove As MSForms.CommandButton
@@ -949,6 +950,8 @@ Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
         "Create Process Table", 928, 44, 102, 24)
     Set mBtnProcessWorksheetRetrieve = AddButton(pg, "btnProcessWorksheetRetrieve", _
         "Retrieve Selected Process", 860, 140, 170, 24)
+    Set mBtnProcessWorksheetAddAlternative = AddButton(pg, _
+        "btnProcessWorksheetAddAlternative", "Add Acceptable Item", 680, 140, 170, 24)
 
     AddLabel pg, "Requirements", 12, 174, 100, 16
     Set mLstProcessRequirements = AddList(pg, "lstProcessRequirements", 12, 192, 315, 128, 7, _
@@ -6284,11 +6287,11 @@ Public Function TestProcessWorksheetWorkbenchContract() As String
         End If
         itemCodeRemoved = (ProcessWorksheetColumnForTest(lo, "Item Code") = 0)
         assignments = ProcessWorksheetColumnForTest(lo, "Requirement ID") > 0 And _
-            ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item") > 0 And _
-            ProcessWorksheetColumnForTest(lo, "Accepted SKU") > 0
-        If assignments And lo.ListRows.Count >= 10 Then
-            Set itemSearchCell = lo.DataBodyRange.Cells(10, _
-                ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item"))
+            ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1") > 0 And _
+            ProcessWorksheetColumnForTest(lo, "Accepted SKU 1") > 0
+        If assignments Then
+            Set itemSearchCell = lo.DataBodyRange.Cells(1, _
+                ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1"))
             itemSearch = modProductionProcessWorksheet.IsProcessWorksheetItemSearchTarget( _
                 itemSearchCell)
         End If
@@ -6354,6 +6357,129 @@ Public Function TestProcessWorksheetWorkbenchContract() As String
     End If
 End Function
 
+Public Function TestProcessWorksheetBulkImportContract() As String
+    Dim lo As ListObject
+    Dim firstTable As String
+    Dim secondTable As String
+    Dim firstProcessId As String
+    Dim secondProcessId As String
+    Dim observedInputId As String
+    Dim observedRequirementId As String
+    Dim observedDesignId As String
+    Dim observedIdFormat As String
+    Dim actionReport As String
+    Dim outputRow As Long
+    Dim recordTypeColumn As Long
+    Dim itemSearchCell As Range
+    Dim textSafeIds As Boolean
+    Dim requirementIds As Boolean
+    Dim uomCatalog As Boolean
+    Dim numberedAlternatives As Boolean
+    Dim addedAlternative As Boolean
+    Dim pickerOpened As Boolean
+    Dim multiAreaSelection As Boolean
+    Dim multiTableDrafts As Boolean
+
+    If Not mBuilt Then BuildLayout
+    ClearProcessDraft True
+    mTxtProcessName.Text = "Slice 4aa Bulk Process One"
+    mBtnProcessWorksheetCreate_Click
+    Call modProductionProcessWorksheet.FindSelectedProcessWorksheetTable( _
+        mOperatorWorkbook, firstTable, actionReport)
+    Set lo = ProcessWorksheetTableForTest(firstTable)
+    If lo Is Nothing Then GoTo ReportResult
+    firstProcessId = CStr(lo.Parent.Cells(lo.HeaderRowRange.Row - 4, 5).Value2)
+    Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+        mOperatorWorkbook, firstTable, False, actionReport)
+    Application.Calculate
+    recordTypeColumn = ProcessWorksheetColumnForTest(lo, "Record Type")
+    For outputRow = 1 To lo.ListRows.Count
+        If UCase$(Trim$(CStr(lo.DataBodyRange.Cells(outputRow, recordTypeColumn).Value2))) = "OUTPUT" Then Exit For
+    Next outputRow
+    observedInputId = CStr(lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "ID")).Value2)
+    observedIdFormat = CStr(lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "ID")).NumberFormat)
+    observedRequirementId = CStr(lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "Requirement ID")).Value2)
+    observedDesignId = CStr(lo.DataBodyRange.Cells(outputRow, _
+        ProcessWorksheetColumnForTest(lo, "Design ID")).Value2)
+    textSafeIds = (firstProcessId Like "[0-9A-Z][0-9A-Z][0-9A-Z]") And _
+        (observedInputId = "001") And (observedIdFormat = "@") And _
+        (observedDesignId = "D-" & firstProcessId & "-001")
+    requirementIds = lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "Requirement ID")).HasFormula And _
+        (CStr(lo.DataBodyRange.Cells(1, _
+            ProcessWorksheetColumnForTest(lo, "Requirement ID")).Value2) = "001")
+    On Error Resume Next
+    uomCatalog = (lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "UOM")).Validation.Type = xlValidateList) And _
+        (InStr(1, lo.DataBodyRange.Cells(1, _
+            ProcessWorksheetColumnForTest(lo, "UOM")).Validation.Formula1, "LB", vbTextCompare) > 0)
+    On Error GoTo 0
+    numberedAlternatives = ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1") > 0 And _
+        ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 4") > 0 And _
+        ProcessWorksheetColumnForTest(lo, "Accepted SKU 4") > 0
+    lo.DataBodyRange.Cells(1, recordTypeColumn).Select
+    mBtnProcessWorksheetAddAlternative_Click
+    addedAlternative = (ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 5") > 0)
+
+    Set itemSearchCell = lo.DataBodyRange.Cells(1, _
+        ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1"))
+    lo.DataBodyRange.Cells(1, ProcessWorksheetColumnForTest(lo, "Name")).Select
+    itemSearchCell.Select
+    DoEvents
+    pickerOpened = mProduction.ProductionProcessItemSearchVisibleForTest()
+    mProduction.CloseProductionProcessItemSearchForTest
+
+    ClearProcessDraft True
+    mTxtProcessName.Text = "Slice 4aa Bulk Process Two"
+    mBtnProcessWorksheetCreate_Click
+    Call modProductionProcessWorksheet.FindSelectedProcessWorksheetTable( _
+        mOperatorWorkbook, secondTable, actionReport)
+    Set lo = ProcessWorksheetTableForTest(secondTable)
+    If Not lo Is Nothing Then
+        secondProcessId = CStr(lo.Parent.Cells(lo.HeaderRowRange.Row - 4, 5).Value2)
+        Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+            mOperatorWorkbook, secondTable, False, actionReport)
+    End If
+    multiAreaSelection = modProductionProcessWorksheet.SelectProcessWorksheetTablesForTest( _
+        mOperatorWorkbook, firstTable, secondTable)
+    If multiAreaSelection Then mBtnProcessWorksheetRetrieve_Click
+    RefreshReusableDesignLists
+    multiTableDrafts = (modProductionProcessWorksheet.CountProcessWorksheetTables( _
+        mOperatorWorkbook) = 2) And _
+        Not ProcessWorksheetTableExistsForTest(firstTable) And _
+        Not ProcessWorksheetTableExistsForTest(secondTable) And _
+        (FindIdentityListRow(mLstProcesses, firstProcessId, "1") >= 0) And _
+        (FindIdentityListRow(mLstProcesses, secondProcessId, "1") >= 0)
+
+ReportResult:
+    If textSafeIds And requirementIds And uomCatalog And numberedAlternatives _
+       And addedAlternative And pickerOpened And multiAreaSelection And multiTableDrafts Then
+        TestProcessWorksheetBulkImportContract = _
+            "OK|TextSafeIds=True|RequirementIds=True|UomCatalog=True" & _
+            "|NumberedAlternatives=True|AddedAlternative=True|PickerOpened=True" & _
+            "|MultiAreaSelection=True|MultiTableDrafts=True"
+    Else
+        TestProcessWorksheetBulkImportContract = _
+            "FAIL|TextSafeIds=" & CStr(textSafeIds) & _
+            "|RequirementIds=" & CStr(requirementIds) & _
+            "|UomCatalog=" & CStr(uomCatalog) & _
+            "|NumberedAlternatives=" & CStr(numberedAlternatives) & _
+            "|AddedAlternative=" & CStr(addedAlternative) & _
+            "|PickerOpened=" & CStr(pickerOpened) & _
+            "|MultiAreaSelection=" & CStr(multiAreaSelection) & _
+            "|MultiTableDrafts=" & CStr(multiTableDrafts) & _
+            "|ProcessId=" & firstProcessId & _
+            "|InputId=" & observedInputId & _
+            "|InputIdFormat=" & observedIdFormat & _
+            "|RequirementIdValue=" & observedRequirementId & _
+            "|DesignIdValue=" & observedDesignId & _
+            "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    End If
+End Function
+
 Private Function ProcessWorksheetTableForTest(ByVal tableName As String) As ListObject
     Dim ws As Worksheet
     Dim lo As ListObject
@@ -6394,6 +6520,7 @@ Public Function TestReusableProductionFormActionContract() As String
     requiredControls = Array( _
         "btnProcessSave", "btnProcessRelease", "btnProcessObsolete", "btnProcessReuse", _
         "btnProcessWorksheetCreate", "btnProcessWorksheetRetrieve", _
+        "btnProcessWorksheetAddAlternative", _
         "btnRecipeAddProcess", "btnRecipeConnect", "btnRecipeMoveUp", _
         "btnRecipeSave", "btnRecipeRelease", "btnRecipeObsolete", _
         "btnAssignSave")
@@ -7169,6 +7296,18 @@ Failed:
     ShowStatus "Process worksheet creation failed: " & Err.Description
 End Sub
 
+Private Sub mBtnProcessWorksheetAddAlternative_Click()
+    Dim report As String
+
+    If mOperatorWorkbook Is Nothing Then
+        ShowStatus "The captured Production operator workbook is unavailable."
+        Exit Sub
+    End If
+    Call modProductionProcessWorksheet.AddAcceptableItemPairToSelectedTable( _
+        mOperatorWorkbook, report)
+    ShowStatus report
+End Sub
+
 Private Sub mBtnProcessWorksheetRetrieve_Click()
     Dim report As String
     Dim deleteReport As String
@@ -7184,14 +7323,23 @@ Private Sub mBtnProcessWorksheetRetrieve_Click()
     Dim oldPayload As String
     Dim validationReport As String
     Dim tableName As String
+    Dim tableNames As Collection
+    Dim imports As New Collection
+    Dim importRecord As Object
+    Dim tableNameValue As Variant
+    Dim succeeded As Long
+    Dim failed As Long
+    Dim summary As String
+    Dim failureDetails As String
 
     On Error GoTo Failed
     If mOperatorWorkbook Is Nothing Then
         ShowStatus "The captured Production operator workbook is unavailable."
         Exit Sub
     End If
-    If Not modProductionProcessWorksheet.FindSelectedProcessWorksheetTable( _
-        mOperatorWorkbook, tableName, report) Then
+    Set tableNames = modProductionProcessWorksheet.FindSelectedProcessWorksheetTables( _
+        mOperatorWorkbook, report)
+    If tableNames Is Nothing Or tableNames.Count = 0 Then
         ShowStatus report
         Exit Sub
     End If
@@ -7201,29 +7349,66 @@ Private Sub mBtnProcessWorksheetRetrieve_Click()
     oldProcessName = Trim$(mTxtProcessName.Text)
     oldDescription = Trim$(mTxtProcessDescription.Text)
     oldPayload = BuildProcessPayload()
-    If Not modProductionProcessWorksheet.ReadProcessDraftFromWorksheet( _
-        mOperatorWorkbook, tableName, processId, processVersion, _
-        processName, description, payloadJson, report) Then
-        ShowStatus report
-        Exit Sub
-    End If
-    If Not LoadProcessPayloadIntoDesigner(processId, processVersion, processName, _
-                                           description, payloadJson, report) Then
-        ShowStatus "Process worksheet retrieval failed: " & report
-        Exit Sub
-    End If
-    If Not ValidateProcessDraft(validationReport) Then
-        Call LoadProcessPayloadIntoDesigner(oldProcessId, oldProcessVersion, _
-            oldProcessName, oldDescription, oldPayload, report)
-        ShowStatus "Process worksheet retrieval failed: " & validationReport
-        Exit Sub
-    End If
-    If Not modProductionProcessWorksheet.DeleteProcessWorksheetTable( _
-        mOperatorWorkbook, tableName, deleteReport) Then
-        ShowStatus validationReport & vbCrLf & deleteReport
-        Exit Sub
-    End If
-    ShowStatus validationReport & vbCrLf & deleteReport
+    ' Validate every selected table before the first Designs Domain write.
+    For Each tableNameValue In tableNames
+        tableName = CStr(tableNameValue)
+        If Not modProductionProcessWorksheet.ReadProcessDraftFromWorksheet( _
+            mOperatorWorkbook, tableName, processId, processVersion, _
+            processName, description, payloadJson, report) Then GoTo ValidationFailed
+        If Not LoadProcessPayloadIntoDesigner(processId, processVersion, processName, _
+                                               description, payloadJson, report) Then
+            report = "Process worksheet retrieval failed: " & report
+            GoTo ValidationFailed
+        End If
+        If Not ValidateProcessDraft(validationReport) Then
+            report = "Process worksheet retrieval failed: " & validationReport
+            GoTo ValidationFailed
+        End If
+        Set importRecord = CreateObject("Scripting.Dictionary")
+        importRecord.CompareMode = vbTextCompare
+        importRecord("TableName") = tableName
+        importRecord("ProcessId") = processId
+        importRecord("ProcessVersion") = processVersion
+        importRecord("ProcessName") = processName
+        importRecord("Description") = description
+        importRecord("Payload") = payloadJson
+        imports.Add importRecord
+    Next tableNameValue
+
+    For Each importRecord In imports
+        If Not LoadProcessPayloadIntoDesigner(CStr(importRecord("ProcessId")), _
+                CStr(importRecord("ProcessVersion")), CStr(importRecord("ProcessName")), _
+                CStr(importRecord("Description")), CStr(importRecord("Payload")), report) Then
+            failed = failed + 1
+            failureDetails = report
+            GoTo NextImport
+        End If
+        If SubmitProcessAction("PROCESS_SAVE", CStr(importRecord("Payload"))) Then
+            If modProductionProcessWorksheet.DeleteProcessWorksheetTable( _
+                    mOperatorWorkbook, CStr(importRecord("TableName")), deleteReport) Then
+                succeeded = succeeded + 1
+            Else
+                failed = failed + 1
+                failureDetails = deleteReport
+            End If
+        Else
+            failed = failed + 1
+            failureDetails = TestStatusText()
+        End If
+NextImport:
+    Next importRecord
+    summary = "Retrieved " & CStr(succeeded) & " selected Process table(s) as DRAFT"
+    If failed > 0 Then summary = summary & "; " & CStr(failed) & " table(s) remain"
+    summary = summary & "."
+    If failureDetails <> "" Then summary = summary & " " & failureDetails
+    ShowStatus summary
+    Exit Sub
+
+ValidationFailed:
+    Call LoadProcessPayloadIntoDesigner(oldProcessId, oldProcessVersion, _
+        oldProcessName, oldDescription, oldPayload, validationReport)
+    ShowStatus CStr(tableName) & ": " & report & _
+        " No selected table was saved or removed."
     Exit Sub
 Failed:
     ShowStatus "Process worksheet retrieval failed: " & Err.Description

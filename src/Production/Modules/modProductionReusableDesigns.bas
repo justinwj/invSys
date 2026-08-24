@@ -42,7 +42,8 @@ Public Function SubmitReusableDesignEvent(ByVal eventType As String, _
     If StrComp(actualStatus, expectedStatus, vbTextCompare) <> 0 Then
         report = "Event " & eventId & " was queued but the expected " & expectedStatus & _
                  " projection is not visible. Processor applied=" & CStr(appliedCount) & _
-                 ". " & processorReport
+                 ". " & processorReport & "; ProjectionIdentities=" & _
+                 ReusableDefinitionIdentityEvidence(eventType)
         Exit Function
     End If
 
@@ -54,6 +55,35 @@ Public Function SubmitReusableDesignEvent(ByVal eventType As String, _
 
 Failed:
     report = "Reusable design action failed: " & Err.Description
+End Function
+
+Private Function ReusableDefinitionIdentityEvidence(ByVal eventType As String) As String
+    Dim rows As Variant
+    Dim r As Long
+    Dim shown As Long
+
+    If Left$(eventType, 7) = "PROCESS" Then
+        rows = modOperationsPrimitiveBridge.ListProcesses("")
+    Else
+        rows = modOperationsPrimitiveBridge.ListRecipes("")
+    End If
+    If Not IsArray(rows) Then
+        ReusableDefinitionIdentityEvidence = "NoRows"
+        Exit Function
+    End If
+    On Error GoTo Done
+    For r = LBound(rows, 1) To UBound(rows, 1)
+        If ReusableDefinitionIdentityEvidence <> "" Then _
+            ReusableDefinitionIdentityEvidence = ReusableDefinitionIdentityEvidence & ","
+        ReusableDefinitionIdentityEvidence = ReusableDefinitionIdentityEvidence & _
+            Trim$(CStr(rows(r, 1))) & "/" & Trim$(CStr(rows(r, 2))) & "/" & _
+            Trim$(CStr(rows(r, 5)))
+        shown = shown + 1
+        If shown >= 12 Then Exit For
+    Next r
+Done:
+    If ReusableDefinitionIdentityEvidence = "" Then _
+        ReusableDefinitionIdentityEvidence = "Empty"
 End Function
 
 Public Function NextReusableDefinitionVersion(ByVal definitionId As String, _

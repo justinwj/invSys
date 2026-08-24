@@ -1346,8 +1346,21 @@ End Function
 
 Private Sub SetDesignTableValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                 ByVal columnName As String, ByVal valueOut As Variant)
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value = valueOut
+    Dim targetCell As Range
+
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index)
+    If IsTextDesignIdentityColumn(columnName) Then targetCell.NumberFormat = "@"
+    targetCell.Value2 = valueOut
 End Sub
+
+Private Function IsTextDesignIdentityColumn(ByVal columnName As String) As Boolean
+    Select Case LCase$(Trim$(columnName))
+        Case "processid", "recipeid", "requirementid", "outputid", _
+             "processnodeid", "fromoutputid", "torequirementid", _
+             "definitionid", "designid", "componentdesignid"
+            IsTextDesignIdentityColumn = True
+    End Select
+End Function
 
 Private Function ReadDesignTableValue(ByVal lo As ListObject, ByVal values As Variant, _
                                       ByVal rowIndex As Long, ByVal columnName As String) As Variant
