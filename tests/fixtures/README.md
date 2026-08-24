@@ -27,3 +27,12 @@ Generated files:
 
 - `WH1.invSys.Data.Inventory.xlsb`
 - `invSys.Inbox.Receiving.S1.xlsb`
+
+Plan 022 visible user acceptance uses:
+
+- `plan022-demo-inventory-upload.csv`
+
+Upload this CSV through Admin **Demo Inventory** > **Upload Data Set**. It is a
+single valid demo-only inventory definition used to prove stored data-set
+selection, seed persistence, and definition-only deletion without touching
+operational inventory.
