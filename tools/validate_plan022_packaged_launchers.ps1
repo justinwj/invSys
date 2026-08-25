@@ -1123,6 +1123,18 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionBulkImportPassed
                     $observedText += " || PRODUCTION_PROCESS_BULK_IMPORT=" + $productionBulkImportReport
 
+                    $productionOutputPickerReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetOutputPickerContractTest")
+                    $productionOutputPickerPassed = $productionOutputPickerReport -match '^OK\|' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputPickerOpened=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputPickerCommitted=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputSkuHidden=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputSkuRoundTrip=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)NoPhysicalKey=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionOutputPickerPassed
+                    $observedText += " || PRODUCTION_PROCESS_OUTPUT_PICKER=" + $productionOutputPickerReport
+
                     $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionFormActionContractTest")

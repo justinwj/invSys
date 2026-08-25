@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  153,
-                     "procedureCount":  5071,
-                     "lineCount":  112166,
+                     "procedureCount":  5076,
+                     "lineCount":  112331,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -13239,6 +13239,7 @@
                                                   "CloseSearch",
                                                   "ColumnIndex",
                                                   "ColumnIndexLoose",
+                                                  "CommitFirstSearchResultForTest",
                                                   "CommitSelection",
                                                   "ConfigureForMode",
                                                   "CurrentRoleKey",
@@ -14901,6 +14902,7 @@
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
                                                   "TestProcessWorksheetBulkImportContract",
+                                                  "TestProcessWorksheetOutputPickerContract",
                                                   "TestProcessWorksheetRoundTripContract",
                                                   "TestProcessWorksheetWorkbenchContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
@@ -14989,6 +14991,7 @@
                                                   "IsConfiguredProcessUom",
                                                   "IsInvSysProcessTable",
                                                   "IsProcessWorksheetItemSearchTarget",
+                                                  "IsProcessWorksheetOutputItemSearchTarget",
                                                   "IsProcessWorksheetTableTarget",
                                                   "NewWorksheetRecord",
                                                   "NextIdFromDictionary",
@@ -15193,6 +15196,7 @@
                                                   "CollectUsedRecipeIdsProduction",
                                                   "ColumnIndex",
                                                   "ColumnIndexLoose",
+                                                  "CommitFirstProductionProcessItemSearchResultForTest",
                                                   "CompleteProductionRunAfterCheckIn",
                                                   "CompleteProductionRunAfterCheckInForOutput",
                                                   "CompleteProductionRunAfterCheckInForOutputResult",
@@ -15482,6 +15486,7 @@
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
                                                   "RunProcessWorksheetBulkImportContractTest",
+                                                  "RunProcessWorksheetOutputPickerContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProcessWorksheetWorkbenchContractTest",
                                                   "RunProductionBatchScaleContractTest",
@@ -20484,6 +20489,23 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "RepairLastCompletedProductionRun"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RunProcessWorksheetOutputPickerContractTest",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "RunProcessWorksheetOutputPickerContractTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"

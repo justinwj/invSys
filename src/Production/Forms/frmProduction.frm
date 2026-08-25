@@ -6486,6 +6486,90 @@ ReportResult:
     End If
 End Function
 
+Public Function TestProcessWorksheetOutputPickerContract() As String
+    Dim lo As ListObject
+    Dim tableName As String
+    Dim actionReport As String
+    Dim outputRow As Long
+    Dim recordTypeColumn As Long
+    Dim nameColumn As Long
+    Dim outputSkuColumn As Long
+    Dim outputNameCell As Range
+    Dim selectedOutputName As String
+    Dim selectedOutputSku As String
+    Dim outputPickerOpened As Boolean
+    Dim outputPickerCommitted As Boolean
+    Dim outputSkuHidden As Boolean
+    Dim outputSkuRoundTrip As Boolean
+    Dim noPhysicalKey As Boolean
+
+    If Not mBuilt Then BuildLayout
+    ClearProcessDraft True
+    mTxtProcessName.Text = "Slice 4ac Output Picker Process"
+    mBtnProcessWorksheetCreate_Click
+    Call modProductionProcessWorksheet.FindSelectedProcessWorksheetTable( _
+        mOperatorWorkbook, tableName, actionReport)
+    Set lo = ProcessWorksheetTableForTest(tableName)
+    If lo Is Nothing Then GoTo ReportResult
+    Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+        mOperatorWorkbook, tableName, False, actionReport)
+    recordTypeColumn = ProcessWorksheetColumnForTest(lo, "Record Type")
+    nameColumn = ProcessWorksheetColumnForTest(lo, "Name")
+    outputSkuColumn = ProcessWorksheetColumnForTest(lo, "Output SKU")
+    If recordTypeColumn = 0 Or nameColumn = 0 Or outputSkuColumn = 0 Then GoTo ReportResult
+    For outputRow = 1 To lo.ListRows.Count
+        If UCase$(Trim$(CStr(lo.DataBodyRange.Cells(outputRow, _
+                recordTypeColumn).Value2))) = "OUTPUT" Then Exit For
+    Next outputRow
+    If outputRow > lo.ListRows.Count Then GoTo ReportResult
+
+    lo.DataBodyRange.Cells(outputRow, nameColumn).ClearContents
+    lo.DataBodyRange.Cells(outputRow, outputSkuColumn).ClearContents
+    Set outputNameCell = lo.DataBodyRange.Cells(outputRow, nameColumn)
+    outputNameCell.Select
+    DoEvents
+    outputPickerOpened = mProduction.ProductionProcessItemSearchVisibleForTest() And _
+        (mProduction.ProductionProcessItemSearchResultCountForTest() > 0)
+    If outputPickerOpened Then outputPickerCommitted = _
+        mProduction.CommitFirstProductionProcessItemSearchResultForTest()
+    selectedOutputName = Trim$(CStr(lo.DataBodyRange.Cells(outputRow, nameColumn).Value2))
+    selectedOutputSku = Trim$(CStr(lo.DataBodyRange.Cells(outputRow, outputSkuColumn).Value2))
+    outputPickerCommitted = outputPickerCommitted And _
+        selectedOutputName <> "" And selectedOutputSku <> ""
+    outputSkuHidden = lo.ListColumns("Output SKU").Range.EntireColumn.Hidden
+    noPhysicalKey = (ProcessWorksheetColumnForTest(lo, "System_Key") = 0)
+
+    If modProductionProcessWorksheet.SelectProcessWorksheetTableForTest( _
+            mOperatorWorkbook, tableName) Then
+        mBtnProcessWorksheetRetrieve_Click
+        outputSkuRoundTrip = (mLstProcessOutputs.ListCount > 0) And _
+            (StrComp(NzStr(mLstProcessOutputs.List(0, 1)), _
+                selectedOutputName, vbTextCompare) = 0) And _
+            (StrComp(NzStr(mLstProcessOutputs.List(0, 2)), _
+                selectedOutputSku, vbTextCompare) = 0) And _
+            Not ProcessWorksheetTableExistsForTest(tableName)
+    End If
+
+ReportResult:
+    mProduction.CloseProductionProcessItemSearchForTest
+    If outputPickerOpened And outputPickerCommitted And outputSkuHidden And _
+       outputSkuRoundTrip And noPhysicalKey Then
+        TestProcessWorksheetOutputPickerContract = _
+            "OK|OutputPickerOpened=True|OutputPickerCommitted=True" & _
+            "|OutputSkuHidden=True|OutputSkuRoundTrip=True|NoPhysicalKey=True"
+    Else
+        TestProcessWorksheetOutputPickerContract = _
+            "FAIL|OutputPickerOpened=" & CStr(outputPickerOpened) & _
+            "|OutputPickerCommitted=" & CStr(outputPickerCommitted) & _
+            "|OutputSkuHidden=" & CStr(outputSkuHidden) & _
+            "|OutputSkuRoundTrip=" & CStr(outputSkuRoundTrip) & _
+            "|NoPhysicalKey=" & CStr(noPhysicalKey) & _
+            "|OutputName=" & selectedOutputName & _
+            "|OutputSku=" & selectedOutputSku & _
+            "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    End If
+End Function
+
 Private Function ProcessWorksheetTableForTest(ByVal tableName As String) As ListObject
     Dim ws As Worksheet
     Dim lo As ListObject

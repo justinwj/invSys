@@ -53,6 +53,14 @@ Public Function SearchResultCount() As Long
     On Error GoTo 0
 End Function
 
+Public Function CommitFirstSearchResultForTest() As Boolean
+    If lst Is Nothing Then Exit Function
+    If lst.ListCount = 0 Then Exit Function
+    lst.ListIndex = 0
+    CommitSelection
+    CommitFirstSearchResultForTest = True
+End Function
+
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
     If targetCell Is Nothing Then Exit Sub
@@ -1498,16 +1506,31 @@ Public Sub CommitSelection()
                 Dim cProcessRecordType As Long
                 Dim cProcessItem As Long
                 Dim cProcessSku As Long
+                Dim cProcessName As Long
+                Dim cProcessOutputSku As Long
                 Dim processPairNumber As Long
+                Dim processRecordType As String
                 cProcessRecordType = ColumnIndex(lo, "Record Type")
-                processPairNumber = ProcessAlternativePairNumber(lo, callbackCell)
-                cProcessItem = ColumnIndex(lo, "Acceptable Managed Item " & CStr(processPairNumber))
-                cProcessSku = ColumnIndex(lo, "Accepted SKU " & CStr(processPairNumber))
                 If rowIdx > 0 Then
-                    If cProcessItem > 0 Then _
-                        lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
-                    If cProcessSku > 0 Then _
-                        lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
+                    If cProcessRecordType > 0 Then _
+                        processRecordType = UCase$(Trim$(NzStr( _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2)))
+                    cProcessName = ColumnIndex(lo, "Name")
+                    cProcessOutputSku = ColumnIndex(lo, "Output SKU")
+                    If processRecordType = "OUTPUT" And cProcessName > 0 _
+                       And callbackCell.Column = lo.ListColumns(cProcessName).Range.Column Then
+                        lo.DataBodyRange.Cells(rowIdx, cProcessName).Value2 = itemName
+                        If cProcessOutputSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessOutputSku).Value2 = itemCode
+                    Else
+                        processPairNumber = ProcessAlternativePairNumber(lo, callbackCell)
+                        cProcessItem = ColumnIndex(lo, "Acceptable Managed Item " & CStr(processPairNumber))
+                        cProcessSku = ColumnIndex(lo, "Accepted SKU " & CStr(processPairNumber))
+                        If cProcessItem > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
+                        If cProcessSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
+                    End If
                 End If
             ElseIf tblName = "inventorypalette_generated" Or tblName Like "proc_*_palette" Then
                 Dim palItemRow As Long

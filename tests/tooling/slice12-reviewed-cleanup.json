@@ -11,7 +11,7 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedComponentGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ab",
+    "slice": "Plan 022 Slices 4x through 4ac",
     "baseline": 150,
     "ceiling": 153,
     "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project; no legacy package or parallel authority was added.",
@@ -25,10 +25,10 @@
     ]
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ab",
+    "slice": "Plan 022 Slices 4x through 4ac",
     "baseline": 4729,
-    "ceiling": 5071,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe identity boundary, bulk DRAFT import, current exact-entity picker projection, same-handler packaged tests, and bounded clean-restart probes add protected procedures. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
+    "ceiling": 5076,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged tests, and bounded clean-restart probes add protected procedures. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
@@ -37,21 +37,23 @@
       "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
       "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
       "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1",
-      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1"
+      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
+      "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1"
     ]
   },
   "approvedCandidateGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ab",
+    "slice": "Plan 022 Slices 4x through 4ac",
     "baseline": 965,
-    "ceiling": 1037,
-    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, multi-table captured-workbook worksheet controller, numbered item-picker bridge, text-safe Designs event path, and exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
+    "ceiling": 1038,
+    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, multi-table captured-workbook worksheet controller, numbered INPUT and OUTPUT item-picker bridge, text-safe Designs event path, and exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
       "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
       "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
       "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1",
-      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1"
+      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
+      "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1"
     ]
   },
   "approvedDuplicateGrowth": {
@@ -74,20 +76,20 @@
     {
       "source": "src/Production/Forms/frmProduction.frm",
       "baseline": 4913,
-      "ceiling": 8203,
-      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual picker-open/nonempty proof, and clean-restart diagnostics."
+      "ceiling": 8287,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab/4ac add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual INPUT/OUTPUT picker-open and commit proof, hidden output-SKU round-trip, and clean-restart diagnostics."
     },
     {
       "source": "src/Production/Modules/mProduction.bas",
       "baseline": 12942,
-      "ceiling": 13115,
-      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run/workbench/restart test entry points, owns the shared three-character Base-36 generator and validator, routes Process item search through Core, and converts automation-only faults into actionable test results."
+      "ceiling": 13138,
+      "rationale": "The preserved packaged launcher exposes bounded same-project reusable-design/run/workbench/restart test entry points, owns the shared three-character Base-36 generator and validator, routes Process INPUT and OUTPUT item search through Core, and converts automation-only faults into actionable test results."
     },
     {
       "source": "src/Core/ClassModules/cDynItemSearch.cls",
       "baseline": 1890,
-      "ceiling": 1967,
-      "rationale": "Slice 4ab adds a bounded Process-only Inventory Domain entity loader, SKU-level deduplication, and packaged visible-result count without changing other picker modes or adding a parallel inventory authority."
+      "ceiling": 1990,
+      "rationale": "Slices 4ab/4ac add a bounded Process-only Inventory Domain entity loader, SKU-level deduplication, packaged visible-result count, and OUTPUT Name/hidden-SKU commit branch without changing other picker modes or adding a parallel inventory authority."
     },
     {
       "source": "src/Production/Modules/modProductionReusableRun.bas",
@@ -98,8 +100,8 @@
     {
       "source": "src/Production/Modules/modProductionProcessWorksheet.bas",
       "baseline": 0,
-      "ceiling": 1260,
-      "rationale": "The cohesive typed worksheet controller owns simultaneous captured-workbook Process tables, calculated formula/validation columns, catalog UOM validation, text-safe generated identity, numbered assignment projections, Ctrl+click selected-only safe retrieval, and clean-restart discovery without creating a second Designs authority."
+      "ceiling": 1295,
+      "rationale": "The cohesive typed worksheet controller owns simultaneous captured-workbook Process tables, calculated formula/validation columns, catalog UOM validation, text-safe generated identity, numbered INPUT assignment projections, OUTPUT managed-item/hidden-SKU projection, Ctrl+click selected-only safe retrieval, and clean-restart discovery without creating a second Designs authority."
     }
   ],
   "approvedModuleGrowthProtectingTests": [
@@ -108,6 +110,7 @@
     "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
     "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1",
     "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
+    "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
     "tools/validate_slice9_production_layout.ps1",
     "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"

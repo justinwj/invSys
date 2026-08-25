@@ -377,6 +377,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunProcessWorksheetOutputPickerContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetOutputPickerContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetOutputPickerContractTest = _
+            frmProduction.TestProcessWorksheetOutputPickerContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetOutputPickerContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionFormActionContractTest() As String
     On Error GoTo Failed
 
@@ -520,6 +537,12 @@ Public Function ProductionProcessItemSearchResultCountForTest() As Long
     If mProcessItemPicker Is Nothing Then Exit Function
     ProductionProcessItemSearchResultCountForTest = _
         CLng(mProcessItemPicker.SearchResultCount())
+End Function
+
+Public Function CommitFirstProductionProcessItemSearchResultForTest() As Boolean
+    If mProcessItemPicker Is Nothing Then Exit Function
+    CommitFirstProductionProcessItemSearchResultForTest = _
+        CBool(mProcessItemPicker.CommitFirstSearchResultForTest())
 End Function
 
 Public Sub CloseProductionProcessItemSearchForTest()

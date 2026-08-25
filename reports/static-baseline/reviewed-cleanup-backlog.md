@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1037
-- Reviewed candidates: 1039
+- Scanner candidates: 1038
+- Reviewed candidates: 1040
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 201 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 202 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
@@ -36,7 +36,7 @@
 | src/Admin/Modules/modAdmin.bas | Admin | 1924 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
-| src/Core/ClassModules/cDynItemSearch.cls | Core | 1967 |
+| src/Core/ClassModules/cDynItemSearch.cls | Core | 1990 |
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
@@ -50,10 +50,10 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 8203 |
-| src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1260 |
+| src/Production/Forms/frmProduction.frm | Production | 8287 |
+| src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1295 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13115 |
+| src/Production/Modules/mProduction.bas | Production | 13138 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -724,6 +724,7 @@
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RepairLastCompletedProductionRun | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.ResolveProductionOutputSystemKey | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RestoreMadeStageColumns | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_mProduction.bas:mProduction.RunProcessWorksheetOutputPickerContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionFormActionContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionRunActionContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionSurfaceContractTest | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
