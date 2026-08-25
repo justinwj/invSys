@@ -6377,6 +6377,7 @@ Public Function TestProcessWorksheetBulkImportContract() As String
     Dim numberedAlternatives As Boolean
     Dim addedAlternative As Boolean
     Dim pickerOpened As Boolean
+    Dim pickerInventoryRows As Boolean
     Dim multiAreaSelection As Boolean
     Dim multiTableDrafts As Boolean
 
@@ -6430,6 +6431,8 @@ Public Function TestProcessWorksheetBulkImportContract() As String
     itemSearchCell.Select
     DoEvents
     pickerOpened = mProduction.ProductionProcessItemSearchVisibleForTest()
+    pickerInventoryRows = _
+        (mProduction.ProductionProcessItemSearchResultCountForTest() > 0)
     mProduction.CloseProductionProcessItemSearchForTest
 
     ClearProcessDraft True
@@ -6456,10 +6459,12 @@ Public Function TestProcessWorksheetBulkImportContract() As String
 
 ReportResult:
     If textSafeIds And requirementIds And uomCatalog And numberedAlternatives _
-       And addedAlternative And pickerOpened And multiAreaSelection And multiTableDrafts Then
+       And addedAlternative And pickerOpened And pickerInventoryRows And _
+       multiAreaSelection And multiTableDrafts Then
         TestProcessWorksheetBulkImportContract = _
             "OK|TextSafeIds=True|RequirementIds=True|UomCatalog=True" & _
             "|NumberedAlternatives=True|AddedAlternative=True|PickerOpened=True" & _
+            "|PickerInventoryRows=True" & _
             "|MultiAreaSelection=True|MultiTableDrafts=True"
     Else
         TestProcessWorksheetBulkImportContract = _
@@ -6469,6 +6474,7 @@ ReportResult:
             "|NumberedAlternatives=" & CStr(numberedAlternatives) & _
             "|AddedAlternative=" & CStr(addedAlternative) & _
             "|PickerOpened=" & CStr(pickerOpened) & _
+            "|PickerInventoryRows=" & CStr(pickerInventoryRows) & _
             "|MultiAreaSelection=" & CStr(multiAreaSelection) & _
             "|MultiTableDrafts=" & CStr(multiTableDrafts) & _
             "|ProcessId=" & firstProcessId & _

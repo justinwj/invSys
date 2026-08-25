@@ -505,6 +505,55 @@ if ($WorkbookState -eq "ReceivingFormClosed") {
         throw "ReceivingFormClosed supports only -CallbackFilter Receiving."
     }
 }
+
+function Add-ProductionPickerProjectionFixture {
+    param([object]$InventoryWorkbook)
+
+    $wsSku = Get-WorksheetSafe -Workbook $InventoryWorkbook -WorksheetName "SkuCatalog"
+    $loSku = Get-ListObjectSafe -Worksheet $wsSku -TableName "tblSkuCatalog"
+    if ($null -eq $loSku) { throw "Production picker fixture requires tblSkuCatalog." }
+    foreach ($header in @("ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "CATEGORY")) {
+        if ((Get-ColumnIndexSafe -ListObject $loSku -ColumnName $header) -eq 0) {
+            $newColumn = $loSku.ListColumns.Add()
+            $newColumn.Name = $header
+        }
+    }
+
+    $fixture = @{
+        "SKU-RUN-RAW" = @("SYS-LIVE-PRODUCTION-RUN-RAW", "Production Raw Material", 20.0)
+        "SKU-RUN-STALE" = @("SYS-LIVE-PRODUCTION-RUN-STALE", "Production Stale Material", 6.0)
+    }
+    $entityRows = @()
+    foreach ($sku in @("SKU-RUN-RAW", "SKU-RUN-STALE")) {
+        $rowIndex = 0
+        if ($null -ne $loSku.DataBodyRange) {
+            for ($candidateRow = 1; $candidateRow -le [int]$loSku.ListRows.Count; $candidateRow++) {
+                $candidateSku = [string]$loSku.DataBodyRange.Cells($candidateRow, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "SKU")).Value2
+                if ($candidateSku -eq $sku) { $rowIndex = $candidateRow; break }
+            }
+        }
+        if ($rowIndex -eq 0) {
+            [void]$loSku.ListRows.Add()
+            $rowIndex = [int]$loSku.ListRows.Count
+            $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "SKU")).Value2 = $sku
+        }
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "ITEM_CODE")).Value2 = $sku
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "ITEM")).Value2 = [string]$fixture[$sku][1]
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "UOM")).Value2 = "LB"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "LOCATION")).Value2 = "LINE"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "DESCRIPTION")).Value2 = "isolated packaged picker fixture"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "CATEGORY")).Value2 = "INGREDIENT"
+        $entityRows += ,@([string]$fixture[$sku][0], $sku, [double]$fixture[$sku][2], "LINE", "GOOD", "ACTIVE", "{}", [datetime]::UtcNow)
+    }
+
+    $wsEntities = $InventoryWorkbook.Worksheets.Add()
+    $wsEntities.Name = "InventoryEntities"
+    Add-Table -Worksheet $wsEntities -TableName "tblInventoryEntities" -Headers @(
+        "System_Key", "SKU", "QtyOnHand", "Location", "Condition", "InventoryState",
+        "AttributesJson", "LastAppliedUTC"
+    ) -Rows $entityRows | Out-Null
+    $InventoryWorkbook.Save()
+}
 if ($WorkbookState -eq "ShippingLayout") {
     if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
         $callbacks = @($callbacks | Where-Object { $_.Name -eq "Shipping" })
@@ -571,6 +620,7 @@ try {
     elseif ($WorkbookState -eq "ProductionReusable") {
         $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
             -WarehouseId $warehouseId -SkuRows @("SKU-RUN-RAW", "SKU-RUN-STALE")
+        Add-ProductionPickerProjectionFixture -InventoryWorkbook $inventoryWb
         $opened.Add($inventoryWb) | Out-Null
     }
 
@@ -1067,6 +1117,7 @@ try {
                         $productionBulkImportReport -match '(?:^|\|)NumberedAlternatives=True(?:\||$)' -and
                         $productionBulkImportReport -match '(?:^|\|)AddedAlternative=True(?:\||$)' -and
                         $productionBulkImportReport -match '(?:^|\|)PickerOpened=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)PickerInventoryRows=True(?:\||$)' -and
                         $productionBulkImportReport -match '(?:^|\|)MultiAreaSelection=True(?:\||$)' -and
                         $productionBulkImportReport -match '(?:^|\|)MultiTableDrafts=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionBulkImportPassed

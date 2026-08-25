@@ -36,7 +36,7 @@
 | src/Admin/Modules/modAdmin.bas | Admin | 1924 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
-| src/Core/ClassModules/cDynItemSearch.cls | Core | 1890 |
+| src/Core/ClassModules/cDynItemSearch.cls | Core | 1967 |
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
@@ -50,10 +50,10 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 8197 |
+| src/Production/Forms/frmProduction.frm | Production | 8203 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1260 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
-| src/Production/Modules/mProduction.bas | Production | 13109 |
+| src/Production/Modules/mProduction.bas | Production | 13115 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |

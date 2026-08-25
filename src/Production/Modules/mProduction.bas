@@ -516,6 +516,12 @@ Public Function ProductionProcessItemSearchVisibleForTest() As Boolean
         CBool(mProcessItemPicker.IsSearchVisible())
 End Function
 
+Public Function ProductionProcessItemSearchResultCountForTest() As Long
+    If mProcessItemPicker Is Nothing Then Exit Function
+    ProductionProcessItemSearchResultCountForTest = _
+        CLng(mProcessItemPicker.SearchResultCount())
+End Function
+
 Public Sub CloseProductionProcessItemSearchForTest()
     If mProcessItemPicker Is Nothing Then Exit Sub
     mProcessItemPicker.CloseSearch

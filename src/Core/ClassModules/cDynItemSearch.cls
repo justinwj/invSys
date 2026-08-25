@@ -47,6 +47,12 @@ Public Sub CloseSearch()
     On Error GoTo 0
 End Sub
 
+Public Function SearchResultCount() As Long
+    On Error Resume Next
+    If Not lst Is Nothing Then SearchResultCount = lst.ListCount
+    On Error GoTo 0
+End Function
+
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
     If targetCell Is Nothing Then Exit Sub
@@ -326,6 +332,8 @@ Private Function LoadItems() As Boolean
         itemsArr = RunRoleMacro1("mProduction.LoadIngredientListForRecipe", mIngredientRecipeId)
     ElseIf LCase$(mPickerMode) = "shipping_component" Then
         itemsArr = LoadShippingComponentItems()
+    ElseIf IsProcessWorksheetPicker() Then
+        itemsArr = LoadProcessManagedInventoryItems()
     ElseIf ShouldUseShippingBomFilter() Then
         itemsArr = LoadShippingBomPackageItems()
         If Not IsEmpty(itemsArr) Then mLoadedFromShippingBom = True
@@ -1559,6 +1567,75 @@ Private Function ProcessAlternativePairNumber(ByVal lo As ListObject, _
     If Left$(columnName, Len(prefix)) <> prefix Then Exit Function
     If IsNumeric(Mid$(columnName, Len(prefix) + 1)) Then _
         ProcessAlternativePairNumber = CLng(Mid$(columnName, Len(prefix) + 1))
+End Function
+
+Private Function IsProcessWorksheetPicker() As Boolean
+    Dim lo As ListObject
+
+    If CurrentRoleKey() <> "production" Then Exit Function
+    If LCase$(mPickerMode) <> "item" Then Exit Function
+    On Error Resume Next
+    If Not callbackCell Is Nothing Then Set lo = callbackCell.ListObject
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Function
+    IsProcessWorksheetPicker = (LCase$(lo.Name) Like "invsys_process_*")
+End Function
+
+Private Function LoadProcessManagedInventoryItems() As Variant
+    Dim sourceRows As Variant
+    Dim result() As Variant
+    Dim trimmed() As Variant
+    Dim seen As Object
+    Dim systemKey As String
+    Dim itemCode As String
+    Dim itemName As String
+    Dim alternativeKey As String
+    Dim r As Long
+    Dim c As Long
+    Dim outRow As Long
+
+    sourceRows = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    If IsEmpty(sourceRows) Then Exit Function
+    If Not IsArray(sourceRows) Then Exit Function
+
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbTextCompare
+    ReDim result(1 To UBound(sourceRows, 1), 1 To 8)
+    For r = LBound(sourceRows, 1) To UBound(sourceRows, 1)
+        systemKey = Trim$(NzStr(sourceRows(r, 1)))
+        itemCode = Trim$(NzStr(sourceRows(r, 2)))
+        itemName = Trim$(NzStr(sourceRows(r, 4)))
+        If systemKey = "" Or itemName = "" Then GoTo NextProcessItem
+
+        alternativeKey = itemCode & vbNullChar & itemName
+        If seen.Exists(alternativeKey) Then GoTo NextProcessItem
+        seen.Add alternativeKey, True
+
+        outRow = outRow + 1
+        result(outRow, 1) = systemKey
+        result(outRow, 2) = itemCode
+        result(outRow, 3) = itemName
+        result(outRow, 4) = NzStr(sourceRows(r, 5))
+        result(outRow, 5) = NzStr(sourceRows(r, 7))
+        result(outRow, 6) = ""
+        result(outRow, 7) = ""
+        result(outRow, 8) = ""
+NextProcessItem:
+    Next r
+
+    If outRow = 0 Then Exit Function
+    If outRow = UBound(result, 1) Then
+        LoadProcessManagedInventoryItems = result
+        Exit Function
+    End If
+
+    ReDim trimmed(1 To outRow, 1 To 8)
+    For r = 1 To outRow
+        For c = 1 To 8
+            trimmed(r, c) = result(r, c)
+        Next c
+    Next r
+    LoadProcessManagedInventoryItems = trimmed
 End Function
 
 Private Function NzStr(v As Variant) As String
