@@ -16,27 +16,25 @@ $picker = Get-Content -LiteralPath (Join-Path $repo "src\Core\ClassModules\cDynI
 $form = Get-Content -LiteralPath (Join-Path $repo "src\Production\Forms\frmProduction.frm") -Raw
 $validator = Get-Content -LiteralPath (Join-Path $repo "tools\validate_plan022_packaged_launchers.ps1") -Raw
 
-$checks["Docs.OutputSkuContract"] =
-    $spec.Contains("system-managed **Output SKU**") -and
-    $plan.Contains("Slice 4ac -- Process OUTPUT managed-item picker") -and
-    $controls.Contains("Slice 4ac Process OUTPUT managed-item picker:")
-$checks["Worksheet.OutputNameTarget"] =
+$checks["Docs.RecordTypeReachability"] =
+    $spec.Contains("same Core item-search interaction as INPUT") -and
+    $plan.Contains("Slice 4ad -- Process picker INPUT/OUTPUT record-type reachability") -and
+    $controls.Contains("Slice 4ad Process picker INPUT/OUTPUT reachability:")
+$checks["Worksheet.OutputManagedItemTarget"] =
     $worksheet.Contains("IsProcessWorksheetOutputManagedItemTarget") -and
-    $worksheet.Contains('Set nameColumn = lo.ListColumns("Name")') -and
-    $worksheet.Contains('lo.ListColumns("Output SKU")')
-$checks["Worksheet.OutputSkuRoundTrip"] =
-    $worksheet.Contains('rowRecord("OutputSku")') -and
+    $worksheet.Contains('Set managedItemColumn = lo.ListColumns("Acceptable Managed Item 1")')
+$checks["Picker.OutputManagedItemCommit"] =
+    $picker.Contains('If processRecordType = "OUTPUT" Then') -and
+    $picker.Contains('cProcessItem = ColumnIndex(lo, "Acceptable Managed Item 1")') -and
+    $picker.Contains('cProcessOutputSku = ColumnIndex(lo, "Output SKU")')
+$checks["Worksheet.OutputSkuImport"] =
+    $worksheet.Contains('If outputSku = "" Then outputSku = acceptedSku') -and
     $worksheet.Contains('record("ITEM_CODE") = outputSku')
-$checks["Picker.OutputCommit"] =
-    $picker.Contains('cProcessOutputSku = ColumnIndex(lo, "Output SKU")') -and
-    $picker.Contains('cProcessName = ColumnIndex(lo, "Name")')
-$checks["Packaged.PublicOutputPicker"] =
-    $form.Contains("TestProcessWorksheetOutputPickerContract") -and
-    $form.Contains("OutputPickerOpened=True") -and
-    $form.Contains("OutputSkuRoundTrip=True")
-$checks["Validator.RequiresOutputPicker"] =
-    $validator.Contains("OutputPickerOpened=True") -and
-    $validator.Contains("OutputSkuRoundTrip=True")
+$checks["Packaged.ActualOutputManagedItemCell"] =
+    $form.Contains('outputItemColumn = ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1")') -and
+    $form.Contains("OutputNameRetained=True")
+$checks["Validator.RequiresRetainedName"] =
+    $validator.Contains("OutputNameRetained=True")
 
 $passed = 0
 $red = 0
@@ -51,5 +49,5 @@ foreach ($entry in $checks.GetEnumerator()) {
     }
 }
 
-Write-Host ("PLAN022_SLICE4AC_SOURCE passed={0} red={1} total={2}" -f $passed, $red, $checks.Count)
+Write-Host ("PLAN022_SLICE4AD_SOURCE passed={0} red={1} total={2}" -f $passed, $red, $checks.Count)
 if ($red -gt 0) { exit 1 }

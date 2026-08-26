@@ -1131,6 +1131,7 @@ try {
                         $productionOutputPickerReport -match '(?:^|\|)OutputPickerCommitted=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)OutputSkuHidden=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)OutputSkuRoundTrip=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputNameRetained=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)NoPhysicalKey=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionOutputPickerPassed
                     $observedText += " || PRODUCTION_PROCESS_OUTPUT_PICKER=" + $productionOutputPickerReport

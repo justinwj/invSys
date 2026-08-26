@@ -1517,11 +1517,21 @@ Public Sub CommitSelection()
                             lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2)))
                     cProcessName = ColumnIndex(lo, "Name")
                     cProcessOutputSku = ColumnIndex(lo, "Output SKU")
-                    If processRecordType = "OUTPUT" And cProcessName > 0 _
-                       And callbackCell.Column = lo.ListColumns(cProcessName).Range.Column Then
-                        lo.DataBodyRange.Cells(rowIdx, cProcessName).Value2 = itemName
+                    If processRecordType = "OUTPUT" Then
+                        cProcessItem = ColumnIndex(lo, "Acceptable Managed Item 1")
+                        cProcessSku = ColumnIndex(lo, "Accepted SKU 1")
+                        If cProcessItem > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
+                        If cProcessSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
                         If cProcessOutputSku > 0 Then _
                             lo.DataBodyRange.Cells(rowIdx, cProcessOutputSku).Value2 = itemCode
+                        If cProcessName > 0 Then
+                            If callbackCell.Column = lo.ListColumns(cProcessName).Range.Column _
+                               Or Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, _
+                                    cProcessName).Value2)) = "" Then _
+                                lo.DataBodyRange.Cells(rowIdx, cProcessName).Value2 = itemName
+                        End If
                     Else
                         processPairNumber = ProcessAlternativePairNumber(lo, callbackCell)
                         cProcessItem = ColumnIndex(lo, "Acceptable Managed Item " & CStr(processPairNumber))

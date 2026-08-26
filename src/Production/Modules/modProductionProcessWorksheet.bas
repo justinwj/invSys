@@ -254,6 +254,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 records.Add record
                 AppendWorksheetAlternativeRecords lo, rowIndex, rowId, records
             Case "OUTPUT"
+                If outputSku = "" Then outputSku = acceptedSku
+                If rowName = "" Then rowName = acceptableItem
                 rowId = ResolveWorksheetRowId(rowId, outputIds)
                 If rowName = "" Or outputSku = "" Or uom = "" Then
                     report = "Each OUTPUT row needs a managed item selected from item search and a UOM."
@@ -530,14 +532,15 @@ End Function
 
 Public Function IsProcessWorksheetItemSearchTarget(ByVal target As Range) As Boolean
     IsProcessWorksheetItemSearchTarget = _
-        IsProcessWorksheetOutputItemSearchTarget(target) Or _
+        IsProcessWorksheetOutputManagedItemTarget(target) Or _
         (ProcessAlternativePairNumber(target) > 0)
 End Function
 
-Public Function IsProcessWorksheetOutputItemSearchTarget(ByVal target As Range) As Boolean
+Public Function IsProcessWorksheetOutputManagedItemTarget(ByVal target As Range) As Boolean
     Dim lo As ListObject
     Dim recordTypeColumn As ListColumn
     Dim nameColumn As ListColumn
+    Dim managedItemColumn As ListColumn
     Dim rowIndex As Long
 
     If target Is Nothing Or target.Cells.CountLarge <> 1 Then Exit Function
@@ -549,12 +552,15 @@ Public Function IsProcessWorksheetOutputItemSearchTarget(ByVal target As Range) 
     On Error Resume Next
     Set recordTypeColumn = lo.ListColumns("Record Type")
     Set nameColumn = lo.ListColumns("Name")
+    Set managedItemColumn = lo.ListColumns("Acceptable Managed Item 1")
     On Error GoTo 0
-    If recordTypeColumn Is Nothing Or nameColumn Is Nothing Then Exit Function
-    If target.Column <> nameColumn.Range.Column Then Exit Function
+    If recordTypeColumn Is Nothing Or nameColumn Is Nothing _
+       Or managedItemColumn Is Nothing Then Exit Function
+    If target.Column <> nameColumn.Range.Column _
+       And target.Column <> managedItemColumn.Range.Column Then Exit Function
     rowIndex = target.Row - lo.DataBodyRange.Row + 1
     If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Function
-    IsProcessWorksheetOutputItemSearchTarget = _
+    IsProcessWorksheetOutputManagedItemTarget = _
         (UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, _
             recordTypeColumn.Index).Value2))) = "OUTPUT")
 End Function
@@ -705,6 +711,13 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
                 rowRecord("Id") = modProductionReusableDesigns.ReusableRecordText(record, "OutputId")
                 rowRecord("Name") = modProductionReusableDesigns.ReusableRecordText(record, "OutputName")
                 rowRecord("OutputSku") = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
+                rowRecord("AcceptedSku1") = DictionaryText(rowRecord, "OutputSku")
+                If itemNameBySku.Exists(DictionaryText(rowRecord, "OutputSku")) Then
+                    rowRecord("AcceptableItem1") = _
+                        itemNameBySku(DictionaryText(rowRecord, "OutputSku"))
+                Else
+                    rowRecord("AcceptableItem1") = DictionaryText(rowRecord, "Name")
+                End If
                 rowRecord("Qty") = modProductionReusableDesigns.ReusableRecordValue(record, "Qty")
                 rowRecord("Percent") = modProductionReusableDesigns.ReusableRecordValue(record, "Percent")
                 rowRecord("BasisQty") = modProductionReusableDesigns.ReusableRecordValue(record, "YieldBasis")
