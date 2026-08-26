@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "b71b8d56aa9c28e535e196a3a0193577be68d81cce55c63cde15ce404adeb89e",
-                          "maintenanceCandidatesSha256":  "8c08565a6040a3ff8877278d8b77447fabb62337fc74b5e8c75af693e2aae32f"
+                          "implementationManifestSha256":  "832299c9b15ea6b020297c3a91057c2e10cac4581d4dbcb665fda9ee860ea5c1",
+                          "maintenanceCandidatesSha256":  "f5baa0dda8dde00dba82dfb849617a1b7693f3b30093e9710fbe75d61e93fb00"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8500,
+                                                  "baselineLineCount":  8572,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -15919,6 +15919,7 @@
                                                   "CreateReusableRunRawInventory",
                                                   "CurrentRecipeRowBudget",
                                                   "EnsureComboValueForActionTest",
+                                                  "EnsureRecipeDraftIdentity",
                                                   "EnsureRunBaseQtyMap",
                                                   "EnsureRunInventoryCache",
                                                   "EnsureRunItemCodeMap",
@@ -16122,6 +16123,7 @@
                                                   "RecipeHasIncomingRequirement",
                                                   "RecipeNodeIndex",
                                                   "RecipeRequirementsResolved",
+                                                  "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
                                                   "RefreshAllViews",
                                                   "RefreshAssignmentState",
@@ -20290,7 +20292,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20336,7 +20338,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

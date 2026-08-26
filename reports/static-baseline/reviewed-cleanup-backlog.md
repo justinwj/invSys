@@ -50,7 +50,7 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 8500 |
+| src/Production/Forms/frmProduction.frm | Production | 8572 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1291 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1098 |
 | src/Production/Modules/mProduction.bas | Production | 13138 |

@@ -1079,8 +1079,12 @@ try {
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunProcessWorksheetRoundTripContractTest")
                     $processWorksheetPassed = $processWorksheetReport -match '^OK\|' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdentityInitialized=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)ProcessIdGenerated=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)RequirementIdGenerated=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)OutputIdGenerated=True(?:\||$)' -and
                         $processWorksheetReport -match '(?:^|\|)IdentityControlsLocked=True(?:\||$)' -and
@@ -1152,6 +1156,11 @@ try {
                         $productionActionReport -match '(?:^|\|)RecipeSaved=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeReleased=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeObsoleted=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)EditedRecipeVersionRetained=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport

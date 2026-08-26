@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  153,
-                     "procedureCount":  5079,
-                     "lineCount":  112551,
+                     "procedureCount":  5081,
+                     "lineCount":  112623,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10640,7 +10640,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10674,7 +10674,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14608,6 +14608,7 @@
                                                   "CreateReusableRunRawInventory",
                                                   "CurrentRecipeRowBudget",
                                                   "EnsureComboValueForActionTest",
+                                                  "EnsureRecipeDraftIdentity",
                                                   "EnsureRunBaseQtyMap",
                                                   "EnsureRunInventoryCache",
                                                   "EnsureRunItemCodeMap",
@@ -14811,6 +14812,7 @@
                                                   "RecipeHasIncomingRequirement",
                                                   "RecipeNodeIndex",
                                                   "RecipeRequirementsResolved",
+                                                  "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
                                                   "RefreshAllViews",
                                                   "RefreshAssignmentState",

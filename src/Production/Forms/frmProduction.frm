@@ -309,6 +309,7 @@ Public Sub InitializeFromProduction()
     mProduction.InitializeProductionUiForWorkbook wb
     ResetInventoryCache
     RefreshAllViews
+    EnsureRecipeDraftIdentity
     mLoading = False
     ShowStatus "Production form loaded for " & wb.Name & ". " & _
                NzStr(mProduction.GetProductionInventoryModeStatus()) & " " & _
@@ -1018,7 +1019,7 @@ Private Sub BuildRecipeDesignerPage(ByVal pg As MSForms.Page)
     mTxtReusableRecipeId.Locked = True
     AddLabel pg, "Version", 660, 8, 55, 16
     Set mTxtReusableRecipeVersion = AddText(pg, "txtReusableRecipeVersion", 660, 26, 55, 22)
-    mTxtReusableRecipeVersion.Locked = True
+    mTxtReusableRecipeVersion.Locked = False
     AddLabel pg, "Description", 290, 54, 80, 16
     Set mTxtReusableRecipeDescription = AddText(pg, "txtReusableRecipeDescription", 290, 72, 425, 60)
     mTxtReusableRecipeDescription.MultiLine = True
@@ -5527,11 +5528,37 @@ Private Sub ClearRecipeDraft(Optional ByVal createIdentity As Boolean = True)
     mLstRecipeConnections.Clear
     mLstRecipeValidation.Clear
     ClearConnectionEditor
-    If createIdentity Then
+    If createIdentity Then EnsureRecipeDraftIdentity
+End Sub
+
+Private Sub EnsureRecipeDraftIdentity()
+    If Trim$(mTxtReusableRecipeId.Text) = "" Then
         mTxtReusableRecipeId.Text = NextListBase36Id(mLstRecipes, 0)
-        mTxtReusableRecipeVersion.Text = "1"
+    End If
+    If Trim$(mTxtReusableRecipeVersion.Text) = "" Then
+        mTxtReusableRecipeVersion.Text = _
+            modProductionReusableDesigns.NextReusableDefinitionVersion( _
+                Trim$(mTxtReusableRecipeId.Text), False)
     End If
 End Sub
+
+Private Function RecipeVersionIsValid(ByVal versionText As String) As Boolean
+    Dim i As Long
+    Dim ch As String
+
+    On Error GoTo InvalidVersion
+    versionText = Trim$(versionText)
+    If versionText = "" Then Exit Function
+    For i = 1 To Len(versionText)
+        ch = Mid$(versionText, i, 1)
+        If ch < "0" Or ch > "9" Then Exit Function
+    Next i
+    RecipeVersionIsValid = (CDbl(versionText) > 0#)
+    Exit Function
+
+InvalidVersion:
+    RecipeVersionIsValid = False
+End Function
 
 Private Sub ClearConnectionEditor()
     mCmbConnectionFromNode.Clear
@@ -5793,6 +5820,11 @@ Private Function ValidateRecipeDraft(ByRef report As String, _
        Trim$(mTxtReusableRecipeName.Text) = "" Then
         report = "Recipe ID, version, and name are required."
         AddRecipeValidationIssue "IDENTITY", report
+        Exit Function
+    End If
+    If Not RecipeVersionIsValid(mTxtReusableRecipeVersion.Text) Then
+        report = "Recipe version must be a positive whole number."
+        AddRecipeValidationIssue "VERSION", report
         Exit Function
     End If
     If mLstRecipeNodes.ListCount = 0 Then
@@ -6234,7 +6266,11 @@ End Function
 
 Public Function TestProcessWorksheetRoundTripContract() As String
     Dim processIdGenerated As Boolean
+    Dim recipeIdentityInitialized As Boolean
     Dim recipeIdGenerated As Boolean
+    Dim recipeVersionGenerated As Boolean
+    Dim recipeIdLocked As Boolean
+    Dim recipeVersionEditable As Boolean
     Dim requirementIdGenerated As Boolean
     Dim outputIdGenerated As Boolean
     Dim identityControlsLocked As Boolean
@@ -6251,6 +6287,10 @@ Public Function TestProcessWorksheetRoundTripContract() As String
 
     If Not mBuilt Then BuildLayout
     If Not mOperatorWorkbook Is Nothing Then boundWorkbookName = mOperatorWorkbook.Name
+
+    recipeIdentityInitialized = _
+        mProduction.IsBase36Identifier(mTxtReusableRecipeId.Text) And _
+        (Trim$(mTxtReusableRecipeVersion.Text) = "1")
 
     mBtnProcessNew_Click
     processIdGenerated = mProduction.IsBase36Identifier(mTxtProcessId.Text)
@@ -6276,8 +6316,11 @@ Public Function TestProcessWorksheetRoundTripContract() As String
 
     mBtnRecipeNew_Click
     recipeIdGenerated = mProduction.IsBase36Identifier(mTxtReusableRecipeId.Text)
+    recipeVersionGenerated = (Trim$(mTxtReusableRecipeVersion.Text) = "1")
+    recipeIdLocked = mTxtReusableRecipeId.Locked
+    recipeVersionEditable = Not mTxtReusableRecipeVersion.Locked
     identityControlsLocked = identityControlsLocked And _
-        mTxtReusableRecipeId.Locked And mTxtReusableRecipeVersion.Locked And _
+        recipeIdLocked And _
         mTxtProcessOutputDesignId.Locked And mTxtProcessOutputDesignVersion.Locked
 
     worksheetControlVisible = Not mBtnProcessWorksheetCreate Is Nothing And _
@@ -6325,12 +6368,17 @@ Public Function TestProcessWorksheetRoundTripContract() As String
             tableRemoved And repeatRoundTrip
     End If
 
-    If boundWorkbookName <> "" And processIdGenerated And recipeIdGenerated _
+    If boundWorkbookName <> "" And recipeIdentityInitialized _
+       And processIdGenerated And recipeIdGenerated _
+       And recipeVersionGenerated And recipeIdLocked And recipeVersionEditable _
        And requirementIdGenerated And outputIdGenerated And identityControlsLocked _
        And worksheetControlVisible And worksheetHandlerReached Then
         TestProcessWorksheetRoundTripContract = _
             "OK|BoundWorkbook=" & boundWorkbookName & _
+            "|RecipeIdentityInitialized=True" & _
             "|ProcessIdGenerated=True|RecipeIdGenerated=True" & _
+            "|RecipeVersionGenerated=True|RecipeIdLocked=True" & _
+            "|RecipeVersionEditable=True" & _
             "|RequirementIdGenerated=True|OutputIdGenerated=True" & _
             "|IdentityControlsLocked=True|WorksheetHandler=True" & _
             "|MixedUomRejected=True|Formula=" & formulaEvidence & _
@@ -6338,8 +6386,12 @@ Public Function TestProcessWorksheetRoundTripContract() As String
     Else
         TestProcessWorksheetRoundTripContract = _
             "FAIL|BoundWorkbook=" & boundWorkbookName & _
+            "|RecipeIdentityInitialized=" & CStr(recipeIdentityInitialized) & _
             "|ProcessIdGenerated=" & CStr(processIdGenerated) & _
             "|RecipeIdGenerated=" & CStr(recipeIdGenerated) & _
+            "|RecipeVersionGenerated=" & CStr(recipeVersionGenerated) & _
+            "|RecipeIdLocked=" & CStr(recipeIdLocked) & _
+            "|RecipeVersionEditable=" & CStr(recipeVersionEditable) & _
             "|RequirementIdGenerated=" & CStr(requirementIdGenerated) & _
             "|OutputIdGenerated=" & CStr(outputIdGenerated) & _
             "|IdentityControlsLocked=" & CStr(identityControlsLocked) & _
@@ -6866,12 +6918,16 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     Dim recipeSaved As Boolean
     Dim recipeReleased As Boolean
     Dim recipeObsoleted As Boolean
+    Dim recipeIdGenerated As Boolean
+    Dim recipeVersionGenerated As Boolean
+    Dim recipeIdLocked As Boolean
+    Dim recipeVersionEditable As Boolean
+    Dim editedRecipeVersionRetained As Boolean
 
     mReusableActionTestInProgress = True
     token = UCase$(Right$(CleanControlName(BuildFormGuid()), 10))
     sourceId = "PROC-SRC-" & token
     sinkId = "PROC-SINK-" & token
-    recipeId = "RECIPE-" & token
 
     ClearProcessDraft False
     mTxtProcessId.Text = sourceId
@@ -6943,9 +6999,15 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mBtnProcessRelease_Click
     If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo ActionFailed
 
-    ClearRecipeDraft False
-    mTxtReusableRecipeId.Text = recipeId
-    mTxtReusableRecipeVersion.Text = "1"
+    mBtnRecipeNew_Click
+    recipeId = Trim$(mTxtReusableRecipeId.Text)
+    recipeIdGenerated = mProduction.IsBase36Identifier(recipeId)
+    recipeVersionGenerated = (Trim$(mTxtReusableRecipeVersion.Text) = "1")
+    recipeIdLocked = mTxtReusableRecipeId.Locked
+    recipeVersionEditable = Not mTxtReusableRecipeVersion.Locked
+    If Not recipeIdGenerated Or Not recipeVersionGenerated Or _
+       Not recipeIdLocked Or Not recipeVersionEditable Then GoTo ActionFailed
+    mTxtReusableRecipeVersion.Text = "9"
     mTxtReusableRecipeName.Text = "Reusable Recipe " & token
     RefreshReusableDesignLists
     rowIndex = FindIdentityListRow(mLstReleasedProcesses, sourceId, "1")
@@ -6980,6 +7042,8 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mBtnRecipeRelease_Click
     recipeReleased = (InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) > 0)
     If Not recipeReleased Then GoTo ActionFailed
+    editedRecipeVersionRetained = (Trim$(mTxtReusableRecipeVersion.Text) = "9")
+    If Not editedRecipeVersionRetained Then GoTo ActionFailed
     mBtnRecipeObsolete_Click
     recipeObsoleted = (InStr(1, TestStatusText(), " is OBSOLETE", vbTextCompare) > 0)
     If Not recipeObsoleted Then GoTo ActionFailed
@@ -6999,6 +7063,11 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
         "|RecipeSaved=" & CStr(recipeSaved) & _
         "|RecipeReleased=" & CStr(recipeReleased) & _
         "|RecipeObsoleted=" & CStr(recipeObsoleted) & _
+        "|RecipeIdGenerated=" & CStr(recipeIdGenerated) & _
+        "|RecipeVersionGenerated=" & CStr(recipeVersionGenerated) & _
+        "|RecipeIdLocked=" & CStr(recipeIdLocked) & _
+        "|RecipeVersionEditable=" & CStr(recipeVersionEditable) & _
+        "|EditedRecipeVersionRetained=" & CStr(editedRecipeVersionRetained) & _
         "|AlternativesSaved=" & CStr(alternativesSaved)
 CleanExit:
     mReusableActionTestInProgress = False
@@ -7867,12 +7936,14 @@ End Sub
 
 Private Sub mBtnRecipeValidate_Click()
     Dim report As String
+    EnsureRecipeDraftIdentity
     Call ValidateRecipeDraft(report, True)
     ShowStatus report
 End Sub
 
 Private Sub mBtnRecipeSave_Click()
     Dim report As String
+    EnsureRecipeDraftIdentity
     If Not ValidateRecipeDraft(report, False) Then
         ShowStatus report
         Exit Sub
@@ -7882,6 +7953,7 @@ End Sub
 
 Private Sub mBtnRecipeRelease_Click()
     Dim report As String
+    EnsureRecipeDraftIdentity
     If Not ValidateRecipeDraft(report, True) Then
         ShowStatus report
         Exit Sub
