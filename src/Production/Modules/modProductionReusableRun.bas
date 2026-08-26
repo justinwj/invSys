@@ -20,6 +20,8 @@ Private mOutputs As Collection
 Private mConnections As Collection
 Private mAllocations As Object
 Private mOutputKeys As Object
+Private mActualOutputQty As Object
+Private mLastOutputQty As Object
 Private mLastSummary As String
 
 Public Sub ClearReusableRun()
@@ -38,6 +40,8 @@ Public Sub ClearReusableRun()
     Set mConnections = New Collection
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
+    Set mActualOutputQty = NewTextDictionary()
+    Set mLastOutputQty = NewTextDictionary()
     mLastSummary = ""
 End Sub
 
@@ -129,6 +133,7 @@ Public Function ApplyReusableRunScale(ByVal scalePercent As Double, _
     mScalePercent = scalePercent
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
+    Set mActualOutputQty = NewTextDictionary()
     mCheckedIn = False
     mCompleted = False
     mLastSummary = ""
@@ -389,13 +394,72 @@ Public Function ReusableRunOutputRows() As Variant
         result(rowIndex, 1) = RunRecordText(output, "ProcessName")
         result(rowIndex, 2) = RunRecordText(output, "OutputName")
         result(rowIndex, 3) = RunRecordText(output, "UOM")
-        result(rowIndex, 4) = ""
+        If mLastOutputQty.Exists(outputKey) Then result(rowIndex, 4) = mLastOutputQty(outputKey)
         result(rowIndex, 5) = mBatchNumber
         result(rowIndex, 6) = ScaledRecordQty(output)
         result(rowIndex, 7) = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
         If mOutputKeys.Exists(outputKey) Then result(rowIndex, 8) = mOutputKeys(outputKey)
     Next rawOutput
     ReusableRunOutputRows = result
+End Function
+
+Public Function StageReusableRunActualOutput(ByVal outputIndex As Long, _
+                                             ByVal quantityText As String, _
+                                             Optional ByRef report As String = "") As Boolean
+    Dim output As Object
+    Dim outputKey As String
+    Dim actualQty As Double
+
+    If Not mLoaded Then
+        report = "Load a released Recipe before entering Actual Output."
+        Exit Function
+    End If
+    If mCompleted Then
+        report = "This batch is already complete. Click Next Batch before entering Actual Output."
+        Exit Function
+    End If
+    If outputIndex < 1 Or outputIndex > mOutputs.Count Then
+        report = "Select the Production Output row whose Actual Output is being entered."
+        Exit Function
+    End If
+
+    Set output = mOutputs(outputIndex)
+    outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
+                                  RunRecordText(output, "OutputId"))
+    quantityText = Trim$(quantityText)
+    If quantityText = "" Then
+        If mActualOutputQty.Exists(outputKey) Then mActualOutputQty.Remove outputKey
+        report = "Actual Output cleared for " & RunRecordText(output, "OutputName") & "."
+        StageReusableRunActualOutput = True
+        Exit Function
+    End If
+    If Not IsNumeric(quantityText) Then
+        report = "Actual Output must be a number greater than zero."
+        Exit Function
+    End If
+    actualQty = CDbl(quantityText)
+    If actualQty <= 0 Then
+        report = "Actual Output must be a number greater than zero."
+        Exit Function
+    End If
+
+    mActualOutputQty(outputKey) = actualQty
+    report = "Actual Output staged for " & RunRecordText(output, "OutputName") & _
+             ": " & FormatRunNumberLocal(actualQty) & " " & RunRecordText(output, "UOM") & "."
+    StageReusableRunActualOutput = True
+End Function
+
+Public Function ReusableRunActualOutput(ByVal outputIndex As Long) As String
+    Dim output As Object
+    Dim outputKey As String
+
+    If Not mLoaded Then Exit Function
+    If outputIndex < 1 Or outputIndex > mOutputs.Count Then Exit Function
+    Set output = mOutputs(outputIndex)
+    outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
+                                  RunRecordText(output, "OutputId"))
+    If mActualOutputQty.Exists(outputKey) Then _
+        ReusableRunActualOutput = FormatRunNumberLocal(CDbl(mActualOutputQty(outputKey)))
 End Function
 
 Public Function CompleteReusableRun(ByVal runLocation As String, _
@@ -427,6 +491,7 @@ Public Function CompleteReusableRun(ByVal runLocation As String, _
         report = recheckReport
         Exit Function
     End If
+    If Not ValidateReusableActualOutputs(report) Then Exit Function
     AssignFreshOutputKeys
     runId = "PROD-RUN-" & Replace$(modRoleEventWriter.CreateSystemKey(), "-", "")
     For Each rawNode In mNodes
@@ -475,6 +540,7 @@ Public Function CompleteReusableRun(ByVal runLocation As String, _
         report = report & " Processor applied=" & CStr(appliedCount) & ". " & processorReports
         Exit Function
     End If
+    CaptureLastActualOutputs
     mCompleted = True
     mLastSummary = "RunId=" & runId & "; Recipe=" & mRecipeId & " v" & mRecipeVersion & _
                    "; Batch=" & CStr(mBatchNumber) & "; Scale=" & _
@@ -501,6 +567,7 @@ Public Function BeginNextReusableBatch(Optional ByRef report As String = "") As 
     mBatchNumber = mBatchNumber + 1
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
+    Set mActualOutputQty = NewTextDictionary()
     mCheckedIn = False
     mCompleted = False
     mLastSummary = ""
@@ -753,9 +820,11 @@ Private Function BuildNodeCompleteItems(ByVal node As Object, ByVal runLocation 
                              mRecipeId & """,""RecipeVersion"":""" & mRecipeVersion & _
                              """,""ProcessId"":""" & RunRecordText(node, "ProcessId") & _
                              """,""ProcessVersion"":""" & RunRecordText(node, "ProcessVersion") & _
-                             """,""OutputId"":""" & RunRecordText(output, "OutputId") & """}"
+                             """,""OutputId"":""" & RunRecordText(output, "OutputId") & _
+                             """,""PlannedQty"":" & JsonRunNumber(ScaledRecordQty(output)) & _
+                             ",""ActualQty"":" & JsonRunNumber(ActualOutputQty(output)) & "}"
             Set item = modProductionJson.CreateProductionInventoryEntityPayloadItem( _
-                outputKey, RunRecordText(output, "ITEM_CODE"), ScaledRecordQty(output), _
+                outputKey, RunRecordText(output, "ITEM_CODE"), ActualOutputQty(output), _
                 runLocation, "GOOD", attributesJson, RunItemNote(runId, node, RunRecordText(output, "OutputId")))
             item("IoType") = "MADE"
             item("ITEM_CODE") = RunRecordText(output, "ITEM_CODE")
@@ -790,7 +859,7 @@ Private Function VerifyCompletedOutputBalances(ByRef report As String) As Boolea
         Set output = rawOutput
         key = CStr(mOutputKeys(OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
                                                 RunRecordText(output, "OutputId"))))
-        expectedQty = ScaledRecordQty(output) - OutgoingQtyForOutput( _
+        expectedQty = ActualOutputQty(output) - OutgoingQtyForOutput( _
             RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId"))
         actualQty = ExactEntityAvailableQty(key)
         If Abs(actualQty - expectedQty) > QTY_TOLERANCE Then
@@ -802,6 +871,60 @@ Private Function VerifyCompletedOutputBalances(ByRef report As String) As Boolea
     Next rawOutput
     VerifyCompletedOutputBalances = True
 End Function
+
+Private Function ValidateReusableActualOutputs(ByRef report As String) As Boolean
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim outputKey As String
+    Dim actualQty As Double
+    Dim committedQty As Double
+
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
+                                      RunRecordText(output, "OutputId"))
+        If Not mActualOutputQty.Exists(outputKey) Then
+            report = "Enter Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " before completing the run."
+            Exit Function
+        End If
+        actualQty = ActualOutputQty(output)
+        If actualQty <= 0 Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " must be greater than zero."
+            Exit Function
+        End If
+        committedQty = OutgoingQtyForOutput(RunRecordText(output, "ProcessNodeId"), _
+                                            RunRecordText(output, "OutputId"))
+        If actualQty + QTY_TOLERANCE < committedQty Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " is below its routed downstream commitment. Actual=" & _
+                     FormatRunNumberLocal(actualQty) & "; committed=" & _
+                     FormatRunNumberLocal(committedQty) & "."
+            Exit Function
+        End If
+    Next rawOutput
+    ValidateReusableActualOutputs = True
+End Function
+
+Private Function ActualOutputQty(ByVal output As Object) As Double
+    Dim outputKey As String
+
+    outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
+                                  RunRecordText(output, "OutputId"))
+    If Not mActualOutputQty Is Nothing Then
+        If mActualOutputQty.Exists(outputKey) Then ActualOutputQty = CDbl(mActualOutputQty(outputKey))
+    End If
+End Function
+
+Private Sub CaptureLastActualOutputs()
+    Dim key As Variant
+
+    Set mLastOutputQty = NewTextDictionary()
+    For Each key In mActualOutputQty.Keys
+        mLastOutputQty(CStr(key)) = CDbl(mActualOutputQty(key))
+    Next key
+End Sub
 
 Private Function OutgoingQtyForOutput(ByVal nodeId As String, ByVal outputId As String) As Double
     Dim rawConnection As Variant
@@ -1069,6 +1192,10 @@ End Function
 
 Private Function FormatRunNumberLocal(ByVal valueIn As Double) As String
     FormatRunNumberLocal = Format$(valueIn, "0.#########")
+End Function
+
+Private Function JsonRunNumber(ByVal valueIn As Double) As String
+    JsonRunNumber = Replace$(CStr(valueIn), Application.International(xlDecimalSeparator), ".")
 End Function
 
 Private Function RunEventNote(ByVal runId As String, ByVal node As Object, _

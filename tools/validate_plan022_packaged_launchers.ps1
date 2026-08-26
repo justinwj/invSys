@@ -1179,7 +1179,11 @@ try {
                         $productionRunReport -match '(?:^|\|)DistinctOutputKeys=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)IntermediateConsumed=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)CoProductRemaining=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)PercentageYieldBasis=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)PercentageYieldBasis=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ActualOutputAccepted=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LastActualDisplayed=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ActualInventoryQty=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)SystemKeyHeadersReadable=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {

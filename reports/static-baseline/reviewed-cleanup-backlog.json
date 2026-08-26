@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "832299c9b15ea6b020297c3a91057c2e10cac4581d4dbcb665fda9ee860ea5c1",
-                          "maintenanceCandidatesSha256":  "f5baa0dda8dde00dba82dfb849617a1b7693f3b30093e9710fbe75d61e93fb00"
+                          "implementationManifestSha256":  "3c0535edf94406d249ac6d3317311f9591933e03c335671780a2dea53aa57c4a",
+                          "maintenanceCandidatesSha256":  "c52f95bccb6f45eeacd4e2b529c6e0c923c06e2c1520073aa3a2743b60bce003"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8572,
+                                                  "baselineLineCount":  8682,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,7 +231,7 @@
                                                   "sourcePath":  "src/Production/Modules/modProductionReusableRun.bas",
                                                   "componentName":  "modProductionReusableRun",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  1098,
+                                                  "baselineLineCount":  1225,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -15972,6 +15972,7 @@
                                                   "LoadSelectedRecipeDefinition",
                                                   "LoadSelectedRecipeIntoBuilder",
                                                   "LoadSelectedRecipeIntoLoader",
+                                                  "LoadSelectedReusableActualOutput",
                                                   "LoadSelectedRunPaletteRow",
                                                   "LoggedOutputStats",
                                                   "MaxDoubleForm",
@@ -16118,6 +16119,7 @@
                                                   "ProductionLogRowMatchesOutput",
                                                   "ProductionLogTable",
                                                   "ProductionPageControlExists",
+                                                  "ProductionRunSystemKeyHeadersReadable",
                                                   "ProductionTable",
                                                   "RecipeGraphIsAcyclic",
                                                   "RecipeHasIncomingRequirement",
@@ -16160,6 +16162,7 @@
                                                   "ResolveOperatorWorkbook",
                                                   "ResolveReusableRunFixtureEntity",
                                                   "ResolveRunSystemKey",
+                                                  "ReusableOutputListValue",
                                                   "RunAllocationGroupKeyFromList",
                                                   "RunAllocationKeyFromList",
                                                   "RunAllocationPercentForGroup",
@@ -16197,6 +16200,8 @@
                                                   "SetRunLocationForActionTest",
                                                   "ShowPersistencePending",
                                                   "ShowStatus",
+                                                  "StageReusableTestActualOutputs",
+                                                  "StageSelectedReusableActualOutput",
                                                   "StoreRunAllocationOverride",
                                                   "StoreRunBaseQty",
                                                   "StoreRunItemCode",
@@ -16358,6 +16363,7 @@
                            "workstream":  "PRODUCTION",
                            "componentName":  "modProductionReusableRun",
                            "procedureNames":  [
+                                                  "ActualOutputQty",
                                                   "AddNodeInExecutionOrder",
                                                   "AllocationKey",
                                                   "AllocationPercent",
@@ -16373,6 +16379,7 @@
                                                   "BeginNextReusableBatch",
                                                   "BuildNodeCompleteItems",
                                                   "BuildNodeConsumeItems",
+                                                  "CaptureLastActualOutputs",
                                                   "CheckInReusableRun",
                                                   "ClearReusableRun",
                                                   "CloneRunRecord",
@@ -16383,6 +16390,7 @@
                                                   "FindOutput",
                                                   "FindRequirement",
                                                   "FormatRunNumberLocal",
+                                                  "JsonRunNumber",
                                                   "LoadNodeProcessDefinitions",
                                                   "LoadReleasedReusableRecipe",
                                                   "NewTextDictionary",
@@ -16391,6 +16399,7 @@
                                                   "RequirementAllowsItem",
                                                   "RequirementHasAlternative",
                                                   "RequirementHasIncomingConnection",
+                                                  "ReusableRunActualOutput",
                                                   "ReusableRunBatchNumber",
                                                   "ReusableRunExactEntityQty",
                                                   "ReusableRunIsCheckedIn",
@@ -16410,9 +16419,11 @@
                                                   "RunRecordText",
                                                   "ScaledConnectionQty",
                                                   "ScaledRecordQty",
+                                                  "StageReusableRunActualOutput",
                                                   "TotalExternalAllocation",
                                                   "UomCompatible",
                                                   "ValidateLoadedRunGraph",
+                                                  "ValidateReusableActualOutputs",
                                                   "VerifyCompletedOutputBalances"
                                               ],
                            "sourcePaths":  [
@@ -20775,7 +20786,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20982,7 +20993,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

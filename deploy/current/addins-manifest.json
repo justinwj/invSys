@@ -1,37 +1,37 @@
 {
     "schemaVersion":  "1.0.0",
     "packageSetVersion":  "R1-5",
-    "generatedUtc":  "2026-08-26T19:37:30Z",
+    "generatedUtc":  "2026-08-26T21:03:26Z",
     "packages":  [
                      {
                          "name":  "invSys.Core.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  896948,
-                         "sha256":  "b6178b7d82201fc852e6f24d82a0cde1420c49aeebaf36528f661f2e27e6c1b0"
+                         "sizeBytes":  897078,
+                         "sha256":  "5ba903270488d52b2209f84b9b22119a7e54e4f924c406a27178c768b8ff79d8"
                      },
                      {
                          "name":  "invSys.Inventory.Domain.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  149877,
-                         "sha256":  "292ade9965ef2be0dbba041a02c905ba444745332fa86c9276426d96307ac850"
+                         "sizeBytes":  149882,
+                         "sha256":  "45e9d80fab370ad84e10e3becd4fcae7d0402c471b7c76547c6258a131894ece"
                      },
                      {
                          "name":  "invSys.Designs.Domain.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  103943,
-                         "sha256":  "b85d83c0cc2db0158cf8efe82dc317cd3187f4f6e1c8eb882d6c3a9399d2a88e"
+                         "sizeBytes":  103942,
+                         "sha256":  "a3b949158b8fa393166dfdf18eace553224712f58d5aeb3768a63f313526fdce"
                      },
                      {
                          "name":  "invSys.Operations.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  1661465,
-                         "sha256":  "2ddb15160f761bf3f109674f0aee38ebc513f957f298a1a9448790ffea1eaa4c"
+                         "sizeBytes":  1667778,
+                         "sha256":  "38841b5473259861a20b0be7cde0ab84b73f47d145354deaae4ccaaea9607c21"
                      },
                      {
                          "name":  "invSys.Admin.xlam",
                          "packageSetVersion":  "R1-5",
-                         "sizeBytes":  514168,
-                         "sha256":  "2318767eccaf02eb1a5c450bc6387e381e8a9df072b2ad04cf1cf86962fdac9d"
+                         "sizeBytes":  514137,
+                         "sha256":  "211ec8a9eff2ef6787978ebe9cf613fac1b2c840afd7550423b81400a93986ba"
                      }
                  ]
 }

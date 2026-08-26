@@ -18,9 +18,9 @@ Option Explicit
 '@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=690 DefaultWidth=1110 DefaultHeight=690 ExpandedWidth=1350 ExpandedHeight=750
 Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
 Private Const RUN_LOADER_LINE_WIDTHS As String = "85 pt;0 pt;55 pt;155 pt;50 pt;45 pt;65 pt;0 pt"
-Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;180 pt;45 pt;220 pt;60 pt;70 pt;45 pt;105 pt;120 pt"
-Private Const RUN_OUTPUT_WIDTHS As String = "85 pt;260 pt;45 pt;70 pt;55 pt;80 pt;105 pt;45 pt"
-Private Const RUN_CHECK_WIDTHS As String = "48 pt;120 pt;320 pt;50 pt;70 pt;100 pt"
+Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;165 pt;210 pt;190 pt;65 pt;70 pt;55 pt;90 pt;125 pt"
+Private Const RUN_OUTPUT_WIDTHS As String = "125 pt;215 pt;55 pt;80 pt;55 pt;80 pt;110 pt;245 pt"
+Private Const RUN_CHECK_WIDTHS As String = "200 pt;170 pt;295 pt;55 pt;75 pt;120 pt"
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
 Private Const BATCH_SCALE_MAX_PERCENT As Double = 1000
 
@@ -1161,18 +1161,18 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     Set mBtnRunApplyPalette = AddButton(pg, "btnRunApplyPalette", "Apply", 900, 165, 90, 24)
 
     AddLabel pg, "Acceptable Inventory For Run", 12, 182, 230, 16
-    AddColumnHeaders pg, "RunPalette", Array("", "", "Ingredient", "System Key", "Inventory Item", "% Req", "Qty", "UOM", "Inv", "Location"), 12, 202, RUN_PALETTE_WIDTHS
+    AddColumnHeaders pg, "RunPalette", Array("", "", "Ingredient", "System_Key", "Inventory Item", "% Req", "Qty", "UOM", "Inv", "Location"), 12, 202, RUN_PALETTE_WIDTHS
     Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 220, 1018, 80, 10, RUN_PALETTE_WIDTHS)
 
     AddLabel pg, "Inventory Check", 12, 316, 150, 16
-    AddColumnHeaders pg, "ManagerCheck", Array("System Key", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 336, RUN_CHECK_WIDTHS
+    AddColumnHeaders pg, "ManagerCheck", Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 336, RUN_CHECK_WIDTHS
     Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 354, 1018, 56, 6, RUN_CHECK_WIDTHS)
 
     AddLabel pg, "Production Output", 12, 426, 170, 16
-    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last", "Batch", "Total", "Recall", "Inventory ID"), 12, 446, RUN_OUTPUT_WIDTHS
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Planned", "Recall", "System_Key"), 12, 446, RUN_OUTPUT_WIDTHS
     Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 464, 1018, 48, 8, RUN_OUTPUT_WIDTHS)
 
-    AddLabel pg, "Real Output", 12, 526, 80, 16
+    AddLabel pg, "Actual Output", 12, 526, 80, 16
     Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 522, 105, 22)
     Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 520, 95, 24)
     Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 520, 120, 24)
@@ -1201,7 +1201,7 @@ End Sub
 
 Private Sub AddRunPaletteHeader(ByVal pg As MSForms.Page, ByVal leftVal As Single, ByVal topVal As Single)
     AddLabel pg, "Ingredient", leftVal + 2, topVal, 135, 14
-    AddLabel pg, "System Key", leftVal + 130, topVal, 70, 14
+    AddLabel pg, "System_Key", leftVal + 130, topVal, 95, 14
     AddLabel pg, "Inventory Item", leftVal + 168, topVal, 145, 14
     AddLabel pg, "% Req", leftVal + 315, topVal, 46, 14
     AddLabel pg, "Qty", leftVal + 365, topVal, 50, 14
@@ -1381,7 +1381,7 @@ Private Sub ConfigureRunListAnchors()
     mLayout.RegisterControl mBtnManagerRefresh, leftBottom
     mLayout.RegisterControl mBtnManagerNext, leftBottom
     mLayout.RegisterControl mBtnManagerPrint, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
-    AddCaptionAnchors mPages.Pages(3), "Real Output", leftBottom
+    AddCaptionAnchors mPages.Pages(3), "Actual Output", leftBottom
 End Sub
 
 Private Sub ConfigureRunTreeAnchors()
@@ -2260,7 +2260,7 @@ Private Sub AddRunTreeInputRowsForProcess(ByVal procName As String)
 
         If collapsed Then GoTo NextPaletteRow
         childText = "    " & NzStr(mLstRunPalette.List(i, 4))
-        If Trim$(childText) = "" Then childText = "    System Key " & NzStr(mLstRunPalette.List(i, 3))
+        If Trim$(childText) = "" Then childText = "    System_Key " & NzStr(mLstRunPalette.List(i, 3))
         mLstRunTree.AddItem NzStr(mLstRunPalette.List(i, 0))
         rowIndex = mLstRunTree.ListCount - 1
         CopyRunPaletteListRow mLstRunPalette, i, mLstRunTree, rowIndex
@@ -2281,8 +2281,8 @@ Private Sub AddRunTreeOutputRowsForProcess(ByVal procName As String)
         outputName = NzStr(mLstManagerOutput.List(i, 1))
         If Trim$(outputName) = "" Then GoTo NextOutput
         caption = "  OUTPUT  " & outputName
-        If NzStr(mLstManagerOutput.List(i, 3)) <> "" Then caption = caption & "  Last " & NzStr(mLstManagerOutput.List(i, 3))
-        caption = caption & "  Batch " & NzStr(mLstManagerOutput.List(i, 4)) & "  Total " & NzStr(mLstManagerOutput.List(i, 5))
+        If NzStr(mLstManagerOutput.List(i, 3)) <> "" Then caption = caption & "  Last Actual " & NzStr(mLstManagerOutput.List(i, 3))
+        caption = caption & "  Batch " & NzStr(mLstManagerOutput.List(i, 4)) & "  Planned " & NzStr(mLstManagerOutput.List(i, 5))
         mLstRunTree.AddItem RUN_TREE_OUTPUT_MARKER
         rowIndex = mLstRunTree.ListCount - 1
         mLstRunTree.List(rowIndex, 1) = "OUTPUT|" & ProcessKey(procName) & "|" & NzStr(mLstManagerOutput.List(i, 7))
@@ -2782,7 +2782,7 @@ Private Sub RefreshProductionOutputList(ByVal lst As MSForms.ListBox)
         lst.List(listRow, 3) = IIf(loggedCount > 0, FormatRunNumber(lastQty), "")
         ' The Batch column is completed-run history: 0 before the first
         ' completion, 1 after the first completion, and so on.  The next
-        ' internal batch number is calculated only when Real Output is staged.
+        ' internal batch number is calculated only when Actual Output is staged.
         lst.List(listRow, 4) = CStr(maxBatch)
         lst.List(listRow, 5) = IIf(loggedCount > 0, FormatRunNumber(totalQty), "0")
         lst.List(listRow, 6) = recallVal
@@ -3533,7 +3533,7 @@ Private Sub ApplySelectedProductionOutput()
     SetCellByHeader lo, tableRowNumber, "BATCH", batchVal
     RefreshManagerState
     If idx < mLstManagerOutput.ListCount Then mLstManagerOutput.ListIndex = idx
-    ShowStatus "Real Output staged for batch " & batchVal & "."
+    ShowStatus "Actual Output staged for batch " & batchVal & "."
 End Sub
 
 Private Function SelectedProductionOutputTableRow() As Long
@@ -3789,6 +3789,7 @@ Private Sub CompleteProductionRun()
     Dim reusableReport As String
 
     If modProductionReusableRun.ReusableRunIsLoaded() Then
+        If Not StageSelectedReusableActualOutput(True) Then Exit Sub
         ShowPersistencePending "Saving the reusable Process run to the warehouse server..."
         If modProductionReusableRun.CompleteReusableRun(ActiveRunLocation(), reusableReport) Then
             ResetInventoryCache
@@ -3835,11 +3836,11 @@ Private Sub CompleteProductionRun()
         Exit Sub
     End If
     If Trim$(mTxtOutputReal.Text) = "" Then
-        ShowStatus "Enter the real output quantity before completing the run."
+        ShowStatus "Enter the Actual Output quantity before completing the run."
         Exit Sub
     End If
     If Not IsNumeric(mTxtOutputReal.Text) Or CDbl(mTxtOutputReal.Text) <= 0 Then
-        ShowStatus "Real Output must be a number greater than zero."
+        ShowStatus "Actual Output must be a number greater than zero."
         Exit Sub
     End If
 
@@ -3877,7 +3878,7 @@ Private Sub CompleteProductionRun()
     ClearProductionOutputEntry outputRowNumber
     mTxtOutputReal.Text = ""
     RefreshManagerState
-    ShowStatus "Production run completed. Checked-in inventory was consumed, Real Output was added to inventory, and the batch was logged." & IIf(Trim$(completionReport) <> "", " " & completionReport, "")
+    ShowStatus "Production run completed. Checked-in inventory was consumed, Actual Output was added to inventory, and the batch was logged." & IIf(Trim$(completionReport) <> "", " " & completionReport, "")
 End Sub
 
 Private Sub ClearProductionOutputEntry(ByVal outputRowNumber As Long)
@@ -3997,7 +3998,7 @@ Private Function ValidateRunAllocationLocations() As Boolean
         invLoc = Trim$(NzStr(mLstRunPalette.List(i, 9)))
         If Not RunChoiceLocationAllowed(runLoc, invLoc, qtyVal) Then
             itemVal = Trim$(NzStr(mLstRunPalette.List(i, 4)))
-            If itemVal = "" Then itemVal = "System Key " & Trim$(NzStr(mLstRunPalette.List(i, 3)))
+            If itemVal = "" Then itemVal = "System_Key " & Trim$(NzStr(mLstRunPalette.List(i, 3)))
             ShowStatus "Cannot use " & itemVal & " from " & invLoc & ". Production run location is " & runLoc & "; use inventory at the production location."
             Exit Function
         End If
@@ -4114,7 +4115,7 @@ Private Function BuildRunUsedPayloadJson(ByRef stagedTotal As Double) As String
         qtyVal = CDbl(NzStr(mLstRunPalette.List(i, 6)))
         If qtyVal <= 0 Then GoTo NextChoice
         If RunChoiceWouldExceedInventory(i, qtyVal) Then
-            ShowStatus "Cannot complete run. Inventory " & IIf(rowVal <> "", "System Key " & rowVal, itemCode) & _
+            ShowStatus "Cannot complete run. Inventory " & IIf(rowVal <> "", "System_Key " & rowVal, itemCode) & _
                        " requires " & FormatRunNumber(qtyVal) & " but only " & _
                        NzStr(mLstRunPalette.List(i, 8)) & " is available."
             Exit Function
@@ -7114,8 +7115,13 @@ Public Function TestReusableProductionRunActionContract() As String
     Dim staleStartQty As Double
     Dim insufficiencyRejected As Boolean
     Dim staleRejected As Boolean
+    Dim actualOutputAccepted As Boolean
+    Dim lastActualDisplayed As Boolean
+    Dim actualInventoryQty As Boolean
+    Dim systemKeyHeadersReadable As Boolean
 
     mReusableActionTestInProgress = True
+    systemKeyHeadersReadable = ProductionRunSystemKeyHeadersReadable()
     If mReusableTestSourceId = "" Then
         setupReport = ExerciseReusableProductionFormActions(IIf(mOperatorWorkbook Is Nothing, _
             "", mOperatorWorkbook.Name))
@@ -7258,6 +7264,8 @@ Public Function TestReusableProductionRunActionContract() As String
     checkedIn = modProductionReusableRun.ReusableRunIsCheckedIn()
     If Not checkedIn Then GoTo FixtureFailed
     fixtureStage = "Batch1Complete"
+    actualOutputAccepted = StageReusableTestActualOutputs(4.25)
+    If Not actualOutputAccepted Then GoTo FixtureFailed
     mBtnManagerApplyOutput_Click
     completed = modProductionReusableRun.ReusableRunIsCompleted()
     If Not completed Then GoTo FixtureFailed
@@ -7267,6 +7275,9 @@ Public Function TestReusableProductionRunActionContract() As String
         modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"))) < 0.0000001)
     coProductRemaining = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
         modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "003")) - 2#) < 0.0000001)
+    lastActualDisplayed = (Abs(ReusableOutputListValue("Finished Output", 3) - 4.25) < 0.0000001)
+    actualInventoryQty = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+        modProductionReusableRun.ReusableRunOutputSystemKey(sinkNodeId, "002")) - 4.25) < 0.0000001)
     exactInputKeys = exactInputKeys And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 5#)) < 0.0000001)
     fixtureStage = "RefreshAndNext"
@@ -7289,6 +7300,8 @@ Public Function TestReusableProductionRunActionContract() As String
     mBtnManagerCheckIn_Click
     If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then GoTo FixtureFailed
     fixtureStage = "Batch2Complete"
+    actualOutputAccepted = actualOutputAccepted And StageReusableTestActualOutputs(4.5)
+    If Not actualOutputAccepted Then GoTo FixtureFailed
     mBtnManagerApplyOutput_Click
     If Not modProductionReusableRun.ReusableRunIsCompleted() Then GoTo FixtureFailed
     Set secondBatchKeys = CaptureReusableOutputKeys()
@@ -7304,6 +7317,11 @@ Public Function TestReusableProductionRunActionContract() As String
     coProductRemaining = coProductRemaining And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
             modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "003")) - 2#) < 0.0000001)
+    lastActualDisplayed = lastActualDisplayed And _
+        (Abs(ReusableOutputListValue("Finished Output", 3) - 4.5) < 0.0000001)
+    actualInventoryQty = actualInventoryQty And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
+            modProductionReusableRun.ReusableRunOutputSystemKey(sinkNodeId, "002")) - 4.5) < 0.0000001)
     exactInputKeys = exactInputKeys And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 10#)) < 0.0000001)
 
@@ -7318,6 +7336,10 @@ Public Function TestReusableProductionRunActionContract() As String
         "|IntermediateConsumed=" & CStr(intermediateConsumed) & _
         "|CoProductRemaining=" & CStr(coProductRemaining) & _
         "|PercentageYieldBasis=" & CStr(coProductRemaining) & _
+        "|ActualOutputAccepted=" & CStr(actualOutputAccepted) & _
+        "|LastActualDisplayed=" & CStr(lastActualDisplayed) & _
+        "|ActualInventoryQty=" & CStr(actualInventoryQty) & _
+        "|SystemKeyHeadersReadable=" & CStr(systemKeyHeadersReadable) & _
         "|CheckedIn=" & CStr(checkedIn) & "|Completed=" & CStr(completed) & _
         "|Refreshed=" & CStr(refreshed) & "|NextBatch=" & CStr(nextBatch)
 CleanExit:
@@ -7528,6 +7550,57 @@ Private Function CaptureReusableOutputKeys() As Object
         If systemKey <> "" Then result(systemKey) = True
     Next i
     Set CaptureReusableOutputKeys = result
+End Function
+
+Private Function StageReusableTestActualOutputs(ByVal finishedActualQty As Double) As Boolean
+    Dim i As Long
+    Dim stagedQty As Double
+
+    For i = 0 To mLstManagerOutput.ListCount - 1
+        mLstManagerOutput.ListIndex = i
+        mLstManagerOutput_Click
+        stagedQty = CDbl(mLstManagerOutput.List(i, 5))
+        If StrComp(NzStr(mLstManagerOutput.List(i, 1)), _
+                   "Finished Output", vbTextCompare) = 0 Then stagedQty = finishedActualQty
+        mTxtOutputReal.Text = FormatRunNumber(stagedQty)
+        mTxtOutputReal_Change
+        If Abs(CDbl(modProductionReusableRun.ReusableRunActualOutput(i + 1)) - stagedQty) > _
+           0.0000001 Then Exit Function
+    Next i
+    StageReusableTestActualOutputs = True
+End Function
+
+Private Function ReusableOutputListValue(ByVal outputName As String, _
+                                         ByVal columnIndex As Long) As Double
+    Dim i As Long
+
+    For i = 0 To mLstManagerOutput.ListCount - 1
+        If StrComp(NzStr(mLstManagerOutput.List(i, 1)), outputName, vbTextCompare) = 0 Then
+            If IsNumeric(mLstManagerOutput.List(i, columnIndex)) Then _
+                ReusableOutputListValue = CDbl(mLstManagerOutput.List(i, columnIndex))
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ProductionRunSystemKeyHeadersReadable() As Boolean
+    On Error GoTo NotReadable
+
+    Dim paletteHeader As MSForms.Label
+    Dim checkHeader As MSForms.Label
+    Dim outputHeader As MSForms.Label
+
+    Set paletteHeader = mPages.Pages(3).Controls("hdrRunPalette4")
+    Set checkHeader = mPages.Pages(3).Controls("hdrManagerCheck1")
+    Set outputHeader = mPages.Pages(3).Controls("hdrManagerOutput8")
+    ProductionRunSystemKeyHeadersReadable = _
+        (paletteHeader.Caption = "System_Key" And paletteHeader.Width >= 120) And _
+        (checkHeader.Caption = "System_Key" And checkHeader.Width >= 120) And _
+        (outputHeader.Caption = "System_Key" And outputHeader.Width >= 120)
+    Exit Function
+
+NotReadable:
+    ProductionRunSystemKeyHeadersReadable = False
 End Function
 
 Private Function FindIdentityListRow(ByVal listControl As MSForms.ListBox, _
@@ -8225,7 +8298,9 @@ Private Sub mTxtTreePaletteQty_Change()
 End Sub
 
 Private Sub mTxtOutputReal_Change()
-    ' Real Output is staged when Complete Run is clicked.
+    If mLoading Then Exit Sub
+    If modProductionReusableRun.ReusableRunIsLoaded() Then _
+        StageSelectedReusableActualOutput False
 End Sub
 
 Private Sub PaletteSplitTextChanged(ByVal splitTextBox As MSForms.TextBox, ByVal qtyTextBox As MSForms.TextBox)
@@ -8393,6 +8468,7 @@ Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
     FillListFromArray mLstRunPalette, paletteRows
     FillListFromArray mLstManagerCheck, checkRows
     FillListFromArray mLstManagerOutput, outputRows
+    If mLstManagerOutput.ListCount = 1 Then mLstManagerOutput.ListIndex = 0
 
     mCmbRunProcess.Clear
     mCmbTreeRunProcess.Clear
@@ -8409,6 +8485,7 @@ Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
         AddUniqueComboItem mCmbTreeRunLocation, locationName
     Next i
     mLoading = False
+    If mLstManagerOutput.ListCount = 1 Then LoadSelectedReusableActualOutput
 End Sub
 
 Private Sub AddUniqueComboItem(ByVal comboControl As MSForms.ComboBox, ByVal itemText As String)
@@ -8517,9 +8594,42 @@ End Sub
 
 Private Sub mLstManagerOutput_Click()
     If mLoading Then Exit Sub
-    If modProductionReusableRun.ReusableRunIsLoaded() Then Exit Sub
+    If modProductionReusableRun.ReusableRunIsLoaded() Then
+        LoadSelectedReusableActualOutput
+        Exit Sub
+    End If
     LoadSelectedProductionOutput
 End Sub
+
+Private Sub LoadSelectedReusableActualOutput()
+    Dim wasLoading As Boolean
+
+    If mLstManagerOutput Is Nothing Or mTxtOutputReal Is Nothing Then Exit Sub
+    If mLstManagerOutput.ListIndex < 0 Then Exit Sub
+    wasLoading = mLoading
+    mLoading = True
+    mTxtOutputReal.Text = modProductionReusableRun.ReusableRunActualOutput( _
+        mLstManagerOutput.ListIndex + 1)
+    mLoading = wasLoading
+End Sub
+
+Private Function StageSelectedReusableActualOutput( _
+    Optional ByVal showFailure As Boolean = True) As Boolean
+    Dim report As String
+
+    If mLstManagerOutput Is Nothing Or mTxtOutputReal Is Nothing Then Exit Function
+    If mLstManagerOutput.ListIndex < 0 And mLstManagerOutput.ListCount = 1 Then
+        mLstManagerOutput.ListIndex = 0
+    End If
+    If mLstManagerOutput.ListIndex < 0 Then
+        If showFailure Then ShowStatus "Select an output row before entering Actual Output."
+        Exit Function
+    End If
+    StageSelectedReusableActualOutput = _
+        modProductionReusableRun.StageReusableRunActualOutput( _
+            mLstManagerOutput.ListIndex + 1, mTxtOutputReal.Text, report)
+    If showFailure And Not StageSelectedReusableActualOutput Then ShowStatus report
+End Function
 
 Private Sub mBtnManagerCheckIn_Click()
     CheckInProductionRun
