@@ -1132,6 +1132,9 @@ try {
                         $productionOutputPickerReport -match '(?:^|\|)OutputSkuHidden=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)OutputSkuRoundTrip=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)OutputNameRetained=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputNamePickerSuppressed=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)UniqueRowIds=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)FirstAssignedIdRetained=True(?:\||$)' -and
                         $productionOutputPickerReport -match '(?:^|\|)NoPhysicalKey=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionOutputPickerPassed
                     $observedText += " || PRODUCTION_PROCESS_OUTPUT_PICKER=" + $productionOutputPickerReport

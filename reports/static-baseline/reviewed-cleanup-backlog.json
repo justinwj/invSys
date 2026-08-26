@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "4d23ad47cb9f9ca9f165b48decaa7629541f819fb5abf8e81e6c33a095416c75",
-                          "maintenanceCandidatesSha256":  "3cf61c50d2089d6aa2b244872a9d02ef1157ed84ff12109165968871265c5929"
+                          "implementationManifestSha256":  "b71b8d56aa9c28e535e196a3a0193577be68d81cce55c63cde15ce404adeb89e",
+                          "maintenanceCandidatesSha256":  "8c08565a6040a3ff8877278d8b77447fabb62337fc74b5e8c75af693e2aae32f"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -119,7 +119,7 @@
                                                   "sourcePath":  "src/Core/ClassModules/cDynItemSearch.cls",
                                                   "componentName":  "cDynItemSearch",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  2000,
+                                                  "baselineLineCount":  1999,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,14 +217,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8302,
+                                                  "baselineLineCount":  8500,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                   "componentName":  "modProductionProcessWorksheet",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  1308,
+                                                  "baselineLineCount":  1291,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16085,9 +16085,11 @@
                                                   "NewReusableRecord",
                                                   "NextListBase36Id",
                                                   "NextOutputBatchNumberForListIndex",
+                                                  "NextProcessComponentBase36Id",
                                                   "NextProcessDraftBase36Id",
                                                   "NextRecipeNodeId",
                                                   "NormalizeInventorySearch",
+                                                  "NormalizeProcessComponentIdentities",
                                                   "NormalizeRecipeRowBudgetText",
                                                   "NormalizeRunSystemKey",
                                                   "NzDblLocal",
@@ -16102,11 +16104,13 @@
                                                   "PrepareProductionOutput",
                                                   "PrepareRunChoiceForActionTest",
                                                   "ProcessCaption",
+                                                  "ProcessComponentIdentityExists",
                                                   "ProcessKey",
                                                   "ProcessNameForIdentity",
                                                   "ProcessRecordsForRecipeNode",
                                                   "ProcessRecordsHaveAlternative",
                                                   "ProcessWorksheetColumnForTest",
+                                                  "ProcessWorksheetRowIdsUniqueForTest",
                                                   "ProcessWorksheetTableExistsForTest",
                                                   "ProcessWorksheetTableForTest",
                                                   "ProductionColumnIndex",
@@ -16308,14 +16312,13 @@
                                                   "IsConfiguredProcessUom",
                                                   "IsInvSysProcessTable",
                                                   "IsProcessWorksheetItemSearchTarget",
-                                                  "IsProcessWorksheetOutputManagedItemTarget",
                                                   "IsProcessWorksheetTableTarget",
                                                   "NewWorksheetRecord",
                                                   "NextIdFromDictionary",
                                                   "NextProcessTableTopRow",
                                                   "PopulateFormulationExampleForTest",
-                                                  "ProcessAlternativePairNumber",
                                                   "ProcessIdFromTableName",
+                                                  "ProcessManagedItemPairNumber",
                                                   "ProcessMetadataValue",
                                                   "ReadFormulaEvidenceForTest",
                                                   "ReadProcessDraftFromWorksheet",

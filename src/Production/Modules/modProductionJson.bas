@@ -94,6 +94,8 @@ Private Function JsonValue(ByVal valueIn As Variant) As String
             JsonValue = "null"
         Case VarType(valueIn) = vbBoolean
             JsonValue = IIf(CBool(valueIn), "true", "false")
+        Case VarType(valueIn) = vbString
+            JsonValue = """" & EscapeJson(CStr(valueIn)) & """"
         Case IsNumeric(valueIn)
             JsonValue = Replace$(CStr(valueIn), Application.International(xlDecimalSeparator), ".")
         Case Else

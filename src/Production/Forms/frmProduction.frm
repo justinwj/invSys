@@ -4891,7 +4891,7 @@ Private Sub ClearProcessDraft(Optional ByVal createIdentity As Boolean = True)
 End Sub
 
 Private Sub ClearRequirementEditor()
-    mTxtRequirementId.Text = NextListBase36Id(mLstProcessRequirements, 0)
+    mTxtRequirementId.Text = NextProcessComponentBase36Id()
     mTxtRequirementName.Text = ""
     mTxtRequirementQty.Text = ""
     mTxtRequirementPercent.Text = ""
@@ -4900,7 +4900,7 @@ Private Sub ClearRequirementEditor()
 End Sub
 
 Private Sub ClearOutputEditor()
-    mTxtProcessOutputId.Text = NextListBase36Id(mLstProcessOutputs, 0)
+    mTxtProcessOutputId.Text = NextProcessComponentBase36Id()
     mTxtProcessOutputName.Text = ""
     mTxtProcessOutputItemCode.Text = ""
     mTxtProcessOutputDesignId.Text = ""
@@ -4979,6 +4979,7 @@ Private Function LoadProcessDefinitionIntoDesigner(ByVal processId As String, _
     Else
         ShowStatus "Loaded Process " & processId & " version " & processVersion & "."
     End If
+    NormalizeProcessComponentIdentities
     LoadProcessDefinitionIntoDesigner = True
 End Function
 
@@ -5044,11 +5045,82 @@ Private Function LoadProcessPayloadIntoDesigner(ByVal processId As String, _
                     modProductionReusableDesigns.ReusableRecordText(record, "Instruction")
         End Select
     Next record
+    NormalizeProcessComponentIdentities
     ClearRequirementEditor
     ClearOutputEditor
     report = "Process worksheet draft loaded into Process Designer."
     LoadProcessPayloadIntoDesigner = True
 End Function
+
+Private Sub NormalizeProcessComponentIdentities()
+    Dim usedIds As Object
+    Dim retainedRequirementRows As Object
+    Dim retainedOutputRows As Object
+    Dim requirementIdChanges As Object
+    Dim alternative As Variant
+    Dim rowIndex As Long
+    Dim componentId As String
+    Dim originalId As String
+    Dim usedArray As Variant
+
+    Set usedIds = CreateObject("Scripting.Dictionary")
+    usedIds.CompareMode = vbTextCompare
+    Set retainedRequirementRows = CreateObject("Scripting.Dictionary")
+    Set retainedOutputRows = CreateObject("Scripting.Dictionary")
+    Set requirementIdChanges = CreateObject("Scripting.Dictionary")
+    requirementIdChanges.CompareMode = vbTextCompare
+    For rowIndex = 0 To mLstProcessRequirements.ListCount - 1
+        componentId = UCase$(Trim$(NzStr(mLstProcessRequirements.List(rowIndex, 0))))
+        If mProduction.IsBase36Identifier(componentId) _
+           And Not usedIds.Exists(componentId) Then
+            usedIds.Add componentId, True
+            retainedRequirementRows.Add CStr(rowIndex), True
+        End If
+    Next rowIndex
+    For rowIndex = 0 To mLstProcessOutputs.ListCount - 1
+        componentId = UCase$(Trim$(NzStr(mLstProcessOutputs.List(rowIndex, 0))))
+        If mProduction.IsBase36Identifier(componentId) _
+           And Not usedIds.Exists(componentId) Then
+            usedIds.Add componentId, True
+            retainedOutputRows.Add CStr(rowIndex), True
+        End If
+    Next rowIndex
+    For rowIndex = 0 To mLstProcessRequirements.ListCount - 1
+        If Not retainedRequirementRows.Exists(CStr(rowIndex)) Then
+            originalId = UCase$(Trim$(NzStr(mLstProcessRequirements.List(rowIndex, 0))))
+            If usedIds.Count = 0 Then
+                usedArray = Array("")
+            Else
+                usedArray = usedIds.Keys
+            End If
+            componentId = mProduction.NextBase36Identifier(usedArray)
+            mLstProcessRequirements.List(rowIndex, 0) = componentId
+            If originalId <> "" Then requirementIdChanges(originalId) = componentId
+            usedIds.Add componentId, True
+        End If
+    Next rowIndex
+    For Each alternative In mProcessAlternatives
+        originalId = UCase$(Trim$(modProductionReusableDesigns.ReusableRecordText( _
+            alternative, "RequirementId")))
+        If requirementIdChanges.Exists(originalId) Then _
+            alternative("RequirementId") = requirementIdChanges(originalId)
+    Next alternative
+    For rowIndex = 0 To mLstProcessOutputs.ListCount - 1
+        If Not retainedOutputRows.Exists(CStr(rowIndex)) Then
+            If usedIds.Count = 0 Then
+                usedArray = Array("")
+            Else
+                usedArray = usedIds.Keys
+            End If
+            componentId = mProduction.NextBase36Identifier(usedArray)
+            mLstProcessOutputs.List(rowIndex, 0) = componentId
+            mLstProcessOutputs.List(rowIndex, 3) = "D-" & _
+                UCase$(Trim$(mTxtProcessId.Text)) & "-" & componentId
+            mLstProcessOutputs.List(rowIndex, 4) = Trim$(mTxtProcessVersion.Text)
+            usedIds.Add componentId, True
+        End If
+    Next rowIndex
+End Sub
 
 Private Function CloneReusableRecord(ByVal source As Object) As Object
     Dim target As Object
@@ -5068,8 +5140,8 @@ Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
     idx = mLstProcessRequirements.ListIndex
     If Not updateExisting Or idx < 0 Then
         If Trim$(mTxtRequirementId.Text) = "" _
-           Or ListIdentityExists(mLstProcessRequirements, 0, mTxtRequirementId.Text) Then
-            mTxtRequirementId.Text = NextListBase36Id(mLstProcessRequirements, 0)
+           Or ProcessComponentIdentityExists(mTxtRequirementId.Text) Then
+            mTxtRequirementId.Text = NextProcessComponentBase36Id()
         End If
     Else
         mTxtRequirementId.Text = NzStr(mLstProcessRequirements.List(idx, 0))
@@ -5112,8 +5184,8 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
     idx = mLstProcessOutputs.ListIndex
     If Not updateExisting Or idx < 0 Then
         If Trim$(mTxtProcessOutputId.Text) = "" _
-           Or ListIdentityExists(mLstProcessOutputs, 0, mTxtProcessOutputId.Text) Then
-            mTxtProcessOutputId.Text = NextListBase36Id(mLstProcessOutputs, 0)
+           Or ProcessComponentIdentityExists(mTxtProcessOutputId.Text) Then
+            mTxtProcessOutputId.Text = NextProcessComponentBase36Id()
         End If
     Else
         mTxtProcessOutputId.Text = NzStr(mLstProcessOutputs.List(idx, 0))
@@ -5153,6 +5225,35 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
     If Not updateExisting Then ClearOutputEditor
     ShowStatus "Output staged in the Process draft."
 End Sub
+
+Private Function NextProcessComponentBase36Id() As String
+    Dim usedIds() As String
+    Dim rowIndex As Long
+    Dim valueIndex As Long
+    Dim usedCount As Long
+
+    usedCount = mLstProcessRequirements.ListCount + mLstProcessOutputs.ListCount
+    If usedCount = 0 Then
+        NextProcessComponentBase36Id = mProduction.NextBase36Identifier(Array(""))
+        Exit Function
+    End If
+    ReDim usedIds(0 To usedCount - 1)
+    For rowIndex = 0 To mLstProcessRequirements.ListCount - 1
+        usedIds(valueIndex) = NzStr(mLstProcessRequirements.List(rowIndex, 0))
+        valueIndex = valueIndex + 1
+    Next rowIndex
+    For rowIndex = 0 To mLstProcessOutputs.ListCount - 1
+        usedIds(valueIndex) = NzStr(mLstProcessOutputs.List(rowIndex, 0))
+        valueIndex = valueIndex + 1
+    Next rowIndex
+    NextProcessComponentBase36Id = mProduction.NextBase36Identifier(usedIds)
+End Function
+
+Private Function ProcessComponentIdentityExists(ByVal identityText As String) As Boolean
+    ProcessComponentIdentityExists = _
+        ListIdentityExists(mLstProcessRequirements, 0, identityText) Or _
+        ListIdentityExists(mLstProcessOutputs, 0, identityText)
+End Function
 
 Private Function NextListBase36Id(ByVal listControl As MSForms.ListBox, _
                                   ByVal identityColumn As Long) As String
@@ -5257,6 +5358,8 @@ End Sub
 
 Private Function ValidateProcessDraft(ByRef report As String) As Boolean
     Dim i As Long
+    Dim usedComponentIds As Object
+    Dim componentId As String
 
     If Trim$(mTxtProcessId.Text) = "" Or Trim$(mTxtProcessVersion.Text) = "" Or _
        Trim$(mTxtProcessName.Text) = "" Then
@@ -5267,6 +5370,8 @@ Private Function ValidateProcessDraft(ByRef report As String) As Boolean
         report = "Every Process must declare at least one output."
         Exit Function
     End If
+    Set usedComponentIds = CreateObject("Scripting.Dictionary")
+    usedComponentIds.CompareMode = vbTextCompare
     For i = 0 To mLstProcessRequirements.ListCount - 1
         If Trim$(NzStr(mLstProcessRequirements.List(i, 0))) = "" Or _
            Trim$(NzStr(mLstProcessRequirements.List(i, 1))) = "" Or _
@@ -5274,6 +5379,16 @@ Private Function ValidateProcessDraft(ByRef report As String) As Boolean
             report = "Each Process requirement requires identity, name, and UOM."
             Exit Function
         End If
+        componentId = UCase$(Trim$(NzStr(mLstProcessRequirements.List(i, 0))))
+        If Not mProduction.IsBase36Identifier(componentId) Then
+            report = "Invalid Process requirement ID " & componentId & "."
+            Exit Function
+        End If
+        If usedComponentIds.Exists(componentId) Then
+            report = "Duplicate Process requirement/output ID " & componentId & "."
+            Exit Function
+        End If
+        usedComponentIds.Add componentId, True
         If Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 2))) _
            And Not PositiveTextValue(NzStr(mLstProcessRequirements.List(i, 3))) Then
             report = "Each Process requirement requires a positive quantity or percentage."
@@ -5293,6 +5408,16 @@ Private Function ValidateProcessDraft(ByRef report As String) As Boolean
             report = "Each Process output requires identity, name, item code, and UOM."
             Exit Function
         End If
+        componentId = UCase$(Trim$(NzStr(mLstProcessOutputs.List(i, 0))))
+        If Not mProduction.IsBase36Identifier(componentId) Then
+            report = "Invalid Process output ID " & componentId & "."
+            Exit Function
+        End If
+        If usedComponentIds.Exists(componentId) Then
+            report = "Duplicate Process requirement/output ID " & componentId & "."
+            Exit Function
+        End If
+        usedComponentIds.Add componentId, True
         If Not PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 5))) _
            And Not PositiveTextValue(NzStr(mLstProcessOutputs.List(i, 6))) Then
             report = "Each Process output requires a positive quantity or percentage."
@@ -5326,7 +5451,7 @@ Private Function BuildProcessPayload() As String
         record("RequirementName") = NzStr(mLstProcessRequirements.List(i, 1))
         AddNumericReusableField record, "Qty", NzStr(mLstProcessRequirements.List(i, 2))
         AddNumericReusableField record, "Percent", NzStr(mLstProcessRequirements.List(i, 3))
-        record("YieldBasis") = NzStr(mLstProcessRequirements.List(i, 4))
+        AddNumericReusableField record, "YieldBasis", NzStr(mLstProcessRequirements.List(i, 4))
         record("UOM") = NzStr(mLstProcessRequirements.List(i, 5))
         records.Add record
     Next i
@@ -5344,7 +5469,7 @@ Private Function BuildProcessPayload() As String
         record("ComponentDesignVersion") = NzStr(mLstProcessOutputs.List(i, 4))
         AddNumericReusableField record, "Qty", NzStr(mLstProcessOutputs.List(i, 5))
         AddNumericReusableField record, "Percent", NzStr(mLstProcessOutputs.List(i, 6))
-        record("YieldBasis") = NzStr(mLstProcessOutputs.List(i, 7))
+        AddNumericReusableField record, "YieldBasis", NzStr(mLstProcessOutputs.List(i, 7))
         record("UOM") = NzStr(mLstProcessOutputs.List(i, 8))
         records.Add record
     Next i
@@ -6364,6 +6489,7 @@ Public Function TestProcessWorksheetBulkImportContract() As String
     Dim firstProcessId As String
     Dim secondProcessId As String
     Dim observedInputId As String
+    Dim observedOutputId As String
     Dim observedRequirementId As String
     Dim observedDesignId As String
     Dim observedIdFormat As String
@@ -6405,9 +6531,13 @@ Public Function TestProcessWorksheetBulkImportContract() As String
         ProcessWorksheetColumnForTest(lo, "Requirement ID")).Value2)
     observedDesignId = CStr(lo.DataBodyRange.Cells(outputRow, _
         ProcessWorksheetColumnForTest(lo, "Design ID")).Value2)
+    observedOutputId = CStr(lo.DataBodyRange.Cells(outputRow, _
+        ProcessWorksheetColumnForTest(lo, "ID")).Value2)
     textSafeIds = (firstProcessId Like "[0-9A-Z][0-9A-Z][0-9A-Z]") And _
         (observedInputId = "001") And (observedIdFormat = "@") And _
-        (observedDesignId = "D-" & firstProcessId & "-001")
+        mProduction.IsBase36Identifier(observedOutputId) And _
+        (observedOutputId <> observedInputId) And _
+        (observedDesignId = "D-" & firstProcessId & "-" & observedOutputId)
     requirementIds = lo.DataBodyRange.Cells(1, _
         ProcessWorksheetColumnForTest(lo, "Requirement ID")).HasFormula And _
         (CStr(lo.DataBodyRange.Cells(1, _
@@ -6492,10 +6622,12 @@ Public Function TestProcessWorksheetOutputPickerContract() As String
     Dim actionReport As String
     Dim outputRow As Long
     Dim recordTypeColumn As Long
+    Dim idColumn As Long
     Dim nameColumn As Long
     Dim outputItemColumn As Long
     Dim outputSkuColumn As Long
     Dim outputItemCell As Range
+    Dim outputNameCell As Range
     Dim selectedOutputName As String
     Dim selectedOutputItem As String
     Dim selectedOutputSku As String
@@ -6504,7 +6636,13 @@ Public Function TestProcessWorksheetOutputPickerContract() As String
     Dim outputSkuHidden As Boolean
     Dim outputSkuRoundTrip As Boolean
     Dim outputNameRetained As Boolean
+    Dim outputNamePickerSuppressed As Boolean
+    Dim uniqueRowIds As Boolean
+    Dim firstAssignedIdRetained As Boolean
     Dim noPhysicalKey As Boolean
+    Dim firstAssignedId As String
+    Dim priorEvents As Boolean
+    Dim rowIndex As Long
 
     If Not mBuilt Then BuildLayout
     ClearProcessDraft True
@@ -6514,20 +6652,50 @@ Public Function TestProcessWorksheetOutputPickerContract() As String
         mOperatorWorkbook, tableName, actionReport)
     Set lo = ProcessWorksheetTableForTest(tableName)
     If lo Is Nothing Then GoTo ReportResult
-    Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
-        mOperatorWorkbook, tableName, False, actionReport)
     recordTypeColumn = ProcessWorksheetColumnForTest(lo, "Record Type")
+    idColumn = ProcessWorksheetColumnForTest(lo, "ID")
     nameColumn = ProcessWorksheetColumnForTest(lo, "Name")
     outputItemColumn = ProcessWorksheetColumnForTest(lo, "Acceptable Managed Item 1")
     outputSkuColumn = ProcessWorksheetColumnForTest(lo, "Output SKU")
-    If recordTypeColumn = 0 Or nameColumn = 0 Or outputItemColumn = 0 _
+    If recordTypeColumn = 0 Or idColumn = 0 Or nameColumn = 0 Or outputItemColumn = 0 _
        Or outputSkuColumn = 0 Then GoTo ReportResult
+
+    priorEvents = Application.EnableEvents
+    Application.EnableEvents = False
+    For rowIndex = 1 To lo.ListRows.Count
+        lo.DataBodyRange.Cells(rowIndex, recordTypeColumn).ClearContents
+        lo.DataBodyRange.Cells(rowIndex, idColumn).ClearContents
+    Next rowIndex
+    Application.EnableEvents = priorEvents
+    lo.DataBodyRange.Cells(7, recordTypeColumn).Value2 = "OUTPUT"
+    mProduction.HandleProductionChange lo.DataBodyRange.Cells(7, recordTypeColumn)
+    firstAssignedId = Trim$(CStr(lo.DataBodyRange.Cells(7, idColumn).Value2))
+    uniqueRowIds = ProcessWorksheetRowIdsUniqueForTest(lo, recordTypeColumn, idColumn)
+    lo.DataBodyRange.Cells(1, recordTypeColumn).Value2 = "INPUT"
+    mProduction.HandleProductionChange lo.DataBodyRange.Cells(1, recordTypeColumn)
+    uniqueRowIds = uniqueRowIds And _
+        ProcessWorksheetRowIdsUniqueForTest(lo, recordTypeColumn, idColumn)
+    lo.DataBodyRange.Cells(3, recordTypeColumn).Value2 = "INSTRUCTION"
+    mProduction.HandleProductionChange lo.DataBodyRange.Cells(3, recordTypeColumn)
+    uniqueRowIds = uniqueRowIds And _
+        ProcessWorksheetRowIdsUniqueForTest(lo, recordTypeColumn, idColumn)
+    firstAssignedIdRetained = firstAssignedId <> "" And _
+        (Trim$(CStr(lo.DataBodyRange.Cells(7, idColumn).Value2)) = firstAssignedId)
+
+    Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+        mOperatorWorkbook, tableName, False, actionReport)
     For outputRow = 1 To lo.ListRows.Count
         If UCase$(Trim$(CStr(lo.DataBodyRange.Cells(outputRow, _
                 recordTypeColumn).Value2))) = "OUTPUT" Then Exit For
     Next outputRow
     If outputRow > lo.ListRows.Count Then GoTo ReportResult
 
+    Set outputNameCell = lo.DataBodyRange.Cells(outputRow, nameColumn)
+    mProduction.CloseProductionProcessItemSearchForTest
+    mProduction.ShowProductionProcessItemSearch outputNameCell
+    DoEvents
+    outputNamePickerSuppressed = _
+        Not mProduction.ProductionProcessItemSearchVisibleForTest()
     lo.DataBodyRange.Cells(outputRow, outputItemColumn).ClearContents
     lo.DataBodyRange.Cells(outputRow, _
         ProcessWorksheetColumnForTest(lo, "Accepted SKU 1")).ClearContents
@@ -6565,11 +6733,13 @@ Public Function TestProcessWorksheetOutputPickerContract() As String
 ReportResult:
     mProduction.CloseProductionProcessItemSearchForTest
     If outputPickerOpened And outputPickerCommitted And outputSkuHidden And _
-       outputSkuRoundTrip And outputNameRetained And noPhysicalKey Then
+       outputSkuRoundTrip And outputNameRetained And outputNamePickerSuppressed And _
+       uniqueRowIds And firstAssignedIdRetained And noPhysicalKey Then
         TestProcessWorksheetOutputPickerContract = _
             "OK|OutputPickerOpened=True|OutputPickerCommitted=True" & _
             "|OutputSkuHidden=True|OutputSkuRoundTrip=True" & _
-            "|OutputNameRetained=True|NoPhysicalKey=True"
+            "|OutputNameRetained=True|OutputNamePickerSuppressed=True" & _
+            "|UniqueRowIds=True|FirstAssignedIdRetained=True|NoPhysicalKey=True"
     Else
         TestProcessWorksheetOutputPickerContract = _
             "FAIL|OutputPickerOpened=" & CStr(outputPickerOpened) & _
@@ -6577,12 +6747,40 @@ ReportResult:
             "|OutputSkuHidden=" & CStr(outputSkuHidden) & _
             "|OutputSkuRoundTrip=" & CStr(outputSkuRoundTrip) & _
             "|OutputNameRetained=" & CStr(outputNameRetained) & _
+            "|OutputNamePickerSuppressed=" & CStr(outputNamePickerSuppressed) & _
+            "|UniqueRowIds=" & CStr(uniqueRowIds) & _
+            "|FirstAssignedIdRetained=" & CStr(firstAssignedIdRetained) & _
             "|NoPhysicalKey=" & CStr(noPhysicalKey) & _
             "|OutputName=" & selectedOutputName & _
             "|OutputItem=" & selectedOutputItem & _
             "|OutputSku=" & selectedOutputSku & _
             "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
     End If
+End Function
+
+Private Function ProcessWorksheetRowIdsUniqueForTest(ByVal lo As ListObject, _
+                                                     ByVal recordTypeColumn As Long, _
+                                                     ByVal idColumn As Long) As Boolean
+    Dim used As Object
+    Dim rowIndex As Long
+    Dim recordType As String
+    Dim rowId As String
+
+    Set used = CreateObject("Scripting.Dictionary")
+    used.CompareMode = vbTextCompare
+    For rowIndex = 1 To lo.ListRows.Count
+        recordType = UCase$(Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, _
+            recordTypeColumn).Value2)))
+        Select Case recordType
+            Case "INPUT", "REQUIREMENT", "OUTPUT", "INSTRUCTION"
+                rowId = UCase$(Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, _
+                    idColumn).Value2)))
+                If Not mProduction.IsBase36Identifier(rowId) Then Exit Function
+                If used.Exists(rowId) Then Exit Function
+                used.Add rowId, True
+        End Select
+    Next rowIndex
+    ProcessWorksheetRowIdsUniqueForTest = (used.Count > 0)
 End Function
 
 Private Function ProcessWorksheetTableForTest(ByVal tableName As String) As ListObject
@@ -6679,7 +6877,7 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mTxtProcessId.Text = sourceId
     mTxtProcessVersion.Text = "1"
     mTxtProcessName.Text = "Reusable Source " & token
-    mTxtProcessOutputId.Text = "OUT-A"
+    mTxtProcessOutputId.Text = "001"
     mTxtProcessOutputName.Text = "Source Output"
     mTxtProcessOutputItemCode.Text = "SKU-SOURCE-" & token
     mTxtProcessOutputQty.Text = "5"
@@ -6710,12 +6908,12 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mTxtProcessId.Text = sinkId
     mTxtProcessVersion.Text = "1"
     mTxtProcessName.Text = "Reusable Sink " & token
-    mTxtRequirementId.Text = "REQ-B"
+    mTxtRequirementId.Text = "001"
     mTxtRequirementName.Text = "Source ingredient"
     mTxtRequirementQty.Text = "5"
     mTxtRequirementUom.Text = "LB"
     mBtnProcessRequirementAdd_Click
-    mTxtProcessOutputId.Text = "OUT-B"
+    mTxtProcessOutputId.Text = "002"
     mTxtProcessOutputName.Text = "Finished Output"
     mTxtProcessOutputItemCode.Text = "SKU-FINISHED-" & token
     mTxtProcessOutputQty.Text = "5"
@@ -6764,8 +6962,8 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mCmbConnectionFromNode_Change
     SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
     mCmbConnectionToNode_Change
-    SelectComboText mCmbConnectionOutput, "OUT-A"
-    SelectComboText mCmbConnectionRequirement, "REQ-B"
+    SelectComboText mCmbConnectionOutput, "001"
+    SelectComboText mCmbConnectionRequirement, "001"
     mTxtConnectionQty.Text = "5"
     mTxtConnectionUom.Text = "LB"
     mBtnRecipeConnect_Click
@@ -6863,20 +7061,20 @@ Public Function TestReusableProductionRunActionContract() As String
     If rowIndex < 0 Then GoTo FixtureFailed
     mLstProcesses.ListIndex = rowIndex
     mBtnProcessReuse_Click
-    mTxtRequirementId.Text = "REQ-RAW"
+    mTxtRequirementId.Text = "002"
     mTxtRequirementName.Text = "Raw inventory"
     mTxtRequirementQty.Text = "5"
     mTxtRequirementUom.Text = "LB"
     mBtnProcessRequirementAdd_Click
     Set alternative = NewReusableRecord("ALTERNATIVE")
-    alternative("RequirementId") = "REQ-RAW"
+    alternative("RequirementId") = "002"
     alternative("ITEM_CODE") = "SKU-RUN-RAW"
     mProcessAlternatives.Add alternative
     Set alternative = NewReusableRecord("ALTERNATIVE")
-    alternative("RequirementId") = "REQ-RAW"
+    alternative("RequirementId") = "002"
     alternative("ITEM_CODE") = "SKU-RUN-STALE"
     mProcessAlternatives.Add alternative
-    mTxtProcessOutputId.Text = "OUT-CO"
+    mTxtProcessOutputId.Text = "003"
     mTxtProcessOutputName.Text = "Co Product"
     mTxtProcessOutputItemCode.Text = "SKU-RUN-CO"
     mTxtProcessOutputQty.Text = ""
@@ -6906,8 +7104,8 @@ Public Function TestReusableProductionRunActionContract() As String
     mCmbConnectionFromNode_Change
     SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
     mCmbConnectionToNode_Change
-    SelectComboText mCmbConnectionOutput, "OUT-A"
-    SelectComboText mCmbConnectionRequirement, "REQ-B"
+    SelectComboText mCmbConnectionOutput, "001"
+    SelectComboText mCmbConnectionRequirement, "001"
     mTxtConnectionQty.Text = "5"
     mTxtConnectionUom.Text = "LB"
     mBtnRecipeConnect_Click
@@ -6997,9 +7195,9 @@ Public Function TestReusableProductionRunActionContract() As String
     Set firstBatchKeys = CaptureReusableOutputKeys()
     If firstBatchKeys.Count <> 3 Then GoTo FixtureFailed
     intermediateConsumed = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
-        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-A"))) < 0.0000001)
+        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"))) < 0.0000001)
     coProductRemaining = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
-        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-CO")) - 2#) < 0.0000001)
+        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "003")) - 2#) < 0.0000001)
     exactInputKeys = exactInputKeys And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 5#)) < 0.0000001)
     fixtureStage = "RefreshAndNext"
@@ -7033,10 +7231,10 @@ Public Function TestReusableProductionRunActionContract() As String
     distinctOutputKeys = distinctOutputKeys And (firstBatchKeys.Count + secondBatchKeys.Count = 6)
     intermediateConsumed = intermediateConsumed And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
-            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-A"))) < 0.0000001)
+            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"))) < 0.0000001)
     coProductRemaining = coProductRemaining And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
-            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "OUT-CO")) - 2#) < 0.0000001)
+            modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "003")) - 2#) < 0.0000001)
     exactInputKeys = exactInputKeys And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 10#)) < 0.0000001)
 

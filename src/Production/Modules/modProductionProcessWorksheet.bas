@@ -126,8 +126,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     Dim lo As ListObject
     Dim records As New Collection
     Dim record As Object
-    Dim requirementIds As Object
-    Dim outputIds As Object
+    Dim usedRowIds As Object
     Dim inputUoms As Object
     Dim inputRowCount As Long
     Dim derivedInputCount As Long
@@ -183,10 +182,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
         Exit Function
     End If
 
-    Set requirementIds = CreateObject("Scripting.Dictionary")
-    requirementIds.CompareMode = vbTextCompare
-    Set outputIds = CreateObject("Scripting.Dictionary")
-    outputIds.CompareMode = vbTextCompare
+    Set usedRowIds = CreateObject("Scripting.Dictionary")
+    usedRowIds.CompareMode = vbTextCompare
     Set inputUoms = CreateObject("Scripting.Dictionary")
     inputUoms.CompareMode = vbTextCompare
 
@@ -216,7 +213,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
 
         Select Case recordType
             Case "INPUT", "REQUIREMENT"
-                rowId = ResolveWorksheetRowId(rowId, requirementIds)
+                rowId = ResolveWorksheetRowId(rowId, usedRowIds)
                 If rowName = "" Or uom = "" Then
                     report = "Each INPUT row needs a name and UOM."
                     Exit Function
@@ -233,11 +230,11 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                     report = "Each percentage INPUT needs a positive Batch basis quantity."
                     Exit Function
                 End If
-                If requirementIds.Exists(rowId) Then
-                    report = "Duplicate INPUT ID " & rowId & "."
+                If usedRowIds.Exists(rowId) Then
+                    report = "Duplicate Process row ID " & rowId & "."
                     Exit Function
                 End If
-                requirementIds.Add rowId, True
+                usedRowIds.Add rowId, True
                 inputUoms(uom) = True
                 inputRowCount = inputRowCount + 1
                 If hasQty Then
@@ -256,7 +253,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
             Case "OUTPUT"
                 If outputSku = "" Then outputSku = acceptedSku
                 If rowName = "" Then rowName = acceptableItem
-                rowId = ResolveWorksheetRowId(rowId, outputIds)
+                rowId = ResolveWorksheetRowId(rowId, usedRowIds)
                 If rowName = "" Or outputSku = "" Or uom = "" Then
                     report = "Each OUTPUT row needs a managed item selected from item search and a UOM."
                     Exit Function
@@ -273,11 +270,11 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                     report = "Each percentage OUTPUT needs a positive Yield basis quantity."
                     Exit Function
                 End If
-                If outputIds.Exists(rowId) Then
-                    report = "Duplicate OUTPUT ID " & rowId & "."
+                If usedRowIds.Exists(rowId) Then
+                    report = "Duplicate Process row ID " & rowId & "."
                     Exit Function
                 End If
-                outputIds.Add rowId, True
+                usedRowIds.Add rowId, True
                 outputRowCount = outputRowCount + 1
                 designId = GeneratedOutputDesignId(processId, rowId)
                 designVersion = processVersion
@@ -293,6 +290,12 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 record("UOM") = uom
                 records.Add record
             Case "INSTRUCTION"
+                rowId = ResolveWorksheetRowId(rowId, usedRowIds)
+                If usedRowIds.Exists(rowId) Then
+                    report = "Duplicate Process row ID " & rowId & "."
+                    Exit Function
+                End If
+                usedRowIds.Add rowId, True
                 If instructionText = "" Then instructionText = rowName
                 If instructionText = "" Then
                     report = "Each INSTRUCTION row needs instruction text."
@@ -531,41 +534,10 @@ Public Function IsProcessWorksheetTableTarget(ByVal target As Range) As Boolean
 End Function
 
 Public Function IsProcessWorksheetItemSearchTarget(ByVal target As Range) As Boolean
-    IsProcessWorksheetItemSearchTarget = _
-        IsProcessWorksheetOutputManagedItemTarget(target) Or _
-        (ProcessAlternativePairNumber(target) > 0)
+    IsProcessWorksheetItemSearchTarget = (ProcessManagedItemPairNumber(target) > 0)
 End Function
 
-Public Function IsProcessWorksheetOutputManagedItemTarget(ByVal target As Range) As Boolean
-    Dim lo As ListObject
-    Dim recordTypeColumn As ListColumn
-    Dim nameColumn As ListColumn
-    Dim managedItemColumn As ListColumn
-    Dim rowIndex As Long
-
-    If target Is Nothing Or target.Cells.CountLarge <> 1 Then Exit Function
-    On Error Resume Next
-    Set lo = target.ListObject
-    On Error GoTo 0
-    If Not IsInvSysProcessTable(lo) Then Exit Function
-    If target.Row <= lo.HeaderRowRange.Row Then Exit Function
-    On Error Resume Next
-    Set recordTypeColumn = lo.ListColumns("Record Type")
-    Set nameColumn = lo.ListColumns("Name")
-    Set managedItemColumn = lo.ListColumns("Acceptable Managed Item 1")
-    On Error GoTo 0
-    If recordTypeColumn Is Nothing Or nameColumn Is Nothing _
-       Or managedItemColumn Is Nothing Then Exit Function
-    If target.Column <> nameColumn.Range.Column _
-       And target.Column <> managedItemColumn.Range.Column Then Exit Function
-    rowIndex = target.Row - lo.DataBodyRange.Row + 1
-    If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Function
-    IsProcessWorksheetOutputManagedItemTarget = _
-        (UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, _
-            recordTypeColumn.Index).Value2))) = "OUTPUT")
-End Function
-
-Public Function ProcessAlternativePairNumber(ByVal target As Range) As Long
+Public Function ProcessManagedItemPairNumber(ByVal target As Range) As Long
     Dim lo As ListObject
     Dim recordTypeColumn As ListColumn
     Dim rowIndex As Long
@@ -593,9 +565,14 @@ Public Function ProcessAlternativePairNumber(ByVal target As Range) As Long
     If pairNumber > AlternativePairCount(lo) Then Exit Function
     rowIndex = target.Row - lo.DataBodyRange.Row + 1
     If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Function
-    If UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) <> "INPUT" _
-       And UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, recordTypeColumn.Index).Value2))) <> "REQUIREMENT" Then Exit Function
-    ProcessAlternativePairNumber = pairNumber
+    Select Case UCase$(Trim$(CellText(lo.DataBodyRange.Cells(rowIndex, _
+            recordTypeColumn.Index).Value2)))
+        Case "INPUT", "REQUIREMENT"
+            ProcessManagedItemPairNumber = pairNumber
+        Case "OUTPUT"
+            If pairNumber = FIRST_ALTERNATIVE_PAIR Then _
+                ProcessManagedItemPairNumber = pairNumber
+    End Select
 End Function
 
 Public Sub RefreshProcessWorksheetManagedColumns(ByVal target As Range)
@@ -738,46 +715,47 @@ Private Sub AddWorksheetTemplateRows(ByVal rows As Collection)
     Dim inputCount As Long
     Dim outputCount As Long
     Dim instructionCount As Long
-    Dim usedInputs As Object
-    Dim usedOutputs As Object
+    Dim usedRowIds As Object
     Dim record As Object
     Dim rowRecord As Object
     Dim recordType As String
     Dim addCount As Long
     Dim index As Long
 
-    Set usedInputs = CreateObject("Scripting.Dictionary")
-    usedInputs.CompareMode = vbTextCompare
-    Set usedOutputs = CreateObject("Scripting.Dictionary")
-    usedOutputs.CompareMode = vbTextCompare
+    Set usedRowIds = CreateObject("Scripting.Dictionary")
+    usedRowIds.CompareMode = vbTextCompare
     For Each record In rows
         recordType = UCase$(CellText(record("RecordType")))
         Select Case recordType
             Case "INPUT"
                 inputCount = inputCount + 1
-                If Trim$(CellText(record("Id"))) <> "" Then usedInputs(UCase$(Trim$(CellText(record("Id"))))) = True
+                If Trim$(CellText(record("Id"))) <> "" Then usedRowIds(UCase$(Trim$(CellText(record("Id"))))) = True
             Case "OUTPUT"
                 outputCount = outputCount + 1
-                If Trim$(CellText(record("Id"))) <> "" Then usedOutputs(UCase$(Trim$(CellText(record("Id"))))) = True
-            Case "INSTRUCTION": instructionCount = instructionCount + 1
+                If Trim$(CellText(record("Id"))) <> "" Then usedRowIds(UCase$(Trim$(CellText(record("Id"))))) = True
+            Case "INSTRUCTION"
+                instructionCount = instructionCount + 1
+                If Trim$(CellText(record("Id"))) <> "" Then usedRowIds(UCase$(Trim$(CellText(record("Id"))))) = True
         End Select
     Next record
 
     addCount = IIf(inputCount = 0, 6, 2)
     For index = 1 To addCount
         Set rowRecord = NewWorksheetRecord("INPUT")
-        rowRecord("Id") = NextIdFromDictionary(usedInputs)
-        usedInputs(rowRecord("Id")) = True
+        rowRecord("Id") = NextIdFromDictionary(usedRowIds)
+        usedRowIds(rowRecord("Id")) = True
         rows.Add rowRecord
     Next index
     addCount = IIf(outputCount = 0, 2, 1)
     For index = 1 To addCount
         Set rowRecord = NewWorksheetRecord("OUTPUT")
-        rowRecord("Id") = NextIdFromDictionary(usedOutputs)
-        usedOutputs(rowRecord("Id")) = True
+        rowRecord("Id") = NextIdFromDictionary(usedRowIds)
+        usedRowIds(rowRecord("Id")) = True
         rows.Add rowRecord
     Next index
     Set rowRecord = NewWorksheetRecord("INSTRUCTION")
+    rowRecord("Id") = NextIdFromDictionary(usedRowIds)
+    usedRowIds(rowRecord("Id")) = True
     rows.Add rowRecord
 End Sub
 
@@ -958,29 +936,34 @@ Private Sub ApplyProcessWorksheetUomValidation(ByVal lo As ListObject)
 End Sub
 
 Private Sub EnsureWorksheetRowIds(ByVal lo As ListObject)
-    Dim requirementIds As Object
-    Dim outputIds As Object
+    Dim usedRowIds As Object
+    Dim rowsNeedingIds As Object
     Dim rowIndex As Long
     Dim recordType As String
     Dim rowId As String
 
-    Set requirementIds = CreateObject("Scripting.Dictionary")
-    requirementIds.CompareMode = vbTextCompare
-    Set outputIds = CreateObject("Scripting.Dictionary")
-    outputIds.CompareMode = vbTextCompare
+    Set usedRowIds = CreateObject("Scripting.Dictionary")
+    usedRowIds.CompareMode = vbTextCompare
+    Set rowsNeedingIds = CreateObject("Scripting.Dictionary")
     For rowIndex = 1 To lo.ListRows.Count
         recordType = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_RECORD_TYPE)))
         rowId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_ID)))
-        If recordType = "INPUT" Or recordType = "REQUIREMENT" Then
-            rowId = ResolveWorksheetRowId(rowId, requirementIds)
+        Select Case recordType
+            Case "INPUT", "REQUIREMENT", "OUTPUT", "INSTRUCTION"
+                If mProduction.IsBase36Identifier(rowId) _
+                   And Not usedRowIds.Exists(rowId) Then
+                    usedRowIds.Add rowId, True
+                Else
+                    rowsNeedingIds.Add CStr(rowIndex), True
+                End If
+        End Select
+    Next rowIndex
+    For rowIndex = 1 To lo.ListRows.Count
+        If rowsNeedingIds.Exists(CStr(rowIndex)) Then
+            rowId = NextIdFromDictionary(usedRowIds)
             lo.DataBodyRange.Cells(rowIndex, COL_ID).NumberFormat = "@"
             lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
-            requirementIds(rowId) = True
-        ElseIf recordType = "OUTPUT" Then
-            rowId = ResolveWorksheetRowId(rowId, outputIds)
-            lo.DataBodyRange.Cells(rowIndex, COL_ID).NumberFormat = "@"
-            lo.DataBodyRange.Cells(rowIndex, COL_ID).Value2 = rowId
-            outputIds(rowId) = True
+            usedRowIds.Add rowId, True
         End If
     Next rowIndex
 End Sub

@@ -1527,8 +1527,7 @@ Public Sub CommitSelection()
                         If cProcessOutputSku > 0 Then _
                             lo.DataBodyRange.Cells(rowIdx, cProcessOutputSku).Value2 = itemCode
                         If cProcessName > 0 Then
-                            If callbackCell.Column = lo.ListColumns(cProcessName).Range.Column _
-                               Or Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, _
+                            If Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, _
                                     cProcessName).Value2)) = "" Then _
                                 lo.DataBodyRange.Cells(rowIdx, cProcessName).Value2 = itemName
                         End If

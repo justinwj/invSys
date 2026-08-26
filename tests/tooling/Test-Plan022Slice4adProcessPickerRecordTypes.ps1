@@ -17,12 +17,13 @@ $form = Get-Content -LiteralPath (Join-Path $repo "src\Production\Forms\frmProdu
 $validator = Get-Content -LiteralPath (Join-Path $repo "tools\validate_plan022_packaged_launchers.ps1") -Raw
 
 $checks["Docs.RecordTypeReachability"] =
-    $spec.Contains("same Core item-search interaction as INPUT") -and
+    $spec -match 'same Core\s+item-search interaction as INPUT' -and
     $plan.Contains("Slice 4ad -- Process picker INPUT/OUTPUT record-type reachability") -and
     $controls.Contains("Slice 4ad Process picker INPUT/OUTPUT reachability:")
 $checks["Worksheet.OutputManagedItemTarget"] =
-    $worksheet.Contains("IsProcessWorksheetOutputManagedItemTarget") -and
-    $worksheet.Contains('Set managedItemColumn = lo.ListColumns("Acceptable Managed Item 1")')
+    $worksheet.Contains("ProcessManagedItemPairNumber") -and
+    $worksheet.Contains('Case "OUTPUT"') -and
+    $worksheet.Contains("If pairNumber = FIRST_ALTERNATIVE_PAIR")
 $checks["Picker.OutputManagedItemCommit"] =
     $picker.Contains('If processRecordType = "OUTPUT" Then') -and
     $picker.Contains('cProcessItem = ColumnIndex(lo, "Acceptable Managed Item 1")') -and

@@ -20,9 +20,9 @@ $checks["Docs.OutputSkuContract"] =
     $spec.Contains("system-managed **Output SKU**") -and
     $plan.Contains("Slice 4ac -- Process OUTPUT managed-item picker") -and
     $controls.Contains("Slice 4ac Process OUTPUT managed-item picker:")
-$checks["Worksheet.OutputNameTarget"] =
-    $worksheet.Contains("IsProcessWorksheetOutputManagedItemTarget") -and
-    $worksheet.Contains('Set nameColumn = lo.ListColumns("Name")') -and
+$checks["Worksheet.OutputManagedItemTarget"] =
+    $worksheet.Contains("ProcessManagedItemPairNumber") -and
+    $worksheet.Contains('Case "OUTPUT"') -and
     $worksheet.Contains('lo.ListColumns("Output SKU")')
 $checks["Worksheet.OutputSkuRoundTrip"] =
     $worksheet.Contains('rowRecord("OutputSku")') -and
