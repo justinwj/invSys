@@ -194,6 +194,7 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
     Dim trackQty As String
     Dim itemKind As String
     Dim categoryValue As String
+    Dim nonCounted As Boolean
     Dim haystack As String
 
     Set wb = modInventoryApply.ResolveInventoryWorkbook("", inventoryWb)
@@ -216,8 +217,8 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
         trackQty = ""
         itemKind = ""
         categoryValue = ""
-        If systemKey = "" Or sku = "" Or qtyOnHand <= 0 Then GoTo NextEntity
-        If inventoryState <> "" And StrComp(inventoryState, "ACTIVE", vbTextCompare) <> 0 Then GoTo NextEntity
+        nonCounted = False
+        If systemKey = "" Or sku = "" Then GoTo NextEntity
 
         catalogRow = FindInventoryQueryRow(loCatalog, "SKU", sku)
         If catalogRow > 0 Then
@@ -234,6 +235,9 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
             uom = ""
             description = ""
         End If
+        nonCounted = InventoryQueryCatalogIsNonCounted(trackQty, itemKind, categoryValue)
+        If qtyOnHand <= 0 And Not nonCounted Then GoTo NextEntity
+        If inventoryState <> "" And StrComp(inventoryState, "ACTIVE", vbTextCompare) <> 0 Then GoTo NextEntity
         If itemCode = "" Then itemCode = sku
         If itemName = "" Then itemName = itemCode
         haystack = LCase$(systemKey & " " & sku & " " & itemCode & " " & itemName & " " & _
@@ -269,6 +273,17 @@ NextEntity:
     Next r
     ListAvailableInventoryEntities = trimmed
 CleanFail:
+End Function
+
+Private Function InventoryQueryCatalogIsNonCounted(ByVal trackQty As String, _
+                                                   ByVal itemKind As String, _
+                                                   ByVal categoryValue As String) As Boolean
+    trackQty = UCase$(Trim$(trackQty))
+    itemKind = UCase$(Trim$(itemKind))
+    categoryValue = UCase$(Trim$(categoryValue))
+    InventoryQueryCatalogIsNonCounted = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+        Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+        Or categoryValue = "UTILITY" Or categoryValue = "SERVICE")
 End Function
 
 Private Sub AddInventoryPickerResultRow(ByRef result() As Variant, ByRef outRow As Long, _

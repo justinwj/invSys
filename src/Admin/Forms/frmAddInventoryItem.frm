@@ -61,9 +61,9 @@ Private mLblCustomValue As MSForms.Label
 Private mLblGenerated As MSForms.Label
 Private mLblStatus As MSForms.Label
 Private mTxtItemName As MSForms.TextBox
-Private mTxtLocation As MSForms.TextBox
+Private mCmbLocation As MSForms.ComboBox
 Private mTxtDescription As MSForms.TextBox
-Private mTxtCategory As MSForms.TextBox
+Private mCmbCategory As MSForms.ComboBox
 Private mTxtVendorName As MSForms.TextBox
 Private mTxtVendorCode As MSForms.TextBox
 Private mTxtExternalCode As MSForms.TextBox
@@ -92,6 +92,7 @@ Private mImagePlaceholderActive As Boolean
 Private mOperatorWorkbook As Workbook
 Private mLastInventoryTableName As String
 Private mLastInventoryWorksheetReport As String
+Private mConfiguredDefaultLocation As String
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -141,7 +142,7 @@ Public Property Get NonCountedItem() As Boolean
 End Property
 
 Public Property Get LocationValue() As String
-    LocationValue = Trim$(CStr(mTxtLocation.Value))
+    LocationValue = Trim$(CStr(mCmbLocation.Value))
 End Property
 
 Public Property Get DescriptionValue() As String
@@ -149,7 +150,7 @@ Public Property Get DescriptionValue() As String
 End Property
 
 Public Property Get Category() As String
-    Category = Trim$(CStr(mTxtCategory.Value))
+    Category = Trim$(CStr(mCmbCategory.Value))
 End Property
 
 Public Property Get VendorName() As String
@@ -255,6 +256,51 @@ Failed:
         "|Error=" & CStr(Err.Number) & " " & Err.Description
 End Function
 
+Public Function TestAddItemVisibilityDropdownContract() As String
+    On Error GoTo Failed
+
+    Dim locationDropdown As Boolean
+    Dim categoryDropdown As Boolean
+    Dim submitHandler As Boolean
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    testStage = "CatalogOptions"
+    AddCatalogItem "SKU-RAW", "1", "Raw Material", "LB", "SECONDARY", _
+        "", "", "", "RAW", "", "", "TRUE", "INVENTORY", "10"
+    AddCatalogItem "SKU-FINISHED", "2", "Finished Good", "EA", "CLEARVIEW", _
+        "", "", "", "FINISHED", "", "", "TRUE", "INVENTORY", "5"
+
+    locationDropdown = (TypeName(mCmbLocation) = "ComboBox" And _
+        ComboContainsValue(mCmbLocation, "CLEARVIEW") And _
+        ComboContainsValue(mCmbLocation, "SECONDARY"))
+    categoryDropdown = (TypeName(mCmbCategory) = "ComboBox" And _
+        ComboContainsValue(mCmbCategory, "RAW") And _
+        ComboContainsValue(mCmbCategory, "FINISHED"))
+
+    testStage = "SubmitHandler"
+    mTxtItemName.Value = "Honey"
+    mCmbUom.Value = "LB"
+    mTxtQty.Value = "25"
+    mCmbLocation.Value = "CLEARVIEW"
+    mCmbCategory.Value = "RAW"
+    mBtnOK_Click
+    submitHandler = (mAccepted And ItemName = "Honey" And _
+        LocationValue = "CLEARVIEW" And Category = "RAW")
+
+    TestAddItemVisibilityDropdownContract = IIf(locationDropdown And categoryDropdown And _
+        submitHandler, "OK", "FAIL") & _
+        "|SubmitHandler=" & CStr(submitHandler) & _
+        "|LocationDropdown=" & CStr(locationDropdown) & _
+        "|CategoryDropdown=" & CStr(categoryDropdown)
+    Exit Function
+
+Failed:
+    TestAddItemVisibilityDropdownContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
 Public Function TestInventoryWorksheetActionContract(ByVal operatorWb As Workbook) As String
     On Error GoTo Failed
 
@@ -332,6 +378,7 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mUserId = SafeFormText(userId)
     mGeneratedSku = SafeFormText(generatedSku)
     mGeneratedRow = CLng(Val(SafeFormText(generatedRow)))
+    mConfiguredDefaultLocation = SafeFormText(defaultLocation)
     Set mCatalogItems = New Collection
     mAccepted = False
     mEditMode = False
@@ -346,9 +393,10 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mCmbUom.Value = "EA"
     mPreviousUom = "EA"
     mTxtQty.Value = "1"
-    mTxtLocation.Value = SafeFormText(defaultLocation)
+    LoadInventoryDimensionOptions
+    mCmbLocation.Value = mConfiguredDefaultLocation
     mTxtDescription.Value = ""
-    mTxtCategory.Value = ""
+    mCmbCategory.Value = ""
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
@@ -423,6 +471,7 @@ Public Sub AddCatalogItem(ByVal sku As String, _
 
     mLoading = True
     LoadUomOptions
+    LoadInventoryDimensionOptions
     If selectedUom <> "" Then
         mCmbUom.Value = selectedUom
     ElseIf Not mEditMode Then
@@ -502,9 +551,13 @@ Private Sub EnsureControls()
     LoadQuantityOptions
 
     Set mLblLocation = AddLabel("lblLocation", 14, 222, 126, 18, "Default location")
-    Set mTxtLocation = AddTextBox("txtLocation", 146, 218, 120, 22)
+    Set mCmbLocation = AddCombo("cmbLocation", 146, 218, 120, 22)
+    mCmbLocation.Style = fmStyleDropDownCombo
+    mCmbLocation.MatchEntry = fmMatchEntryComplete
     Set mLblCategory = AddLabel("lblCategory", 288, 222, 92, 18, "Category")
-    Set mTxtCategory = AddTextBox("txtCategory", 386, 218, 152, 22)
+    Set mCmbCategory = AddCombo("cmbCategory", 386, 218, 152, 22)
+    mCmbCategory.Style = fmStyleDropDownCombo
+    mCmbCategory.MatchEntry = fmMatchEntryComplete
 
     Set mLblDescription = AddLabel("lblDescription", 14, 254, 126, 18, "Description")
     Set mTxtDescription = AddTextBox("txtDescription", 146, 250, 392, 22)
@@ -640,6 +693,57 @@ NextItem:
     Next item
     mCmbEditItem.ListRows = MaxLongAdminForm(1, MinLongAdminForm(12, mCmbEditItem.ListCount))
 End Sub
+
+Private Sub LoadInventoryDimensionOptions()
+    Dim selectedLocation As String
+    Dim selectedCategory As String
+    Dim seenLocations As Object
+    Dim seenCategories As Object
+    Dim item As Variant
+
+    If mCmbLocation Is Nothing Or mCmbCategory Is Nothing Then Exit Sub
+    selectedLocation = Trim$(CStr(mCmbLocation.Value))
+    selectedCategory = Trim$(CStr(mCmbCategory.Value))
+    Set seenLocations = CreateObject("Scripting.Dictionary")
+    seenLocations.CompareMode = vbTextCompare
+    Set seenCategories = CreateObject("Scripting.Dictionary")
+    seenCategories.CompareMode = vbTextCompare
+
+    mCmbLocation.Clear
+    mCmbCategory.Clear
+    AddDimensionOption mCmbLocation, seenLocations, mConfiguredDefaultLocation
+    If Not mCatalogItems Is Nothing Then
+        For Each item In mCatalogItems
+            AddDimensionOption mCmbLocation, seenLocations, CatalogField(item, "LOCATION")
+            AddDimensionOption mCmbCategory, seenCategories, CatalogField(item, "CATEGORY")
+        Next item
+    End If
+    If selectedLocation <> "" Then mCmbLocation.Value = selectedLocation
+    If selectedCategory <> "" Then mCmbCategory.Value = selectedCategory
+End Sub
+
+Private Sub AddDimensionOption(ByVal targetCombo As MSForms.ComboBox, _
+                               ByVal seen As Object, _
+                               ByVal valueText As String)
+    valueText = Trim$(valueText)
+    If valueText = "" Then Exit Sub
+    If seen.Exists(valueText) Then Exit Sub
+    seen.Add valueText, True
+    targetCombo.AddItem valueText
+End Sub
+
+Private Function ComboContainsValue(ByVal targetCombo As MSForms.ComboBox, _
+                                    ByVal valueText As String) As Boolean
+    Dim i As Long
+
+    If targetCombo Is Nothing Then Exit Function
+    For i = 0 To targetCombo.ListCount - 1
+        If StrComp(Trim$(CStr(targetCombo.List(i))), Trim$(valueText), vbTextCompare) = 0 Then
+            ComboContainsValue = True
+            Exit Function
+        End If
+    Next i
+End Function
 
 Private Sub ShowEditItemSearchResults(ByVal searchText As String)
     Dim i As Long
@@ -1106,8 +1210,8 @@ Private Sub ApplyQuantityModeState()
     mTxtQty.Enabled = True
     If NonCountedItem Then
         mLblQty.Caption = "Qty mode"
-        If Not mTxtCategory Is Nothing Then
-            If Trim$(CStr(mTxtCategory.Value)) = "" Then mTxtCategory.Value = NonCountedItemKind()
+        If Not mCmbCategory Is Nothing Then
+            If Trim$(CStr(mCmbCategory.Value)) = "" Then mCmbCategory.Value = NonCountedItemKind()
         End If
         If UCase$(QuantityModeText()) = "UTILITY" Then
             If Not mTxtVendorName Is Nothing Then
@@ -1170,9 +1274,9 @@ Private Sub ClearEditableFields()
     mCmbUom.Value = "EA"
     mPreviousUom = "EA"
     mTxtQty.Value = ""
-    mTxtLocation.Value = ""
+    mCmbLocation.Value = ""
     mTxtDescription.Value = ""
-    mTxtCategory.Value = ""
+    mCmbCategory.Value = ""
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
@@ -1212,9 +1316,9 @@ Private Sub LoadSelectedEditItemBySku(ByVal sku As String)
         mPreviousUom = "EA"
     End If
     mTxtQty.Value = ""
-    mTxtLocation.Value = CatalogField(item, "LOCATION")
+    mCmbLocation.Value = CatalogField(item, "LOCATION")
     mTxtDescription.Value = CatalogField(item, "DESCRIPTION")
-    mTxtCategory.Value = CatalogField(item, "CATEGORY")
+    mCmbCategory.Value = CatalogField(item, "CATEGORY")
     mTxtVendorName.Value = CatalogField(item, "VENDOR(s)")
     mTxtVendorCode.Value = CatalogField(item, "VENDOR_CODE")
     mTxtExternalCode.Value = CatalogField(item, "EXTERNAL_CODE")

@@ -341,6 +341,34 @@ Failed:
     On Error GoTo 0
 End Function
 
+Public Function InventoryAddVisibilityDropdownContractForAutomation() As String
+    On Error GoTo Failed
+
+    Dim payloadItem As Object
+    Dim systemKey As String
+    Dim exactEntityCreate As Boolean
+    Dim formEvidence As String
+
+    systemKey = modRoleEventWriter.CreateSystemKey()
+    Set payloadItem = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        systemKey, "SKU-ADMIN-ADD-CONTRACT", 1, "CLEARVIEW", "GOOD", "", _
+        "Admin Add Item contract evidence")
+    exactEntityCreate = (Trim$(CStr(payloadItem("System_Key"))) = systemKey And _
+        UCase$(Trim$(CStr(payloadItem("IoType")))) = "CREATE")
+    formEvidence = frmAddInventoryItem.TestAddItemVisibilityDropdownContract()
+    InventoryAddVisibilityDropdownContractForAutomation = formEvidence & _
+        "|ExactEntityCreate=" & CStr(exactEntityCreate)
+    Unload frmAddInventoryItem
+    Exit Function
+
+Failed:
+    InventoryAddVisibilityDropdownContractForAutomation = "FAIL|Error=" & _
+        CStr(Err.Number) & " " & Err.Description
+    On Error Resume Next
+    Unload frmAddInventoryItem
+    On Error GoTo 0
+End Function
+
 Public Function InventoryWorksheetContractForAutomation(ByVal operatorWb As Workbook) As String
     On Error GoTo Failed
 
@@ -628,6 +656,8 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     Dim batchReport As String
     Dim processedCount As Long
     Dim inboxReport As String
+    Dim systemKey As String
+    Dim nonCounted As Boolean
 
     On Error GoTo FailAdd
 
@@ -646,7 +676,8 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     If itemName = "" Then itemName = sku
     If uom = "" Then report = "UOM is required.": Exit Function
     If rowVal <= 0 Then report = "Inventory ROW id must be positive.": Exit Function
-    If IsNonCountedCustomFieldsAdmin(customFields) Then
+    nonCounted = IsNonCountedCustomFieldsAdmin(customFields)
+    If nonCounted Then
         qty = 0#
     ElseIf qty <= 0 Then
         report = "Starting quantity must be greater than zero."
@@ -659,7 +690,10 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     End If
 
     Set payloadItems = New Collection
-    Set item = modRoleEventWriter.CreatePayloadItem(rowVal, sku, qty, locationVal, "Admin add inventory item", "IMPORT")
+    systemKey = modRoleEventWriter.CreateSystemKey()
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        systemKey, sku, qty, locationVal, "GOOD", "", "Admin add inventory item")
+    item("ROW") = rowVal
     item("ITEM_CODE") = sku
     item("ITEM") = itemName
     item("UOM") = uom
@@ -672,7 +706,7 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     item("CATEGORY") = category
     item("EXTERNAL_CODE") = externalCode
     AddPictureReferencesToPayloadAdmin item, imagePath
-    If IsNonCountedCustomFieldsAdmin(customFields) Then
+    If nonCounted Then
         item("TRACK_QTY") = "FALSE"
         item("ITEM_KIND") = NonCountedItemKindAdmin(customFields)
     End If
@@ -689,9 +723,9 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
         Exit Function
     End If
 
-    If Not modRoleEventWriter.QueueMigrationSeedEvent(warehouseId, stationId, userId, payloadJson, _
-                                                      "ADMIN_ADD_INVENTORY_ITEM", "Admin add inventory item " & sku, _
-                                                      0, Nothing, eventIdOut, queueError, "") Then
+    If Not modRoleEventWriter.QueueInventoryCreateEvent(warehouseId, stationId, userId, payloadJson, _
+                                                        "Admin add inventory item " & sku, _
+                                                        0, Nothing, eventIdOut, queueError, "") Then
         report = "Inventory item event could not be queued: " & queueError & vbCrLf & _
                  "Use Users & Roles to grant ADMIN_MAINT to '" & userId & "' for " & warehouseId & " / " & stationId & "."
         Exit Function
@@ -707,7 +741,8 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
              "Warehouse: " & warehouseId & vbCrLf & _
              "SKU: " & sku & vbCrLf & _
              "Item: " & itemName & vbCrLf & _
-             "Starting quantity: " & IIf(IsNonCountedCustomFieldsAdmin(customFields), "not counted", CStr(qty)) & vbCrLf & _
+             "System_Key: " & systemKey & vbCrLf & _
+             "Starting quantity: " & IIf(nonCounted, "not counted", CStr(qty)) & vbCrLf & _
              "Processor: " & batchReport & vbCrLf & _
              "Refresh inventory in any open role workbook to see the new item."
     AddInventoryItemForWarehouse = True
@@ -842,6 +877,13 @@ Private Function SetInventoryQuantityForWarehouse(ByVal warehouseId As String, _
     If targetQty < 0 Then report = "Set qty cannot be negative.": Exit Function
     If editReason = "" Then report = "Why the edit is required before changing quantity.": Exit Function
 
+    If targetQty > 0 And Not InventorySkuHasManagedEntityAdmin(warehouseId, sku) Then
+        SetInventoryQuantityForWarehouse = CreateFirstInventoryEntityForCatalogItemAdmin( _
+            warehouseId, stationId, userId, rowVal, sku, itemName, uom, _
+            locationVal, targetQty, editReason, report)
+        Exit Function
+    End If
+
     currentQty = ResolveInventoryQtyOnHandAdmin(warehouseId, sku)
     deltaQty = targetQty - currentQty
     If Abs(deltaQty) < 0.0000001 Then
@@ -908,6 +950,83 @@ FailSet:
     report = "SetInventoryQuantity failed: " & Err.Description
 End Function
 
+Private Function CreateFirstInventoryEntityForCatalogItemAdmin(ByVal warehouseId As String, _
+                                                                ByVal stationId As String, _
+                                                                ByVal userId As String, _
+                                                                ByVal rowVal As Long, _
+                                                                ByVal sku As String, _
+                                                                ByVal itemName As String, _
+                                                                ByVal uom As String, _
+                                                                ByVal locationVal As String, _
+                                                                ByVal targetQty As Double, _
+                                                                ByVal editReason As String, _
+                                                                ByRef report As String) As Boolean
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim payloadJson As String
+    Dim eventIdOut As String
+    Dim queueError As String
+    Dim batchReport As String
+    Dim processedCount As Long
+    Dim inboxReport As String
+    Dim systemKey As String
+    Dim noteText As String
+
+    On Error GoTo Failed
+
+    If Not EnsureDemoStationInboxes(warehouseId, stationId, inboxReport) Then
+        report = inboxReport
+        Exit Function
+    End If
+
+    systemKey = modRoleEventWriter.CreateSystemKey()
+    noteText = "Admin completed catalog-only inventory item. Reason: " & editReason & _
+               "; SubmittedQty=" & CStr(targetQty)
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        systemKey, sku, targetQty, locationVal, "GOOD", "", noteText)
+    item("ROW") = rowVal
+    item("ITEM_CODE") = sku
+    item("ITEM") = itemName
+    item("UOM") = uom
+    item("LOCATION") = locationVal
+    item("TOTAL INV") = targetQty
+    item("QtyAvailable") = targetQty
+    item("Reason") = editReason
+    payloadItems.Add item
+
+    payloadJson = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
+    If payloadJson = "" Or payloadJson = "[]" Then
+        report = "Inventory creation payload was empty."
+        Exit Function
+    End If
+    If Not modRoleEventWriter.QueueInventoryCreateEvent(warehouseId, stationId, userId, _
+            payloadJson, noteText, 0, Nothing, eventIdOut, queueError, "") Then
+        report = "Inventory creation event could not be queued: " & queueError
+        Exit Function
+    End If
+
+    processedCount = modProcessor.RunBatch(warehouseId, 0, batchReport)
+    If processedCount < 1 Then
+        report = "Inventory creation event was queued but not applied. " & batchReport
+        Exit Function
+    End If
+
+    report = "Catalog-only inventory item completed as a managed entity." & vbCrLf & _
+             "Warehouse: " & warehouseId & vbCrLf & _
+             "SKU: " & sku & vbCrLf & _
+             "System_Key: " & systemKey & vbCrLf & _
+             "Starting quantity: " & CStr(targetQty) & vbCrLf & _
+             "Reason: " & editReason & vbCrLf & _
+             "Processor: " & batchReport & vbCrLf & _
+             "Refresh Inventory Viewer and Production to see the item."
+    CreateFirstInventoryEntityForCatalogItemAdmin = True
+    Exit Function
+
+Failed:
+    report = "Complete catalog-only inventory item failed: " & Err.Description
+End Function
+
 Public Function UpdateInventoryItemCatalogForWarehouse(ByVal warehouseId As String, _
                                                        ByVal sku As String, _
                                                        ByVal itemName As String, _
@@ -925,7 +1044,6 @@ Public Function UpdateInventoryItemCatalogForWarehouse(ByVal warehouseId As Stri
     Dim wb As Workbook
     Dim openedHere As Boolean
     Dim lo As ListObject
-    Dim loBalance As ListObject
     Dim rowIndex As Long
     Dim customKey As Variant
 
@@ -1049,7 +1167,7 @@ Private Function LoadInventoryCatalogItemsAdmin(ByVal warehouseId As String) As 
     Dim wb As Workbook
     Dim openedHere As Boolean
     Dim lo As ListObject
-    Dim loBalance As ListObject
+    Dim loEntities As ListObject
     Dim rowIndex As Long
     Dim item As Object
     Dim result As Collection
@@ -1069,7 +1187,7 @@ Private Function LoadInventoryCatalogItemsAdmin(ByVal warehouseId As String) As 
 
     If Not wb Is Nothing Then
         Set lo = FindListObjectByNameAdminLocal(wb, "tblSkuCatalog")
-        Set loBalance = FindListObjectByNameAdminLocal(wb, "tblSkuBalance")
+        Set loEntities = FindListObjectByNameAdminLocal(wb, "tblInventoryEntities")
         If Not lo Is Nothing Then
             If Not lo.DataBodyRange Is Nothing Then
                 For rowIndex = 1 To lo.ListRows.Count
@@ -1089,7 +1207,7 @@ Private Function LoadInventoryCatalogItemsAdmin(ByVal warehouseId As String) As 
                         item("IMAGE_PATH") = CombinedPictureReferencesAdmin(lo, rowIndex)
                         item("TRACK_QTY") = CatalogCellAdmin(lo, rowIndex, "TRACK_QTY")
                         item("ITEM_KIND") = CatalogCellAdmin(lo, rowIndex, "ITEM_KIND")
-                        item("QTY_ON_HAND") = ResolveQtyOnHandFromBalanceAdmin(loBalance, item("SKU"))
+                        item("QTY_ON_HAND") = ResolveQtyOnHandFromEntitiesAdmin(loEntities, item("SKU"))
                         result.Add item
                     End If
                 Next rowIndex
@@ -1167,7 +1285,7 @@ Private Function ResolveInventoryQtyOnHandAdmin(ByVal warehouseId As String, ByV
     Dim path As String
     Dim wb As Workbook
     Dim openedHere As Boolean
-    Dim loBalance As ListObject
+    Dim loEntities As ListObject
 
     On Error GoTo CleanExit
     warehouseId = Trim$(warehouseId)
@@ -1182,13 +1300,80 @@ Private Function ResolveInventoryQtyOnHandAdmin(ByVal warehouseId As String, ByV
         Set wb = Application.Workbooks.Open(path, UpdateLinks:=False, ReadOnly:=True, AddToMru:=False)
         openedHere = True
     End If
-    Set loBalance = FindListObjectByNameAdminLocal(wb, "tblSkuBalance")
-    ResolveInventoryQtyOnHandAdmin = ResolveQtyOnHandFromBalanceAdmin(loBalance, sku)
+    Set loEntities = FindListObjectByNameAdminLocal(wb, "tblInventoryEntities")
+    ResolveInventoryQtyOnHandAdmin = ResolveQtyOnHandFromEntitiesAdmin(loEntities, sku)
 
 CleanExit:
     On Error Resume Next
     If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
     On Error GoTo 0
+End Function
+
+Private Function InventorySkuHasManagedEntityAdmin(ByVal warehouseId As String, _
+                                                   ByVal sku As String) As Boolean
+    Dim path As String
+    Dim wb As Workbook
+    Dim openedHere As Boolean
+    Dim loEntities As ListObject
+    Dim cSystemKey As Long
+    Dim cSku As Long
+    Dim rowIndex As Long
+
+    On Error GoTo CleanExit
+    warehouseId = Trim$(warehouseId)
+    sku = Trim$(sku)
+    If warehouseId = "" Or sku = "" Then Exit Function
+
+    path = modProcessor.ResolveInventoryWorkbookPathForAutomation(warehouseId)
+    If path = "" Then Exit Function
+    Set wb = FindOpenWorkbookByFullNameAdmin(path)
+    If wb Is Nothing Then
+        If Len(Dir$(path, vbNormal)) = 0 Then Exit Function
+        Set wb = Application.Workbooks.Open(path, UpdateLinks:=False, ReadOnly:=True, AddToMru:=False)
+        openedHere = True
+    End If
+    Set loEntities = FindListObjectByNameAdminLocal(wb, "tblInventoryEntities")
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then GoTo CleanExit
+    cSystemKey = ColumnIndexAdminLocal(loEntities, "System_Key")
+    cSku = ColumnIndexAdminLocal(loEntities, "SKU")
+    If cSystemKey = 0 Or cSku = 0 Then GoTo CleanExit
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If Trim$(CStr(loEntities.DataBodyRange.Cells(rowIndex, cSystemKey).Value)) <> "" And _
+           StrComp(Trim$(CStr(loEntities.DataBodyRange.Cells(rowIndex, cSku).Value)), _
+                   sku, vbTextCompare) = 0 Then
+            InventorySkuHasManagedEntityAdmin = True
+            Exit For
+        End If
+    Next rowIndex
+
+CleanExit:
+    On Error Resume Next
+    If openedHere And Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+End Function
+
+Private Function ResolveQtyOnHandFromEntitiesAdmin(ByVal loEntities As ListObject, _
+                                                   ByVal sku As String) As Double
+    Dim cSystemKey As Long
+    Dim cSku As Long
+    Dim cQty As Long
+    Dim rowIndex As Long
+
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
+    cSystemKey = ColumnIndexAdminLocal(loEntities, "System_Key")
+    cSku = ColumnIndexAdminLocal(loEntities, "SKU")
+    cQty = ColumnIndexAdminLocal(loEntities, "QtyOnHand")
+    If cSystemKey = 0 Or cSku = 0 Or cQty = 0 Then Exit Function
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If Trim$(CStr(loEntities.DataBodyRange.Cells(rowIndex, cSystemKey).Value)) <> "" And _
+           StrComp(Trim$(CStr(loEntities.DataBodyRange.Cells(rowIndex, cSku).Value)), _
+                   sku, vbTextCompare) = 0 Then
+            ResolveQtyOnHandFromEntitiesAdmin = ResolveQtyOnHandFromEntitiesAdmin + _
+                CDbl(Val(CStr(loEntities.DataBodyRange.Cells(rowIndex, cQty).Value)))
+        End If
+    Next rowIndex
 End Function
 
 Private Function ResolveQtyOnHandFromBalanceAdmin(ByVal loBalance As ListObject, ByVal sku As String) As Double

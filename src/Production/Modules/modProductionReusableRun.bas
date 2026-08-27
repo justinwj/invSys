@@ -251,6 +251,7 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
     Dim otherRequirementQty As Double
     Dim otherEntityQty As Double
     Dim allocationId As String
+    Dim nonCounted As Boolean
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -265,8 +266,9 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
         report = "Allocation quantity cannot be negative."
         Exit Function
     End If
+    nonCounted = ExactEntityIsNonCounted(systemKey)
     availableQty = ExactEntityAvailableQty(systemKey)
-    If availableQty <= 0 And qty > 0 Then
+    If Not nonCounted And availableQty <= 0 And qty > 0 Then
         report = "The selected System_Key is no longer available. Refresh Production Run."
         Exit Function
     End If
@@ -278,7 +280,7 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
         Exit Function
     End If
     otherEntityQty = AllocationTotalForEntity(systemKey, allocationId)
-    If otherEntityQty + qty > availableQty + QTY_TOLERANCE Then
+    If Not nonCounted And otherEntityQty + qty > availableQty + QTY_TOLERANCE Then
         report = "Allocation exceeds exact entity availability of " & FormatRunNumberLocal(availableQty) & "."
         Exit Function
     End If
@@ -307,6 +309,7 @@ Public Function CheckInReusableRun(ByVal runLocation As String, _
     Dim liveQty As Double
     Dim allocatedForEntity As Double
     Dim liveLocation As String
+    Dim nonCounted As Boolean
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -336,8 +339,9 @@ Public Function CheckInReusableRun(ByVal runLocation As String, _
     For Each key In mAllocations.Keys
         systemKey = AllocationSystemKey(CStr(key))
         liveQty = ExactEntityAvailableQty(systemKey, liveLocation)
+        nonCounted = ExactEntityIsNonCounted(systemKey)
         allocatedForEntity = AllocationTotalForEntity(systemKey, "")
-        If liveQty + QTY_TOLERANCE < allocatedForEntity Then
+        If Not nonCounted And liveQty + QTY_TOLERANCE < allocatedForEntity Then
             report = "Stale allocation rejected for System_Key " & systemKey & _
                      ". Available=" & FormatRunNumberLocal(liveQty) & "; allocated=" & _
                      FormatRunNumberLocal(allocatedForEntity) & ". Refresh Production Run."
@@ -1233,6 +1237,28 @@ Private Function ExactEntityAvailableQty(ByVal systemKey As String, _
         If StrComp(Trim$(CStr(entities(r, 1))), Trim$(systemKey), vbTextCompare) = 0 Then
             If IsNumeric(entities(r, 6)) Then ExactEntityAvailableQty = CDbl(entities(r, 6))
             locationOut = Trim$(CStr(entities(r, 7)))
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function ExactEntityIsNonCounted(ByVal systemKey As String) As Boolean
+    Dim entities As Variant
+    Dim r As Long
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryValue As String
+
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    If Not IsArray(entities) Then Exit Function
+    For r = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(Trim$(CStr(entities(r, 1))), Trim$(systemKey), vbTextCompare) = 0 Then
+            If UBound(entities, 2) >= 11 Then trackQty = UCase$(Trim$(CStr(entities(r, 11))))
+            If UBound(entities, 2) >= 12 Then itemKind = UCase$(Trim$(CStr(entities(r, 12))))
+            If UBound(entities, 2) >= 13 Then categoryValue = UCase$(Trim$(CStr(entities(r, 13))))
+            ExactEntityIsNonCounted = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+                Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+                Or categoryValue = "UTILITY" Or categoryValue = "SERVICE")
             Exit Function
         End If
     Next r

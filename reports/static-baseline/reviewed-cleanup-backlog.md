@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1040
-- Reviewed candidates: 1042
+- Scanner candidates: 1041
+- Reviewed candidates: 1043
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -17,7 +17,7 @@
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
 | DOMAINS | 66 | Inventory and Designs Domain authority source. |
-| ADMIN | 222 | Administrative setup, lifecycle, and developer-support source. |
+| ADMIN | 223 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -30,10 +30,10 @@
 
 | Source | Package | Baseline lines |
 |---|---|---:|
-| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1354 |
+| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1458 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 2068 |
+| src/Admin/Modules/modAdmin.bas | Admin | 2253 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1999 |
@@ -48,11 +48,11 @@
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2425 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2429 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 8763 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1291 |
-| src/Production/Modules/modProductionReusableRun.bas | Production | 1384 |
+| src/Production/Modules/modProductionReusableRun.bas | Production | 1410 |
 | src/Production/Modules/mProduction.bas | Production | 13138 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
@@ -109,6 +109,7 @@
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_LastTesterWorkbook | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_RetireMigrateWarehouse | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Open_SetupTesterStation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Admin_Modules_modAdmin.bas:modAdmin.ResolveQtyOnHandFromBalanceAdmin | ADMIN | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.RunDemoInventoryActionCallbackForAutomation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Scheduler_RunHQAggregation | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Admin_Modules_modAdmin.bas:modAdmin.Scheduler_RunWarehouseBatch | ADMIN | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

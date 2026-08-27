@@ -583,6 +583,18 @@ try {
             Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $false -Detail $_.Exception.Message
         }
         try {
+            $adminAdd = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryAddVisibilityDropdownContractForAutomation")
+            $adminAddPassed = $adminAdd -match '^OK\|' -and
+                $adminAdd -match '(?:^|\|)SubmitHandler=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)ExactEntityCreate=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)LocationDropdown=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)CategoryDropdown=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $adminAddPassed -Detail $adminAdd
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
             $inventoryWorksheetWb = $excel.Workbooks.Add()
             $targetWorkbooks.Add($inventoryWorksheetWb) | Out-Null
             $inventoryWorksheetPath = Join-Path $targetRoot "Admin.Inventory.Worksheet.Contract.xlsx"

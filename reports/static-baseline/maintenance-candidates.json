@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5151,
-                     "lineCount":  114235,
+                     "procedureCount":  5161,
+                     "lineCount":  114569,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -52,6 +52,23 @@
                            "componentName":  "modAdmin",
                            "procedureNames":  [
                                                   "NormalizeAdminDemoInventoryRow"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Modules/modAdmin.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Admin_Modules_modAdmin.bas:modAdmin.ResolveQtyOnHandFromBalanceAdmin",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modAdmin",
+                           "procedureNames":  [
+                                                  "ResolveQtyOnHandFromBalanceAdmin"
                                               ],
                            "sourcePaths":  [
                                                "src/Admin/Modules/modAdmin.bas"
@@ -5773,7 +5790,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -8758,7 +8775,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -8844,7 +8861,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12689,6 +12706,7 @@
                                                   "AddButton",
                                                   "AddCatalogItem",
                                                   "AddCombo",
+                                                  "AddDimensionOption",
                                                   "AddLabel",
                                                   "AddListBox",
                                                   "AddTextBox",
@@ -12702,6 +12720,7 @@
                                                   "CatalogItemIsNonCounted",
                                                   "Category",
                                                   "ClearEditableFields",
+                                                  "ComboContainsValue",
                                                   "CommitEditItemSelection",
                                                   "CommitSelectedEditItemFromCombo",
                                                   "Configure",
@@ -12722,6 +12741,7 @@
                                                   "IsReservedCustomField",
                                                   "ItemName",
                                                   "LoadEditItemOptions",
+                                                  "LoadInventoryDimensionOptions",
                                                   "LoadQuantityOptions",
                                                   "LoadSelectedEditItem",
                                                   "LoadSelectedEditItemBySku",
@@ -12758,6 +12778,7 @@
                                                   "ShowEditItemSearchResults",
                                                   "ShowImagePathPlaceholder",
                                                   "StartingQty",
+                                                  "TestAddItemVisibilityDropdownContract",
                                                   "TestEditItemComboSelectionContract",
                                                   "TestInventoryWorksheetActionContract",
                                                   "TestSetQuantityMode",
@@ -13002,6 +13023,7 @@
                                                   "CatalogItemTextAdmin",
                                                   "ColumnIndexAdminLocal",
                                                   "CombinedPictureReferencesAdmin",
+                                                  "CreateFirstInventoryEntityForCatalogItemAdmin",
                                                   "CsvFieldAdmin",
                                                   "CsvHeaderMapAdmin",
                                                   "DemoInventoryFormContractForAutomation",
@@ -13014,8 +13036,10 @@
                                                   "GenerateInventoryItemCodeForWorksheet",
                                                   "GenerateInventorySkuAdmin",
                                                   "GetLastDemoInventoryCallbackResultForAutomation",
+                                                  "InventoryAddVisibilityDropdownContractForAutomation",
                                                   "InventoryEditSelectionContractForAutomation",
                                                   "InventoryItemCatalogContainsForWorksheet",
+                                                  "InventorySkuHasManagedEntityAdmin",
                                                   "InventoryWorksheetContractForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
@@ -13043,6 +13067,7 @@
                                                   "ResolveInteractiveAdminWorkbook",
                                                   "ResolveInventoryQtyOnHandAdmin",
                                                   "ResolveQtyOnHandFromBalanceAdmin",
+                                                  "ResolveQtyOnHandFromEntitiesAdmin",
                                                   "ResolveSeedInventoryContext",
                                                   "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
@@ -15114,6 +15139,7 @@
                                                   "ExactEntityField",
                                                   "ExactEntityInventoryDisplay",
                                                   "ExactEntityInventoryDisplayForKey",
+                                                  "ExactEntityIsNonCounted",
                                                   "FindNode",
                                                   "FindOutput",
                                                   "FindRequirement",

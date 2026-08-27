@@ -588,6 +588,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         Else
             If qty <= 0 Then
                 If eventType = EVENT_TYPE_MIGRATION_SEED And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
+                If eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
                 errorCode = "INVALID_QTY"
                 errorMessage = "Payload Qty must be greater than zero."
                 Set BuildPayloadLines = Nothing
@@ -2228,6 +2229,7 @@ Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
                     entities.Add systemKey, entity
                 End If
                 entity("SKU") = sku
+                entity("NonCounted") = PayloadSkuIsNonCountedApply(wb, sku)
                 entity("QtyOnHand") = CDbl(entity("QtyOnHand")) + qtyDelta
                 If locationVal <> "" Then entity("Location") = locationVal
                 If conditionValue <> "" Then entity("Condition") = conditionValue
@@ -2269,7 +2271,9 @@ Private Sub RewriteEntityProjectionTable(ByVal lo As ListObject, ByVal entities 
         SetTableRowValue lo, r.Index, "QtyOnHand", qtyOnHand
         If entity.Exists("Location") Then SetTableRowValue lo, r.Index, "Location", CStr(entity("Location"))
         If entity.Exists("Condition") Then SetTableRowValue lo, r.Index, "Condition", CStr(entity("Condition"))
-        SetTableRowValue lo, r.Index, "InventoryState", IIf(qtyOnHand > 0, "ACTIVE", "DEPLETED")
+        SetTableRowValue lo, r.Index, "InventoryState", _
+            IIf(qtyOnHand > 0 Or (entity.Exists("NonCounted") And CBool(entity("NonCounted"))), _
+                "ACTIVE", "DEPLETED")
         If entity.Exists("AttributesJson") Then SetTableRowValue lo, r.Index, "AttributesJson", CStr(entity("AttributesJson"))
         If entity.Exists("LastAppliedUTC") Then SetTableRowValue lo, r.Index, "LastAppliedUTC", entity("LastAppliedUTC")
     Next key
