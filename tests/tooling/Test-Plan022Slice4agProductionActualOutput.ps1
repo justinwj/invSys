@@ -22,7 +22,7 @@ $checks["Docs.ActualOutputContract"] =
 $checks["Form.ReadableRunHeaders"] =
     $form.Contains('Array("", "", "Ingredient", "System_Key", "Inventory Item"') -and
     $form.Contains('Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv")') -and
-    $form.Contains('Array("Process", "Output", "UOM", "Last Actual", "Batch", "Planned", "Recall", "System_Key")') -and
+    $form.Contains('Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key")') -and
     $form.Contains('AddLabel pg, "Actual Output"')
 $checks["Run.PerOutputActualState"] =
     $run.Contains("Private mActualOutputQty As Object") -and

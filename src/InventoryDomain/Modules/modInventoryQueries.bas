@@ -191,6 +191,9 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
     Dim conditionValue As String
     Dim inventoryState As String
     Dim attributesJson As String
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryValue As String
     Dim haystack As String
 
     Set wb = modInventoryApply.ResolveInventoryWorkbook("", inventoryWb)
@@ -199,7 +202,7 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
     If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
     Set loCatalog = FindInventoryQueryTable(wb, "tblSkuCatalog")
     entityRows = loEntities.DataBodyRange.Value2
-    ReDim result(1 To UBound(entityRows, 1), 1 To 10)
+    ReDim result(1 To UBound(entityRows, 1), 1 To 13)
     filterText = LCase$(Trim$(filterText))
 
     For r = 1 To UBound(entityRows, 1)
@@ -210,6 +213,9 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
         conditionValue = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "Condition"))
         inventoryState = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "InventoryState"))
         attributesJson = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "AttributesJson"))
+        trackQty = ""
+        itemKind = ""
+        categoryValue = ""
         If systemKey = "" Or sku = "" Or qtyOnHand <= 0 Then GoTo NextEntity
         If inventoryState <> "" And StrComp(inventoryState, "ACTIVE", vbTextCompare) <> 0 Then GoTo NextEntity
 
@@ -219,6 +225,9 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
             itemName = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM")))
             uom = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "UOM")))
             description = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "DESCRIPTION")))
+            trackQty = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "TRACK_QTY")))
+            itemKind = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM_KIND")))
+            categoryValue = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "CATEGORY")))
         Else
             itemCode = sku
             itemName = sku
@@ -228,7 +237,8 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
         If itemCode = "" Then itemCode = sku
         If itemName = "" Then itemName = itemCode
         haystack = LCase$(systemKey & " " & sku & " " & itemCode & " " & itemName & " " & _
-                          uom & " " & locationValue & " " & conditionValue & " " & description)
+                          uom & " " & locationValue & " " & conditionValue & " " & description & " " & _
+                          trackQty & " " & itemKind & " " & categoryValue)
         If filterText <> "" Then
             If InStr(1, haystack, filterText, vbTextCompare) = 0 Then GoTo NextEntity
         End If
@@ -244,13 +254,16 @@ Public Function ListAvailableInventoryEntities(Optional ByVal filterText As Stri
         result(outRow, 8) = conditionValue
         result(outRow, 9) = inventoryState
         result(outRow, 10) = attributesJson
+        result(outRow, 11) = trackQty
+        result(outRow, 12) = itemKind
+        result(outRow, 13) = categoryValue
 NextEntity:
     Next r
 
     If outRow = 0 Then Exit Function
-    ReDim trimmed(1 To outRow, 1 To 10)
+    ReDim trimmed(1 To outRow, 1 To 13)
     For r = 1 To outRow
-        For c = 1 To 10
+        For c = 1 To 13
             trimmed(r, c) = result(r, c)
         Next c
     Next r
@@ -325,7 +338,11 @@ End Function
 
 Private Function ReadInventoryQueryValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                          ByVal columnName As String) As Variant
-    ReadInventoryQueryValue = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value
+    Dim columnIndex As Long
+
+    columnIndex = InventoryQueryColumn(lo, columnName)
+    If columnIndex = 0 Then Exit Function
+    ReadInventoryQueryValue = lo.DataBodyRange.Cells(rowIndex, columnIndex).Value
 End Function
 
 Private Function NzInventoryQueryNumber(ByVal valueIn As Variant) As Double

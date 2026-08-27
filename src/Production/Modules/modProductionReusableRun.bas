@@ -22,6 +22,7 @@ Private mAllocations As Object
 Private mOutputKeys As Object
 Private mActualOutputQty As Object
 Private mLastOutputQty As Object
+Private mOutputHistory As Collection
 Private mLastSummary As String
 
 Public Sub ClearReusableRun()
@@ -42,6 +43,7 @@ Public Sub ClearReusableRun()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
     Set mLastOutputQty = NewTextDictionary()
+    Set mOutputHistory = New Collection
     mLastSummary = ""
 End Sub
 
@@ -221,7 +223,7 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
             result(outRow, 6) = AllocationPercent(nodeId, requirementId, CStr(entities(entityRow, 1)))
             result(outRow, 7) = AllocationQty(nodeId, requirementId, CStr(entities(entityRow, 1)))
             result(outRow, 8) = IIf(Trim$(CStr(entities(entityRow, 5))) <> "", entities(entityRow, 5), RunRecordText(requirement, "UOM"))
-            result(outRow, 9) = entities(entityRow, 6)
+            result(outRow, 9) = ExactEntityInventoryDisplay(entities, entityRow)
             result(outRow, 10) = entities(entityRow, 7)
 NextEntity:
         Next entityRow
@@ -373,34 +375,76 @@ Public Function ReusableRunManagerCheckRows() As Variant
         result(rowIndex, 3) = ExactEntityField(entity, systemKey, 4)
         result(rowIndex, 4) = ExactEntityField(entity, systemKey, 5)
         result(rowIndex, 5) = qty
-        result(rowIndex, 6) = ExactEntityField(entity, systemKey, 6)
+        result(rowIndex, 6) = ExactEntityInventoryDisplayForKey(entity, systemKey)
     Next key
     ReusableRunManagerCheckRows = result
 End Function
 
 Public Function ReusableRunOutputRows() As Variant
     Dim result() As Variant
+    Dim rawHistory As Variant
+    Dim history As Object
     Dim rawOutput As Variant
     Dim output As Object
+    Dim totalRows As Long
     Dim rowIndex As Long
     Dim outputKey As String
 
     If Not mLoaded Or mOutputs.Count = 0 Then Exit Function
-    ReDim result(1 To mOutputs.Count, 1 To 8)
-    For Each rawOutput In mOutputs
-        Set output = rawOutput
+    totalRows = mOutputHistory.Count
+    If Not mCompleted Then totalRows = totalRows + mOutputs.Count
+    If totalRows = 0 Then Exit Function
+    ReDim result(1 To totalRows, 1 To 9)
+    For Each rawHistory In mOutputHistory
+        Set history = rawHistory
         rowIndex = rowIndex + 1
-        outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId"))
-        result(rowIndex, 1) = RunRecordText(output, "ProcessName")
-        result(rowIndex, 2) = RunRecordText(output, "OutputName")
-        result(rowIndex, 3) = RunRecordText(output, "UOM")
-        If mLastOutputQty.Exists(outputKey) Then result(rowIndex, 4) = mLastOutputQty(outputKey)
-        result(rowIndex, 5) = mBatchNumber
-        result(rowIndex, 6) = ScaledRecordQty(output)
-        result(rowIndex, 7) = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
-        If mOutputKeys.Exists(outputKey) Then result(rowIndex, 8) = mOutputKeys(outputKey)
-    Next rawOutput
+        result(rowIndex, 1) = RunRecordText(history, "ProcessName")
+        result(rowIndex, 2) = RunRecordText(history, "OutputName")
+        result(rowIndex, 3) = RunRecordText(history, "UOM")
+        result(rowIndex, 4) = RunRecordNumber(history, "ActualQty")
+        result(rowIndex, 5) = CLng(RunRecordNumber(history, "BatchNumber"))
+        result(rowIndex, 6) = RunRecordNumber(history, "UsedGoods")
+        result(rowIndex, 7) = RunRecordNumber(history, "ProcessTotal")
+        result(rowIndex, 8) = RunRecordText(history, "Recall")
+        result(rowIndex, 9) = RunRecordText(history, "System_Key")
+    Next rawHistory
+    If Not mCompleted Then
+        For Each rawOutput In mOutputs
+            Set output = rawOutput
+            rowIndex = rowIndex + 1
+            outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId"))
+            result(rowIndex, 1) = RunRecordText(output, "ProcessName")
+            result(rowIndex, 2) = RunRecordText(output, "OutputName")
+            result(rowIndex, 3) = RunRecordText(output, "UOM")
+            result(rowIndex, 5) = mBatchNumber
+            result(rowIndex, 6) = ProcessUsedGoodsQty( _
+                RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "UOM"))
+            result(rowIndex, 7) = ProcessOutputTotal( _
+                RunRecordText(output, "ProcessName"), RunRecordText(output, "OutputName"), _
+                RunRecordText(output, "UOM"))
+            result(rowIndex, 8) = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
+            If mOutputKeys.Exists(outputKey) Then result(rowIndex, 9) = mOutputKeys(outputKey)
+        Next rawOutput
+    End If
     ReusableRunOutputRows = result
+End Function
+
+Public Function ReusableRunOutputDefinitionIndex(ByVal displayRowIndex As Long) As Long
+    Dim firstCurrentRow As Long
+
+    If Not mLoaded Or mCompleted Then Exit Function
+    firstCurrentRow = mOutputHistory.Count + 1
+    If displayRowIndex < firstCurrentRow Then Exit Function
+    ReusableRunOutputDefinitionIndex = displayRowIndex - firstCurrentRow + 1
+    If ReusableRunOutputDefinitionIndex < 1 Or _
+            ReusableRunOutputDefinitionIndex > mOutputs.Count Then _
+        ReusableRunOutputDefinitionIndex = 0
+End Function
+
+Public Function ReusableRunPlannedOutput(ByVal outputIndex As Long) As String
+    If Not mLoaded Then Exit Function
+    If outputIndex < 1 Or outputIndex > mOutputs.Count Then Exit Function
+    ReusableRunPlannedOutput = FormatRunNumberLocal(ScaledRecordQty(mOutputs(outputIndex)))
 End Function
 
 Public Function StageReusableRunActualOutput(ByVal outputIndex As Long, _
@@ -541,6 +585,7 @@ Public Function CompleteReusableRun(ByVal runLocation As String, _
         Exit Function
     End If
     CaptureLastActualOutputs
+    CaptureCompletedOutputHistory
     mCompleted = True
     mLastSummary = "RunId=" & runId & "; Recipe=" & mRecipeId & " v" & mRecipeVersion & _
                    "; Batch=" & CStr(mBatchNumber) & "; Scale=" & _
@@ -926,6 +971,64 @@ Private Sub CaptureLastActualOutputs()
     Next key
 End Sub
 
+Private Sub CaptureCompletedOutputHistory()
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim record As Object
+    Dim outputKey As String
+
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
+                                      RunRecordText(output, "OutputId"))
+        Set record = NewTextDictionary()
+        record("ProcessName") = RunRecordText(output, "ProcessName")
+        record("OutputName") = RunRecordText(output, "OutputName")
+        record("UOM") = RunRecordText(output, "UOM")
+        record("ActualQty") = ActualOutputQty(output)
+        record("BatchNumber") = mBatchNumber
+        record("UsedGoods") = ProcessUsedGoodsQty( _
+            RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "UOM"))
+        record("Recall") = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
+        record("System_Key") = CStr(mOutputKeys(outputKey))
+        mOutputHistory.Add record
+        record("ProcessTotal") = ProcessOutputTotal( _
+            RunRecordText(output, "ProcessName"), RunRecordText(output, "OutputName"), _
+            RunRecordText(output, "UOM"))
+    Next rawOutput
+End Sub
+
+Private Function ProcessUsedGoodsQty(ByVal nodeId As String, ByVal outputUom As String) As Double
+    Dim rawRequirement As Variant
+    Dim requirement As Object
+    Dim requirementUom As String
+
+    For Each rawRequirement In mRequirements
+        Set requirement = rawRequirement
+        If StrComp(RunRecordText(requirement, "ProcessNodeId"), nodeId, vbTextCompare) = 0 Then
+            requirementUom = RunRecordText(requirement, "UOM")
+            If UomCompatible(requirementUom, outputUom) Then _
+                ProcessUsedGoodsQty = ProcessUsedGoodsQty + ScaledRecordQty(requirement)
+        End If
+    Next rawRequirement
+End Function
+
+Private Function ProcessOutputTotal(ByVal processName As String, _
+                                    ByVal outputName As String, _
+                                    ByVal uom As String) As Double
+    Dim rawHistory As Variant
+    Dim history As Object
+
+    For Each rawHistory In mOutputHistory
+        Set history = rawHistory
+        If StrComp(RunRecordText(history, "ProcessName"), processName, vbTextCompare) = 0 _
+           And StrComp(RunRecordText(history, "OutputName"), outputName, vbTextCompare) = 0 _
+           And StrComp(RunRecordText(history, "UOM"), uom, vbTextCompare) = 0 Then
+            ProcessOutputTotal = ProcessOutputTotal + RunRecordNumber(history, "ActualQty")
+        End If
+    Next rawHistory
+End Function
+
 Private Function OutgoingQtyForOutput(ByVal nodeId As String, ByVal outputId As String) As Double
     Dim rawConnection As Variant
     Dim connection As Object
@@ -1145,6 +1248,62 @@ Private Function ExactEntityField(ByVal entities As Variant, ByVal systemKey As 
             Exit Function
         End If
     Next r
+End Function
+
+Private Function ExactEntityInventoryDisplayForKey(ByVal entities As Variant, _
+                                                   ByVal systemKey As String) As Variant
+    Dim r As Long
+
+    If Not IsArray(entities) Then Exit Function
+    For r = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(Trim$(CStr(entities(r, 1))), Trim$(systemKey), vbTextCompare) = 0 Then
+            ExactEntityInventoryDisplayForKey = ExactEntityInventoryDisplay(entities, r)
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function ExactEntityInventoryDisplay(ByVal entities As Variant, _
+                                             ByVal entityRow As Long) As Variant
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryValue As String
+
+    If Not IsArray(entities) Then Exit Function
+    If UBound(entities, 2) >= 11 Then trackQty = UCase$(Trim$(CStr(entities(entityRow, 11))))
+    If UBound(entities, 2) >= 12 Then itemKind = UCase$(Trim$(CStr(entities(entityRow, 12))))
+    If UBound(entities, 2) >= 13 Then categoryValue = UCase$(Trim$(CStr(entities(entityRow, 13))))
+    If trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+       Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+       Or categoryValue = "UTILITY" Or categoryValue = "SERVICE" Then
+        Select Case itemKind
+            Case "UTILITY": ExactEntityInventoryDisplay = "Utility"
+            Case "SERVICE": ExactEntityInventoryDisplay = "Service"
+            Case Else
+                If categoryValue = "UTILITY" Then
+                    ExactEntityInventoryDisplay = "Utility"
+                ElseIf categoryValue = "SERVICE" Then
+                    ExactEntityInventoryDisplay = "Service"
+                Else
+                    ExactEntityInventoryDisplay = "Not counted"
+                End If
+        End Select
+    Else
+        ExactEntityInventoryDisplay = entities(entityRow, 6)
+    End If
+End Function
+
+Public Function ReusableRunInventoryDisplayForTest(ByVal trackQty As String, _
+                                                   ByVal itemKind As String, _
+                                                   ByVal categoryValue As String, _
+                                                   ByVal qty As Double) As String
+    Dim entities(1 To 1, 1 To 13) As Variant
+
+    entities(1, 6) = qty
+    entities(1, 11) = trackQty
+    entities(1, 12) = itemKind
+    entities(1, 13) = categoryValue
+    ReusableRunInventoryDisplayForTest = CStr(ExactEntityInventoryDisplay(entities, 1))
 End Function
 
 Private Function OutputIdentityKey(ByVal nodeId As String, ByVal outputId As String) As String

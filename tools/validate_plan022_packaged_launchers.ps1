@@ -1183,7 +1183,10 @@ try {
                         $productionRunReport -match '(?:^|\|)ActualOutputAccepted=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)LastActualDisplayed=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)ActualInventoryQty=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)SystemKeyHeadersReadable=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)SystemKeyHeadersReadable=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)BatchHistoryRows=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ProcessTotal=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)UtilityDisplay=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {

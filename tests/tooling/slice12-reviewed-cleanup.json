@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAtUtc": "2026-08-26T20:00:00Z",
+  "reviewedAtUtc": "2026-08-27T07:30:00Z",
   "before": {
     "components": 169,
     "procedures": 4690,
@@ -11,7 +11,7 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedComponentGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ai",
+    "slice": "Plan 022 Slices 4x through 4aj",
     "baseline": 150,
     "ceiling": 154,
     "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project. Slice 4ai adds one D14 Admin inventory worksheet staging controller; no legacy package or parallel authority was added.",
@@ -22,14 +22,15 @@
       "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
       "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
       "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
-      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+      "tests/tooling/Test-Plan022Slice4ajProductionHistoryUtility.ps1"
     ]
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ai",
+    "slice": "Plan 022 Slices 4x through 4aj",
     "baseline": 4729,
-    "ceiling": 5140,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds shared Process-component identity protection; 4af adds Recipe identity/version initialization; 4ag adds actual-output persistence; and 4ah fixes Admin edit selection. Slice 4ai adds captured-workbook Admin inventory table creation, normalized-header preflight, ADD/EDIT application, row-status reporting, and same-handler packaged proof. Literal Application.Run targets and unresolved dynamic calls do not grow.",
+    "ceiling": 5151,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds shared Process-component identity protection; 4af adds Recipe identity/version initialization; 4ag adds actual-output persistence; and 4ah fixes Admin edit selection. Slice 4ai adds captured-workbook Admin inventory table creation, normalized-header preflight, ADD/EDIT application, row-status reporting, and same-handler packaged proof. Slice 4aj adds retained per-batch output history, Used Goods and Process Total calculations, active-row mapping, and Utility-aware inventory display. Literal Application.Run targets and unresolved dynamic calls do not grow.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
@@ -45,11 +46,12 @@
       "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1",
       "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
       "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1",
-      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+      "tests/tooling/Test-Plan022Slice4ajProductionHistoryUtility.ps1"
     ]
   },
   "approvedCandidateGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ai",
+    "slice": "Plan 022 Slices 4x through 4aj",
     "baseline": 965,
     "ceiling": 1040,
     "rationale": "The scanner increase is bounded to the approved Process/Recipe surfaces plus the D14 Admin captured-workbook inventory worksheet controller and same-handler evidence. Scanner findings remain review-only and authorize no deletion; duplicate-body and dynamic-call ratchets do not grow.",
@@ -62,7 +64,8 @@
       "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
       "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1",
       "tests/tooling/Test-Plan022Slice4adProcessPickerRecordTypes.ps1",
-      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+      "tests/tooling/Test-Plan022Slice4ajProductionHistoryUtility.ps1"
     ]
   },
   "approvedDuplicateGrowth": {
@@ -85,8 +88,8 @@
     {
       "source": "src/Production/Forms/frmProduction.frm",
       "baseline": 4913,
-      "ceiling": 8682,
-      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab/4ac/4ad add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual same-column INPUT/OUTPUT picker-open and commit proof, retained descriptive output Name, hidden output-SKU round-trip, and clean-restart diagnostics. Slice 4ae adds bounded public-handler proof that OUTPUT Name is suppressed and table-wide Base-36 row IDs stay unique and stable under order-dependent edits, plus load-boundary normalization for historical nonconforming draft component IDs. Slice 4af adds automatic Recipe identity initialization, editable positive-whole-number Recipe version validation, and actual New Recipe/Save Draft/Release evidence. Slice 4ag adds per-output Actual Output selection/change handling and packaged readable-header, Last Actual, and actual-inventory assertions."
+      "ceiling": 8763,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab/4ac/4ad add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual same-column INPUT/OUTPUT picker-open and commit proof, retained descriptive output Name, hidden output-SKU round-trip, and clean-restart diagnostics. Slice 4ae adds bounded public-handler proof that OUTPUT Name is suppressed and table-wide Base-36 row IDs stay unique and stable under order-dependent edits, plus load-boundary normalization for historical nonconforming draft component IDs. Slice 4af adds automatic Recipe identity initialization, editable positive-whole-number Recipe version validation, and actual New Recipe/Save Draft/Release evidence. Slice 4ag adds per-output Actual Output selection/change handling and packaged readable-header, Last Actual, and actual-inventory assertions. Slice 4aj retains completed batch rows and maps operator edits only to the active output rows while proving Used Goods, Process Total, and Utility display through the public run handler."
     },
     {
       "source": "src/Production/Modules/mProduction.bas",
@@ -103,8 +106,8 @@
     {
       "source": "src/Production/Modules/modProductionReusableRun.bas",
       "baseline": 0,
-      "ceiling": 1225,
-      "rationale": "The typed run controller owns graph loading, exact-key allocation, stale revalidation, ordered events, percentage/yield-basis scaling, per-output planned/actual state, routed-commitment validation, actual-quantity entity creation, Last Actual history, and two-batch state outside the already oversized form/controller."
+      "ceiling": 1384,
+      "rationale": "The typed run controller owns graph loading, exact-key allocation, stale revalidation, ordered events, percentage/yield-basis scaling, per-output planned/actual state, routed-commitment validation, actual-quantity entity creation, retained per-batch output history, same-Process/output/UOM totals, Utility-aware inventory display, and two-batch state outside the already oversized form/controller."
     },
     {
       "source": "src/Production/Modules/modProductionProcessWorksheet.bas",
@@ -144,6 +147,7 @@
     "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
     "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1",
     "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+    "tests/tooling/Test-Plan022Slice4ajProductionHistoryUtility.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
     "tools/validate_slice9_production_layout.ps1",
     "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"
