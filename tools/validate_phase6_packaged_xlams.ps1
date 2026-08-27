@@ -571,6 +571,17 @@ try {
         catch {
             Add-ResultRow -Rows $resultRows -Check "Admin.DesignLifecycle.LegacyMigrationControl" -Passed $false -Detail $_.Exception.Message
         }
+        try {
+            $editSelection = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryEditSelectionContractForAutomation")
+            $editSelectionPassed = $editSelection -match '^OK\|' -and
+                $editSelection -match '(?:^|\|)ComboSelected=True(?:\||$)' -and
+                $editSelection -match '(?:^|\|)FieldsLoaded=True(?:\||$)' -and
+                $editSelection -match '(?:^|\|)UtilityReady=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $editSelectionPassed -Detail $editSelection
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $false -Detail $_.Exception.Message
+        }
     }
 
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {

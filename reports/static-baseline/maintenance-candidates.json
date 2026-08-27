@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  153,
-                     "procedureCount":  5092,
-                     "lineCount":  112860,
+                     "procedureCount":  5096,
+                     "lineCount":  112949,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -5809,7 +5809,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12670,6 +12670,8 @@
                                                   "CatalogItemIsNonCounted",
                                                   "Category",
                                                   "ClearEditableFields",
+                                                  "CommitEditItemSelection",
+                                                  "CommitSelectedEditItemFromCombo",
                                                   "Configure",
                                                   "CustomFields",
                                                   "DescriptionValue",
@@ -12721,6 +12723,7 @@
                                                   "ShowEditItemSearchResults",
                                                   "ShowImagePathPlaceholder",
                                                   "StartingQty",
+                                                  "TestEditItemComboSelectionContract",
                                                   "TestSetQuantityMode",
                                                   "Uom",
                                                   "UserForm_Activate",
@@ -12973,6 +12976,7 @@
                                                   "FindOpenWorkbookByFullNameAdmin",
                                                   "GenerateInventorySkuAdmin",
                                                   "GetLastDemoInventoryCallbackResultForAutomation",
+                                                  "InventoryEditSelectionContractForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",

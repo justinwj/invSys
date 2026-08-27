@@ -325,6 +325,22 @@ Public Function DemoInventoryFormContractForAutomation() As String
     Unload frmSeedInventory
 End Function
 
+Public Function InventoryEditSelectionContractForAutomation() As String
+    On Error GoTo Failed
+
+    InventoryEditSelectionContractForAutomation = _
+        frmAddInventoryItem.TestEditItemComboSelectionContract()
+    Unload frmAddInventoryItem
+    Exit Function
+
+Failed:
+    InventoryEditSelectionContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    On Error Resume Next
+    Unload frmAddInventoryItem
+    On Error GoTo 0
+End Function
+
 Sub Add_InventoryItem()
     Dim warehouseId As String
     Dim stationId As String

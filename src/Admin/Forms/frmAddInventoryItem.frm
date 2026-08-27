@@ -196,6 +196,58 @@ Public Sub TestSetQuantityMode(ByVal quantityMode As String)
     ApplyQuantityModeState
 End Sub
 
+Public Function TestEditItemComboSelectionContract() As String
+    On Error GoTo Failed
+
+    Dim comboSelected As Boolean
+    Dim fieldsLoaded As Boolean
+    Dim utilityReady As Boolean
+    Dim validationReady As Boolean
+    Dim fields As Object
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "NEW-SKU", 999, "CLEARVIEW"
+    testStage = "AddCatalogItem"
+    AddCatalogItem "DEMO-RAW-FILTERED-WATER", "7", "Filtered Water", "LB", _
+        "Clearview", "clean double filtered water", "Utility", "", "UTILITY", _
+        "", "", "TRUE", "INVENTORY", "19400"
+    testStage = "EditMode"
+    mEditMode = True
+    ApplyModeLayout
+
+    testStage = "SelectCombo"
+    mLoading = True
+    mCmbEditItem.ListIndex = 0
+    mLoading = False
+    mCmbEditItem_Change
+
+    testStage = "VerifySelection"
+    comboSelected = (mSelectedEditSku = "DEMO-RAW-FILTERED-WATER")
+    fieldsLoaded = (ItemName = "Filtered Water" And Uom = "LB" And _
+                    DescriptionValue = "clean double filtered water")
+    TestSetQuantityMode QTY_OPTION_UTILITY
+    testStage = "CustomFields"
+    Set fields = Me.CustomFields
+    utilityReady = (NonCountedItem And StartingQty = 0 And _
+                    CStr(fields("TRACK_QTY")) = "FALSE" And _
+                    CStr(fields("ITEM_KIND")) = "UTILITY")
+    testStage = "Validate"
+    validationReady = ValidateForm()
+
+    TestEditItemComboSelectionContract = IIf(comboSelected And fieldsLoaded And _
+        utilityReady And validationReady, "OK", "FAIL") & _
+        "|ComboSelected=" & CStr(comboSelected) & _
+        "|FieldsLoaded=" & CStr(fieldsLoaded) & _
+        "|UtilityReady=" & CStr(utilityReady) & _
+        "|ValidationReady=" & CStr(validationReady)
+    Exit Function
+
+Failed:
+    TestEditItemComboSelectionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
 Public Sub Configure(ByVal warehouseId As Variant, _
                      ByVal stationId As Variant, _
                      ByVal userId As Variant, _
@@ -765,6 +817,7 @@ Private Sub mCmbEditItem_Change()
     If mLoading Then Exit Sub
     If Not mEditMode Then Exit Sub
     If mFilteringEditItems Then Exit Sub
+    If CommitSelectedEditItemFromCombo() Then Exit Sub
     searchText = Trim$(CStr(mCmbEditItem.Text))
     mFilteringEditItems = True
     mLoading = True
@@ -786,6 +839,7 @@ End Sub
 Private Sub mCmbEditItem_Click()
     If mLoading Then Exit Sub
     If Not mEditMode Then Exit Sub
+    If CommitSelectedEditItemFromCombo() Then Exit Sub
     ShowEditItemSearchResults CStr(mCmbEditItem.Text)
 End Sub
 
@@ -806,6 +860,24 @@ Private Sub mLstEditItemResults_Click()
 
     displayText = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 0))
     sku = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 1))
+    CommitEditItemSelection displayText, sku
+End Sub
+
+Private Function CommitSelectedEditItemFromCombo() As Boolean
+    Dim selectedIndex As Long
+
+    If mCmbEditItem Is Nothing Then Exit Function
+    selectedIndex = mCmbEditItem.ListIndex
+    If selectedIndex < 0 Then Exit Function
+    CommitSelectedEditItemFromCombo = CommitEditItemSelection( _
+        CStr(mCmbEditItem.List(selectedIndex, 0)), _
+        CStr(mCmbEditItem.List(selectedIndex, 1)))
+End Function
+
+Private Function CommitEditItemSelection(ByVal displayText As String, _
+                                         ByVal sku As String) As Boolean
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
     HideEditItemSearchResults
 
     mLoading = True
@@ -814,7 +886,8 @@ Private Sub mLstEditItemResults_Click()
     mLoading = False
 
     LoadSelectedEditItemBySku sku
-End Sub
+    CommitEditItemSelection = (StrComp(mSelectedEditSku, sku, vbTextCompare) = 0)
+End Function
 
 Private Sub mCmbUom_Change()
     Dim newUom As String
