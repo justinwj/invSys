@@ -3,8 +3,8 @@
 - Schema: 1.0.0
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
-- Components: 153
-- Procedures: 5096
+- Components: 154
+- Procedures: 5140
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -12,7 +12,7 @@
 
 | Package | Project | Output | Components |
 |---|---|---|---:|
-| Admin | invSys_Admin | invSys.Admin.xlam | 24 |
+| Admin | invSys_Admin | invSys.Admin.xlam | 25 |
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
@@ -138,6 +138,7 @@
 | mBtnConfirm_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnConnect_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnCopyPin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnCreateInventoryTable_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeactivate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -252,6 +253,7 @@
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpload_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnUploadInventoryTable_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootBrowse_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnWarehouseRootRefresh_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCboBoxBuilderVersion_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

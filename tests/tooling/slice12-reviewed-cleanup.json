@@ -11,24 +11,25 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedComponentGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ah",
+    "slice": "Plan 022 Slices 4x through 4ai",
     "baseline": 150,
-    "ceiling": 153,
-    "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project; no legacy package or parallel authority was added.",
+    "ceiling": 154,
+    "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project. Slice 4ai adds one D14 Admin inventory worksheet staging controller; no legacy package or parallel authority was added.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
       "tools/validate_phase6_packaged_ribbon.ps1",
       "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
       "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
-      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1"
+      "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
     ]
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ah",
+    "slice": "Plan 022 Slices 4x through 4ai",
     "baseline": 4729,
-    "ceiling": 5096,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds one shared Process-component ID allocator, one packaged row-uniqueness assertion helper, and one compatibility normalizer that converts historical non-Base-36 draft component IDs without weakening validation. Slice 4af adds one shared Recipe draft-identity initializer and one positive-whole-number Recipe-version validator. Slice 4ag adds per-output actual staging/history, routed-quantity validation, actual-quantity persistence verification, readable System_Key header proof, and packaged multi-output helpers through the operator handlers. Slice 4ah adds one shared Admin edit-selection commit path, one same-handler packaged form contract, and one packaged Admin entry point. Literal Application.Run targets do not grow and unresolved dynamic calls improve.",
+    "ceiling": 5140,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds shared Process-component identity protection; 4af adds Recipe identity/version initialization; 4ag adds actual-output persistence; and 4ah fixes Admin edit selection. Slice 4ai adds captured-workbook Admin inventory table creation, normalized-header preflight, ADD/EDIT application, row-status reporting, and same-handler packaged proof. Literal Application.Run targets and unresolved dynamic calls do not grow.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
@@ -43,14 +44,15 @@
       "tests/tooling/Test-Plan022Slice4aeProcessPickerTargetsAndRowIds.ps1",
       "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1",
       "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
-      "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1"
+      "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1",
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
     ]
   },
   "approvedCandidateGrowth": {
-    "slice": "Plan 022 Slices 4x through 4ah",
+    "slice": "Plan 022 Slices 4x through 4ai",
     "baseline": 965,
-    "ceiling": 1038,
-    "rationale": "The scanner increase is bounded to the approved Process/Recipe form surface, reusable-run controller, multi-table captured-workbook worksheet controller, numbered INPUT and OUTPUT item-picker bridge, text-safe Designs event path, and exact Inventory Domain bridge. Scanner findings remain review-only and authorize no deletion.",
+    "ceiling": 1040,
+    "rationale": "The scanner increase is bounded to the approved Process/Recipe surfaces plus the D14 Admin captured-workbook inventory worksheet controller and same-handler evidence. Scanner findings remain review-only and authorize no deletion; duplicate-body and dynamic-call ratchets do not grow.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
@@ -59,7 +61,8 @@
       "tests/tooling/Test-Plan022Slice4aaProcessBulkImport.ps1",
       "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
       "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1",
-      "tests/tooling/Test-Plan022Slice4adProcessPickerRecordTypes.ps1"
+      "tests/tooling/Test-Plan022Slice4adProcessPickerRecordTypes.ps1",
+      "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
     ]
   },
   "approvedDuplicateGrowth": {
@@ -112,14 +115,20 @@
     {
       "source": "src/Admin/Forms/frmAddInventoryItem.frm",
       "baseline": 1158,
-      "ceiling": 1231,
-      "rationale": "Slice 4ah adds a bounded shared SKU-backed commit path for combo and search-result edit choices plus a same-handler packaged contract proving Filtered Water field loading and Utility readiness."
+      "ceiling": 1354,
+      "rationale": "Slices 4ah/4ai add shared SKU-backed edit selection plus visible Create/Upload Inventory Table controls, captured-workbook binding, and same-handler packaged contracts for single-item and bulk workflows."
     },
     {
       "source": "src/Admin/Modules/modAdmin.bas",
       "baseline": 1924,
-      "ceiling": 1940,
-      "rationale": "Slice 4ah adds one typed same-project packaged entry point for the Admin inventory edit-selection form contract; it does not add a parallel catalog or inventory authority."
+      "ceiling": 2068,
+      "rationale": "Slices 4ah/4ai add typed packaged form entry points and bounded wrappers that route worksheet ADD/EDIT records through the existing catalog, event, processor, and quantity-adjustment authorities."
+    },
+    {
+      "source": "src/Admin/Modules/modAdminInventoryWorksheet.bas",
+      "baseline": 0,
+      "ceiling": 778,
+      "rationale": "Slice 4ai's cohesive D14 controller owns uniquely named local inventory tables, configured dropdowns, normalized-header/custom-field ingestion, whole-table preflight, generated ADD Item Codes, exact EDIT identity, row outcomes, and packaged dry-run evidence without becoming inventory authority."
     }
   ],
   "approvedModuleGrowthProtectingTests": [
@@ -134,6 +143,7 @@
     "tests/tooling/Test-Plan022Slice4afRecipeIdentity.ps1",
     "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
     "tests/tooling/Test-Plan022Slice4ahAdminEditSelection.ps1",
+    "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
     "tools/validate_slice9_production_layout.ps1",
     "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"

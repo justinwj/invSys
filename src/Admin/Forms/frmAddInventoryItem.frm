@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmAddInventoryItem
-   Caption         =   "invSys Admin - Add Inventory Item"
+   Caption         =   "invSys Admin - Add/Edit Inventory Items"
    ClientHeight    =   6100
    ClientLeft      =   110
    ClientTop       =   450
@@ -27,6 +27,10 @@ Private WithEvents mBtnAddMode As MSForms.CommandButton
 Attribute mBtnAddMode.VB_VarHelpID = -1
 Private WithEvents mBtnEditMode As MSForms.CommandButton
 Attribute mBtnEditMode.VB_VarHelpID = -1
+Private WithEvents mBtnCreateInventoryTable As MSForms.CommandButton
+Attribute mBtnCreateInventoryTable.VB_VarHelpID = -1
+Private WithEvents mBtnUploadInventoryTable As MSForms.CommandButton
+Attribute mBtnUploadInventoryTable.VB_VarHelpID = -1
 Private WithEvents mCmbEditItem As MSForms.ComboBox
 Attribute mCmbEditItem.VB_VarHelpID = -1
 Private WithEvents mLstEditItemResults As MSForms.ListBox
@@ -85,6 +89,9 @@ Private mPreviousUom As String
 Private mInitStep As String
 Private mAllowUomPrompt As Boolean
 Private mImagePlaceholderActive As Boolean
+Private mOperatorWorkbook As Workbook
+Private mLastInventoryTableName As String
+Private mLastInventoryWorksheetReport As String
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -248,6 +255,65 @@ Failed:
         "|Error=" & CStr(Err.Number) & " " & Err.Description
 End Function
 
+Public Function TestInventoryWorksheetActionContract(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    Dim tableCreated As Boolean
+    Dim rowsPrepared As Boolean
+    Dim tableSelected As Boolean
+    Dim capturedWorkbook As Boolean
+    Dim evidence As String
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    SetOperatorWorkbook operatorWb
+    capturedWorkbook = Not mOperatorWorkbook Is Nothing
+    modAdminInventoryWorksheet.BeginInventoryWorksheetAutomation "EXISTING-SKU"
+
+    testStage = "CreateHandler"
+    mBtnCreateInventoryTable_Click
+    tableCreated = (mLastInventoryTableName <> "" And _
+        modAdminInventoryWorksheet.CountInventoryWorksheetTables(operatorWb) = 1)
+    testStage = "Populate"
+    rowsPrepared = modAdminInventoryWorksheet.PopulateInventoryWorksheetContractRowsForTest( _
+        operatorWb, mLastInventoryTableName)
+    tableSelected = modAdminInventoryWorksheet.SelectInventoryWorksheetTableForTest( _
+        operatorWb, mLastInventoryTableName)
+    testStage = "UploadHandler"
+    mBtnUploadInventoryTable_Click
+    evidence = modAdminInventoryWorksheet.LastInventoryWorksheetAutomationReport()
+    modAdminInventoryWorksheet.EndInventoryWorksheetAutomation
+
+    If tableCreated And rowsPrepared And tableSelected And capturedWorkbook And _
+            InStr(1, evidence, "Preflight=True", vbTextCompare) > 0 And _
+            InStr(1, evidence, "Utility=True", vbTextCompare) > 0 And _
+            InStr(1, evidence, "ExactEdit=True", vbTextCompare) > 0 Then
+        TestInventoryWorksheetActionContract = "OK|" & evidence & _
+            "|CapturedWorkbook=True|CreateHandler=True|UploadHandler=True"
+    Else
+        TestInventoryWorksheetActionContract = "FAIL|TableCreated=" & CStr(tableCreated) & _
+            "|RowsPrepared=" & CStr(rowsPrepared) & _
+            "|TableSelected=" & CStr(tableSelected) & _
+            "|CapturedWorkbook=" & CStr(capturedWorkbook) & _
+            "|Evidence=" & evidence
+    End If
+    Exit Function
+
+Failed:
+    modAdminInventoryWorksheet.EndInventoryWorksheetAutomation
+    TestInventoryWorksheetActionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
+Public Sub SetOperatorWorkbook(ByVal wb As Workbook)
+    On Error GoTo Unavailable
+    If wb Is Nothing Then Exit Sub
+    If wb.Worksheets.Count < 1 Then Exit Sub
+    Set mOperatorWorkbook = wb
+Unavailable:
+End Sub
+
 Public Sub Configure(ByVal warehouseId As Variant, _
                      ByVal stationId As Variant, _
                      ByVal userId As Variant, _
@@ -395,12 +461,13 @@ End Sub
 
 Private Sub UserForm_Terminate()
     Set mAnchors = Nothing
+    Set mOperatorWorkbook = Nothing
 End Sub
 
 Private Sub EnsureControls()
     If Not mBtnOK Is Nothing Then Exit Sub
 
-    Me.Caption = "invSys Admin - Add Inventory Item"
+    Me.Caption = "invSys Admin - Add/Edit Inventory Items"
     Me.Width = 575
     Me.Height = 665
 
@@ -469,6 +536,8 @@ Private Sub EnsureControls()
 
     Set mLblStatus = AddLabel("lblStatus", 146, 550, 328, 28, "")
     mLblStatus.ForeColor = 255
+    Set mBtnCreateInventoryTable = AddButton("btnCreateInventoryTable", 14, 594, 154, 28, "Create Inventory Table")
+    Set mBtnUploadInventoryTable = AddButton("btnUploadInventoryTable", 174, 594, 192, 28, "Upload Selected Inventory Table")
     Set mBtnOK = AddButton("btnOK", 374, 594, 78, 28, "Add Item")
     Set mBtnCancel = AddButton("btnCancel", 460, 594, 78, 28, "Cancel")
 
@@ -481,6 +550,8 @@ Private Sub InitializeAddInventoryAnchors()
 
     mAnchors.Add mBtnAddMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mBtnEditMode, ANCHOR_LEFT Or ANCHOR_TOP
+    mAnchors.Add mBtnCreateInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnUploadInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
     mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mLblGenerated, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mCmbEditItem, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
@@ -770,6 +841,58 @@ End Sub
 
 Private Sub mBtnRemoveField_Click()
     If mLstCustomFields.ListIndex >= 0 Then mLstCustomFields.RemoveItem mLstCustomFields.ListIndex
+End Sub
+
+Private Sub mBtnCreateInventoryTable_Click()
+    Dim report As String
+    Dim tableName As String
+
+    On Error GoTo Failed
+    If mOperatorWorkbook Is Nothing Then
+        mLblStatus.Caption = "The captured Admin operator workbook is unavailable."
+        Exit Sub
+    End If
+    If modAdminInventoryWorksheet.CreateInventoryWorksheetTable( _
+            mOperatorWorkbook, tableName, report) Then
+        mLastInventoryTableName = tableName
+        mAccepted = False
+    End If
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+    If Not modAdminInventoryWorksheet.InventoryWorksheetAutomationEnabled() Then _
+        MsgBox report, IIf(tableName <> "", vbInformation, vbExclamation), "invSys Admin"
+    If tableName <> "" Then Me.Hide
+    Exit Sub
+
+Failed:
+    report = "Inventory worksheet creation failed: " & Err.Description
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+End Sub
+
+Private Sub mBtnUploadInventoryTable_Click()
+    Dim report As String
+    Dim succeeded As Boolean
+
+    On Error GoTo Failed
+    If mOperatorWorkbook Is Nothing Then
+        mLblStatus.Caption = "The captured Admin operator workbook is unavailable."
+        Exit Sub
+    End If
+    succeeded = modAdminInventoryWorksheet.UploadSelectedInventoryWorksheetTable( _
+        mOperatorWorkbook, mWarehouseId, mStationId, mUserId, report)
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+    If Not modAdminInventoryWorksheet.InventoryWorksheetAutomationEnabled() Then _
+        MsgBox report, IIf(succeeded, vbInformation, vbExclamation), "invSys Admin"
+    mAccepted = False
+    Me.Hide
+    Exit Sub
+
+Failed:
+    report = "Inventory worksheet upload failed: " & Err.Description
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
 End Sub
 
 Private Sub mBtnOK_Click()

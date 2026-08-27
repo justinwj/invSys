@@ -3,9 +3,9 @@
     "reportType":  "maintenance-candidates",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
-                     "componentCount":  153,
-                     "procedureCount":  5096,
-                     "lineCount":  112949,
+                     "componentCount":  154,
+                     "procedureCount":  5140,
+                     "lineCount":  113978,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -3674,12 +3674,11 @@
                            "reviewRequired":  true
                        },
                        {
-                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
+                           "id":  "duplicate:7ad0e1ea89bb7079:UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate+UserForm_Terminate",
                            "candidateType":  "REPLACE_DUPLICATE",
                            "confidence":  "LOW",
-                           "componentName":  "frmAddInventoryItem",
+                           "componentName":  "frmCreateDeleteUser",
                            "procedureNames":  [
-                                                  "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
                                                   "UserForm_Terminate",
@@ -3688,7 +3687,6 @@
                                                   "UserForm_Terminate"
                                               ],
                            "sourcePaths":  [
-                                               "src/Admin/Forms/frmAddInventoryItem.frm",
                                                "src/Admin/Forms/frmCreateDeleteUser.frm",
                                                "src/Admin/Forms/frmCreateWarehouse.frm",
                                                "src/Admin/Forms/frmRetireMigrateWarehouse.frm",
@@ -5729,6 +5727,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnCreateInventoryTable_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmAddInventoryItem",
+                           "procedureNames":  [
+                                                  "mBtnCreateInventoryTable_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmAddInventoryItem.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnEditMode_Click",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -5776,6 +5791,23 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnUploadInventoryTable_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmAddInventoryItem",
+                           "procedureNames":  [
+                                                  "mBtnUploadInventoryTable_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmAddInventoryItem.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -7994,7 +8026,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12699,9 +12731,11 @@
                                                   "mBtnAddField_Click",
                                                   "mBtnAddMode_Click",
                                                   "mBtnCancel_Click",
+                                                  "mBtnCreateInventoryTable_Click",
                                                   "mBtnEditMode_Click",
                                                   "mBtnOK_Click",
                                                   "mBtnRemoveField_Click",
+                                                  "mBtnUploadInventoryTable_Click",
                                                   "mCmbEditItem_AfterUpdate",
                                                   "mCmbEditItem_Change",
                                                   "mCmbEditItem_Click",
@@ -12720,10 +12754,12 @@
                                                   "RefreshGeneratedLabel",
                                                   "SafeFormText",
                                                   "SetImagePathValue",
+                                                  "SetOperatorWorkbook",
                                                   "ShowEditItemSearchResults",
                                                   "ShowImagePathPlaceholder",
                                                   "StartingQty",
                                                   "TestEditItemComboSelectionContract",
+                                                  "TestInventoryWorksheetActionContract",
                                                   "TestSetQuantityMode",
                                                   "Uom",
                                                   "UserForm_Activate",
@@ -12957,6 +12993,7 @@
                                                   "AdminDemoInventoryRowForSku",
                                                   "AdminSettingsFormInitializeSmokeForWorkbook",
                                                   "AppendCatalogEditHistoryAdmin",
+                                                  "ApplyInventoryWorksheetRecordForWarehouse",
                                                   "Base36Admin",
                                                   "BuildAdminDemoInventoryFallbackPayload",
                                                   "BuildAdminDemoInventoryPayload",
@@ -12974,12 +13011,16 @@
                                                   "FindCatalogRowBySkuAdmin",
                                                   "FindListObjectByNameAdminLocal",
                                                   "FindOpenWorkbookByFullNameAdmin",
+                                                  "GenerateInventoryItemCodeForWorksheet",
                                                   "GenerateInventorySkuAdmin",
                                                   "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "InventoryEditSelectionContractForAutomation",
+                                                  "InventoryItemCatalogContainsForWorksheet",
+                                                  "InventoryWorksheetContractForAutomation",
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
+                                                  "NextInventoryRowForWorksheet",
                                                   "NextInventoryRowSuggestionAdmin",
                                                   "NonCountedItemKindAdmin",
                                                   "NormalizeAdminDemoInventoryRow",

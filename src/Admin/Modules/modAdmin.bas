@@ -341,11 +341,130 @@ Failed:
     On Error GoTo 0
 End Function
 
+Public Function InventoryWorksheetContractForAutomation(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    InventoryWorksheetContractForAutomation = _
+        frmAddInventoryItem.TestInventoryWorksheetActionContract(operatorWb)
+    Unload frmAddInventoryItem
+    Exit Function
+
+Failed:
+    InventoryWorksheetContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    On Error Resume Next
+    modAdminInventoryWorksheet.EndInventoryWorksheetAutomation
+    Unload frmAddInventoryItem
+    On Error GoTo 0
+End Function
+
+Public Function NextInventoryRowForWorksheet(ByVal warehouseId As String) As Long
+    NextInventoryRowForWorksheet = NextInventoryRowSuggestionAdmin(warehouseId)
+End Function
+
+Public Function GenerateInventoryItemCodeForWorksheet(ByVal warehouseId As String, _
+                                                      ByVal rowVal As Long) As String
+    GenerateInventoryItemCodeForWorksheet = GenerateInventorySkuAdmin(warehouseId, rowVal)
+End Function
+
+Public Function InventoryItemCatalogContainsForWorksheet(ByVal warehouseId As String, _
+                                                         ByVal sku As String, _
+                                                         ByRef rowVal As Long) As Boolean
+    Dim catalogItems As Collection
+    Dim item As Variant
+
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
+    Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
+    For Each item In catalogItems
+        If StrComp(CatalogItemTextAdmin(item, "SKU"), sku, vbTextCompare) = 0 Then
+            rowVal = CLng(Val(CatalogItemTextAdmin(item, "ROW")))
+            InventoryItemCatalogContainsForWorksheet = True
+            Exit Function
+        End If
+    Next item
+End Function
+
+Public Function ApplyInventoryWorksheetRecordForWarehouse(ByVal warehouseId As String, _
+                                                          ByVal stationId As String, _
+                                                          ByVal userId As String, _
+                                                          ByVal record As Object, _
+                                                          ByRef report As String) As Boolean
+    Dim customFields As Object
+    Dim actionName As String
+    Dim sku As String
+    Dim itemName As String
+    Dim uom As String
+    Dim locationValue As String
+    Dim categoryValue As String
+    Dim vendorValue As String
+    Dim qty As Double
+    Dim editReason As String
+    Dim actionSucceeded As Boolean
+    Dim qtyReport As String
+    Dim editStamp As String
+
+    On Error GoTo Failed
+    If record Is Nothing Then report = "Inventory worksheet record is unavailable.": Exit Function
+    actionName = UCase$(Trim$(CStr(record("Action"))))
+    sku = Trim$(CStr(record("ItemCode")))
+    itemName = Trim$(CStr(record("ItemName")))
+    uom = Trim$(CStr(record("UOM")))
+    locationValue = Trim$(CStr(record("Location")))
+    categoryValue = Trim$(CStr(record("Category")))
+    vendorValue = Trim$(CStr(record("Vendors")))
+    qty = CDbl(record("Quantity"))
+    editReason = Trim$(CStr(record("EditReason")))
+    Set customFields = record("CustomFields")
+    If IsNonCountedCustomFieldsAdmin(customFields) Then
+        If categoryValue = "" Then categoryValue = NonCountedItemKindAdmin(customFields)
+        If vendorValue = "" And NonCountedItemKindAdmin(customFields) = "UTILITY" Then vendorValue = "Utility"
+    End If
+
+    If actionName = "ADD" Then
+        ApplyInventoryWorksheetRecordForWarehouse = AddInventoryItemForWarehouse( _
+            warehouseId, stationId, userId, CLng(record("RowVal")), sku, itemName, _
+            uom, locationValue, qty, CStr(record("Description")), vendorValue, _
+            CStr(record("VendorCode")), categoryValue, CStr(record("ExternalCode")), _
+            CStr(record("Picture")), customFields, report)
+        Exit Function
+    End If
+    If actionName <> "EDIT" Then report = "Inventory worksheet Action must be ADD or EDIT.": Exit Function
+
+    editStamp = Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    customFields("LAST_EDIT_REASON") = editReason
+    customFields("LAST_EDIT_AT") = editStamp
+    customFields("LAST_EDIT_USER") = userId
+    customFields("EDIT_HISTORY_APPEND") = editStamp & " | User=" & userId & _
+        " | SKU=" & sku & " | Reason=" & editReason
+    actionSucceeded = UpdateInventoryItemCatalogForWarehouse(warehouseId, sku, itemName, _
+        uom, locationValue, CStr(record("Description")), vendorValue, _
+        CStr(record("VendorCode")), categoryValue, CStr(record("ExternalCode")), _
+        CStr(record("Picture")), customFields, report)
+    If actionSucceeded And Not IsNonCountedCustomFieldsAdmin(customFields) And _
+            CBool(record("HasQuantity")) Then
+        If SetInventoryQuantityForWarehouse(warehouseId, stationId, userId, _
+                CLng(record("RowVal")), sku, itemName, uom, locationValue, qty, _
+                editReason, qtyReport) Then
+            report = report & vbCrLf & vbCrLf & qtyReport
+        Else
+            report = "Inventory item catalog fields were updated, but set qty failed." & vbCrLf & qtyReport
+            actionSucceeded = False
+        End If
+    End If
+    ApplyInventoryWorksheetRecordForWarehouse = actionSucceeded
+    Exit Function
+
+Failed:
+    report = "Inventory worksheet row apply failed: " & Err.Description
+End Function
+
 Sub Add_InventoryItem()
     Dim warehouseId As String
     Dim stationId As String
     Dim userId As String
     Dim report As String
+    Dim targetWb As Workbook
     Dim sku As String
     Dim rowVal As Long
     Dim defaultLocation As String
@@ -375,6 +494,13 @@ Sub Add_InventoryItem()
         Exit Sub
     End If
 
+    Set targetWb = ResolveInteractiveAdminWorkbook(False)
+    If targetWb Is Nothing Then
+        MsgBox "Open the saved Admin/operator workbook before adding or editing inventory items.", _
+               vbExclamation, "invSys Admin"
+        Exit Sub
+    End If
+
     rowVal = NextInventoryRowSuggestionAdmin(warehouseId)
     sku = GenerateInventorySkuAdmin(warehouseId, rowVal)
     defaultLocation = Trim$(modConfig.GetString("DefaultLocation", ""))
@@ -382,6 +508,7 @@ Sub Add_InventoryItem()
 
     Set addForm = New frmAddInventoryItem
     addForm.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+    addForm.SetOperatorWorkbook targetWb
     LoadCatalogItemsIntoAddInventoryForm addForm, catalogItems
 
     Do
@@ -450,6 +577,7 @@ Sub Add_InventoryItem()
             sku = GenerateInventorySkuAdmin(warehouseId, rowVal)
             Set catalogItems = LoadInventoryCatalogItemsAdmin(warehouseId)
             addForm.Configure warehouseId, stationId, userId, sku, rowVal, defaultLocation
+            addForm.SetOperatorWorkbook targetWb
             LoadCatalogItemsIntoAddInventoryForm addForm, catalogItems
         Else
             MsgBox report, vbExclamation, "invSys Admin"

@@ -582,6 +582,24 @@ try {
         catch {
             Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $false -Detail $_.Exception.Message
         }
+        try {
+            $inventoryWorksheetWb = $excel.Workbooks.Add()
+            $targetWorkbooks.Add($inventoryWorksheetWb) | Out-Null
+            $inventoryWorksheetPath = Join-Path $targetRoot "Admin.Inventory.Worksheet.Contract.xlsx"
+            $inventoryWorksheetWb.SaveAs($inventoryWorksheetPath, 51)
+            $inventoryWorksheetWb.Activate()
+            $inventoryWorksheet = [string]$excel.Run(
+                "'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryWorksheetContractForAutomation",
+                $inventoryWorksheetWb)
+            $inventoryWorksheetPassed = $inventoryWorksheet -match '^OK\|' -and
+                $inventoryWorksheet -match '(?:^|\|)TableCreated=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)Preflight=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)Utility=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryWorksheetActions" -Passed $inventoryWorksheetPassed -Detail $inventoryWorksheet
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryWorksheetActions" -Passed $false -Detail $_.Exception.Message
+        }
     }
 
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
