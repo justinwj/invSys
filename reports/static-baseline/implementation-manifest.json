@@ -17948,13 +17948,11 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  451,
-                           "endLine":  525,
-                           "lineCount":  75,
+                           "endLine":  523,
+                           "lineCount":  73,
                            "directCalls":  [
                                                "AddInventoryItemForWarehouse",
                                                "CustomFields",
-                                               "DeleteReason",
-                                               "DeleteRequested",
                                                "EditReason",
                                                "IsNonCountedCustomFieldsAdmin",
                                                "ItemName",
@@ -17981,9 +17979,9 @@
                            "name":  "Add_InventoryItem",
                            "visibility":  "DEFAULT",
                            "kind":  "SUB",
-                           "startLine":  527,
+                           "startLine":  525,
                            "endLine":  673,
-                           "lineCount":  147,
+                           "lineCount":  149,
                            "directCalls":  [
                                                "Accepted",
                                                "AddForm",
@@ -128364,7 +128362,8 @@
                            {
                                "entryPoint":  "Add_InventoryItem",
                                "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                                 "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                              ]
                            },
                            {
@@ -129318,6 +129317,18 @@
                                "entryPoint":  "DeleteProcessWorksheetTable",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "DeleteReason",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "DeleteRequested",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                              ]
                            },
                            {

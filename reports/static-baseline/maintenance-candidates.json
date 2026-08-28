@@ -8060,7 +8060,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                                ],
                            "reviewRequired":  true
                        },

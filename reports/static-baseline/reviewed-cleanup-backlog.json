@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "9929bec69f0bc5f6c9bd5c2b91981d4ad0223cd96cc3a0bbfbeb11557143f5dd",
-                          "maintenanceCandidatesSha256":  "1ecbde67df0d84ca7e49f8fdf5bae33365265a3033f53fd4d6dc3432e5aacdc0"
+                          "implementationManifestSha256":  "56dd8f8a52ce6d171d3ae3832e79616e33743541cc96b3e1d0f286e8f7e502e9",
+                          "maintenanceCandidatesSha256":  "771300ddd8fe095ec44f9e24d27e6c7c13591d5818c359e100ade7d4498db3e4"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -5725,7 +5725,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

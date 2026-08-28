@@ -464,8 +464,6 @@ Public Function ApplyInventoryWorksheetRecordForWarehouse(ByVal warehouseId As S
     Dim qty As Double
     Dim editReason As String
     Dim actionSucceeded As Boolean
-    Dim deleteRequested As Boolean
-    Dim deleteReason As String
     Dim qtyReport As String
     Dim editStamp As String
 
@@ -537,6 +535,8 @@ Sub Add_InventoryItem()
     Dim addForm As frmAddInventoryItem
     Dim accepted As Boolean
     Dim isEdit As Boolean
+    Dim deleteRequested As Boolean
+    Dim deleteReason As String
     Dim formSku As String
     Dim formRow As Long
     Dim formItemName As String

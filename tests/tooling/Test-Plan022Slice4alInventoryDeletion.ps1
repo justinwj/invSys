@@ -32,6 +32,14 @@ $checks["Admin.ExactSkuRetirementService"] =
     $admin.Contains('item("System_Key") = systemKey') -and
     $admin.Contains('item("InventoryState") = "RETIRED"') -and
     $admin.Contains("QueueAdminInventoryAdjustEvent")
+$addInventoryItemMatch = [regex]::Match(
+    $admin,
+    '(?ms)^Sub Add_InventoryItem\(\).*?^End Sub'
+)
+$checks["Admin.DeleteVariablesDeclaredInPublicHandler"] =
+    $addInventoryItemMatch.Success -and
+    $addInventoryItemMatch.Value.Contains("Dim deleteRequested As Boolean") -and
+    $addInventoryItemMatch.Value.Contains("Dim deleteReason As String")
 $checks["Domain.RetiredProjectionState"] =
     $schema.Contains('"InventoryState", "AttributesJson", "Note"') -and
     $apply.Contains('lineItem("InventoryState") = inventoryState') -and
