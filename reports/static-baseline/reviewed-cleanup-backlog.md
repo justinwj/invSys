@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1041
-- Reviewed candidates: 1043
+- Scanner candidates: 1043
+- Reviewed candidates: 1045
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -16,8 +16,8 @@
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
-| DOMAINS | 66 | Inventory and Designs Domain authority source. |
-| ADMIN | 223 | Administrative setup, lifecycle, and developer-support source. |
+| DOMAINS | 67 | Inventory and Designs Domain authority source. |
+| ADMIN | 224 | Administrative setup, lifecycle, and developer-support source. |
 | DEVELOPER_TOOLING | 13 | Build, scan, report, and other developer-only tooling. |
 | TESTING | 0 | Test harness and fixture source that must remain outside runtime packages. |
 
@@ -30,17 +30,17 @@
 
 | Source | Package | Baseline lines |
 |---|---|---:|
-| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1458 |
+| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1561 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
-| src/Admin/Modules/modAdmin.bas | Admin | 2253 |
+| src/Admin/Modules/modAdmin.bas | Admin | 2482 |
 | src/Admin/Modules/modAdminConsole.bas | Admin | 2008 |
 | src/Admin/Modules/modTesterSetup.bas | Admin | 1655 |
 | src/Core/ClassModules/cDynItemSearch.cls | Core | 1999 |
 | src/Core/Modules/modAuth.bas | Core | 1804 |
 | src/Core/Modules/modConfig.bas | Core | 1679 |
 | src/Core/Modules/modNasConnection.bas | Core | 1494 |
-| src/Core/Modules/modOperatorReadModel.bas | Core | 1909 |
+| src/Core/Modules/modOperatorReadModel.bas | Core | 1919 |
 | src/Core/Modules/modProcessor.bas | Core | 1479 |
 | src/Core/Modules/modRoleEventWriter.bas | Core | 3086 |
 | src/Core/Modules/modWarehouseBootstrap.bas | Core | 1278 |
@@ -48,7 +48,7 @@
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2429 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2629 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 8763 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1291 |
@@ -140,6 +140,7 @@
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnAddMode_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnCancel_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnCreateInventoryTable_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnDeleteItem_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnEditMode_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnOK_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnRemoveField_Click | ADMIN | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
@@ -603,6 +604,7 @@
 | reachability:src_DesignsDomain_Modules_modDesignsBridgeApi.bas:modDesignsBridgeApi.ValidateDesignsSchemaBridgeResult | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_DesignsDomain_Modules_modDesignsInit.bas:modDesignsInit.GetDesignsDomainContractVersion | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_ClassModules_cInventoryAppEvents.cls:cInventoryAppEvents.App_WorkbookOpen | DOMAINS | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.InventoryRetirementContractForAutomation | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.RefreshInvSysFromCanonicalRuntime | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.WorkbookHasListObjectApply | DOMAINS | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_InventoryDomain_Modules_modInventoryBridgeApi.bas:modInventoryBridgeApi.ApplyEventBridgeEncodedDeferred | DOMAINS | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

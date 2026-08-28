@@ -996,13 +996,18 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
     EnsureInvSysRowsForSnapshot loInv, snapshotRows
     If loInv.DataBodyRange Is Nothing Then Exit Sub
 
-    For rowIndex = 1 To loInv.ListRows.Count
+    For rowIndex = loInv.ListRows.Count To 1 Step -1
         sku = ResolveInvSysSku(loInv, rowIndex)
         SyncDisplayAliases loInv, rowIndex
         systemKey = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "System_Key")))
         Set payload = ResolveSnapshotPayloadForInvSysReadModel(snapshotRows, systemKey)
 
         If Not payload Is Nothing Then
+            If StrComp(ResolveSnapshotTextPayloadReadModel(payload, "InventoryState"), _
+                    "RETIRED", vbTextCompare) = 0 Then
+                loInv.ListRows(rowIndex).Delete
+                GoTo ContinueApplyRow
+            End If
             qtyOnHand = ResolveSnapshotNumberPayloadReadModel(payload, "QtyOnHand")
             qtyAvailable = ResolveSnapshotNumberPayloadReadModel(payload, "QtyAvailable")
             locationSummary = ResolveSnapshotTextPayloadReadModel(payload, "LocationSummary")
@@ -1017,6 +1022,7 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
                                 CStr(GetReadModelValue(loInv, rowIndex, "LocationSummary")), _
                                 GetReadModelValue(loInv, rowIndex, "LAST EDITED"), refreshUtc, snapshotId, sourceType, isStale
         End If
+ContinueApplyRow:
     Next rowIndex
 End Sub
 
@@ -1030,6 +1036,9 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
 
     For Each key In snapshotRows.Keys
         If Trim$(CStr(key)) <> "" Then
+            Set payload = snapshotRows(CStr(key))
+            If StrComp(ResolveSnapshotTextPayloadReadModel(payload, "InventoryState"), _
+                    "RETIRED", vbTextCompare) = 0 Then GoTo ContinueSnapshotKey
             rowIndex = FindInvSysRowBySystemKeyReadModel(loInv, CStr(key))
             If rowIndex = 0 Then
                 rowIndex = AppendInvSysRow(loInv)
@@ -1043,6 +1052,7 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
                 End If
             End If
         End If
+ContinueSnapshotKey:
     Next key
 End Sub
 

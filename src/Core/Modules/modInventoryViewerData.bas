@@ -209,6 +209,7 @@ Private Function ViewerFriendlyEventType(ByVal eventType As String) As String
         Case "SHIP_RELEASE": ViewerFriendlyEventType = "Remove"
         Case "PROD_CONSUME": ViewerFriendlyEventType = "Production Input Consumed"
         Case "PROD_COMPLETE": ViewerFriendlyEventType = "Production Output Created"
+        Case "ADMIN_INVENTORY_ADJUST": ViewerFriendlyEventType = "Inventory Adjustment"
     End Select
 End Function
 

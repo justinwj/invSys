@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5161,
-                     "lineCount":  114569,
+                     "procedureCount":  5173,
+                     "lineCount":  115112,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -5757,6 +5757,23 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnDeleteItem_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmAddInventoryItem",
+                           "procedureNames":  [
+                                                  "mBtnDeleteItem_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmAddInventoryItem.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -12725,6 +12742,8 @@
                                                   "CommitSelectedEditItemFromCombo",
                                                   "Configure",
                                                   "CustomFields",
+                                                  "DeleteReason",
+                                                  "DeleteRequested",
                                                   "DescriptionValue",
                                                   "EditMode",
                                                   "EditReason",
@@ -12752,6 +12771,7 @@
                                                   "mBtnAddMode_Click",
                                                   "mBtnCancel_Click",
                                                   "mBtnCreateInventoryTable_Click",
+                                                  "mBtnDeleteItem_Click",
                                                   "mBtnEditMode_Click",
                                                   "mBtnOK_Click",
                                                   "mBtnRemoveField_Click",
@@ -12780,6 +12800,7 @@
                                                   "StartingQty",
                                                   "TestAddItemVisibilityDropdownContract",
                                                   "TestEditItemComboSelectionContract",
+                                                  "TestInventoryDeleteActionContract",
                                                   "TestInventoryWorksheetActionContract",
                                                   "TestSetQuantityMode",
                                                   "Uom",
@@ -13019,6 +13040,7 @@
                                                   "BuildAdminDemoInventoryFallbackPayload",
                                                   "BuildAdminDemoInventoryPayload",
                                                   "BuildAdminDemoInventoryPayloadFromCsv",
+                                                  "BuildInventoryRetirementPayloadItemAdmin",
                                                   "CatalogCellAdmin",
                                                   "CatalogItemTextAdmin",
                                                   "ColumnIndexAdminLocal",
@@ -13037,6 +13059,7 @@
                                                   "GenerateInventorySkuAdmin",
                                                   "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "InventoryAddVisibilityDropdownContractForAutomation",
+                                                  "InventoryDeleteContractForAutomation",
                                                   "InventoryEditSelectionContractForAutomation",
                                                   "InventoryItemCatalogContainsForWorksheet",
                                                   "InventorySkuHasManagedEntityAdmin",
@@ -13044,6 +13067,7 @@
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
+                                                  "MarkInventoryCatalogRetiredAdmin",
                                                   "NextInventoryRowForWorksheet",
                                                   "NextInventoryRowSuggestionAdmin",
                                                   "NonCountedItemKindAdmin",
@@ -13069,6 +13093,7 @@
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveQtyOnHandFromEntitiesAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "RetireInventoryItemForWarehouse",
                                                   "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
@@ -14444,6 +14469,7 @@
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
                                                   "BuildDispositionLines",
+                                                  "BuildInventoryRetirementAutomationEventApply",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -14476,6 +14502,7 @@
                                                   "HideWorkbookWindowsApply",
                                                   "InferWarehouseIdFromWorkbookNameApply",
                                                   "InventoryLogEventExistsApply",
+                                                  "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
@@ -14493,6 +14520,7 @@
                                                   "ParsePayloadJsonArray",
                                                   "ParsePayloadJsonObject",
                                                   "PayloadLineIsNonCountedApply",
+                                                  "PayloadLineIsRetirementApply",
                                                   "PayloadSkuIsNonCountedApply",
                                                   "RebuildInventoryProjections",
                                                   "RebuildInventoryProjectionsForWorkbook",
@@ -14530,6 +14558,7 @@
                                                   "TryGetEventValue",
                                                   "ValidateAdminShipmentReconcileLine",
                                                   "ValidateEventDoesNotCreateNegativeInventory",
+                                                  "ValidateRetirementPayloadLineApply",
                                                   "ValidateSkuExists",
                                                   "ValuesDifferNumericApply",
                                                   "ValuesDifferTextApply",
@@ -19485,6 +19514,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/DesignsDomain/Modules/modDesignsInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.InventoryRetirementContractForAutomation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modInventoryApply",
+                           "procedureNames":  [
+                                                  "InventoryRetirementContractForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/InventoryDomain/Modules/modInventoryApply.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

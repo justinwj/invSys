@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 154
-- Procedures: 5161
+- Procedures: 5173
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -144,6 +144,7 @@
 | mBtnDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeleteDataSet_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeleteGenerated_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnDeleteItem_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnEditMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnGeneratePin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHistory_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

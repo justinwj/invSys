@@ -484,7 +484,7 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
     EnsureTableWithHeadersLocal wb, "InventoryLog", "tblInventoryLog", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
               "WarehouseId", "StationId", "UserId", "System_Key", "SKU", "QtyDelta", "Location", _
-              "Condition", "AttributesJson", "Note"), issues
+              "Condition", "InventoryState", "AttributesJson", "Note"), issues
     EnsureTableWithHeadersLocal wb, "AppliedEvents", "tblAppliedEvents", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
     EnsureTableWithHeadersLocal wb, "Locks", "tblLocks", _
@@ -497,7 +497,7 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
     EnsureTableWithHeadersLocal wb, "LocationBalance", "tblLocationBalance", _
         Array("SKU", "Location", "Condition", "QtyOnHand", "LastAppliedUTC"), issues
     EnsureTableWithHeadersLocal wb, "SkuCatalog", "tblSkuCatalog", _
-        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", "CATALOG_STATE"), issues
 
     RemoveProhibitedRowHeadersLocal wb, issues
 

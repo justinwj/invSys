@@ -595,6 +595,17 @@ try {
             Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $false -Detail $_.Exception.Message
         }
         try {
+            $inventoryDelete = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryDeleteContractForAutomation")
+            $inventoryDeletePassed = $inventoryDelete -match '^OK\|' -and
+                $inventoryDelete -match '(?:^|\|)DeleteHandler=True(?:\||$)' -and
+                $inventoryDelete -match '(?:^|\|)ExactKey=True(?:\||$)' -and
+                $inventoryDelete -match '(?:^|\|)UtilityZeroDelta=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryDeleteItem" -Passed $inventoryDeletePassed -Detail $inventoryDelete
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryDeleteItem" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
             $inventoryWorksheetWb = $excel.Workbooks.Add()
             $targetWorkbooks.Add($inventoryWorksheetWb) | Out-Null
             $inventoryWorksheetPath = Join-Path $targetRoot "Admin.Inventory.Worksheet.Contract.xlsx"
@@ -615,6 +626,17 @@ try {
     }
 
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
+        try {
+            $inventoryRetirement = [string]$excel.Run("'$($workbookMap["invSys.Inventory.Domain.xlam"].Name)'!modInventoryApply.InventoryRetirementContractForAutomation")
+            $inventoryRetirementPassed = $inventoryRetirement -match '^OK\|' -and
+                $inventoryRetirement -match '(?:^|\|)CountedRetired=True(?:\||$)' -and
+                $inventoryRetirement -match '(?:^|\|)UtilityRetired=True(?:\||$)' -and
+                $inventoryRetirement -match '(?:^|\|)ActiveRows=0(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryRetirement" -Passed $inventoryRetirementPassed -Detail $inventoryRetirement
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryRetirement" -Passed $false -Detail $_.Exception.Message
+        }
         try {
             $workbookMap["invSys.Inventory.Domain.xlam"].Close($false)
             $diagnosticMacro = "'$($workbookMap["invSys.Core.xlam"].Name)'!modInventoryDomainBridge.DiagnoseInventoryDomainBridge"

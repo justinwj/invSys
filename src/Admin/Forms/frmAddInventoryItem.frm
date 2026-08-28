@@ -27,6 +27,8 @@ Private WithEvents mBtnAddMode As MSForms.CommandButton
 Attribute mBtnAddMode.VB_VarHelpID = -1
 Private WithEvents mBtnEditMode As MSForms.CommandButton
 Attribute mBtnEditMode.VB_VarHelpID = -1
+Private WithEvents mBtnDeleteItem As MSForms.CommandButton
+Attribute mBtnDeleteItem.VB_VarHelpID = -1
 Private WithEvents mBtnCreateInventoryTable As MSForms.CommandButton
 Attribute mBtnCreateInventoryTable.VB_VarHelpID = -1
 Private WithEvents mBtnUploadInventoryTable As MSForms.CommandButton
@@ -93,6 +95,9 @@ Private mOperatorWorkbook As Workbook
 Private mLastInventoryTableName As String
 Private mLastInventoryWorksheetReport As String
 Private mConfiguredDefaultLocation As String
+Private mDeleteRequested As Boolean
+Private mDeleteReason As String
+Private mDeleteAutomation As Boolean
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -122,6 +127,14 @@ End Property
 
 Public Property Get EditMode() As Boolean
     EditMode = mEditMode
+End Property
+
+Public Property Get DeleteRequested() As Boolean
+    DeleteRequested = mDeleteRequested
+End Property
+
+Public Property Get DeleteReason() As String
+    DeleteReason = mDeleteReason
 End Property
 
 Public Property Get ItemName() As String
@@ -301,6 +314,48 @@ Failed:
         "|Error=" & CStr(Err.Number) & " " & Err.Description
 End Function
 
+Public Function TestInventoryDeleteActionContract() As String
+    On Error GoTo Failed
+
+    Dim deleteVisible As Boolean
+    Dim deleteEnabled As Boolean
+    Dim deleteHandler As Boolean
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    AddCatalogItem "SKU-HONEY", "1", "Honey", "LB", "CLEARVIEW", _
+        "", "", "", "RAW", "", "", "TRUE", "INVENTORY", "25"
+    testStage = "EditMode"
+    mEditMode = True
+    ApplyModeLayout
+    mLoading = True
+    mCmbEditItem.ListIndex = 0
+    mLoading = False
+    mCmbEditItem_Change
+    deleteVisible = mBtnDeleteItem.Visible
+    deleteEnabled = mBtnDeleteItem.Enabled
+
+    testStage = "DeleteHandler"
+    mDeleteAutomation = True
+    mBtnDeleteItem_Click
+    mDeleteAutomation = False
+    deleteHandler = (mAccepted And mDeleteRequested And _
+        mSelectedEditSku = "SKU-HONEY" And mDeleteReason = "Packaged deletion contract")
+
+    TestInventoryDeleteActionContract = IIf(deleteVisible And deleteEnabled And _
+        deleteHandler, "OK", "FAIL") & _
+        "|DeleteVisible=" & CStr(deleteVisible) & _
+        "|DeleteEnabled=" & CStr(deleteEnabled) & _
+        "|DeleteHandler=" & CStr(deleteHandler)
+    Exit Function
+
+Failed:
+    mDeleteAutomation = False
+    TestInventoryDeleteActionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
 Public Function TestInventoryWorksheetActionContract(ByVal operatorWb As Workbook) As String
     On Error GoTo Failed
 
@@ -378,6 +433,8 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mUserId = SafeFormText(userId)
     mGeneratedSku = SafeFormText(generatedSku)
     mGeneratedRow = CLng(Val(SafeFormText(generatedRow)))
+    mDeleteRequested = False
+    mDeleteReason = ""
     mConfiguredDefaultLocation = SafeFormText(defaultLocation)
     Set mCatalogItems = New Collection
     mAccepted = False
@@ -522,6 +579,7 @@ Private Sub EnsureControls()
 
     Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item Mode")
     Set mBtnEditMode = AddButton("btnEditMode", 138, 10, 118, 24, "Edit Item")
+    Set mBtnDeleteItem = AddButton("btnDeleteItem", 262, 10, 100, 24, "Delete Item")
 
     Set mLblTitle = AddLabel("lblTitle", 14, 44, 530, 20, "Add inventory item")
     mLblTitle.Font.Bold = True
@@ -603,6 +661,7 @@ Private Sub InitializeAddInventoryAnchors()
 
     mAnchors.Add mBtnAddMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mBtnEditMode, ANCHOR_LEFT Or ANCHOR_TOP
+    mAnchors.Add mBtnDeleteItem, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mBtnCreateInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
     mAnchors.Add mBtnUploadInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
     mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
@@ -1004,6 +1063,8 @@ Private Sub mBtnOK_Click()
     If mEditMode Then
         If Not PromptForEditReason Then Exit Sub
     End If
+    mDeleteRequested = False
+    mDeleteReason = ""
     mAccepted = True
     Me.Hide
 End Sub
@@ -1034,6 +1095,38 @@ Private Sub mBtnEditMode_Click()
     If mLoading Then Exit Sub
     mEditMode = True
     ApplyModeLayout
+End Sub
+
+Private Sub mBtnDeleteItem_Click()
+    Dim answer As VbMsgBoxResult
+    Dim reason As String
+
+    If Not mEditMode Or mSelectedEditSku = "" Then
+        mLblStatus.Caption = "Choose an inventory item to delete."
+        Exit Sub
+    End If
+    If mDeleteAutomation Then
+        answer = vbYes
+        reason = "Packaged deletion contract"
+    Else
+        answer = MsgBox("Delete '" & ItemName & "' (" & mSelectedEditSku & _
+            ") from managed inventory?" & vbCrLf & vbCrLf & _
+            "All active exact inventory entities for this item will be retired. " & _
+            "Catalog and event history will be retained.", _
+            vbQuestion Or vbYesNo Or vbDefaultButton2, "invSys Admin - Delete Item")
+        If answer <> vbYes Then Exit Sub
+        reason = Trim$(InputBox("Why is this item being deleted from managed inventory?", _
+            "invSys Admin - Delete Item"))
+    End If
+    If Trim$(reason) = "" Then
+        mLblStatus.Caption = "Why the deletion is required."
+        Exit Sub
+    End If
+
+    mDeleteReason = Trim$(reason)
+    mDeleteRequested = True
+    mAccepted = True
+    Me.Hide
 End Sub
 
 Private Sub mCmbEditItem_Change()
@@ -1113,6 +1206,7 @@ Private Function CommitEditItemSelection(ByVal displayText As String, _
     mLoading = False
 
     LoadSelectedEditItemBySku sku
+    If Not mBtnDeleteItem Is Nothing Then mBtnDeleteItem.Enabled = (mSelectedEditSku <> "")
     CommitEditItemSelection = (StrComp(mSelectedEditSku, sku, vbTextCompare) = 0)
 End Function
 
@@ -1244,6 +1338,10 @@ Private Sub ApplyModeLayout()
     If mBtnOK Is Nothing Then Exit Sub
     mLblEditItem.Visible = mEditMode
     mCmbEditItem.Visible = mEditMode
+    If Not mBtnDeleteItem Is Nothing Then
+        mBtnDeleteItem.Visible = mEditMode
+        mBtnDeleteItem.Enabled = (mEditMode And mSelectedEditSku <> "")
+    End If
     HideEditItemSearchResults
     If Not mLblEditReason Is Nothing Then mLblEditReason.Visible = False
     If Not mTxtEditReason Is Nothing Then mTxtEditReason.Visible = False
@@ -1260,6 +1358,8 @@ Private Sub ApplyModeLayout()
     End If
     If Not mEditMode Then
         mSelectedEditSku = ""
+        mDeleteRequested = False
+        mDeleteReason = ""
         If mGeneratedRow < 0 Then mGeneratedRow = 0
     ElseIf mCmbEditItem.ListIndex < 0 Then
         ClearEditableFields
@@ -1286,6 +1386,7 @@ Private Sub ClearEditableFields()
     mTxtCustomName.Value = ""
     mTxtCustomValue.Value = ""
     mLstCustomFields.Clear
+    If Not mBtnDeleteItem Is Nothing Then mBtnDeleteItem.Enabled = False
 End Sub
 
 Private Sub LoadSelectedEditItem()
@@ -1344,6 +1445,8 @@ End Sub
 
 Private Sub mBtnCancel_Click()
     mAccepted = False
+    mDeleteRequested = False
+    mDeleteReason = ""
     Me.Hide
 End Sub
 

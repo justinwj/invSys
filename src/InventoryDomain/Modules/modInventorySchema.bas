@@ -40,7 +40,7 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
     EnsureTableWithHeaders wb, SHEET_INVENTORY_LOG, TABLE_INVENTORY_LOG, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
               "WarehouseId", "StationId", "UserId", "MigrationSourceId", "System_Key", "SKU", "QtyDelta", _
-              "Location", "Condition", "AttributesJson", "Note"), issues
+              "Location", "Condition", "InventoryState", "AttributesJson", "Note"), issues
 
     EnsureTableWithHeaders wb, SHEET_APPLIED_EVENTS, TABLE_APPLIED_EVENTS, _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
@@ -63,7 +63,7 @@ Public Function EnsureInventorySchema(Optional ByVal targetWb As Workbook = Noth
               "TotalAppliedEvents", "DistinctSkuCount", "DistinctLocationCount", "ProjectionRebuiltAtUTC", "Notes"), issues
 
     EnsureTableWithHeaders wb, SHEET_SKU_CATALOG, TABLE_SKU_CATALOG, _
-        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", "CATALOG_STATE"), issues
 
     RemoveProhibitedRowHeaders wb, issues
 

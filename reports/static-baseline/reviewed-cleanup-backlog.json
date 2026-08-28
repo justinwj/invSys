@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "0237ed624c1c23b336dc66c0ab0ebd393f231e23a7b10adf94f88864052f174a",
-                          "maintenanceCandidatesSha256":  "39e5dab5a1a222b173950bdc63349702385bb8fd4b2eda4d892aa7708a83f7a2"
+                          "implementationManifestSha256":  "9929bec69f0bc5f6c9bd5c2b91981d4ad0223cd96cc3a0bbfbeb11557143f5dd",
+                          "maintenanceCandidatesSha256":  "1ecbde67df0d84ca7e49f8fdf5bae33365265a3033f53fd4d6dc3432e5aacdc0"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1041,
-                    "reviewedCandidateCount":  1043,
+                    "scannerCandidateCount":  1043,
+                    "reviewedCandidateCount":  1045,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -47,12 +47,12 @@
                         },
                         {
                             "name":  "DOMAINS",
-                            "candidateCount":  66,
+                            "candidateCount":  67,
                             "reason":  "Inventory and Designs Domain authority source."
                         },
                         {
                             "name":  "ADMIN",
-                            "candidateCount":  223,
+                            "candidateCount":  224,
                             "reason":  "Administrative setup, lifecycle, and developer-support source."
                         },
                         {
@@ -77,7 +77,7 @@
                                                   "sourcePath":  "src/Admin/Forms/frmAddInventoryItem.frm",
                                                   "componentName":  "frmAddInventoryItem",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1458,
+                                                  "baselineLineCount":  1561,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -98,7 +98,7 @@
                                                   "sourcePath":  "src/Admin/Modules/modAdmin.bas",
                                                   "componentName":  "modAdmin",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  2253,
+                                                  "baselineLineCount":  2482,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -147,7 +147,7 @@
                                                   "sourcePath":  "src/Core/Modules/modOperatorReadModel.bas",
                                                   "componentName":  "modOperatorReadModel",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1909,
+                                                  "baselineLineCount":  1919,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -203,7 +203,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2429,
+                                                  "baselineLineCount":  2629,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -997,6 +997,8 @@
                                                   "CommitSelectedEditItemFromCombo",
                                                   "Configure",
                                                   "CustomFields",
+                                                  "DeleteReason",
+                                                  "DeleteRequested",
                                                   "DescriptionValue",
                                                   "EditMode",
                                                   "EditReason",
@@ -1024,6 +1026,7 @@
                                                   "mBtnAddMode_Click",
                                                   "mBtnCancel_Click",
                                                   "mBtnCreateInventoryTable_Click",
+                                                  "mBtnDeleteItem_Click",
                                                   "mBtnEditMode_Click",
                                                   "mBtnOK_Click",
                                                   "mBtnRemoveField_Click",
@@ -1052,6 +1055,7 @@
                                                   "StartingQty",
                                                   "TestAddItemVisibilityDropdownContract",
                                                   "TestEditItemComboSelectionContract",
+                                                  "TestInventoryDeleteActionContract",
                                                   "TestInventoryWorksheetActionContract",
                                                   "TestSetQuantityMode",
                                                   "Uom",
@@ -1309,6 +1313,7 @@
                                                   "BuildAdminDemoInventoryFallbackPayload",
                                                   "BuildAdminDemoInventoryPayload",
                                                   "BuildAdminDemoInventoryPayloadFromCsv",
+                                                  "BuildInventoryRetirementPayloadItemAdmin",
                                                   "CatalogCellAdmin",
                                                   "CatalogItemTextAdmin",
                                                   "ColumnIndexAdminLocal",
@@ -1327,6 +1332,7 @@
                                                   "GenerateInventorySkuAdmin",
                                                   "GetLastDemoInventoryCallbackResultForAutomation",
                                                   "InventoryAddVisibilityDropdownContractForAutomation",
+                                                  "InventoryDeleteContractForAutomation",
                                                   "InventoryEditSelectionContractForAutomation",
                                                   "InventoryItemCatalogContainsForWorksheet",
                                                   "InventorySkuHasManagedEntityAdmin",
@@ -1334,6 +1340,7 @@
                                                   "IsNonCountedCustomFieldsAdmin",
                                                   "LoadCatalogItemsIntoAddInventoryForm",
                                                   "LoadInventoryCatalogItemsAdmin",
+                                                  "MarkInventoryCatalogRetiredAdmin",
                                                   "NextInventoryRowForWorksheet",
                                                   "NextInventoryRowSuggestionAdmin",
                                                   "NonCountedItemKindAdmin",
@@ -1359,6 +1366,7 @@
                                                   "ResolveQtyOnHandFromBalanceAdmin",
                                                   "ResolveQtyOnHandFromEntitiesAdmin",
                                                   "ResolveSeedInventoryContext",
+                                                  "RetireInventoryItemForWarehouse",
                                                   "RunDemoInventoryActionCallbackForAutomation",
                                                   "SanitizeSeedCallbackErrorText",
                                                   "Scheduler_RunHQAggregation",
@@ -2604,6 +2612,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Admin_Forms_frmAddInventoryItem.frm:frmAddInventoryItem.mBtnDeleteItem_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "ADMIN",
+                           "componentName":  "frmAddInventoryItem",
+                           "procedureNames":  [
+                                                  "mBtnDeleteItem_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Admin/Forms/frmAddInventoryItem.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -14254,6 +14285,7 @@
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
                                                   "BuildDispositionLines",
+                                                  "BuildInventoryRetirementAutomationEventApply",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -14286,6 +14318,7 @@
                                                   "HideWorkbookWindowsApply",
                                                   "InferWarehouseIdFromWorkbookNameApply",
                                                   "InventoryLogEventExistsApply",
+                                                  "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
@@ -14303,6 +14336,7 @@
                                                   "ParsePayloadJsonArray",
                                                   "ParsePayloadJsonObject",
                                                   "PayloadLineIsNonCountedApply",
+                                                  "PayloadLineIsRetirementApply",
                                                   "PayloadSkuIsNonCountedApply",
                                                   "RebuildInventoryProjections",
                                                   "RebuildInventoryProjectionsForWorkbook",
@@ -14340,6 +14374,7 @@
                                                   "TryGetEventValue",
                                                   "ValidateAdminShipmentReconcileLine",
                                                   "ValidateEventDoesNotCreateNegativeInventory",
+                                                  "ValidateRetirementPayloadLineApply",
                                                   "ValidateSkuExists",
                                                   "ValuesDifferNumericApply",
                                                   "ValuesDifferTextApply",
@@ -14699,6 +14734,29 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.InventoryRetirementContractForAutomation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "DOMAINS",
+                           "componentName":  "modInventoryApply",
+                           "procedureNames":  [
+                                                  "InventoryRetirementContractForAutomation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/InventoryDomain/Modules/modInventoryApply.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_InventoryDomain_Modules_modInventoryApply.bas:modInventoryApply.RefreshInvSysFromCanonicalRuntime",
