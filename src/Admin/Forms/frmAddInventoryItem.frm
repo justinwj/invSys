@@ -275,6 +275,8 @@ Public Function TestAddItemVisibilityDropdownContract() As String
     Dim locationDropdown As Boolean
     Dim categoryDropdown As Boolean
     Dim submitHandler As Boolean
+    Dim zeroQtyAccepted As Boolean
+    Dim negativeRejected As Boolean
     Dim testStage As String
 
     testStage = "Configure"
@@ -295,16 +297,26 @@ Public Function TestAddItemVisibilityDropdownContract() As String
     testStage = "SubmitHandler"
     mTxtItemName.Value = "Honey"
     mCmbUom.Value = "LB"
-    mTxtQty.Value = "25"
+    mTxtQty.Value = "0"
     mCmbLocation.Value = "CLEARVIEW"
     mCmbCategory.Value = "RAW"
     mBtnOK_Click
     submitHandler = (mAccepted And ItemName = "Honey" And _
         LocationValue = "CLEARVIEW" And Category = "RAW")
+    zeroQtyAccepted = (submitHandler And StartingQty = 0)
+
+    testStage = "NegativeValidation"
+    mAccepted = False
+    mTxtQty.Value = "-1"
+    mBtnOK_Click
+    negativeRejected = (Not mAccepted And _
+        InStr(1, mLblStatus.Caption, "cannot be negative", vbTextCompare) > 0)
 
     TestAddItemVisibilityDropdownContract = IIf(locationDropdown And categoryDropdown And _
-        submitHandler, "OK", "FAIL") & _
+        submitHandler And zeroQtyAccepted And negativeRejected, "OK", "FAIL") & _
         "|SubmitHandler=" & CStr(submitHandler) & _
+        "|ZeroQtyAccepted=" & CStr(zeroQtyAccepted) & _
+        "|NegativeRejected=" & CStr(negativeRejected) & _
         "|LocationDropdown=" & CStr(locationDropdown) & _
         "|CategoryDropdown=" & CStr(categoryDropdown)
     Exit Function
@@ -1480,8 +1492,8 @@ Private Function ValidateForm() As Boolean
             mLblStatus.Caption = "Starting quantity must be numeric or a mode like Utility."
             Exit Function
         End If
-        If StartingQty <= 0 Then
-            mLblStatus.Caption = "Starting quantity must be greater than zero."
+        If StartingQty < 0 Then
+            mLblStatus.Caption = "Starting quantity cannot be negative."
             Exit Function
         End If
     ElseIf Trim$(CStr(mTxtQty.Value)) <> "" And Not NonCountedItem Then

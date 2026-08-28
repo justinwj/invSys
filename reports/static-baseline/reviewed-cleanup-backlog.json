@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "56dd8f8a52ce6d171d3ae3832e79616e33743541cc96b3e1d0f286e8f7e502e9",
-                          "maintenanceCandidatesSha256":  "771300ddd8fe095ec44f9e24d27e6c7c13591d5818c359e100ade7d4498db3e4"
+                          "implementationManifestSha256":  "d5123ad81ae86b85e68f4ad1432251c8f236e8a2af0affc1c815a27d73879dc5",
+                          "maintenanceCandidatesSha256":  "b24ed202a35e6751d1136c758e532ea0ab6234ef240990f86e23628415b3dd52"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -77,7 +77,7 @@
                                                   "sourcePath":  "src/Admin/Forms/frmAddInventoryItem.frm",
                                                   "componentName":  "frmAddInventoryItem",
                                                   "packageKey":  "Admin",
-                                                  "baselineLineCount":  1561,
+                                                  "baselineLineCount":  1573,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -203,7 +203,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2629,
+                                                  "baselineLineCount":  2739,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -2680,7 +2680,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -13224,7 +13225,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -13340,7 +13342,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -14282,11 +14285,13 @@
                                                   "ApplyEvent",
                                                   "ApplyLatestMovementToInvSysApply",
                                                   "ApplyReceiveEvent",
+                                                  "AutomationAvailableRowsContainKeyApply",
                                                   "BuildApplyLines",
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
                                                   "BuildDispositionLines",
                                                   "BuildInventoryRetirementAutomationEventApply",
+                                                  "BuildInventoryZeroCreateAutomationEventApply",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -14321,6 +14326,7 @@
                                                   "InventoryLogEventExistsApply",
                                                   "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
+                                                  "InventoryZeroCreateContractForAutomation",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
                                                   "IsWorkbookFileLockedApply",

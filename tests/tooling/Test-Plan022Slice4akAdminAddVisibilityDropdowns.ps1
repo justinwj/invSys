@@ -51,10 +51,11 @@ $checks["ViewerAndProductionUseManagedProjection"] =
     $queries.Contains('Set loEntities = FindInventoryQueryTable(wb, "tblInventoryEntities")') -and
     $queries.Contains('If systemKey = "" Or sku = "" Then GoTo NextEntity') -and
     $queries.Contains('InventoryQueryCatalogIsNonCounted') -and
-    $apply.Contains('eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 And PayloadLineIsNonCountedApply') -and
+    $apply.Contains('eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 Then GoTo QtyAccepted') -and
     $productionRun.Contains('ExactEntityIsNonCounted') -and
     $viewer.Contains('Set snapshotTable = ViewerFindTable(snapshotWb, SNAPSHOT_TABLE)') -and
-    $viewer.Contains('If CDbl(quantities(key)) > 0 Then visibleCount = visibleCount + 1')
+    $viewer.Contains('If inventoryState = "RETIRED" Then GoTo ContinueRow') -and
+    $viewer.Contains('If CDbl(quantities(key)) >= 0 Then visibleCount = visibleCount + 1')
 $checks["Packaged.AdminAddEvidence"] =
     $admin.Contains("InventoryAddVisibilityDropdownContractForAutomation") -and
     $validator.Contains("Admin.InventoryAddVisibilityDropdowns") -and

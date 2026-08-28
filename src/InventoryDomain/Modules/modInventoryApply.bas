@@ -591,7 +591,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         Else
             If qty <= 0 Then
                 If eventType = EVENT_TYPE_MIGRATION_SEED And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
-                If eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
+                If eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 Then GoTo QtyAccepted
                 errorCode = "INVALID_QTY"
                 errorMessage = "Payload Qty must be greater than zero."
                 Set BuildPayloadLines = Nothing
@@ -668,6 +668,116 @@ QtyAccepted:
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
+End Function
+
+Public Function InventoryZeroCreateContractForAutomation() As String
+    Dim wb As Workbook
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim loEntities As ListObject
+    Dim rowIndex As Long
+    Dim zeroEntityActive As Boolean
+    Dim zeroVisible As Boolean
+    Dim negativeRejected As Boolean
+    Dim availableRows As Variant
+
+    On Error GoTo Failed
+    Set wb = Application.Workbooks.Add
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then Err.Raise 5, , report
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-ZERO-CREATE", "SKU-ZERO-CREATE", 0, "CLEARVIEW", "GOOD", "", _
+        "zero starting quantity contract")
+    item("ITEM_CODE") = "SKU-ZERO-CREATE"
+    item("ITEM") = "Zero Starting Item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-ZERO-CREATE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    If Not ApplyEvent(evt, wb, "RUN-ZERO-CREATE", statusOut, errorCode, errorMessage) Then _
+        Err.Raise 5, , errorCode & "|" & errorMessage
+
+    Set loEntities = FindListObjectByNameApply(wb, "tblInventoryEntities")
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, "System_Key")) = _
+                "SYS-ZERO-CREATE" Then
+            zeroEntityActive = (SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, _
+                "InventoryState")) = "ACTIVE" And _
+                Abs(NzDblApply(GetCellByColumnApply(loEntities, rowIndex, "QtyOnHand"))) < 0.0000001)
+            Exit For
+        End If
+    Next rowIndex
+    availableRows = modInventoryQueries.ListInventoryPickerItems("", wb)
+    zeroVisible = AutomationAvailableRowsContainKeyApply(availableRows, "SYS-ZERO-CREATE")
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-NEGATIVE-CREATE", "SKU-NEGATIVE-CREATE", -1, "CLEARVIEW", "GOOD", "", _
+        "negative starting quantity contract")
+    item("ITEM_CODE") = "SKU-NEGATIVE-CREATE"
+    item("ITEM") = "Negative Starting Item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-NEGATIVE-CREATE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    negativeRejected = (Not ApplyEvent(evt, wb, "RUN-NEGATIVE-CREATE", _
+        statusOut, errorCode, errorMessage) And errorCode = "INVALID_QTY")
+
+    InventoryZeroCreateContractForAutomation = IIf(zeroEntityActive And zeroVisible And _
+        negativeRejected, "OK", "FAIL") & _
+        "|ZeroEntityActive=" & CStr(zeroEntityActive) & _
+        "|ZeroVisible=" & CStr(zeroVisible) & _
+        "|NegativeRejected=" & CStr(negativeRejected)
+
+CleanExit:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    InventoryZeroCreateContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function BuildInventoryZeroCreateAutomationEventApply(ByVal eventId As String, _
+                                                               ByVal payloadJson As String) As Object
+    Dim evt As Object
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = EVENT_TYPE_INVENTORY_CREATE
+    evt("WarehouseId") = "WH-ZERO-CONTRACT"
+    evt("StationId") = "S1"
+    evt("UserId") = "admin"
+    evt("CreatedAtUTC") = Now
+    evt("PayloadJson") = payloadJson
+    evt("SourceInbox") = "zero-create-contract"
+    evt("Note") = "zero starting quantity contract"
+    Set BuildInventoryZeroCreateAutomationEventApply = evt
+End Function
+
+Private Function AutomationAvailableRowsContainKeyApply(ByVal rows As Variant, _
+                                                        ByVal systemKey As String) As Boolean
+    Dim rowIndex As Long
+    On Error GoTo NotFound
+    If Not IsArray(rows) Then Exit Function
+    For rowIndex = LBound(rows, 1) To UBound(rows, 1)
+        If StrComp(SafeTrimApply(rows(rowIndex, 1)), systemKey, vbTextCompare) = 0 Then
+            AutomationAvailableRowsContainKeyApply = True
+            Exit Function
+        End If
+    Next rowIndex
+NotFound:
 End Function
 
 Public Function InventoryRetirementContractForAutomation() As String
@@ -2472,7 +2582,7 @@ Private Sub RewriteEntityProjectionTable(ByVal lo As ListObject, ByVal entities 
         If entity.Exists("Condition") Then SetTableRowValue lo, r.Index, "Condition", CStr(entity("Condition"))
         SetTableRowValue lo, r.Index, "InventoryState", _
             IIf(entity.Exists("Retired") And CBool(entity("Retired")), "RETIRED", _
-                IIf(qtyOnHand > 0 Or (entity.Exists("NonCounted") And CBool(entity("NonCounted"))), _
+                IIf(qtyOnHand >= 0 Or (entity.Exists("NonCounted") And CBool(entity("NonCounted"))), _
                     "ACTIVE", "DEPLETED"))
         If entity.Exists("AttributesJson") Then SetTableRowValue lo, r.Index, "AttributesJson", CStr(entity("AttributesJson"))
         If entity.Exists("LastAppliedUTC") Then SetTableRowValue lo, r.Index, "LastAppliedUTC", entity("LastAppliedUTC")

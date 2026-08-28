@@ -30,7 +30,7 @@
 
 | Source | Package | Baseline lines |
 |---|---|---:|
-| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1561 |
+| src/Admin/Forms/frmAddInventoryItem.frm | Admin | 1573 |
 | src/Admin/Forms/frmCreateDeleteUser.frm | Admin | 1388 |
 | src/Admin/Forms/frmRetireMigrateWarehouse.frm | Admin | 1644 |
 | src/Admin/Modules/modAdmin.bas | Admin | 2482 |
@@ -48,7 +48,7 @@
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2629 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2739 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
 | src/Production/Forms/frmProduction.frm | Production | 8763 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1291 |

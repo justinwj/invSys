@@ -319,7 +319,7 @@ Public Function PopulateInventoryWorksheetContractRowsForTest(ByVal wb As Workbo
 
     Set lo = FindInventoryTableByName(wb, tableName)
     If lo Is Nothing Then Exit Function
-    WriteContractTestRow lo, 1, "ADD", "", "Bulk Flour", "LB", "COUNTED", 25, "CLEARVIEW", "", ""
+    WriteContractTestRow lo, 1, "ADD", "", "Bulk Flour", "LB", "COUNTED", 0, "CLEARVIEW", "", ""
     WriteContractTestRow lo, 2, "ADD", "", "Piped Water", "LB", "UTILITY", "", "CLEARVIEW", "", ""
     WriteContractTestRow lo, 3, "EDIT", "EXISTING-SKU", "Existing Item", "EA", "COUNTED", 10, "CLEARVIEW", "", "bulk edit"
     PopulateInventoryWorksheetContractRowsForTest = True
@@ -356,6 +356,7 @@ Public Function InventoryWorksheetEvidenceForTest(ByVal lo As ListObject) As Str
     Dim exactEdit As Boolean
     Dim generatedCode As Boolean
     Dim statusesReady As Boolean
+    Dim zeroCounted As Boolean
 
     If lo Is Nothing Then
         InventoryWorksheetEvidenceForTest = "TableCreated=False"
@@ -368,12 +369,15 @@ Public Function InventoryWorksheetEvidenceForTest(ByVal lo As ListObject) As Str
                          "ITEM_KIND=UTILITY", vbTextCompare) > 0
     exactEdit = InventoryWorksheetText(lo, 3, HDR_ITEM_CODE) = "EXISTING-SKU" And _
                 UCase$(InventoryWorksheetText(lo, 3, HDR_STATUS)) = "IMPORTED"
+    zeroCounted = (UCase$(InventoryWorksheetText(lo, 1, HDR_STATUS)) = "IMPORTED" And _
+                   Val(InventoryWorksheetText(lo, 1, HDR_QUANTITY)) = 0)
     statusesReady = UCase$(InventoryWorksheetText(lo, 1, HDR_STATUS)) = "IMPORTED" And _
                     UCase$(InventoryWorksheetText(lo, 2, HDR_STATUS)) = "IMPORTED" And exactEdit
     preflightPassed = generatedCode And statusesReady
     InventoryWorksheetEvidenceForTest = _
         "TableCreated=" & CStr(tableCreated) & _
         "|Preflight=" & CStr(preflightPassed) & _
+        "|ZeroCounted=" & CStr(zeroCounted) & _
         "|Utility=" & CStr(utilityReady) & _
         "|ExactEdit=" & CStr(exactEdit) & _
         "|GeneratedCode=" & CStr(generatedCode) & _
@@ -433,8 +437,8 @@ Private Function ValidateInventoryWorksheetRow(ByVal lo As ListObject, _
         hasQty = True
     End If
     If qtyMode = "COUNTED" Then
-        If actionName = "ADD" And (Not hasQty Or qty <= 0) Then
-            rowError = "COUNTED ADD requires a positive Quantity."
+        If actionName = "ADD" And (Not hasQty Or qty < 0) Then
+            rowError = "COUNTED ADD requires an explicit nonnegative Quantity."
             Exit Function
         End If
         If actionName = "EDIT" And hasQty And qty < 0 Then

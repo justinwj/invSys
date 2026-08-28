@@ -1626,7 +1626,7 @@ Private Function LoadProcessManagedInventoryItems() As Variant
     Dim c As Long
     Dim outRow As Long
 
-    sourceRows = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    sourceRows = modInventoryDomainBridge.ListInventoryPickerItemsBridge("")
     If IsEmpty(sourceRows) Then Exit Function
     If Not IsArray(sourceRows) Then Exit Function
 
@@ -1635,8 +1635,8 @@ Private Function LoadProcessManagedInventoryItems() As Variant
     ReDim result(1 To UBound(sourceRows, 1), 1 To 8)
     For r = LBound(sourceRows, 1) To UBound(sourceRows, 1)
         systemKey = Trim$(NzStr(sourceRows(r, 1)))
-        itemCode = Trim$(NzStr(sourceRows(r, 2)))
-        itemName = Trim$(NzStr(sourceRows(r, 4)))
+        itemCode = Trim$(NzStr(sourceRows(r, 7)))
+        itemName = Trim$(NzStr(sourceRows(r, 2)))
         If systemKey = "" Or itemName = "" Then GoTo NextProcessItem
 
         alternativeKey = itemCode & vbNullChar & itemName
@@ -1647,8 +1647,8 @@ Private Function LoadProcessManagedInventoryItems() As Variant
         result(outRow, 1) = systemKey
         result(outRow, 2) = itemCode
         result(outRow, 3) = itemName
-        result(outRow, 4) = NzStr(sourceRows(r, 5))
-        result(outRow, 5) = NzStr(sourceRows(r, 7))
+        result(outRow, 4) = NzStr(sourceRows(r, 3))
+        result(outRow, 5) = NzStr(sourceRows(r, 5))
         result(outRow, 6) = ""
         result(outRow, 7) = ""
         result(outRow, 8) = ""

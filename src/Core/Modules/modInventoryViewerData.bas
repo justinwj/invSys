@@ -18,6 +18,7 @@ Public Function LoadCurrentInventoryViewerData() As String
     Dim uom As String
     Dim locationValue As String
     Dim conditionValue As String
+    Dim inventoryState As String
     Dim groupKey As String
     Dim qty As Double
     Dim key As Variant
@@ -66,6 +67,8 @@ Public Function LoadCurrentInventoryViewerData() As String
             uom = ViewerCellText(snapshotTable, rowIndex, "UOM")
             locationValue = ViewerCellText(snapshotTable, rowIndex, "LOCATION")
             conditionValue = UCase$(ViewerCellText(snapshotTable, rowIndex, "Condition"))
+            inventoryState = UCase$(ViewerCellText(snapshotTable, rowIndex, "InventoryState"))
+            If inventoryState = "RETIRED" Then GoTo ContinueRow
             qty = ViewerCellNumber(snapshotTable, rowIndex, "QtyAvailable")
             groupKey = itemCode & Chr$(30) & itemName & Chr$(30) & uom & _
                 Chr$(30) & locationValue & Chr$(30) & conditionValue
@@ -80,12 +83,12 @@ ContinueRow:
     End If
 
     For Each key In quantities.Keys
-        If CDbl(quantities(key)) > 0 Then visibleCount = visibleCount + 1
+        If CDbl(quantities(key)) >= 0 Then visibleCount = visibleCount + 1
     Next key
     resultText = "OK" & vbTab & ViewerEscape(warehouseId) & vbTab & _
         Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbTab & CStr(visibleCount)
     For Each key In quantities.Keys
-        If CDbl(quantities(key)) <= 0 Then GoTo ContinueDisplayGroup
+        If CDbl(quantities(key)) < 0 Then GoTo ContinueDisplayGroup
         fields = displayRows(key)
         resultText = resultText & vbCrLf & _
             ViewerEscape(CStr(fields(0))) & vbTab & _

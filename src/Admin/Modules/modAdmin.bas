@@ -721,8 +721,8 @@ Public Function AddInventoryItemForWarehouse(ByVal warehouseId As String, _
     nonCounted = IsNonCountedCustomFieldsAdmin(customFields)
     If nonCounted Then
         qty = 0#
-    ElseIf qty <= 0 Then
-        report = "Starting quantity must be greater than zero."
+    ElseIf qty < 0 Then
+        report = "Starting quantity cannot be negative."
         Exit Function
     End If
 

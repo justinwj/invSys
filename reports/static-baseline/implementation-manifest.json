@@ -246,7 +246,7 @@
                            "name":  "frmAddInventoryItem",
                            "kind":  "FORM",
                            "sourcePath":  "src/Admin/Forms/frmAddInventoryItem.frm",
-                           "lineCount":  1561,
+                           "lineCount":  1573,
                            "procedureNames":  [
                                                   "Accepted",
                                                   "AddButton",
@@ -1150,7 +1150,7 @@
                            "name":  "modAdminInventoryWorksheet",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Admin/Modules/modAdminInventoryWorksheet.bas",
-                           "lineCount":  778,
+                           "lineCount":  782,
                            "procedureNames":  [
                                                   "AppendInventoryWorksheetCustomFields",
                                                   "ApplyInventoryWorksheetRecord",
@@ -2337,7 +2337,7 @@
                            "name":  "modInventoryViewerData",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Core/Modules/modInventoryViewerData.bas",
-                           "lineCount":  306,
+                           "lineCount":  309,
                            "procedureNames":  [
                                                   "LoadCurrentInventoryEventViewerData",
                                                   "LoadCurrentInventoryViewerData",
@@ -3923,7 +3923,7 @@
                            "name":  "modInventoryApply",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
-                           "lineCount":  2629,
+                           "lineCount":  2739,
                            "procedureNames":  [
                                                   "AccumulateProjectionScalars",
                                                   "AppliedEventExists",
@@ -3932,11 +3932,13 @@
                                                   "ApplyEvent",
                                                   "ApplyLatestMovementToInvSysApply",
                                                   "ApplyReceiveEvent",
+                                                  "AutomationAvailableRowsContainKeyApply",
                                                   "BuildApplyLines",
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
                                                   "BuildDispositionLines",
                                                   "BuildInventoryRetirementAutomationEventApply",
+                                                  "BuildInventoryZeroCreateAutomationEventApply",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -3971,6 +3973,7 @@
                                                   "InventoryLogEventExistsApply",
                                                   "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
+                                                  "InventoryZeroCreateContractForAutomation",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
                                                   "IsWorkbookFileLockedApply",
@@ -4159,7 +4162,7 @@
                            "name":  "modInventoryQueries",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/InventoryDomain/Modules/modInventoryQueries.bas",
-                           "lineCount":  367,
+                           "lineCount":  406,
                            "procedureNames":  [
                                                   "AddInventoryPickerResultRow",
                                                   "FindInventoryQueryRow",
@@ -4174,7 +4177,8 @@
                                                   "ListAvailableInventoryEntities",
                                                   "ListInventoryPickerItems",
                                                   "NzInventoryQueryNumber",
-                                                  "ReadInventoryQueryValue"
+                                                  "ReadInventoryQueryValue",
+                                                  "ResolveInventoryQueryRepresentativeSystemKey"
                                               ],
                            "metadata":  {
 
@@ -7575,8 +7579,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  272,
-                           "endLine":  315,
-                           "lineCount":  44,
+                           "endLine":  327,
+                           "lineCount":  56,
                            "directCalls":  [
                                                "AddCatalogItem",
                                                "Category",
@@ -7584,7 +7588,8 @@
                                                "Configure",
                                                "ItemName",
                                                "LocationValue",
-                                               "mBtnOK_Click"
+                                               "mBtnOK_Click",
+                                               "StartingQty"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -7601,8 +7606,8 @@
                            "name":  "TestInventoryDeleteActionContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  317,
-                           "endLine":  357,
+                           "startLine":  329,
+                           "endLine":  369,
                            "lineCount":  41,
                            "directCalls":  [
                                                "AddCatalogItem",
@@ -7626,8 +7631,8 @@
                            "name":  "TestInventoryWorksheetActionContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  359,
-                           "endLine":  408,
+                           "startLine":  371,
+                           "endLine":  420,
                            "lineCount":  50,
                            "directCalls":  [
                                                "BeginInventoryWorksheetAutomation",
@@ -7656,8 +7661,8 @@
                            "name":  "SetOperatorWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  410,
-                           "endLine":  416,
+                           "startLine":  422,
+                           "endLine":  428,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -7677,8 +7682,8 @@
                            "name":  "Configure",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  418,
-                           "endLine":  479,
+                           "startLine":  430,
+                           "endLine":  491,
                            "lineCount":  62,
                            "directCalls":  [
                                                "ApplyModeLayout",
@@ -7708,8 +7713,8 @@
                            "name":  "SafeFormText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  481,
-                           "endLine":  486,
+                           "startLine":  493,
+                           "endLine":  498,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -7729,8 +7734,8 @@
                            "name":  "AddCatalogItem",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  488,
-                           "endLine":  539,
+                           "startLine":  500,
+                           "endLine":  551,
                            "lineCount":  52,
                            "directCalls":  [
                                                "Add",
@@ -7760,8 +7765,8 @@
                            "name":  "UserForm_Initialize",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  541,
-                           "endLine":  543,
+                           "startLine":  553,
+                           "endLine":  555,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -7796,8 +7801,8 @@
                            "name":  "UserForm_Activate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  545,
-                           "endLine":  553,
+                           "startLine":  557,
+                           "endLine":  565,
                            "lineCount":  9,
                            "directCalls":  [
                                                "EnableResizableUserForm",
@@ -7835,8 +7840,8 @@
                            "name":  "UserForm_Layout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  555,
-                           "endLine":  558,
+                           "startLine":  567,
+                           "endLine":  570,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ResizeControls"
@@ -7864,8 +7869,8 @@
                            "name":  "UserForm_QueryClose",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  560,
-                           "endLine":  566,
+                           "startLine":  572,
+                           "endLine":  578,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -7888,8 +7893,8 @@
                            "name":  "UserForm_Terminate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  568,
-                           "endLine":  571,
+                           "startLine":  580,
+                           "endLine":  583,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -7919,8 +7924,8 @@
                            "name":  "EnsureControls",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  573,
-                           "endLine":  656,
+                           "startLine":  585,
+                           "endLine":  668,
                            "lineCount":  84,
                            "directCalls":  [
                                                "AddButton",
@@ -7948,8 +7953,8 @@
                            "name":  "InitializeAddInventoryAnchors",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  658,
-                           "endLine":  682,
+                           "startLine":  670,
+                           "endLine":  694,
                            "lineCount":  25,
                            "directCalls":  [
                                                "Add",
@@ -7971,8 +7976,8 @@
                            "name":  "LoadUomOptions",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  684,
-                           "endLine":  707,
+                           "startLine":  696,
+                           "endLine":  719,
                            "lineCount":  24,
                            "directCalls":  [
                                                "AddUomOption",
@@ -7993,8 +7998,8 @@
                            "name":  "AddUomOption",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  709,
-                           "endLine":  715,
+                           "startLine":  721,
+                           "endLine":  727,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -8014,8 +8019,8 @@
                            "name":  "LoadEditItemOptions",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  717,
-                           "endLine":  754,
+                           "startLine":  729,
+                           "endLine":  766,
                            "lineCount":  38,
                            "directCalls":  [
                                                "AdminAnyTextMatchesSearch",
@@ -8041,8 +8046,8 @@
                            "name":  "LoadInventoryDimensionOptions",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  756,
-                           "endLine":  782,
+                           "startLine":  768,
+                           "endLine":  794,
                            "lineCount":  27,
                            "directCalls":  [
                                                "AddDimensionOption",
@@ -8063,8 +8068,8 @@
                            "name":  "AddDimensionOption",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  784,
-                           "endLine":  792,
+                           "startLine":  796,
+                           "endLine":  804,
                            "lineCount":  9,
                            "directCalls":  [
                                                "Add"
@@ -8084,8 +8089,8 @@
                            "name":  "ComboContainsValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  794,
-                           "endLine":  805,
+                           "startLine":  806,
+                           "endLine":  817,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -8105,8 +8110,8 @@
                            "name":  "ShowEditItemSearchResults",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  807,
-                           "endLine":  829,
+                           "startLine":  819,
+                           "endLine":  841,
                            "lineCount":  23,
                            "directCalls":  [
                                                "AdminNormalizeSearchText",
@@ -8129,8 +8134,8 @@
                            "name":  "HideEditItemSearchResults",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  831,
-                           "endLine":  835,
+                           "startLine":  843,
+                           "endLine":  847,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -8150,8 +8155,8 @@
                            "name":  "MaxLongAdminForm",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  837,
-                           "endLine":  843,
+                           "startLine":  849,
+                           "endLine":  855,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -8171,8 +8176,8 @@
                            "name":  "MinLongAdminForm",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  845,
-                           "endLine":  851,
+                           "startLine":  857,
+                           "endLine":  863,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -8192,8 +8197,8 @@
                            "name":  "AdminNormalizeSearchText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  853,
-                           "endLine":  862,
+                           "startLine":  865,
+                           "endLine":  874,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -8213,8 +8218,8 @@
                            "name":  "AdminTextMatchesSearch",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  864,
-                           "endLine":  870,
+                           "startLine":  876,
+                           "endLine":  882,
                            "lineCount":  7,
                            "directCalls":  [
                                                "AdminNormalizeSearchText"
@@ -8234,8 +8239,8 @@
                            "name":  "AdminAnyTextMatchesSearch",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  872,
-                           "endLine":  885,
+                           "startLine":  884,
+                           "endLine":  897,
                            "lineCount":  14,
                            "directCalls":  [
                                                "AdminTextMatchesSearch"
@@ -8255,8 +8260,8 @@
                            "name":  "LoadQuantityOptions",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  887,
-                           "endLine":  894,
+                           "startLine":  899,
+                           "endLine":  906,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -8276,8 +8281,8 @@
                            "name":  "RefreshGeneratedLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  896,
-                           "endLine":  908,
+                           "startLine":  908,
+                           "endLine":  920,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -8297,8 +8302,8 @@
                            "name":  "AddLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  910,
-                           "endLine":  922,
+                           "startLine":  922,
+                           "endLine":  934,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -8316,27 +8321,6 @@
                        {
                            "componentName":  "frmAddInventoryItem",
                            "name":  "AddTextBox",
-                           "visibility":  "PRIVATE",
-                           "kind":  "FUNCTION",
-                           "startLine":  924,
-                           "endLine":  934,
-                           "lineCount":  11,
-                           "directCalls":  [
-                                               "Add"
-                                           ],
-                           "literalApplicationRunTargets":  [
-
-                                                            ],
-                           "unresolvedApplicationRunExpressions":  [
-
-                                                                   ],
-                           "rootIds":  [
-
-                                       ]
-                       },
-                       {
-                           "componentName":  "frmAddInventoryItem",
-                           "name":  "AddCombo",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  936,
@@ -8357,7 +8341,7 @@
                        },
                        {
                            "componentName":  "frmAddInventoryItem",
-                           "name":  "AddListBox",
+                           "name":  "AddCombo",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  948,
@@ -8378,11 +8362,32 @@
                        },
                        {
                            "componentName":  "frmAddInventoryItem",
-                           "name":  "AddButton",
+                           "name":  "AddListBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
                            "startLine":  960,
-                           "endLine":  972,
+                           "endLine":  970,
+                           "lineCount":  11,
+                           "directCalls":  [
+                                               "Add"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmAddInventoryItem",
+                           "name":  "AddButton",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  972,
+                           "endLine":  984,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -8402,8 +8407,8 @@
                            "name":  "mBtnAddField_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  974,
-                           "endLine":  1003,
+                           "startLine":  986,
+                           "endLine":  1015,
                            "lineCount":  30,
                            "directCalls":  [
                                                "FindCustomFieldRow",
@@ -8425,8 +8430,8 @@
                            "name":  "mBtnRemoveField_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1005,
-                           "endLine":  1007,
+                           "startLine":  1017,
+                           "endLine":  1019,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -8446,8 +8451,8 @@
                            "name":  "mBtnCreateInventoryTable_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1009,
-                           "endLine":  1034,
+                           "startLine":  1021,
+                           "endLine":  1046,
                            "lineCount":  26,
                            "directCalls":  [
                                                "CreateInventoryWorksheetTable",
@@ -8468,8 +8473,8 @@
                            "name":  "mBtnUploadInventoryTable_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1036,
-                           "endLine":  1059,
+                           "startLine":  1048,
+                           "endLine":  1071,
                            "lineCount":  24,
                            "directCalls":  [
                                                "InventoryWorksheetAutomationEnabled",
@@ -8491,8 +8496,8 @@
                            "name":  "mBtnOK_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1061,
-                           "endLine":  1070,
+                           "startLine":  1073,
+                           "endLine":  1082,
                            "lineCount":  10,
                            "directCalls":  [
                                                "PromptForEditReason",
@@ -8515,8 +8520,8 @@
                            "name":  "PromptForEditReason",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1072,
-                           "endLine":  1086,
+                           "startLine":  1084,
+                           "endLine":  1098,
                            "lineCount":  15,
                            "directCalls":  [
                                                "EditReason"
@@ -8536,8 +8541,8 @@
                            "name":  "mBtnAddMode_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1088,
-                           "endLine":  1092,
+                           "startLine":  1100,
+                           "endLine":  1104,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ApplyModeLayout"
@@ -8557,8 +8562,8 @@
                            "name":  "mBtnEditMode_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1094,
-                           "endLine":  1098,
+                           "startLine":  1106,
+                           "endLine":  1110,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ApplyModeLayout"
@@ -8578,8 +8583,8 @@
                            "name":  "mBtnDeleteItem_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1100,
-                           "endLine":  1130,
+                           "startLine":  1112,
+                           "endLine":  1142,
                            "lineCount":  31,
                            "directCalls":  [
                                                "ItemName"
@@ -8599,8 +8604,8 @@
                            "name":  "mCmbEditItem_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1132,
-                           "endLine":  1157,
+                           "startLine":  1144,
+                           "endLine":  1169,
                            "lineCount":  26,
                            "directCalls":  [
                                                "CommitSelectedEditItemFromCombo",
@@ -8622,8 +8627,8 @@
                            "name":  "mCmbEditItem_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1159,
-                           "endLine":  1164,
+                           "startLine":  1171,
+                           "endLine":  1176,
                            "lineCount":  6,
                            "directCalls":  [
                                                "CommitSelectedEditItemFromCombo",
@@ -8644,8 +8649,8 @@
                            "name":  "mCmbEditItem_AfterUpdate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1166,
-                           "endLine":  1170,
+                           "startLine":  1178,
+                           "endLine":  1182,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ShowEditItemSearchResults"
@@ -8665,8 +8670,8 @@
                            "name":  "mLstEditItemResults_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1172,
-                           "endLine":  1184,
+                           "startLine":  1184,
+                           "endLine":  1196,
                            "lineCount":  13,
                            "directCalls":  [
                                                "CommitEditItemSelection",
@@ -8687,8 +8692,8 @@
                            "name":  "CommitSelectedEditItemFromCombo",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1186,
-                           "endLine":  1195,
+                           "startLine":  1198,
+                           "endLine":  1207,
                            "lineCount":  10,
                            "directCalls":  [
                                                "CommitEditItemSelection"
@@ -8708,8 +8713,8 @@
                            "name":  "CommitEditItemSelection",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1197,
-                           "endLine":  1211,
+                           "startLine":  1209,
+                           "endLine":  1223,
                            "lineCount":  15,
                            "directCalls":  [
                                                "HideEditItemSearchResults",
@@ -8731,8 +8736,8 @@
                            "name":  "mCmbUom_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1213,
-                           "endLine":  1242,
+                           "startLine":  1225,
+                           "endLine":  1254,
                            "lineCount":  30,
                            "directCalls":  [
                                                "InsertUomBeforeAddOption"
@@ -8752,8 +8757,8 @@
                            "name":  "mTxtQty_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1244,
-                           "endLine":  1247,
+                           "startLine":  1256,
+                           "endLine":  1259,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ApplyQuantityModeState"
@@ -8773,8 +8778,8 @@
                            "name":  "mTxtImagePath_Enter",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1249,
-                           "endLine":  1255,
+                           "startLine":  1261,
+                           "endLine":  1267,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -8794,8 +8799,8 @@
                            "name":  "mTxtImagePath_Exit",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1257,
-                           "endLine":  1259,
+                           "startLine":  1269,
+                           "endLine":  1271,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ShowImagePathPlaceholder"
@@ -8815,8 +8820,8 @@
                            "name":  "ShowImagePathPlaceholder",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1261,
-                           "endLine":  1266,
+                           "startLine":  1273,
+                           "endLine":  1278,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -8836,8 +8841,8 @@
                            "name":  "SetImagePathValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1268,
-                           "endLine":  1277,
+                           "startLine":  1280,
+                           "endLine":  1289,
                            "lineCount":  10,
                            "directCalls":  [
                                                "ShowImagePathPlaceholder"
@@ -8857,8 +8862,8 @@
                            "name":  "QuantityModeText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1279,
-                           "endLine":  1282,
+                           "startLine":  1291,
+                           "endLine":  1294,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -8878,8 +8883,8 @@
                            "name":  "QuantityModeIsNonCounted",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1284,
-                           "endLine":  1289,
+                           "startLine":  1296,
+                           "endLine":  1301,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -8899,8 +8904,8 @@
                            "name":  "NonCountedItemKind",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1291,
-                           "endLine":  1300,
+                           "startLine":  1303,
+                           "endLine":  1312,
                            "lineCount":  10,
                            "directCalls":  [
                                                "QuantityModeText"
@@ -8920,8 +8925,8 @@
                            "name":  "ApplyQuantityModeState",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1302,
-                           "endLine":  1320,
+                           "startLine":  1314,
+                           "endLine":  1332,
                            "lineCount":  19,
                            "directCalls":  [
                                                "NonCountedItem",
@@ -8943,8 +8948,8 @@
                            "name":  "InsertUomBeforeAddOption",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1322,
-                           "endLine":  1335,
+                           "startLine":  1334,
+                           "endLine":  1347,
                            "lineCount":  14,
                            "directCalls":  [
 
@@ -8964,8 +8969,8 @@
                            "name":  "ApplyModeLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1337,
-                           "endLine":  1370,
+                           "startLine":  1349,
+                           "endLine":  1382,
                            "lineCount":  34,
                            "directCalls":  [
                                                "ApplyQuantityModeState",
@@ -8988,8 +8993,8 @@
                            "name":  "ClearEditableFields",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1372,
-                           "endLine":  1390,
+                           "startLine":  1384,
+                           "endLine":  1402,
                            "lineCount":  19,
                            "directCalls":  [
                                                "ApplyQuantityModeState",
@@ -9010,8 +9015,8 @@
                            "name":  "LoadSelectedEditItem",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1392,
-                           "endLine":  1398,
+                           "startLine":  1404,
+                           "endLine":  1410,
                            "lineCount":  7,
                            "directCalls":  [
                                                "LoadSelectedEditItemBySku",
@@ -9032,8 +9037,8 @@
                            "name":  "LoadSelectedEditItemBySku",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1400,
-                           "endLine":  1444,
+                           "startLine":  1412,
+                           "endLine":  1456,
                            "lineCount":  45,
                            "directCalls":  [
                                                "ApplyQuantityModeState",
@@ -9060,8 +9065,8 @@
                            "name":  "mBtnCancel_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1446,
-                           "endLine":  1451,
+                           "startLine":  1458,
+                           "endLine":  1463,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -9084,8 +9089,8 @@
                            "name":  "ValidateForm",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1453,
-                           "endLine":  1498,
+                           "startLine":  1465,
+                           "endLine":  1510,
                            "lineCount":  46,
                            "directCalls":  [
                                                "ItemName",
@@ -9108,8 +9113,8 @@
                            "name":  "CatalogItemIsNonCounted",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1500,
-                           "endLine":  1508,
+                           "startLine":  1512,
+                           "endLine":  1520,
                            "lineCount":  9,
                            "directCalls":  [
                                                "CatalogField"
@@ -9129,8 +9134,8 @@
                            "name":  "FindCatalogItemBySku",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1510,
-                           "endLine":  1520,
+                           "startLine":  1522,
+                           "endLine":  1532,
                            "lineCount":  11,
                            "directCalls":  [
                                                "CatalogField",
@@ -9151,8 +9156,8 @@
                            "name":  "CatalogField",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1522,
-                           "endLine":  1526,
+                           "startLine":  1534,
+                           "endLine":  1538,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -9172,8 +9177,8 @@
                            "name":  "FindCustomFieldRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1528,
-                           "endLine":  1538,
+                           "startLine":  1540,
+                           "endLine":  1550,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -9193,8 +9198,8 @@
                            "name":  "NormalizeCustomFieldName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1540,
-                           "endLine":  1552,
+                           "startLine":  1552,
+                           "endLine":  1564,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -9214,8 +9219,8 @@
                            "name":  "IsReservedCustomField",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1554,
-                           "endLine":  1561,
+                           "startLine":  1566,
+                           "endLine":  1573,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -23111,8 +23116,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  352,
-                           "endLine":  381,
-                           "lineCount":  30,
+                           "endLine":  385,
+                           "lineCount":  34,
                            "directCalls":  [
                                                "InventoryWorksheetText",
                                                "IsInventoryWorksheetTable"
@@ -23132,8 +23137,8 @@
                            "name":  "ValidateInventoryWorksheetRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  383,
-                           "endLine":  511,
+                           "startLine":  387,
+                           "endLine":  515,
                            "lineCount":  129,
                            "directCalls":  [
                                                "AppendInventoryWorksheetCustomFields",
@@ -23163,8 +23168,8 @@
                            "name":  "ApplyInventoryWorksheetRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  513,
-                           "endLine":  529,
+                           "startLine":  517,
+                           "endLine":  533,
                            "lineCount":  17,
                            "directCalls":  [
                                                "ApplyInventoryWorksheetRecordForWarehouse"
@@ -23184,8 +23189,8 @@
                            "name":  "InventoryCatalogContains",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  531,
-                           "endLine":  545,
+                           "startLine":  535,
+                           "endLine":  549,
                            "lineCount":  15,
                            "directCalls":  [
                                                "InventoryItemCatalogContainsForWorksheet",
@@ -23206,8 +23211,8 @@
                            "name":  "AppendInventoryWorksheetCustomFields",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  547,
-                           "endLine":  561,
+                           "startLine":  551,
+                           "endLine":  565,
                            "lineCount":  15,
                            "directCalls":  [
                                                "CustomFields",
@@ -23228,8 +23233,8 @@
                            "name":  "IsManagedInventoryWorksheetHeader",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  563,
-                           "endLine":  570,
+                           "startLine":  567,
+                           "endLine":  574,
                            "lineCount":  8,
                            "directCalls":  [
                                                "NormalizeInventoryWorksheetHeader"
@@ -23249,8 +23254,8 @@
                            "name":  "IsConfiguredInventoryWorksheetUom",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  572,
-                           "endLine":  585,
+                           "startLine":  576,
+                           "endLine":  589,
                            "lineCount":  14,
                            "directCalls":  [
                                                "GetConfiguredUomsPackedText",
@@ -23271,8 +23276,8 @@
                            "name":  "ApplyInventoryWorksheetValidation",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  587,
-                           "endLine":  600,
+                           "startLine":  591,
+                           "endLine":  604,
                            "lineCount":  14,
                            "directCalls":  [
                                                "ApplyListValidation",
@@ -23293,8 +23298,8 @@
                            "name":  "ApplyListValidation",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  602,
-                           "endLine":  618,
+                           "startLine":  606,
+                           "endLine":  622,
                            "lineCount":  17,
                            "directCalls":  [
                                                "Add"
@@ -23314,8 +23319,8 @@
                            "name":  "EnsureInventoryEditorSheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  620,
-                           "endLine":  629,
+                           "startLine":  624,
+                           "endLine":  633,
                            "lineCount":  10,
                            "directCalls":  [
                                                "Add"
@@ -23335,8 +23340,8 @@
                            "name":  "NextInventoryTableHeaderRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  631,
-                           "endLine":  643,
+                           "startLine":  635,
+                           "endLine":  647,
                            "lineCount":  13,
                            "directCalls":  [
                                                "IsInventoryWorksheetTable"
@@ -23356,8 +23361,8 @@
                            "name":  "BuildUniqueInventoryTableName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  645,
-                           "endLine":  656,
+                           "startLine":  649,
+                           "endLine":  660,
                            "lineCount":  12,
                            "directCalls":  [
                                                "FindInventoryTableByName"
@@ -23377,8 +23382,8 @@
                            "name":  "FindInventoryTableByName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  658,
-                           "endLine":  672,
+                           "startLine":  662,
+                           "endLine":  676,
                            "lineCount":  15,
                            "directCalls":  [
 
@@ -23398,8 +23403,8 @@
                            "name":  "IsInventoryWorksheetTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  674,
-                           "endLine":  678,
+                           "startLine":  678,
+                           "endLine":  682,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23419,8 +23424,8 @@
                            "name":  "InventoryWorksheetColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  680,
-                           "endLine":  692,
+                           "startLine":  684,
+                           "endLine":  696,
                            "lineCount":  13,
                            "directCalls":  [
                                                "NormalizeInventoryWorksheetHeader"
@@ -23440,8 +23445,8 @@
                            "name":  "NormalizeInventoryWorksheetHeader",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  694,
-                           "endLine":  703,
+                           "startLine":  698,
+                           "endLine":  707,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -23461,8 +23466,8 @@
                            "name":  "InventoryWorksheetText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  705,
-                           "endLine":  713,
+                           "startLine":  709,
+                           "endLine":  717,
                            "lineCount":  9,
                            "directCalls":  [
                                                "InventoryWorksheetColumnIndex"
@@ -23482,8 +23487,8 @@
                            "name":  "SetInventoryWorksheetValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  715,
-                           "endLine":  724,
+                           "startLine":  719,
+                           "endLine":  728,
                            "lineCount":  10,
                            "directCalls":  [
                                                "InventoryWorksheetColumnIndex"
@@ -23503,8 +23508,8 @@
                            "name":  "InventoryWorksheetRowHasBusinessData",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  726,
-                           "endLine":  734,
+                           "startLine":  730,
+                           "endLine":  738,
                            "lineCount":  9,
                            "directCalls":  [
                                                "InventoryWorksheetText"
@@ -23524,8 +23529,8 @@
                            "name":  "FormatInventoryWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  736,
-                           "endLine":  742,
+                           "startLine":  740,
+                           "endLine":  746,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -23545,8 +23550,8 @@
                            "name":  "SaveInventoryWorksheetWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  744,
-                           "endLine":  748,
+                           "startLine":  748,
+                           "endLine":  752,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -23566,8 +23571,8 @@
                            "name":  "IsUsableInventoryWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  750,
-                           "endLine":  756,
+                           "startLine":  754,
+                           "endLine":  760,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -23587,8 +23592,8 @@
                            "name":  "WriteContractTestRow",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  758,
-                           "endLine":  778,
+                           "startLine":  762,
+                           "endLine":  782,
                            "lineCount":  21,
                            "directCalls":  [
                                                "EditReason",
@@ -29350,7 +29355,7 @@
                            "directCalls":  [
                                                "Add",
                                                "ItemName",
-                                               "ListAvailableInventoryEntitiesBridge",
+                                               "ListInventoryPickerItemsBridge",
                                                "NzStr",
                                                "SystemKey"
                                            ],
@@ -40269,8 +40274,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  7,
-                           "endLine":  113,
-                           "lineCount":  107,
+                           "endLine":  116,
+                           "lineCount":  110,
                            "directCalls":  [
                                                "Add",
                                                "ConditionValue",
@@ -40302,8 +40307,8 @@
                            "name":  "LoadCurrentInventoryEventViewerData",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  115,
-                           "endLine":  199,
+                           "startLine":  118,
+                           "endLine":  202,
                            "lineCount":  85,
                            "directCalls":  [
                                                "EventType",
@@ -40333,8 +40338,8 @@
                            "name":  "ViewerFriendlyEventType",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  201,
-                           "endLine":  214,
+                           "startLine":  204,
+                           "endLine":  217,
                            "lineCount":  14,
                            "directCalls":  [
                                                "EventType"
@@ -40354,8 +40359,8 @@
                            "name":  "ViewerFirstNoteToken",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  216,
-                           "endLine":  222,
+                           "startLine":  219,
+                           "endLine":  225,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ViewerNoteToken"
@@ -40375,8 +40380,8 @@
                            "name":  "ViewerNoteToken",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  224,
-                           "endLine":  236,
+                           "startLine":  227,
+                           "endLine":  239,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -40396,8 +40401,8 @@
                            "name":  "ViewerFirstNonBlank",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  238,
-                           "endLine":  241,
+                           "startLine":  241,
+                           "endLine":  244,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -40417,8 +40422,8 @@
                            "name":  "ViewerWorkbookNameIsOpen",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  243,
-                           "endLine":  252,
+                           "startLine":  246,
+                           "endLine":  255,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -40438,8 +40443,8 @@
                            "name":  "ViewerFindTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  254,
-                           "endLine":  264,
+                           "startLine":  257,
+                           "endLine":  267,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -40459,8 +40464,8 @@
                            "name":  "ViewerColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  266,
-                           "endLine":  276,
+                           "startLine":  269,
+                           "endLine":  279,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -40480,8 +40485,8 @@
                            "name":  "ViewerCellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  278,
-                           "endLine":  289,
+                           "startLine":  281,
+                           "endLine":  292,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -40502,8 +40507,8 @@
                            "name":  "ViewerCellNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  291,
-                           "endLine":  298,
+                           "startLine":  294,
+                           "endLine":  301,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ViewerCellText"
@@ -40523,8 +40528,8 @@
                            "name":  "ViewerEscape",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  300,
-                           "endLine":  306,
+                           "startLine":  303,
+                           "endLine":  309,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -64902,11 +64907,86 @@
                        },
                        {
                            "componentName":  "modInventoryApply",
-                           "name":  "InventoryRetirementContractForAutomation",
+                           "name":  "InventoryZeroCreateContractForAutomation",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  673,
+                           "endLine":  750,
+                           "lineCount":  78,
+                           "directCalls":  [
+                                               "Add",
+                                               "ApplyEvent",
+                                               "AutomationAvailableRowsContainKeyApply",
+                                               "BuildInventoryZeroCreateAutomationEventApply",
+                                               "BuildPayloadJsonFromCollection",
+                                               "CreateInventoryEntityPayloadItem",
+                                               "EnsureInventorySchema",
+                                               "FindListObjectByNameApply",
+                                               "GetCellByColumnApply",
+                                               "ListInventoryPickerItems",
+                                               "NzDblApply",
+                                               "SafeTrimApply"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modInventoryApply",
+                           "name":  "BuildInventoryZeroCreateAutomationEventApply",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  752,
                            "endLine":  767,
+                           "lineCount":  16,
+                           "directCalls":  [
+                                               "EventId"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modInventoryApply",
+                           "name":  "AutomationAvailableRowsContainKeyApply",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  769,
+                           "endLine":  781,
+                           "lineCount":  13,
+                           "directCalls":  [
+                                               "SafeTrimApply",
+                                               "SystemKey"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modInventoryApply",
+                           "name":  "InventoryRetirementContractForAutomation",
+                           "visibility":  "PUBLIC",
+                           "kind":  "FUNCTION",
+                           "startLine":  783,
+                           "endLine":  877,
                            "lineCount":  95,
                            "directCalls":  [
                                                "Add",
@@ -64937,8 +65017,8 @@
                            "name":  "BuildInventoryRetirementAutomationEventApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  769,
-                           "endLine":  785,
+                           "startLine":  879,
+                           "endLine":  895,
                            "lineCount":  17,
                            "directCalls":  [
                                                "EventId",
@@ -64959,8 +65039,8 @@
                            "name":  "PayloadLineIsRetirementApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  787,
-                           "endLine":  792,
+                           "startLine":  897,
+                           "endLine":  902,
                            "lineCount":  6,
                            "directCalls":  [
                                                "GetDictionaryValue",
@@ -64981,8 +65061,8 @@
                            "name":  "ValidateRetirementPayloadLineApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  794,
-                           "endLine":  850,
+                           "startLine":  904,
+                           "endLine":  960,
                            "lineCount":  57,
                            "directCalls":  [
                                                "AttributesJson",
@@ -65010,8 +65090,8 @@
                            "name":  "PayloadSkuIsNonCountedApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  852,
-                           "endLine":  858,
+                           "startLine":  962,
+                           "endLine":  968,
                            "lineCount":  7,
                            "directCalls":  [
                                                "CatalogSkuIsNonCountedInTableApply",
@@ -65033,8 +65113,8 @@
                            "name":  "CatalogSkuIsNonCountedInTableApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  860,
-                           "endLine":  878,
+                           "startLine":  970,
+                           "endLine":  988,
                            "lineCount":  19,
                            "directCalls":  [
                                                "FindRowByColumnValueApply",
@@ -65057,8 +65137,8 @@
                            "name":  "PayloadLineIsNonCountedApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  880,
-                           "endLine":  889,
+                           "startLine":  990,
+                           "endLine":  999,
                            "lineCount":  10,
                            "directCalls":  [
                                                "GetDictionaryValue",
@@ -65079,8 +65159,8 @@
                            "name":  "ValidateEventDoesNotCreateNegativeInventory",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  891,
-                           "endLine":  933,
+                           "startLine":  1001,
+                           "endLine":  1043,
                            "lineCount":  43,
                            "directCalls":  [
                                                "Add",
@@ -65104,8 +65184,8 @@
                            "name":  "BuildCurrentSkuBalanceFromLogApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  935,
-                           "endLine":  966,
+                           "startLine":  1045,
+                           "endLine":  1076,
                            "lineCount":  32,
                            "directCalls":  [
                                                "Add",
@@ -65129,8 +65209,8 @@
                            "name":  "ValidateAdminShipmentReconcileLine",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  968,
-                           "endLine":  992,
+                           "startLine":  1078,
+                           "endLine":  1102,
                            "lineCount":  25,
                            "directCalls":  [
                                                "GetDictionaryValue",
@@ -65152,8 +65232,8 @@
                            "name":  "InventoryLogEventExistsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  994,
-                           "endLine":  1009,
+                           "startLine":  1104,
+                           "endLine":  1119,
                            "lineCount":  16,
                            "directCalls":  [
                                                "EventId",
@@ -65176,8 +65256,8 @@
                            "name":  "BuildDispositionLines",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1011,
-                           "endLine":  1081,
+                           "startLine":  1121,
+                           "endLine":  1191,
                            "lineCount":  71,
                            "directCalls":  [
                                                "Add",
@@ -65207,8 +65287,8 @@
                            "name":  "ResolveEntityStateFromLogApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1083,
-                           "endLine":  1111,
+                           "startLine":  1193,
+                           "endLine":  1221,
                            "lineCount":  29,
                            "directCalls":  [
                                                "AttributesJson",
@@ -65235,8 +65315,8 @@
                            "name":  "InventorySystemKeyExistsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1113,
-                           "endLine":  1129,
+                           "startLine":  1223,
+                           "endLine":  1239,
                            "lineCount":  17,
                            "directCalls":  [
                                                "FindListObjectByNameApply",
@@ -65259,8 +65339,8 @@
                            "name":  "ResolvePayloadSkuApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1131,
-                           "endLine":  1135,
+                           "startLine":  1241,
+                           "endLine":  1245,
                            "lineCount":  5,
                            "directCalls":  [
                                                "GetDictionaryValue",
@@ -65282,8 +65362,8 @@
                            "name":  "ResolvePayloadSkuByRowApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1137,
-                           "endLine":  1150,
+                           "startLine":  1247,
+                           "endLine":  1260,
                            "lineCount":  14,
                            "directCalls":  [
                                                "FindListObjectByNameApply",
@@ -65306,8 +65386,8 @@
                            "name":  "ResolvePayloadQtyDelta",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1152,
-                           "endLine":  1234,
+                           "startLine":  1262,
+                           "endLine":  1344,
                            "lineCount":  83,
                            "directCalls":  [
                                                "EventType",
@@ -65328,8 +65408,8 @@
                            "name":  "ComposeLineNote",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1236,
-                           "endLine":  1287,
+                           "startLine":  1346,
+                           "endLine":  1397,
                            "lineCount":  52,
                            "directCalls":  [
                                                "EventType",
@@ -65351,8 +65431,8 @@
                            "name":  "ParsePayloadJsonArray",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1289,
-                           "endLine":  1324,
+                           "startLine":  1399,
+                           "endLine":  1434,
                            "lineCount":  36,
                            "directCalls":  [
                                                "Add",
@@ -65375,8 +65455,8 @@
                            "name":  "ParsePayloadJsonObject",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1326,
-                           "endLine":  1371,
+                           "startLine":  1436,
+                           "endLine":  1481,
                            "lineCount":  46,
                            "directCalls":  [
                                                "ConsumeJsonChar",
@@ -65399,8 +65479,8 @@
                            "name":  "ParseJsonValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1373,
-                           "endLine":  1409,
+                           "startLine":  1483,
+                           "endLine":  1519,
                            "lineCount":  37,
                            "directCalls":  [
                                                "MatchJsonLiteral",
@@ -65423,8 +65503,8 @@
                            "name":  "ParseJsonString",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1411,
-                           "endLine":  1459,
+                           "startLine":  1521,
+                           "endLine":  1569,
                            "lineCount":  49,
                            "directCalls":  [
                                                "ConsumeJsonChar",
@@ -65445,8 +65525,8 @@
                            "name":  "ParseJsonNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1461,
-                           "endLine":  1479,
+                           "startLine":  1571,
+                           "endLine":  1589,
                            "lineCount":  19,
                            "directCalls":  [
 
@@ -65466,8 +65546,8 @@
                            "name":  "MatchJsonLiteral",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1481,
-                           "endLine":  1485,
+                           "startLine":  1591,
+                           "endLine":  1595,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -65487,8 +65567,8 @@
                            "name":  "SkipJsonWhitespace",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1487,
-                           "endLine":  1496,
+                           "startLine":  1597,
+                           "endLine":  1606,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -65508,8 +65588,8 @@
                            "name":  "ConsumeJsonChar",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1498,
-                           "endLine":  1504,
+                           "startLine":  1608,
+                           "endLine":  1614,
                            "lineCount":  7,
                            "directCalls":  [
                                                "SkipJsonWhitespace"
@@ -65529,8 +65609,8 @@
                            "name":  "AppliedEventExists",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1506,
-                           "endLine":  1517,
+                           "startLine":  1616,
+                           "endLine":  1627,
                            "lineCount":  12,
                            "directCalls":  [
                                                "EventId",
@@ -65552,8 +65632,8 @@
                            "name":  "ValidateSkuExists",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1519,
-                           "endLine":  1534,
+                           "startLine":  1629,
+                           "endLine":  1644,
                            "lineCount":  16,
                            "directCalls":  [
                                                "FindListObjectByNameApply",
@@ -65575,8 +65655,8 @@
                            "name":  "EnsureSkuCatalogFromPayloadLineApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1536,
-                           "endLine":  1581,
+                           "startLine":  1646,
+                           "endLine":  1691,
                            "lineCount":  46,
                            "directCalls":  [
                                                "Add",
@@ -65606,8 +65686,8 @@
                            "name":  "ApplyCustomCatalogFieldsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1583,
-                           "endLine":  1605,
+                           "startLine":  1693,
+                           "endLine":  1715,
                            "lineCount":  23,
                            "directCalls":  [
                                                "EnsureCatalogColumnApply",
@@ -65632,8 +65712,8 @@
                            "name":  "EnsureCatalogColumnApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1607,
-                           "endLine":  1613,
+                           "startLine":  1717,
+                           "endLine":  1723,
                            "lineCount":  7,
                            "directCalls":  [
                                                "Add",
@@ -65655,8 +65735,8 @@
                            "name":  "NormalizeCatalogColumnNameApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1615,
-                           "endLine":  1627,
+                           "startLine":  1725,
+                           "endLine":  1737,
                            "lineCount":  13,
                            "directCalls":  [
                                                "SafeTrimApply"
@@ -65676,8 +65756,8 @@
                            "name":  "IsReservedPayloadCatalogKeyApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1629,
-                           "endLine":  1639,
+                           "startLine":  1739,
+                           "endLine":  1749,
                            "lineCount":  11,
                            "directCalls":  [
                                                "SafeTrimApply"
@@ -65697,8 +65777,8 @@
                            "name":  "SetTableRowValueIfNonBlankApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1641,
-                           "endLine":  1646,
+                           "startLine":  1751,
+                           "endLine":  1756,
                            "lineCount":  6,
                            "directCalls":  [
                                                "EnsureCatalogColumnApply",
@@ -65720,8 +65800,8 @@
                            "name":  "ResolvePayloadTextApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1648,
-                           "endLine":  1651,
+                           "startLine":  1758,
+                           "endLine":  1761,
                            "lineCount":  4,
                            "directCalls":  [
                                                "GetDictionaryValue",
@@ -65742,8 +65822,8 @@
                            "name":  "SearchSkuInTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1653,
-                           "endLine":  1675,
+                           "startLine":  1763,
+                           "endLine":  1785,
                            "lineCount":  23,
                            "directCalls":  [
                                                "GetColumnIndexApply",
@@ -65765,8 +65845,8 @@
                            "name":  "SearchSkuByRowInTableApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1677,
-                           "endLine":  1698,
+                           "startLine":  1787,
+                           "endLine":  1808,
                            "lineCount":  22,
                            "directCalls":  [
                                                "GetColumnIndexApply",
@@ -65788,8 +65868,8 @@
                            "name":  "GetNextAppliedSeq",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1700,
-                           "endLine":  1726,
+                           "startLine":  1810,
+                           "endLine":  1836,
                            "lineCount":  27,
                            "directCalls":  [
                                                "FindListObjectByNameApply",
@@ -65810,8 +65890,8 @@
                            "name":  "NormalizeEventType",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1728,
-                           "endLine":  1735,
+                           "startLine":  1838,
+                           "endLine":  1845,
                            "lineCount":  8,
                            "directCalls":  [
                                                "EventType",
@@ -65832,8 +65912,8 @@
                            "name":  "TryGetEventDate",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1737,
-                           "endLine":  1743,
+                           "startLine":  1847,
+                           "endLine":  1853,
                            "lineCount":  7,
                            "directCalls":  [
                                                "TryGetEventValue"
@@ -65853,8 +65933,8 @@
                            "name":  "TryGetEventDouble",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1745,
-                           "endLine":  1751,
+                           "startLine":  1855,
+                           "endLine":  1861,
                            "lineCount":  7,
                            "directCalls":  [
                                                "TryGetEventValue"
@@ -65874,8 +65954,8 @@
                            "name":  "GetEventString",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1753,
-                           "endLine":  1758,
+                           "startLine":  1863,
+                           "endLine":  1868,
                            "lineCount":  6,
                            "directCalls":  [
                                                "SafeTrimApply",
@@ -65896,8 +65976,8 @@
                            "name":  "TryGetEventValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1760,
-                           "endLine":  1767,
+                           "startLine":  1870,
+                           "endLine":  1877,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -65917,8 +65997,8 @@
                            "name":  "GetDictionaryValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1769,
-                           "endLine":  1774,
+                           "startLine":  1879,
+                           "endLine":  1884,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -65938,8 +66018,8 @@
                            "name":  "TryGetDictionaryDouble",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1776,
-                           "endLine":  1783,
+                           "startLine":  1886,
+                           "endLine":  1893,
                            "lineCount":  8,
                            "directCalls":  [
                                                "GetDictionaryValue"
@@ -65959,8 +66039,8 @@
                            "name":  "SetTableRowValue",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1785,
-                           "endLine":  1790,
+                           "startLine":  1895,
+                           "endLine":  1900,
                            "lineCount":  6,
                            "directCalls":  [
                                                "GetColumnIndexApply"
@@ -65980,8 +66060,8 @@
                            "name":  "GetCellByColumnApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1792,
-                           "endLine":  1798,
+                           "startLine":  1902,
+                           "endLine":  1908,
                            "lineCount":  7,
                            "directCalls":  [
                                                "GetColumnIndexApply"
@@ -66001,8 +66081,8 @@
                            "name":  "GetColumnIndexApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1800,
-                           "endLine":  1809,
+                           "startLine":  1910,
+                           "endLine":  1919,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -66022,8 +66102,8 @@
                            "name":  "FindRowByColumnValueApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1811,
-                           "endLine":  1827,
+                           "startLine":  1921,
+                           "endLine":  1937,
                            "lineCount":  17,
                            "directCalls":  [
                                                "GetColumnIndexApply",
@@ -66044,8 +66124,8 @@
                            "name":  "FindListObjectByNameApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1829,
-                           "endLine":  1837,
+                           "startLine":  1939,
+                           "endLine":  1947,
                            "lineCount":  9,
                            "directCalls":  [
 
@@ -66065,8 +66145,8 @@
                            "name":  "WorkbookHasListObjectApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1839,
-                           "endLine":  1841,
+                           "startLine":  1949,
+                           "endLine":  1951,
                            "lineCount":  3,
                            "directCalls":  [
                                                "FindListObjectByNameApply"
@@ -66086,8 +66166,8 @@
                            "name":  "IsInventoryWorkbookName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1843,
-                           "endLine":  1849,
+                           "startLine":  1953,
+                           "endLine":  1959,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -66107,8 +66187,8 @@
                            "name":  "OpenOrCreateCanonicalInventoryWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1851,
-                           "endLine":  1895,
+                           "startLine":  1961,
+                           "endLine":  2005,
                            "lineCount":  45,
                            "directCalls":  [
                                                "Add",
@@ -66134,8 +66214,8 @@
                            "name":  "IsWorkbookFileLockedApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1897,
-                           "endLine":  1913,
+                           "startLine":  2007,
+                           "endLine":  2023,
                            "lineCount":  17,
                            "directCalls":  [
 
@@ -66155,8 +66235,8 @@
                            "name":  "BuildCanonicalInventoryPath",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1915,
-                           "endLine":  1928,
+                           "startLine":  2025,
+                           "endLine":  2038,
                            "lineCount":  14,
                            "directCalls":  [
                                                "DefaultWarehouseRuntimeRootPath",
@@ -66180,8 +66260,8 @@
                            "name":  "ResolveWarehouseIdFromSourceWorkbookApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1930,
-                           "endLine":  1955,
+                           "startLine":  2040,
+                           "endLine":  2065,
                            "lineCount":  26,
                            "directCalls":  [
                                                "FindListObjectByNameApply",
@@ -66206,8 +66286,8 @@
                            "name":  "ResolveWarehouseIdFromSnapshotIdApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1957,
-                           "endLine":  1964,
+                           "startLine":  2067,
+                           "endLine":  2074,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -66227,8 +66307,8 @@
                            "name":  "InferWarehouseIdFromWorkbookNameApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1966,
-                           "endLine":  1977,
+                           "startLine":  2076,
+                           "endLine":  2087,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -66248,8 +66328,8 @@
                            "name":  "BuildSkuProjectionDictionariesApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1979,
-                           "endLine":  1998,
+                           "startLine":  2089,
+                           "endLine":  2108,
                            "lineCount":  20,
                            "directCalls":  [
                                                "GetCellByColumnApply",
@@ -66272,8 +66352,8 @@
                            "name":  "BuildLocationSummaryDictionaryApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2000,
-                           "endLine":  2025,
+                           "startLine":  2110,
+                           "endLine":  2135,
                            "lineCount":  26,
                            "directCalls":  [
                                                "FormatQuantityApply",
@@ -66297,8 +66377,8 @@
                            "name":  "BuildLatestMovementDictionariesApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2027,
-                           "endLine":  2066,
+                           "startLine":  2137,
+                           "endLine":  2176,
                            "lineCount":  40,
                            "directCalls":  [
                                                "EventType",
@@ -66323,8 +66403,8 @@
                            "name":  "ApplyCanonicalRuntimeRowApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2068,
-                           "endLine":  2107,
+                           "startLine":  2178,
+                           "endLine":  2217,
                            "lineCount":  40,
                            "directCalls":  [
                                                "ResolvePrimaryLocationFromSummaryApply",
@@ -66346,8 +66426,8 @@
                            "name":  "CanonicalRuntimeRowWouldChangeApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2109,
-                           "endLine":  2142,
+                           "startLine":  2219,
+                           "endLine":  2252,
                            "lineCount":  34,
                            "directCalls":  [
                                                "GetCellByColumnApply",
@@ -66371,8 +66451,8 @@
                            "name":  "ApplyLatestMovementToInvSysApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2144,
-                           "endLine":  2159,
+                           "startLine":  2254,
+                           "endLine":  2269,
                            "lineCount":  16,
                            "directCalls":  [
                                                "ResolveLatestMovementValuesApply",
@@ -66394,8 +66474,8 @@
                            "name":  "ResolveLatestMovementValuesApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2161,
-                           "endLine":  2192,
+                           "startLine":  2271,
+                           "endLine":  2302,
                            "lineCount":  32,
                            "directCalls":  [
                                                "EventType",
@@ -66419,8 +66499,8 @@
                            "name":  "ResolveInvSysSkuApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2194,
-                           "endLine":  2197,
+                           "startLine":  2304,
+                           "endLine":  2307,
                            "lineCount":  4,
                            "directCalls":  [
                                                "GetCellByColumnApply",
@@ -66441,8 +66521,8 @@
                            "name":  "SetInvSysValueApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2199,
-                           "endLine":  2207,
+                           "startLine":  2309,
+                           "endLine":  2317,
                            "lineCount":  9,
                            "directCalls":  [
                                                "GetColumnIndexApply"
@@ -66462,8 +66542,8 @@
                            "name":  "ValuesDifferNumericApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2209,
-                           "endLine":  2211,
+                           "startLine":  2319,
+                           "endLine":  2321,
                            "lineCount":  3,
                            "directCalls":  [
                                                "NzDblApply"
@@ -66483,8 +66563,8 @@
                            "name":  "ValuesDifferTextApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2213,
-                           "endLine":  2215,
+                           "startLine":  2323,
+                           "endLine":  2325,
                            "lineCount":  3,
                            "directCalls":  [
                                                "SafeTrimApply"
@@ -66504,8 +66584,8 @@
                            "name":  "ResolvePrimaryLocationFromSummaryApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2217,
-                           "endLine":  2230,
+                           "startLine":  2327,
+                           "endLine":  2340,
                            "lineCount":  14,
                            "directCalls":  [
 
@@ -66525,8 +66605,8 @@
                            "name":  "WorkbookIsAlreadyOpenApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2232,
-                           "endLine":  2244,
+                           "startLine":  2342,
+                           "endLine":  2354,
                            "lineCount":  13,
                            "directCalls":  [
 
@@ -66546,8 +66626,8 @@
                            "name":  "FileExistsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2246,
-                           "endLine":  2250,
+                           "startLine":  2356,
+                           "endLine":  2360,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -66567,8 +66647,8 @@
                            "name":  "ResolveFileStampApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2252,
-                           "endLine":  2262,
+                           "startLine":  2362,
+                           "endLine":  2372,
                            "lineCount":  11,
                            "directCalls":  [
                                                "FileExistsApply"
@@ -66588,8 +66668,8 @@
                            "name":  "OpenWorkbookReadOnlyApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2264,
-                           "endLine":  2276,
+                           "startLine":  2374,
+                           "endLine":  2386,
                            "lineCount":  13,
                            "directCalls":  [
                                                "FileExistsApply",
@@ -66610,8 +66690,8 @@
                            "name":  "HideWorkbookWindowsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2278,
-                           "endLine":  2288,
+                           "startLine":  2388,
+                           "endLine":  2398,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ReactivateQuietOwner"
@@ -66631,8 +66711,8 @@
                            "name":  "CloseWorkbookQuietlyApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2290,
-                           "endLine":  2296,
+                           "startLine":  2400,
+                           "endLine":  2406,
                            "lineCount":  7,
                            "directCalls":  [
                                                "HideWorkbookWindowsApply"
@@ -66652,8 +66732,8 @@
                            "name":  "FormatQuantityApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2298,
-                           "endLine":  2300,
+                           "startLine":  2408,
+                           "endLine":  2410,
                            "lineCount":  3,
                            "directCalls":  [
                                                "Qty"
@@ -66673,8 +66753,8 @@
                            "name":  "NzDblApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2302,
-                           "endLine":  2305,
+                           "startLine":  2412,
+                           "endLine":  2415,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -66694,8 +66774,8 @@
                            "name":  "NormalizeFolderPathApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2307,
-                           "endLine":  2312,
+                           "startLine":  2417,
+                           "endLine":  2422,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -66715,8 +66795,8 @@
                            "name":  "GetParentFolderApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2314,
-                           "endLine":  2319,
+                           "startLine":  2424,
+                           "endLine":  2429,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -66736,8 +66816,8 @@
                            "name":  "EnsureFolderRecursiveApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2321,
-                           "endLine":  2334,
+                           "startLine":  2431,
+                           "endLine":  2444,
                            "lineCount":  14,
                            "directCalls":  [
                                                "GetParentFolderApply"
@@ -66757,8 +66837,8 @@
                            "name":  "SafeTrimApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2336,
-                           "endLine":  2339,
+                           "startLine":  2446,
+                           "endLine":  2449,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -66778,8 +66858,8 @@
                            "name":  "SetSheetProtectionApply",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2341,
-                           "endLine":  2358,
+                           "startLine":  2451,
+                           "endLine":  2468,
                            "lineCount":  18,
                            "directCalls":  [
 
@@ -66799,8 +66879,8 @@
                            "name":  "RebuildInventoryProjections",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2360,
-                           "endLine":  2452,
+                           "startLine":  2470,
+                           "endLine":  2562,
                            "lineCount":  93,
                            "directCalls":  [
                                                "AccumulateProjectionScalars",
@@ -66833,8 +66913,8 @@
                            "name":  "RewriteEntityProjectionTable",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2454,
-                           "endLine":  2480,
+                           "startLine":  2564,
+                           "endLine":  2590,
                            "lineCount":  27,
                            "directCalls":  [
                                                "Add",
@@ -66856,8 +66936,8 @@
                            "name":  "RefreshLedgerStatus",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2482,
-                           "endLine":  2516,
+                           "startLine":  2592,
+                           "endLine":  2626,
                            "lineCount":  35,
                            "directCalls":  [
                                                "CountTableRowsApply",
@@ -66882,8 +66962,8 @@
                            "name":  "EnsureWritableLedgerStatusRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2518,
-                           "endLine":  2535,
+                           "startLine":  2628,
+                           "endLine":  2645,
                            "lineCount":  18,
                            "directCalls":  [
                                                "Add",
@@ -66904,8 +66984,8 @@
                            "name":  "CountTableRowsApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2537,
-                           "endLine":  2541,
+                           "startLine":  2647,
+                           "endLine":  2651,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -66925,8 +67005,8 @@
                            "name":  "TableRowIsBlankApply",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  2543,
-                           "endLine":  2560,
+                           "startLine":  2653,
+                           "endLine":  2670,
                            "lineCount":  18,
                            "directCalls":  [
                                                "SafeTrimApply"
@@ -66946,8 +67026,8 @@
                            "name":  "AccumulateProjectionScalars",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2562,
-                           "endLine":  2582,
+                           "startLine":  2672,
+                           "endLine":  2692,
                            "lineCount":  21,
                            "directCalls":  [
                                                "Add"
@@ -66967,8 +67047,8 @@
                            "name":  "RewriteSkuProjectionTable",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2584,
-                           "endLine":  2599,
+                           "startLine":  2694,
+                           "endLine":  2709,
                            "lineCount":  16,
                            "directCalls":  [
                                                "Add",
@@ -66990,8 +67070,8 @@
                            "name":  "RewriteLocationProjectionTable",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2601,
-                           "endLine":  2620,
+                           "startLine":  2711,
+                           "endLine":  2730,
                            "lineCount":  20,
                            "directCalls":  [
                                                "Add",
@@ -67013,8 +67093,8 @@
                            "name":  "ClearProjectionRows",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  2622,
-                           "endLine":  2629,
+                           "startLine":  2732,
+                           "endLine":  2739,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -68971,8 +69051,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  64,
-                           "endLine":  167,
-                           "lineCount":  104,
+                           "endLine":  174,
+                           "lineCount":  111,
                            "directCalls":  [
                                                "AddInventoryPickerResultRow",
                                                "Category",
@@ -68983,6 +69063,7 @@
                                                "InventoryQueryText",
                                                "ItemName",
                                                "LocationValue",
+                                               "ResolveInventoryQueryRepresentativeSystemKey",
                                                "ResolveInventoryWorkbook",
                                                "Sku",
                                                "SystemKey",
@@ -69000,11 +69081,34 @@
                        },
                        {
                            "componentName":  "modInventoryQueries",
+                           "name":  "ResolveInventoryQueryRepresentativeSystemKey",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  176,
+                           "endLine":  206,
+                           "lineCount":  31,
+                           "directCalls":  [
+                                               "NzInventoryQueryNumber",
+                                               "ReadInventoryQueryValue",
+                                               "Sku"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "modInventoryQueries",
                            "name":  "ListAvailableInventoryEntities",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  169,
-                           "endLine":  276,
+                           "startLine":  208,
+                           "endLine":  315,
                            "lineCount":  108,
                            "directCalls":  [
                                                "AttributesJson",
@@ -69038,8 +69142,8 @@
                            "name":  "InventoryQueryCatalogIsNonCounted",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  278,
-                           "endLine":  287,
+                           "startLine":  317,
+                           "endLine":  326,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -69059,8 +69163,8 @@
                            "name":  "AddInventoryPickerResultRow",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  289,
-                           "endLine":  302,
+                           "startLine":  328,
+                           "endLine":  341,
                            "lineCount":  14,
                            "directCalls":  [
                                                "ItemName",
@@ -69083,8 +69187,8 @@
                            "name":  "InventoryQuerySkuBalance",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  304,
-                           "endLine":  309,
+                           "startLine":  343,
+                           "endLine":  348,
                            "lineCount":  6,
                            "directCalls":  [
                                                "FindInventoryQueryRow",
@@ -69106,8 +69210,8 @@
                            "name":  "InventoryQueryColumn",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  311,
-                           "endLine":  316,
+                           "startLine":  350,
+                           "endLine":  355,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -69127,8 +69231,8 @@
                            "name":  "InventoryQueryText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  318,
-                           "endLine":  324,
+                           "startLine":  357,
+                           "endLine":  363,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ColumnIndex"
@@ -69148,8 +69252,8 @@
                            "name":  "InventoryQueryIsNonCounted",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  326,
-                           "endLine":  329,
+                           "startLine":  365,
+                           "endLine":  368,
                            "lineCount":  4,
                            "directCalls":  [
                                                "Category"
@@ -69169,8 +69273,8 @@
                            "name":  "FindInventoryQueryTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  331,
-                           "endLine":  340,
+                           "startLine":  370,
+                           "endLine":  379,
                            "lineCount":  10,
                            "directCalls":  [
 
@@ -69190,8 +69294,8 @@
                            "name":  "FindInventoryQueryRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  342,
-                           "endLine":  352,
+                           "startLine":  381,
+                           "endLine":  391,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ReadInventoryQueryValue"
@@ -69211,8 +69315,8 @@
                            "name":  "ReadInventoryQueryValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  354,
-                           "endLine":  361,
+                           "startLine":  393,
+                           "endLine":  400,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -69233,8 +69337,8 @@
                            "name":  "NzInventoryQueryNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  363,
-                           "endLine":  367,
+                           "startLine":  402,
+                           "endLine":  406,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -128315,6 +128419,7 @@
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
                                                  "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1",
                                                  "tests/tooling/Test-Plan022Slice4lRibbonSessionControls.ps1",
                                                  "tests/tooling/Test-Plan022Slice4oReceiving.ps1",
@@ -128419,7 +128524,8 @@
                            {
                                "entryPoint":  "AddInventoryItemForWarehouse",
                                "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -129227,6 +129333,7 @@
                                "entryPoint":  "CreateInventoryEntityPayloadItem",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
                                                  "tests/unit/TestPhase6CoreSurfaces.bas"
                                              ]
                            },
@@ -130317,6 +130424,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "InventoryQuerySkuBalance",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "InventorySkuHasManagedEntityAdmin",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
@@ -130332,6 +130445,12 @@
                                "entryPoint":  "InventoryWorksheetContractForAutomation",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "InventoryZeroCreateContractForAutomation",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -130478,6 +130597,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "ListAvailableInventoryEntities",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "ListAvailableInventoryEntitiesBridge",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1"
@@ -130499,6 +130624,18 @@
                                "entryPoint":  "ListDesignsBridge",
                                "testPaths":  [
                                                  "tests/tooling/Test-Slice8ProductionRetirement.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "ListInventoryPickerItems",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "ListInventoryPickerItemsBridge",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -130608,7 +130745,8 @@
                            {
                                "entryPoint":  "LoadProcessManagedInventoryItems",
                                "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1"
+                                                 "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -130827,7 +130965,8 @@
                            {
                                "entryPoint":  "mBtnOK_Click",
                                "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -130993,6 +131132,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "Nonnegative",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "NormalizeConfiguredUomName",
                                "testPaths":  [
                                                  "tests/unit/TestPhase6RoleSurfaces.bas"
@@ -131127,12 +131272,6 @@
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
                                                  "tests/unit/TestProductionSessionService.bas"
-                                             ]
-                           },
-                           {
-                               "entryPoint":  "PayloadLineIsNonCountedApply",
-                               "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
                                              ]
                            },
                            {
@@ -131316,6 +131455,7 @@
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
                                                  "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
                                                  "tests/unit/TestCoreRoleEventWriter.bas",
@@ -131741,6 +131881,12 @@
                                "entryPoint":  "ResolveInboxWorkbookPath",
                                "testPaths":  [
                                                  "tests/integration/test_ConfirmWrites_Tester.bas"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "ResolveInventoryQueryRepresentativeSystemKey",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -132432,6 +132578,7 @@
                                                  "tests/tooling/Test-Plan022Slice4acProcessOutputPicker.ps1",
                                                  "tests/tooling/Test-Plan022Slice4adProcessPickerRecordTypes.ps1",
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
                                                  "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
                                                  "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
                                                  "tests/unit/TestAdminConsole.bas",
@@ -132479,6 +132626,7 @@
                            {
                                "entryPoint":  "StartingQty",
                                "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
                                                  "tests/unit/TestPhase6RoleSurfaces.bas"
                                              ]
                            },
@@ -132562,7 +132710,8 @@
                            {
                                "entryPoint":  "TestAddItemVisibilityDropdownContract",
                                "testPaths":  [
-                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                 "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {
@@ -133031,6 +133180,12 @@
                                "entryPoint":  "ValidateInventoryWorksheetHeaders",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "ValidateInventoryWorksheetRow",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                              ]
                            },
                            {

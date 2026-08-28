@@ -69,6 +69,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     Dim loCatalog As ListObject
     Dim loBalance As ListObject
     Dim loLocation As ListObject
+    Dim loEntities As ListObject
     Dim catalogRows As Variant
     Dim locationRows As Variant
     Dim result() As Variant
@@ -86,6 +87,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     Dim catalogLocation As String
     Dim description As String
     Dim category As String
+    Dim catalogState As String
     Dim locationValue As String
     Dim qtyOnHand As Variant
     Dim matchedLocation As Boolean
@@ -97,6 +99,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     If loCatalog Is Nothing Or loCatalog.DataBodyRange Is Nothing Then Exit Function
     Set loBalance = FindInventoryQueryTable(wb, "tblSkuBalance")
     Set loLocation = FindInventoryQueryTable(wb, "tblLocationBalance")
+    Set loEntities = FindInventoryQueryTable(wb, "tblInventoryEntities")
 
     catalogRows = loCatalog.DataBodyRange.Value
     maxRows = UBound(catalogRows, 1)
@@ -118,9 +121,13 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
         catalogLocation = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "LOCATION"))
         description = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "DESCRIPTION"))
         category = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "CATEGORY"))
+        catalogState = UCase$(InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "CATALOG_STATE")))
+        If catalogState = "RETIRED" Then GoTo NextCatalogRow
         If itemCode = "" Then itemCode = sku
         If sku = "" Then sku = itemCode
         If itemName = "" And itemCode = "" Then GoTo NextCatalogRow
+        If systemKey = "" Then systemKey = ResolveInventoryQueryRepresentativeSystemKey(loEntities, sku)
+        If systemKey = "" Then GoTo NextCatalogRow
 
         haystack = LCase$(systemKey & " " & itemCode & " " & itemName & " " & uom & " " & _
                               catalogLocation & " " & description & " " & category)
@@ -164,6 +171,38 @@ NextCatalogRow:
     Next r
     ListInventoryPickerItems = trimmed
 CleanFail:
+End Function
+
+Private Function ResolveInventoryQueryRepresentativeSystemKey(ByVal loEntities As ListObject, _
+                                                              ByVal sku As String) As String
+    Dim rowIndex As Long
+    Dim candidateKey As String
+    Dim inventoryState As String
+    Dim qtyOnHand As Double
+
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If StrComp(Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, "SKU"))), _
+                sku, vbTextCompare) = 0 Then
+            inventoryState = UCase$(Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, _
+                "InventoryState"))))
+            If inventoryState = "" Or inventoryState = "ACTIVE" Then
+                candidateKey = Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, "System_Key")))
+                If candidateKey <> "" Then
+                    If ResolveInventoryQueryRepresentativeSystemKey = "" Then _
+                        ResolveInventoryQueryRepresentativeSystemKey = candidateKey
+                    qtyOnHand = NzInventoryQueryNumber(ReadInventoryQueryValue(loEntities, rowIndex, _
+                        "QtyOnHand"))
+                    If qtyOnHand > 0 Then
+                        ResolveInventoryQueryRepresentativeSystemKey = candidateKey
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Next rowIndex
 End Function
 
 Public Function ListAvailableInventoryEntities(Optional ByVal filterText As String = "", _

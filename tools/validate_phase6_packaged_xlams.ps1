@@ -587,9 +587,12 @@ try {
             $adminAddPassed = $adminAdd -match '^OK\|' -and
                 $adminAdd -match '(?:^|\|)SubmitHandler=True(?:\||$)' -and
                 $adminAdd -match '(?:^|\|)ExactEntityCreate=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)ZeroQtyAccepted=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)NegativeRejected=True(?:\||$)' -and
                 $adminAdd -match '(?:^|\|)LocationDropdown=True(?:\||$)' -and
                 $adminAdd -match '(?:^|\|)CategoryDropdown=True(?:\||$)'
             Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $adminAddPassed -Detail $adminAdd
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryZeroStartingQuantity" -Passed $adminAddPassed -Detail $adminAdd
         }
         catch {
             Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $false -Detail $_.Exception.Message
@@ -617,7 +620,8 @@ try {
             $inventoryWorksheetPassed = $inventoryWorksheet -match '^OK\|' -and
                 $inventoryWorksheet -match '(?:^|\|)TableCreated=True(?:\||$)' -and
                 $inventoryWorksheet -match '(?:^|\|)Preflight=True(?:\||$)' -and
-                $inventoryWorksheet -match '(?:^|\|)Utility=True(?:\||$)'
+                $inventoryWorksheet -match '(?:^|\|)Utility=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)ZeroCounted=True(?:\||$)'
             Add-ResultRow -Rows $resultRows -Check "Admin.InventoryWorksheetActions" -Passed $inventoryWorksheetPassed -Detail $inventoryWorksheet
         }
         catch {
@@ -626,6 +630,17 @@ try {
     }
 
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
+        try {
+            $inventoryZeroCreate = [string]$excel.Run("'$($workbookMap["invSys.Inventory.Domain.xlam"].Name)'!modInventoryApply.InventoryZeroCreateContractForAutomation")
+            $inventoryZeroCreatePassed = $inventoryZeroCreate -match '^OK\|' -and
+                $inventoryZeroCreate -match '(?:^|\|)ZeroEntityActive=True(?:\||$)' -and
+                $inventoryZeroCreate -match '(?:^|\|)ZeroVisible=True(?:\||$)' -and
+                $inventoryZeroCreate -match '(?:^|\|)NegativeRejected=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryZeroCreate" -Passed $inventoryZeroCreatePassed -Detail $inventoryZeroCreate
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryZeroCreate" -Passed $false -Detail $_.Exception.Message
+        }
         try {
             $inventoryRetirement = [string]$excel.Run("'$($workbookMap["invSys.Inventory.Domain.xlam"].Name)'!modInventoryApply.InventoryRetirementContractForAutomation")
             $inventoryRetirementPassed = $inventoryRetirement -match '^OK\|' -and

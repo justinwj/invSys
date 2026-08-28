@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5173,
-                     "lineCount":  115112,
+                     "procedureCount":  5177,
+                     "lineCount":  115280,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -5807,7 +5807,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -8793,7 +8794,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -8879,7 +8881,8 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1"
+                                                   "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14466,11 +14469,13 @@
                                                   "ApplyEvent",
                                                   "ApplyLatestMovementToInvSysApply",
                                                   "ApplyReceiveEvent",
+                                                  "AutomationAvailableRowsContainKeyApply",
                                                   "BuildApplyLines",
                                                   "BuildCanonicalInventoryPath",
                                                   "BuildCurrentSkuBalanceFromLogApply",
                                                   "BuildDispositionLines",
                                                   "BuildInventoryRetirementAutomationEventApply",
+                                                  "BuildInventoryZeroCreateAutomationEventApply",
                                                   "BuildLatestMovementDictionariesApply",
                                                   "BuildLocationSummaryDictionaryApply",
                                                   "BuildPayloadLines",
@@ -14505,6 +14510,7 @@
                                                   "InventoryLogEventExistsApply",
                                                   "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
+                                                  "InventoryZeroCreateContractForAutomation",
                                                   "IsInventoryWorkbookName",
                                                   "IsReservedPayloadCatalogKeyApply",
                                                   "IsWorkbookFileLockedApply",
