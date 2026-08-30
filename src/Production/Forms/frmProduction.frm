@@ -91,7 +91,7 @@ Private mTxtProcessOutputDesignVersion As MSForms.TextBox
 Private mTxtProcessOutputQty As MSForms.TextBox
 Private mTxtProcessOutputPercent As MSForms.TextBox
 Private mTxtProcessOutputYieldBasis As MSForms.TextBox
-Private mTxtProcessOutputUom As MSForms.TextBox
+Private WithEvents mCmbProcessOutputUom As MSForms.ComboBox
 Private WithEvents mLstProcessInstructions As MSForms.ListBox
 Private mTxtProcessInstruction As MSForms.TextBox
 
@@ -995,16 +995,17 @@ Private Sub BuildProcessDesignerPage(ByVal pg As MSForms.Page)
     Set mTxtProcessOutputId = AddText(pg, "txtProcessOutputId", 340, 342, 48, 22)
     mTxtProcessOutputId.Locked = True
     Set mTxtProcessOutputName = AddText(pg, "txtProcessOutputName", 392, 342, 67, 22)
-    Set mTxtProcessOutputItemCode = AddText(pg, "txtProcessOutputItemCode", 463, 342, 56, 22)
+    Set mTxtProcessOutputItemCode = AddText(pg, "txtProcessOutputItemCode", 463, 342, 1, 1)
     mTxtProcessOutputItemCode.Visible = False
-    Set mTxtProcessOutputDesignId = AddText(pg, "txtProcessOutputDesignId", 523, 342, 48, 22)
+    Set mTxtProcessOutputDesignId = AddText(pg, "txtProcessOutputDesignId", 463, 342, 48, 22)
     mTxtProcessOutputDesignId.Locked = True
-    Set mTxtProcessOutputDesignVersion = AddText(pg, "txtProcessOutputDesignVersion", 575, 342, 31, 22)
+    Set mTxtProcessOutputDesignVersion = AddText(pg, "txtProcessOutputDesignVersion", 515, 342, 31, 22)
     mTxtProcessOutputDesignVersion.Locked = True
-    Set mTxtProcessOutputQty = AddText(pg, "txtProcessOutputQty", 610, 342, 36, 22)
-    Set mTxtProcessOutputPercent = AddText(pg, "txtProcessOutputPercent", 650, 342, 36, 22)
-    Set mTxtProcessOutputYieldBasis = AddText(pg, "txtProcessOutputYieldBasis", 690, 342, 40, 22)
-    Set mTxtProcessOutputUom = AddText(pg, "txtProcessOutputUom", 694, 370, 36, 22)
+    Set mTxtProcessOutputQty = AddText(pg, "txtProcessOutputQty", 550, 342, 36, 22)
+    Set mTxtProcessOutputPercent = AddText(pg, "txtProcessOutputPercent", 590, 342, 36, 22)
+    Set mTxtProcessOutputYieldBasis = AddText(pg, "txtProcessOutputYieldBasis", 630, 342, 40, 22)
+    Set mCmbProcessOutputUom = AddCombo(pg, "cmbProcessOutputUom", 674, 342, 56, 22)
+    RefreshProcessOutputUomCatalog
     Set mBtnProcessOutputAdd = AddButton(pg, "btnProcessOutputAdd", "Add", 340, 372, 52, 22)
     Set mBtnProcessOutputUpdate = AddButton(pg, "btnProcessOutputUpdate", "Update", 396, 372, 58, 22)
     Set mBtnProcessOutputRemove = AddButton(pg, "btnProcessOutputRemove", "Remove", 458, 372, 58, 22)
@@ -3883,6 +3884,35 @@ Private Sub RefreshConnectionUomCatalog(Optional ByVal selectedUom As String = "
     SelectComboText mCmbConnectionUom, selectedUom
 End Sub
 
+Private Sub RefreshProcessOutputUomCatalog(Optional ByVal selectedUom As String = "")
+    Dim uoms As Variant
+    Dim idx As Long
+
+    If mCmbProcessOutputUom Is Nothing Then Exit Sub
+    If selectedUom = "" Then selectedUom = ComboText(mCmbProcessOutputUom)
+    mCmbProcessOutputUom.Clear
+    uoms = modUomSettings.GetConfiguredUoms()
+    If IsArray(uoms) Then
+        For idx = LBound(uoms) To UBound(uoms)
+            mCmbProcessOutputUom.AddItem CStr(uoms(idx))
+        Next idx
+    End If
+    SelectComboText mCmbProcessOutputUom, selectedUom
+End Sub
+
+Private Function OutputUomIsCatalogValue(ByVal uomName As String) As Boolean
+    Dim idx As Long
+
+    uomName = Trim$(uomName)
+    If uomName = "" Then Exit Function
+    For idx = 0 To mCmbProcessOutputUom.ListCount - 1
+        If StrComp(NzStr(mCmbProcessOutputUom.List(idx)), uomName, vbTextCompare) = 0 Then
+            OutputUomIsCatalogValue = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
 Private Sub CompleteProductionRun()
     Dim outputIndex As Long
     Dim outputRowNumber As Long
@@ -5020,7 +5050,7 @@ Private Sub ClearOutputEditor()
     mTxtProcessOutputQty.Text = ""
     mTxtProcessOutputPercent.Text = ""
     mTxtProcessOutputYieldBasis.Text = ""
-    mTxtProcessOutputUom.Text = ""
+    RefreshProcessOutputUomCatalog
     RefreshOutputDesignIdentity True
 End Sub
 
@@ -5315,8 +5345,12 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
     NormalizeOutputYieldEditorDefaults
 
     If Trim$(mTxtProcessOutputId.Text) = "" Or Trim$(mTxtProcessOutputName.Text) = "" Or _
-       Trim$(mTxtProcessOutputItemCode.Text) = "" Or Trim$(mTxtProcessOutputUom.Text) = "" Then
+       Trim$(mTxtProcessOutputItemCode.Text) = "" Or ComboText(mCmbProcessOutputUom) = "" Then
         ShowStatus "An output needs its generated identity, name, and UOM."
+        Exit Sub
+    End If
+    If Not OutputUomIsCatalogValue(ComboText(mCmbProcessOutputUom)) Then
+        ShowStatus "Select an output UOM from the Recipe UOM Catalog."
         Exit Sub
     End If
     If Not PositiveTextValue(mTxtProcessOutputQty.Text) And Not PositiveTextValue(mTxtProcessOutputPercent.Text) Then
@@ -5341,7 +5375,7 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
         .List(idx, 5) = Trim$(mTxtProcessOutputQty.Text)
         .List(idx, 6) = Trim$(mTxtProcessOutputPercent.Text)
         .List(idx, 7) = Trim$(mTxtProcessOutputYieldBasis.Text)
-        .List(idx, 8) = Trim$(mTxtProcessOutputUom.Text)
+        .List(idx, 8) = ComboText(mCmbProcessOutputUom)
         .ListIndex = idx
     End With
     If Not updateExisting Then ClearOutputEditor
@@ -6914,7 +6948,7 @@ Public Function TestProcessWorksheetRoundTripContract() As String
 
     mTxtProcessOutputName.Text = "Finished Product"
     mTxtProcessOutputQty.Text = "100"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     If mLstProcessOutputs.ListCount > 0 Then
         outputIdGenerated = mProduction.IsBase36Identifier( _
@@ -7526,7 +7560,7 @@ Public Function TestReusableProductionFormActionContract() As String
     requiredControls = Array( _
         "btnProcessSave", "btnProcessRelease", "btnProcessObsolete", "btnProcessReuse", _
         "btnProcessWorksheetCreate", "btnProcessWorksheetRetrieve", _
-        "btnProcessWorksheetAddAlternative", _
+        "btnProcessWorksheetAddAlternative", "cmbProcessOutputUom", _
         "btnRecipeAddProcess", "btnRecipeConnect", "btnRecipeMoveUp", _
         "btnRecipeSave", "btnRecipeRelease", "btnRecipeObsolete", _
         "btnAssignSave", "chkRunTargetOutputScale", "cmbRunTargetOutput", _
@@ -7602,11 +7636,28 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     Dim outputFlowUsesProcessYield As Boolean
     Dim processAssignmentHeaders As Boolean
     Dim acceptableItemsNamed As Boolean
+    Dim processOutputEditorCompact As Boolean
+    Dim processOutputUomCatalog As Boolean
 
     mReusableActionTestInProgress = True
     token = UCase$(Right$(CleanControlName(BuildFormGuid()), 10))
     sourceId = "PROC-SRC-" & token
     sinkId = "PROC-SINK-" & token
+    RefreshProcessOutputUomCatalog "LB"
+    processOutputEditorCompact = _
+        Not mTxtProcessOutputItemCode.Visible And _
+        (mTxtProcessOutputItemCode.Width <= 1) And _
+        (Abs(mTxtProcessOutputDesignId.Left - 463) < 0.1) And _
+        (Abs(mTxtProcessOutputDesignVersion.Left - 515) < 0.1) And _
+        (Abs(mTxtProcessOutputQty.Left - 550) < 0.1) And _
+        (Abs(mTxtProcessOutputPercent.Left - 590) < 0.1) And _
+        (Abs(mTxtProcessOutputYieldBasis.Left - 630) < 0.1) And _
+        (Abs(mCmbProcessOutputUom.Left - 674) < 0.1) And _
+        (Abs(mCmbProcessOutputUom.Top - mTxtProcessOutputQty.Top) < 0.1)
+    processOutputUomCatalog = _
+        (mCmbProcessOutputUom.Style = fmStyleDropDownList) And _
+        OutputUomIsCatalogValue("LB") And _
+        (StrComp(ComboText(mCmbProcessOutputUom), "LB", vbTextCompare) = 0)
     processAssignmentHeaders = _
         ControlExistsByName(mPages.Pages(0), "hdrSavedProcesses1") And _
         ControlExistsByName(mPages.Pages(0), "hdrProcessRequirements1") And _
@@ -7625,15 +7676,19 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mTxtProcessOutputName.Text = "Source Output"
     mTxtProcessOutputItemCode.Text = "SKU-SOURCE-" & token
     mTxtProcessOutputQty.Text = "5"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     If mLstProcessOutputs.ListCount > 0 Then
         mLstProcessOutputs.ListIndex = 0
         mLstProcessOutputs_Click
+        processOutputUomCatalog = processOutputUomCatalog And _
+            (StrComp(ComboText(mCmbProcessOutputUom), "LB", vbTextCompare) = 0)
         mBtnProcessOutputUpdate_Click
         outputYieldDefaults = _
             (Abs(Val(NzStr(mLstProcessOutputs.List(0, 6))) - 100#) < 0.00000001) And _
             (Abs(Val(NzStr(mLstProcessOutputs.List(0, 7))) - 5#) < 0.00000001)
+        processOutputUomCatalog = processOutputUomCatalog And _
+            (StrComp(NzStr(mLstProcessOutputs.List(0, 8)), "LB", vbTextCompare) = 0)
     End If
     mTxtProcessInstruction.Text = "Produce the reusable source output."
     mBtnProcessInstructionAdd_Click
@@ -7669,7 +7724,7 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mTxtProcessOutputName.Text = "Finished Output"
     mTxtProcessOutputItemCode.Text = "SKU-FINISHED-" & token
     mTxtProcessOutputQty.Text = "5"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     mBtnProcessSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo ActionFailed
@@ -7906,7 +7961,9 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
         "|OutputYieldDefaults=" & CStr(outputYieldDefaults) & _
         "|OutputFlowUsesProcessYield=" & CStr(outputFlowUsesProcessYield) & _
         "|ProcessAssignmentHeaders=" & CStr(processAssignmentHeaders) & _
-        "|AcceptableItemsNamed=" & CStr(acceptableItemsNamed)
+        "|AcceptableItemsNamed=" & CStr(acceptableItemsNamed) & _
+        "|ProcessOutputEditorCompact=" & CStr(processOutputEditorCompact) & _
+        "|ProcessOutputUomCatalog=" & CStr(processOutputUomCatalog)
 CleanExit:
     mReusableActionTestInProgress = False
     Exit Function
@@ -7938,6 +7995,8 @@ ActionFailed:
         "|OutputFlowUsesProcessYield=" & CStr(outputFlowUsesProcessYield) & _
         "|ProcessAssignmentHeaders=" & CStr(processAssignmentHeaders) & _
         "|AcceptableItemsNamed=" & CStr(acceptableItemsNamed) & _
+        "|ProcessOutputEditorCompact=" & CStr(processOutputEditorCompact) & _
+        "|ProcessOutputUomCatalog=" & CStr(processOutputUomCatalog) & _
         "|ConnectionRows=" & CStr(mLstRecipeConnections.ListCount) & _
         "|ConnectionId=" & recipeConnectionId & _
         "|ConnectionQty=" & recipeConnectionQty & _
@@ -7978,7 +8037,7 @@ Private Function ExerciseRecipeForkProjectionForTest(ByVal token As String, _
     mTxtProcessOutputName.Text = "Parallel Output"
     mTxtProcessOutputItemCode.Text = "SKU-BRANCH-" & token
     mTxtProcessOutputQty.Text = "75.025"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     mBtnProcessSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then Exit Function
@@ -8011,7 +8070,7 @@ Private Function ExerciseRecipeForkProjectionForTest(ByVal token As String, _
     mTxtProcessOutputName.Text = "Converged Output"
     mTxtProcessOutputItemCode.Text = "SKU-CONVERGED-" & token
     mTxtProcessOutputQty.Text = "10"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     mBtnProcessSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then Exit Function
@@ -8164,7 +8223,7 @@ Public Function TestReusableProductionRunActionContract() As String
     mTxtProcessOutputQty.Text = ""
     mTxtProcessOutputPercent.Text = "20"
     mTxtProcessOutputYieldBasis.Text = "10"
-    mTxtProcessOutputUom.Text = "LB"
+    RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
     mBtnProcessSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
@@ -8969,7 +9028,7 @@ Private Sub mLstProcessOutputs_Click()
     mTxtProcessOutputQty.Text = NzStr(mLstProcessOutputs.List(idx, 5))
     mTxtProcessOutputPercent.Text = NzStr(mLstProcessOutputs.List(idx, 6))
     mTxtProcessOutputYieldBasis.Text = NzStr(mLstProcessOutputs.List(idx, 7))
-    mTxtProcessOutputUom.Text = NzStr(mLstProcessOutputs.List(idx, 8))
+    RefreshProcessOutputUomCatalog NzStr(mLstProcessOutputs.List(idx, 8))
 End Sub
 
 Private Sub mBtnProcessOutputAdd_Click()

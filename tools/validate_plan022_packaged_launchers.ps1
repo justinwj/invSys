@@ -1171,7 +1171,9 @@ try {
                         $productionActionReport -match '(?:^|\|)OutputYieldDefaults=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)OutputFlowUsesProcessYield=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)ProcessAssignmentHeaders=True(?:\||$)' -and
-                        $productionActionReport -match '(?:^|\|)AcceptableItemsNamed=True(?:\||$)'
+                        $productionActionReport -match '(?:^|\|)AcceptableItemsNamed=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessOutputEditorCompact=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessOutputUomCatalog=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
 

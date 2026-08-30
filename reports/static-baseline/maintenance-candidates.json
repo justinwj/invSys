@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5208,
-                     "lineCount":  116434,
+                     "procedureCount":  5210,
+                     "lineCount":  116493,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -14982,6 +14982,7 @@
                                                   "NzDblLocal",
                                                   "NzStr",
                                                   "OrderedRunProcesses",
+                                                  "OutputUomIsCatalogValue",
                                                   "PaletteQtyTextChanged",
                                                   "PaletteSplitTextChanged",
                                                   "PopulateRunLocationCombo",
@@ -15029,6 +15030,7 @@
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
                                                   "RefreshOutputDesignIdentity",
+                                                  "RefreshProcessOutputUomCatalog",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
                                                   "RefreshRecipeConnectionDisplay",

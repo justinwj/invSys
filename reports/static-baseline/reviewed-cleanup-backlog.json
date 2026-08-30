@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "b34ea34b68ce1a0b2b0261e6a003968cbf7f7186fc6bca788fbc8255d3839a9c",
-                          "maintenanceCandidatesSha256":  "cfd8323f5785e422bbf15a5e84e7fb4c580171b57e868c50779ecaa2c6928c2d"
+                          "implementationManifestSha256":  "893396c699d7e4807e8dc035713b9981a4d6e7b12aa5a05e29da6008a094ef62",
+                          "maintenanceCandidatesSha256":  "c6a5e38182c244bf955d3ed51b5ee03279a4a59f47a4ddd2181608f92f4566b0"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  9890,
+                                                  "baselineLineCount":  9949,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16273,6 +16273,7 @@
                                                   "NzDblLocal",
                                                   "NzStr",
                                                   "OrderedRunProcesses",
+                                                  "OutputUomIsCatalogValue",
                                                   "PaletteQtyTextChanged",
                                                   "PaletteSplitTextChanged",
                                                   "PopulateRunLocationCombo",
@@ -16320,6 +16321,7 @@
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
                                                   "RefreshOutputDesignIdentity",
+                                                  "RefreshProcessOutputUomCatalog",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
                                                   "RefreshRecipeConnectionDisplay",
