@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5223,
-                     "lineCount":  116847,
+                     "procedureCount":  5224,
+                     "lineCount":  116898,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -11753,7 +11753,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -15868,6 +15868,7 @@
                                                   "RefreshStaging",
                                                   "ResizeReceivingLayout",
                                                   "ResolveOperatorWorkbook",
+                                                  "SelectedReceiveItemSystemKey",
                                                   "SetOperatorWorkbook",
                                                   "ShowPersistencePending",
                                                   "ShowSelectedAggregateReferences",

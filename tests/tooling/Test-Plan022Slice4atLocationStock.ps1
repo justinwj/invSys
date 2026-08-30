@@ -36,7 +36,8 @@ $checks["Production.ExactExpansion"] =
     $form.Contains("modProductionReusableRun.ApplyReusableRunStockAllocation") -and
     $form.Contains('"|LocationStockExactExpansion=" & CStr(locationStockExactExpansion)')
 $checks["Receiving.CapacityStub"] =
-    $receiving.Contains('Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Capacity (coming later)", "Lot", "Condition", "Description", "Vendor")') -and
+    $receiving.Contains('Array("Code", "Item", "UOM", "Available", "Location", "Capacity (coming later)", "Lot", "Condition", "Description", "Vendor")') -and
+    $receiving.Contains("Private mReceiveItemSystemKeys As Collection") -and
     $receiving.Contains("Private Sub FillReceiveItemResults") -and
     $receiving.Contains('|CapacityStub=" & CStr(capacityStub)')
 $checks["PublicActions.ExerciseStockAndCapacity"] =

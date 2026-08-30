@@ -1031,6 +1031,10 @@ try {
                 $receivingControlReport -match '(?:^|\|)OptionalLot=True(?:\||$)' -and
                 $receivingControlReport -match '(?:^|\|)ReceivingHeaderColumnsAligned=True(?:\||$)' -and
                 $receivingControlReport -match '(?:^|\|)CapacityStub=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)SearchRowsLoaded=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)HiddenSystemKeyMap=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)TenColumnItemResults=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)HeadersSingleLine=True(?:\||$)' -and
                 $refreshOk -and
                 $customPreserved -and
                 $canonicalHashesUnchanged -and

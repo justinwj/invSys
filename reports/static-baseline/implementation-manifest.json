@@ -5790,7 +5790,7 @@
                            "name":  "frmReceiving",
                            "kind":  "FORM",
                            "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
-                           "lineCount":  1209,
+                           "lineCount":  1260,
                            "procedureNames":  [
                                                   "AddButton",
                                                   "AddComboBox",
@@ -5834,6 +5834,7 @@
                                                   "RefreshStaging",
                                                   "ResizeReceivingLayout",
                                                   "ResolveOperatorWorkbook",
+                                                  "SelectedReceiveItemSystemKey",
                                                   "SetOperatorWorkbook",
                                                   "ShowPersistencePending",
                                                   "ShowSelectedAggregateReferences",
@@ -100184,8 +100185,8 @@
                            "name":  "UserForm_Initialize",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  73,
-                           "endLine":  75,
+                           "startLine":  75,
+                           "endLine":  77,
                            "lineCount":  3,
                            "directCalls":  [
                                                "BuildLayout"
@@ -100220,8 +100221,8 @@
                            "name":  "UserForm_Activate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  77,
-                           "endLine":  83,
+                           "startLine":  79,
+                           "endLine":  85,
                            "lineCount":  7,
                            "directCalls":  [
                                                "EnableReceivingResizable",
@@ -100258,8 +100259,8 @@
                            "name":  "UserForm_Resize",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  85,
-                           "endLine":  87,
+                           "startLine":  87,
+                           "endLine":  89,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ResizeReceivingLayout"
@@ -100280,8 +100281,8 @@
                            "name":  "UserForm_QueryClose",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  89,
-                           "endLine":  93,
+                           "startLine":  91,
+                           "endLine":  95,
                            "lineCount":  5,
                            "directCalls":  [
                                                "NotifyReceivingLauncherFormTerminating"
@@ -100304,8 +100305,8 @@
                            "name":  "UserForm_Terminate",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  95,
-                           "endLine":  97,
+                           "startLine":  97,
+                           "endLine":  99,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -100335,8 +100336,8 @@
                            "name":  "SetOperatorWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  99,
-                           "endLine":  103,
+                           "startLine":  101,
+                           "endLine":  105,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -100356,8 +100357,8 @@
                            "name":  "InitializeFromReceiving",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  105,
-                           "endLine":  128,
+                           "startLine":  107,
+                           "endLine":  130,
                            "lineCount":  24,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100382,8 +100383,8 @@
                            "name":  "TestSearchInventoryCount",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  130,
-                           "endLine":  135,
+                           "startLine":  132,
+                           "endLine":  137,
                            "lineCount":  6,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100405,8 +100406,8 @@
                            "name":  "TestReceiptIdSeparatedFromReference",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  137,
-                           "endLine":  145,
+                           "startLine":  139,
+                           "endLine":  147,
                            "lineCount":  9,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100427,8 +100428,8 @@
                            "name":  "TestInitializeForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  147,
-                           "endLine":  154,
+                           "startLine":  149,
+                           "endLine":  156,
                            "lineCount":  8,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100449,8 +100450,8 @@
                            "name":  "TestRefreshInventoryActionForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  156,
-                           "endLine":  179,
+                           "startLine":  158,
+                           "endLine":  181,
                            "lineCount":  24,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100474,8 +100475,8 @@
                            "name":  "CountManagedItemChoices",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  181,
-                           "endLine":  192,
+                           "startLine":  183,
+                           "endLine":  194,
                            "lineCount":  12,
                            "directCalls":  [
                                                "NzText"
@@ -100495,8 +100496,8 @@
                            "name":  "TestRunConfirmWritesActionForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  194,
-                           "endLine":  205,
+                           "startLine":  196,
+                           "endLine":  207,
                            "lineCount":  12,
                            "directCalls":  [
                                                "BuildLayout",
@@ -100521,8 +100522,8 @@
                            "name":  "TestPurchasingTabContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  207,
-                           "endLine":  217,
+                           "startLine":  209,
+                           "endLine":  219,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ApplyReceivingTab",
@@ -100544,8 +100545,8 @@
                            "name":  "BuildLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  219,
-                           "endLine":  332,
+                           "startLine":  221,
+                           "endLine":  334,
                            "lineCount":  114,
                            "directCalls":  [
                                                "Add",
@@ -100572,8 +100573,8 @@
                            "name":  "AddLabel",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  334,
-                           "endLine":  348,
+                           "startLine":  336,
+                           "endLine":  350,
                            "lineCount":  15,
                            "directCalls":  [
                                                "Add"
@@ -100593,8 +100594,8 @@
                            "name":  "AddTextBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  350,
-                           "endLine":  361,
+                           "startLine":  352,
+                           "endLine":  363,
                            "lineCount":  12,
                            "directCalls":  [
                                                "Add"
@@ -100614,8 +100615,8 @@
                            "name":  "AddComboBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  363,
-                           "endLine":  375,
+                           "startLine":  365,
+                           "endLine":  377,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -100635,8 +100636,8 @@
                            "name":  "AddButton",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  377,
-                           "endLine":  389,
+                           "startLine":  379,
+                           "endLine":  391,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -100656,8 +100657,8 @@
                            "name":  "AddListBox",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  391,
-                           "endLine":  406,
+                           "startLine":  393,
+                           "endLine":  408,
                            "lineCount":  16,
                            "directCalls":  [
                                                "Add"
@@ -100677,8 +100678,8 @@
                            "name":  "ResizeReceivingLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  408,
-                           "endLine":  514,
+                           "startLine":  410,
+                           "endLine":  516,
                            "lineCount":  107,
                            "directCalls":  [
                                                "ApplyReceivingHeaderLayout",
@@ -100699,8 +100700,8 @@
                            "name":  "ResolveOperatorWorkbook",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  516,
-                           "endLine":  526,
+                           "startLine":  518,
+                           "endLine":  528,
                            "lineCount":  11,
                            "directCalls":  [
 
@@ -100720,8 +100721,8 @@
                            "name":  "RefreshAllViews",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  528,
-                           "endLine":  535,
+                           "startLine":  530,
+                           "endLine":  537,
                            "lineCount":  8,
                            "directCalls":  [
                                                "EnforceReceivingSupportSheetsHidden",
@@ -100747,8 +100748,8 @@
                            "name":  "LoadInventoryCache",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  537,
-                           "endLine":  545,
+                           "startLine":  539,
+                           "endLine":  547,
                            "lineCount":  9,
                            "directCalls":  [
                                                "LoadReceivingFormInventoryForWorkbook",
@@ -100770,8 +100771,8 @@
                            "name":  "RefreshReceiveItems",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  547,
-                           "endLine":  553,
+                           "startLine":  549,
+                           "endLine":  555,
                            "lineCount":  7,
                            "directCalls":  [
                                                "FillReceiveItemResults",
@@ -100792,9 +100793,31 @@
                            "name":  "FillReceiveItemResults",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  555,
-                           "endLine":  574,
-                           "lineCount":  20,
+                           "startLine":  557,
+                           "endLine":  579,
+                           "lineCount":  23,
+                           "directCalls":  [
+                                               "Add",
+                                               "NzText"
+                                           ],
+                           "literalApplicationRunTargets":  [
+
+                                                            ],
+                           "unresolvedApplicationRunExpressions":  [
+
+                                                                   ],
+                           "rootIds":  [
+
+                                       ]
+                       },
+                       {
+                           "componentName":  "frmReceiving",
+                           "name":  "SelectedReceiveItemSystemKey",
+                           "visibility":  "PRIVATE",
+                           "kind":  "FUNCTION",
+                           "startLine":  581,
+                           "endLine":  585,
+                           "lineCount":  5,
                            "directCalls":  [
                                                "NzText"
                                            ],
@@ -100813,8 +100836,8 @@
                            "name":  "LoadHistoryCache",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  576,
-                           "endLine":  583,
+                           "startLine":  587,
+                           "endLine":  594,
                            "lineCount":  8,
                            "directCalls":  [
                                                "LoadReceivingEntriesHistoryForWorkbook",
@@ -100836,8 +100859,8 @@
                            "name":  "RefreshInventory",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  585,
-                           "endLine":  591,
+                           "startLine":  596,
+                           "endLine":  602,
                            "lineCount":  7,
                            "directCalls":  [
                                                "FillInventoryList",
@@ -100859,8 +100882,8 @@
                            "name":  "RefreshStaging",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  593,
-                           "endLine":  617,
+                           "startLine":  604,
+                           "endLine":  628,
                            "lineCount":  25,
                            "directCalls":  [
                                                "ClearAggregateReferenceDetail",
@@ -100887,8 +100910,8 @@
                            "name":  "FillListBox",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  619,
-                           "endLine":  644,
+                           "startLine":  630,
+                           "endLine":  655,
                            "lineCount":  26,
                            "directCalls":  [
                                                "NzText"
@@ -100908,8 +100931,8 @@
                            "name":  "FilterInventoryRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  646,
-                           "endLine":  698,
+                           "startLine":  657,
+                           "endLine":  709,
                            "lineCount":  53,
                            "directCalls":  [
                                                "NormalizeSearchText",
@@ -100930,8 +100953,8 @@
                            "name":  "FillInventoryList",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  700,
-                           "endLine":  707,
+                           "startLine":  711,
+                           "endLine":  718,
                            "lineCount":  8,
                            "directCalls":  [
                                                "FillListBox",
@@ -100952,8 +100975,8 @@
                            "name":  "mTxtSearch_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  709,
-                           "endLine":  712,
+                           "startLine":  720,
+                           "endLine":  723,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshInventory"
@@ -100974,8 +100997,8 @@
                            "name":  "mTxtItemSearch_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  714,
-                           "endLine":  718,
+                           "startLine":  725,
+                           "endLine":  729,
                            "lineCount":  5,
                            "directCalls":  [
                                                "LoadInventoryCache",
@@ -100996,8 +101019,8 @@
                            "name":  "mLstReceiveItems_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  720,
-                           "endLine":  722,
+                           "startLine":  731,
+                           "endLine":  733,
                            "lineCount":  3,
                            "directCalls":  [
                                                "LoadSelectedReceiveItemDetails"
@@ -101017,8 +101040,8 @@
                            "name":  "LoadSelectedReceiveItemDetails",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  724,
-                           "endLine":  735,
+                           "startLine":  735,
+                           "endLine":  746,
                            "lineCount":  12,
                            "directCalls":  [
                                                "NzText"
@@ -101038,8 +101061,8 @@
                            "name":  "mBtnRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  737,
-                           "endLine":  739,
+                           "startLine":  748,
+                           "endLine":  750,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RefreshClicked"
@@ -101062,8 +101085,8 @@
                            "name":  "mBtnAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  741,
-                           "endLine":  743,
+                           "startLine":  752,
+                           "endLine":  754,
                            "lineCount":  3,
                            "directCalls":  [
                                                "AddSelectedInventory"
@@ -101085,8 +101108,8 @@
                            "name":  "mBtnConfirm_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  745,
-                           "endLine":  781,
+                           "startLine":  756,
+                           "endLine":  792,
                            "lineCount":  37,
                            "directCalls":  [
                                                "BeginQuietUi",
@@ -101115,8 +101138,8 @@
                            "name":  "mLstAggregate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  783,
-                           "endLine":  785,
+                           "startLine":  794,
+                           "endLine":  796,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ShowSelectedAggregateReferences"
@@ -101136,8 +101159,8 @@
                            "name":  "ShowSelectedAggregateReferences",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  787,
-                           "endLine":  794,
+                           "startLine":  798,
+                           "endLine":  805,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ClearAggregateReferenceDetail"
@@ -101157,8 +101180,8 @@
                            "name":  "ClearAggregateReferenceDetail",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  796,
-                           "endLine":  798,
+                           "startLine":  807,
+                           "endLine":  809,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -101178,8 +101201,8 @@
                            "name":  "mBtnClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  800,
-                           "endLine":  808,
+                           "startLine":  811,
+                           "endLine":  819,
                            "lineCount":  9,
                            "directCalls":  [
                                                "ClearReceivingFormStagingForWorkbook",
@@ -101202,8 +101225,8 @@
                            "name":  "mBtnClose_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  810,
-                           "endLine":  812,
+                           "startLine":  821,
+                           "endLine":  823,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -101229,8 +101252,8 @@
                            "name":  "RefreshClicked",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  814,
-                           "endLine":  822,
+                           "startLine":  825,
+                           "endLine":  833,
                            "lineCount":  9,
                            "directCalls":  [
                                                "RefreshAllViews",
@@ -101253,13 +101276,14 @@
                            "name":  "AddSelectedInventory",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  824,
-                           "endLine":  891,
+                           "startLine":  835,
+                           "endLine":  902,
                            "lineCount":  68,
                            "directCalls":  [
                                                "NzText",
                                                "RefreshStaging",
                                                "ResolveOperatorWorkbook",
+                                               "SelectedReceiveItemSystemKey",
                                                "ShowStatus",
                                                "StageReceivingFormItemForWorkbook"
                                            ],
@@ -101278,8 +101302,8 @@
                            "name":  "mTabs_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  893,
-                           "endLine":  896,
+                           "startLine":  904,
+                           "endLine":  907,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ApplyReceivingTab"
@@ -101300,8 +101324,8 @@
                            "name":  "ApplyReceivingTab",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  898,
-                           "endLine":  960,
+                           "startLine":  909,
+                           "endLine":  971,
                            "lineCount":  63,
                            "directCalls":  [
                                                "ResizeReceivingLayout",
@@ -101322,8 +101346,8 @@
                            "name":  "ApplyReceivingHeaderLayout",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  962,
-                           "endLine":  971,
+                           "startLine":  973,
+                           "endLine":  982,
                            "lineCount":  10,
                            "directCalls":  [
                                                "AlignReceivingHeader"
@@ -101343,9 +101367,9 @@
                            "name":  "AlignReceivingHeader",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  973,
-                           "endLine":  983,
-                           "lineCount":  11,
+                           "startLine":  984,
+                           "endLine":  996,
+                           "lineCount":  13,
                            "directCalls":  [
                                                "BuildReceivingHeaderCaption"
                                            ],
@@ -101364,8 +101388,8 @@
                            "name":  "BuildReceivingHeaderCaption",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  985,
-                           "endLine":  1009,
+                           "startLine":  998,
+                           "endLine":  1022,
                            "lineCount":  25,
                            "directCalls":  [
 
@@ -101385,8 +101409,8 @@
                            "name":  "TestReturnsTabContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1011,
-                           "endLine":  1030,
+                           "startLine":  1024,
+                           "endLine":  1043,
                            "lineCount":  20,
                            "directCalls":  [
                                                "ApplyReceivingTab",
@@ -101408,8 +101432,8 @@
                            "name":  "TestStageInboundReturnActionForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1032,
-                           "endLine":  1110,
+                           "startLine":  1045,
+                           "endLine":  1123,
                            "lineCount":  79,
                            "directCalls":  [
                                                "ApplyReceivingTab",
@@ -101437,8 +101461,8 @@
                            "name":  "TestStageProtectedDispositionActionForWorkbook",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1112,
-                           "endLine":  1145,
+                           "startLine":  1125,
+                           "endLine":  1158,
                            "lineCount":  34,
                            "directCalls":  [
                                                "ApplyReceivingTab",
@@ -101463,12 +101487,16 @@
                            "name":  "TestReceivingSearchAndHeaderContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  1147,
-                           "endLine":  1170,
-                           "lineCount":  24,
+                           "startLine":  1160,
+                           "endLine":  1221,
+                           "lineCount":  62,
                            "directCalls":  [
                                                "ApplyReceivingHeaderLayout",
-                                               "BuildLayout"
+                                               "BuildLayout",
+                                               "FillReceiveItemResults",
+                                               "mTxtItemSearch_Change",
+                                               "NzText",
+                                               "SelectedReceiveItemSystemKey"
                                            ],
                            "literalApplicationRunTargets":  [
 
@@ -101485,8 +101513,8 @@
                            "name":  "ShowStatus",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1172,
-                           "endLine":  1175,
+                           "startLine":  1223,
+                           "endLine":  1226,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -101506,8 +101534,8 @@
                            "name":  "ShowPersistencePending",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1177,
-                           "endLine":  1181,
+                           "startLine":  1228,
+                           "endLine":  1232,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ShowStatus"
@@ -101527,8 +101555,8 @@
                            "name":  "DefaultReceiptId",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1183,
-                           "endLine":  1185,
+                           "startLine":  1234,
+                           "endLine":  1236,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -101548,8 +101576,8 @@
                            "name":  "NormalizeSearchText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1187,
-                           "endLine":  1193,
+                           "startLine":  1238,
+                           "endLine":  1244,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -101569,8 +101597,8 @@
                            "name":  "NzText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1195,
-                           "endLine":  1201,
+                           "startLine":  1246,
+                           "endLine":  1252,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -101590,8 +101618,8 @@
                            "name":  "MaxDoubleReceiving",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1203,
-                           "endLine":  1209,
+                           "startLine":  1254,
+                           "endLine":  1260,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -129740,6 +129768,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "AddListBox",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "AddRecipeOutputFlowRow",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1"
@@ -132136,6 +132170,7 @@
                                                  "tests/tooling/Test-DemoWorkflowSeed.ps1",
                                                  "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
                                                  "tests/tooling/Test-Plan022Slice4atLocationStock.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1",
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1",
                                                  "tests/unit/TestDesignsDomain.bas",
                                                  "tests/unit/TestInventoryApply.bas",
@@ -132432,6 +132467,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "mTxtItemSearch_Change",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "mTxtOutputReal_Change",
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1"
@@ -132548,6 +132589,12 @@
                                "testPaths":  [
                                                  "tests/tooling/Test-Plan022Slice4abProcessPickerInventory.ps1",
                                                  "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1"
+                                             ]
+                           },
+                           {
+                               "entryPoint":  "NzText",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
                                              ]
                            },
                            {
@@ -133599,6 +133646,12 @@
                                              ]
                            },
                            {
+                               "entryPoint":  "SelectedReceiveItemSystemKey",
+                               "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
+                                             ]
+                           },
+                           {
                                "entryPoint":  "SelectedUploadPath",
                                "testPaths":  [
                                                  "tests/tooling/Test-DemoWorkflowSeed.ps1"
@@ -134512,6 +134565,7 @@
                                                  "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1",
                                                  "tests/tooling/Test-Plan022Slice4asProcessOutputEditor.ps1",
                                                  "tests/tooling/Test-Plan022Slice4atLocationStock.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1",
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1",
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                  "tests/unit/TestDesignsDomain.bas",

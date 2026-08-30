@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "42e2267bcaf1dbf82c37dd5ac95dd71ed6fa28fe6698e557294192c540c87416",
-                          "maintenanceCandidatesSha256":  "5eb8731dffd11bc902e6094e3bea5133a24bfc0c6b767398aac8b6b88a886229"
+                          "implementationManifestSha256":  "e19fe86d4580ce0bb66b72d44332d980c87276f8423168fe1725948f62077395",
+                          "maintenanceCandidatesSha256":  "c404ad94084cd45698072a72cbd4c213b9e85fb63345acbd20cdd83ad01081d4"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -245,7 +245,7 @@
                                                   "sourcePath":  "src/Receiving/Forms/frmReceiving.frm",
                                                   "componentName":  "frmReceiving",
                                                   "packageKey":  "Receiving",
-                                                  "baselineLineCount":  1209,
+                                                  "baselineLineCount":  1260,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -21772,6 +21772,7 @@
                                                   "RefreshStaging",
                                                   "ResizeReceivingLayout",
                                                   "ResolveOperatorWorkbook",
+                                                  "SelectedReceiveItemSystemKey",
                                                   "SetOperatorWorkbook",
                                                   "ShowPersistencePending",
                                                   "ShowSelectedAggregateReferences",
@@ -22464,7 +22465,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4auReceivingListbox.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

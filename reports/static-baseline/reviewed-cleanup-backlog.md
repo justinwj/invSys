@@ -54,7 +54,7 @@
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1318 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1672 |
 | src/Production/Modules/mProduction.bas | Production | 13138 |
-| src/Receiving/Forms/frmReceiving.frm | Receiving | 1209 |
+| src/Receiving/Forms/frmReceiving.frm | Receiving | 1260 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22451 |
