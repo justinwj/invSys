@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5177,
-                     "lineCount":  115327,
+                     "procedureCount":  5180,
+                     "lineCount":  115418,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10575,7 +10575,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10762,7 +10762,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14707,6 +14707,8 @@
                                                   "ConfigureReusableDesignerAnchors",
                                                   "ConfigureRunListAnchors",
                                                   "ConfigureRunTreeAnchors",
+                                                  "ConnectionOutputDisplayName",
+                                                  "ConnectionOutputId",
                                                   "ConsumeReusableRunFixtureEntity",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
@@ -14931,6 +14933,7 @@
                                                   "RefreshConnectionNodeCombos",
                                                   "RefreshConnectionOutputChoices",
                                                   "RefreshConnectionRequirementChoices",
+                                                  "RefreshConnectionUomCatalog",
                                                   "RefreshInventoryList",
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
@@ -16817,6 +16820,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/DesignsDomain/Modules/modDesignsApply.bas"
+                                           ],
+                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.ExerciseReusableProductionFormActions",
+                           "candidateType":  "SPLIT_MODULE",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "ExerciseReusableProductionFormActions"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
                                            ],
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [

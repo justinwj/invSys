@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "265614f7d51bfc1321d7318f477caedd3f0727a9b5cb3e1f27ac3cf82e27ea8b",
-                          "maintenanceCandidatesSha256":  "dedc002ef67a727b0e326eb7ecec06cabcc422c98e95bc363eb05baa386e043b"
+                          "implementationManifestSha256":  "9485a7f4a2c509388ea209e88cc4080195e07d19989d8b5fa30f7f26b30f2af7",
+                          "maintenanceCandidatesSha256":  "36ce3bdc20dff0f348bda83b13a08e1d706d1a971edeee7642c8f2e234534869"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1043,
-                    "reviewedCandidateCount":  1045,
+                    "scannerCandidateCount":  1044,
+                    "reviewedCandidateCount":  1046,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  202,
+                            "candidateCount":  203,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8783,
+                                                  "baselineLineCount":  8874,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16066,6 +16066,8 @@
                                                   "ConfigureReusableDesignerAnchors",
                                                   "ConfigureRunListAnchors",
                                                   "ConfigureRunTreeAnchors",
+                                                  "ConnectionOutputDisplayName",
+                                                  "ConnectionOutputId",
                                                   "ConsumeReusableRunFixtureEntity",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
@@ -16290,6 +16292,7 @@
                                                   "RefreshConnectionNodeCombos",
                                                   "RefreshConnectionOutputChoices",
                                                   "RefreshConnectionRequirementChoices",
+                                                  "RefreshConnectionUomCatalog",
                                                   "RefreshInventoryList",
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
@@ -17062,6 +17065,29 @@
                                                "src/Production/Modules/mProduction.bas"
                                            ],
                            "reason":  "Runtime component exceeds the 1000-line new-module threshold.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
+                       },
+                       {
+                           "id":  "procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.ExerciseReusableProductionFormActions",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "ExerciseReusableProductionFormActions"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
 
                                                ],
@@ -20287,7 +20313,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20540,7 +20566,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

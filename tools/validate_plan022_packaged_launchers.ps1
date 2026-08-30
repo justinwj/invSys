@@ -1147,6 +1147,10 @@ try {
                         $productionActionReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)EditedRecipeVersionRetained=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputNameVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputIdPreserved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeUomCatalog=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionUpdated=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
