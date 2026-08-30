@@ -32,11 +32,11 @@ $checks = @(
         $form -match 'ConnectionRequirementId\(\)' },
     [pscustomobject]@{ Name = "Form.NoVisibleIngredientDropdown"; Pass =
         $form -match 'mCmbConnectionRequirement\.Visible = False' -and
-        $form -match '"Produced by / Output / Feeds Process / Qty / % / UOM"' -and
+        $form -match '"Produced by / Output / Feeds Process / Required Qty / Required % / UOM"' -and
         $form -notmatch '"Upstream Process / Output / Downstream Process / Input Requirement / Qty / % / UOM"' },
     [pscustomobject]@{ Name = "Form.OutputFlowProjection"; Pass =
         $form -match 'AddLabel pg, "Output Flow"' -and
-        $form -match 'Array\("Stage", "Produced by", "Output", "Feeds Process", "Qty", "%", "UOM", "", "", ""\)' -and
+        $form -match 'Array\("Stage", "Produced by", "Output", "Feeds Process", "Output Qty", "Yield %", "UOM", "", "", ""\)' -and
         $form -match 'mLstRecipeConnectionDisplay.*10' -and
         $form -match '"Finished inventory"' },
     [pscustomobject]@{ Name = "Form.DerivesForkStages"; Pass =

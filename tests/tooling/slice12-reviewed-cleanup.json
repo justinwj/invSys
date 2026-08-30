@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAtUtc": "2026-08-30T20:00:00Z",
+  "reviewedAtUtc": "2026-08-30T11:15:00Z",
   "before": {
     "components": 169,
     "procedures": 4690,
@@ -11,10 +11,10 @@
     "dynamicRootRegistrySha256": "7e457d98e73c72fc6133d017f7a414b37683e001314d2b13eb6068e227d6d4c4"
   },
   "approvedComponentGrowth": {
-    "slice": "Plan 022 Slices 4x through 4aq",
+    "slice": "Plan 022 Slices 4x through 4ar",
     "baseline": 150,
     "ceiling": 154,
-    "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project. Slice 4ai adds one D14 Admin inventory worksheet staging controller. Slices 4ak through 4am correct the existing Admin, Domain, Viewer, and picker services. Slices 4an through 4aq refine existing Production worksheet and Recipe Designer controllers only; they add no component, legacy package, or parallel authority.",
+    "rationale": "The approved Architecture v4.11 D15 redesign adds typed reusable-design, reusable-run, and captured-workbook Process worksheet controllers to the packaged Operations project. Slice 4ai adds one D14 Admin inventory worksheet staging controller. Slices 4ak through 4am correct the existing Admin, Domain, Viewer, and picker services. Slices 4an through 4ar refine existing Production worksheet, Recipe Designer, Ingredients Assignment, and Run List controllers only; they add no component, legacy package, or parallel authority.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
@@ -30,14 +30,15 @@
       "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
       "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1",
       "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1",
-      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1"
+      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1",
+      "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1"
     ]
   },
   "approvedProcedureGrowth": {
-    "slice": "Plan 022 Slices 4x through 4aq",
+    "slice": "Plan 022 Slices 4x through 4ar",
     "baseline": 4729,
-    "ceiling": 5201,
-    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds shared Process-component identity protection; 4af adds Recipe identity/version initialization; 4ag adds actual-output persistence; and 4ah fixes Admin edit selection. Slice 4ai adds captured-workbook Admin inventory table creation, normalized-header preflight, ADD/EDIT application, row-status reporting, and same-handler packaged proof. Slice 4aj adds retained per-batch output history, Used Goods and Process Total calculations, active-row mapping, and Utility-aware inventory display. Slice 4ak adds exact managed-entity creation and catalog-only completion plus shared dropdown and non-counted-entity helpers. Slice 4al adds a guarded form delete handler, exact-key counted/non-counted retirement service, durable RETIRED projection, catalog retirement, and packaged Domain proof. Slice 4am adds isolated counted-zero Domain creation proof and a bounded catalog-to-active-entity representative-key resolver while keeping zero entities out of exact available-allocation queries. Slice 4an changes no procedure count. Slice 4ao adds bounded catalog UOM and name-visible output helpers. Slice 4ap adds six bounded Recipe graph display, name-resolution, and visible selection helpers while preserving hidden graph identity and same-node rejection. Slice 4aq adds output-first compatibility binding, terminal-output projection, derived Stage display, and a fork/convergence public-handler fixture while preserving the seven-field persisted edge contract. Literal Application.Run targets and unresolved dynamic calls do not grow.",
+    "ceiling": 5208,
+    "rationale": "The approved D15 Process/Recipe lifecycle, graph editor, exact-entity allocator, ordered multi-output run engine, multi-table captured-workbook Process workbench, numbered assignment picker, text-safe table-wide row identity boundary, bulk DRAFT import, current exact-entity picker projection, OUTPUT managed-item picker/hidden-SKU round-trip, same-handler packaged selection/change tests, and bounded clean-restart probes add protected procedures. Slice 4ae adds shared Process-component identity protection; 4af adds Recipe identity/version initialization; 4ag adds actual-output persistence; and 4ah fixes Admin edit selection. Slice 4ai adds captured-workbook Admin inventory table creation, normalized-header preflight, ADD/EDIT application, row-status reporting, and same-handler packaged proof. Slice 4aj adds retained per-batch output history, Used Goods and Process Total calculations, active-row mapping, and Utility-aware inventory display. Slice 4ak adds exact managed-entity creation and catalog-only completion plus shared dropdown and non-counted-entity helpers. Slice 4al adds a guarded form delete handler, exact-key counted/non-counted retirement service, durable RETIRED projection, catalog retirement, and packaged Domain proof. Slice 4am adds isolated counted-zero Domain creation proof and a bounded catalog-to-active-entity representative-key resolver while keeping zero entities out of exact available-allocation queries. Slice 4an changes no procedure count. Slice 4ao adds bounded catalog UOM and name-visible output helpers. Slice 4ap adds six bounded Recipe graph display, name-resolution, and visible selection helpers while preserving hidden graph identity and same-node rejection. Slice 4aq adds output-first compatibility binding, terminal-output projection, derived Stage display, and a fork/convergence public-handler fixture while preserving the seven-field persisted edge contract. Slice 4ar adds seven bounded helpers for output-yield defaults, named assignment projection, and non-reentrant Process-filtered run projection; no Domain schema or authority path changes. Literal Application.Run targets and unresolved dynamic calls do not grow.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tests/unit/TestProductionStabilization.bas:TestReusableProductionRunActionContract",
@@ -61,14 +62,15 @@
       "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
       "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1",
       "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1",
-      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1"
+      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1",
+      "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1"
     ]
   },
   "approvedCandidateGrowth": {
-    "slice": "Plan 022 Slices 4x through 4aq",
+    "slice": "Plan 022 Slices 4x through 4ar",
     "baseline": 965,
     "ceiling": 1048,
-    "rationale": "The scanner increase is bounded to the approved Process/Recipe surfaces plus the D14 Admin captured-workbook inventory worksheet controller, Slice 4ak exact-entity/dropdown same-handler evidence, Slice 4al audit-preserving retirement handlers, and Slice 4am counted-zero creation/picker evidence. Slice 4an adds no maintenance candidate; Slices 4ao and 4ap add two reviewed Recipe Designer projection candidates; Slice 4aq adds three reviewed output-routing and Stage-projection candidates. Scanner findings remain review-only and authorize no deletion; duplicate-body and dynamic-call ratchets do not grow.",
+    "rationale": "The scanner increase is bounded to the approved Process/Recipe surfaces plus the D14 Admin captured-workbook inventory worksheet controller, Slice 4ak exact-entity/dropdown same-handler evidence, Slice 4al audit-preserving retirement handlers, and Slice 4am counted-zero creation/picker evidence. Slice 4an adds no maintenance candidate; Slices 4ao and 4ap add two reviewed Recipe Designer projection candidates; Slice 4aq adds three reviewed output-routing and Stage-projection candidates; Slice 4ar adds no maintenance candidate. Scanner findings remain review-only and authorize no deletion; duplicate-body and dynamic-call ratchets do not grow.",
     "protectingTests": [
       "tests/tooling/Test-Plan022Slice4xReusableProduction.ps1",
       "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
@@ -86,7 +88,8 @@
       "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
       "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1",
       "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1",
-      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1"
+      "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1",
+      "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1"
     ]
   },
   "approvedDuplicateGrowth": {
@@ -109,8 +112,8 @@
     {
       "source": "src/Production/Forms/frmProduction.frm",
       "baseline": 4913,
-      "ceiling": 9641,
-      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab/4ac/4ad add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual same-column INPUT/OUTPUT picker-open and commit proof, retained descriptive output Name, hidden output-SKU round-trip, and clean-restart diagnostics. Slice 4ae adds bounded public-handler proof that OUTPUT Name is suppressed and table-wide Base-36 row IDs stay unique and stable under order-dependent edits, plus load-boundary normalization for historical nonconforming draft component IDs. Slice 4af adds automatic Recipe identity initialization, editable positive-whole-number Recipe version validation, and actual New Recipe/Save Draft/Release evidence. Slice 4ag adds per-output Actual Output selection/change handling and packaged readable-header, Last Actual, and actual-inventory assertions. Slice 4aj retains completed batch rows and maps operator edits only to the active output rows while proving Used Goods, Process Total, and Utility display through the public run handler. Slice 4an extends the existing public-handler proof with an LB/EA assembly, per-group basis/percent assertions, and selected-table-only removal under existing multi-table state. Slice 4ao adds a catalog-backed connection UOM combo, name-visible/ID-bound output projection, and same-handler Connect/Update persistence proof without changing the graph schema. Slice 4ap adds header-backed full-width named graph projections, upstream/downstream guidance, same-node rejection proof, and visible Connect/Update/Disconnect selection while retaining the internal ID-bound edge list. Slice 4aq replaces arbitrary downstream/ingredient selection with compatible output-first routing, an Output Flow projection with terminal finished inventory, derived fork/convergence Stages, and packaged same-handler graph proof."
+      "ceiling": 9890,
+      "rationale": "Five operator-visible pages and their real action handlers replace the former single Recipe Builder surface; Slices 4y/4z/4aa/4ab/4ac/4ad add locked generated identities, separate Process workbench actions, numbered alternatives, Ctrl+click bulk DRAFT import, actual same-column INPUT/OUTPUT picker-open and commit proof, retained descriptive output Name, hidden output-SKU round-trip, and clean-restart diagnostics. Slice 4ae adds bounded public-handler proof that OUTPUT Name is suppressed and table-wide Base-36 row IDs stay unique and stable under order-dependent edits, plus load-boundary normalization for historical nonconforming draft component IDs. Slice 4af adds automatic Recipe identity initialization, editable positive-whole-number Recipe version validation, and actual New Recipe/Save Draft/Release evidence. Slice 4ag adds per-output Actual Output selection/change handling and packaged readable-header, Last Actual, and actual-inventory assertions. Slice 4aj retains completed batch rows and maps operator edits only to the active output rows while proving Used Goods, Process Total, and Utility display through the public run handler. Slice 4an extends the existing public-handler proof with an LB/EA assembly, per-group basis/percent assertions, and selected-table-only removal under existing multi-table state. Slice 4ao adds a catalog-backed connection UOM combo, name-visible/ID-bound output projection, and same-handler Connect/Update persistence proof without changing the graph schema. Slice 4ap adds header-backed full-width named graph projections, upstream/downstream guidance, same-node rejection proof, and visible Connect/Update/Disconnect selection while retaining the internal ID-bound edge list. Slice 4aq replaces arbitrary downstream/ingredient selection with compatible output-first routing, an Output Flow projection with terminal finished inventory, derived fork/convergence Stages, and packaged same-handler graph proof. Slice 4ar adds header-backed Process/Assignment lists, output-yield normalization/projection, named acceptable-item display, a whole-Recipe run plan, non-reentrant Process filtering, and an inert target-output Qty stub through the same public handlers."
     },
     {
       "source": "src/Production/Modules/mProduction.bas",
@@ -194,6 +197,7 @@
     "tests/tooling/Test-Plan022Slice4aoRecipeConnectionEditor.ps1",
     "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1",
     "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1",
+    "tests/tooling/Test-Plan022Slice4arProductionClarity.ps1",
     "tools/validate_plan022_packaged_launchers.ps1:ProductionReusable",
     "tools/validate_slice9_production_layout.ps1",
     "tests/tooling/Test-Plan022Slice4xProductionRestart.ps1"

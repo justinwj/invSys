@@ -1167,7 +1167,11 @@ try {
                         $productionActionReport -match '(?:^|\|)RecipeForkConvergenceVisible=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeTerminalOutputVisible=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeStagesDerived=True(?:\||$)' -and
-                        $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
+                        $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)OutputYieldDefaults=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)OutputFlowUsesProcessYield=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessAssignmentHeaders=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AcceptableItemsNamed=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
 
@@ -1193,7 +1197,9 @@ try {
                         $productionRunReport -match '(?:^|\|)SystemKeyHeadersReadable=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)BatchHistoryRows=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)ProcessTotal=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)UtilityDisplay=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)UtilityDisplay=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)MultiProcessRunPlan=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)TargetOutputScaleStub=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
