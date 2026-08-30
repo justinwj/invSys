@@ -188,6 +188,8 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
     Dim entities As Variant
     Dim result() As Variant
     Dim trimmed() As Variant
+    Dim buckets As Object
+    Dim bucketOrder As Collection
     Dim rawRequirement As Variant
     Dim requirement As Object
     Dim entityRow As Long
@@ -197,6 +199,11 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
     Dim nodeId As String
     Dim requirementId As String
     Dim itemCode As String
+    Dim bucketKey As String
+    Dim rawBucketKey As Variant
+    Dim bucket As Variant
+    Dim allocatedQty As Double
+    Dim requiredQty As Double
 
     If Not mLoaded Then Exit Function
     entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
@@ -208,25 +215,47 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
         nodeId = RunRecordText(requirement, "ProcessNodeId")
         requirementId = RunRecordText(requirement, "RequirementId")
         If RequirementHasIncomingConnection(nodeId, requirementId) Then GoTo NextRequirement
+        Set buckets = NewTextDictionary()
+        Set bucketOrder = New Collection
         For entityRow = LBound(entities, 1) To UBound(entities, 1)
             itemCode = Trim$(CStr(entities(entityRow, 3)))
             If Not RequirementAllowsItem(nodeId, requirementId, itemCode, CStr(entities(entityRow, 2))) Then GoTo NextEntity
             If locationFilter <> "" Then
                 If StrComp(locationFilter, Trim$(CStr(entities(entityRow, 7))), vbTextCompare) <> 0 Then GoTo NextEntity
             End If
+            bucketKey = StockBucketKeyForEntity(entities, entityRow)
+            If Not buckets.Exists(bucketKey) Then
+                bucket = Array(CStr(entities(entityRow, 1)), CStr(entities(entityRow, 4)), _
+                    CStr(entities(entityRow, 5)), CStr(entities(entityRow, 7)), 0#, _
+                    EntityRowIsNonCounted(entities, entityRow), _
+                    CStr(ExactEntityInventoryDisplay(entities, entityRow)))
+                buckets.Add bucketKey, bucket
+                bucketOrder.Add bucketKey
+            End If
+            bucket = buckets(bucketKey)
+            If Not CBool(bucket(5)) And IsNumeric(entities(entityRow, 6)) Then _
+                bucket(4) = CDbl(bucket(4)) + CDbl(entities(entityRow, 6))
+            buckets(bucketKey) = bucket
+NextEntity:
+        Next entityRow
+        requiredQty = ScaledRecordQty(requirement)
+        For Each rawBucketKey In bucketOrder
+            bucketKey = CStr(rawBucketKey)
+            bucket = buckets(bucketKey)
+            allocatedQty = StockBucketAllocatedQty(entities, nodeId, requirementId, bucketKey)
             outRow = outRow + 1
             result(outRow, 1) = nodeId
             result(outRow, 2) = requirementId
             result(outRow, 3) = RunRecordText(requirement, "RequirementName")
-            result(outRow, 4) = entities(entityRow, 1)
-            result(outRow, 5) = entities(entityRow, 4)
-            result(outRow, 6) = AllocationPercent(nodeId, requirementId, CStr(entities(entityRow, 1)))
-            result(outRow, 7) = AllocationQty(nodeId, requirementId, CStr(entities(entityRow, 1)))
-            result(outRow, 8) = IIf(Trim$(CStr(entities(entityRow, 5))) <> "", entities(entityRow, 5), RunRecordText(requirement, "UOM"))
-            result(outRow, 9) = ExactEntityInventoryDisplay(entities, entityRow)
-            result(outRow, 10) = entities(entityRow, 7)
-NextEntity:
-        Next entityRow
+            result(outRow, 4) = bucket(0)
+            result(outRow, 5) = bucket(1)
+            If allocatedQty > QTY_TOLERANCE And requiredQty > 0 Then _
+                result(outRow, 6) = allocatedQty / requiredQty * 100#
+            If allocatedQty > QTY_TOLERANCE Then result(outRow, 7) = allocatedQty
+            result(outRow, 8) = IIf(Trim$(CStr(bucket(2))) <> "", bucket(2), RunRecordText(requirement, "UOM"))
+            result(outRow, 9) = StockBucketAvailableDisplay(CDbl(bucket(4)), CBool(bucket(5)), CStr(bucket(6)))
+            result(outRow, 10) = bucket(3)
+        Next rawBucketKey
 NextRequirement:
     Next rawRequirement
     If outRow = 0 Then Exit Function
@@ -238,6 +267,153 @@ NextRequirement:
     Next rowIndex
     ReusableRunPaletteRows = trimmed
 CleanFail:
+End Function
+
+Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
+                                                 ByVal requirementId As String, _
+                                                 ByVal representativeSystemKey As String, _
+                                                 ByVal qty As Double, _
+                                                 Optional ByRef report As String = "") As Boolean
+    On Error GoTo Failed
+
+    Dim requirement As Object
+    Dim entities As Variant
+    Dim representativeRow As Long
+    Dim entityRow As Long
+    Dim bucketKey As String
+    Dim entityKey As String
+    Dim allocationId As String
+    Dim currentAllocation As Double
+    Dim currentBucketAllocation As Double
+    Dim otherRequirementQty As Double
+    Dim otherEntityQty As Double
+    Dim availableForPlan As Double
+    Dim bucketAvailable As Double
+    Dim requiredQty As Double
+    Dim remainingQty As Double
+    Dim takeQty As Double
+    Dim nonCounted As Boolean
+    Dim planned As Object
+    Dim removeIds As Collection
+    Dim removeId As Variant
+    Dim planId As Variant
+
+    If Not mLoaded Then
+        report = "Load a released Recipe first."
+        Exit Function
+    End If
+    Set requirement = FindRequirement(processNodeId, requirementId)
+    If requirement Is Nothing Or RequirementHasIncomingConnection(processNodeId, requirementId) Then
+        report = "The selected external requirement could not be resolved."
+        Exit Function
+    End If
+    If qty < 0 Then
+        report = "Allocation quantity cannot be negative."
+        Exit Function
+    End If
+
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    If Not IsArray(entities) Then
+        report = "No managed inventory stock is available."
+        Exit Function
+    End If
+    representativeRow = FindExactEntityRow(entities, representativeSystemKey)
+    If representativeRow = 0 Then
+        report = "The selected stock bucket is no longer available. Refresh Production Run."
+        Exit Function
+    End If
+    If Not RequirementAllowsItem(processNodeId, requirementId, _
+            CStr(entities(representativeRow, 3)), CStr(entities(representativeRow, 2))) Then
+        report = "The selected stock bucket is not acceptable for this requirement."
+        Exit Function
+    End If
+
+    bucketKey = StockBucketKeyForEntity(entities, representativeRow)
+    nonCounted = EntityRowIsNonCounted(entities, representativeRow)
+    Set removeIds = New Collection
+    For entityRow = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(StockBucketKeyForEntity(entities, entityRow), bucketKey, vbTextCompare) = 0 Then
+            entityKey = Trim$(CStr(entities(entityRow, 1)))
+            allocationId = AllocationKey(processNodeId, requirementId, entityKey)
+            currentAllocation = 0#
+            If mAllocations.Exists(allocationId) Then
+                currentAllocation = CDbl(mAllocations(allocationId))
+                currentBucketAllocation = currentBucketAllocation + currentAllocation
+                removeIds.Add allocationId
+            End If
+            If nonCounted Then
+                bucketAvailable = qty
+            Else
+                otherEntityQty = AllocationTotalForEntity(entityKey, "") - currentAllocation
+                availableForPlan = 0#
+                If IsNumeric(entities(entityRow, 6)) Then _
+                    availableForPlan = CDbl(entities(entityRow, 6)) - otherEntityQty
+                If availableForPlan > 0 Then bucketAvailable = bucketAvailable + availableForPlan
+            End If
+        End If
+    Next entityRow
+
+    requiredQty = ScaledRecordQty(requirement)
+    otherRequirementQty = AllocationTotalForRequirement(processNodeId, requirementId, "") - _
+        currentBucketAllocation
+    If otherRequirementQty + qty > requiredQty + QTY_TOLERANCE Then
+        report = "Allocation exceeds the scaled requirement of " & FormatRunNumberLocal(requiredQty) & "."
+        Exit Function
+    End If
+    If Not nonCounted And qty > bucketAvailable + QTY_TOLERANCE Then
+        report = "Allocation exceeds stock bucket availability of " & _
+            FormatRunNumberLocal(bucketAvailable) & "."
+        Exit Function
+    End If
+
+    Set planned = NewTextDictionary()
+    remainingQty = qty
+    For entityRow = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(StockBucketKeyForEntity(entities, entityRow), bucketKey, vbTextCompare) = 0 Then
+            entityKey = Trim$(CStr(entities(entityRow, 1)))
+            allocationId = AllocationKey(processNodeId, requirementId, entityKey)
+            currentAllocation = 0#
+            If mAllocations.Exists(allocationId) Then currentAllocation = CDbl(mAllocations(allocationId))
+            If nonCounted Then
+                If remainingQty > QTY_TOLERANCE Then
+                    planned.Add allocationId, remainingQty
+                    remainingQty = 0#
+                End If
+                Exit For
+            End If
+            otherEntityQty = AllocationTotalForEntity(entityKey, "") - currentAllocation
+            availableForPlan = 0#
+            If IsNumeric(entities(entityRow, 6)) Then _
+                availableForPlan = CDbl(entities(entityRow, 6)) - otherEntityQty
+            If availableForPlan > QTY_TOLERANCE And remainingQty > QTY_TOLERANCE Then
+                takeQty = availableForPlan
+                If takeQty > remainingQty Then takeQty = remainingQty
+                planned.Add allocationId, takeQty
+                remainingQty = remainingQty - takeQty
+            End If
+        End If
+    Next entityRow
+    If remainingQty > QTY_TOLERANCE Then
+        report = "Allocation could not be expanded across sufficient exact inventory keys."
+        Exit Function
+    End If
+
+    For Each removeId In removeIds
+        If mAllocations.Exists(CStr(removeId)) Then mAllocations.Remove CStr(removeId)
+    Next removeId
+    For Each planId In planned.Keys
+        mAllocations.Add CStr(planId), CDbl(planned(planId))
+    Next planId
+    mCheckedIn = False
+    mCompleted = False
+    report = "Exact allocation expansion saved: " & FormatRunNumberLocal(qty) & _
+             " of " & FormatRunNumberLocal(requiredQty) & " across " & _
+             CStr(planned.Count) & " System_Key entity(s)."
+    ApplyReusableRunStockAllocation = True
+    Exit Function
+
+Failed:
+    report = "Stock allocation failed: " & Err.Description
 End Function
 
 Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
@@ -1193,6 +1369,74 @@ Private Function AllocationPercent(ByVal nodeId As String, ByVal requirementId A
     If requiredQty > 0 Then AllocationPercent = CDbl(qty) / requiredQty * 100#
 End Function
 
+Private Function StockBucketKey(ByVal sku As String, ByVal uom As String, _
+                                ByVal locationValue As String, _
+                                ByVal conditionValue As String) As String
+    StockBucketKey = UCase$(Trim$(sku)) & vbTab & UCase$(Trim$(uom)) & vbTab & _
+                     UCase$(Trim$(locationValue)) & vbTab & UCase$(Trim$(conditionValue))
+End Function
+
+Private Function StockBucketKeyForEntity(ByVal entities As Variant, _
+                                         ByVal entityRow As Long) As String
+    Dim conditionValue As String
+
+    If UBound(entities, 2) >= 8 Then conditionValue = CStr(entities(entityRow, 8))
+    StockBucketKeyForEntity = StockBucketKey(CStr(entities(entityRow, 2)), _
+        CStr(entities(entityRow, 5)), CStr(entities(entityRow, 7)), conditionValue)
+End Function
+
+Private Function FindExactEntityRow(ByVal entities As Variant, _
+                                    ByVal systemKey As String) As Long
+    Dim entityRow As Long
+
+    If Not IsArray(entities) Then Exit Function
+    For entityRow = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(Trim$(CStr(entities(entityRow, 1))), Trim$(systemKey), _
+                   vbTextCompare) = 0 Then
+            FindExactEntityRow = entityRow
+            Exit Function
+        End If
+    Next entityRow
+End Function
+
+Private Function EntityRowIsNonCounted(ByVal entities As Variant, _
+                                       ByVal entityRow As Long) As Boolean
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryValue As String
+
+    If UBound(entities, 2) >= 11 Then trackQty = UCase$(Trim$(CStr(entities(entityRow, 11))))
+    If UBound(entities, 2) >= 12 Then itemKind = UCase$(Trim$(CStr(entities(entityRow, 12))))
+    If UBound(entities, 2) >= 13 Then categoryValue = UCase$(Trim$(CStr(entities(entityRow, 13))))
+    EntityRowIsNonCounted = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+        Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+        Or categoryValue = "UTILITY" Or categoryValue = "SERVICE")
+End Function
+
+Private Function StockBucketAllocatedQty(ByVal entities As Variant, ByVal nodeId As String, _
+                                         ByVal requirementId As String, _
+                                         ByVal bucketKey As String) As Double
+    Dim entityRow As Long
+    Dim qty As Variant
+
+    For entityRow = LBound(entities, 1) To UBound(entities, 1)
+        If StrComp(StockBucketKeyForEntity(entities, entityRow), bucketKey, vbTextCompare) = 0 Then
+            qty = AllocationQty(nodeId, requirementId, CStr(entities(entityRow, 1)))
+            If IsNumeric(qty) Then StockBucketAllocatedQty = StockBucketAllocatedQty + CDbl(qty)
+        End If
+    Next entityRow
+End Function
+
+Private Function StockBucketAvailableDisplay(ByVal totalQty As Double, _
+                                             ByVal nonCounted As Boolean, _
+                                             ByVal nonCountedLabel As String) As Variant
+    If nonCounted Then
+        StockBucketAvailableDisplay = nonCountedLabel
+    Else
+        StockBucketAvailableDisplay = totalQty
+    End If
+End Function
+
 Private Function AllocationTotalForRequirement(ByVal nodeId As String, ByVal requirementId As String, _
                                                ByVal excludedKey As String) As Double
     Dim key As Variant
@@ -1216,6 +1460,24 @@ Private Function AllocationTotalForEntity(ByVal systemKey As String, ByVal exclu
         If StrComp(CStr(key), excludedKey, vbTextCompare) <> 0 _
            And StrComp(AllocationSystemKey(CStr(key)), systemKey, vbTextCompare) = 0 Then
             AllocationTotalForEntity = AllocationTotalForEntity + CDbl(mAllocations(key))
+        End If
+    Next key
+End Function
+
+Public Function ReusableRunExactAllocationCountForRequirement(ByVal nodeId As String, _
+                                                              ByVal requirementId As String) As Long
+    Dim key As Variant
+    Dim parts() As String
+
+    If mAllocations Is Nothing Then Exit Function
+    For Each key In mAllocations.Keys
+        parts = Split(CStr(key), vbTab)
+        If UBound(parts) = 2 Then
+            If StrComp(parts(0), nodeId, vbTextCompare) = 0 _
+               And StrComp(parts(1), requirementId, vbTextCompare) = 0 Then
+                ReusableRunExactAllocationCountForRequirement = _
+                    ReusableRunExactAllocationCountForRequirement + 1
+            End If
         End If
     Next key
 End Function

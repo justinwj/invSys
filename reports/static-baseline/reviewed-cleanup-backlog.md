@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1048
-- Reviewed candidates: 1050
+- Scanner candidates: 1050
+- Reviewed candidates: 1052
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 207 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 209 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
@@ -50,11 +50,11 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2739 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 9949 |
+| src/Production/Forms/frmProduction.frm | Production | 10015 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1318 |
-| src/Production/Modules/modProductionReusableRun.bas | Production | 1410 |
+| src/Production/Modules/modProductionReusableRun.bas | Production | 1672 |
 | src/Production/Modules/mProduction.bas | Production | 13138 |
-| src/Receiving/Forms/frmReceiving.frm | Receiving | 1183 |
+| src/Receiving/Forms/frmReceiving.frm | Receiving | 1209 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
 | src/Shipping/Modules/modTS_Shipments.bas | Shipping | 22451 |
@@ -688,6 +688,8 @@
 | reachability:src_Production_Forms_frmProduction.frm:frmProduction.SelectAssignmentRecipeFromList | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | reachability:src_Production_Modules_modProductionCompletionService.bas:modProductionCompletionService.ClearProductionSessionFromWorkbook | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionInit.bas:modProductionInit.InitProductionAddin | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
+| reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.AllocationPercent | PRODUCTION | REMOVE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ApplyReusableRunAllocation | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ReusableRunLastSummary | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnClearPaletteBuilder | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |
 | reachability:src_Production_Modules_mProduction.bas:mProduction.BtnHideSystem | PRODUCTION | UNRESOLVED | MEDIUM | MANUAL_INVESTIGATION |

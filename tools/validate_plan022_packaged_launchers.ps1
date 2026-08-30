@@ -511,7 +511,10 @@ function Add-ProductionPickerProjectionFixture {
 
     $wsSku = Get-WorksheetSafe -Workbook $InventoryWorkbook -WorksheetName "SkuCatalog"
     $loSku = Get-ListObjectSafe -Worksheet $wsSku -TableName "tblSkuCatalog"
+    $wsLog = Get-WorksheetSafe -Workbook $InventoryWorkbook -WorksheetName "InventoryLog"
+    $loLog = Get-ListObjectSafe -Worksheet $wsLog -TableName "tblInventoryLog"
     if ($null -eq $loSku) { throw "Production picker fixture requires tblSkuCatalog." }
+    if ($null -eq $loLog) { throw "Production picker fixture requires tblInventoryLog." }
     foreach ($header in @("ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "CATEGORY")) {
         if ((Get-ColumnIndexSafe -ListObject $loSku -ColumnName $header) -eq 0) {
             $newColumn = $loSku.ListColumns.Add()
@@ -520,7 +523,7 @@ function Add-ProductionPickerProjectionFixture {
     }
 
     $fixture = @{
-        "SKU-RUN-RAW" = @("SYS-LIVE-PRODUCTION-RUN-RAW", "Production Raw Material", 20.0)
+        "SKU-RUN-RAW" = @("SYS-LIVE-PRODUCTION-RUN-RAW-A", "Production Raw Material", 3.0)
         "SKU-RUN-STALE" = @("SYS-LIVE-PRODUCTION-RUN-STALE", "Production Stale Material", 6.0)
     }
     $entityRows = @()
@@ -544,6 +547,60 @@ function Add-ProductionPickerProjectionFixture {
         $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "DESCRIPTION")).Value2 = "isolated packaged picker fixture"
         $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "CATEGORY")).Value2 = "INGREDIENT"
         $entityRows += ,@([string]$fixture[$sku][0], $sku, [double]$fixture[$sku][2], "LINE", "GOOD", "ACTIVE", "{}", [datetime]::UtcNow)
+    }
+    foreach ($rawPart in @(
+        @("B", 3.0), @("C", 3.0), @("D", 3.0), @("E", 3.0),
+        @("F", 3.0), @("G", 2.0)
+    )) {
+        $entityRows += ,@(
+            "SYS-LIVE-PRODUCTION-RUN-RAW-$($rawPart[0])", "SKU-RUN-RAW",
+            [double]$rawPart[1], "LINE", "GOOD", "ACTIVE", "{}", [datetime]::UtcNow
+        )
+    }
+
+    $rawSeedRow = 0
+    for ($candidateRow = 1; $candidateRow -le [int]$loLog.ListRows.Count; $candidateRow++) {
+        $candidateSku = [string]$loLog.DataBodyRange.Cells(
+            $candidateRow,
+            (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "SKU")
+        ).Value2
+        if ($candidateSku -eq "SKU-RUN-RAW") { $rawSeedRow = $candidateRow; break }
+    }
+    if ($rawSeedRow -eq 0) { throw "Production picker fixture requires the raw seed event." }
+    $fixtureWarehouseId = [string]$loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "WarehouseId")
+    ).Value2
+    $loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "System_Key")
+    ).Value2 = "SYS-LIVE-PRODUCTION-RUN-RAW-A"
+    $loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "QtyDelta")
+    ).Value2 = 3.0
+    foreach ($rawPart in @(
+        @("B", 3.0), @("C", 3.0), @("D", 3.0), @("E", 3.0),
+        @("F", 3.0), @("G", 2.0)
+    )) {
+        Add-ListObjectRow -ListObject $loLog -Values @{
+            "EventID" = "EVT-LIVE-SEED-SKU-RUN-RAW"
+            "UndoOfEventId" = ""
+            "AppliedSeq" = 1
+            "EventType" = "INVENTORY_CREATE"
+            "OccurredAtUTC" = [datetime]::UtcNow
+            "AppliedAtUTC" = [datetime]::UtcNow
+            "WarehouseId" = $fixtureWarehouseId
+            "StationId" = "S1"
+            "UserId" = "svc_processor"
+            "System_Key" = "SYS-LIVE-PRODUCTION-RUN-RAW-$($rawPart[0])"
+            "SKU" = "SKU-RUN-RAW"
+            "QtyDelta" = [double]$rawPart[1]
+            "Location" = "LINE"
+            "Condition" = "GOOD"
+            "AttributesJson" = "{}"
+            "Note" = "isolated packaged split stock fixture"
+        }
     }
 
     $wsEntities = $InventoryWorkbook.Worksheets.Add()
@@ -973,6 +1030,7 @@ try {
                 $receivingControlReport -match '(?:^|\|)Location=True(?:\||$)' -and
                 $receivingControlReport -match '(?:^|\|)OptionalLot=True(?:\||$)' -and
                 $receivingControlReport -match '(?:^|\|)ReceivingHeaderColumnsAligned=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)CapacityStub=True(?:\||$)' -and
                 $refreshOk -and
                 $customPreserved -and
                 $canonicalHashesUnchanged -and
@@ -1171,6 +1229,7 @@ try {
                         $productionActionReport -match '(?:^|\|)OutputYieldDefaults=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)OutputFlowUsesProcessYield=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)ProcessAssignmentHeaders=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AssignmentSystemKeyReadable=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)AcceptableItemsNamed=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)ProcessOutputEditorCompact=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)ProcessOutputUomCatalog=True(?:\||$)'
@@ -1201,7 +1260,9 @@ try {
                         $productionRunReport -match '(?:^|\|)ProcessTotal=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)UtilityDisplay=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)MultiProcessRunPlan=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)TargetOutputScaleStub=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)TargetOutputScaleStub=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LocationStockBuckets=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LocationStockExactExpansion=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {

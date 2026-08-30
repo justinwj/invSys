@@ -256,8 +256,8 @@ Private Sub BuildLayout()
     Set mBtnAdd = AddButton("btnAdd", "Add Selected", 884, 78, 98, 28)
     Set mLblReceiveItemsTitle = AddLabel("lblReceiveItemsTitle", "Receive Item Results", 18, 110, 180, 18, True)
     Set mLblReceiveItemsHeader = AddLabel("lblReceiveItemsHeader", "", 18, 132, 964, 16, False)
-    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 10, _
-        "0 pt;94 pt;176 pt;48 pt;64 pt;82 pt;62 pt;66 pt;176 pt;100 pt")
+    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 11, _
+        "0 pt;86 pt;150 pt;44 pt;58 pt;76 pt;96 pt;52 pt;62 pt;160 pt;100 pt")
 
     Set mLblReceiveLocation = AddLabel("lblReceiveLocation", "Receive location *", 18, 280, 112, 18, True)
     Set mTxtReceiveLocation = AddTextBox("txtReceiveLocation", 134, 276, 170, 22)
@@ -545,11 +545,32 @@ ErrHandler:
 End Sub
 
 Private Sub RefreshReceiveItems()
-    FillListBox mLstReceiveItems, mItemRows, 10
+    FillReceiveItemResults mItemRows
     If mLstReceiveItems.ListCount = 1 Then
         mLstReceiveItems.ListIndex = 0
         LoadSelectedReceiveItemDetails
     End If
+End Sub
+
+Private Sub FillReceiveItemResults(ByVal values As Variant)
+    Dim r As Long
+    Dim c As Long
+    Dim rowIndex As Long
+
+    mLstReceiveItems.Clear
+    mLstReceiveItems.ColumnCount = 11
+    If IsEmpty(values) Or Not IsArray(values) Then Exit Sub
+    For r = 1 To UBound(values, 1)
+        mLstReceiveItems.AddItem NzText(values(r, 1))
+        rowIndex = mLstReceiveItems.ListCount - 1
+        For c = 2 To 6
+            mLstReceiveItems.List(rowIndex, c - 1) = NzText(values(r, c))
+        Next c
+        mLstReceiveItems.List(rowIndex, 6) = ""
+        For c = 7 To 10
+            mLstReceiveItems.List(rowIndex, c) = NzText(values(r, c))
+        Next c
+    Next r
 End Sub
 
 Private Sub LoadHistoryCache()
@@ -707,9 +728,9 @@ Private Sub LoadSelectedReceiveItemDetails()
         mLstReceiveItems.List(mLstReceiveItems.ListIndex, 5))
     If mTabs.Value = 1 Then
         mTxtLotNumber.Value = NzText( _
-            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 6))
-        mCboCondition.Value = NzText( _
             mLstReceiveItems.List(mLstReceiveItems.ListIndex, 7))
+        mCboCondition.Value = NzText( _
+            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 8))
     End If
 End Sub
 
@@ -940,7 +961,7 @@ End Sub
 
 Private Sub ApplyReceivingHeaderLayout()
     AlignReceivingHeader mLblReceiveItemsHeader, mLstReceiveItems, _
-        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Lot", "Condition", "Description", "Vendor")
+        Array("System_Key", "Code", "Item", "UOM", "Available", "Location", "Capacity (coming later)", "Lot", "Condition", "Description", "Vendor")
     AlignReceivingHeader mLblInventoryHeader, mLstInventory, _
         Array("Date", "Type", "Reference", "Item", "Qty", "UOM", "Location", "Lot", "Condition", "Return reason")
     AlignReceivingHeader mLblStagedHeader, mLstStaged, _
@@ -1125,6 +1146,8 @@ End Function
 
 Public Function TestReceivingSearchAndHeaderContract() As String
     Dim aligned As Boolean
+    Dim capacityStub As Boolean
+    Dim receiveWidths As Variant
 
     If Not mBuilt Then BuildLayout
     ApplyReceivingHeaderLayout
@@ -1134,9 +1157,12 @@ Public Function TestReceivingSearchAndHeaderContract() As String
         (mLblInventoryHeader.Left = mLstInventory.Left) And _
         (mLblStagedHeader.Left = mLstStaged.Left) And _
         (mLblAggregateHeader.Left = mLstAggregate.Left)
+    receiveWidths = Split(CStr(mLstReceiveItems.ColumnWidths), ";")
+    capacityStub = (mLstReceiveItems.ColumnCount = 11) And _
+        (UBound(receiveWidths) = 10) And (Val(CStr(receiveWidths(6))) >= 80)
     If aligned Then
         TestReceivingSearchAndHeaderContract = _
-            "OK|DedicatedItemResults=True|Location=True|OptionalLot=True|Condition=True|Returns=True|ViewerReadOnly=True|ReceivingHeaderColumnsAligned=True"
+            "OK|DedicatedItemResults=True|Location=True|OptionalLot=True|Condition=True|Returns=True|ViewerReadOnly=True|ReceivingHeaderColumnsAligned=True|CapacityStub=" & CStr(capacityStub)
     Else
         TestReceivingSearchAndHeaderContract = _
             "FAIL|ReceivingHeaderColumnsAligned=False"

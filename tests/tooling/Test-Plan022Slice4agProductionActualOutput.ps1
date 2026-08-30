@@ -20,7 +20,8 @@ $checks["Docs.ActualOutputContract"] =
     $plan.Contains("Slice 4ag -- reusable-run actual output and list readability") -and
     $controls.Contains("Slice 4ag reusable-run actual output and list readability:")
 $checks["Form.ReadableRunHeaders"] =
-    $form.Contains('Array("", "", "Ingredient", "System_Key", "Inventory Item"') -and
+    $form.Contains('Array("", "", "Process / Ingredient", "", "Inventory Stock", "% Req", "Qty", "UOM", "Available", "Location")') -and
+    $form.Contains('Array("System_Key", "Managed Item", "UOM", "Inv", "Location", "Description", "")') -and
     $form.Contains('Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv")') -and
     $form.Contains('Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key")') -and
     $form.Contains('AddLabel pg, "Actual Output"')

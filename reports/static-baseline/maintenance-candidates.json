@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5210,
-                     "lineCount":  116493,
+                     "procedureCount":  5223,
+                     "lineCount":  116847,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -973,6 +973,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.AllocationPercent",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "modProductionReusableRun",
+                           "procedureNames":  [
+                                                  "AllocationPercent"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionReusableRun.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
                            "protectingTests":  [
@@ -14730,6 +14747,7 @@
                                                   "ApplySelectedProductionOutput",
                                                   "ApplySelectedRunPaletteSplit",
                                                   "AssignmentItemRowIsBlank",
+                                                  "AssignmentSystemKeyReadable",
                                                   "AutoOrderRecipeNodes",
                                                   "BindOperatorWorkbookForRun",
                                                   "BindSelectedCompatibleRequirement",
@@ -14814,6 +14832,7 @@
                                                   "FindIdentityListRow",
                                                   "FindProductionOutputTableRow",
                                                   "FindRecipeOutputFlowRowForTest",
+                                                  "FindReusablePaletteItemName",
                                                   "FindReusablePaletteSystemKey",
                                                   "FirstNonBlankCheckRow",
                                                   "FirstReusableActiveOutputRow",
@@ -15060,6 +15079,8 @@
                                                   "ReusableActiveOutputRowCount",
                                                   "ReusableOutputListValueForBatch",
                                                   "ReusableOutputRowsForBatch",
+                                                  "ReusablePaletteRowsForItemName",
+                                                  "ReusableRunFixtureAvailableQty",
                                                   "ReusableRunProcessNameForNode",
                                                   "RunAllocationGroupKeyFromList",
                                                   "RunAllocationKeyFromList",
@@ -15263,6 +15284,7 @@
                                                   "AppendProcessorReport",
                                                   "ApplyReusableRunAllocation",
                                                   "ApplyReusableRunScale",
+                                                  "ApplyReusableRunStockAllocation",
                                                   "AssignFreshOutputKeys",
                                                   "BeginNextReusableBatch",
                                                   "BuildNodeCompleteItems",
@@ -15273,11 +15295,13 @@
                                                   "ClearReusableRun",
                                                   "CloneRunRecord",
                                                   "CompleteReusableRun",
+                                                  "EntityRowIsNonCounted",
                                                   "ExactEntityAvailableQty",
                                                   "ExactEntityField",
                                                   "ExactEntityInventoryDisplay",
                                                   "ExactEntityInventoryDisplayForKey",
                                                   "ExactEntityIsNonCounted",
+                                                  "FindExactEntityRow",
                                                   "FindNode",
                                                   "FindOutput",
                                                   "FindRequirement",
@@ -15295,6 +15319,7 @@
                                                   "RequirementHasIncomingConnection",
                                                   "ReusableRunActualOutput",
                                                   "ReusableRunBatchNumber",
+                                                  "ReusableRunExactAllocationCountForRequirement",
                                                   "ReusableRunExactEntityQty",
                                                   "ReusableRunInventoryDisplayForTest",
                                                   "ReusableRunIsCheckedIn",
@@ -15317,6 +15342,10 @@
                                                   "ScaledConnectionQty",
                                                   "ScaledRecordQty",
                                                   "StageReusableRunActualOutput",
+                                                  "StockBucketAllocatedQty",
+                                                  "StockBucketAvailableDisplay",
+                                                  "StockBucketKey",
+                                                  "StockBucketKeyForEntity",
                                                   "TotalExternalAllocation",
                                                   "UomCompatible",
                                                   "ValidateLoadedRunGraph",
@@ -15813,6 +15842,7 @@
                                                   "DefaultReceiptId",
                                                   "FillInventoryList",
                                                   "FillListBox",
+                                                  "FillReceiveItemResults",
                                                   "FilterInventoryRows",
                                                   "InitializeFromReceiving",
                                                   "LoadHistoryCache",
@@ -20286,6 +20316,23 @@
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/modProductionInit.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ApplyReusableRunAllocation",
+                           "candidateType":  "UNRESOLVED",
+                           "confidence":  "MEDIUM",
+                           "componentName":  "modProductionReusableRun",
+                           "procedureNames":  [
+                                                  "ApplyReusableRunAllocation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionReusableRun.bas"
                                            ],
                            "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
                            "protectingTests":  [

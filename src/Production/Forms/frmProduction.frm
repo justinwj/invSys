@@ -18,7 +18,7 @@ Option Explicit
 '@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=690 DefaultWidth=1110 DefaultHeight=690 ExpandedWidth=1350 ExpandedHeight=750
 Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
 Private Const RUN_LOADER_LINE_WIDTHS As String = "150 pt;0 pt;55 pt;205 pt;55 pt;55 pt;55 pt;0 pt"
-Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;225 pt;205 pt;180 pt;60 pt;65 pt;50 pt;90 pt;135 pt"
+Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;235 pt;0 pt;315 pt;60 pt;65 pt;50 pt;120 pt;165 pt"
 Private Const RUN_OUTPUT_WIDTHS As String = "120 pt;190 pt;48 pt;72 pt;45 pt;72 pt;82 pt;100 pt;240 pt"
 Private Const RUN_CHECK_WIDTHS As String = "200 pt;170 pt;295 pt;55 pt;75 pt;120 pt"
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
@@ -1183,8 +1183,8 @@ Private Sub BuildAssignmentPage(ByVal pg As MSForms.Page)
     AddLabel pg, "Managed Items", 12, 292, 120, 16
     AddColumnHeaders pg, "AssignmentInventory", _
         Array("System_Key", "Managed Item", "UOM", "Inv", "Location", "Description", ""), _
-        12, 312, "45 pt;145 pt;45 pt;58 pt;65 pt;130 pt;0 pt"
-    Set mLstAssignInventory = AddList(pg, "lstAssignInventory", 12, 330, 510, 190, 7, "45 pt;145 pt;45 pt;58 pt;65 pt;130 pt;0 pt")
+        12, 312, "190 pt;105 pt;35 pt;45 pt;70 pt;65 pt;0 pt"
+    Set mLstAssignInventory = AddList(pg, "lstAssignInventory", 12, 330, 510, 190, 7, "190 pt;105 pt;35 pt;45 pt;70 pt;65 pt;0 pt")
     AddLabel pg, "Acceptable Items", 540, 292, 150, 16
     AddColumnHeaders pg, "AssignmentAllowed", _
         Array("", "Managed Item", "UOM", "Item Code", "", "", ""), _
@@ -1234,7 +1234,7 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     Set mBtnRunApplyPalette = AddButton(pg, "btnRunApplyPalette", "Apply", 920, 187, 90, 24)
 
     AddLabel pg, "Acceptable Inventory For Run", 12, 214, 230, 16
-    AddColumnHeaders pg, "RunPalette", Array("", "", "Process / Ingredient", "System_Key", "Inventory Item", "% Req", "Qty", "UOM", "Inv", "Location"), 12, 232, RUN_PALETTE_WIDTHS
+    AddColumnHeaders pg, "RunPalette", Array("", "", "Process / Ingredient", "", "Inventory Stock", "% Req", "Qty", "UOM", "Available", "Location"), 12, 232, RUN_PALETTE_WIDTHS
     Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 250, 1018, 50, 10, RUN_PALETTE_WIDTHS)
 
     AddLabel pg, "Inventory Check", 12, 316, 150, 16
@@ -4524,7 +4524,7 @@ Private Sub ApplySelectedRunPaletteSplit()
 
     If modProductionReusableRun.ReusableRunIsLoaded() Then
         If mLstRunPalette.ListIndex < 0 Then
-            ShowStatus "Select an acceptable exact inventory entity first."
+            ShowStatus "Select an acceptable inventory stock row first."
             Exit Sub
         End If
         idx = mLstRunPalette.ListIndex
@@ -4551,7 +4551,7 @@ Private Sub ApplySelectedRunPaletteSplit()
                        "; production run location is " & ActiveRunLocation() & "."
             Exit Sub
         End If
-        allocationApplied = modProductionReusableRun.ApplyReusableRunAllocation( _
+        allocationApplied = modProductionReusableRun.ApplyReusableRunStockAllocation( _
             CStr(mLstRunPalette.List(idx, 0)), CStr(mLstRunPalette.List(idx, 1)), _
             CStr(mLstRunPalette.List(idx, 3)), CDbl(qtyVal), reusableReport)
         If allocationApplied Then
@@ -7635,6 +7635,7 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     Dim outputYieldDefaults As Boolean
     Dim outputFlowUsesProcessYield As Boolean
     Dim processAssignmentHeaders As Boolean
+    Dim assignmentKeyReadable As Boolean
     Dim acceptableItemsNamed As Boolean
     Dim processOutputEditorCompact As Boolean
     Dim processOutputUomCatalog As Boolean
@@ -7667,6 +7668,7 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
         ControlExistsByName(mPages.Pages(2), "hdrAssignmentRequirements2") And _
         ControlExistsByName(mPages.Pages(2), "hdrAssignmentInventory1") And _
         ControlExistsByName(mPages.Pages(2), "hdrAssignmentAllowed2")
+    assignmentKeyReadable = AssignmentSystemKeyReadable()
 
     ClearProcessDraft False
     mTxtProcessId.Text = sourceId
@@ -7961,6 +7963,7 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
         "|OutputYieldDefaults=" & CStr(outputYieldDefaults) & _
         "|OutputFlowUsesProcessYield=" & CStr(outputFlowUsesProcessYield) & _
         "|ProcessAssignmentHeaders=" & CStr(processAssignmentHeaders) & _
+        "|AssignmentSystemKeyReadable=" & CStr(assignmentKeyReadable) & _
         "|AcceptableItemsNamed=" & CStr(acceptableItemsNamed) & _
         "|ProcessOutputEditorCompact=" & CStr(processOutputEditorCompact) & _
         "|ProcessOutputUomCatalog=" & CStr(processOutputUomCatalog)
@@ -7994,6 +7997,7 @@ ActionFailed:
         "|OutputYieldDefaults=" & CStr(outputYieldDefaults) & _
         "|OutputFlowUsesProcessYield=" & CStr(outputFlowUsesProcessYield) & _
         "|ProcessAssignmentHeaders=" & CStr(processAssignmentHeaders) & _
+        "|AssignmentSystemKeyReadable=" & CStr(assignmentKeyReadable) & _
         "|AcceptableItemsNamed=" & CStr(acceptableItemsNamed) & _
         "|ProcessOutputEditorCompact=" & CStr(processOutputEditorCompact) & _
         "|ProcessOutputUomCatalog=" & CStr(processOutputUomCatalog) & _
@@ -8185,6 +8189,9 @@ Public Function TestReusableProductionRunActionContract() As String
     Dim utilityDisplay As Boolean
     Dim multiProcessRunPlan As Boolean
     Dim targetOutputScaleStub As Boolean
+    Dim locationStockBuckets As Boolean
+    Dim locationStockExactExpansion As Boolean
+    Dim rawStockStartQty As Double
 
     mReusableActionTestInProgress = True
     systemKeyHeadersReadable = ProductionRunSystemKeyHeadersReadable()
@@ -8262,6 +8269,7 @@ Public Function TestReusableProductionRunActionContract() As String
         mCmbTreeRunLocation.AddItem runLocation
     End If
     If Not CreateReusableRunRawInventory(runLocation, rawSystemKey, rawStartQty, setupReport) Then GoTo FixtureFailed
+    rawStockStartQty = ReusableRunFixtureAvailableQty("SKU-RUN-RAW", runLocation)
     If Not ResolveReusableRunFixtureEntity("SKU-RUN-STALE", runLocation, _
             staleSystemKey, staleStartQty, setupReport) Then GoTo FixtureFailed
 
@@ -8291,6 +8299,8 @@ Public Function TestReusableProductionRunActionContract() As String
         End If
     Next i
     If i >= mLstRunPalette.ListCount Then multiProcessRunPlan = False
+    locationStockBuckets = _
+        (ReusablePaletteRowsForItemName("Production Raw Material") = 1)
     targetOutputScaleStub = _
         (StrComp(mChkRunTargetOutputScale.Caption, _
             "Scale from target output Qty (coming later)", vbTextCompare) = 0) And _
@@ -8335,13 +8345,15 @@ Public Function TestReusableProductionRunActionContract() As String
     SelectComboText mCmbRunLocation, runLocation
     mCmbRunLocation_Change
     If mLstRunPalette.ListCount = 0 Then GoTo FixtureFailed
-    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(rawSystemKey)
+    mLstRunPalette.ListIndex = FindReusablePaletteItemName("Production Raw Material")
     If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
     mTxtPaletteSplit.Text = "100"
     mTxtPaletteQty.Text = "5"
     mBtnRunApplyPalette_Click
-    exactInputKeys = (mLstRunPalette.ListIndex >= 0 Or _
-                      FindReusablePaletteSystemKey(rawSystemKey) >= 0)
+    locationStockExactExpansion = _
+        (modProductionReusableRun.ReusableRunExactAllocationCountForRequirement( _
+            sourceNodeId, "002") >= 2)
+    exactInputKeys = locationStockExactExpansion
     fixtureStage = "Batch1CheckIn"
     mBtnManagerCheckIn_Click
     checkedIn = modProductionReusableRun.ReusableRunIsCheckedIn()
@@ -8363,7 +8375,8 @@ Public Function TestReusableProductionRunActionContract() As String
     actualInventoryQty = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
         modProductionReusableRun.ReusableRunOutputSystemKey(sinkNodeId, "002")) - 4.25) < 0.0000001)
     exactInputKeys = exactInputKeys And _
-        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 5#)) < 0.0000001)
+        (Abs(ReusableRunFixtureAvailableQty("SKU-RUN-RAW", runLocation) - _
+             (rawStockStartQty - 5#)) < 0.0000001)
     fixtureStage = "RefreshAndNext"
     mBtnManagerRefresh_Click
     refreshed = (InStr(1, TestStatusText(), "refreshed", vbTextCompare) > 0)
@@ -8377,7 +8390,7 @@ Public Function TestReusableProductionRunActionContract() As String
     fixtureStage = "Batch2Allocate"
     SelectComboText mCmbRunLocation, runLocation
     mCmbRunLocation_Change
-    mLstRunPalette.ListIndex = FindReusablePaletteSystemKey(rawSystemKey)
+    mLstRunPalette.ListIndex = FindReusablePaletteItemName("Production Raw Material")
     If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
     mTxtPaletteSplit.Text = "100"
     mTxtPaletteQty.Text = "5"
@@ -8414,7 +8427,8 @@ Public Function TestReusableProductionRunActionContract() As String
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
             modProductionReusableRun.ReusableRunOutputSystemKey(sinkNodeId, "002")) - 4.5) < 0.0000001)
     exactInputKeys = exactInputKeys And _
-        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(rawSystemKey) - (rawStartQty - 10#)) < 0.0000001)
+        (Abs(ReusableRunFixtureAvailableQty("SKU-RUN-RAW", runLocation) - _
+             (rawStockStartQty - 10#)) < 0.0000001)
 
     TestReusableProductionRunActionContract = _
         "OK|ReusableRecipe=" & mReusableTestRecipeId & _
@@ -8436,6 +8450,8 @@ Public Function TestReusableProductionRunActionContract() As String
         "|UtilityDisplay=" & CStr(utilityDisplay) & _
         "|MultiProcessRunPlan=" & CStr(multiProcessRunPlan) & _
         "|TargetOutputScaleStub=" & CStr(targetOutputScaleStub) & _
+        "|LocationStockBuckets=" & CStr(locationStockBuckets) & _
+        "|LocationStockExactExpansion=" & CStr(locationStockExactExpansion) & _
         "|CheckedIn=" & CStr(checkedIn) & "|Completed=" & CStr(completed) & _
         "|Refreshed=" & CStr(refreshed) & "|NextBatch=" & CStr(nextBatch)
 CleanExit:
@@ -8635,6 +8651,44 @@ Private Function FindReusablePaletteSystemKey(ByVal systemKey As String) As Long
     Next i
 End Function
 
+Private Function FindReusablePaletteItemName(ByVal itemName As String) As Long
+    Dim i As Long
+
+    FindReusablePaletteItemName = -1
+    For i = 0 To mLstRunPalette.ListCount - 1
+        If StrComp(NzStr(mLstRunPalette.List(i, 4)), itemName, vbTextCompare) = 0 Then
+            FindReusablePaletteItemName = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ReusablePaletteRowsForItemName(ByVal itemName As String) As Long
+    Dim i As Long
+
+    For i = 0 To mLstRunPalette.ListCount - 1
+        If StrComp(NzStr(mLstRunPalette.List(i, 4)), itemName, vbTextCompare) = 0 Then _
+            ReusablePaletteRowsForItemName = ReusablePaletteRowsForItemName + 1
+    Next i
+End Function
+
+Private Function ReusableRunFixtureAvailableQty(ByVal itemCode As String, _
+                                                ByVal locationValue As String) As Double
+    Dim entities As Variant
+    Dim r As Long
+
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge(itemCode)
+    If Not IsArray(entities) Then Exit Function
+    For r = LBound(entities, 1) To UBound(entities, 1)
+        If (StrComp(Trim$(NzStr(entities(r, 2))), itemCode, vbTextCompare) = 0 _
+            Or StrComp(Trim$(NzStr(entities(r, 3))), itemCode, vbTextCompare) = 0) _
+           And StrComp(Trim$(NzStr(entities(r, 7))), locationValue, vbTextCompare) = 0 Then
+            If IsNumeric(entities(r, 6)) Then _
+                ReusableRunFixtureAvailableQty = ReusableRunFixtureAvailableQty + CDbl(entities(r, 6))
+        End If
+    Next r
+End Function
+
 Private Function CaptureReusableOutputKeys() As Object
     Dim result As Object
     Dim i As Long
@@ -8710,21 +8764,33 @@ End Function
 Private Function ProductionRunSystemKeyHeadersReadable() As Boolean
     On Error GoTo NotReadable
 
-    Dim paletteHeader As MSForms.Label
     Dim checkHeader As MSForms.Label
     Dim outputHeader As MSForms.Label
 
-    Set paletteHeader = mPages.Pages(3).Controls("hdrRunPalette4")
     Set checkHeader = mPages.Pages(3).Controls("hdrManagerCheck1")
     Set outputHeader = mPages.Pages(3).Controls("hdrManagerOutput9")
     ProductionRunSystemKeyHeadersReadable = _
-        (paletteHeader.Caption = "System_Key" And paletteHeader.Width >= 120) And _
+        AssignmentSystemKeyReadable() And _
         (checkHeader.Caption = "System_Key" And checkHeader.Width >= 120) And _
         (outputHeader.Caption = "System_Key" And outputHeader.Width >= 120)
     Exit Function
 
 NotReadable:
     ProductionRunSystemKeyHeadersReadable = False
+End Function
+
+Private Function AssignmentSystemKeyReadable() As Boolean
+    On Error GoTo NotReadable
+
+    Dim assignmentHeader As MSForms.Label
+
+    Set assignmentHeader = mPages.Pages(2).Controls("hdrAssignmentInventory1")
+    AssignmentSystemKeyReadable = _
+        (assignmentHeader.Caption = "System_Key" And assignmentHeader.Width >= 120)
+    Exit Function
+
+NotReadable:
+    AssignmentSystemKeyReadable = False
 End Function
 
 Private Function FindIdentityListRow(ByVal listControl As MSForms.ListBox, _
