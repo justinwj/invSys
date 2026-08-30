@@ -19,7 +19,7 @@ $checks["Docs.Slice4abContract"] =
     $controls.Contains("Slice 4ab Process picker inventory projection:")
 $checks["Picker.SystemKeyIdentity"] =
     $picker.Contains("LoadProcessManagedInventoryItems") -and
-    $picker.Contains('modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")') -and
+    $picker.Contains('modInventoryDomainBridge.ListInventoryPickerItemsBridge("")') -and
     $picker.Contains('systemKey = Trim$(NzStr(sourceRows(r, 1)))')
 $checks["Packaged.PublicPickerRows"] =
     $form.Contains("PickerInventoryRows=True") -and

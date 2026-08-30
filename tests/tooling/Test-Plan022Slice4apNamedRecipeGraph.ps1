@@ -40,7 +40,7 @@ $checks = @(
     [pscustomobject]@{ Name = "Form.HeadersAndFullWidthLayout"; Pass =
         $form -match 'AddColumnHeaders pg, "RecipeNodes"' -and
         $form -match 'AddColumnHeaders pg, "RecipeConnections"' -and
-        $form -match '"Stage", "Produced by", "Output", "Feeds Process", "Qty", "%", "UOM"' -and
+        $form -match '"Stage", "Produced by", "Output", "Feeds Process", "Output Qty", "Yield %", "UOM"' -and
         $form -match 'AddList\(pg, "lstRecipeConnectionDisplay", 12, [0-9]+, 1018,' },
     [pscustomobject]@{ Name = "Form.FinishedOutputGuidance"; Pass =
         $form -match 'Final output: leave unconnected; Production creates it as finished inventory\.' },

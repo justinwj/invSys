@@ -18,16 +18,24 @@ Private mRequirements As Collection
 Private mAlternatives As Collection
 Private mOutputs As Collection
 Private mConnections As Collection
+Private mInstructions As Collection
 Private mAllocations As Object
 Private mOutputKeys As Object
 Private mActualOutputQty As Object
 Private mLastOutputQty As Object
 Private mOutputHistory As Collection
+Private mCompletedNodes As Object
+Private mCheckedInNodeId As String
+Private mRunId As String
+Private mEventIds As String
+Private mAppliedCount As Long
+Private mProcessorReports As String
 Private mLastSummary As String
 
 Public Sub ClearReusableRun()
     mLoaded = False
     mCheckedIn = False
+    mCheckedInNodeId = ""
     mCompleted = False
     mRecipeId = ""
     mRecipeVersion = ""
@@ -39,11 +47,18 @@ Public Sub ClearReusableRun()
     Set mAlternatives = New Collection
     Set mOutputs = New Collection
     Set mConnections = New Collection
+    Set mInstructions = New Collection
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
     Set mLastOutputQty = NewTextDictionary()
     Set mOutputHistory = New Collection
+    Set mCompletedNodes = NewTextDictionary()
+    mCheckedInNodeId = ""
+    mRunId = ""
+    mEventIds = ""
+    mAppliedCount = 0
+    mProcessorReports = ""
     mLastSummary = ""
 End Sub
 
@@ -72,7 +87,6 @@ Public Function LoadReleasedReusableRecipe(ByVal recipeId As String, _
         report = "Batch scale must be from 0.001% through 1000%."
         Exit Function
     End If
-
     validation = modOperationsPrimitiveBridge.ValidateReleasedRecipe(recipeId, recipeVersion)
     If Left$(validation, 2) <> "1" & vbTab Then
         report = "Released Recipe validation failed: " & Replace$(validation, vbTab, " ")
@@ -132,11 +146,24 @@ Public Function ApplyReusableRunScale(ByVal scalePercent As Double, _
         report = "Batch scale must be from 0.001% through 1000%."
         Exit Function
     End If
+    If Not mCompletedNodes Is Nothing Then
+        If mCompletedNodes.Count > 0 Then
+            report = "Batch scale cannot change after a Process has completed. Finish or clear the batch."
+            Exit Function
+        End If
+    End If
     mScalePercent = scalePercent
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
+    Set mCompletedNodes = NewTextDictionary()
+    mCheckedInNodeId = ""
+    mRunId = ""
+    mEventIds = ""
+    mAppliedCount = 0
+    mProcessorReports = ""
     mCheckedIn = False
+    mCheckedInNodeId = ""
     mCompleted = False
     mLastSummary = ""
     report = "Batch scale applied: " & FormatRunNumberLocal(scalePercent) & _
@@ -144,7 +171,7 @@ Public Function ApplyReusableRunScale(ByVal scalePercent As Double, _
     ApplyReusableRunScale = True
 End Function
 
-Public Function ReusableRunLoaderRows() As Variant
+Public Function ReusableRunLoaderRows(Optional ByVal locationFilter As String = "") As Variant
     Dim result() As Variant
     Dim totalRows As Long
     Dim rowIndex As Long
@@ -154,7 +181,7 @@ Public Function ReusableRunLoaderRows() As Variant
     If Not mLoaded Then Exit Function
     totalRows = mRequirements.Count + mOutputs.Count
     If totalRows = 0 Then Exit Function
-    ReDim result(1 To totalRows, 1 To 8)
+    ReDim result(1 To totalRows, 1 To 9)
     For Each rawRecord In mRequirements
         Set record = rawRecord
         rowIndex = rowIndex + 1
@@ -165,7 +192,10 @@ Public Function ReusableRunLoaderRows() As Variant
         result(rowIndex, 5) = RunRecordNumber(record, "Percent")
         result(rowIndex, 6) = RunRecordText(record, "UOM")
         result(rowIndex, 7) = ScaledRecordQty(record)
-        result(rowIndex, 8) = RunRecordText(record, "RequirementId")
+        result(rowIndex, 8) = ReusableRunLineStatus( _
+            RunRecordText(record, "ProcessNodeId"), "INPUT", _
+            RunRecordText(record, "RequirementId"), locationFilter)
+        result(rowIndex, 9) = RunRecordText(record, "RequirementId")
     Next rawRecord
     For Each rawRecord In mOutputs
         Set record = rawRecord
@@ -177,9 +207,39 @@ Public Function ReusableRunLoaderRows() As Variant
         result(rowIndex, 5) = RunRecordNumber(record, "Percent")
         result(rowIndex, 6) = RunRecordText(record, "UOM")
         result(rowIndex, 7) = ScaledRecordQty(record)
-        result(rowIndex, 8) = RunRecordText(record, "OutputId")
+        result(rowIndex, 8) = ReusableRunLineStatus( _
+            RunRecordText(record, "ProcessNodeId"), "OUTPUT", _
+            RunRecordText(record, "OutputId"), locationFilter)
+        result(rowIndex, 9) = RunRecordText(record, "OutputId")
     Next rawRecord
     ReusableRunLoaderRows = result
+End Function
+
+Public Function ReusableRunInstructionRows(ByVal processName As String) As Variant
+    Dim result() As Variant
+    Dim rawInstruction As Variant
+    Dim instruction As Object
+    Dim rowCount As Long
+    Dim rowIndex As Long
+
+    processName = Trim$(processName)
+    If Not mLoaded Or processName = "" Then Exit Function
+    For Each rawInstruction In mInstructions
+        Set instruction = rawInstruction
+        If StrComp(RunRecordText(instruction, "ProcessName"), processName, vbTextCompare) = 0 Then _
+            rowCount = rowCount + 1
+    Next rawInstruction
+    If rowCount = 0 Then Exit Function
+    ReDim result(1 To rowCount, 1 To 2)
+    For Each rawInstruction In mInstructions
+        Set instruction = rawInstruction
+        If StrComp(RunRecordText(instruction, "ProcessName"), processName, vbTextCompare) = 0 Then
+            rowIndex = rowIndex + 1
+            result(rowIndex, 1) = RunRecordText(instruction, "InstructionOrdinal")
+            result(rowIndex, 2) = RunRecordText(instruction, "Instruction")
+        End If
+    Next rawInstruction
+    ReusableRunInstructionRows = result
 End Function
 
 Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String = "") As Variant
@@ -214,6 +274,7 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
         Set requirement = rawRequirement
         nodeId = RunRecordText(requirement, "ProcessNodeId")
         requirementId = RunRecordText(requirement, "RequirementId")
+        If NodeIsComplete(nodeId) Then GoTo NextRequirement
         If RequirementHasIncomingConnection(nodeId, requirementId) Then GoTo NextRequirement
         Set buckets = NewTextDictionary()
         Set bucketOrder = New Collection
@@ -405,6 +466,7 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
         mAllocations.Add CStr(planId), CDbl(planned(planId))
     Next planId
     mCheckedIn = False
+    mCheckedInNodeId = ""
     mCompleted = False
     report = "Exact allocation expansion saved: " & FormatRunNumberLocal(qty) & _
              " of " & FormatRunNumberLocal(requiredQty) & " across " & _
@@ -468,6 +530,7 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
         mAllocations.Add allocationId, qty
     End If
     mCheckedIn = False
+    mCheckedInNodeId = ""
     mCompleted = False
     report = "Exact inventory allocation saved: " & FormatRunNumberLocal(qty) & _
              " of " & FormatRunNumberLocal(requiredQty) & "."
@@ -494,6 +557,12 @@ Public Function CheckInReusableRun(ByVal runLocation As String, _
     If mCompleted Then
         report = "This batch is already complete. Click Next Batch."
         Exit Function
+    End If
+    If Not mCompletedNodes Is Nothing Then
+        If mCompletedNodes.Count > 0 Then
+            report = "Select one remaining Process; this batch is already in Process-scoped execution."
+            Exit Function
+        End If
     End If
     For Each rawRequirement In mRequirements
         Set requirement = rawRequirement
@@ -535,6 +604,41 @@ Public Function CheckInReusableRun(ByVal runLocation As String, _
     CheckInReusableRun = True
 End Function
 
+Public Function CheckInReusableProcess(ByVal processName As String, _
+                                       ByVal runLocation As String, _
+                                       Optional ByRef report As String = "") As Boolean
+    Dim node As Object
+    Dim nodeId As String
+
+    If Not mLoaded Then
+        report = "Load a released Recipe first."
+        Exit Function
+    End If
+    If mCompleted Then
+        report = "This batch is already complete. Click Next Batch."
+        Exit Function
+    End If
+    Set node = FindNodeByProcessName(processName)
+    If node Is Nothing Then
+        report = "Choose one Process before Check In."
+        Exit Function
+    End If
+    nodeId = RunRecordText(node, "ProcessNodeId")
+    If NodeIsComplete(nodeId) Then
+        report = "Process " & RunRecordText(node, "ProcessName") & " is already complete."
+        Exit Function
+    End If
+    If Not ValidateProcessRequirementsReady(node, report) Then Exit Function
+    If Not ValidateProcessAllocationsLive(node, runLocation, report) Then Exit Function
+
+    mCheckedIn = True
+    mCheckedInNodeId = nodeId
+    report = "Checked in Process " & RunRecordText(node, "ProcessName") & _
+             " using " & CStr(AllocationCountForNode(nodeId)) & _
+             " exact System_Key allocation(s)."
+    CheckInReusableProcess = True
+End Function
+
 Public Function ReusableRunManagerCheckRows() As Variant
     Dim result() As Variant
     Dim key As Variant
@@ -542,11 +646,21 @@ Public Function ReusableRunManagerCheckRows() As Variant
     Dim entity As Variant
     Dim systemKey As String
     Dim qty As Double
+    Dim totalRows As Long
 
-    If Not mCheckedIn Or mAllocations Is Nothing Or mAllocations.Count = 0 Then Exit Function
+    If Not mCheckedIn Or mAllocations Is Nothing Then Exit Function
+    If mCheckedInNodeId = "" Then
+        totalRows = mAllocations.Count
+    Else
+        totalRows = AllocationCountForNode(mCheckedInNodeId)
+    End If
+    If totalRows = 0 Then Exit Function
     entity = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
-    ReDim result(1 To mAllocations.Count, 1 To 6)
+    ReDim result(1 To totalRows, 1 To 6)
     For Each key In mAllocations.Keys
+        If mCheckedInNodeId <> "" Then
+            If Not AllocationBelongsToNode(CStr(key), mCheckedInNodeId) Then GoTo NextAllocation
+        End If
         rowIndex = rowIndex + 1
         systemKey = AllocationSystemKey(CStr(key))
         qty = CDbl(mAllocations(key))
@@ -556,7 +670,9 @@ Public Function ReusableRunManagerCheckRows() As Variant
         result(rowIndex, 4) = ExactEntityField(entity, systemKey, 5)
         result(rowIndex, 5) = qty
         result(rowIndex, 6) = ExactEntityInventoryDisplayForKey(entity, systemKey)
+NextAllocation:
     Next key
+    If rowIndex = 0 Then Exit Function
     ReusableRunManagerCheckRows = result
 End Function
 
@@ -572,7 +688,7 @@ Public Function ReusableRunOutputRows() As Variant
 
     If Not mLoaded Or mOutputs.Count = 0 Then Exit Function
     totalRows = mOutputHistory.Count
-    If Not mCompleted Then totalRows = totalRows + mOutputs.Count
+    If Not mCompleted Then totalRows = totalRows + ActiveOutputCount()
     If totalRows = 0 Then Exit Function
     ReDim result(1 To totalRows, 1 To 9)
     For Each rawHistory In mOutputHistory
@@ -591,6 +707,7 @@ Public Function ReusableRunOutputRows() As Variant
     If Not mCompleted Then
         For Each rawOutput In mOutputs
             Set output = rawOutput
+            If NodeIsComplete(RunRecordText(output, "ProcessNodeId")) Then GoTo NextActiveOutput
             rowIndex = rowIndex + 1
             outputKey = OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId"))
             result(rowIndex, 1) = RunRecordText(output, "ProcessName")
@@ -604,6 +721,7 @@ Public Function ReusableRunOutputRows() As Variant
                 RunRecordText(output, "UOM"))
             result(rowIndex, 8) = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
             If mOutputKeys.Exists(outputKey) Then result(rowIndex, 9) = mOutputKeys(outputKey)
+NextActiveOutput:
         Next rawOutput
     End If
     ReusableRunOutputRows = result
@@ -611,14 +729,26 @@ End Function
 
 Public Function ReusableRunOutputDefinitionIndex(ByVal displayRowIndex As Long) As Long
     Dim firstCurrentRow As Long
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim activeIndex As Long
+    Dim definitionIndex As Long
 
     If Not mLoaded Or mCompleted Then Exit Function
     firstCurrentRow = mOutputHistory.Count + 1
     If displayRowIndex < firstCurrentRow Then Exit Function
-    ReusableRunOutputDefinitionIndex = displayRowIndex - firstCurrentRow + 1
-    If ReusableRunOutputDefinitionIndex < 1 Or _
-            ReusableRunOutputDefinitionIndex > mOutputs.Count Then _
-        ReusableRunOutputDefinitionIndex = 0
+    activeIndex = displayRowIndex - firstCurrentRow + 1
+    For Each rawOutput In mOutputs
+        definitionIndex = definitionIndex + 1
+        Set output = rawOutput
+        If Not NodeIsComplete(RunRecordText(output, "ProcessNodeId")) Then
+            activeIndex = activeIndex - 1
+            If activeIndex = 0 Then
+                ReusableRunOutputDefinitionIndex = definitionIndex
+                Exit Function
+            End If
+        End If
+    Next rawOutput
 End Function
 
 Public Function ReusableRunPlannedOutput(ByVal outputIndex As Long) As String
@@ -780,6 +910,105 @@ Failed:
     report = "Reusable Production completion failed: " & Err.Description
 End Function
 
+Public Function CompleteReusableProcess(ByVal processName As String, _
+                                        ByVal runLocation As String, _
+                                        Optional ByRef report As String = "") As Boolean
+    On Error GoTo Failed
+
+    Dim node As Object
+    Dim nodeId As String
+    Dim recheckReport As String
+    Dim items As Collection
+    Dim eventId As String
+    Dim queueError As String
+    Dim processorReport As String
+    Dim processedNow As Long
+
+    Set node = FindNodeByProcessName(processName)
+    If node Is Nothing Then
+        report = "Choose one Process before Complete Run."
+        Exit Function
+    End If
+    nodeId = RunRecordText(node, "ProcessNodeId")
+    If Not mCheckedIn Or StrComp(mCheckedInNodeId, nodeId, vbTextCompare) <> 0 Then
+        report = "Check exact inventory into Process " & _
+                 RunRecordText(node, "ProcessName") & " before completing it."
+        Exit Function
+    End If
+    If Not CheckInReusableProcess(processName, runLocation, recheckReport) Then
+        report = recheckReport
+        Exit Function
+    End If
+    If Not ValidateReusableActualOutputsForNode(nodeId, report) Then Exit Function
+    AssignFreshOutputKeysForNode nodeId
+    If mRunId = "" Then _
+        mRunId = "PROD-RUN-" & Replace$(modRoleEventWriter.CreateSystemKey(), "-", "")
+
+    Set items = BuildNodeConsumeItems(node, runLocation, mRunId)
+    If items.Count > 0 Then
+        If Not modRoleEventWriter.QueuePayloadEventCurrent(EVENT_TYPE_PROD_CONSUME, "", _
+                modProductionJson.BuildJsonArray(items), RunEventNote(mRunId, node, "CONSUME"), _
+                eventId, queueError) Then
+            report = "Production consume event was not queued: " & queueError
+            Exit Function
+        End If
+        AppendEventId mEventIds, eventId
+        processedNow = modProcessor.RunBatch(Trim$(modConfig.GetWarehouseId()), 0, processorReport)
+        If processedNow < 1 Then
+            report = "Production consume event " & eventId & " was not applied. " & processorReport
+            Exit Function
+        End If
+        mAppliedCount = mAppliedCount + processedNow
+        AppendProcessorReport mProcessorReports, processorReport
+    End If
+
+    Set items = BuildNodeCompleteItems(node, runLocation, mRunId)
+    If items.Count = 0 Then
+        report = "Process " & RunRecordText(node, "ProcessName") & " has no output to complete."
+        Exit Function
+    End If
+    eventId = ""
+    If Not modRoleEventWriter.QueuePayloadEventCurrent(EVENT_TYPE_PROD_COMPLETE, "", _
+            modProductionJson.BuildJsonArray(items), RunEventNote(mRunId, node, "COMPLETE"), _
+            eventId, queueError) Then
+        report = "Production complete event was not queued: " & queueError
+        Exit Function
+    End If
+    AppendEventId mEventIds, eventId
+    processedNow = modProcessor.RunBatch(Trim$(modConfig.GetWarehouseId()), 0, processorReport)
+    If processedNow < 1 Then
+        report = "Production complete event " & eventId & " was not applied. " & processorReport
+        Exit Function
+    End If
+    mAppliedCount = mAppliedCount + processedNow
+    AppendProcessorReport mProcessorReports, processorReport
+    If Not VerifyNodeOutputBalances(nodeId, False, report) Then Exit Function
+
+    mCompletedNodes.Add nodeId, True
+    CaptureCompletedNodeOutputHistory nodeId
+    mCheckedIn = False
+    mCheckedInNodeId = ""
+    If AllNodesCompleted() Then
+        If Not VerifyCompletedOutputBalances(report) Then Exit Function
+        CaptureLastActualOutputs
+        mCompleted = True
+        mLastSummary = "RunId=" & mRunId & "; Recipe=" & mRecipeId & " v" & mRecipeVersion & _
+                       "; Batch=" & CStr(mBatchNumber) & "; Scale=" & _
+                       FormatRunNumberLocal(mScalePercent) & "%; ExactInputs=" & _
+                       CStr(mAllocations.Count) & "; Outputs=" & CStr(mOutputs.Count) & _
+                       "; Events=" & mEventIds & "; ProcessorApplied=" & CStr(mAppliedCount) & "."
+        report = "Production batch completed and persisted. " & mLastSummary
+    Else
+        report = "Process " & RunRecordText(node, "ProcessName") & _
+                 " completed and persisted. Select another READY Process. RunId=" & mRunId & "."
+    End If
+    CompleteReusableProcess = True
+    Exit Function
+
+Failed:
+    report = "Reusable Process completion failed: " & Err.Description
+End Function
+
 Public Function BeginNextReusableBatch(Optional ByRef report As String = "") As Boolean
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -793,6 +1022,12 @@ Public Function BeginNextReusableBatch(Optional ByRef report As String = "") As 
     Set mAllocations = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
+    Set mCompletedNodes = NewTextDictionary()
+    mCheckedInNodeId = ""
+    mRunId = ""
+    mEventIds = ""
+    mAppliedCount = 0
+    mProcessorReports = ""
     mCheckedIn = False
     mCompleted = False
     mLastSummary = ""
@@ -810,6 +1045,13 @@ End Function
 
 Public Function ReusableRunIsCompleted() As Boolean
     ReusableRunIsCompleted = mCompleted
+End Function
+
+Public Function ReusableRunIsProcessComplete(ByVal processName As String) As Boolean
+    Dim node As Object
+    Set node = FindNodeByProcessName(processName)
+    If Not node Is Nothing Then _
+        ReusableRunIsProcessComplete = NodeIsComplete(RunRecordText(node, "ProcessNodeId"))
 End Function
 
 Public Function ReusableRunBatchNumber() As Long
@@ -887,7 +1129,7 @@ Private Function LoadNodeProcessDefinitions(ByRef report As String) As Boolean
         For Each rawRecord In records
             Set record = rawRecord
             Select Case UCase$(RunRecordText(record, "RecordType"))
-                Case "REQUIREMENT", "ALTERNATIVE", "OUTPUT"
+                Case "REQUIREMENT", "ALTERNATIVE", "OUTPUT", "INSTRUCTION"
                     Set enriched = CloneRunRecord(record)
                     enriched("ProcessNodeId") = RunRecordText(node, "ProcessNodeId")
                     enriched("ProcessId") = RunRecordText(node, "ProcessId")
@@ -897,6 +1139,7 @@ Private Function LoadNodeProcessDefinitions(ByRef report As String) As Boolean
                         Case "REQUIREMENT": mRequirements.Add enriched
                         Case "ALTERNATIVE": mAlternatives.Add enriched
                         Case "OUTPUT": mOutputs.Add enriched
+                        Case "INSTRUCTION": mInstructions.Add enriched
                     End Select
             End Select
         Next rawRecord
@@ -954,6 +1197,275 @@ Private Function ValidateLoadedRunGraph(ByRef report As String) As Boolean
         End If
     Next rawRequirement
     ValidateLoadedRunGraph = True
+End Function
+
+Public Function ReusableRunLineStatus(ByVal nodeId As String, _
+                                      ByVal lineType As String, _
+                                      ByVal recordId As String, _
+                                      Optional ByVal locationFilter As String = "") As String
+    Dim requirement As Object
+    Dim statusText As String
+
+    If NodeIsComplete(nodeId) Then
+        ReusableRunLineStatus = "COMPLETE"
+        Exit Function
+    End If
+    If StrComp(lineType, "INPUT", vbTextCompare) = 0 Then
+        Set requirement = FindRequirement(nodeId, recordId)
+        statusText = RequirementReadinessStatus(requirement, locationFilter)
+    Else
+        statusText = ProcessReadinessStatus(nodeId, locationFilter)
+    End If
+    ReusableRunLineStatus = statusText
+End Function
+
+Private Function ProcessReadinessStatus(ByVal nodeId As String, _
+                                        ByVal locationFilter As String) As String
+    Dim rawRequirement As Variant
+    Dim requirement As Object
+    Dim statusText As String
+    Dim needsAllocation As Boolean
+    Dim waitingUpstream As Boolean
+
+    If NodeIsComplete(nodeId) Then
+        ProcessReadinessStatus = "COMPLETE"
+        Exit Function
+    End If
+    For Each rawRequirement In mRequirements
+        Set requirement = rawRequirement
+        If StrComp(RunRecordText(requirement, "ProcessNodeId"), nodeId, vbTextCompare) = 0 Then
+            statusText = RequirementReadinessStatus(requirement, locationFilter)
+            If statusText = "! INSUFFICIENT" Then
+                ProcessReadinessStatus = statusText
+                Exit Function
+            ElseIf statusText = "WAITING UPSTREAM" Then
+                waitingUpstream = True
+            ElseIf statusText = "NEEDS ALLOCATION" Then
+                needsAllocation = True
+            End If
+        End If
+    Next rawRequirement
+    If waitingUpstream Then
+        ProcessReadinessStatus = "WAITING UPSTREAM"
+    ElseIf needsAllocation Then
+        ProcessReadinessStatus = "NEEDS ALLOCATION"
+    Else
+        ProcessReadinessStatus = "READY"
+    End If
+End Function
+
+Private Function RequirementReadinessStatus(ByVal requirement As Object, _
+                                            ByVal locationFilter As String) As String
+    Dim nodeId As String
+    Dim requirementId As String
+    Dim requiredQty As Double
+    Dim allocatedQty As Double
+    Dim connection As Object
+    Dim sourceKey As String
+
+    If requirement Is Nothing Then
+        RequirementReadinessStatus = "! INSUFFICIENT"
+        Exit Function
+    End If
+    nodeId = RunRecordText(requirement, "ProcessNodeId")
+    requirementId = RunRecordText(requirement, "RequirementId")
+    requiredQty = ScaledRecordQty(requirement)
+    Set connection = IncomingConnectionForRequirement(nodeId, requirementId)
+    If Not connection Is Nothing Then
+        If Not NodeIsComplete(RunRecordText(connection, "FromProcessNodeId")) Then
+            RequirementReadinessStatus = "WAITING UPSTREAM"
+            Exit Function
+        End If
+        sourceKey = OutputKeyForConnection(connection)
+        If sourceKey = "" Or _
+           ExactEntityAvailableQty(sourceKey) + QTY_TOLERANCE < ScaledConnectionQty(connection) Then
+            RequirementReadinessStatus = "! INSUFFICIENT"
+        Else
+            RequirementReadinessStatus = "READY"
+        End If
+        Exit Function
+    End If
+    allocatedQty = AllocationTotalForRequirement(nodeId, requirementId, "")
+    If Abs(allocatedQty - requiredQty) <= QTY_TOLERANCE Then
+        RequirementReadinessStatus = "READY"
+    ElseIf AvailableStockForRequirement(requirement, locationFilter) + QTY_TOLERANCE < requiredQty Then
+        RequirementReadinessStatus = "! INSUFFICIENT"
+    Else
+        RequirementReadinessStatus = "NEEDS ALLOCATION"
+    End If
+End Function
+
+Private Function ValidateProcessRequirementsReady(ByVal node As Object, _
+                                                  ByRef report As String) As Boolean
+    Dim rawRequirement As Variant
+    Dim requirement As Object
+    Dim nodeId As String
+    Dim requirementId As String
+    Dim requiredQty As Double
+    Dim allocatedQty As Double
+    Dim connection As Object
+    Dim sourceKey As String
+
+    nodeId = RunRecordText(node, "ProcessNodeId")
+    For Each rawRequirement In mRequirements
+        Set requirement = rawRequirement
+        If StrComp(RunRecordText(requirement, "ProcessNodeId"), nodeId, vbTextCompare) <> 0 Then GoTo NextRequirement
+        requirementId = RunRecordText(requirement, "RequirementId")
+        Set connection = IncomingConnectionForRequirement(nodeId, requirementId)
+        If Not connection Is Nothing Then
+            If Not NodeIsComplete(RunRecordText(connection, "FromProcessNodeId")) Then
+                report = "Upstream output is not ready for " & _
+                         RunRecordText(requirement, "RequirementName") & "."
+                Exit Function
+            End If
+            sourceKey = OutputKeyForConnection(connection)
+            If sourceKey = "" Or _
+               ExactEntityAvailableQty(sourceKey) + QTY_TOLERANCE < ScaledConnectionQty(connection) Then
+                report = "Upstream output is not ready or is insufficient for " & _
+                         RunRecordText(requirement, "RequirementName") & "."
+                Exit Function
+            End If
+        Else
+            requiredQty = ScaledRecordQty(requirement)
+            allocatedQty = AllocationTotalForRequirement(nodeId, requirementId, "")
+            If Abs(allocatedQty - requiredQty) > QTY_TOLERANCE Then
+                report = "Inventory is insufficient or unresolved for " & _
+                         RunRecordText(requirement, "RequirementName") & ". Required=" & _
+                         FormatRunNumberLocal(requiredQty) & "; allocated=" & _
+                         FormatRunNumberLocal(allocatedQty) & "."
+                Exit Function
+            End If
+        End If
+NextRequirement:
+    Next rawRequirement
+    ValidateProcessRequirementsReady = True
+End Function
+
+Private Function ValidateProcessAllocationsLive(ByVal node As Object, _
+                                                ByVal runLocation As String, _
+                                                ByRef report As String) As Boolean
+    Dim key As Variant
+    Dim nodeId As String
+    Dim systemKey As String
+    Dim liveQty As Double
+    Dim liveLocation As String
+    Dim allocatedForEntity As Double
+    Dim nonCounted As Boolean
+
+    nodeId = RunRecordText(node, "ProcessNodeId")
+    For Each key In mAllocations.Keys
+        If Not AllocationBelongsToNode(CStr(key), nodeId) Then GoTo NextAllocation
+        systemKey = AllocationSystemKey(CStr(key))
+        liveQty = ExactEntityAvailableQty(systemKey, liveLocation)
+        nonCounted = ExactEntityIsNonCounted(systemKey)
+        allocatedForEntity = AllocationTotalForEntityForNode(systemKey, nodeId)
+        If Not nonCounted And liveQty + QTY_TOLERANCE < allocatedForEntity Then
+            report = "Stale allocation rejected for System_Key " & systemKey & _
+                     ". Available=" & FormatRunNumberLocal(liveQty) & "; allocated=" & _
+                     FormatRunNumberLocal(allocatedForEntity) & ". Refresh Production Run."
+            Exit Function
+        End If
+        If Trim$(runLocation) <> "" And _
+           StrComp(Trim$(runLocation), liveLocation, vbTextCompare) <> 0 Then
+            report = "System_Key " & systemKey & " is at " & liveLocation & _
+                     "; the Production run location is " & Trim$(runLocation) & "."
+            Exit Function
+        End If
+NextAllocation:
+    Next key
+    ValidateProcessAllocationsLive = True
+End Function
+
+Private Function AvailableStockForRequirement(ByVal requirement As Object, _
+                                              ByVal locationFilter As String) As Double
+    Dim entities As Variant
+    Dim entityRow As Long
+    Dim nodeId As String
+    Dim requirementId As String
+    Dim systemKey As String
+    Dim availableQty As Double
+    Dim reservedOther As Double
+    Dim currentAllocation As Double
+    Dim allocationId As String
+
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    If Not IsArray(entities) Then Exit Function
+    nodeId = RunRecordText(requirement, "ProcessNodeId")
+    requirementId = RunRecordText(requirement, "RequirementId")
+    locationFilter = Trim$(locationFilter)
+    For entityRow = LBound(entities, 1) To UBound(entities, 1)
+        If locationFilter <> "" Then
+            If StrComp(locationFilter, Trim$(CStr(entities(entityRow, 7))), vbTextCompare) <> 0 Then GoTo NextEntity
+        End If
+        If Not RequirementAllowsItem(nodeId, requirementId, _
+                CStr(entities(entityRow, 3)), CStr(entities(entityRow, 2))) Then GoTo NextEntity
+        If EntityRowIsNonCounted(entities, entityRow) Then
+            AvailableStockForRequirement = ScaledRecordQty(requirement)
+            Exit Function
+        End If
+        systemKey = Trim$(CStr(entities(entityRow, 1)))
+        availableQty = 0#
+        If IsNumeric(entities(entityRow, 6)) Then availableQty = CDbl(entities(entityRow, 6))
+        allocationId = AllocationKey(nodeId, requirementId, systemKey)
+        currentAllocation = 0#
+        If mAllocations.Exists(allocationId) Then currentAllocation = CDbl(mAllocations(allocationId))
+        reservedOther = AllocationTotalForEntity(systemKey, "") - currentAllocation
+        If availableQty > reservedOther Then _
+            AvailableStockForRequirement = AvailableStockForRequirement + availableQty - reservedOther
+NextEntity:
+    Next entityRow
+End Function
+
+Private Function IncomingConnectionForRequirement(ByVal nodeId As String, _
+                                                  ByVal requirementId As String) As Object
+    Dim rawConnection As Variant
+    Dim connection As Object
+    For Each rawConnection In mConnections
+        Set connection = rawConnection
+        If StrComp(RunRecordText(connection, "ToProcessNodeId"), nodeId, vbTextCompare) = 0 _
+           And StrComp(RunRecordText(connection, "ToRequirementId"), requirementId, vbTextCompare) = 0 Then
+            Set IncomingConnectionForRequirement = connection
+            Exit Function
+        End If
+    Next rawConnection
+End Function
+
+Private Function OutputKeyForConnection(ByVal connection As Object) As String
+    Dim key As String
+    If connection Is Nothing Then Exit Function
+    key = OutputIdentityKey(RunRecordText(connection, "FromProcessNodeId"), _
+                            RunRecordText(connection, "FromOutputId"))
+    If Not mOutputKeys Is Nothing Then
+        If mOutputKeys.Exists(key) Then OutputKeyForConnection = CStr(mOutputKeys(key))
+    End If
+End Function
+
+Private Function AllocationBelongsToNode(ByVal allocationId As String, _
+                                         ByVal nodeId As String) As Boolean
+    Dim parts() As String
+    parts = Split(allocationId, vbTab)
+    If UBound(parts) = 2 Then _
+        AllocationBelongsToNode = _
+            (StrComp(parts(0), nodeId, vbTextCompare) = 0)
+End Function
+
+Private Function AllocationCountForNode(ByVal nodeId As String) As Long
+    Dim key As Variant
+    For Each key In mAllocations.Keys
+        If AllocationBelongsToNode(CStr(key), nodeId) Then _
+            AllocationCountForNode = AllocationCountForNode + 1
+    Next key
+End Function
+
+Private Function AllocationTotalForEntityForNode(ByVal systemKey As String, _
+                                                 ByVal nodeId As String) As Double
+    Dim key As Variant
+    For Each key In mAllocations.Keys
+        If AllocationBelongsToNode(CStr(key), nodeId) Then
+            If StrComp(AllocationSystemKey(CStr(key)), systemKey, vbTextCompare) = 0 Then _
+                AllocationTotalForEntityForNode = AllocationTotalForEntityForNode + CDbl(mAllocations(key))
+        End If
+    Next key
 End Function
 
 Private Sub AddNodeInExecutionOrder(ByVal node As Object)
@@ -1073,6 +1585,20 @@ Private Sub AssignFreshOutputKeys()
     Next rawOutput
 End Sub
 
+Private Sub AssignFreshOutputKeysForNode(ByVal nodeId As String)
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim key As String
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If StrComp(RunRecordText(output, "ProcessNodeId"), nodeId, vbTextCompare) = 0 Then
+            key = OutputIdentityKey(nodeId, RunRecordText(output, "OutputId"))
+            If Not mOutputKeys.Exists(key) Then _
+                mOutputKeys.Add key, modRoleEventWriter.CreateSystemKey()
+        End If
+    Next rawOutput
+End Sub
+
 Private Function VerifyCompletedOutputBalances(ByRef report As String) As Boolean
     Dim rawOutput As Variant
     Dim output As Object
@@ -1085,7 +1611,8 @@ Private Function VerifyCompletedOutputBalances(ByRef report As String) As Boolea
         key = CStr(mOutputKeys(OutputIdentityKey(RunRecordText(output, "ProcessNodeId"), _
                                                 RunRecordText(output, "OutputId"))))
         expectedQty = ActualOutputQty(output) - OutgoingQtyForOutput( _
-            RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId"))
+            RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "OutputId")) - _
+            AllocationTotalForEntity(key, "")
         actualQty = ExactEntityAvailableQty(key)
         If Abs(actualQty - expectedQty) > QTY_TOLERANCE Then
             report = "Output persistence verification failed for System_Key " & key & _
@@ -1095,6 +1622,34 @@ Private Function VerifyCompletedOutputBalances(ByRef report As String) As Boolea
         End If
     Next rawOutput
     VerifyCompletedOutputBalances = True
+End Function
+
+Private Function VerifyNodeOutputBalances(ByVal nodeId As String, _
+                                          ByVal downstreamConsumed As Boolean, _
+                                          ByRef report As String) As Boolean
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim key As String
+    Dim expectedQty As Double
+    Dim actualQty As Double
+
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If StrComp(RunRecordText(output, "ProcessNodeId"), nodeId, vbTextCompare) <> 0 Then GoTo NextOutput
+        key = CStr(mOutputKeys(OutputIdentityKey(nodeId, RunRecordText(output, "OutputId"))))
+        expectedQty = ActualOutputQty(output)
+        If downstreamConsumed Then expectedQty = expectedQty - _
+            OutgoingQtyForOutput(nodeId, RunRecordText(output, "OutputId"))
+        actualQty = ExactEntityAvailableQty(key)
+        If Abs(actualQty - expectedQty) > QTY_TOLERANCE Then
+            report = "Output persistence verification failed for System_Key " & key & _
+                     ". Expected=" & FormatRunNumberLocal(expectedQty) & "; actual=" & _
+                     FormatRunNumberLocal(actualQty) & "."
+            Exit Function
+        End If
+NextOutput:
+    Next rawOutput
+    VerifyNodeOutputBalances = True
 End Function
 
 Private Function ValidateReusableActualOutputs(ByRef report As String) As Boolean
@@ -1130,6 +1685,46 @@ Private Function ValidateReusableActualOutputs(ByRef report As String) As Boolea
         End If
     Next rawOutput
     ValidateReusableActualOutputs = True
+End Function
+
+Private Function ValidateReusableActualOutputsForNode(ByVal nodeId As String, _
+                                                      ByRef report As String) As Boolean
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim outputKey As String
+    Dim actualQty As Double
+    Dim committedQty As Double
+    Dim foundOutput As Boolean
+
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If StrComp(RunRecordText(output, "ProcessNodeId"), nodeId, vbTextCompare) <> 0 Then GoTo NextOutput
+        foundOutput = True
+        outputKey = OutputIdentityKey(nodeId, RunRecordText(output, "OutputId"))
+        If Not mActualOutputQty.Exists(outputKey) Then
+            report = "Enter Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " before completing the selected Process."
+            Exit Function
+        End If
+        actualQty = ActualOutputQty(output)
+        If actualQty <= 0 Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " must be greater than zero."
+            Exit Function
+        End If
+        committedQty = OutgoingQtyForOutput(nodeId, RunRecordText(output, "OutputId"))
+        If actualQty + QTY_TOLERANCE < committedQty Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " is below its routed downstream commitment."
+            Exit Function
+        End If
+NextOutput:
+    Next rawOutput
+    If Not foundOutput Then
+        report = "The selected Process has no output to complete."
+        Exit Function
+    End If
+    ValidateReusableActualOutputsForNode = True
 End Function
 
 Private Function ActualOutputQty(ByVal output As Object) As Double
@@ -1175,6 +1770,33 @@ Private Sub CaptureCompletedOutputHistory()
         record("ProcessTotal") = ProcessOutputTotal( _
             RunRecordText(output, "ProcessName"), RunRecordText(output, "OutputName"), _
             RunRecordText(output, "UOM"))
+    Next rawOutput
+End Sub
+
+Private Sub CaptureCompletedNodeOutputHistory(ByVal nodeId As String)
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim record As Object
+    Dim outputKey As String
+
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If StrComp(RunRecordText(output, "ProcessNodeId"), nodeId, vbTextCompare) <> 0 Then GoTo NextOutput
+        outputKey = OutputIdentityKey(nodeId, RunRecordText(output, "OutputId"))
+        Set record = NewTextDictionary()
+        record("ProcessName") = RunRecordText(output, "ProcessName")
+        record("OutputName") = RunRecordText(output, "OutputName")
+        record("UOM") = RunRecordText(output, "UOM")
+        record("ActualQty") = ActualOutputQty(output)
+        record("BatchNumber") = mBatchNumber
+        record("UsedGoods") = ProcessUsedGoodsQty(nodeId, RunRecordText(output, "UOM"))
+        record("Recall") = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
+        record("System_Key") = CStr(mOutputKeys(outputKey))
+        mOutputHistory.Add record
+        record("ProcessTotal") = ProcessOutputTotal( _
+            RunRecordText(output, "ProcessName"), RunRecordText(output, "OutputName"), _
+            RunRecordText(output, "UOM"))
+NextOutput:
     Next rawOutput
 End Sub
 
@@ -1231,6 +1853,39 @@ Private Function FindNode(ByVal nodeId As String) As Object
             Exit Function
         End If
     Next rawRecord
+End Function
+
+Private Function FindNodeByProcessName(ByVal processName As String) As Object
+    Dim rawRecord As Variant
+    Dim record As Object
+    processName = Trim$(processName)
+    For Each rawRecord In mNodes
+        Set record = rawRecord
+        If StrComp(RunRecordText(record, "ProcessName"), processName, vbTextCompare) = 0 Then
+            Set FindNodeByProcessName = record
+            Exit Function
+        End If
+    Next rawRecord
+End Function
+
+Private Function NodeIsComplete(ByVal nodeId As String) As Boolean
+    If mCompletedNodes Is Nothing Then Exit Function
+    NodeIsComplete = mCompletedNodes.Exists(nodeId)
+End Function
+
+Private Function AllNodesCompleted() As Boolean
+    If mCompletedNodes Is Nothing Then Exit Function
+    AllNodesCompleted = (mNodes.Count > 0 And mCompletedNodes.Count = mNodes.Count)
+End Function
+
+Private Function ActiveOutputCount() As Long
+    Dim rawOutput As Variant
+    Dim output As Object
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If Not NodeIsComplete(RunRecordText(output, "ProcessNodeId")) Then _
+            ActiveOutputCount = ActiveOutputCount + 1
+    Next rawOutput
 End Function
 
 Private Function FindRequirement(ByVal nodeId As String, ByVal requirementId As String) As Object

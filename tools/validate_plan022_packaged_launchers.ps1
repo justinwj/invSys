@@ -6,7 +6,8 @@ param(
     [ValidateSet("", "Receiving", "Production", "Shipping")]
     [string]$CallbackFilter = "",
     [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")]
-    [string]$WorkbookState = "NoEligible"
+    [string]$WorkbookState = "NoEligible",
+    [switch]$ProductionRunOnly
 )
 
 Set-StrictMode -Version Latest
@@ -627,6 +628,10 @@ if ($WorkbookState -eq "ProductionReusable") {
         throw "ProductionReusable supports only -CallbackFilter Production."
     }
 }
+if ($ProductionRunOnly -and
+    ($WorkbookState -ne "ProductionReusable" -or $CallbackFilter -ne "Production")) {
+    throw "ProductionRunOnly requires -WorkbookState ProductionReusable -CallbackFilter Production."
+}
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -1127,6 +1132,7 @@ try {
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
                 if ($WorkbookState -eq "ProductionReusable") {
+                    if (-not $ProductionRunOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke Production reusable-surface contract")
                     $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
@@ -1239,6 +1245,7 @@ try {
                         $productionActionReport -match '(?:^|\|)ProcessOutputUomCatalog=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
+                    }
 
                     [IO.File]::WriteAllText($progressPath, "invoke Production reusable run actions")
                     $productionRunReport = [string](Run-WorkbookMacro -Excel $excel `
@@ -1266,13 +1273,18 @@ try {
                         $productionRunReport -match '(?:^|\|)MultiProcessRunPlan=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)TargetOutputScaleStub=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)LocationStockBuckets=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)LocationStockExactExpansion=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)LocationStockExactExpansion=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)SelectedProcessOnly=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RunInstructionsVisible=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)WholeRecipeStatus=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)EightPaletteRows=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
                         $reusableRecipeId = [string]$Matches[1]
                     }
 
+                    if (-not $ProductionRunOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet round-trip")
                     $processWorksheetReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
@@ -1294,6 +1306,7 @@ try {
                         $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
+                    }
                 }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {
@@ -1382,7 +1395,7 @@ try {
         [IO.File]::WriteAllText($progressPath, "completed " + $callback.Macro)
     }
 
-    if ($WorkbookState -eq "ProductionReusable") {
+    if ($WorkbookState -eq "ProductionReusable" -and -not $ProductionRunOnly) {
         $currentStep = "restart reusable Production in a clean Excel process"
         [IO.File]::WriteAllText($progressPath, $currentStep)
         if ([string]::IsNullOrWhiteSpace($reusableRecipeId)) {
@@ -1542,6 +1555,9 @@ finally {
     }
     elseif ($WorkbookState -eq "ShippingLayout") {
         "# Plan 022 Slices 4g-4h Shipping Layout Evidence"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable" -and $ProductionRunOnly) {
+        "# Plan 022 Slice 4av Focused Packaged Production Evidence"
     }
     elseif ($WorkbookState -eq "ProductionReusable") {
         "# Plan 022 Slice 4x Packaged Reusable Production Evidence"

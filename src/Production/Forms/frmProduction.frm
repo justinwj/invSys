@@ -17,10 +17,10 @@ Option Explicit
 
 '@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=690 DefaultWidth=1110 DefaultHeight=690 ExpandedWidth=1350 ExpandedHeight=750
 Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
-Private Const RUN_LOADER_LINE_WIDTHS As String = "150 pt;0 pt;55 pt;205 pt;55 pt;55 pt;55 pt;0 pt"
+Private Const RUN_LOADER_LINE_WIDTHS As String = "110 pt;0 pt;45 pt;155 pt;45 pt;45 pt;50 pt;95 pt;0 pt"
 Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;235 pt;0 pt;315 pt;60 pt;65 pt;50 pt;120 pt;165 pt"
 Private Const RUN_OUTPUT_WIDTHS As String = "120 pt;190 pt;48 pt;72 pt;45 pt;72 pt;82 pt;100 pt;240 pt"
-Private Const RUN_CHECK_WIDTHS As String = "200 pt;170 pt;295 pt;55 pt;75 pt;120 pt"
+Private Const RUN_CHECK_WIDTHS As String = "135 pt;100 pt;180 pt;50 pt;65 pt;80 pt"
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
 Private Const BATCH_SCALE_MAX_PERCENT As Double = 1000
 
@@ -166,6 +166,7 @@ Private WithEvents mBtnRunTreeApplyPalette As MSForms.CommandButton
 
 Private WithEvents mLstManagerOutput As MSForms.ListBox
 Private WithEvents mLstManagerCheck As MSForms.ListBox
+Private WithEvents mLstRunInstructions As MSForms.ListBox
 Private WithEvents mBtnRunApplyPalette As MSForms.CommandButton
 Private WithEvents mBtnApplyBatchScale As MSForms.CommandButton
 Private WithEvents mBtnManagerCheckIn As MSForms.CommandButton
@@ -1220,8 +1221,8 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     mTxtRunTargetOutputQty.Enabled = False
 
     AddLabel pg, "Multi-Process Run Plan", 455, 12, 180, 16
-    AddColumnHeaders pg, "LoaderLines", Array("Process", "", "Type", "Requirement / Output", "%", "UOM", "Qty", ""), 455, 32, RUN_LOADER_LINE_WIDTHS
-    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 50, 575, 106, 8, RUN_LOADER_LINE_WIDTHS)
+    AddColumnHeaders pg, "LoaderLines", Array("Process", "", "Type", "Requirement / Output", "%", "UOM", "Qty", "Status", ""), 455, 32, RUN_LOADER_LINE_WIDTHS
+    Set mLstLoaderLines = AddList(pg, "lstLoaderLines", 455, 50, 575, 106, 9, RUN_LOADER_LINE_WIDTHS)
 
     AddLabel pg, "Process filter", 12, 192, 80, 16
     Set mCmbRunProcess = AddCombo(pg, "cmbRunProcess", 95, 188, 160, 22)
@@ -1235,23 +1236,28 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
 
     AddLabel pg, "Acceptable Inventory For Run", 12, 214, 230, 16
     AddColumnHeaders pg, "RunPalette", Array("", "", "Process / Ingredient", "", "Inventory Stock", "% Req", "Qty", "UOM", "Available", "Location"), 12, 232, RUN_PALETTE_WIDTHS
-    Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 250, 1018, 50, 10, RUN_PALETTE_WIDTHS)
+    Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 250, 1018, 96, 10, RUN_PALETTE_WIDTHS)
 
-    AddLabel pg, "Inventory Check", 12, 316, 150, 16
-    AddColumnHeaders pg, "ManagerCheck", Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 336, RUN_CHECK_WIDTHS
-    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 354, 1018, 56, 6, RUN_CHECK_WIDTHS)
+    AddLabel pg, "Inventory Check", 12, 352, 150, 16
+    AddColumnHeaders pg, "ManagerCheck", Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 370, RUN_CHECK_WIDTHS
+    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 388, 620, 46, 6, RUN_CHECK_WIDTHS)
+    AddLabel pg, "Selected Process Instructions", 650, 352, 220, 16
+    AddColumnHeaders pg, "RunInstructions", Array("Step", "Instruction"), _
+        650, 370, "45 pt;325 pt"
+    Set mLstRunInstructions = AddList(pg, "lstRunInstructions", 650, 388, 380, 46, 2, _
+        "45 pt;325 pt")
 
-    AddLabel pg, "Production Output", 12, 426, 170, 16
-    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 446, RUN_OUTPUT_WIDTHS
-    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 464, 1018, 62, 9, RUN_OUTPUT_WIDTHS)
+    AddLabel pg, "Production Output", 12, 442, 170, 16
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 460, RUN_OUTPUT_WIDTHS
+    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 478, 1018, 50, 9, RUN_OUTPUT_WIDTHS)
 
-    AddLabel pg, "Actual Output", 12, 526, 80, 16
-    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 522, 105, 22)
-    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 520, 95, 24)
-    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 520, 120, 24)
-    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 520, 95, 24)
-    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 520, 120, 24)
-    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 520, 120, 24)
+    AddLabel pg, "Actual Output", 12, 536, 80, 16
+    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 532, 105, 22)
+    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 530, 95, 24)
+    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 530, 120, 24)
+    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 530, 95, 24)
+    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 530, 120, 24)
+    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 530, 120, 24)
 End Sub
 
 Private Sub BuildRunTreePage(ByVal pg As MSForms.Page)
@@ -1445,7 +1451,8 @@ Private Sub ConfigureRunListAnchors()
     mLayout.RegisterControl mTxtBatchScalePercent, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mBtnApplyBatchScale, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLstRunPalette, leftRightTop
-    mLayout.RegisterControl mLstManagerCheck, leftRightTop
+    mLayout.RegisterControl mLstManagerCheck, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstRunInstructions, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLstManagerOutput, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
                                               OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
     mLayout.RegisterControl mTxtOutputReal, leftBottom
@@ -3821,7 +3828,12 @@ Private Sub CheckInProductionRun()
     On Error GoTo FailCheckIn
     checkInStage = "ReusableState"
     If modProductionReusableRun.ReusableRunIsLoaded() Then
-        If modProductionReusableRun.CheckInReusableRun(ActiveRunLocation(), reusableReport) Then
+        If ActiveRunProcess() <> "" Then
+            If modProductionReusableRun.CheckInReusableProcess(ActiveRunProcess(), _
+                    ActiveRunLocation(), reusableReport) Then
+                RefreshReusableRunControls False
+            End If
+        ElseIf modProductionReusableRun.CheckInReusableRun(ActiveRunLocation(), reusableReport) Then
             RefreshReusableRunControls False
         End If
         ShowStatus reusableReport
@@ -3931,7 +3943,13 @@ Private Sub CompleteProductionRun()
     If modProductionReusableRun.ReusableRunIsLoaded() Then
         If Not StageSelectedReusableActualOutput(True) Then Exit Sub
         ShowPersistencePending "Saving the reusable Process run to the warehouse server..."
-        If modProductionReusableRun.CompleteReusableRun(ActiveRunLocation(), reusableReport) Then
+        If ActiveRunProcess() <> "" Then
+            If modProductionReusableRun.CompleteReusableProcess(ActiveRunProcess(), _
+                    ActiveRunLocation(), reusableReport) Then
+                ResetInventoryCache
+                RefreshReusableRunControls True
+            End If
+        ElseIf modProductionReusableRun.CompleteReusableRun(ActiveRunLocation(), reusableReport) Then
             ResetInventoryCache
             RefreshReusableRunControls True
         End If
@@ -8192,6 +8210,12 @@ Public Function TestReusableProductionRunActionContract() As String
     Dim locationStockBuckets As Boolean
     Dim locationStockExactExpansion As Boolean
     Dim rawStockStartQty As Double
+    Dim selectedProcessOnly As Boolean
+    Dim runInstructionsVisible As Boolean
+    Dim wholeRecipeStatus As Boolean
+    Dim eightPaletteRows As Boolean
+    Dim sourceProcessName As String
+    Dim sinkProcessName As String
 
     mReusableActionTestInProgress = True
     systemKeyHeadersReadable = ProductionRunSystemKeyHeadersReadable()
@@ -8205,6 +8229,7 @@ Public Function TestReusableProductionRunActionContract() As String
             GoTo CleanExit
         End If
     End If
+    mReusableActionTestInProgress = True
 
     RefreshReusableDesignLists
     rowIndex = FindIdentityListRow(mLstProcesses, mReusableTestSourceId, "1")
@@ -8232,6 +8257,35 @@ Public Function TestReusableProductionRunActionContract() As String
     mTxtProcessOutputYieldBasis.Text = "10"
     RefreshProcessOutputUomCatalog "LB"
     mBtnProcessOutputAdd_Click
+    mTxtProcessOutputId.Text = "004"
+    mTxtProcessOutputName.Text = "Run Supply"
+    mTxtProcessOutputItemCode.Text = "SKU-RUN-SUPPLY"
+    mTxtProcessOutputQty.Text = "1"
+    mTxtProcessOutputPercent.Text = ""
+    mTxtProcessOutputYieldBasis.Text = ""
+    RefreshProcessOutputUomCatalog "LB"
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
+    mBtnProcessRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo FixtureFailed
+
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstProcesses, mReusableTestSinkId, "2")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstProcesses.ListIndex = rowIndex
+    mBtnProcessReuse_Click
+    mTxtRequirementId.Text = "003"
+    mTxtRequirementName.Text = "Run supply"
+    mTxtRequirementQty.Text = "1"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = "003"
+    alternative("ITEM_CODE") = "SKU-RUN-SUPPLY"
+    mProcessAlternatives.Add alternative
+    mTxtProcessInstruction.Text = "Finish the reusable output."
+    mBtnProcessInstructionAdd_Click
     mBtnProcessSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
     mBtnProcessRelease_Click
@@ -8246,7 +8300,7 @@ Public Function TestReusableProductionRunActionContract() As String
     If rowIndex < 0 Then GoTo FixtureFailed
     mLstReleasedProcesses.ListIndex = rowIndex
     mBtnRecipeAddProcess_Click
-    rowIndex = FindIdentityListRow(mLstReleasedProcesses, mReusableTestSinkId, "2")
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, mReusableTestSinkId, "3")
     If rowIndex < 0 Then GoTo FixtureFailed
     mLstReleasedProcesses.ListIndex = rowIndex
     mBtnRecipeAddProcess_Click
@@ -8287,6 +8341,9 @@ Public Function TestReusableProductionRunActionContract() As String
             sinkNodeId = NzStr(mLstLoaderLines.List(i, 1))
     Next i
     If sourceNodeId = "" Or sinkNodeId = "" Then GoTo FixtureFailed
+    sourceProcessName = ReusableRunProcessNameForNode(sourceNodeId)
+    sinkProcessName = ReusableRunProcessNameForNode(sinkNodeId)
+    If sourceProcessName = "" Or sinkProcessName = "" Then GoTo FixtureFailed
     multiProcessRunPlan = _
         ControlExistsByName(mPages.Pages(3), "hdrLoaderLines1") And _
         ControlExistsByName(mPages.Pages(3), "hdrLoaderLines7")
@@ -8299,6 +8356,14 @@ Public Function TestReusableProductionRunActionContract() As String
         End If
     Next i
     If i >= mLstRunPalette.ListCount Then multiProcessRunPlan = False
+    wholeRecipeStatus = LoaderHasReusableStatus("! INSUFFICIENT")
+    eightPaletteRows = (mLstRunPalette.Height >= 90)
+    SelectComboText mCmbRunProcess, sourceProcessName
+    mCmbRunProcess_Change
+    runInstructionsVisible = _
+        (mLstRunInstructions.ListCount > 0) And _
+        (InStr(1, NzStr(mLstRunInstructions.List(0, 1)), _
+            "Produce the reusable source output", vbTextCompare) > 0)
     locationStockBuckets = _
         (ReusablePaletteRowsForItemName("Production Raw Material") = 1)
     targetOutputScaleStub = _
@@ -8342,6 +8407,8 @@ Public Function TestReusableProductionRunActionContract() As String
     mBtnApplyBatchScale_Click
 
     fixtureStage = "Batch1Allocate"
+    SelectComboText mCmbRunProcess, sourceProcessName
+    mCmbRunProcess_Change
     SelectComboText mCmbRunLocation, runLocation
     mCmbRunLocation_Change
     If mLstRunPalette.ListCount = 0 Then GoTo FixtureFailed
@@ -8362,10 +8429,35 @@ Public Function TestReusableProductionRunActionContract() As String
     actualOutputAccepted = StageReusableTestActualOutputs(4.25)
     If Not actualOutputAccepted Then GoTo FixtureFailed
     mBtnManagerApplyOutput_Click
+    selectedProcessOnly = _
+        modProductionReusableRun.ReusableRunIsProcessComplete(sourceProcessName) And _
+        Not modProductionReusableRun.ReusableRunIsProcessComplete(sinkProcessName) And _
+        Not modProductionReusableRun.ReusableRunIsCompleted()
+    If Not selectedProcessOnly Then GoTo FixtureFailed
+    wholeRecipeStatus = wholeRecipeStatus And LoaderHasReusableStatus("NEEDS ALLOCATION")
+    fixtureStage = "Batch1SinkAllocate"
+    SelectComboText mCmbRunProcess, sinkProcessName
+    mCmbRunProcess_Change
+    mLstRunPalette.ListIndex = FindReusablePaletteItemName("Run Supply")
+    If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
+    mTxtPaletteSplit.Text = "100"
+    mTxtPaletteQty.Text = "1"
+    mBtnRunApplyPalette_Click
+    exactInputKeys = exactInputKeys And _
+        (modProductionReusableRun.ReusableRunExactAllocationCountForRequirement( _
+            sinkNodeId, "003") >= 1)
+    fixtureStage = "Batch1SinkCheckIn"
+    mBtnManagerCheckIn_Click
+    If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then GoTo FixtureFailed
+    fixtureStage = "Batch1SinkComplete"
+    actualOutputAccepted = actualOutputAccepted And _
+        StageReusableTestActualOutputs(4.25)
+    If Not actualOutputAccepted Then GoTo FixtureFailed
+    mBtnManagerApplyOutput_Click
     completed = modProductionReusableRun.ReusableRunIsCompleted()
     If Not completed Then GoTo FixtureFailed
     Set firstBatchKeys = CaptureReusableOutputKeys()
-    If firstBatchKeys.Count <> 3 Then GoTo FixtureFailed
+    If firstBatchKeys.Count <> 4 Then GoTo FixtureFailed
     intermediateConsumed = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
         modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"))) < 0.0000001)
     coProductRemaining = (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
@@ -8383,11 +8475,13 @@ Public Function TestReusableProductionRunActionContract() As String
     mBtnManagerNext_Click
     nextBatch = (modProductionReusableRun.ReusableRunBatchNumber() = 2 And _
                   Not modProductionReusableRun.ReusableRunIsCheckedIn())
-    batchHistoryRows = (ReusableOutputRowsForBatch(1) = 3 And _
-                        ReusableActiveOutputRowCount() = 3)
+    batchHistoryRows = (ReusableOutputRowsForBatch(1) = 4 And _
+                        ReusableActiveOutputRowCount() = 4)
     If Not nextBatch Then GoTo FixtureFailed
 
     fixtureStage = "Batch2Allocate"
+    SelectComboText mCmbRunProcess, sourceProcessName
+    mCmbRunProcess_Change
     SelectComboText mCmbRunLocation, runLocation
     mCmbRunLocation_Change
     mLstRunPalette.ListIndex = FindReusablePaletteItemName("Production Raw Material")
@@ -8402,18 +8496,35 @@ Public Function TestReusableProductionRunActionContract() As String
     actualOutputAccepted = actualOutputAccepted And StageReusableTestActualOutputs(4.5)
     If Not actualOutputAccepted Then GoTo FixtureFailed
     mBtnManagerApplyOutput_Click
+    If Not modProductionReusableRun.ReusableRunIsProcessComplete(sourceProcessName) Or _
+       modProductionReusableRun.ReusableRunIsCompleted() Then GoTo FixtureFailed
+    fixtureStage = "Batch2SinkAllocate"
+    SelectComboText mCmbRunProcess, sinkProcessName
+    mCmbRunProcess_Change
+    mLstRunPalette.ListIndex = FindReusablePaletteItemName("Run Supply")
+    If mLstRunPalette.ListIndex < 0 Then GoTo FixtureFailed
+    mTxtPaletteSplit.Text = "100"
+    mTxtPaletteQty.Text = "1"
+    mBtnRunApplyPalette_Click
+    fixtureStage = "Batch2SinkCheckIn"
+    mBtnManagerCheckIn_Click
+    If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then GoTo FixtureFailed
+    fixtureStage = "Batch2SinkComplete"
+    actualOutputAccepted = actualOutputAccepted And StageReusableTestActualOutputs(4.5)
+    If Not actualOutputAccepted Then GoTo FixtureFailed
+    mBtnManagerApplyOutput_Click
     If Not modProductionReusableRun.ReusableRunIsCompleted() Then GoTo FixtureFailed
     batchHistoryRows = batchHistoryRows And _
-        (ReusableOutputRowsForBatch(1) = 3 And ReusableOutputRowsForBatch(2) = 3)
+        (ReusableOutputRowsForBatch(1) = 4 And ReusableOutputRowsForBatch(2) = 4)
     processTotalReady = (Abs(ReusableOutputListValueForBatch( _
         "Finished Output", 2, 6) - 8.75) < 0.0000001)
     Set secondBatchKeys = CaptureReusableOutputKeys()
-    If secondBatchKeys.Count <> 3 Then GoTo FixtureFailed
+    If secondBatchKeys.Count <> 4 Then GoTo FixtureFailed
     distinctOutputKeys = True
     For Each key In secondBatchKeys.Keys
         If firstBatchKeys.Exists(CStr(key)) Then distinctOutputKeys = False
     Next key
-    distinctOutputKeys = distinctOutputKeys And (firstBatchKeys.Count + secondBatchKeys.Count = 6)
+    distinctOutputKeys = distinctOutputKeys And (firstBatchKeys.Count + secondBatchKeys.Count = 8)
     intermediateConsumed = intermediateConsumed And _
         (Abs(modProductionReusableRun.ReusableRunExactEntityQty( _
             modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"))) < 0.0000001)
@@ -8447,11 +8558,17 @@ Public Function TestReusableProductionRunActionContract() As String
         "|SystemKeyHeadersReadable=" & CStr(systemKeyHeadersReadable) & _
         "|BatchHistoryRows=" & CStr(batchHistoryRows) & _
         "|ProcessTotal=" & CStr(processTotalReady) & _
-        "|UtilityDisplay=" & CStr(utilityDisplay) & _
+        "|UtilityDisplay=" & CStr(utilityDisplay)
+    TestReusableProductionRunActionContract = _
+        TestReusableProductionRunActionContract & _
         "|MultiProcessRunPlan=" & CStr(multiProcessRunPlan) & _
         "|TargetOutputScaleStub=" & CStr(targetOutputScaleStub) & _
         "|LocationStockBuckets=" & CStr(locationStockBuckets) & _
         "|LocationStockExactExpansion=" & CStr(locationStockExactExpansion) & _
+        "|SelectedProcessOnly=" & CStr(selectedProcessOnly) & _
+        "|RunInstructionsVisible=" & CStr(runInstructionsVisible) & _
+        "|WholeRecipeStatus=" & CStr(wholeRecipeStatus) & _
+        "|EightPaletteRows=" & CStr(eightPaletteRows) & _
         "|CheckedIn=" & CStr(checkedIn) & "|Completed=" & CStr(completed) & _
         "|Refreshed=" & CStr(refreshed) & "|NextBatch=" & CStr(nextBatch)
 CleanExit:
@@ -8669,6 +8786,18 @@ Private Function ReusablePaletteRowsForItemName(ByVal itemName As String) As Lon
     For i = 0 To mLstRunPalette.ListCount - 1
         If StrComp(NzStr(mLstRunPalette.List(i, 4)), itemName, vbTextCompare) = 0 Then _
             ReusablePaletteRowsForItemName = ReusablePaletteRowsForItemName + 1
+    Next i
+End Function
+
+Private Function LoaderHasReusableStatus(ByVal expectedStatus As String) As Boolean
+    Dim i As Long
+
+    For i = 0 To mLstLoaderLines.ListCount - 1
+        If StrComp(Trim$(NzStr(mLstLoaderLines.List(i, 7))), _
+                   expectedStatus, vbTextCompare) = 0 Then
+            LoaderHasReusableStatus = True
+            Exit Function
+        End If
     Next i
 End Function
 
@@ -9702,7 +9831,7 @@ Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
     If refreshInventory Then ResetInventoryCache
     selectedProcess = ActiveRunProcess()
     mLoading = True
-    loaderRows = modProductionReusableRun.ReusableRunLoaderRows()
+    loaderRows = modProductionReusableRun.ReusableRunLoaderRows(ActiveRunLocation())
     paletteRows = modProductionReusableRun.ReusableRunPaletteRows(ActiveRunLocation())
     checkRows = modProductionReusableRun.ReusableRunManagerCheckRows()
     outputRows = modProductionReusableRun.ReusableRunOutputRows()
@@ -9734,6 +9863,7 @@ Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
     If mCmbRunTargetOutput.ListCount > 0 Then _
         mCmbRunTargetOutput.ListIndex = mCmbRunTargetOutput.ListCount - 1
     ApplyReusablePaletteProcessProjection selectedProcess
+    RefreshReusableRunInstructions selectedProcess
     For i = 0 To mLstRunPalette.ListCount - 1
         locationName = NzStr(mLstRunPalette.List(i, 9))
         AddUniqueComboItem mCmbRunLocation, locationName
@@ -9741,6 +9871,13 @@ Private Sub RefreshReusableRunControls(ByVal refreshInventory As Boolean)
     Next i
     mLoading = False
     If activeOutputRow >= 0 Then LoadSelectedReusableActualOutput
+End Sub
+
+Private Sub RefreshReusableRunInstructions(ByVal processName As String)
+    Dim instructionRows As Variant
+    If mLstRunInstructions Is Nothing Then Exit Sub
+    instructionRows = modProductionReusableRun.ReusableRunInstructionRows(processName)
+    FillListFromArray mLstRunInstructions, instructionRows
 End Sub
 
 Private Sub ApplyReusablePaletteProcessProjection(ByVal filterProcess As String)
@@ -9828,6 +9965,7 @@ Private Sub mBtnLoaderClear_Click()
         mLstRunPalette.Clear
         mLstManagerCheck.Clear
         mLstManagerOutput.Clear
+        mLstRunInstructions.Clear
         ShowStatus "Reusable Production Run cleared."
         Exit Sub
     End If
@@ -9971,6 +10109,7 @@ Private Sub mCmbRunProcess_Change()
     SyncRunProcessCombo mCmbRunProcess, mCmbTreeRunProcess
     If modProductionReusableRun.ReusableRunIsLoaded() Then
         RefreshReusableRunPaletteProjection
+        RefreshReusableRunInstructions ActiveRunProcess()
         Exit Sub
     End If
     RefreshRunPaletteState
@@ -9981,6 +10120,7 @@ Private Sub mCmbTreeRunProcess_Change()
     SyncRunProcessCombo mCmbTreeRunProcess, mCmbRunProcess
     If modProductionReusableRun.ReusableRunIsLoaded() Then
         RefreshReusableRunPaletteProjection
+        RefreshReusableRunInstructions ActiveRunProcess()
         Exit Sub
     End If
     RefreshRunPaletteState

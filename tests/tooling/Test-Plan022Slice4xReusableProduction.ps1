@@ -12,8 +12,8 @@ function Read-Source([string]$RelativePath) {
 
 $productionModule = Read-Source "src\Production\Modules\mProduction.bas"
 $productionForm = Read-Source "src\Production\Forms\frmProduction.frm"
-$runSession = Read-Source "src\Production\ClassModules\cProductionRunSession.cls"
-$completionService = Read-Source "src\Production\Modules\modProductionCompletionService.bas"
+$reusableDesigns = Read-Source "src\Production\Modules\modProductionReusableDesigns.bas"
+$reusableRun = Read-Source "src\Production\Modules\modProductionReusableRun.bas"
 $designsApply = Read-Source "src\DesignsDomain\Modules\modDesignsApply.bas"
 $designsSchema = Read-Source "src\DesignsDomain\Modules\modDesignsSchema.bas"
 $viewerData = Read-Source "src\Core\Modules\modInventoryViewerData.bas"
@@ -49,9 +49,9 @@ $checks = @(
             ($productionForm -match 'Reuse as New Version') -and
             ($productionForm -match 'Save Draft') -and
             ($productionForm -match 'Obsolete') -and
-            ($productionModule -match 'PROCESS_SAVE') -and
-            ($productionModule -match 'PROCESS_RELEASE') -and
-            ($productionModule -match 'PROCESS_OBSOLETE')
+            ($reusableDesigns -match 'PROCESS_SAVE') -and
+            ($reusableDesigns -match 'PROCESS_RELEASE') -and
+            ($reusableDesigns -match 'PROCESS_OBSOLETE')
         Contract = "Process Designer uses operator handlers for new/reuse, draft save, release, and obsolete lifecycle events."
     },
     [pscustomobject]@{
@@ -65,10 +65,10 @@ $checks = @(
         Passed = ($productionForm -match 'Validate Recipe') -and
             ($productionForm -match 'Auto Order') -and
             ($productionForm -match 'Disconnect') -and
-            ($designsApply -match 'ValidateRecipeGraph') -and
+            ($productionForm -match 'ValidateRecipeDraft') -and
             ($designsApply -match 'circular|cycle') -and
-            ($designsApply -match 'unresolved') -and
-            ($designsApply -match 'over-allocation|overalloc')
+            ($reusableRun -match 'unresolved') -and
+            ($designsApply -match 'over-allocated|over-allocation|overalloc')
         Contract = "Recipe Designer and Designs Domain validate connections, execution order, unresolved inputs, quantities, and circular dependencies."
     },
     [pscustomobject]@{
@@ -76,23 +76,24 @@ $checks = @(
         Passed = ($productionForm -match 'Ingredient Requirements') -and
             ($productionForm -match 'Acceptable Items') -and
             ($productionForm -match 'ProcessVersion') -and
-            ($productionModule -match 'PROCESS_SAVE')
+            ($reusableDesigns -match 'PROCESS_SAVE')
         Contract = "Ingredients Assignment maps each exact Process-version requirement to acceptable managed item/SKU alternatives."
     },
     [pscustomobject]@{
         Name = "Production.RunSession.MultiOutput"
-        Passed = ($runSession -match 'OutputAllocations') -and
-            ($runSession -match 'ProcessExecution') -and
-            ($runSession -notmatch 'Private mOutputSystemKey As String') -and
-            ($runSession -notmatch 'Property Get OutputSystemKey\(\) As String')
+        Passed = ($reusableRun -match 'Private mOutputs As Collection') -and
+            ($reusableRun -match 'Private mCompletedNodes As Object') -and
+            ($reusableRun -match 'AssignFreshOutputKeysForNode') -and
+            ($reusableRun -notmatch 'Private mOutputSystemKey As String')
         Contract = "The typed run session carries correlated Process executions and multiple output allocations rather than one singular output key."
     },
     [pscustomobject]@{
         Name = "Production.Completion.ExactKeysAndCoProducts"
-        Passed = ($completionService -match 'OutputAllocationsJson') -and
-            ($completionService -match 'ProcessExecutionId') -and
-            ($completionService -match 'Finished|CoProduct|Co-product') -and
-            ($completionService -match 'InputAllocationsJson')
+        Passed = ($reusableRun -match 'BuildNodeCompleteItems') -and
+            ($reusableRun -match 'BuildNodeConsumeItems') -and
+            ($reusableRun -match 'OutputIdentityKey') -and
+            ($reusableRun -match 'OutgoingQtyForOutput') -and
+            ($reusableRun -match 'AllocationTotalForEntity')
         Contract = "Completion serializes every fresh output key, exact routed-intermediate input keys, and finished/co-product balances."
     },
     [pscustomobject]@{
@@ -120,7 +121,7 @@ $passed = @($checks | Where-Object Passed).Count
 $failed = $checks.Count - $passed
 $resultPath = Join-Path $repo "tests\integration\plan022_slice4x_reusable_production_red_results.md"
 $lines = @(
-    "# Plan 022 Slice 4x Reusable Production RED Results", "",
+    "# Plan 022 Slice 4x Reusable Production Results", "",
     "- Passed: $passed", "- Failed: $failed", "",
     "| Check | Result | Contract |", "|---|---|---|"
 )
