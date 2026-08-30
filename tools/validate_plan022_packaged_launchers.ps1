@@ -1151,6 +1151,15 @@ try {
                         $productionActionReport -match '(?:^|\|)RecipeOutputIdPreserved=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeUomCatalog=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeConnectionUpdated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeNodeNamesVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeRequirementNameVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionNamesVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionHeaders=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionsFullWidth=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeFinishedOutputGuidance=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionSelected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeDisconnected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeSelfReferenceRejected=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport

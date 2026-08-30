@@ -1,7 +1,7 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "operations-shadow-collisions",
-    "generatedAtUtc":  "2026-07-27T23:30:00Z",
+    "generatedAtUtc":  "2026-08-30T06:46:07Z",
     "sourceRoots":  [
                         "src/Operations",
                         "src/Receiving",
@@ -14,8 +14,8 @@
                               "modShippingAutoOpen.bas"
                           ],
     "summary":  {
-                    "componentCount":  36,
-                    "publicProcedureCount":  378,
+                    "componentCount":  39,
+                    "publicProcedureCount":  455,
                     "ribbonCallbackCount":  4,
                     "componentCollisionCount":  0,
                     "publicProcedureCollisionCount":  0,

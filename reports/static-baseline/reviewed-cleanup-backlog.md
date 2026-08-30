@@ -2,8 +2,8 @@
 
 - Schema: 1.0.0
 - Baseline: 2026-08-16T20:00:00Z
-- Scanner candidates: 1044
-- Reviewed candidates: 1046
+- Scanner candidates: 1045
+- Reviewed candidates: 1047
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 203 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 204 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
@@ -50,7 +50,7 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2739 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 8874 |
+| src/Production/Forms/frmProduction.frm | Production | 9129 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1318 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 1410 |
 | src/Production/Modules/mProduction.bas | Production | 13138 |
@@ -835,6 +835,7 @@
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessInstructions_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessOutputs_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstProcessRequirements_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRecipeConnectionDisplay_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRecipeConnections_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRunPalette_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRunTree_Click | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |

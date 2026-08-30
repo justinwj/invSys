@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "9485a7f4a2c509388ea209e88cc4080195e07d19989d8b5fa30f7f26b30f2af7",
-                          "maintenanceCandidatesSha256":  "36ce3bdc20dff0f348bda83b13a08e1d706d1a971edeee7642c8f2e234534869"
+                          "implementationManifestSha256":  "17a280c6e25ce4529a38fbad99a9e33067df0bd2894a9967f90f050dc9ae5803",
+                          "maintenanceCandidatesSha256":  "098dd897b4353afe25d6dae49ffc9635243ffc720a57f1483480404bc34dece2"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1044,
-                    "reviewedCandidateCount":  1046,
+                    "scannerCandidateCount":  1045,
+                    "reviewedCandidateCount":  1047,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  203,
+                            "candidateCount":  204,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8874,
+                                                  "baselineLineCount":  9129,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16060,6 +16060,7 @@
                                                   "ComboText",
                                                   "CompleteProductionRun",
                                                   "ConfigureAssignmentAnchors",
+                                                  "ConfigureNamedIdCombo",
                                                   "ConfigureProductionAnchors",
                                                   "ConfigureRecipeBuilderAnchors",
                                                   "ConfigureRecipeLineInputs",
@@ -16120,6 +16121,7 @@
                                                   "LayoutRectanglesOverlap",
                                                   "LineIoValue",
                                                   "ListIdentityExists",
+                                                  "LoadConnectionEditorFromIndex",
                                                   "LoadProcessDefinitionIntoDesigner",
                                                   "LoadProcessPayloadIntoDesigner",
                                                   "LoadRecipeDefinitionIntoDesigner",
@@ -16230,6 +16232,7 @@
                                                   "mLstProcessInstructions_Click",
                                                   "mLstProcessOutputs_Click",
                                                   "mLstProcessRequirements_Click",
+                                                  "mLstRecipeConnectionDisplay_Click",
                                                   "mLstRecipeConnections_Click",
                                                   "mLstRunPalette_Click",
                                                   "mLstRunTree_Click",
@@ -16281,7 +16284,9 @@
                                                   "ProductionTable",
                                                   "RecipeGraphIsAcyclic",
                                                   "RecipeHasIncomingRequirement",
+                                                  "RecipeNodeDisplayName",
                                                   "RecipeNodeIndex",
+                                                  "RecipeNodeRecordDisplayName",
                                                   "RecipeRequirementsResolved",
                                                   "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
@@ -16299,6 +16304,7 @@
                                                   "RefreshOutputDesignIdentity",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
+                                                  "RefreshRecipeConnectionDisplay",
                                                   "RefreshRecipeLists",
                                                   "RefreshRecipeUomCatalog",
                                                   "RefreshReusableAllowedItems",
@@ -20336,7 +20342,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -21073,6 +21079,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRecipeConnectionDisplay_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mLstRecipeConnectionDisplay_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

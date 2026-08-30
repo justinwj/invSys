@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 154
-- Procedures: 5180
+- Procedures: 5186
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -293,6 +293,7 @@
 | mLstProcessOutputs_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstProcessRequirements_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstReceiveItems_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstRecipeConnectionDisplay_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRecipeConnections_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunPalette_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstRunTree_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5180,
-                     "lineCount":  115418,
+                     "procedureCount":  5186,
+                     "lineCount":  115673,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10592,7 +10592,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -11137,6 +11137,23 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mLstRecipeConnectionDisplay_Click",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mLstRecipeConnectionDisplay_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4apNamedRecipeGraph.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -14701,6 +14718,7 @@
                                                   "ComboText",
                                                   "CompleteProductionRun",
                                                   "ConfigureAssignmentAnchors",
+                                                  "ConfigureNamedIdCombo",
                                                   "ConfigureProductionAnchors",
                                                   "ConfigureRecipeBuilderAnchors",
                                                   "ConfigureRecipeLineInputs",
@@ -14761,6 +14779,7 @@
                                                   "LayoutRectanglesOverlap",
                                                   "LineIoValue",
                                                   "ListIdentityExists",
+                                                  "LoadConnectionEditorFromIndex",
                                                   "LoadProcessDefinitionIntoDesigner",
                                                   "LoadProcessPayloadIntoDesigner",
                                                   "LoadRecipeDefinitionIntoDesigner",
@@ -14871,6 +14890,7 @@
                                                   "mLstProcessInstructions_Click",
                                                   "mLstProcessOutputs_Click",
                                                   "mLstProcessRequirements_Click",
+                                                  "mLstRecipeConnectionDisplay_Click",
                                                   "mLstRecipeConnections_Click",
                                                   "mLstRunPalette_Click",
                                                   "mLstRunTree_Click",
@@ -14922,7 +14942,9 @@
                                                   "ProductionTable",
                                                   "RecipeGraphIsAcyclic",
                                                   "RecipeHasIncomingRequirement",
+                                                  "RecipeNodeDisplayName",
                                                   "RecipeNodeIndex",
+                                                  "RecipeNodeRecordDisplayName",
                                                   "RecipeRequirementsResolved",
                                                   "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
@@ -14940,6 +14962,7 @@
                                                   "RefreshOutputDesignIdentity",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
+                                                  "RefreshRecipeConnectionDisplay",
                                                   "RefreshRecipeLists",
                                                   "RefreshRecipeUomCatalog",
                                                   "RefreshReusableAllowedItems",

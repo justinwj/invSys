@@ -35,10 +35,12 @@ $checks = @(
         $form -match 'modUomSettings\.GetConfiguredUoms\(\)' -and
         $form -match 'SelectComboText mCmbConnectionUom' },
     [pscustomobject]@{ Name = "Form.OutputShowsNameAndBindsId"; Pass =
-        $form -match 'With mCmbConnectionOutput' -and
-        $form -match '\.ColumnCount = 2' -and
-        $form -match '\.BoundColumn = 1' -and
-        $form -match '\.TextColumn = 2' -and
+        (($form -match 'With mCmbConnectionOutput' -and
+          $form -match '\.ColumnCount = 2' -and
+          $form -match '\.BoundColumn = 1' -and
+          $form -match '\.TextColumn = 2') -or
+         ($form -match 'ConfigureNamedIdCombo mCmbConnectionOutput' -and
+          $form -match 'Private Sub ConfigureNamedIdCombo')) -and
         $form -match 'ReusableRecordText\(record, "OutputName"\)' },
     [pscustomobject]@{ Name = "Form.ConnectUpdatePreserveHiddenId"; Pass =
         $form -match 'mBtnRecipeConnect_Click' -and
