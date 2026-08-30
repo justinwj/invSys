@@ -4,7 +4,7 @@
 - Generated: 2026-08-16T20:00:00Z
 - Packages: 6
 - Components: 154
-- Procedures: 5186
+- Procedures: 5201
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -263,6 +263,7 @@
 | mChkRoamingStation_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mChkUseExisting_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbConnectionFromNode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbConnectionOutput_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbConnectionToNode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_AfterUpdate | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |

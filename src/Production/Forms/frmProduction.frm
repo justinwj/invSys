@@ -1054,30 +1054,29 @@ Private Sub BuildRecipeDesignerPage(ByVal pg As MSForms.Page)
     Set mBtnRecipeMoveDown = AddButton(pg, "btnRecipeMoveDown", "Move Down", 690, 294, 72, 22)
     Set mBtnRecipeAutoOrder = AddButton(pg, "btnRecipeAutoOrder", "Auto Order", 766, 294, 72, 22)
 
-    AddLabel pg, "Connections", 12, 321, 90, 16
-    AddColumnHeaders pg, "RecipeConnections", Array("Upstream Process", "Output", "Downstream Process", "Input Requirement", "Qty", "%", "UOM"), _
-        12, 339, "200 pt;180 pt;200 pt;200 pt;80 pt;70 pt;85 pt"
+    AddLabel pg, "Output Flow", 12, 321, 90, 16
+    AddColumnHeaders pg, "RecipeConnections", Array("Stage", "Produced by", "Output", "Feeds Process", "Qty", "%", "UOM", "", "", ""), _
+        12, 339, "70 pt;245 pt;220 pt;245 pt;80 pt;70 pt;85 pt;0 pt;0 pt;0 pt"
     Set mLstRecipeConnections = AddList(pg, "lstRecipeConnections", 12, 355, 1018, 72, 7, _
         "200 pt;180 pt;200 pt;200 pt;80 pt;70 pt;85 pt")
     mLstRecipeConnections.Visible = False
-    Set mLstRecipeConnectionDisplay = AddList(pg, "lstRecipeConnectionDisplay", 12, 355, 1018, 72, 7, _
-        "200 pt;180 pt;200 pt;200 pt;80 pt;70 pt;85 pt")
+    Set mLstRecipeConnectionDisplay = AddList(pg, "lstRecipeConnectionDisplay", 12, 355, 1018, 72, 10, _
+        "70 pt;245 pt;220 pt;245 pt;80 pt;70 pt;85 pt;0 pt;0 pt;0 pt")
 
-    AddLabel pg, "Upstream Process / Output / Downstream Process / Input Requirement / Qty / % / UOM", _
-        12, 431, 650, 16
+    AddLabel pg, "Produced by / Output / Feeds Process / Qty / % / UOM", 12, 431, 500, 16
     mLoading = True
-    Set mCmbConnectionFromNode = AddCombo(pg, "cmbConnectionFromNode", 12, 449, 180, 22)
-    ConfigureNamedIdCombo mCmbConnectionFromNode, 177
-    Set mCmbConnectionOutput = AddCombo(pg, "cmbConnectionOutput", 198, 449, 180, 22)
-    ConfigureNamedIdCombo mCmbConnectionOutput, 177
-    Set mCmbConnectionToNode = AddCombo(pg, "cmbConnectionToNode", 384, 449, 180, 22)
-    ConfigureNamedIdCombo mCmbConnectionToNode, 177
-    Set mCmbConnectionRequirement = AddCombo(pg, "cmbConnectionRequirement", 570, 449, 200, 22)
-    ConfigureNamedIdCombo mCmbConnectionRequirement, 197
+    Set mCmbConnectionFromNode = AddCombo(pg, "cmbConnectionFromNode", 12, 449, 220, 22)
+    ConfigureNamedIdCombo mCmbConnectionFromNode, 217
+    Set mCmbConnectionOutput = AddCombo(pg, "cmbConnectionOutput", 238, 449, 220, 22)
+    ConfigureNamedIdCombo mCmbConnectionOutput, 217
+    Set mCmbConnectionToNode = AddCombo(pg, "cmbConnectionToNode", 464, 449, 260, 22)
+    ConfigureCompatibleTargetCombo mCmbConnectionToNode, 257
+    Set mCmbConnectionRequirement = AddCombo(pg, "cmbConnectionRequirement", 464, 449, 1, 1)
+    mCmbConnectionRequirement.Visible = False
     mLoading = False
-    Set mTxtConnectionQty = AddText(pg, "txtConnectionQty", 776, 449, 65, 22)
-    Set mTxtConnectionPercent = AddText(pg, "txtConnectionPercent", 847, 449, 60, 22)
-    Set mCmbConnectionUom = AddCombo(pg, "cmbConnectionUom", 913, 449, 75, 22)
+    Set mTxtConnectionQty = AddText(pg, "txtConnectionQty", 730, 449, 80, 22)
+    Set mTxtConnectionPercent = AddText(pg, "txtConnectionPercent", 816, 449, 70, 22)
+    Set mCmbConnectionUom = AddCombo(pg, "cmbConnectionUom", 892, 449, 96, 22)
     RefreshConnectionUomCatalog
     Set mBtnRecipeConnect = AddButton(pg, "btnRecipeConnect", "Connect", 12, 479, 62, 22)
     Set mBtnRecipeUpdateConnection = AddButton(pg, "btnRecipeUpdateConnection", "Update", 78, 479, 62, 22)
@@ -1644,6 +1643,16 @@ Private Sub ConfigureNamedIdCombo(ByVal combo As MSForms.ComboBox, ByVal display
         .BoundColumn = 1
         .TextColumn = 2
         .ColumnWidths = "0 pt;" & CStr(displayWidth) & " pt"
+    End With
+End Sub
+
+Private Sub ConfigureCompatibleTargetCombo(ByVal combo As MSForms.ComboBox, _
+                                           ByVal displayWidth As Single)
+    With combo
+        .ColumnCount = 4
+        .BoundColumn = 1
+        .TextColumn = 3
+        .ColumnWidths = "0 pt;0 pt;" & CStr(displayWidth) & " pt;0 pt"
     End With
 End Sub
 
@@ -5780,27 +5789,29 @@ Private Sub RefreshConnectionNodeCombos()
     Dim i As Long
     Dim selectedFrom As String
     Dim selectedTo As String
+    Dim selectedRequirement As String
+    Dim selectedOutput As String
 
     selectedFrom = ComboText(mCmbConnectionFromNode)
-    selectedTo = ComboText(mCmbConnectionToNode)
+    selectedTo = ConnectionTargetNodeId()
+    selectedRequirement = ConnectionRequirementId()
+    selectedOutput = ConnectionOutputId()
     mLoading = True
     mCmbConnectionFromNode.Clear
     mCmbConnectionToNode.Clear
+    mCmbConnectionRequirement.Clear
     For i = 0 To mLstRecipeNodes.ListCount - 1
         mCmbConnectionFromNode.AddItem NzStr(mLstRecipeNodes.List(i, 0))
         mCmbConnectionFromNode.List(mCmbConnectionFromNode.ListCount - 1, 1) = _
             NzStr(mLstRecipeNodes.List(i, 3))
-        mCmbConnectionToNode.AddItem NzStr(mLstRecipeNodes.List(i, 0))
-        mCmbConnectionToNode.List(mCmbConnectionToNode.ListCount - 1, 1) = _
-            NzStr(mLstRecipeNodes.List(i, 3))
     Next i
     SelectComboText mCmbConnectionFromNode, selectedFrom
-    SelectComboText mCmbConnectionToNode, selectedTo
     If mCmbConnectionFromNode.ListIndex < 0 And mCmbConnectionFromNode.ListCount > 0 Then mCmbConnectionFromNode.ListIndex = 0
-    If mCmbConnectionToNode.ListIndex < 0 And mCmbConnectionToNode.ListCount > 1 Then mCmbConnectionToNode.ListIndex = 1
+    FillConnectionRecordChoices mCmbConnectionOutput, ComboText(mCmbConnectionFromNode), _
+        "OUTPUT", "OutputId", "OutputName"
+    SelectComboText mCmbConnectionOutput, selectedOutput
     mLoading = False
-    RefreshConnectionOutputChoices
-    RefreshConnectionRequirementChoices
+    RefreshCompatibleDownstreamChoices selectedTo, selectedRequirement
 End Sub
 
 Private Sub SelectComboText(ByVal combo As MSForms.ComboBox, ByVal textValue As String)
@@ -5814,13 +5825,201 @@ Private Sub SelectComboText(ByVal combo As MSForms.ComboBox, ByVal textValue As 
 End Sub
 
 Private Sub RefreshConnectionOutputChoices()
+    Dim selectedOutput As String
+
+    selectedOutput = ConnectionOutputId()
+    mLoading = True
     FillConnectionRecordChoices mCmbConnectionOutput, ComboText(mCmbConnectionFromNode), _
         "OUTPUT", "OutputId", "OutputName"
+    SelectComboText mCmbConnectionOutput, selectedOutput
+    mLoading = False
+    RefreshCompatibleDownstreamChoices
 End Sub
 
 Private Sub RefreshConnectionRequirementChoices()
-    FillConnectionRecordChoices mCmbConnectionRequirement, ComboText(mCmbConnectionToNode), _
-        "REQUIREMENT", "RequirementId", "RequirementName"
+    BindSelectedCompatibleRequirement
+End Sub
+
+Private Sub RefreshCompatibleDownstreamChoices(Optional ByVal selectedNodeId As String = "", _
+                                               Optional ByVal selectedRequirementId As String = "")
+    Dim outputItemCode As String
+    Dim outputUom As String
+    Dim outputQty As String
+    Dim outputPercent As String
+    Dim sourceNodeId As String
+    Dim nodeIndex As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim report As String
+    Dim requirementId As String
+    Dim requirementName As String
+    Dim requirementUom As String
+    Dim compatibleCount As Long
+    Dim matchedRequirementId As String
+    Dim matchedRequirementName As String
+    Dim rowIndex As Long
+    Dim ignoreConnectionIndex As Long
+
+    If mCmbConnectionToNode Is Nothing Then Exit Sub
+    sourceNodeId = ComboText(mCmbConnectionFromNode)
+    If selectedNodeId = "" Then selectedNodeId = ConnectionTargetNodeId()
+    If selectedRequirementId = "" Then selectedRequirementId = ConnectionRequirementId()
+    mLoading = True
+    mCmbConnectionToNode.Clear
+    mCmbConnectionRequirement.Clear
+    mLoading = False
+    If Not TrySelectedOutputRoutingInfo(outputItemCode, outputUom, outputQty, outputPercent) Then Exit Sub
+
+    ignoreConnectionIndex = mLstRecipeConnections.ListIndex
+    For nodeIndex = 0 To mLstRecipeNodes.ListCount - 1
+        If StrComp(NzStr(mLstRecipeNodes.List(nodeIndex, 0)), sourceNodeId, vbTextCompare) <> 0 Then
+            Set records = ProcessRecordsForRecipeNode(nodeIndex, report)
+            compatibleCount = 0
+            matchedRequirementId = ""
+            matchedRequirementName = ""
+            If Not records Is Nothing Then
+                For Each record In records
+                    If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                            "REQUIREMENT", vbTextCompare) = 0 Then
+                        requirementId = modProductionReusableDesigns.ReusableRecordText(record, "RequirementId")
+                        requirementName = modProductionReusableDesigns.ReusableRecordText(record, "RequirementName")
+                        requirementUom = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+                        If StrComp(requirementUom, outputUom, vbTextCompare) = 0 _
+                           And ProcessRecordsHaveAlternativeItem(records, requirementId, outputItemCode) _
+                           And Not RecipeRequirementAlreadyConnected( _
+                               NzStr(mLstRecipeNodes.List(nodeIndex, 0)), requirementId, _
+                               ignoreConnectionIndex) Then
+                            compatibleCount = compatibleCount + 1
+                            matchedRequirementId = requirementId
+                            matchedRequirementName = requirementName
+                        End If
+                    End If
+                Next record
+            End If
+            If compatibleCount = 1 Then
+                mCmbConnectionToNode.AddItem NzStr(mLstRecipeNodes.List(nodeIndex, 0))
+                rowIndex = mCmbConnectionToNode.ListCount - 1
+                mCmbConnectionToNode.List(rowIndex, 1) = matchedRequirementId
+                mCmbConnectionToNode.List(rowIndex, 2) = NzStr(mLstRecipeNodes.List(nodeIndex, 3))
+                mCmbConnectionToNode.List(rowIndex, 3) = matchedRequirementName
+            End If
+        End If
+    Next nodeIndex
+    SelectCompatibleTarget selectedNodeId, selectedRequirementId
+    If mCmbConnectionToNode.ListIndex < 0 And mCmbConnectionToNode.ListCount = 1 Then
+        mCmbConnectionToNode.ListIndex = 0
+    End If
+    BindSelectedCompatibleRequirement
+End Sub
+
+Private Function TrySelectedOutputRoutingInfo(ByRef itemCode As String, _
+                                              ByRef outputUom As String, _
+                                              ByRef outputQty As String, _
+                                              ByRef outputPercent As String) As Boolean
+    Dim nodeIndex As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim report As String
+    Dim outputId As String
+
+    nodeIndex = RecipeNodeIndex(ComboText(mCmbConnectionFromNode))
+    outputId = ConnectionOutputId()
+    If nodeIndex < 0 Or outputId = "" Then Exit Function
+    Set records = ProcessRecordsForRecipeNode(nodeIndex, report)
+    If records Is Nothing Then Exit Function
+    For Each record In records
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                   "OUTPUT", vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(record, "OutputId"), _
+                       outputId, vbTextCompare) = 0 Then
+            itemCode = modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE")
+            outputUom = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+            outputQty = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+            outputPercent = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+            TrySelectedOutputRoutingInfo = (itemCode <> "" And outputUom <> "")
+            Exit Function
+        End If
+    Next record
+End Function
+
+Private Function ProcessRecordsHaveAlternativeItem(ByVal records As Collection, _
+                                                   ByVal requirementId As String, _
+                                                   ByVal itemCode As String) As Boolean
+    Dim record As Object
+
+    For Each record In records
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                   "ALTERNATIVE", vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RequirementId"), _
+                       requirementId, vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(record, "ITEM_CODE"), _
+                       itemCode, vbTextCompare) = 0 Then
+            ProcessRecordsHaveAlternativeItem = True
+            Exit Function
+        End If
+    Next record
+End Function
+
+Private Function RecipeRequirementAlreadyConnected(ByVal nodeId As String, _
+                                                   ByVal requirementId As String, _
+                                                   ByVal ignoreIndex As Long) As Boolean
+    Dim i As Long
+
+    For i = 0 To mLstRecipeConnections.ListCount - 1
+        If i <> ignoreIndex _
+           And StrComp(NzStr(mLstRecipeConnections.List(i, 2)), nodeId, vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstRecipeConnections.List(i, 3)), requirementId, vbTextCompare) = 0 Then
+            RecipeRequirementAlreadyConnected = True
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Sub SelectCompatibleTarget(ByVal nodeId As String, ByVal requirementId As String)
+    Dim i As Long
+
+    For i = 0 To mCmbConnectionToNode.ListCount - 1
+        If StrComp(NzStr(mCmbConnectionToNode.List(i, 0)), nodeId, vbTextCompare) = 0 _
+           And StrComp(NzStr(mCmbConnectionToNode.List(i, 1)), requirementId, vbTextCompare) = 0 Then
+            mCmbConnectionToNode.ListIndex = i
+            Exit Sub
+        End If
+    Next i
+End Sub
+
+Private Sub BindSelectedCompatibleRequirement()
+    Dim nodeIndex As Long
+    Dim records As Collection
+    Dim record As Object
+    Dim report As String
+    Dim requirementId As String
+    Dim requirementUom As String
+    Dim requirementQty As String
+    Dim requirementPercent As String
+
+    mCmbConnectionRequirement.Clear
+    requirementId = ConnectionRequirementId()
+    If requirementId = "" Then Exit Sub
+    mCmbConnectionRequirement.AddItem requirementId
+    mCmbConnectionRequirement.ListIndex = 0
+    nodeIndex = RecipeNodeIndex(ConnectionTargetNodeId())
+    If nodeIndex < 0 Then Exit Sub
+    Set records = ProcessRecordsForRecipeNode(nodeIndex, report)
+    If records Is Nothing Then Exit Sub
+    For Each record In records
+        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                   "REQUIREMENT", vbTextCompare) = 0 _
+           And StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RequirementId"), _
+                       requirementId, vbTextCompare) = 0 Then
+            requirementQty = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+            requirementPercent = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+            requirementUom = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+            mTxtConnectionQty.Text = requirementQty
+            mTxtConnectionPercent.Text = requirementPercent
+            RefreshConnectionUomCatalog requirementUom
+            Exit Sub
+        End If
+    Next record
 End Sub
 
 Private Sub FillConnectionRecordChoices(ByVal combo As MSForms.ComboBox, ByVal nodeId As String, _
@@ -5904,35 +6103,122 @@ MissingName:
 End Function
 
 Private Sub RefreshRecipeConnectionDisplay(Optional ByVal selectedIndex As Long = -1)
+    Dim stageMap As Object
+    Dim stageNumber As Long
+    Dim nodeIndex As Long
+    Dim nodeId As String
+    Dim records As Collection
+    Dim record As Object
+    Dim report As String
+    Dim outputId As String
+    Dim outputName As String
+    Dim outputQty As String
+    Dim outputPercent As String
+    Dim outputUom As String
     Dim i As Long
     Dim rowIndex As Long
+    Dim hasOutgoing As Boolean
     Dim wasLoading As Boolean
 
     If mLstRecipeConnectionDisplay Is Nothing Then Exit Sub
     wasLoading = mLoading
     mLoading = True
     mLstRecipeConnectionDisplay.Clear
-    For i = 0 To mLstRecipeConnections.ListCount - 1
-        mLstRecipeConnectionDisplay.AddItem RecipeNodeDisplayName( _
-            NzStr(mLstRecipeConnections.List(i, 0)))
-        rowIndex = mLstRecipeConnectionDisplay.ListCount - 1
-        mLstRecipeConnectionDisplay.List(rowIndex, 1) = RecipeNodeRecordDisplayName( _
-            NzStr(mLstRecipeConnections.List(i, 0)), "OUTPUT", "OutputId", _
-            NzStr(mLstRecipeConnections.List(i, 1)), "OutputName")
-        mLstRecipeConnectionDisplay.List(rowIndex, 2) = RecipeNodeDisplayName( _
-            NzStr(mLstRecipeConnections.List(i, 2)))
-        mLstRecipeConnectionDisplay.List(rowIndex, 3) = RecipeNodeRecordDisplayName( _
-            NzStr(mLstRecipeConnections.List(i, 2)), "REQUIREMENT", "RequirementId", _
-            NzStr(mLstRecipeConnections.List(i, 3)), "RequirementName")
-        mLstRecipeConnectionDisplay.List(rowIndex, 4) = NzStr(mLstRecipeConnections.List(i, 4))
-        mLstRecipeConnectionDisplay.List(rowIndex, 5) = NzStr(mLstRecipeConnections.List(i, 5))
-        mLstRecipeConnectionDisplay.List(rowIndex, 6) = NzStr(mLstRecipeConnections.List(i, 6))
-    Next i
-    If selectedIndex >= 0 And selectedIndex < mLstRecipeConnectionDisplay.ListCount Then
-        mLstRecipeConnectionDisplay.ListIndex = selectedIndex
+    Set stageMap = BuildRecipeStageMap()
+    For stageNumber = 1 To mLstRecipeNodes.ListCount
+        For nodeIndex = 0 To mLstRecipeNodes.ListCount - 1
+            nodeId = NzStr(mLstRecipeNodes.List(nodeIndex, 0))
+            If stageMap.Exists(nodeId) And CLng(stageMap(nodeId)) = stageNumber Then
+                Set records = ProcessRecordsForRecipeNode(nodeIndex, report)
+                If Not records Is Nothing Then
+                    For Each record In records
+                        If StrComp(modProductionReusableDesigns.ReusableRecordText(record, "RecordType"), _
+                                   "OUTPUT", vbTextCompare) = 0 Then
+                            outputId = modProductionReusableDesigns.ReusableRecordText(record, "OutputId")
+                            outputName = modProductionReusableDesigns.ReusableRecordText(record, "OutputName")
+                            outputQty = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Qty"))
+                            outputPercent = NzStr(modProductionReusableDesigns.ReusableRecordValue(record, "Percent"))
+                            outputUom = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+                            hasOutgoing = False
+                            For i = 0 To mLstRecipeConnections.ListCount - 1
+                                If StrComp(NzStr(mLstRecipeConnections.List(i, 0)), nodeId, vbTextCompare) = 0 _
+                                   And StrComp(NzStr(mLstRecipeConnections.List(i, 1)), outputId, vbTextCompare) = 0 Then
+                                    AddRecipeOutputFlowRow stageNumber, nodeId, outputId, outputName, _
+                                        RecipeNodeDisplayName(NzStr(mLstRecipeConnections.List(i, 2))), _
+                                        NzStr(mLstRecipeConnections.List(i, 4)), _
+                                        NzStr(mLstRecipeConnections.List(i, 5)), _
+                                        NzStr(mLstRecipeConnections.List(i, 6)), i
+                                    hasOutgoing = True
+                                End If
+                            Next i
+                            If Not hasOutgoing Then
+                                AddRecipeOutputFlowRow stageNumber, nodeId, outputId, outputName, _
+                                    "Finished inventory", outputQty, outputPercent, outputUom, -1
+                            End If
+                        End If
+                    Next record
+                End If
+            End If
+        Next nodeIndex
+    Next stageNumber
+    If selectedIndex >= 0 Then
+        For rowIndex = 0 To mLstRecipeConnectionDisplay.ListCount - 1
+            If CLng(Val(NzStr(mLstRecipeConnectionDisplay.List(rowIndex, 7)))) = selectedIndex Then
+                mLstRecipeConnectionDisplay.ListIndex = rowIndex
+                Exit For
+            End If
+        Next rowIndex
     End If
     mLoading = wasLoading
 End Sub
+
+Private Sub AddRecipeOutputFlowRow(ByVal stageNumber As Long, ByVal sourceNodeId As String, _
+                                   ByVal outputId As String, ByVal outputName As String, _
+                                   ByVal feedsProcess As String, ByVal qty As String, _
+                                   ByVal percent As String, ByVal uom As String, _
+                                   ByVal connectionIndex As Long)
+    Dim rowIndex As Long
+
+    mLstRecipeConnectionDisplay.AddItem "Stage " & CStr(stageNumber)
+    rowIndex = mLstRecipeConnectionDisplay.ListCount - 1
+    mLstRecipeConnectionDisplay.List(rowIndex, 1) = RecipeNodeDisplayName(sourceNodeId)
+    mLstRecipeConnectionDisplay.List(rowIndex, 2) = outputName
+    mLstRecipeConnectionDisplay.List(rowIndex, 3) = feedsProcess
+    mLstRecipeConnectionDisplay.List(rowIndex, 4) = qty
+    mLstRecipeConnectionDisplay.List(rowIndex, 5) = percent
+    mLstRecipeConnectionDisplay.List(rowIndex, 6) = uom
+    mLstRecipeConnectionDisplay.List(rowIndex, 7) = CStr(connectionIndex)
+    mLstRecipeConnectionDisplay.List(rowIndex, 8) = sourceNodeId
+    mLstRecipeConnectionDisplay.List(rowIndex, 9) = outputId
+End Sub
+
+Private Function BuildRecipeStageMap() As Object
+    Dim stages As Object
+    Dim i As Long
+    Dim pass As Long
+    Dim sourceNodeId As String
+    Dim targetNodeId As String
+    Dim sourceStage As Long
+    Dim targetStage As Long
+
+    Set stages = CreateObject("Scripting.Dictionary")
+    stages.CompareMode = vbTextCompare
+    For i = 0 To mLstRecipeNodes.ListCount - 1
+        stages(NzStr(mLstRecipeNodes.List(i, 0))) = 1
+    Next i
+    For pass = 1 To mLstRecipeNodes.ListCount
+        For i = 0 To mLstRecipeConnections.ListCount - 1
+            sourceNodeId = NzStr(mLstRecipeConnections.List(i, 0))
+            targetNodeId = NzStr(mLstRecipeConnections.List(i, 2))
+            If stages.Exists(sourceNodeId) And stages.Exists(targetNodeId) Then
+                sourceStage = CLng(stages(sourceNodeId))
+                targetStage = sourceStage + 1
+                If CLng(stages(targetNodeId)) < targetStage Then stages(targetNodeId) = targetStage
+            End If
+        Next i
+    Next pass
+    Set BuildRecipeStageMap = stages
+End Function
 
 Private Function ConnectionOutputId() As String
     If mCmbConnectionOutput Is Nothing Then Exit Function
@@ -5948,15 +6234,30 @@ Private Function ConnectionOutputDisplayName() As String
         mCmbConnectionOutput.List(mCmbConnectionOutput.ListIndex, 1)))
 End Function
 
+Private Function ConnectionTargetNodeId() As String
+    If mCmbConnectionToNode Is Nothing Then Exit Function
+    If mCmbConnectionToNode.ListIndex < 0 Then Exit Function
+    ConnectionTargetNodeId = Trim$(NzStr( _
+        mCmbConnectionToNode.List(mCmbConnectionToNode.ListIndex, 0)))
+End Function
+
+Private Function ConnectionRequirementId() As String
+    If mCmbConnectionToNode Is Nothing Then Exit Function
+    If mCmbConnectionToNode.ListIndex < 0 Then Exit Function
+    ConnectionRequirementId = Trim$(NzStr( _
+        mCmbConnectionToNode.List(mCmbConnectionToNode.ListIndex, 1)))
+End Function
+
 Private Sub WriteConnectionEditorToList(ByVal updateExisting As Boolean)
     Dim idx As Long
+    Dim ignoreIndex As Long
 
     If ComboText(mCmbConnectionFromNode) = "" Or ConnectionOutputId() = "" Or _
-       ComboText(mCmbConnectionToNode) = "" Or ComboText(mCmbConnectionRequirement) = "" Then
-        ShowStatus "A connection needs source/output and downstream/requirement selections."
+       ConnectionTargetNodeId() = "" Or ConnectionRequirementId() = "" Then
+        ShowStatus "Select an output and one compatible Feeds Process target."
         Exit Sub
     End If
-    If StrComp(ComboText(mCmbConnectionFromNode), ComboText(mCmbConnectionToNode), vbTextCompare) = 0 Then
+    If StrComp(ComboText(mCmbConnectionFromNode), ConnectionTargetNodeId(), vbTextCompare) = 0 Then
         ShowStatus "A Process output cannot connect back to the same Recipe node."
         Exit Sub
     End If
@@ -5969,6 +6270,13 @@ Private Sub WriteConnectionEditorToList(ByVal updateExisting As Boolean)
         Exit Sub
     End If
     idx = mLstRecipeConnections.ListIndex
+    ignoreIndex = -1
+    If updateExisting Then ignoreIndex = idx
+    If RecipeRequirementAlreadyConnected(ConnectionTargetNodeId(), _
+            ConnectionRequirementId(), ignoreIndex) Then
+        ShowStatus "That Feeds Process input is already supplied by another output."
+        Exit Sub
+    End If
     If Not updateExisting Or idx < 0 Then
         mLstRecipeConnections.AddItem ""
         idx = mLstRecipeConnections.ListCount - 1
@@ -5976,8 +6284,8 @@ Private Sub WriteConnectionEditorToList(ByVal updateExisting As Boolean)
     With mLstRecipeConnections
         .List(idx, 0) = ComboText(mCmbConnectionFromNode)
         .List(idx, 1) = ConnectionOutputId()
-        .List(idx, 2) = ComboText(mCmbConnectionToNode)
-        .List(idx, 3) = ComboText(mCmbConnectionRequirement)
+        .List(idx, 2) = ConnectionTargetNodeId()
+        .List(idx, 3) = ConnectionRequirementId()
         .List(idx, 4) = Trim$(mTxtConnectionQty.Text)
         .List(idx, 5) = Trim$(mTxtConnectionPercent.Text)
         .List(idx, 6) = ComboText(mCmbConnectionUom)
@@ -7062,6 +7370,33 @@ Private Function ProcessWorksheetColumnForTest(ByVal lo As ListObject, _
     On Error GoTo 0
 End Function
 
+Private Function FindRecipeOutputFlowRowForTest(ByVal producedBy As String, _
+                                                ByVal outputName As String, _
+                                                ByVal feedsProcess As String) As Long
+    Dim i As Long
+
+    FindRecipeOutputFlowRowForTest = -1
+    For i = 0 To mLstRecipeConnectionDisplay.ListCount - 1
+        If StrComp(NzStr(mLstRecipeConnectionDisplay.List(i, 1)), producedBy, vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstRecipeConnectionDisplay.List(i, 2)), outputName, vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstRecipeConnectionDisplay.List(i, 3)), feedsProcess, vbTextCompare) = 0 Then
+            FindRecipeOutputFlowRowForTest = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function CompatibleTargetContainsForTest(ByVal nodeId As String) As Boolean
+    Dim i As Long
+
+    For i = 0 To mCmbConnectionToNode.ListCount - 1
+        If StrComp(NzStr(mCmbConnectionToNode.List(i, 0)), nodeId, vbTextCompare) = 0 Then
+            CompatibleTargetContainsForTest = True
+            Exit Function
+        End If
+    Next i
+End Function
+
 Public Function TestReusableProductionFormActionContract() As String
     Dim requiredControls As Variant
     Dim controlName As Variant
@@ -7137,6 +7472,13 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     Dim recipeConnectionSelected As Boolean
     Dim recipeDisconnected As Boolean
     Dim recipeSelfReferenceRejected As Boolean
+    Dim recipeOutputFirstRouting As Boolean
+    Dim recipeCompatibleTargetsOnly As Boolean
+    Dim recipeRequirementInternallyBound As Boolean
+    Dim recipeNoIngredientDropdown As Boolean
+    Dim recipeForkConvergenceVisible As Boolean
+    Dim recipeTerminalOutputVisible As Boolean
+    Dim recipeStagesDerived As Boolean
 
     mReusableActionTestInProgress = True
     token = UCase$(Right$(CleanControlName(BuildFormGuid()), 10))
@@ -7250,52 +7592,60 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
 
     SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(0, 0))
     mCmbConnectionFromNode_Change
-    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
-    mCmbConnectionToNode_Change
+    SelectComboText mCmbConnectionOutput, "001"
+    mCmbConnectionOutput_Change
+    recipeOutputFirstRouting = (mCmbConnectionToNode.ListCount = 1)
+    recipeCompatibleTargetsOnly = recipeOutputFirstRouting And _
+        (StrComp(ConnectionTargetNodeId(), NzStr(mLstRecipeNodes.List(1, 0)), _
+            vbTextCompare) = 0)
+    recipeRequirementInternallyBound = _
+        (StrComp(ConnectionRequirementId(), "001", vbTextCompare) = 0) And _
+        (StrComp(ComboText(mCmbConnectionRequirement), "001", vbTextCompare) = 0)
+    recipeNoIngredientDropdown = Not mCmbConnectionRequirement.Visible
     recipeNodeNamesVisible = _
         (mCmbConnectionFromNode.ColumnCount = 2) And _
-        (mCmbConnectionToNode.ColumnCount = 2) And _
+        (mCmbConnectionToNode.ColumnCount = 4) And _
         (StrComp(NzStr(mCmbConnectionFromNode.List(mCmbConnectionFromNode.ListIndex, 1)), _
             "Reusable Source " & token, vbTextCompare) = 0) And _
-        (StrComp(NzStr(mCmbConnectionToNode.List(mCmbConnectionToNode.ListIndex, 1)), _
+        (StrComp(NzStr(mCmbConnectionToNode.List(mCmbConnectionToNode.ListIndex, 2)), _
             "Reusable Sink " & token, vbTextCompare) = 0)
-    SelectComboText mCmbConnectionOutput, "001"
     recipeOutputNameVisible = _
         (StrComp(ConnectionOutputDisplayName(), "Source Output", vbTextCompare) = 0)
-    SelectComboText mCmbConnectionRequirement, "001"
     recipeRequirementNameVisible = _
-        (mCmbConnectionRequirement.ColumnCount = 2) And _
-        (StrComp(NzStr(mCmbConnectionRequirement.List( _
-            mCmbConnectionRequirement.ListIndex, 1)), "Source ingredient", vbTextCompare) = 0)
-    mTxtConnectionQty.Text = "5"
-    SelectComboText mCmbConnectionUom, "LB"
+        (StrComp(NzStr(mCmbConnectionToNode.List( _
+            mCmbConnectionToNode.ListIndex, 3)), "Source ingredient", vbTextCompare) = 0)
     recipeUomCatalog = (mCmbConnectionUom.Style = fmStyleDropDownList) And _
         (ComboText(mCmbConnectionUom) = "LB") And _
         (mCmbConnectionUom.ListCount > 0)
     mBtnRecipeConnect_Click
     recipeConnected = (mLstRecipeConnections.ListCount = 1) And _
-        (mLstRecipeConnectionDisplay.ListCount = 1)
-    recipeConnectionNamesVisible = recipeConnected And _
-        (StrComp(NzStr(mLstRecipeConnectionDisplay.List(0, 0)), _
-            "Reusable Source " & token, vbTextCompare) = 0) And _
-        (StrComp(NzStr(mLstRecipeConnectionDisplay.List(0, 1)), _
-            "Source Output", vbTextCompare) = 0) And _
-        (StrComp(NzStr(mLstRecipeConnectionDisplay.List(0, 2)), _
-            "Reusable Sink " & token, vbTextCompare) = 0) And _
-        (StrComp(NzStr(mLstRecipeConnectionDisplay.List(0, 3)), _
-            "Source ingredient", vbTextCompare) = 0)
+        (mLstRecipeConnectionDisplay.ListCount = 2)
+    rowIndex = FindRecipeOutputFlowRowForTest( _
+        "Reusable Source " & token, "Source Output", "Reusable Sink " & token)
+    recipeConnectionNamesVisible = recipeConnected And rowIndex >= 0 And _
+        (StrComp(NzStr(mLstRecipeConnectionDisplay.List(rowIndex, 0)), _
+            "Stage 1", vbTextCompare) = 0)
+    rowIndex = FindRecipeOutputFlowRowForTest( _
+        "Reusable Sink " & token, "Finished Output", "Finished inventory")
+    recipeTerminalOutputVisible = (rowIndex >= 0)
+    If recipeTerminalOutputVisible Then
+        recipeStagesDerived = (StrComp(NzStr( _
+            mLstRecipeConnectionDisplay.List(rowIndex, 0)), "Stage 2", vbTextCompare) = 0)
+    End If
     If recipeConnected Then
         recipeOutputIdPreserved = _
             (StrComp(NzStr(mLstRecipeConnections.List(0, 1)), "001", vbTextCompare) = 0)
-        mLstRecipeConnectionDisplay.ListIndex = 0
+        rowIndex = FindRecipeOutputFlowRowForTest( _
+            "Reusable Source " & token, "Source Output", "Reusable Sink " & token)
+        mLstRecipeConnectionDisplay.ListIndex = rowIndex
         mLstRecipeConnectionDisplay_Click
         recipeConnectionSelected = _
             (StrComp(ComboText(mCmbConnectionFromNode), _
                 NzStr(mLstRecipeNodes.List(0, 0)), vbTextCompare) = 0) And _
             (StrComp(ConnectionOutputId(), "001", vbTextCompare) = 0) And _
-            (StrComp(ComboText(mCmbConnectionToNode), _
+            (StrComp(ConnectionTargetNodeId(), _
                 NzStr(mLstRecipeNodes.List(1, 0)), vbTextCompare) = 0) And _
-            (StrComp(ComboText(mCmbConnectionRequirement), "001", vbTextCompare) = 0)
+            (StrComp(ConnectionRequirementId(), "001", vbTextCompare) = 0)
         mBtnRecipeUpdateConnection_Click
         If mLstRecipeConnections.ListCount > 0 Then
             recipeConnectionId = NzStr(mLstRecipeConnections.List(0, 1))
@@ -7313,42 +7663,36 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
        Not recipeNodeNamesVisible Or Not recipeRequirementNameVisible Or _
        Not recipeConnectionNamesVisible Or Not recipeConnectionHeaders Or _
        Not recipeConnectionsFullWidth Or Not recipeFinishedOutputGuidance Or _
-       Not recipeConnectionSelected Then GoTo ActionFailed
+       Not recipeConnectionSelected Or Not recipeOutputFirstRouting Or _
+       Not recipeCompatibleTargetsOnly Or Not recipeRequirementInternallyBound Or _
+       Not recipeNoIngredientDropdown Or Not recipeTerminalOutputVisible Or _
+       Not recipeStagesDerived Then GoTo ActionFailed
 
     SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(1, 0))
     mCmbConnectionFromNode_Change
     SelectComboText mCmbConnectionOutput, "002"
-    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
-    mCmbConnectionToNode_Change
-    SelectComboText mCmbConnectionRequirement, "001"
-    mTxtConnectionQty.Text = "1"
-    mTxtConnectionPercent.Text = ""
-    SelectComboText mCmbConnectionUom, "LB"
-    mBtnRecipeConnect_Click
-    recipeSelfReferenceRejected = (mLstRecipeConnections.ListCount = 1) And _
-        (InStr(1, TestStatusText(), _
-            "cannot connect back to the same Recipe node", vbTextCompare) > 0)
+    mCmbConnectionOutput_Change
+    recipeSelfReferenceRejected = _
+        Not CompatibleTargetContainsForTest(NzStr(mLstRecipeNodes.List(1, 0)))
     If Not recipeSelfReferenceRejected Then GoTo ActionFailed
 
-    mLstRecipeConnectionDisplay.ListIndex = 0
+    rowIndex = FindRecipeOutputFlowRowForTest( _
+        "Reusable Source " & token, "Source Output", "Reusable Sink " & token)
+    mLstRecipeConnectionDisplay.ListIndex = rowIndex
     mLstRecipeConnectionDisplay_Click
     mBtnRecipeDisconnect_Click
     recipeDisconnected = (mLstRecipeConnections.ListCount = 0) And _
-        (mLstRecipeConnectionDisplay.ListCount = 0)
+        (FindRecipeOutputFlowRowForTest("Reusable Source " & token, _
+            "Source Output", "Reusable Sink " & token) < 0)
     If Not recipeDisconnected Then GoTo ActionFailed
 
     SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(0, 0))
     mCmbConnectionFromNode_Change
     SelectComboText mCmbConnectionOutput, "001"
-    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
-    mCmbConnectionToNode_Change
-    SelectComboText mCmbConnectionRequirement, "001"
-    mTxtConnectionQty.Text = "5"
-    mTxtConnectionPercent.Text = ""
-    SelectComboText mCmbConnectionUom, "LB"
+    mCmbConnectionOutput_Change
     mBtnRecipeConnect_Click
     recipeConnected = recipeConnected And (mLstRecipeConnections.ListCount = 1) And _
-        (mLstRecipeConnectionDisplay.ListCount = 1)
+        (mLstRecipeConnectionDisplay.ListCount = 2)
     If Not recipeConnected Then GoTo ActionFailed
     mLstRecipeNodes.ListIndex = 0
     mBtnRecipeMoveDown_Click
@@ -7370,6 +7714,8 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
     mReusableTestSourceId = sourceId
     mReusableTestSinkId = sinkId
     mReusableTestRecipeId = recipeId
+    recipeForkConvergenceVisible = ExerciseRecipeForkProjectionForTest(token, sourceId)
+    If Not recipeForkConvergenceVisible Then GoTo ActionFailed
 
     ExerciseReusableProductionFormActions = _
         "OK|BoundWorkbook=" & boundWorkbookName & _
@@ -7401,6 +7747,13 @@ Private Function ExerciseReusableProductionFormActions(ByVal boundWorkbookName A
         "|RecipeConnectionSelected=" & CStr(recipeConnectionSelected) & _
         "|RecipeDisconnected=" & CStr(recipeDisconnected) & _
         "|RecipeSelfReferenceRejected=" & CStr(recipeSelfReferenceRejected) & _
+        "|RecipeOutputFirstRouting=" & CStr(recipeOutputFirstRouting) & _
+        "|RecipeCompatibleTargetsOnly=" & CStr(recipeCompatibleTargetsOnly) & _
+        "|RecipeRequirementInternallyBound=" & CStr(recipeRequirementInternallyBound) & _
+        "|RecipeNoIngredientDropdown=" & CStr(recipeNoIngredientDropdown) & _
+        "|RecipeForkConvergenceVisible=" & CStr(recipeForkConvergenceVisible) & _
+        "|RecipeTerminalOutputVisible=" & CStr(recipeTerminalOutputVisible) & _
+        "|RecipeStagesDerived=" & CStr(recipeStagesDerived) & _
         "|AlternativesSaved=" & CStr(alternativesSaved)
 CleanExit:
     mReusableActionTestInProgress = False
@@ -7422,6 +7775,13 @@ ActionFailed:
         "|RecipeConnectionSelected=" & CStr(recipeConnectionSelected) & _
         "|RecipeDisconnected=" & CStr(recipeDisconnected) & _
         "|RecipeSelfReferenceRejected=" & CStr(recipeSelfReferenceRejected) & _
+        "|RecipeOutputFirstRouting=" & CStr(recipeOutputFirstRouting) & _
+        "|RecipeCompatibleTargetsOnly=" & CStr(recipeCompatibleTargetsOnly) & _
+        "|RecipeRequirementInternallyBound=" & CStr(recipeRequirementInternallyBound) & _
+        "|RecipeNoIngredientDropdown=" & CStr(recipeNoIngredientDropdown) & _
+        "|RecipeForkConvergenceVisible=" & CStr(recipeForkConvergenceVisible) & _
+        "|RecipeTerminalOutputVisible=" & CStr(recipeTerminalOutputVisible) & _
+        "|RecipeStagesDerived=" & CStr(recipeStagesDerived) & _
         "|ConnectionRows=" & CStr(mLstRecipeConnections.ListCount) & _
         "|ConnectionId=" & recipeConnectionId & _
         "|ConnectionQty=" & recipeConnectionQty & _
@@ -7432,6 +7792,136 @@ Failed:
     ExerciseReusableProductionFormActions = "FAIL|" & CStr(Err.Number) & "|" & Err.Description & _
         "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
     Resume CleanExit
+End Function
+
+Private Function ExerciseRecipeForkProjectionForTest(ByVal token As String, _
+                                                     ByVal sourceId As String) As Boolean
+    On Error GoTo Failed
+
+    Dim branchId As String
+    Dim convergeId As String
+    Dim rowIndex As Long
+    Dim alternative As Object
+    Dim sourceNodeId As String
+    Dim branchNodeId As String
+    Dim convergeNodeId As String
+    Dim stageMap As Object
+    Dim sourceRow As Long
+    Dim branchRow As Long
+    Dim terminalRow As Long
+
+    branchId = "PROC-BRANCH-" & token
+    convergeId = "PROC-CONVERGE-" & token
+
+    ClearProcessDraft False
+    mTxtProcessId.Text = branchId
+    mTxtProcessVersion.Text = "1"
+    mTxtProcessName.Text = "Parallel Source " & token
+    mTxtProcessOutputId.Text = "001"
+    mTxtProcessOutputName.Text = "Parallel Output"
+    mTxtProcessOutputItemCode.Text = "SKU-BRANCH-" & token
+    mTxtProcessOutputQty.Text = "5"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then Exit Function
+    mBtnProcessRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then Exit Function
+
+    ClearProcessDraft False
+    mTxtProcessId.Text = convergeId
+    mTxtProcessVersion.Text = "1"
+    mTxtProcessName.Text = "Converged Product " & token
+    mTxtRequirementId.Text = "001"
+    mTxtRequirementName.Text = "Source input"
+    mTxtRequirementQty.Text = "5"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    mTxtRequirementId.Text = "002"
+    mTxtRequirementName.Text = "Parallel input"
+    mTxtRequirementQty.Text = "5"
+    mTxtRequirementUom.Text = "LB"
+    mBtnProcessRequirementAdd_Click
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = "001"
+    alternative("ITEM_CODE") = "SKU-SOURCE-" & token
+    mProcessAlternatives.Add alternative
+    Set alternative = NewReusableRecord("ALTERNATIVE")
+    alternative("RequirementId") = "002"
+    alternative("ITEM_CODE") = "SKU-BRANCH-" & token
+    mProcessAlternatives.Add alternative
+    mTxtProcessOutputId.Text = "003"
+    mTxtProcessOutputName.Text = "Converged Output"
+    mTxtProcessOutputItemCode.Text = "SKU-CONVERGED-" & token
+    mTxtProcessOutputQty.Text = "10"
+    mTxtProcessOutputUom.Text = "LB"
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then Exit Function
+    mBtnProcessRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then Exit Function
+
+    mBtnRecipeNew_Click
+    mTxtReusableRecipeName.Text = "Fork Projection " & token
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, sourceId, "1")
+    If rowIndex < 0 Then Exit Function
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, branchId, "1")
+    If rowIndex < 0 Then Exit Function
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, convergeId, "1")
+    If rowIndex < 0 Then Exit Function
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    If mLstRecipeNodes.ListCount <> 3 Then Exit Function
+
+    sourceNodeId = NzStr(mLstRecipeNodes.List(0, 0))
+    branchNodeId = NzStr(mLstRecipeNodes.List(1, 0))
+    convergeNodeId = NzStr(mLstRecipeNodes.List(2, 0))
+
+    SelectComboText mCmbConnectionFromNode, sourceNodeId
+    mCmbConnectionFromNode_Change
+    SelectComboText mCmbConnectionOutput, "001"
+    mCmbConnectionOutput_Change
+    If StrComp(ConnectionTargetNodeId(), convergeNodeId, vbTextCompare) <> 0 _
+       Or StrComp(ConnectionRequirementId(), "001", vbTextCompare) <> 0 Then Exit Function
+    mBtnRecipeConnect_Click
+
+    SelectComboText mCmbConnectionFromNode, branchNodeId
+    mCmbConnectionFromNode_Change
+    SelectComboText mCmbConnectionOutput, "001"
+    mCmbConnectionOutput_Change
+    If StrComp(ConnectionTargetNodeId(), convergeNodeId, vbTextCompare) <> 0 _
+       Or StrComp(ConnectionRequirementId(), "002", vbTextCompare) <> 0 Then Exit Function
+    mBtnRecipeConnect_Click
+    If mLstRecipeConnections.ListCount <> 2 Then Exit Function
+
+    mBtnRecipeAutoOrder_Click
+    Set stageMap = BuildRecipeStageMap()
+    If CLng(stageMap(sourceNodeId)) <> 1 Or CLng(stageMap(branchNodeId)) <> 1 _
+       Or CLng(stageMap(convergeNodeId)) <> 2 Then Exit Function
+
+    sourceRow = FindRecipeOutputFlowRowForTest( _
+        "Reusable Source " & token, "Source Output", "Converged Product " & token)
+    branchRow = FindRecipeOutputFlowRowForTest( _
+        "Parallel Source " & token, "Parallel Output", "Converged Product " & token)
+    terminalRow = FindRecipeOutputFlowRowForTest( _
+        "Converged Product " & token, "Converged Output", "Finished inventory")
+    If sourceRow < 0 Or branchRow < 0 Or terminalRow < 0 Then Exit Function
+    If StrComp(NzStr(mLstRecipeConnectionDisplay.List(sourceRow, 0)), _
+               "Stage 1", vbTextCompare) <> 0 Then Exit Function
+    If StrComp(NzStr(mLstRecipeConnectionDisplay.List(branchRow, 0)), _
+               "Stage 1", vbTextCompare) <> 0 Then Exit Function
+    If StrComp(NzStr(mLstRecipeConnectionDisplay.List(terminalRow, 0)), _
+               "Stage 2", vbTextCompare) <> 0 Then Exit Function
+
+    ExerciseRecipeForkProjectionForTest = True
+    Exit Function
+Failed:
+    ExerciseRecipeForkProjectionForTest = False
 End Function
 
 Public Function TestReusableProductionRunActionContract() As String
@@ -7532,12 +8022,8 @@ Public Function TestReusableProductionRunActionContract() As String
     mBtnRecipeAddProcess_Click
     SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeNodes.List(0, 0))
     mCmbConnectionFromNode_Change
-    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeNodes.List(1, 0))
-    mCmbConnectionToNode_Change
     SelectComboText mCmbConnectionOutput, "001"
-    SelectComboText mCmbConnectionRequirement, "001"
-    mTxtConnectionQty.Text = "5"
-    SelectComboText mCmbConnectionUom, "LB"
+    mCmbConnectionOutput_Change
     mBtnRecipeConnect_Click
     mBtnRecipeSave_Click
     If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
@@ -8383,8 +8869,14 @@ End Sub
 
 Private Sub mBtnRecipeDisconnect_Click()
     Dim idx As Long
+    Dim displayIndex As Long
 
-    idx = mLstRecipeConnectionDisplay.ListIndex
+    displayIndex = mLstRecipeConnectionDisplay.ListIndex
+    If displayIndex >= 0 Then
+        idx = CLng(Val(NzStr(mLstRecipeConnectionDisplay.List(displayIndex, 7))))
+    Else
+        idx = -1
+    End If
     If idx < 0 Then idx = mLstRecipeConnections.ListIndex
     If idx < 0 Or idx >= mLstRecipeConnections.ListCount Then Exit Sub
     mLstRecipeConnections.RemoveItem idx
@@ -8459,9 +8951,14 @@ Private Sub mCmbConnectionFromNode_Change()
     RefreshConnectionOutputChoices
 End Sub
 
+Private Sub mCmbConnectionOutput_Change()
+    If mLoading Then Exit Sub
+    RefreshCompatibleDownstreamChoices
+End Sub
+
 Private Sub mCmbConnectionToNode_Change()
     If mLoading Then Exit Sub
-    RefreshConnectionRequirementChoices
+    BindSelectedCompatibleRequirement
 End Sub
 
 Private Sub mLstRecipeConnections_Click()
@@ -8472,12 +8969,27 @@ End Sub
 
 Private Sub mLstRecipeConnectionDisplay_Click()
     Dim idx As Long
+    Dim displayIndex As Long
+    Dim sourceNodeId As String
+    Dim outputId As String
 
     If mLoading Then Exit Sub
-    idx = mLstRecipeConnectionDisplay.ListIndex
-    If idx < 0 Or idx >= mLstRecipeConnections.ListCount Then Exit Sub
-    mLstRecipeConnections.ListIndex = idx
-    LoadConnectionEditorFromIndex idx
+    displayIndex = mLstRecipeConnectionDisplay.ListIndex
+    If displayIndex < 0 Then Exit Sub
+    idx = CLng(Val(NzStr(mLstRecipeConnectionDisplay.List(displayIndex, 7))))
+    If idx >= 0 And idx < mLstRecipeConnections.ListCount Then
+        mLstRecipeConnections.ListIndex = idx
+        LoadConnectionEditorFromIndex idx
+    Else
+        mLstRecipeConnections.ListIndex = -1
+        sourceNodeId = NzStr(mLstRecipeConnectionDisplay.List(displayIndex, 8))
+        outputId = NzStr(mLstRecipeConnectionDisplay.List(displayIndex, 9))
+        SelectComboText mCmbConnectionFromNode, sourceNodeId
+        RefreshConnectionOutputChoices
+        SelectComboText mCmbConnectionOutput, outputId
+        RefreshCompatibleDownstreamChoices
+        ShowStatus "This output is currently Finished inventory; choose Feeds Process to route it."
+    End If
 End Sub
 
 Private Sub LoadConnectionEditorFromIndex(ByVal idx As Long)
@@ -8485,9 +8997,8 @@ Private Sub LoadConnectionEditorFromIndex(ByVal idx As Long)
     SelectComboText mCmbConnectionFromNode, NzStr(mLstRecipeConnections.List(idx, 0))
     RefreshConnectionOutputChoices
     SelectComboText mCmbConnectionOutput, NzStr(mLstRecipeConnections.List(idx, 1))
-    SelectComboText mCmbConnectionToNode, NzStr(mLstRecipeConnections.List(idx, 2))
-    RefreshConnectionRequirementChoices
-    SelectComboText mCmbConnectionRequirement, NzStr(mLstRecipeConnections.List(idx, 3))
+    RefreshCompatibleDownstreamChoices NzStr(mLstRecipeConnections.List(idx, 2)), _
+        NzStr(mLstRecipeConnections.List(idx, 3))
     mTxtConnectionQty.Text = NzStr(mLstRecipeConnections.List(idx, 4))
     mTxtConnectionPercent.Text = NzStr(mLstRecipeConnections.List(idx, 5))
     RefreshConnectionUomCatalog NzStr(mLstRecipeConnections.List(idx, 6))
@@ -8515,6 +9026,7 @@ Private Sub AutoOrderRecipeNodes()
     Next pass
     RenumberRecipeExecutionOrder
     RefreshConnectionNodeCombos
+    RefreshRecipeConnectionDisplay
     If RecipeGraphIsAcyclic() Then
         ShowStatus "Recipe execution order updated."
     Else

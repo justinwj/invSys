@@ -1160,6 +1160,13 @@ try {
                         $productionActionReport -match '(?:^|\|)RecipeConnectionSelected=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeDisconnected=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)RecipeSelfReferenceRejected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputFirstRouting=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeCompatibleTargetsOnly=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeRequirementInternallyBound=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeNoIngredientDropdown=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeForkConvergenceVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeTerminalOutputVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeStagesDerived=True(?:\||$)' -and
                         $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport

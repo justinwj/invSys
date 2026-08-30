@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "17a280c6e25ce4529a38fbad99a9e33067df0bd2894a9967f90f050dc9ae5803",
-                          "maintenanceCandidatesSha256":  "098dd897b4353afe25d6dae49ffc9635243ffc720a57f1483480404bc34dece2"
+                          "implementationManifestSha256":  "1dc9e70568d2317c34be430892a60f2b7fd129809ab3c08330c3b1884e1b1a69",
+                          "maintenanceCandidatesSha256":  "259056468bcb2cf49bf61e2fd9f1b81a9c869bb8e71bc6682b5255a0f1fdd2aa"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1045,
-                    "reviewedCandidateCount":  1047,
+                    "scannerCandidateCount":  1048,
+                    "reviewedCandidateCount":  1050,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  204,
+                            "candidateCount":  207,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  9129,
+                                                  "baselineLineCount":  9641,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16001,6 +16001,7 @@
                                                   "AddProcessOutputRecord",
                                                   "AddProcessRequirementRecord",
                                                   "AddRecipeBuilderLine",
+                                                  "AddRecipeOutputFlowRow",
                                                   "AddRecipeValidationIssue",
                                                   "AddReusableInventoryAlternative",
                                                   "AddRunChoiceRows",
@@ -16021,6 +16022,7 @@
                                                   "AssignmentItemRowIsBlank",
                                                   "AutoOrderRecipeNodes",
                                                   "BindOperatorWorkbookForRun",
+                                                  "BindSelectedCompatibleRequirement",
                                                   "BuildAssignmentPage",
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
@@ -16032,6 +16034,7 @@
                                                   "BuildRecipeBuilderPage",
                                                   "BuildRecipeDesignerPage",
                                                   "BuildRecipePayload",
+                                                  "BuildRecipeStageMap",
                                                   "BuildRunTreeFromPaletteList",
                                                   "BuildRunTreePage",
                                                   "BuildRunUsedPayloadJson",
@@ -16058,8 +16061,10 @@
                                                   "CloneReusableRecord",
                                                   "ColumnWidthPoints",
                                                   "ComboText",
+                                                  "CompatibleTargetContainsForTest",
                                                   "CompleteProductionRun",
                                                   "ConfigureAssignmentAnchors",
+                                                  "ConfigureCompatibleTargetCombo",
                                                   "ConfigureNamedIdCombo",
                                                   "ConfigureProductionAnchors",
                                                   "ConfigureRecipeBuilderAnchors",
@@ -16069,6 +16074,8 @@
                                                   "ConfigureRunTreeAnchors",
                                                   "ConnectionOutputDisplayName",
                                                   "ConnectionOutputId",
+                                                  "ConnectionRequirementId",
+                                                  "ConnectionTargetNodeId",
                                                   "ConsumeReusableRunFixtureEntity",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
@@ -16086,6 +16093,7 @@
                                                   "EnsureRunTreeState",
                                                   "EnsureTableRow",
                                                   "EnsureTableRows",
+                                                  "ExerciseRecipeForkProjectionForTest",
                                                   "ExerciseReusableProductionFormActions",
                                                   "FillConnectionRecordChoices",
                                                   "FillIngredientListFromArray",
@@ -16095,6 +16103,7 @@
                                                   "FillListFromTable",
                                                   "FindIdentityListRow",
                                                   "FindProductionOutputTableRow",
+                                                  "FindRecipeOutputFlowRowForTest",
                                                   "FindReusablePaletteSystemKey",
                                                   "FirstNonBlankCheckRow",
                                                   "FirstReusableActiveOutputRow",
@@ -16216,6 +16225,7 @@
                                                   "mBtnRunTreeCollapseAll_Click",
                                                   "mBtnRunTreeExpandAll_Click",
                                                   "mCmbConnectionFromNode_Change",
+                                                  "mCmbConnectionOutput_Change",
                                                   "mCmbConnectionToNode_Change",
                                                   "mCmbLineIo_Change",
                                                   "mCmbRunLocation_Change",
@@ -16272,6 +16282,7 @@
                                                   "ProcessNameForIdentity",
                                                   "ProcessRecordsForRecipeNode",
                                                   "ProcessRecordsHaveAlternative",
+                                                  "ProcessRecordsHaveAlternativeItem",
                                                   "ProcessWorksheetColumnForTest",
                                                   "ProcessWorksheetRowIdsUniqueForTest",
                                                   "ProcessWorksheetTableExistsForTest",
@@ -16287,6 +16298,7 @@
                                                   "RecipeNodeDisplayName",
                                                   "RecipeNodeIndex",
                                                   "RecipeNodeRecordDisplayName",
+                                                  "RecipeRequirementAlreadyConnected",
                                                   "RecipeRequirementsResolved",
                                                   "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
@@ -16294,6 +16306,7 @@
                                                   "RefreshAssignmentState",
                                                   "RefreshBuilderHeader",
                                                   "RefreshBuilderLines",
+                                                  "RefreshCompatibleDownstreamChoices",
                                                   "RefreshConnectionNodeCombos",
                                                   "RefreshConnectionOutputChoices",
                                                   "RefreshConnectionRequirementChoices",
@@ -16351,6 +16364,7 @@
                                                   "SelectAssignmentIngredientFromList",
                                                   "SelectAssignmentRecipeFromList",
                                                   "SelectComboText",
+                                                  "SelectCompatibleTarget",
                                                   "SelectedProductionOutputTableRow",
                                                   "SelectedRunPaletteBaseQty",
                                                   "SelectProductionOutputForProcess",
@@ -16416,6 +16430,7 @@
                                                   "ToggleSelectedRunTreeParent",
                                                   "TryParseBatchScalePercent",
                                                   "TryParseNonNegativeRunNumber",
+                                                  "TrySelectedOutputRoutingInfo",
                                                   "UpdateSelectedRecipeBuilderLine",
                                                   "UserForm_Activate",
                                                   "UserForm_Initialize",
@@ -17549,6 +17564,52 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "PrepareProductionOutput"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.RecipeNodeRecordDisplayName",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "RecipeNodeRecordDisplayName"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.RefreshConnectionRequirementChoices",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REMOVE",
+                           "disposition":  "REMOVE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "RefreshConnectionRequirementChoices"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -20711,6 +20772,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionOutput_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbConnectionOutput_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."

@@ -31,15 +31,16 @@ $checks = @(
         $form -match 'Private Sub RefreshRecipeConnectionDisplay' },
     [pscustomobject]@{ Name = "Form.NamedBoundNodeAndRequirementSelectors"; Pass =
         $form -match 'ConfigureNamedIdCombo mCmbConnectionFromNode' -and
-        $form -match 'ConfigureNamedIdCombo mCmbConnectionToNode' -and
-        $form -match 'ConfigureNamedIdCombo mCmbConnectionRequirement' -and
-        $form -match 'mLoading = True[\s\S]{0,800}ConfigureNamedIdCombo mCmbConnectionRequirement[\s\S]{0,100}mLoading = False' -and
-        $form -match '"REQUIREMENT", "RequirementId", "RequirementName"' -and
+        $form -match 'ConfigureCompatibleTargetCombo mCmbConnectionToNode' -and
+        $form -match 'mCmbConnectionRequirement\.Visible = False' -and
+        $form -match 'Private Sub BindSelectedCompatibleRequirement' -and
+        $form -match 'mCmbConnectionToNode\.List\(rowIndex, 1\) = matchedRequirementId' -and
+        $form -match 'mCmbConnectionToNode\.List\(rowIndex, 2\) = NzStr\(mLstRecipeNodes\.List\(nodeIndex, 3\)\)' -and
         $form -match 'mCmbConnectionFromNode\.List\([\s\S]{0,100}, 1\) =[\s\S]{0,100}NzStr\(mLstRecipeNodes\.List\([\s\S]{0,100}, 3\)\)' },
     [pscustomobject]@{ Name = "Form.HeadersAndFullWidthLayout"; Pass =
         $form -match 'AddColumnHeaders pg, "RecipeNodes"' -and
         $form -match 'AddColumnHeaders pg, "RecipeConnections"' -and
-        $form -match '"Upstream Process", "Output", "Downstream Process", "Input Requirement", "Qty", "%", "UOM"' -and
+        $form -match '"Stage", "Produced by", "Output", "Feeds Process", "Qty", "%", "UOM"' -and
         $form -match 'AddList\(pg, "lstRecipeConnectionDisplay", 12, [0-9]+, 1018,' },
     [pscustomobject]@{ Name = "Form.FinishedOutputGuidance"; Pass =
         $form -match 'Final output: leave unconnected; Production creates it as finished inventory\.' },

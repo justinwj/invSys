@@ -4,8 +4,8 @@
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5186,
-                     "lineCount":  115673,
+                     "procedureCount":  5201,
+                     "lineCount":  116185,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -902,6 +902,40 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "PrepareProductionOutput"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.RecipeNodeRecordDisplayName",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "RecipeNodeRecordDisplayName"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found for a private procedure.",
+                           "protectingTests":  [
+
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
+                           "id":  "reachability:src_Production_Forms_frmProduction.frm:frmProduction.RefreshConnectionRequirementChoices",
+                           "candidateType":  "REMOVE",
+                           "confidence":  "HIGH",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "RefreshConnectionRequirementChoices"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -10869,6 +10903,23 @@
                            "reviewRequired":  true
                        },
                        {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionOutput_Change",
+                           "candidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "confidence":  "LOW",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbConnectionOutput_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4aqOutputFlow.ps1"
+                                               ],
+                           "reviewRequired":  true
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionToNode_Change",
                            "candidateType":  "RETAIN_DYNAMIC_ROOT",
                            "confidence":  "LOW",
@@ -14659,6 +14710,7 @@
                                                   "AddProcessOutputRecord",
                                                   "AddProcessRequirementRecord",
                                                   "AddRecipeBuilderLine",
+                                                  "AddRecipeOutputFlowRow",
                                                   "AddRecipeValidationIssue",
                                                   "AddReusableInventoryAlternative",
                                                   "AddRunChoiceRows",
@@ -14679,6 +14731,7 @@
                                                   "AssignmentItemRowIsBlank",
                                                   "AutoOrderRecipeNodes",
                                                   "BindOperatorWorkbookForRun",
+                                                  "BindSelectedCompatibleRequirement",
                                                   "BuildAssignmentPage",
                                                   "BuilderTableRowForListIndex",
                                                   "BuildFormGuid",
@@ -14690,6 +14743,7 @@
                                                   "BuildRecipeBuilderPage",
                                                   "BuildRecipeDesignerPage",
                                                   "BuildRecipePayload",
+                                                  "BuildRecipeStageMap",
                                                   "BuildRunTreeFromPaletteList",
                                                   "BuildRunTreePage",
                                                   "BuildRunUsedPayloadJson",
@@ -14716,8 +14770,10 @@
                                                   "CloneReusableRecord",
                                                   "ColumnWidthPoints",
                                                   "ComboText",
+                                                  "CompatibleTargetContainsForTest",
                                                   "CompleteProductionRun",
                                                   "ConfigureAssignmentAnchors",
+                                                  "ConfigureCompatibleTargetCombo",
                                                   "ConfigureNamedIdCombo",
                                                   "ConfigureProductionAnchors",
                                                   "ConfigureRecipeBuilderAnchors",
@@ -14727,6 +14783,8 @@
                                                   "ConfigureRunTreeAnchors",
                                                   "ConnectionOutputDisplayName",
                                                   "ConnectionOutputId",
+                                                  "ConnectionRequirementId",
+                                                  "ConnectionTargetNodeId",
                                                   "ConsumeReusableRunFixtureEntity",
                                                   "ControlExistsByName",
                                                   "CopyRunPaletteListRow",
@@ -14744,6 +14802,7 @@
                                                   "EnsureRunTreeState",
                                                   "EnsureTableRow",
                                                   "EnsureTableRows",
+                                                  "ExerciseRecipeForkProjectionForTest",
                                                   "ExerciseReusableProductionFormActions",
                                                   "FillConnectionRecordChoices",
                                                   "FillIngredientListFromArray",
@@ -14753,6 +14812,7 @@
                                                   "FillListFromTable",
                                                   "FindIdentityListRow",
                                                   "FindProductionOutputTableRow",
+                                                  "FindRecipeOutputFlowRowForTest",
                                                   "FindReusablePaletteSystemKey",
                                                   "FirstNonBlankCheckRow",
                                                   "FirstReusableActiveOutputRow",
@@ -14874,6 +14934,7 @@
                                                   "mBtnRunTreeCollapseAll_Click",
                                                   "mBtnRunTreeExpandAll_Click",
                                                   "mCmbConnectionFromNode_Change",
+                                                  "mCmbConnectionOutput_Change",
                                                   "mCmbConnectionToNode_Change",
                                                   "mCmbLineIo_Change",
                                                   "mCmbRunLocation_Change",
@@ -14930,6 +14991,7 @@
                                                   "ProcessNameForIdentity",
                                                   "ProcessRecordsForRecipeNode",
                                                   "ProcessRecordsHaveAlternative",
+                                                  "ProcessRecordsHaveAlternativeItem",
                                                   "ProcessWorksheetColumnForTest",
                                                   "ProcessWorksheetRowIdsUniqueForTest",
                                                   "ProcessWorksheetTableExistsForTest",
@@ -14945,6 +15007,7 @@
                                                   "RecipeNodeDisplayName",
                                                   "RecipeNodeIndex",
                                                   "RecipeNodeRecordDisplayName",
+                                                  "RecipeRequirementAlreadyConnected",
                                                   "RecipeRequirementsResolved",
                                                   "RecipeVersionIsValid",
                                                   "RefreshAllowedItems",
@@ -14952,6 +15015,7 @@
                                                   "RefreshAssignmentState",
                                                   "RefreshBuilderHeader",
                                                   "RefreshBuilderLines",
+                                                  "RefreshCompatibleDownstreamChoices",
                                                   "RefreshConnectionNodeCombos",
                                                   "RefreshConnectionOutputChoices",
                                                   "RefreshConnectionRequirementChoices",
@@ -15009,6 +15073,7 @@
                                                   "SelectAssignmentIngredientFromList",
                                                   "SelectAssignmentRecipeFromList",
                                                   "SelectComboText",
+                                                  "SelectCompatibleTarget",
                                                   "SelectedProductionOutputTableRow",
                                                   "SelectedRunPaletteBaseQty",
                                                   "SelectProductionOutputForProcess",
@@ -15074,6 +15139,7 @@
                                                   "ToggleSelectedRunTreeParent",
                                                   "TryParseBatchScalePercent",
                                                   "TryParseNonNegativeRunNumber",
+                                                  "TrySelectedOutputRoutingInfo",
                                                   "UpdateSelectedRecipeBuilderLine",
                                                   "UserForm_Activate",
                                                   "UserForm_Initialize",
