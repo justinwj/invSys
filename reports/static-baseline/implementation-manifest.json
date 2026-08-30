@@ -4459,7 +4459,7 @@
                            "name":  "frmProduction",
                            "kind":  "FORM",
                            "sourcePath":  "src/Production/Forms/frmProduction.frm",
-                           "lineCount":  8763,
+                           "lineCount":  8783,
                            "procedureNames":  [
                                                   "ActiveRunLocation",
                                                   "ActiveRunPaletteList",
@@ -5040,7 +5040,7 @@
                            "name":  "modProductionProcessWorksheet",
                            "kind":  "STANDARD_MODULE",
                            "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
-                           "lineCount":  1291,
+                           "lineCount":  1318,
                            "procedureNames":  [
                                                   "AddAcceptableItemPairToSelectedTable",
                                                   "AddWorksheetTemplateRows",
@@ -79826,13 +79826,14 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  6275,
-                           "endLine":  6414,
-                           "lineCount":  140,
+                           "endLine":  6434,
+                           "lineCount":  160,
                            "directCalls":  [
                                                "BuildLayout",
                                                "ClearProcessDraft",
                                                "CountProcessWorksheetTables",
                                                "FindOutstandingProcessWorksheetTable",
+                                               "FindSelectedProcessWorksheetTable",
                                                "IsBase36Identifier",
                                                "mBtnProcessNew_Click",
                                                "mBtnProcessOutputAdd_Click",
@@ -79842,6 +79843,7 @@
                                                "mBtnRecipeNew_Click",
                                                "NzStr",
                                                "PopulateFormulationExampleForTest",
+                                               "ProcessWorksheetTableExistsForTest",
                                                "ReadFormulaEvidenceForTest",
                                                "SelectProcessWorksheetTableForTest",
                                                "TestStatusText"
@@ -79861,8 +79863,8 @@
                            "name":  "TestProcessWorksheetWorkbenchContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  6416,
-                           "endLine":  6543,
+                           "startLine":  6436,
+                           "endLine":  6563,
                            "lineCount":  128,
                            "directCalls":  [
                                                "BuildLayout",
@@ -79894,8 +79896,8 @@
                            "name":  "TestProcessWorksheetBulkImportContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  6545,
-                           "endLine":  6677,
+                           "startLine":  6565,
+                           "endLine":  6697,
                            "lineCount":  133,
                            "directCalls":  [
                                                "BuildLayout",
@@ -79933,8 +79935,8 @@
                            "name":  "TestProcessWorksheetOutputPickerContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  6679,
-                           "endLine":  6819,
+                           "startLine":  6699,
+                           "endLine":  6839,
                            "lineCount":  141,
                            "directCalls":  [
                                                "BuildLayout",
@@ -79973,8 +79975,8 @@
                            "name":  "ProcessWorksheetRowIdsUniqueForTest",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  6821,
-                           "endLine":  6844,
+                           "startLine":  6841,
+                           "endLine":  6864,
                            "lineCount":  24,
                            "directCalls":  [
                                                "Add",
@@ -79995,8 +79997,8 @@
                            "name":  "ProcessWorksheetTableForTest",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  6846,
-                           "endLine":  6859,
+                           "startLine":  6866,
+                           "endLine":  6879,
                            "lineCount":  14,
                            "directCalls":  [
 
@@ -80016,8 +80018,8 @@
                            "name":  "ProcessWorksheetTableExistsForTest",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  6861,
-                           "endLine":  6866,
+                           "startLine":  6881,
+                           "endLine":  6886,
                            "lineCount":  6,
                            "directCalls":  [
                                                "ProcessWorksheetTableForTest"
@@ -80037,8 +80039,8 @@
                            "name":  "ProcessWorksheetColumnForTest",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  6868,
-                           "endLine":  6873,
+                           "startLine":  6888,
+                           "endLine":  6893,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -80058,8 +80060,8 @@
                            "name":  "TestReusableProductionFormActionContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  6875,
-                           "endLine":  6909,
+                           "startLine":  6895,
+                           "endLine":  6929,
                            "lineCount":  35,
                            "directCalls":  [
                                                "BuildLayout",
@@ -80081,8 +80083,8 @@
                            "name":  "ExerciseReusableProductionFormActions",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  6911,
-                           "endLine":  7092,
+                           "startLine":  6931,
+                           "endLine":  7112,
                            "lineCount":  182,
                            "directCalls":  [
                                                "BuildFormGuid",
@@ -80131,8 +80133,8 @@
                            "name":  "TestReusableProductionRunActionContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  7094,
-                           "endLine":  7379,
+                           "startLine":  7114,
+                           "endLine":  7399,
                            "lineCount":  286,
                            "directCalls":  [
                                                "Add",
@@ -80197,8 +80199,8 @@
                            "name":  "TestReusableProductionRestartActionContract",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  7381,
-                           "endLine":  7470,
+                           "startLine":  7401,
+                           "endLine":  7490,
                            "lineCount":  90,
                            "directCalls":  [
                                                "BuildLayout",
@@ -80227,8 +80229,8 @@
                            "name":  "CreateReusableRunRawInventory",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7472,
-                           "endLine":  7478,
+                           "startLine":  7492,
+                           "endLine":  7498,
                            "lineCount":  7,
                            "directCalls":  [
                                                "ResolveReusableRunFixtureEntity"
@@ -80248,8 +80250,8 @@
                            "name":  "ResolveReusableRunFixtureEntity",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7480,
-                           "endLine":  7522,
+                           "startLine":  7500,
+                           "endLine":  7542,
                            "lineCount":  43,
                            "directCalls":  [
                                                "EnsureInventorySchemaBridge",
@@ -80274,8 +80276,8 @@
                            "name":  "ConsumeReusableRunFixtureEntity",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7524,
-                           "endLine":  7552,
+                           "startLine":  7544,
+                           "endLine":  7572,
                            "lineCount":  29,
                            "directCalls":  [
                                                "Add",
@@ -80303,8 +80305,8 @@
                            "name":  "FindReusablePaletteSystemKey",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7554,
-                           "endLine":  7563,
+                           "startLine":  7574,
+                           "endLine":  7583,
                            "lineCount":  10,
                            "directCalls":  [
                                                "NzStr",
@@ -80325,8 +80327,8 @@
                            "name":  "CaptureReusableOutputKeys",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7565,
-                           "endLine":  7579,
+                           "startLine":  7585,
+                           "endLine":  7599,
                            "lineCount":  15,
                            "directCalls":  [
                                                "NzStr",
@@ -80348,8 +80350,8 @@
                            "name":  "StageReusableTestActualOutputs",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7581,
-                           "endLine":  7601,
+                           "startLine":  7601,
+                           "endLine":  7621,
                            "lineCount":  21,
                            "directCalls":  [
                                                "FormatRunNumber",
@@ -80375,8 +80377,8 @@
                            "name":  "ReusableOutputRowsForBatch",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7603,
-                           "endLine":  7611,
+                           "startLine":  7623,
+                           "endLine":  7631,
                            "lineCount":  9,
                            "directCalls":  [
                                                "NzStr"
@@ -80396,8 +80398,8 @@
                            "name":  "ReusableActiveOutputRowCount",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7613,
-                           "endLine":  7620,
+                           "startLine":  7633,
+                           "endLine":  7640,
                            "lineCount":  8,
                            "directCalls":  [
                                                "ReusableRunOutputDefinitionIndex"
@@ -80417,8 +80419,8 @@
                            "name":  "ReusableOutputListValueForBatch",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7622,
-                           "endLine":  7635,
+                           "startLine":  7642,
+                           "endLine":  7655,
                            "lineCount":  14,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -80439,8 +80441,8 @@
                            "name":  "ProductionRunSystemKeyHeadersReadable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7637,
-                           "endLine":  7655,
+                           "startLine":  7657,
+                           "endLine":  7675,
                            "lineCount":  19,
                            "directCalls":  [
 
@@ -80460,8 +80462,8 @@
                            "name":  "FindIdentityListRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7657,
-                           "endLine":  7670,
+                           "startLine":  7677,
+                           "endLine":  7690,
                            "lineCount":  14,
                            "directCalls":  [
                                                "NzStr"
@@ -80481,8 +80483,8 @@
                            "name":  "ProductionPageControlExists",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7672,
-                           "endLine":  7682,
+                           "startLine":  7692,
+                           "endLine":  7702,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ControlExistsByName"
@@ -80502,8 +80504,8 @@
                            "name":  "ShowStatus",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7684,
-                           "endLine":  7687,
+                           "startLine":  7704,
+                           "endLine":  7707,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -80523,8 +80525,8 @@
                            "name":  "ShowPersistencePending",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7689,
-                           "endLine":  7693,
+                           "startLine":  7709,
+                           "endLine":  7713,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ShowStatus"
@@ -80544,8 +80546,8 @@
                            "name":  "NzStr",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  7695,
-                           "endLine":  7700,
+                           "startLine":  7715,
+                           "endLine":  7720,
                            "lineCount":  6,
                            "directCalls":  [
 
@@ -80565,8 +80567,8 @@
                            "name":  "mLstProcesses_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7702,
-                           "endLine":  7707,
+                           "startLine":  7722,
+                           "endLine":  7727,
                            "lineCount":  6,
                            "directCalls":  [
                                                "NzStr",
@@ -80587,8 +80589,8 @@
                            "name":  "mBtnProcessRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7709,
-                           "endLine":  7712,
+                           "startLine":  7729,
+                           "endLine":  7732,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshReusableDesignLists",
@@ -80609,8 +80611,8 @@
                            "name":  "mBtnProcessNew_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7714,
-                           "endLine":  7717,
+                           "startLine":  7734,
+                           "endLine":  7737,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearProcessDraft",
@@ -80631,8 +80633,8 @@
                            "name":  "mBtnProcessLoad_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7719,
-                           "endLine":  7721,
+                           "startLine":  7739,
+                           "endLine":  7741,
                            "lineCount":  3,
                            "directCalls":  [
                                                "LoadSelectedProcessDefinition"
@@ -80652,8 +80654,8 @@
                            "name":  "mBtnProcessReuse_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7723,
-                           "endLine":  7725,
+                           "startLine":  7743,
+                           "endLine":  7745,
                            "lineCount":  3,
                            "directCalls":  [
                                                "LoadSelectedProcessDefinition"
@@ -80673,8 +80675,8 @@
                            "name":  "mBtnProcessValidate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7727,
-                           "endLine":  7731,
+                           "startLine":  7747,
+                           "endLine":  7751,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ShowStatus",
@@ -80695,8 +80697,8 @@
                            "name":  "mBtnProcessSave_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7733,
-                           "endLine":  7740,
+                           "startLine":  7753,
+                           "endLine":  7760,
                            "lineCount":  8,
                            "directCalls":  [
                                                "BuildProcessPayload",
@@ -80719,8 +80721,8 @@
                            "name":  "mBtnProcessRelease_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7742,
-                           "endLine":  7748,
+                           "startLine":  7762,
+                           "endLine":  7768,
                            "lineCount":  7,
                            "directCalls":  [
                                                "SubmitProcessAction"
@@ -80740,8 +80742,8 @@
                            "name":  "mBtnProcessObsolete_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7750,
-                           "endLine":  7756,
+                           "startLine":  7770,
+                           "endLine":  7776,
                            "lineCount":  7,
                            "directCalls":  [
                                                "SubmitProcessAction"
@@ -80761,8 +80763,8 @@
                            "name":  "mBtnProcessClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7758,
-                           "endLine":  7761,
+                           "startLine":  7778,
+                           "endLine":  7781,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearProcessDraft",
@@ -80783,8 +80785,8 @@
                            "name":  "mBtnProcessWorksheetCreate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7763,
-                           "endLine":  7793,
+                           "startLine":  7783,
+                           "endLine":  7813,
                            "lineCount":  31,
                            "directCalls":  [
                                                "BuildProcessPayload",
@@ -80810,8 +80812,8 @@
                            "name":  "mBtnProcessWorksheetAddAlternative_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7795,
-                           "endLine":  7805,
+                           "startLine":  7815,
+                           "endLine":  7825,
                            "lineCount":  11,
                            "directCalls":  [
                                                "AddAcceptableItemPairToSelectedTable",
@@ -80832,8 +80834,8 @@
                            "name":  "mBtnProcessWorksheetRetrieve_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7807,
-                           "endLine":  7911,
+                           "startLine":  7827,
+                           "endLine":  7931,
                            "lineCount":  105,
                            "directCalls":  [
                                                "Add",
@@ -80863,8 +80865,8 @@
                            "name":  "mLstProcessRequirements_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7913,
-                           "endLine":  7923,
+                           "startLine":  7933,
+                           "endLine":  7943,
                            "lineCount":  11,
                            "directCalls":  [
                                                "NzStr"
@@ -80884,8 +80886,8 @@
                            "name":  "mBtnProcessRequirementAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7925,
-                           "endLine":  7927,
+                           "startLine":  7945,
+                           "endLine":  7947,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteRequirementEditorToList"
@@ -80905,8 +80907,8 @@
                            "name":  "mBtnProcessRequirementUpdate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7929,
-                           "endLine":  7931,
+                           "startLine":  7949,
+                           "endLine":  7951,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteRequirementEditorToList"
@@ -80926,8 +80928,8 @@
                            "name":  "mBtnProcessRequirementRemove_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7933,
-                           "endLine":  7936,
+                           "startLine":  7953,
+                           "endLine":  7956,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearRequirementEditor",
@@ -80948,8 +80950,8 @@
                            "name":  "mBtnProcessRequirementUp_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7938,
-                           "endLine":  7940,
+                           "startLine":  7958,
+                           "endLine":  7960,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -80969,8 +80971,8 @@
                            "name":  "mBtnProcessRequirementDown_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7942,
-                           "endLine":  7944,
+                           "startLine":  7962,
+                           "endLine":  7964,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -80990,8 +80992,8 @@
                            "name":  "mLstProcessOutputs_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7946,
-                           "endLine":  7959,
+                           "startLine":  7966,
+                           "endLine":  7979,
                            "lineCount":  14,
                            "directCalls":  [
                                                "NzStr"
@@ -81011,8 +81013,8 @@
                            "name":  "mBtnProcessOutputAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7961,
-                           "endLine":  7963,
+                           "startLine":  7981,
+                           "endLine":  7983,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteOutputEditorToList"
@@ -81032,8 +81034,8 @@
                            "name":  "mBtnProcessOutputUpdate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7965,
-                           "endLine":  7967,
+                           "startLine":  7985,
+                           "endLine":  7987,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteOutputEditorToList"
@@ -81053,8 +81055,8 @@
                            "name":  "mBtnProcessOutputRemove_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7969,
-                           "endLine":  7972,
+                           "startLine":  7989,
+                           "endLine":  7992,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearOutputEditor",
@@ -81075,8 +81077,8 @@
                            "name":  "mBtnProcessOutputUp_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7974,
-                           "endLine":  7976,
+                           "startLine":  7994,
+                           "endLine":  7996,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -81096,8 +81098,8 @@
                            "name":  "mBtnProcessOutputDown_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7978,
-                           "endLine":  7980,
+                           "startLine":  7998,
+                           "endLine":  8000,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -81117,8 +81119,8 @@
                            "name":  "mLstProcessInstructions_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7982,
-                           "endLine":  7985,
+                           "startLine":  8002,
+                           "endLine":  8005,
                            "lineCount":  4,
                            "directCalls":  [
                                                "NzStr"
@@ -81138,8 +81140,8 @@
                            "name":  "mBtnProcessInstructionAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7987,
-                           "endLine":  7991,
+                           "startLine":  8007,
+                           "endLine":  8011,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -81159,8 +81161,8 @@
                            "name":  "mBtnProcessInstructionUpdate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7993,
-                           "endLine":  7996,
+                           "startLine":  8013,
+                           "endLine":  8016,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -81180,8 +81182,8 @@
                            "name":  "mBtnProcessInstructionRemove_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  7998,
-                           "endLine":  8001,
+                           "startLine":  8018,
+                           "endLine":  8021,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RemoveSelectedListRow",
@@ -81202,8 +81204,8 @@
                            "name":  "mBtnProcessInstructionUp_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8003,
-                           "endLine":  8005,
+                           "startLine":  8023,
+                           "endLine":  8025,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -81223,8 +81225,8 @@
                            "name":  "mBtnProcessInstructionDown_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8007,
-                           "endLine":  8009,
+                           "startLine":  8027,
+                           "endLine":  8029,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedListRow"
@@ -81244,8 +81246,8 @@
                            "name":  "mBtnRecipeRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8011,
-                           "endLine":  8014,
+                           "startLine":  8031,
+                           "endLine":  8034,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshReusableDesignLists",
@@ -81266,8 +81268,8 @@
                            "name":  "mBtnRecipeNew_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8016,
-                           "endLine":  8019,
+                           "startLine":  8036,
+                           "endLine":  8039,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearRecipeDraft",
@@ -81288,8 +81290,8 @@
                            "name":  "mBtnRecipeLoad_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8021,
-                           "endLine":  8023,
+                           "startLine":  8041,
+                           "endLine":  8043,
                            "lineCount":  3,
                            "directCalls":  [
                                                "LoadSelectedRecipeDefinition"
@@ -81309,8 +81311,8 @@
                            "name":  "mBtnRecipeAddProcess_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8025,
-                           "endLine":  8027,
+                           "startLine":  8045,
+                           "endLine":  8047,
                            "lineCount":  3,
                            "directCalls":  [
                                                "AddSelectedReleasedProcessToRecipe"
@@ -81330,8 +81332,8 @@
                            "name":  "mBtnRecipeRemoveProcess_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8029,
-                           "endLine":  8031,
+                           "startLine":  8049,
+                           "endLine":  8051,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RemoveSelectedRecipeNode"
@@ -81351,8 +81353,8 @@
                            "name":  "mBtnRecipeConnect_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8033,
-                           "endLine":  8035,
+                           "startLine":  8053,
+                           "endLine":  8055,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteConnectionEditorToList"
@@ -81372,8 +81374,8 @@
                            "name":  "mBtnRecipeUpdateConnection_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8037,
-                           "endLine":  8039,
+                           "startLine":  8057,
+                           "endLine":  8059,
                            "lineCount":  3,
                            "directCalls":  [
                                                "WriteConnectionEditorToList"
@@ -81393,8 +81395,8 @@
                            "name":  "mBtnRecipeDisconnect_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8041,
-                           "endLine":  8043,
+                           "startLine":  8061,
+                           "endLine":  8063,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RemoveSelectedListRow"
@@ -81414,8 +81416,8 @@
                            "name":  "mBtnRecipeMoveUp_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8045,
-                           "endLine":  8049,
+                           "startLine":  8065,
+                           "endLine":  8069,
                            "lineCount":  5,
                            "directCalls":  [
                                                "MoveSelectedListRow",
@@ -81437,8 +81439,8 @@
                            "name":  "mBtnRecipeMoveDown_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8051,
-                           "endLine":  8055,
+                           "startLine":  8071,
+                           "endLine":  8075,
                            "lineCount":  5,
                            "directCalls":  [
                                                "MoveSelectedListRow",
@@ -81460,8 +81462,8 @@
                            "name":  "mBtnRecipeAutoOrder_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8057,
-                           "endLine":  8059,
+                           "startLine":  8077,
+                           "endLine":  8079,
                            "lineCount":  3,
                            "directCalls":  [
                                                "AutoOrderRecipeNodes"
@@ -81481,8 +81483,8 @@
                            "name":  "mBtnRecipeValidate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8061,
-                           "endLine":  8066,
+                           "startLine":  8081,
+                           "endLine":  8086,
                            "lineCount":  6,
                            "directCalls":  [
                                                "EnsureRecipeDraftIdentity",
@@ -81504,8 +81506,8 @@
                            "name":  "mBtnRecipeSave_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8068,
-                           "endLine":  8076,
+                           "startLine":  8088,
+                           "endLine":  8096,
                            "lineCount":  9,
                            "directCalls":  [
                                                "BuildRecipePayload",
@@ -81529,8 +81531,8 @@
                            "name":  "mBtnRecipeRelease_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8078,
-                           "endLine":  8090,
+                           "startLine":  8098,
+                           "endLine":  8110,
                            "lineCount":  13,
                            "directCalls":  [
                                                "EnsureRecipeDraftIdentity",
@@ -81553,8 +81555,8 @@
                            "name":  "mBtnRecipeObsolete_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8092,
-                           "endLine":  8098,
+                           "startLine":  8112,
+                           "endLine":  8118,
                            "lineCount":  7,
                            "directCalls":  [
                                                "SubmitRecipeAction"
@@ -81574,8 +81576,8 @@
                            "name":  "mBtnRecipeClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8100,
-                           "endLine":  8103,
+                           "startLine":  8120,
+                           "endLine":  8123,
                            "lineCount":  4,
                            "directCalls":  [
                                                "ClearRecipeDraft",
@@ -81596,8 +81598,8 @@
                            "name":  "mCmbConnectionFromNode_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8105,
-                           "endLine":  8108,
+                           "startLine":  8125,
+                           "endLine":  8128,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshConnectionOutputChoices"
@@ -81617,8 +81619,8 @@
                            "name":  "mCmbConnectionToNode_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8110,
-                           "endLine":  8113,
+                           "startLine":  8130,
+                           "endLine":  8133,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshConnectionRequirementChoices"
@@ -81638,8 +81640,8 @@
                            "name":  "mLstRecipeConnections_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8115,
-                           "endLine":  8128,
+                           "startLine":  8135,
+                           "endLine":  8148,
                            "lineCount":  14,
                            "directCalls":  [
                                                "NzStr",
@@ -81662,8 +81664,8 @@
                            "name":  "AutoOrderRecipeNodes",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8130,
-                           "endLine":  8157,
+                           "startLine":  8150,
+                           "endLine":  8177,
                            "lineCount":  28,
                            "directCalls":  [
                                                "MoveSelectedListRow",
@@ -81689,8 +81691,8 @@
                            "name":  "mLstBuilderRecipes_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8159,
-                           "endLine":  8165,
+                           "startLine":  8179,
+                           "endLine":  8185,
                            "lineCount":  7,
                            "directCalls":  [
                                                "NzStr"
@@ -81710,8 +81712,8 @@
                            "name":  "mLstBuilderLines_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8167,
-                           "endLine":  8170,
+                           "startLine":  8187,
+                           "endLine":  8190,
                            "lineCount":  4,
                            "directCalls":  [
                                                "LoadSelectedBuilderLine"
@@ -81731,8 +81733,8 @@
                            "name":  "mCmbLineIo_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8172,
-                           "endLine":  8174,
+                           "startLine":  8192,
+                           "endLine":  8194,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ConfigureRecipeLineInputs"
@@ -81752,8 +81754,8 @@
                            "name":  "mBtnBuilderRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8176,
-                           "endLine":  8181,
+                           "startLine":  8196,
+                           "endLine":  8201,
                            "lineCount":  6,
                            "directCalls":  [
                                                "RefreshBuilderHeader",
@@ -81776,8 +81778,8 @@
                            "name":  "mBtnBuilderNew_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8183,
-                           "endLine":  8185,
+                           "startLine":  8203,
+                           "endLine":  8205,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ClearRecipeBuilderForNew"
@@ -81797,8 +81799,8 @@
                            "name":  "mBtnBuilderLoad_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8187,
-                           "endLine":  8189,
+                           "startLine":  8207,
+                           "endLine":  8209,
                            "lineCount":  3,
                            "directCalls":  [
                                                "LoadSelectedRecipeIntoBuilder"
@@ -81818,8 +81820,8 @@
                            "name":  "mBtnBuilderSave_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8191,
-                           "endLine":  8203,
+                           "startLine":  8211,
+                           "endLine":  8223,
                            "lineCount":  13,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -81849,8 +81851,8 @@
                            "name":  "mBtnBuilderProcess_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8205,
-                           "endLine":  8211,
+                           "startLine":  8225,
+                           "endLine":  8231,
                            "lineCount":  7,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -81874,8 +81876,8 @@
                            "name":  "mBtnBuilderFormulas_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8213,
-                           "endLine":  8219,
+                           "startLine":  8233,
+                           "endLine":  8239,
                            "lineCount":  7,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -81899,8 +81901,8 @@
                            "name":  "mBtnBuilderClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8221,
-                           "endLine":  8227,
+                           "startLine":  8241,
+                           "endLine":  8247,
                            "lineCount":  7,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -81924,8 +81926,8 @@
                            "name":  "mBtnBuilderRelease_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8229,
-                           "endLine":  8251,
+                           "startLine":  8249,
+                           "endLine":  8271,
                            "lineCount":  23,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -81950,8 +81952,8 @@
                            "name":  "mBtnLineAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8253,
-                           "endLine":  8255,
+                           "startLine":  8273,
+                           "endLine":  8275,
                            "lineCount":  3,
                            "directCalls":  [
                                                "AddRecipeBuilderLine"
@@ -81971,8 +81973,8 @@
                            "name":  "mBtnLineUpdate_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8257,
-                           "endLine":  8259,
+                           "startLine":  8277,
+                           "endLine":  8279,
                            "lineCount":  3,
                            "directCalls":  [
                                                "UpdateSelectedRecipeBuilderLine"
@@ -81992,8 +81994,8 @@
                            "name":  "mBtnLineRemove_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8261,
-                           "endLine":  8263,
+                           "startLine":  8281,
+                           "endLine":  8283,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RemoveSelectedRecipeBuilderLine"
@@ -82013,8 +82015,8 @@
                            "name":  "mBtnLineMoveUp_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8265,
-                           "endLine":  8267,
+                           "startLine":  8285,
+                           "endLine":  8287,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedRecipeBuilderLine"
@@ -82034,8 +82036,8 @@
                            "name":  "mBtnLineMoveDown_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8269,
-                           "endLine":  8271,
+                           "startLine":  8289,
+                           "endLine":  8291,
                            "lineCount":  3,
                            "directCalls":  [
                                                "MoveSelectedRecipeBuilderLine"
@@ -82055,8 +82057,8 @@
                            "name":  "mBtnLineUomAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8273,
-                           "endLine":  8292,
+                           "startLine":  8293,
+                           "endLine":  8312,
                            "lineCount":  20,
                            "directCalls":  [
                                                "AddConfiguredUom",
@@ -82080,8 +82082,8 @@
                            "name":  "mLstAssignRecipes_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8294,
-                           "endLine":  8297,
+                           "startLine":  8314,
+                           "endLine":  8317,
                            "lineCount":  4,
                            "directCalls":  [
                                                "SelectReusableAssignmentProcess"
@@ -82101,8 +82103,8 @@
                            "name":  "mLstAssignIngredients_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8299,
-                           "endLine":  8302,
+                           "startLine":  8319,
+                           "endLine":  8322,
                            "lineCount":  4,
                            "directCalls":  [
                                                "SelectReusableAssignmentRequirement"
@@ -82122,8 +82124,8 @@
                            "name":  "mTxtInventorySearch_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8304,
-                           "endLine":  8307,
+                           "startLine":  8324,
+                           "endLine":  8327,
                            "lineCount":  4,
                            "directCalls":  [
                                                "RefreshInventoryList"
@@ -82143,8 +82145,8 @@
                            "name":  "mCmbRunLocation_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8309,
-                           "endLine":  8320,
+                           "startLine":  8329,
+                           "endLine":  8340,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ClearMismatchedRunLocationAllocations",
@@ -82168,8 +82170,8 @@
                            "name":  "mCmbTreeRunLocation_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8322,
-                           "endLine":  8333,
+                           "startLine":  8342,
+                           "endLine":  8353,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ClearMismatchedRunLocationAllocations",
@@ -82193,8 +82195,8 @@
                            "name":  "mTxtPaletteSplit_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8335,
-                           "endLine":  8337,
+                           "startLine":  8355,
+                           "endLine":  8357,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PaletteSplitTextChanged"
@@ -82214,8 +82216,8 @@
                            "name":  "mTxtTreePaletteSplit_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8339,
-                           "endLine":  8341,
+                           "startLine":  8359,
+                           "endLine":  8361,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PaletteSplitTextChanged"
@@ -82235,8 +82237,8 @@
                            "name":  "mTxtPaletteQty_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8343,
-                           "endLine":  8345,
+                           "startLine":  8363,
+                           "endLine":  8365,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PaletteQtyTextChanged"
@@ -82256,8 +82258,8 @@
                            "name":  "mTxtTreePaletteQty_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8347,
-                           "endLine":  8349,
+                           "startLine":  8367,
+                           "endLine":  8369,
                            "lineCount":  3,
                            "directCalls":  [
                                                "PaletteQtyTextChanged"
@@ -82277,8 +82279,8 @@
                            "name":  "mTxtOutputReal_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8351,
-                           "endLine":  8355,
+                           "startLine":  8371,
+                           "endLine":  8375,
                            "lineCount":  5,
                            "directCalls":  [
                                                "ReusableRunIsLoaded",
@@ -82299,8 +82301,8 @@
                            "name":  "PaletteSplitTextChanged",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8357,
-                           "endLine":  8383,
+                           "startLine":  8377,
+                           "endLine":  8403,
                            "lineCount":  27,
                            "directCalls":  [
                                                "ActiveRunPaletteList",
@@ -82328,8 +82330,8 @@
                            "name":  "PaletteQtyTextChanged",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8385,
-                           "endLine":  8413,
+                           "startLine":  8405,
+                           "endLine":  8433,
                            "lineCount":  29,
                            "directCalls":  [
                                                "ActiveRunPaletteList",
@@ -82357,8 +82359,8 @@
                            "name":  "mBtnAssignRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8415,
-                           "endLine":  8420,
+                           "startLine":  8435,
+                           "endLine":  8440,
                            "lineCount":  6,
                            "directCalls":  [
                                                "RefreshReusableAssignmentState",
@@ -82381,8 +82383,8 @@
                            "name":  "mBtnAssignRecipe_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8422,
-                           "endLine":  8424,
+                           "startLine":  8442,
+                           "endLine":  8444,
                            "lineCount":  3,
                            "directCalls":  [
                                                "SelectReusableAssignmentProcess"
@@ -82402,8 +82404,8 @@
                            "name":  "mBtnAssignIngredient_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8426,
-                           "endLine":  8428,
+                           "startLine":  8446,
+                           "endLine":  8448,
                            "lineCount":  3,
                            "directCalls":  [
                                                "SelectReusableAssignmentRequirement"
@@ -82423,8 +82425,8 @@
                            "name":  "mBtnAssignAdd_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8430,
-                           "endLine":  8432,
+                           "startLine":  8450,
+                           "endLine":  8452,
                            "lineCount":  3,
                            "directCalls":  [
                                                "AddReusableInventoryAlternative"
@@ -82444,8 +82446,8 @@
                            "name":  "mBtnAssignRemove_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8434,
-                           "endLine":  8436,
+                           "startLine":  8454,
+                           "endLine":  8456,
                            "lineCount":  3,
                            "directCalls":  [
                                                "RemoveReusableInventoryAlternative"
@@ -82465,8 +82467,8 @@
                            "name":  "mBtnAssignSave_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8438,
-                           "endLine":  8440,
+                           "startLine":  8458,
+                           "endLine":  8460,
                            "lineCount":  3,
                            "directCalls":  [
                                                "SaveReusableAssignments"
@@ -82486,8 +82488,8 @@
                            "name":  "mBtnAssignClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8442,
-                           "endLine":  8447,
+                           "startLine":  8462,
+                           "endLine":  8467,
                            "lineCount":  6,
                            "directCalls":  [
                                                "ShowStatus"
@@ -82507,8 +82509,8 @@
                            "name":  "mBtnLoaderRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8449,
-                           "endLine":  8471,
+                           "startLine":  8469,
+                           "endLine":  8491,
                            "lineCount":  23,
                            "directCalls":  [
                                                "RefreshLoaderState",
@@ -82535,8 +82537,8 @@
                            "name":  "mBtnLoaderLoad_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8473,
-                           "endLine":  8481,
+                           "startLine":  8493,
+                           "endLine":  8501,
                            "lineCount":  9,
                            "directCalls":  [
                                                "LoadReusableRecipeIntoRun",
@@ -82558,8 +82560,8 @@
                            "name":  "LoadReusableRecipeIntoRun",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  8483,
-                           "endLine":  8500,
+                           "startLine":  8503,
+                           "endLine":  8520,
                            "lineCount":  18,
                            "directCalls":  [
                                                "LoadReleasedReusableRecipe",
@@ -82582,8 +82584,8 @@
                            "name":  "RefreshReusableRunControls",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8502,
-                           "endLine":  8542,
+                           "startLine":  8522,
+                           "endLine":  8562,
                            "lineCount":  41,
                            "directCalls":  [
                                                "ActiveRunLocation",
@@ -82615,8 +82617,8 @@
                            "name":  "FirstReusableActiveOutputRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  8544,
-                           "endLine":  8555,
+                           "startLine":  8564,
+                           "endLine":  8575,
                            "lineCount":  12,
                            "directCalls":  [
                                                "ReusableRunOutputDefinitionIndex"
@@ -82636,8 +82638,8 @@
                            "name":  "AddUniqueComboItem",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8557,
-                           "endLine":  8565,
+                           "startLine":  8577,
+                           "endLine":  8585,
                            "lineCount":  9,
                            "directCalls":  [
                                                "NzStr"
@@ -82657,8 +82659,8 @@
                            "name":  "mLstLoaderLines_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8567,
-                           "endLine":  8576,
+                           "startLine":  8587,
+                           "endLine":  8596,
                            "lineCount":  10,
                            "directCalls":  [
                                                "NzStr",
@@ -82681,8 +82683,8 @@
                            "name":  "mBtnLoaderClear_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8578,
-                           "endLine":  8593,
+                           "startLine":  8598,
+                           "endLine":  8613,
                            "lineCount":  16,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -82708,8 +82710,8 @@
                            "name":  "mLstRunPalette_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8595,
-                           "endLine":  8598,
+                           "startLine":  8615,
+                           "endLine":  8618,
                            "lineCount":  4,
                            "directCalls":  [
                                                "LoadSelectedRunPaletteRow"
@@ -82729,8 +82731,8 @@
                            "name":  "mLstRunTree_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8600,
-                           "endLine":  8607,
+                           "startLine":  8620,
+                           "endLine":  8627,
                            "lineCount":  8,
                            "directCalls":  [
                                                "IsRunTreeParentRow",
@@ -82752,8 +82754,8 @@
                            "name":  "mBtnRunTreeExpandAll_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8609,
-                           "endLine":  8612,
+                           "startLine":  8629,
+                           "endLine":  8632,
                            "lineCount":  4,
                            "directCalls":  [
                                                "SetAllRunTreeGroupsCollapsed",
@@ -82774,8 +82776,8 @@
                            "name":  "mBtnRunTreeCollapseAll_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8614,
-                           "endLine":  8617,
+                           "startLine":  8634,
+                           "endLine":  8637,
                            "lineCount":  4,
                            "directCalls":  [
                                                "SetAllRunTreeGroupsCollapsed",
@@ -82796,8 +82798,8 @@
                            "name":  "mBtnRunApplyPalette_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8619,
-                           "endLine":  8633,
+                           "startLine":  8639,
+                           "endLine":  8653,
                            "lineCount":  15,
                            "directCalls":  [
                                                "ApplySelectedRunPaletteSplit",
@@ -82821,8 +82823,8 @@
                            "name":  "mBtnRunTreeApplyPalette_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8635,
-                           "endLine":  8637,
+                           "startLine":  8655,
+                           "endLine":  8657,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ApplySelectedRunPaletteSplit"
@@ -82842,8 +82844,8 @@
                            "name":  "mBtnManagerRefresh_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8639,
-                           "endLine":  8659,
+                           "startLine":  8659,
+                           "endLine":  8679,
                            "lineCount":  21,
                            "directCalls":  [
                                                "RefreshLoaderState",
@@ -82869,8 +82871,8 @@
                            "name":  "mLstManagerOutput_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8661,
-                           "endLine":  8668,
+                           "startLine":  8681,
+                           "endLine":  8688,
                            "lineCount":  8,
                            "directCalls":  [
                                                "LoadSelectedProductionOutput",
@@ -82892,8 +82894,8 @@
                            "name":  "LoadSelectedReusableActualOutput",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8670,
-                           "endLine":  8688,
+                           "startLine":  8690,
+                           "endLine":  8708,
                            "lineCount":  19,
                            "directCalls":  [
                                                "ReusableRunActualOutput",
@@ -82914,8 +82916,8 @@
                            "name":  "StageSelectedReusableActualOutput",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  8690,
-                           "endLine":  8713,
+                           "startLine":  8710,
+                           "endLine":  8733,
                            "lineCount":  24,
                            "directCalls":  [
                                                "ReusableRunOutputDefinitionIndex",
@@ -82937,8 +82939,8 @@
                            "name":  "mBtnManagerCheckIn_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8715,
-                           "endLine":  8717,
+                           "startLine":  8735,
+                           "endLine":  8737,
                            "lineCount":  3,
                            "directCalls":  [
                                                "CheckInProductionRun"
@@ -82958,8 +82960,8 @@
                            "name":  "mBtnManagerApplyOutput_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8719,
-                           "endLine":  8721,
+                           "startLine":  8739,
+                           "endLine":  8741,
                            "lineCount":  3,
                            "directCalls":  [
                                                "CompleteProductionRun"
@@ -82979,8 +82981,8 @@
                            "name":  "mCmbRunProcess_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8723,
-                           "endLine":  8728,
+                           "startLine":  8743,
+                           "endLine":  8748,
                            "lineCount":  6,
                            "directCalls":  [
                                                "RefreshRunPaletteState",
@@ -83002,8 +83004,8 @@
                            "name":  "mCmbTreeRunProcess_Change",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8730,
-                           "endLine":  8735,
+                           "startLine":  8750,
+                           "endLine":  8755,
                            "lineCount":  6,
                            "directCalls":  [
                                                "RefreshRunPaletteState",
@@ -83025,8 +83027,8 @@
                            "name":  "mBtnManagerNext_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8737,
-                           "endLine":  8753,
+                           "startLine":  8757,
+                           "endLine":  8773,
                            "lineCount":  17,
                            "directCalls":  [
                                                "BeginNextReusableBatch",
@@ -83054,8 +83056,8 @@
                            "name":  "mBtnManagerPrint_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8755,
-                           "endLine":  8759,
+                           "startLine":  8775,
+                           "endLine":  8779,
                            "lineCount":  5,
                            "directCalls":  [
                                                "BindOperatorWorkbookForRun",
@@ -83079,8 +83081,8 @@
                            "name":  "mBtnClose_Click",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  8761,
-                           "endLine":  8763,
+                           "startLine":  8781,
+                           "endLine":  8783,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -84710,8 +84712,8 @@
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
                            "startLine":  118,
-                           "endLine":  349,
-                           "lineCount":  232,
+                           "endLine":  354,
+                           "lineCount":  237,
                            "directCalls":  [
                                                "Add",
                                                "AppendWorksheetAlternativeRecords",
@@ -84750,8 +84752,8 @@
                            "name":  "DeleteProcessWorksheetTable",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  351,
-                           "endLine":  373,
+                           "startLine":  356,
+                           "endLine":  378,
                            "lineCount":  23,
                            "directCalls":  [
                                                "ClearProcessTableMetadata",
@@ -84772,8 +84774,8 @@
                            "name":  "FindOutstandingProcessWorksheetTable",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  375,
-                           "endLine":  398,
+                           "startLine":  380,
+                           "endLine":  403,
                            "lineCount":  24,
                            "directCalls":  [
 
@@ -84793,8 +84795,8 @@
                            "name":  "FindSelectedProcessWorksheetTable",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  400,
-                           "endLine":  410,
+                           "startLine":  405,
+                           "endLine":  415,
                            "lineCount":  11,
                            "directCalls":  [
                                                "FindSelectedProcessWorksheetTables"
@@ -84814,8 +84816,8 @@
                            "name":  "FindSelectedProcessWorksheetTables",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  412,
-                           "endLine":  457,
+                           "startLine":  417,
+                           "endLine":  462,
                            "lineCount":  46,
                            "directCalls":  [
                                                "Add",
@@ -84836,8 +84838,8 @@
                            "name":  "CountProcessWorksheetTables",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  459,
-                           "endLine":  470,
+                           "startLine":  464,
+                           "endLine":  475,
                            "lineCount":  12,
                            "directCalls":  [
                                                "IsInvSysProcessTable"
@@ -84857,8 +84859,8 @@
                            "name":  "SelectProcessWorksheetTableForTest",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  472,
-                           "endLine":  481,
+                           "startLine":  477,
+                           "endLine":  486,
                            "lineCount":  10,
                            "directCalls":  [
                                                "FindProcessTableByName"
@@ -84878,8 +84880,8 @@
                            "name":  "SelectProcessWorksheetTablesForTest",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  483,
-                           "endLine":  499,
+                           "startLine":  488,
+                           "endLine":  504,
                            "lineCount":  17,
                            "directCalls":  [
                                                "FindProcessTableByName"
@@ -84899,8 +84901,8 @@
                            "name":  "AddAcceptableItemPairToSelectedTable",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  501,
-                           "endLine":  524,
+                           "startLine":  506,
+                           "endLine":  529,
                            "lineCount":  24,
                            "directCalls":  [
                                                "Add",
@@ -84923,8 +84925,8 @@
                            "name":  "IsProcessWorksheetTableTarget",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  526,
-                           "endLine":  534,
+                           "startLine":  531,
+                           "endLine":  539,
                            "lineCount":  9,
                            "directCalls":  [
                                                "IsInvSysProcessTable"
@@ -84944,8 +84946,8 @@
                            "name":  "IsProcessWorksheetItemSearchTarget",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  536,
-                           "endLine":  538,
+                           "startLine":  541,
+                           "endLine":  543,
                            "lineCount":  3,
                            "directCalls":  [
                                                "ProcessManagedItemPairNumber"
@@ -84965,8 +84967,8 @@
                            "name":  "ProcessManagedItemPairNumber",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  540,
-                           "endLine":  576,
+                           "startLine":  545,
+                           "endLine":  581,
                            "lineCount":  37,
                            "directCalls":  [
                                                "AlternativePairCount",
@@ -84988,8 +84990,8 @@
                            "name":  "RefreshProcessWorksheetManagedColumns",
                            "visibility":  "PUBLIC",
                            "kind":  "SUB",
-                           "startLine":  578,
-                           "endLine":  588,
+                           "startLine":  583,
+                           "endLine":  593,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ApplyProcessWorksheetManagedColumns",
@@ -85010,9 +85012,9 @@
                            "name":  "PopulateFormulationExampleForTest",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  590,
-                           "endLine":  627,
-                           "lineCount":  38,
+                           "startLine":  595,
+                           "endLine":  654,
+                           "lineCount":  60,
                            "directCalls":  [
                                                "AlternativeItemColumnIndex",
                                                "AlternativeSkuColumnIndex",
@@ -85034,8 +85036,8 @@
                            "name":  "ReadFormulaEvidenceForTest",
                            "visibility":  "PUBLIC",
                            "kind":  "FUNCTION",
-                           "startLine":  629,
-                           "endLine":  650,
+                           "startLine":  656,
+                           "endLine":  677,
                            "lineCount":  22,
                            "directCalls":  [
                                                "FindProcessTableByName"
@@ -85055,8 +85057,8 @@
                            "name":  "BuildWorksheetRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  652,
-                           "endLine":  712,
+                           "startLine":  679,
+                           "endLine":  739,
                            "lineCount":  61,
                            "directCalls":  [
                                                "Add",
@@ -85083,8 +85085,8 @@
                            "name":  "AddWorksheetTemplateRows",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  714,
-                           "endLine":  760,
+                           "startLine":  741,
+                           "endLine":  787,
                            "lineCount":  47,
                            "directCalls":  [
                                                "Add",
@@ -85108,8 +85110,8 @@
                            "name":  "NewWorksheetRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  762,
-                           "endLine":  784,
+                           "startLine":  789,
+                           "endLine":  811,
                            "lineCount":  23,
                            "directCalls":  [
 
@@ -85129,8 +85131,8 @@
                            "name":  "AttachAlternativeToRequirementRow",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  786,
-                           "endLine":  814,
+                           "startLine":  813,
+                           "endLine":  841,
                            "lineCount":  29,
                            "directCalls":  [
                                                "CellText",
@@ -85151,8 +85153,8 @@
                            "name":  "WriteWorksheetRecord",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  816,
-                           "endLine":  840,
+                           "startLine":  843,
+                           "endLine":  867,
                            "lineCount":  25,
                            "directCalls":  [
                                                "AlternativeItemColumnIndex",
@@ -85175,8 +85177,8 @@
                            "name":  "ApplyProcessWorksheetManagedColumns",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  842,
-                           "endLine":  890,
+                           "startLine":  869,
+                           "endLine":  917,
                            "lineCount":  49,
                            "directCalls":  [
                                                "ApplyProcessWorksheetTextIdentityFormats",
@@ -85201,8 +85203,8 @@
                            "name":  "ApplyRecordTypeValidation",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  892,
-                           "endLine":  904,
+                           "startLine":  919,
+                           "endLine":  931,
                            "lineCount":  13,
                            "directCalls":  [
                                                "Add"
@@ -85222,8 +85224,8 @@
                            "name":  "ApplyProcessWorksheetTextIdentityFormats",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  906,
-                           "endLine":  918,
+                           "startLine":  933,
+                           "endLine":  945,
                            "lineCount":  13,
                            "directCalls":  [
                                                "AlternativePairCount"
@@ -85243,8 +85245,8 @@
                            "name":  "ApplyProcessWorksheetUomValidation",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  920,
-                           "endLine":  936,
+                           "startLine":  947,
+                           "endLine":  963,
                            "lineCount":  17,
                            "directCalls":  [
                                                "Add",
@@ -85265,8 +85267,8 @@
                            "name":  "EnsureWorksheetRowIds",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  938,
-                           "endLine":  969,
+                           "startLine":  965,
+                           "endLine":  996,
                            "lineCount":  32,
                            "directCalls":  [
                                                "Add",
@@ -85289,8 +85291,8 @@
                            "name":  "WriteWorksheetHeaders",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  971,
-                           "endLine":  989,
+                           "startLine":  998,
+                           "endLine":  1016,
                            "lineCount":  19,
                            "directCalls":  [
                                                "AlternativeItemColumnIndex",
@@ -85311,8 +85313,8 @@
                            "name":  "FormatProcessWorksheet",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  991,
-                           "endLine":  1011,
+                           "startLine":  1018,
+                           "endLine":  1038,
                            "lineCount":  21,
                            "directCalls":  [
                                                "AlternativePairCount"
@@ -85332,8 +85334,8 @@
                            "name":  "EnsureProcessEditorSheet",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1013,
-                           "endLine":  1021,
+                           "startLine":  1040,
+                           "endLine":  1048,
                            "lineCount":  9,
                            "directCalls":  [
                                                "Add"
@@ -85353,8 +85355,8 @@
                            "name":  "NextProcessTableTopRow",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1023,
-                           "endLine":  1039,
+                           "startLine":  1050,
+                           "endLine":  1066,
                            "lineCount":  17,
                            "directCalls":  [
                                                "IsInvSysProcessTable"
@@ -85374,8 +85376,8 @@
                            "name":  "ProcessMetadataValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1041,
-                           "endLine":  1049,
+                           "startLine":  1068,
+                           "endLine":  1076,
                            "lineCount":  9,
                            "directCalls":  [
                                                "CellText",
@@ -85396,8 +85398,8 @@
                            "name":  "ClearProcessTableMetadata",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1051,
-                           "endLine":  1058,
+                           "startLine":  1078,
+                           "endLine":  1085,
                            "lineCount":  8,
                            "directCalls":  [
 
@@ -85417,8 +85419,8 @@
                            "name":  "IsInvSysProcessTable",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1060,
-                           "endLine":  1064,
+                           "startLine":  1087,
+                           "endLine":  1091,
                            "lineCount":  5,
                            "directCalls":  [
 
@@ -85438,8 +85440,8 @@
                            "name":  "GeneratedOutputDesignId",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1066,
-                           "endLine":  1072,
+                           "startLine":  1093,
+                           "endLine":  1099,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -85459,8 +85461,8 @@
                            "name":  "BuildManagedItemNameBySku",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1074,
-                           "endLine":  1094,
+                           "startLine":  1101,
+                           "endLine":  1121,
                            "lineCount":  21,
                            "directCalls":  [
                                                "CellText",
@@ -85483,8 +85485,8 @@
                            "name":  "BuildUniqueProcessTableName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1096,
-                           "endLine":  1112,
+                           "startLine":  1123,
+                           "endLine":  1139,
                            "lineCount":  17,
                            "directCalls":  [
                                                "CreateProductionGuid",
@@ -85505,8 +85507,8 @@
                            "name":  "FindProcessTableByName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1114,
-                           "endLine":  1125,
+                           "startLine":  1141,
+                           "endLine":  1152,
                            "lineCount":  12,
                            "directCalls":  [
 
@@ -85526,8 +85528,8 @@
                            "name":  "ProcessIdFromTableName",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1127,
-                           "endLine":  1133,
+                           "startLine":  1154,
+                           "endLine":  1160,
                            "lineCount":  7,
                            "directCalls":  [
 
@@ -85547,8 +85549,8 @@
                            "name":  "AlternativeItemColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1135,
-                           "endLine":  1137,
+                           "startLine":  1162,
+                           "endLine":  1164,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -85568,8 +85570,8 @@
                            "name":  "AlternativeSkuColumnIndex",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1139,
-                           "endLine":  1141,
+                           "startLine":  1166,
+                           "endLine":  1168,
                            "lineCount":  3,
                            "directCalls":  [
 
@@ -85589,8 +85591,8 @@
                            "name":  "AlternativePairCount",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1143,
-                           "endLine":  1157,
+                           "startLine":  1170,
+                           "endLine":  1184,
                            "lineCount":  15,
                            "directCalls":  [
 
@@ -85610,8 +85612,8 @@
                            "name":  "WorksheetAlternativePairCountForRows",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1159,
-                           "endLine":  1172,
+                           "startLine":  1186,
+                           "endLine":  1199,
                            "lineCount":  14,
                            "directCalls":  [
                                                "DictionaryText"
@@ -85631,8 +85633,8 @@
                            "name":  "DictionaryText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1174,
-                           "endLine":  1178,
+                           "startLine":  1201,
+                           "endLine":  1205,
                            "lineCount":  5,
                            "directCalls":  [
                                                "CellText"
@@ -85652,8 +85654,8 @@
                            "name":  "WorksheetValueByHeader",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1180,
-                           "endLine":  1190,
+                           "startLine":  1207,
+                           "endLine":  1217,
                            "lineCount":  11,
                            "directCalls":  [
                                                "ColumnIndex",
@@ -85674,8 +85676,8 @@
                            "name":  "IsConfiguredProcessUom",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1192,
-                           "endLine":  1207,
+                           "startLine":  1219,
+                           "endLine":  1234,
                            "lineCount":  16,
                            "directCalls":  [
                                                "GetConfiguredUomsPackedText",
@@ -85696,8 +85698,8 @@
                            "name":  "AppendWorksheetAlternativeRecords",
                            "visibility":  "PRIVATE",
                            "kind":  "SUB",
-                           "startLine":  1209,
-                           "endLine":  1231,
+                           "startLine":  1236,
+                           "endLine":  1258,
                            "lineCount":  23,
                            "directCalls":  [
                                                "Add",
@@ -85720,8 +85722,8 @@
                            "name":  "WorksheetValue",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1233,
-                           "endLine":  1236,
+                           "startLine":  1260,
+                           "endLine":  1263,
                            "lineCount":  4,
                            "directCalls":  [
                                                "CellText",
@@ -85742,8 +85744,8 @@
                            "name":  "WorksheetRowHasBusinessData",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1238,
-                           "endLine":  1257,
+                           "startLine":  1265,
+                           "endLine":  1284,
                            "lineCount":  20,
                            "directCalls":  [
                                                "AlternativePairCount",
@@ -85765,8 +85767,8 @@
                            "name":  "TryPositiveWorksheetNumber",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1259,
-                           "endLine":  1265,
+                           "startLine":  1286,
+                           "endLine":  1292,
                            "lineCount":  7,
                            "directCalls":  [
                                                "NumberValue"
@@ -85786,8 +85788,8 @@
                            "name":  "ResolveWorksheetRowId",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1267,
-                           "endLine":  1275,
+                           "startLine":  1294,
+                           "endLine":  1302,
                            "lineCount":  9,
                            "directCalls":  [
                                                "IsBase36Identifier",
@@ -85808,8 +85810,8 @@
                            "name":  "NextIdFromDictionary",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1277,
-                           "endLine":  1286,
+                           "startLine":  1304,
+                           "endLine":  1313,
                            "lineCount":  10,
                            "directCalls":  [
                                                "NextBase36Identifier"
@@ -85829,8 +85831,8 @@
                            "name":  "CellText",
                            "visibility":  "PRIVATE",
                            "kind":  "FUNCTION",
-                           "startLine":  1288,
-                           "endLine":  1291,
+                           "startLine":  1315,
+                           "endLine":  1318,
                            "lineCount":  4,
                            "directCalls":  [
 
@@ -130985,6 +130987,7 @@
                            {
                                "entryPoint":  "mBtnProcessWorksheetRetrieve_Click",
                                "testPaths":  [
+                                                 "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                              ]
@@ -131456,6 +131459,7 @@
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
                                                  "tests/tooling/Test-Plan022Slice4alInventoryDeletion.ps1",
                                                  "tests/tooling/Test-Plan022Slice4amZeroStartingQuantity.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1",
                                                  "tests/unit/TestCoreRoleEventWriter.bas",
@@ -133067,6 +133071,7 @@
                                                  "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1",
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4ajProductionHistoryUtility.ps1",
+                                                 "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
                                                  "tests/tooling/Test-Plan022Slice4jWorkflowReadiness.ps1",
                                                  "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                  "tests/unit/TestDesignsDomain.bas",

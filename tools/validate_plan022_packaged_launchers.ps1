@@ -1054,6 +1054,7 @@ try {
             $secondNewWorkbooks = @($secondAfterNames | Where-Object { $_ -notin $secondBeforeNames })
             $observedText += " || SECOND_LAUNCH_NEW_WORKBOOKS=" + $secondNewWorkbooks.Count
             if ($callback.Name -eq "Production") {
+                [IO.File]::WriteAllText($progressPath, "invoke Production batch-scale contract")
                 $workflowControlReport = [string](Run-WorkbookMacro -Excel $excel `
                     -WorkbookName $operationsName `
                     -MacroName "mProduction.RunProductionBatchScaleContractTest")
@@ -1064,6 +1065,7 @@ try {
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
                 if ($WorkbookState -eq "ProductionReusable") {
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable-surface contract")
                     $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionSurfaceContractTest")
@@ -1075,26 +1077,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
                     $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
 
-                    $processWorksheetReport = [string](Run-WorkbookMacro -Excel $excel `
-                        -WorkbookName $operationsName `
-                        -MacroName "mProduction.RunProcessWorksheetRoundTripContractTest")
-                    $processWorksheetPassed = $processWorksheetReport -match '^OK\|' -and
-                        $processWorksheetReport -match '(?:^|\|)RecipeIdentityInitialized=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)ProcessIdGenerated=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RequirementIdGenerated=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)OutputIdGenerated=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)IdentityControlsLocked=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)WorksheetHandler=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)MixedUomRejected=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)TableRemoved=True(?:\||$)' -and
-                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)'
-                    $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
-                    $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
-
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet workbench")
                     $productionWorkbenchReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunProcessWorksheetWorkbenchContractTest")
@@ -1111,6 +1094,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionWorkbenchPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKBENCH=" + $productionWorkbenchReport
 
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet bulk import")
                     $productionBulkImportReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunProcessWorksheetBulkImportContractTest")
@@ -1127,6 +1111,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionBulkImportPassed
                     $observedText += " || PRODUCTION_PROCESS_BULK_IMPORT=" + $productionBulkImportReport
 
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet output picker")
                     $productionOutputPickerReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunProcessWorksheetOutputPickerContractTest")
@@ -1143,6 +1128,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionOutputPickerPassed
                     $observedText += " || PRODUCTION_PROCESS_OUTPUT_PICKER=" + $productionOutputPickerReport
 
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable lifecycle actions")
                     $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionFormActionContractTest")
@@ -1165,6 +1151,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
                     $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
 
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable run actions")
                     $productionRunReport = [string](Run-WorkbookMacro -Excel $excel `
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionRunActionContractTest")
@@ -1192,6 +1179,28 @@ try {
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
                         $reusableRecipeId = [string]$Matches[1]
                     }
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet round-trip")
+                    $processWorksheetReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetRoundTripContractTest")
+                    $processWorksheetPassed = $processWorksheetReport -match '^OK\|' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdentityInitialized=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)ProcessIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RequirementIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)OutputIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)IdentityControlsLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)WorksheetHandler=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)MixedUomAccepted=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)MixedUomRowsPreserved=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)TableRemoved=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
+                    $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
                 }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {

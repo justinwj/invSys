@@ -6286,12 +6286,15 @@ Public Function TestProcessWorksheetRoundTripContract() As String
     Dim worksheetHandlerReached As Boolean
     Dim formulaEvidence As String
     Dim formulaCorrect As Boolean
-    Dim mixedUomRejected As Boolean
+    Dim mixedUomAccepted As Boolean
+    Dim mixedUomRowsPreserved As Boolean
     Dim tableRemoved As Boolean
     Dim repeatRoundTrip As Boolean
     Dim actionReport As String
     Dim boundWorkbookName As String
     Dim tableName As String
+    Dim tableCountBeforeMixed As Long
+    Dim tableCountBeforeRepeat As Long
 
     If Not mBuilt Then BuildLayout
     If Not mOperatorWorkbook Is Nothing Then boundWorkbookName = mOperatorWorkbook.Name
@@ -6327,6 +6330,7 @@ Public Function TestProcessWorksheetRoundTripContract() As String
     recipeVersionGenerated = (Trim$(mTxtReusableRecipeVersion.Text) = "1")
     recipeIdLocked = mTxtReusableRecipeId.Locked
     recipeVersionEditable = Not mTxtReusableRecipeVersion.Locked
+    recipeIdentityInitialized = recipeIdGenerated And recipeVersionGenerated
     identityControlsLocked = identityControlsLocked And _
         recipeIdLocked And _
         mTxtProcessOutputDesignId.Locked And mTxtProcessOutputDesignVersion.Locked
@@ -6340,39 +6344,54 @@ Public Function TestProcessWorksheetRoundTripContract() As String
         If modProductionProcessWorksheet.FindOutstandingProcessWorksheetTable( _
                 mOperatorWorkbook, tableName, actionReport) Then
             Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
-                mOperatorWorkbook, tableName, True, actionReport)
-            Call modProductionProcessWorksheet.SelectProcessWorksheetTableForTest( _
-                mOperatorWorkbook, tableName)
-            mBtnProcessWorksheetRetrieve_Click
-            mixedUomRejected = (modProductionProcessWorksheet.CountProcessWorksheetTables( _
-                mOperatorWorkbook) = 1) And _
-                (InStr(1, TestStatusText(), "one compatible UOM", vbTextCompare) > 0)
-            Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
                 mOperatorWorkbook, tableName, False, actionReport)
             formulaEvidence = modProductionProcessWorksheet.ReadFormulaEvidenceForTest( _
                 mOperatorWorkbook, tableName)
             formulaCorrect = formulaEvidence Like _
                 "OK|Basis=611.2|Sugar=16.4|Flour=32.7|BakingPowder=1.8|Water=49.1|Total=100.0"
+            Call modProductionProcessWorksheet.PopulateFormulationExampleForTest( _
+                mOperatorWorkbook, tableName, True, actionReport)
+            tableCountBeforeMixed = _
+                modProductionProcessWorksheet.CountProcessWorksheetTables(mOperatorWorkbook)
             Call modProductionProcessWorksheet.SelectProcessWorksheetTableForTest( _
                 mOperatorWorkbook, tableName)
             mBtnProcessWorksheetRetrieve_Click
-            tableRemoved = (modProductionProcessWorksheet.CountProcessWorksheetTables( _
-                mOperatorWorkbook) = 0) And _
-                (mLstProcessRequirements.ListCount = 4) And _
-                (mLstProcessOutputs.ListCount = 1)
+            mixedUomAccepted = (modProductionProcessWorksheet.CountProcessWorksheetTables( _
+                mOperatorWorkbook) = tableCountBeforeMixed - 1) And _
+                Not ProcessWorksheetTableExistsForTest(tableName) And _
+                (mLstProcessRequirements.ListCount = 3) And _
+                (mLstProcessOutputs.ListCount = 1) And _
+                (InStr(1, TestStatusText(), "Retrieved 1 selected Process table", _
+                    vbTextCompare) > 0)
+            If mixedUomAccepted Then
+                mixedUomRowsPreserved = _
+                    UCase$(NzStr(mLstProcessRequirements.List(0, 5))) = "LB" And _
+                    UCase$(NzStr(mLstProcessRequirements.List(1, 5))) = "EA" And _
+                    UCase$(NzStr(mLstProcessRequirements.List(2, 5))) = "EA" And _
+                    Abs(CDbl(mLstProcessRequirements.List(0, 4)) - 4.5) < 0.05 And _
+                    Abs(CDbl(mLstProcessRequirements.List(0, 3)) - 100#) < 0.05 And _
+                    Abs(CDbl(mLstProcessRequirements.List(1, 4)) - 2#) < 0.05 And _
+                    Abs(CDbl(mLstProcessRequirements.List(1, 3)) - 50#) < 0.05 And _
+                    Abs(CDbl(mLstProcessRequirements.List(2, 3)) - 50#) < 0.05 And _
+                    UCase$(NzStr(mLstProcessOutputs.List(0, 8))) = "EA"
+            End If
+            tableRemoved = mixedUomAccepted
             If tableRemoved Then
+                tableCountBeforeRepeat = _
+                    modProductionProcessWorksheet.CountProcessWorksheetTables(mOperatorWorkbook)
                 mBtnProcessWorksheetCreate_Click
-                If modProductionProcessWorksheet.FindOutstandingProcessWorksheetTable( _
+                If modProductionProcessWorksheet.FindSelectedProcessWorksheetTable( _
                         mOperatorWorkbook, tableName, actionReport) Then
                     Call modProductionProcessWorksheet.SelectProcessWorksheetTableForTest( _
                         mOperatorWorkbook, tableName)
                     mBtnProcessWorksheetRetrieve_Click
                     repeatRoundTrip = (modProductionProcessWorksheet.CountProcessWorksheetTables( _
-                        mOperatorWorkbook) = 0)
+                        mOperatorWorkbook) = tableCountBeforeRepeat) And _
+                        Not ProcessWorksheetTableExistsForTest(tableName)
                 End If
             End If
         End If
-        worksheetHandlerReached = mixedUomRejected And formulaCorrect And _
+        worksheetHandlerReached = mixedUomAccepted And mixedUomRowsPreserved And formulaCorrect And _
             tableRemoved And repeatRoundTrip
     End If
 
@@ -6389,7 +6408,7 @@ Public Function TestProcessWorksheetRoundTripContract() As String
             "|RecipeVersionEditable=True" & _
             "|RequirementIdGenerated=True|OutputIdGenerated=True" & _
             "|IdentityControlsLocked=True|WorksheetHandler=True" & _
-            "|MixedUomRejected=True|Formula=" & formulaEvidence & _
+            "|MixedUomAccepted=True|MixedUomRowsPreserved=True|Formula=" & formulaEvidence & _
             "|TableRemoved=True|RepeatRoundTrip=True"
     Else
         TestProcessWorksheetRoundTripContract = _
@@ -6405,7 +6424,8 @@ Public Function TestProcessWorksheetRoundTripContract() As String
             "|IdentityControlsLocked=" & CStr(identityControlsLocked) & _
             "|WorksheetControl=" & CStr(worksheetControlVisible) & _
             "|WorksheetHandler=" & CStr(worksheetHandlerReached) & _
-            "|MixedUomRejected=" & CStr(mixedUomRejected) & _
+            "|MixedUomAccepted=" & CStr(mixedUomAccepted) & _
+            "|MixedUomRowsPreserved=" & CStr(mixedUomRowsPreserved) & _
             "|Formula=" & formulaEvidence & _
             "|TableRemoved=" & CStr(tableRemoved) & _
             "|RepeatRoundTrip=" & CStr(repeatRoundTrip) & _

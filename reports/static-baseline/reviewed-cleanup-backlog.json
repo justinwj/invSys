@@ -3,8 +3,8 @@
     "reportType":  "reviewed-cleanup-backlog",
     "generatedAtUtc":  "2026-08-16T20:00:00Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "d5123ad81ae86b85e68f4ad1432251c8f236e8a2af0affc1c815a27d73879dc5",
-                          "maintenanceCandidatesSha256":  "b24ed202a35e6751d1136c758e532ea0ab6234ef240990f86e23628415b3dd52"
+                          "implementationManifestSha256":  "265614f7d51bfc1321d7318f477caedd3f0727a9b5cb3e1f27ac3cf82e27ea8b",
+                          "maintenanceCandidatesSha256":  "dedc002ef67a727b0e326eb7ecec06cabcc422c98e95bc363eb05baa386e043b"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,14 +217,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  8763,
+                                                  "baselineLineCount":  8783,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                   "componentName":  "modProductionProcessWorksheet",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  1291,
+                                                  "baselineLineCount":  1318,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -20193,6 +20193,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],

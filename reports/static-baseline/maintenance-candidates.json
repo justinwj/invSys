@@ -5,7 +5,7 @@
     "baseline":  {
                      "componentCount":  154,
                      "procedureCount":  5177,
-                     "lineCount":  115280,
+                     "lineCount":  115327,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10505,6 +10505,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],

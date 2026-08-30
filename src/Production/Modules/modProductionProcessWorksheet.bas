@@ -85,7 +85,7 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     ws.Cells(tableTopRow + 2, 1).Value2 = "Description"
     ws.Cells(tableTopRow + 2, 2).Value2 = description
     ws.Cells(tableTopRow + 3, 1).Value2 = _
-        "Enter INPUT quantities in one compatible UOM. Batch basis and percentages calculate automatically."
+        "INPUT quantities are grouped by UOM. Each group's batch basis and percentages calculate automatically."
 
     WriteWorksheetHeaders ws, tableHeaderRow, alternativePairCount
     Set tableRange = ws.Range(ws.Cells(tableHeaderRow, 1), _
@@ -128,11 +128,10 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     Dim record As Object
     Dim usedRowIds As Object
     Dim inputUoms As Object
+    Dim inputPercentTotals As Object
     Dim inputRowCount As Long
-    Dim derivedInputCount As Long
     Dim outputRowCount As Long
     Dim instructionOrdinal As Long
-    Dim inputPercentTotal As Double
     Dim rowIndex As Long
     Dim recordType As String
     Dim rowId As String
@@ -151,6 +150,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     Dim hasQty As Boolean
     Dim hasPercent As Boolean
     Dim expectedProcessId As String
+    Dim inputUom As Variant
+    Dim inputPercentTotal As Double
 
     On Error GoTo Failed
     If wb Is Nothing Then
@@ -186,6 +187,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     usedRowIds.CompareMode = vbTextCompare
     Set inputUoms = CreateObject("Scripting.Dictionary")
     inputUoms.CompareMode = vbTextCompare
+    Set inputPercentTotals = CreateObject("Scripting.Dictionary")
+    inputPercentTotals.CompareMode = vbTextCompare
 
     Set record = NewWorksheetRecord("PROCESS")
     record("ProcessName") = processName
@@ -237,10 +240,9 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 usedRowIds.Add rowId, True
                 inputUoms(uom) = True
                 inputRowCount = inputRowCount + 1
-                If hasQty Then
-                    derivedInputCount = derivedInputCount + 1
-                    inputPercentTotal = inputPercentTotal + percentValue
-                End If
+                If Not inputPercentTotals.Exists(uom) Then inputPercentTotals.Add uom, 0#
+                If hasPercent Then _
+                    inputPercentTotals(uom) = CDbl(inputPercentTotals(uom)) + percentValue
                 Set record = NewWorksheetRecord("REQUIREMENT")
                 record("RequirementId") = rowId
                 record("RequirementName") = rowName
@@ -328,14 +330,17 @@ ContinueRow:
         report = "Every Process must declare at least one OUTPUT."
         Exit Function
     End If
-    If inputUoms.Count > 1 Then
-        report = "INPUT percentage formulas require one compatible UOM. Add an explicit conversion Process before retrieval."
-        Exit Function
-    End If
-    If derivedInputCount > 0 And Abs(inputPercentTotal - 100#) > 0.05 Then
-        report = "INPUT formula percentages must total 100.0%; current total is " & Format$(inputPercentTotal, "0.0") & "%."
-        Exit Function
-    End If
+    For Each inputUom In inputUoms.Keys
+        inputPercentTotal = 0#
+        If inputPercentTotals.Exists(CStr(inputUom)) Then _
+            inputPercentTotal = CDbl(inputPercentTotals(CStr(inputUom)))
+        If Abs(inputPercentTotal - 100#) > 0.05 Then
+            report = "INPUT formula percentages for " & CStr(inputUom) & _
+                " UOM must total 100.0%; current total is " & _
+                Format$(inputPercentTotal, "0.0") & "%."
+            Exit Function
+        End If
+    Next inputUom
 
     payloadJson = modProductionJson.BuildJsonArray(records)
     report = "Process worksheet validated: " & CStr(inputRowCount) & _
@@ -594,6 +599,7 @@ Public Function PopulateFormulationExampleForTest(ByVal wb As Workbook, _
     Dim lo As ListObject
     Dim names As Variant
     Dim quantities As Variant
+    Dim uoms As Variant
     Dim rowIndex As Long
 
     On Error GoTo Failed
@@ -602,21 +608,42 @@ Public Function PopulateFormulationExampleForTest(ByVal wb As Workbook, _
         report = "Test Process worksheet table is missing."
         Exit Function
     End If
-    names = Array("Sugar", "Flour", "Baking Powder", "Filtered Water")
-    quantities = Array(100#, 200#, 11.2, 300#)
+    If mixedUom Then
+        names = Array("Chai Concentrate", "64oz Empty Bottle", _
+            "48mm Bottle Cap", "")
+        quantities = Array(4.5, 1#, 1#, "")
+        uoms = Array("LB", "EA", "EA", "")
+    Else
+        names = Array("Sugar", "Flour", "Baking Powder", "Filtered Water")
+        quantities = Array(100#, 200#, 11.2, 300#)
+        uoms = Array("LB", "LB", "LB", "LB")
+    End If
     For rowIndex = 1 To 4
         lo.DataBodyRange.Cells(rowIndex, COL_RECORD_TYPE).Value2 = "INPUT"
         lo.DataBodyRange.Cells(rowIndex, COL_NAME).Value2 = names(rowIndex - 1)
         lo.DataBodyRange.Cells(rowIndex, COL_QTY).Value2 = quantities(rowIndex - 1)
-        lo.DataBodyRange.Cells(rowIndex, COL_UOM).Value2 = IIf(mixedUom And rowIndex = 2, "KG", "LB")
+        lo.DataBodyRange.Cells(rowIndex, COL_UOM).Value2 = uoms(rowIndex - 1)
     Next rowIndex
     lo.DataBodyRange.Cells(7, COL_RECORD_TYPE).Value2 = "OUTPUT"
-    lo.DataBodyRange.Cells(7, COL_NAME).Value2 = "Finished Formula"
-    lo.DataBodyRange.Cells(7, COL_OUTPUT_SKU).Value2 = "SKU-FINISHED"
-    lo.DataBodyRange.Cells(7, COL_QTY).Value2 = 611.2
-    lo.DataBodyRange.Cells(7, COL_UOM).Value2 = "LB"
-    lo.DataBodyRange.Cells(1, AlternativeItemColumnIndex(1)).Value2 = "Sugar Stock"
-    lo.DataBodyRange.Cells(1, AlternativeSkuColumnIndex(1)).Value2 = "SKU-SUGAR"
+    If mixedUom Then
+        lo.DataBodyRange.Cells(7, COL_NAME).Value2 = "64oz Classic Chai"
+        lo.DataBodyRange.Cells(7, COL_OUTPUT_SKU).Value2 = "SKU-CHAI-64OZ"
+        lo.DataBodyRange.Cells(7, COL_QTY).Value2 = 1#
+        lo.DataBodyRange.Cells(7, COL_UOM).Value2 = "EA"
+        lo.DataBodyRange.Cells(1, AlternativeItemColumnIndex(1)).Value2 = "Chai Concentrate"
+        lo.DataBodyRange.Cells(1, AlternativeSkuColumnIndex(1)).Value2 = "SKU-CHAI-CONCENTRATE"
+        lo.DataBodyRange.Cells(2, AlternativeItemColumnIndex(1)).Value2 = "64oz Empty Bottle"
+        lo.DataBodyRange.Cells(2, AlternativeSkuColumnIndex(1)).Value2 = "SKU-BOTTLE-64OZ"
+        lo.DataBodyRange.Cells(3, AlternativeItemColumnIndex(1)).Value2 = "48mm Bottle Cap"
+        lo.DataBodyRange.Cells(3, AlternativeSkuColumnIndex(1)).Value2 = "SKU-CAP-48MM"
+    Else
+        lo.DataBodyRange.Cells(7, COL_NAME).Value2 = "Finished Formula"
+        lo.DataBodyRange.Cells(7, COL_OUTPUT_SKU).Value2 = "SKU-FINISHED"
+        lo.DataBodyRange.Cells(7, COL_QTY).Value2 = 611.2
+        lo.DataBodyRange.Cells(7, COL_UOM).Value2 = "LB"
+        lo.DataBodyRange.Cells(1, AlternativeItemColumnIndex(1)).Value2 = "Sugar Stock"
+        lo.DataBodyRange.Cells(1, AlternativeSkuColumnIndex(1)).Value2 = "SKU-SUGAR"
+    End If
     ApplyProcessWorksheetManagedColumns lo
     Application.Calculate
     report = "Example populated."

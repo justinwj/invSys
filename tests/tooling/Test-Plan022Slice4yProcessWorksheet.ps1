@@ -19,6 +19,7 @@ $spec = Read-Text (Join-Path $docs "0 plan docs\xlam_invSys\invSys-Design-v4.11.
 $plan = Read-Text (Join-Path $docs "expert guidance docs\022 Deployed Operations Launcher and NAS Runtime Stabilization Plan.md")
 $controls = Read-Text (Join-Path $docs "0 plan docs\xlam_invSys\invSys-Controls-v1.md")
 
+# Slice 4an supersedes Slice 4y's single-UOM rejection with per-UOM groups.
 $checks = @(
     [pscustomobject]@{ Name = "Docs.NormativeContract"; Pass =
         $spec -match 'exactly\s+three uppercase Base-36\s+characters' -and
@@ -48,7 +49,7 @@ $checks = @(
     [pscustomobject]@{ Name = "Worksheet.FormulasAndValidation"; Pass =
         $worksheet -match 'SUMIFS\(\[Qty\]' -and
         $worksheet -match '\[@Qty\]/\[@\[Basis Qty\]\]\*100' -and
-        $worksheet -match 'one compatible UOM' -and
+        $worksheet -match 'grouped by UOM' -and
         $worksheet -match 'must total 100\.0%' -and
         $worksheet -match 'Every Process must declare at least one OUTPUT' },
     [pscustomobject]@{ Name = "Worksheet.SafeLifecycle"; Pass =
