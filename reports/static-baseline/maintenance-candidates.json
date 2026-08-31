@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-31T21:35:55Z",
+    "generatedAtUtc":  "2026-08-31T22:07:40Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5284,
-                     "lineCount":  118988,
+                     "procedureCount":  5285,
+                     "lineCount":  119022,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -15127,6 +15127,7 @@
                                                   "RunInventoryAvailableDisplay",
                                                   "RunItemCodeFromList",
                                                   "RunListHeaderBandAligned",
+                                                  "RunListHeaderCellAligned",
                                                   "RunLocationChoiceRequired",
                                                   "RunProcessFromPaletteList",
                                                   "RunProcessMatchesFilter",

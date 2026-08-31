@@ -23,6 +23,7 @@ Private Const RUN_OUTPUT_WIDTHS As String = "120 pt;190 pt;48 pt;72 pt;45 pt;72 
 Private Const RUN_CHECK_WIDTHS As String = "52 pt;150 pt;170 pt;150 pt;72 pt;130 pt;50 pt;72 pt;90 pt"
 Private Const RUN_LIST_CHECK_MIN_HEIGHT As Single = 102
 Private Const RUN_LIST_INSTRUCTIONS_MIN_HEIGHT As Single = 52
+Private Const RUN_LIST_SCROLL_HEIGHT As Single = 680
 Private Const RUN_LIST_CHECK_READABLE_HEIGHT As Single = 96
 Private Const RUN_LIST_INSTRUCTIONS_READABLE_HEIGHT As Single = 48
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
@@ -381,6 +382,8 @@ Public Function TestRunListResponsiveLayoutReportForSize() As String
     Dim listsGrew As Boolean
     Dim instructionLeftStable As Boolean
     Dim headersAligned As Boolean
+    Dim runPlanQtyHeaderAligned As Boolean
+    Dim verticalScrollbarVisible As Boolean
     Dim geometryHealthy As Boolean
 
     If Not mBuilt Then BuildLayout
@@ -401,6 +404,9 @@ Public Function TestRunListResponsiveLayoutReportForSize() As String
     headersAligned = RunListHeaderBandAligned("ManagerCheck", mLstManagerCheck) And _
                      RunListHeaderBandAligned("RunInstructions", mLstRunInstructions) And _
                      RunListHeaderBandAligned("ManagerOutput", mLstManagerOutput)
+    runPlanQtyHeaderAligned = RunListHeaderCellAligned("LoaderLines", 7, mLstLoaderLines)
+    verticalScrollbarVisible = mPages.Pages(3).ScrollBars = fmScrollBarsVertical And _
+                              mPages.Pages(3).KeepScrollBarsVisible = fmScrollBarsVertical
 
     Me.Width = PRODUCTION_LAYOUT_TEST_MAX_WIDTH
     Me.Height = PRODUCTION_LAYOUT_TEST_MAX_HEIGHT
@@ -416,6 +422,8 @@ Public Function TestRunListResponsiveLayoutReportForSize() As String
                      RunListHeaderBandAligned("ManagerCheck", mLstManagerCheck) And _
                      RunListHeaderBandAligned("RunInstructions", mLstRunInstructions) And _
                      RunListHeaderBandAligned("ManagerOutput", mLstManagerOutput)
+    runPlanQtyHeaderAligned = runPlanQtyHeaderAligned And _
+                               RunListHeaderCellAligned("LoaderLines", 7, mLstLoaderLines)
     geometryHealthy = Left$(BuildLayoutGeometryReport(Me.Width, Me.Height, 3), 3) = "OK|"
 
     Me.Width = originalWidth
@@ -430,6 +438,8 @@ Public Function TestRunListResponsiveLayoutReportForSize() As String
         "|AllListsGrew=" & CStr(listsGrew) & _
         "|InstructionLeftStable=" & CStr(instructionLeftStable) & _
         "|HeadersAligned=" & CStr(headersAligned) & _
+        "|RunListVerticalScrollbar=" & CStr(verticalScrollbarVisible) & _
+        "|RunPlanQtyHeaderAligned=" & CStr(runPlanQtyHeaderAligned) & _
         "|GeometryHealthy=" & CStr(geometryHealthy)
 End Function
 
@@ -1266,6 +1276,12 @@ Private Sub BuildAssignmentPage(ByVal pg As MSForms.Page)
 End Sub
 
 Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
+    With pg
+        .ScrollBars = fmScrollBarsVertical
+        .KeepScrollBarsVisible = fmScrollBarsVertical
+        .ScrollHeight = RUN_LIST_SCROLL_HEIGHT
+    End With
+
     AddLabel pg, "Recipes", 12, 12, 140, 16
     AddColumnHeaders pg, "LoaderRecipes", Array("", "Recipe", "Description"), 12, 32, RUN_LOADER_RECIPE_WIDTHS
     Set mLstLoaderRecipes = AddList(pg, "lstLoaderRecipes", 12, 50, 270, 70, 3, RUN_LOADER_RECIPE_WIDTHS)
@@ -1577,7 +1593,8 @@ Private Sub RegisterRunListCaptionBand(ByVal caption As String, ByVal horizontal
     Dim ctl As MSForms.Control
 
     For Each ctl In mPages.Pages(3).Controls
-        If TypeName(ctl) = "Label" Then
+        If TypeName(ctl) = "Label" And _
+           StrComp(Left$(ctl.Name, 3), "hdr", vbTextCompare) <> 0 Then
             If StrComp(CStr(ctl.Caption), caption, vbTextCompare) = 0 Then
                 mLayout.RegisterProportionalVerticalControl ctl, horizontalAnchorMask, _
                                                            verticalTopFactor, 0
@@ -1631,6 +1648,23 @@ Private Function RunListHeaderBandAligned(ByVal groupName As String, _
 
 NotAligned:
     RunListHeaderBandAligned = False
+End Function
+
+Private Function RunListHeaderCellAligned(ByVal groupName As String, _
+                                           ByVal headerIndex As Long, _
+                                           ByVal targetList As MSForms.ListBox) As Boolean
+    Dim headerCell As MSForms.Label
+    Dim firstHeader As MSForms.Label
+
+    On Error GoTo NotAligned
+    Set headerCell = mPages.Pages(3).Controls("hdr" & CleanControlName(groupName) & CStr(headerIndex))
+    Set firstHeader = mPages.Pages(3).Controls("hdr" & CleanControlName(groupName) & "1")
+    RunListHeaderCellAligned = Abs(headerCell.Top - firstHeader.Top) < 0.1 And _
+                                headerCell.Visible And firstHeader.Visible
+    Exit Function
+
+NotAligned:
+    RunListHeaderCellAligned = False
 End Function
 
 Private Function CountOutOfBoundsControls(ByVal parent As Object, ByRef issueDetail As String) As Long

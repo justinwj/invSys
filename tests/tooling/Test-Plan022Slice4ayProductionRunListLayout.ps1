@@ -50,6 +50,16 @@ Add-Check "Production.RunList.HeadersFollowBands" `
      ($formText -match '(?is)ConfigureRunListProportionalLayout.*?RegisterRunListHeaderBand\s+"ManagerCheck".*?RegisterRunListHeaderBand\s+"RunInstructions".*?RegisterRunListHeaderBand\s+"ManagerOutput"')) `
     "Inventory Check, Selected Process Instructions, and Production Output headings and column labels must move with their associated list bands."
 
+Add-Check "Production.RunList.VerticalPageScrollbar" `
+    (($formText -match '(?i)RUN_LIST_SCROLL_HEIGHT\s+As\s+Single') -and
+     ($formText -match '(?is)BuildLoaderPage.*?\.ScrollBars\s*=\s*fmScrollBarsVertical.*?\.KeepScrollBarsVisible\s*=\s*fmScrollBarsVertical.*?\.ScrollHeight\s*=\s*RUN_LIST_SCROLL_HEIGHT')) `
+    "Production Run - List must expose an always-visible vertical page scrollbar so operators can reach all Run List content at constrained heights."
+
+Add-Check "Production.RunList.RunPlanQtyHeaderProtected" `
+    (($formText -match '(?is)RegisterRunListCaptionBand.*?Left\$\(ctl\.Name,\s*3\).*?"hdr".*?<>\s*0') -and
+     ($formText -match '(?is)TestRunListResponsiveLayoutReportForSize.*?RunPlanQtyHeaderAligned')) `
+    "Run Plan column headers, including Qty, must stay in their own header band and remain aligned after vertical resize."
+
 Add-Check "Production.RunList.PackagedPublicLauncherSeam" `
     (($formText -match '(?i)Public\s+Function\s+TestRunListResponsiveLayoutReportForSize') -and
      ($moduleText -match '(?i)Public\s+Function\s+RunProductionRunListResponsiveLayoutTest') -and

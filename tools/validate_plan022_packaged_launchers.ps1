@@ -1149,6 +1149,8 @@ try {
                     $productionRunListLayoutReport -match '(?:^|\|)AllListsGrew=True(?:\||$)' -and
                     $productionRunListLayoutReport -match '(?:^|\|)InstructionLeftStable=True(?:\||$)' -and
                     $productionRunListLayoutReport -match '(?:^|\|)HeadersAligned=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)RunListVerticalScrollbar=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)RunPlanQtyHeaderAligned=True(?:\||$)' -and
                     $productionRunListLayoutReport -match '(?:^|\|)GeometryHealthy=True(?:\||$)'
                 $workflowControlPassed = $workflowControlPassed -and $productionRunListLayoutPassed
                 $observedText += " || PRODUCTION_RUN_LIST_LAYOUT=" + $productionRunListLayoutReport

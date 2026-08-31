@@ -1,7 +1,7 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-31T21:35:55Z
+- Baseline: 2026-08-31T22:07:40Z
 - Scanner candidates: 1052
 - Reviewed candidates: 1054
 - Approved deletions: 0
@@ -50,7 +50,7 @@
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
 | src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2882 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 11015 |
+| src/Production/Forms/frmProduction.frm | Production | 11049 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1319 |
 | src/Production/Modules/modProductionReusableRun.bas | Production | 2488 |
 | src/Production/Modules/mProduction.bas | Production | 13204 |
