@@ -15,11 +15,23 @@ $validatorText = if (Test-Path -LiteralPath $validatorPath) {
     ""
 }
 $liveValidatorPath = Join-Path $repo "tools/validate_phase6_live_role_workflows.ps1"
+$createWarehouseIntegrationPath = Join-Path $repo "tools/run_create_warehouse_integration.ps1"
+$runtimeExporterPath = Join-Path $repo "tools/export-invsys-runtime-state.ps1"
 $packagedActionText = $validatorText
 if (Test-Path -LiteralPath $liveValidatorPath) {
     $packagedActionText += Get-Content -LiteralPath $liveValidatorPath -Raw
 }
 $adminConsoleText = Get-Content -LiteralPath $adminConsolePath -Raw
+$createWarehouseIntegrationText = if (Test-Path -LiteralPath $createWarehouseIntegrationPath) {
+    Get-Content -LiteralPath $createWarehouseIntegrationPath -Raw
+} else {
+    ""
+}
+$runtimeExporterText = if (Test-Path -LiteralPath $runtimeExporterPath) {
+    Get-Content -LiteralPath $runtimeExporterPath -Raw
+} else {
+    ""
+}
 
 $results = [System.Collections.Generic.List[object]]::new()
 function Add-Check {
@@ -46,6 +58,11 @@ Add-Check "Slice14.Admin.PrimitiveEntryBoundary" `
      ($validatorText -match '(?i)modAdminConsole\.BootstrapWarehouseLocalAdmin') -and
      ($validatorText -match '(?i)modAdminConsole\.SeedDemoInventoryForAutomation')) `
     "Fresh warehouse creation and fake inventory seeding must execute through packaged Admin primitive callbacks."
+
+Add-Check "Slice14.SourceIntegration.CoreDependencies" `
+    ($createWarehouseIntegrationText -match [regex]::Escape(
+        "src/Core/Modules/modUomSettings.bas")) `
+    "The Create Warehouse source harness must import every Core module directly called by its imported Domain modules."
 
 $orderedTokens = @(
     'GenerateFreshWarehouse',
@@ -120,6 +137,20 @@ Add-Check "Slice14.RuntimeAndStaticEvidence" `
      ($validatorText -match '(?i)inventory-vba-surface\.ps1')) `
     "The final gate must include read-only five-package runtime evidence and the static retired-path ratchet."
 
+Add-Check "Slice14.RuntimeEvidence.IsolatedPackageSet" `
+    (($validatorText -match "Suspend-NonTargetInvSysAddins") -and
+     ($validatorText -match "Restore-SuspendedInvSysAddins") -and
+     ($validatorText -match "expectedPackagePaths") -and
+     ($validatorText -match "isolationExcel") -and
+     ($validatorText -match "restoreExcel")) `
+    "The five-package extractor must isolate and verify the intended package paths while restoring globally registered invSys add-ins."
+
+Add-Check "Slice14.RuntimeEvidence.ExactExcelSession" `
+    (($runtimeExporterText -match "ExcelHwnd") -and
+     ($runtimeExporterText -match "AccessibleObjectFromWindow") -and
+     ($validatorText -match "-ExcelHwnd")) `
+    "The read-only runtime extractor must attach to the exact full-chain Excel session instead of an arbitrary ROT session."
+
 Add-Check "Slice14.Evidence.RedactsRunIds" `
     ($validatorText.Contains("'(?i)RunId=[^;|\s]+'") -and
      $validatorText -match "RunId=<redacted>") `
@@ -131,6 +162,11 @@ Add-Check "Slice14.Evidence.RecordsD13Trace" `
      ($validatorText -match "Behavioral RED") -and
      ($validatorText -match "GREEN")) `
     "Committed Slice 14 evidence must record meaningful RED and final GREEN."
+
+Add-Check "Slice14.Harness.KeepArtifactsDiagnostic" `
+    (($validatorText -match '(?i)\[switch\]\$KeepArtifacts') -and
+     ($validatorText -match '(?i)-not\s+\$KeepArtifacts')) `
+    "The full-chain harness must be able to preserve its disposable generated validator for a failed automation diagnosis."
 
 $failed = @($results | Where-Object { -not $_.Passed })
 foreach ($row in $results) {

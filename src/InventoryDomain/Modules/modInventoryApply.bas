@@ -486,6 +486,7 @@ Private Function BuildReceiveLines(ByVal evt As Object, _
         errorMessage = "SKU not found in inventory catalog."
         Exit Function
     End If
+    If Not ValidateWholeUnitQuantityApply(wb, sku, "", qty, errorCode, errorMessage) Then Exit Function
     If systemKey = "" Then
         errorCode = "INVALID_SYSTEM_KEY"
         errorMessage = "RECEIVE requires a nonblank System_Key generated at the receiving creation boundary."
@@ -614,6 +615,11 @@ QtyAccepted:
             Set BuildPayloadLines = Nothing
             Exit Function
         End If
+        If Not ValidateWholeUnitQuantityApply(wb, sku, _
+                SafeTrimApply(GetDictionaryValue(rawItem, "UOM")), qty, errorCode, errorMessage) Then
+            Set BuildPayloadLines = Nothing
+            Exit Function
+        End If
 
         ioType = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "IoType")))
         qtyDelta = ResolvePayloadQtyDelta(eventType, ioType, qty, errorCode, errorMessage)
@@ -668,6 +674,103 @@ QtyAccepted:
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
+End Function
+
+Public Function InventoryEaWholeUnitContractForAutomation() As String
+    Dim wb As Workbook
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim wholeEaAccepted As Boolean
+    Dim fractionalPayloadRejected As Boolean
+    Dim fractionalReceiveRejected As Boolean
+    Dim fractionalLbAccepted As Boolean
+
+    On Error GoTo Failed
+    Set wb = Application.Workbooks.Add
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then Err.Raise 5, , report
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-EA-WHOLE", "SKU-EA-WHOLE", 2, "CLEARVIEW", "GOOD", "", _
+        "EA whole-unit contract")
+    item("ITEM_CODE") = "SKU-EA-WHOLE"
+    item("ITEM") = "EA whole-unit item"
+    item("UOM") = "ea"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-EA-WHOLE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    wholeEaAccepted = ApplyEvent(evt, wb, "RUN-EA-WHOLE", statusOut, errorCode, errorMessage)
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-EA-FRACTION", "SKU-EA-FRACTION", 0.5, "CLEARVIEW", "GOOD", "", _
+        "fractional EA payload contract")
+    item("ITEM_CODE") = "SKU-EA-FRACTION"
+    item("ITEM") = "Fractional EA item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-EA-FRACTION", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    fractionalPayloadRejected = (Not ApplyEvent(evt, wb, "RUN-EA-FRACTION", _
+        statusOut, errorCode, errorMessage) And errorCode = "FRACTIONAL_EA_QTY")
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = "EVT-EA-RECEIVE-FRACTION"
+    evt("EventType") = EVENT_TYPE_RECEIVE
+    evt("WarehouseId") = "WH-EA-CONTRACT"
+    evt("StationId") = "S1"
+    evt("UserId") = "automation"
+    evt("CreatedAtUTC") = Now
+    evt("SKU") = "SKU-EA-WHOLE"
+    evt("System_Key") = "SYS-EA-RECEIVE-FRACTION"
+    evt("Qty") = 1.5
+    evt("Location") = "CLEARVIEW"
+    evt("Condition") = "GOOD"
+    errorCode = ""
+    errorMessage = ""
+    fractionalReceiveRejected = (Not ApplyEvent(evt, wb, "RUN-EA-RECEIVE", _
+        statusOut, errorCode, errorMessage) And errorCode = "FRACTIONAL_EA_QTY")
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-LB-FRACTION", "SKU-LB-FRACTION", 0.5, "CLEARVIEW", "GOOD", "", _
+        "fractional LB payload contract")
+    item("ITEM_CODE") = "SKU-LB-FRACTION"
+    item("ITEM") = "Fractional LB item"
+    item("UOM") = "LB"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-LB-FRACTION", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    fractionalLbAccepted = ApplyEvent(evt, wb, "RUN-LB-FRACTION", _
+        statusOut, errorCode, errorMessage)
+
+    InventoryEaWholeUnitContractForAutomation = IIf(wholeEaAccepted And _
+        fractionalPayloadRejected And fractionalReceiveRejected And fractionalLbAccepted, "OK", "FAIL") & _
+        "|WholeEaAccepted=" & CStr(wholeEaAccepted) & _
+        "|FractionalPayloadRejected=" & CStr(fractionalPayloadRejected) & _
+        "|FractionalReceiveRejected=" & CStr(fractionalReceiveRejected) & _
+        "|FractionalLbAccepted=" & CStr(fractionalLbAccepted)
+
+CleanExit:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    InventoryEaWholeUnitContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    Resume CleanExit
 End Function
 
 Public Function InventoryZeroCreateContractForAutomation() As String
@@ -1170,6 +1273,7 @@ Private Function BuildDispositionLines(ByVal evt As Object, _
         errorMessage = eventType & " must preserve the target entity's SKU, Location, and Condition."
         Exit Function
     End If
+    If Not ValidateWholeUnitQuantityApply(wb, entitySku, "", qty, errorCode, errorMessage) Then Exit Function
     If currentQty + 0.0000001 < qty Then
         errorCode = "INSUFFICIENT_ENTITY_INVENTORY"
         errorMessage = eventType & " would overdraw System_Key '" & systemKey & "'. Current=" & _
@@ -1641,6 +1745,45 @@ Private Function ValidateSkuExists(ByVal wb As Workbook, ByVal sku As String) As
     End If
 
     If Not hasCatalog Then ValidateSkuExists = True
+End Function
+
+Private Function ValidateWholeUnitQuantityApply(ByVal wb As Workbook, _
+                                                ByVal sku As String, _
+                                                ByVal suppliedUom As String, _
+                                                ByVal quantity As Double, _
+                                                ByRef errorCode As String, _
+                                                ByRef errorMessage As String) As Boolean
+    Dim effectiveUom As String
+    Dim uomReport As String
+
+    effectiveUom = CatalogUomForSkuApply(wb, sku)
+    If effectiveUom = "" Then effectiveUom = suppliedUom
+    If Not modUomSettings.ValidateQuantityForUom(quantity, effectiveUom, uomReport) Then
+        errorCode = "FRACTIONAL_EA_QTY"
+        errorMessage = uomReport
+        Exit Function
+    End If
+    ValidateWholeUnitQuantityApply = True
+End Function
+
+Private Function CatalogUomForSkuApply(ByVal wb As Workbook, ByVal sku As String) As String
+    CatalogUomForSkuApply = UomForSkuInTableApply( _
+        FindListObjectByNameApply(wb, "tblSkuCatalog"), sku)
+    If CatalogUomForSkuApply = "" Then _
+        CatalogUomForSkuApply = UomForSkuInTableApply(FindListObjectByNameApply(wb, "invSys"), sku)
+    If CatalogUomForSkuApply = "" Then _
+        CatalogUomForSkuApply = UomForSkuInTableApply( _
+            FindListObjectByNameApply(wb, "tblItemSearchIndex"), sku)
+End Function
+
+Private Function UomForSkuInTableApply(ByVal lo As ListObject, ByVal sku As String) As String
+    Dim rowIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    rowIndex = FindRowByColumnValueApply(lo, "SKU", sku)
+    If rowIndex = 0 Then rowIndex = FindRowByColumnValueApply(lo, "ITEM_CODE", sku)
+    If rowIndex = 0 Then Exit Function
+    UomForSkuInTableApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "UOM"))
 End Function
 
 Private Sub EnsureSkuCatalogFromPayloadLineApply(ByVal wb As Workbook, ByVal rawItem As Object)

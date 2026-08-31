@@ -75,6 +75,26 @@ Public Function NormalizeConfiguredUomName(ByVal uomName As String) As String
     NormalizeConfiguredUomName = NormalizeUomName(uomName)
 End Function
 
+Public Function UomRequiresWholeQuantity(ByVal uomName As String) As Boolean
+    UomRequiresWholeQuantity = _
+        (StrComp(NormalizeUomName(uomName), "EA", vbTextCompare) = 0)
+End Function
+
+Public Function ValidateQuantityForUom(ByVal quantity As Double, _
+                                       ByVal uomName As String, _
+                                       Optional ByRef report As String = "") As Boolean
+    Dim normalizedUom As String
+
+    normalizedUom = NormalizeUomName(uomName)
+    If UomRequiresWholeQuantity(normalizedUom) Then
+        If Abs(quantity - Fix(quantity)) > 0.0000001 Then
+            report = "UOM EA requires a whole quantity; fractional EA is not allowed."
+            Exit Function
+        End If
+    End If
+    ValidateQuantityForUom = True
+End Function
+
 Private Function ConfiguredUomCollection() As Collection
     Dim packed As String
 

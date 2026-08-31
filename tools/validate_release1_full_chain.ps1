@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = ".",
-    [string]$DeployRoot = "deploy/current"
+    [string]$DeployRoot = "deploy/current",
+    [switch]$KeepArtifacts
 )
 
 Set-StrictMode -Version Latest
@@ -90,6 +91,78 @@ function Invoke-RepositoryScript {
         ExitCode = $exitCode
         Output = $output
         Text = ($output -join "`n")
+    }
+}
+
+function Suspend-NonTargetInvSysAddins {
+    param(
+        [object]$Excel,
+        [string]$ExpectedPackageRoot
+    )
+
+    $expectedPrefix = ([IO.Path]::GetFullPath($ExpectedPackageRoot)).TrimEnd("\") + "\"
+    $suspended = [System.Collections.Generic.List[string]]::new()
+    $addins2 = $null
+    try {
+        $addins2 = $Excel.AddIns2
+        for ($index = 1; $index -le [int]$addins2.Count; $index++) {
+            $addin = $null
+            try {
+                $addin = $addins2.Item($index)
+                $name = [string]$addin.Name
+                $fullName = [string]$addin.FullName
+                $isExpectedPath = $fullName.StartsWith(
+                    $expectedPrefix,
+                    [StringComparison]::OrdinalIgnoreCase)
+                if ($name -match '(?i)^invSys\..*\.xlam$' -and
+                    -not $isExpectedPath -and
+                    [bool]$addin.Installed) {
+                    $addin.Installed = $false
+                    $suspended.Add($fullName)
+                }
+            }
+            finally {
+                Release-ComObject $addin
+            }
+        }
+    }
+    finally {
+        Release-ComObject $addins2
+    }
+    return @($suspended.ToArray())
+}
+
+function Restore-SuspendedInvSysAddins {
+    param(
+        [object]$Excel,
+        [string[]]$SuspendedPaths
+    )
+
+    if ($SuspendedPaths.Count -eq 0) { return }
+    $restore = @{}
+    foreach ($path in $SuspendedPaths) {
+        $restore[([string]$path).ToLowerInvariant()] = $true
+    }
+    $addins2 = $null
+    try {
+        $addins2 = $Excel.AddIns2
+        for ($index = 1; $index -le [int]$addins2.Count; $index++) {
+            $addin = $null
+            try {
+                $addin = $addins2.Item($index)
+                $fullName = [string]$addin.FullName
+                if ($restore.ContainsKey($fullName.ToLowerInvariant()) -and
+                    -not [bool]$addin.Installed) {
+                    $addin.Installed = $true
+                }
+            }
+            finally {
+                Release-ComObject $addin
+            }
+        }
+    }
+    finally {
+        Release-ComObject $addins2
     }
 }
 
@@ -592,11 +665,29 @@ function Invoke-RestartReconciliation {
 function Invoke-RuntimeFivePackageEvidence {
     $outputRoot = Join-Path $tempRoot "runtime-state"
     New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
-    $localExcel = New-Object -ComObject Excel.Application
-    $localExcel.Visible = $false
-    $localExcel.DisplayAlerts = $false
+    $localExcel = $null
+    $isolationExcel = $null
+    $restoreExcel = $null
     $localBooks = [System.Collections.Generic.List[object]]::new()
+    $suspendedAddinPaths = @()
     try {
+        # Installed add-ins remain loaded until the hosting Excel instance
+        # exits. Suspend them in a short bootstrap instance, then create a
+        # fresh instance that can load only this disposable package set.
+        $isolationExcel = New-Object -ComObject Excel.Application
+        $isolationExcel.Visible = $false
+        $isolationExcel.DisplayAlerts = $false
+        $suspendedAddinPaths = @(Suspend-NonTargetInvSysAddins `
+            -Excel $isolationExcel `
+            -ExpectedPackageRoot $deployPath)
+        $isolationExcel.Quit()
+        Release-ComObject $isolationExcel
+        $isolationExcel = $null
+
+        $localExcel = New-Object -ComObject Excel.Application
+        $localExcel.Visible = $false
+        $localExcel.DisplayAlerts = $false
+        $expectedPackagePaths = @{}
         foreach ($fileName in @(
             "invSys.Core.xlam",
             "invSys.Inventory.Domain.xlam",
@@ -604,6 +695,7 @@ function Invoke-RuntimeFivePackageEvidence {
             "invSys.Operations.xlam",
             "invSys.Admin.xlam"
         )) {
+            $expectedPackagePaths[(Join-Path $deployPath $fileName).ToLowerInvariant()] = $true
             $workbook = $localExcel.Workbooks.Open((Join-Path $deployPath $fileName))
             $localBooks.Add($workbook)
         }
@@ -616,10 +708,19 @@ function Invoke-RuntimeFivePackageEvidence {
         Start-Sleep -Milliseconds 750
         $extract = Invoke-RepositoryScript `
             -Path (Join-Path $repo "tools/export-invsys-runtime-state.ps1") `
-            -Arguments @("-OutputDirectory", $outputRoot)
+            -Arguments @("-OutputDirectory", $outputRoot, "-ExcelHwnd", [string]$localExcel.Hwnd)
         $report = Get-Content -LiteralPath (
             Join-Path $outputRoot "runtime-state.json") -Raw | ConvertFrom-Json
-        $names = @($report.loadedAddins | ForEach-Object { [string]$_.name })
+        $observedAddins = @($report.loadedAddins)
+        $expectedAddins = @($observedAddins | Where-Object {
+            $expectedPackagePaths.ContainsKey(([string]$_.path).ToLowerInvariant())
+        })
+        $unexpectedAddins = @($observedAddins | Where-Object {
+            $path = [string]$_.path
+            -not $expectedPackagePaths.ContainsKey($path.ToLowerInvariant()) -and
+            -not ($suspendedAddinPaths -contains $path)
+        })
+        $names = @($expectedAddins | ForEach-Object { [string]$_.name })
         $warnings = @($report.warnings | ForEach-Object { [string]$_.code })
         $expected = @(
             "invSys.Admin.xlam",
@@ -630,10 +731,14 @@ function Invoke-RuntimeFivePackageEvidence {
         )
         $runtimeOk = $extract.ExitCode -eq 0 -and
             (@($names | Sort-Object) -join "|") -eq ($expected -join "|") -and
+            $expectedAddins.Count -eq $expected.Count -and
+            $unexpectedAddins.Count -eq 0 -and
             "LEGACY_ROLE_ADDINS_LOADED" -notin $warnings -and
-            "DUPLICATE_ADDIN" -notin $warnings
+            ($suspendedAddinPaths.Count -gt 0 -or "DUPLICATE_ADDIN" -notin $warnings)
         Add-Result "RuntimeFivePackages" $runtimeOk `
-            ("Read-only extractor observed: " + (($names | Sort-Object) -join ", "))
+            ("Read-only extractor observed: " + (($names | Sort-Object) -join ", ") +
+             "; Suspended registrations=" + $suspendedAddinPaths.Count +
+             "; Unexpected active packages=" + $unexpectedAddins.Count)
     }
     finally {
         foreach ($workbook in $localBooks) {
@@ -642,6 +747,22 @@ function Invoke-RuntimeFivePackageEvidence {
         }
         try { $localExcel.Quit() } catch {}
         Release-ComObject $localExcel
+        try {
+            if ($suspendedAddinPaths.Count -gt 0) {
+                $restoreExcel = New-Object -ComObject Excel.Application
+                $restoreExcel.Visible = $false
+                $restoreExcel.DisplayAlerts = $false
+                Restore-SuspendedInvSysAddins `
+                    -Excel $restoreExcel `
+                    -SuspendedPaths $suspendedAddinPaths
+            }
+        } catch {}
+        finally {
+            try { $restoreExcel.Quit() } catch {}
+            Release-ComObject $restoreExcel
+            try { $isolationExcel.Quit() } catch {}
+            Release-ComObject $isolationExcel
+        }
     }
 }
 
@@ -816,7 +937,7 @@ finally {
         Release-ComObject $excel
     }
     Write-Evidence
-    if (Test-Path -LiteralPath $tempRoot -PathType Container) {
+    if (-not $KeepArtifacts -and (Test-Path -LiteralPath $tempRoot -PathType Container)) {
         $resolvedTemp = (Resolve-Path -LiteralPath $tempRoot).Path
         $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')
         if ($resolvedTemp.StartsWith(

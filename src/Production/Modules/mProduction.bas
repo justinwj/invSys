@@ -444,6 +444,38 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunChaiForkConvergenceRunActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunChaiForkConvergenceRunActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunChaiForkConvergenceRunActionContractTest = _
+            frmProduction.TestChaiForkConvergenceRunActionContract()
+    End If
+    Exit Function
+Failed:
+    RunChaiForkConvergenceRunActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunEaWholeUnitActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunEaWholeUnitActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunEaWholeUnitActionContractTest = frmProduction.TestEaWholeUnitActionContract()
+    End If
+    Exit Function
+
+Failed:
+    RunEaWholeUnitActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionRestartActionContractTest( _
     ByVal recipeId As String, ByVal recipeVersion As String, _
     ByVal expectedWorkbookFullName As String) As String

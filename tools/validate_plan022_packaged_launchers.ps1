@@ -1140,6 +1140,14 @@ try {
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
                 if ($WorkbookState -eq "ProductionReusable") {
+                    [IO.File]::WriteAllText($progressPath, "invoke Production EA whole-unit handler")
+                    $productionEaWholeUnitReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunEaWholeUnitActionContractTest")
+                    $productionEaWholeUnitPassed = $productionEaWholeUnitReport -match '^OK\|' -and
+                        $productionEaWholeUnitReport -match '(?:^|\|)RequirementHandlerRejected=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEaWholeUnitPassed
+                    $observedText += " || PRODUCTION_EA_WHOLE_UNIT=" + $productionEaWholeUnitReport
                     if ($ProductionEditExportOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke focused Production released Process edit and export")
                     $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
@@ -1313,12 +1321,32 @@ try {
                         $productionRunReport -match '(?:^|\|)SelectedProcessOnly=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)RunInstructionsVisible=True(?:\||$)' -and
                         $productionRunReport -match '(?:^|\|)WholeRecipeStatus=True(?:\||$)' -and
-                        $productionRunReport -match '(?:^|\|)EightPaletteRows=True(?:\||$)'
+                        $productionRunReport -match '(?:^|\|)EightPaletteRows=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)UpstreamWaitThenReady=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RoutedInputVisible=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RoutedInputDetails=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)GroupedUsedGoods=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
                     $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
                     if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
                         $reusableRecipeId = [string]$Matches[1]
                     }
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Chai fork/convergence actions")
+                    $chaiRunReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunChaiForkConvergenceRunActionContractTest")
+                    $chaiRunPassed = $chaiRunReport -match '^OK\|' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiInitialWaitingUpstream=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiRoutedConvergenceInputs=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiUpstreamExactKeysConsumed=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalBottlingRoutedInput=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalOutputNewKey=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFourProcessesCompleted=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalBottlingCompleted=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiRunNotRestarted=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $chaiRunPassed
+                    $observedText += " || PRODUCTION_CHAI_FORK_CONVERGENCE=" + $chaiRunReport
 
                     if (-not $ProductionRunOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet round-trip")

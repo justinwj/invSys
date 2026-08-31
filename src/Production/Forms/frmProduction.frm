@@ -20,7 +20,7 @@ Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
 Private Const RUN_LOADER_LINE_WIDTHS As String = "110 pt;0 pt;45 pt;155 pt;45 pt;45 pt;50 pt;95 pt;0 pt"
 Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;235 pt;0 pt;315 pt;60 pt;65 pt;50 pt;120 pt;165 pt"
 Private Const RUN_OUTPUT_WIDTHS As String = "120 pt;190 pt;48 pt;72 pt;45 pt;72 pt;82 pt;100 pt;240 pt"
-Private Const RUN_CHECK_WIDTHS As String = "135 pt;100 pt;180 pt;50 pt;65 pt;80 pt"
+Private Const RUN_CHECK_WIDTHS As String = "52 pt;150 pt;170 pt;150 pt;72 pt;130 pt;50 pt;72 pt;90 pt"
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
 Private Const BATCH_SCALE_MAX_PERCENT As Double = 1000
 
@@ -1241,25 +1241,25 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
     Set mLstRunPalette = AddList(pg, "lstRunPalette", 12, 250, 1018, 96, 10, RUN_PALETTE_WIDTHS)
 
     AddLabel pg, "Inventory Check", 12, 352, 150, 16
-    AddColumnHeaders pg, "ManagerCheck", Array("System_Key", "Code", "Item", "UOM", "Used", "Total Inv"), 12, 370, RUN_CHECK_WIDTHS
-    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 388, 620, 46, 6, RUN_CHECK_WIDTHS)
-    AddLabel pg, "Selected Process Instructions", 650, 352, 220, 16
+    AddColumnHeaders pg, "ManagerCheck", Array("Type", "Process / Requirement", "Source Process / Output", "System_Key", "Code", "Item", "UOM", "Committed / Used", "Remaining Balance"), 12, 370, RUN_CHECK_WIDTHS
+    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 386, 1018, 28, 9, RUN_CHECK_WIDTHS)
+    AddLabel pg, "Selected Process Instructions", 12, 418, 220, 16
     AddColumnHeaders pg, "RunInstructions", Array("Step", "Instruction"), _
-        650, 370, "45 pt;325 pt"
-    Set mLstRunInstructions = AddList(pg, "lstRunInstructions", 650, 388, 380, 46, 2, _
-        "45 pt;325 pt")
+        12, 436, "45 pt;973 pt"
+    Set mLstRunInstructions = AddList(pg, "lstRunInstructions", 12, 452, 1018, 18, 2, _
+        "45 pt;973 pt")
 
-    AddLabel pg, "Production Output", 12, 442, 170, 16
-    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 460, RUN_OUTPUT_WIDTHS
-    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 478, 1018, 50, 9, RUN_OUTPUT_WIDTHS)
+    AddLabel pg, "Production Output", 12, 474, 170, 16
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 492, RUN_OUTPUT_WIDTHS
+    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 508, 1018, 18, 9, RUN_OUTPUT_WIDTHS)
 
-    AddLabel pg, "Actual Output", 12, 536, 80, 16
-    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 532, 105, 22)
-    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 530, 95, 24)
-    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 530, 120, 24)
-    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 530, 95, 24)
-    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 530, 120, 24)
-    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 530, 120, 24)
+    AddLabel pg, "Actual Output", 12, 530, 80, 16
+    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 528, 105, 22)
+    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 528, 95, 24)
+    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 528, 120, 24)
+    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 528, 95, 24)
+    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 528, 120, 24)
+    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 528, 120, 24)
 End Sub
 
 Private Sub BuildRunTreePage(ByVal pg As MSForms.Page)
@@ -1453,7 +1453,7 @@ Private Sub ConfigureRunListAnchors()
     mLayout.RegisterControl mTxtBatchScalePercent, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mBtnApplyBatchScale, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLstRunPalette, leftRightTop
-    mLayout.RegisterControl mLstManagerCheck, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mLstManagerCheck, leftRightTop
     mLayout.RegisterControl mLstRunInstructions, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLstManagerOutput, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
                                               OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
@@ -5366,6 +5366,10 @@ Private Sub WriteRequirementEditorToList(ByVal updateExisting As Boolean)
         ShowStatus "A percentage requirement needs a positive batch basis quantity."
         Exit Sub
     End If
+    If Not ValidateWholeQuantityForUom(mTxtRequirementQty.Text, _
+            mTxtRequirementUom.Text, "Requirement quantity") Then Exit Sub
+    If Not ValidateWholeQuantityForUom(mTxtRequirementYieldBasis.Text, _
+            mTxtRequirementUom.Text, "Requirement batch basis") Then Exit Sub
     If Not updateExisting Or idx < 0 Then
         mLstProcessRequirements.AddItem ""
         idx = mLstProcessRequirements.ListCount - 1
@@ -5445,6 +5449,10 @@ Private Sub WriteOutputEditorToList(ByVal updateExisting As Boolean)
         ShowStatus "A percentage output needs a positive yield basis."
         Exit Sub
     End If
+    If Not ValidateWholeQuantityForUom(mTxtProcessOutputQty.Text, _
+            ComboText(mCmbProcessOutputUom), "Output quantity") Then Exit Sub
+    If Not ValidateWholeQuantityForUom(mTxtProcessOutputYieldBasis.Text, _
+            ComboText(mCmbProcessOutputUom), "Output yield basis") Then Exit Sub
     If Not updateExisting Or idx < 0 Then
         mLstProcessOutputs.AddItem ""
         idx = mLstProcessOutputs.ListCount - 1
@@ -5616,6 +5624,25 @@ End Function
 Private Function PositiveTextValue(ByVal textValue As String) As Boolean
     If Trim$(textValue) = "" Or Not IsNumeric(textValue) Then Exit Function
     PositiveTextValue = (CDbl(textValue) > 0)
+End Function
+
+Private Function ValidateWholeQuantityForUom(ByVal quantityText As String, _
+                                             ByVal uomName As String, _
+                                             ByVal fieldName As String) As Boolean
+    Dim quantityValue As Double
+    Dim report As String
+
+    quantityText = Trim$(quantityText)
+    If quantityText = "" Or Not IsNumeric(quantityText) Then
+        ValidateWholeQuantityForUom = True
+        Exit Function
+    End If
+    quantityValue = CDbl(quantityText)
+    If Not modUomSettings.ValidateQuantityForUom(quantityValue, uomName, report) Then
+        ShowStatus fieldName & ": " & report
+        Exit Function
+    End If
+    ValidateWholeQuantityForUom = True
 End Function
 
 Private Sub RemoveSelectedListRow(ByVal listControl As MSForms.ListBox)
@@ -6489,6 +6516,8 @@ Private Sub WriteConnectionEditorToList(ByVal updateExisting As Boolean)
         ShowStatus "Select a connection UOM from the Recipe UOM Catalog."
         Exit Sub
     End If
+    If Not ValidateWholeQuantityForUom(mTxtConnectionQty.Text, _
+            ComboText(mCmbConnectionUom), "Connection quantity") Then Exit Sub
     idx = mLstRecipeConnections.ListIndex
     ignoreIndex = -1
     If updateExisting Then ignoreIndex = idx
@@ -8501,6 +8530,10 @@ Public Function TestReusableProductionRunActionContract() As String
     Dim eightPaletteRows As Boolean
     Dim sourceProcessName As String
     Dim sinkProcessName As String
+    Dim upstreamWaitThenReady As Boolean
+    Dim routedInputVisible As Boolean
+    Dim routedInputDetails As Boolean
+    Dim groupedUsedGoods As Boolean
 
     mReusableActionTestInProgress = True
     systemKeyHeadersReadable = ProductionRunSystemKeyHeadersReadable()
@@ -8642,6 +8675,7 @@ Public Function TestReusableProductionRunActionContract() As String
     Next i
     If i >= mLstRunPalette.ListCount Then multiProcessRunPlan = False
     wholeRecipeStatus = LoaderHasReusableStatus("! INSUFFICIENT")
+    upstreamWaitThenReady = LoaderHasReusableStatus("WAITING UPSTREAM")
     eightPaletteRows = (mLstRunPalette.Height >= 90)
     SelectComboText mCmbRunProcess, sourceProcessName
     mCmbRunProcess_Change
@@ -8719,6 +8753,10 @@ Public Function TestReusableProductionRunActionContract() As String
         Not modProductionReusableRun.ReusableRunIsProcessComplete(sinkProcessName) And _
         Not modProductionReusableRun.ReusableRunIsCompleted()
     If Not selectedProcessOnly Then GoTo FixtureFailed
+    mBtnManagerRefresh_Click
+    SelectComboText mCmbRunProcess, sinkProcessName
+    mCmbRunProcess_Change
+    upstreamWaitThenReady = upstreamWaitThenReady And Not LoaderHasReusableStatus("WAITING UPSTREAM")
     wholeRecipeStatus = wholeRecipeStatus And LoaderHasReusableStatus("NEEDS ALLOCATION")
     fixtureStage = "Batch1SinkAllocate"
     SelectComboText mCmbRunProcess, sinkProcessName
@@ -8734,6 +8772,14 @@ Public Function TestReusableProductionRunActionContract() As String
     fixtureStage = "Batch1SinkCheckIn"
     mBtnManagerCheckIn_Click
     If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then GoTo FixtureFailed
+    routedInputVisible = ManagerCheckHasRoutedInputForTest( _
+        modProductionReusableRun.ReusableRunOutputSystemKey(sourceNodeId, "001"), _
+        sourceProcessName, "Source Output", "Source ingredient")
+    routedInputDetails = routedInputVisible And _
+        (mLstManagerCheck.ColumnCount = 9) And _
+        (mLstRunPalette.ListCount = 1)
+    groupedUsedGoods = (StrComp(modProductionReusableRun.ReusableRunUsedGoodsDisplayForTest( _
+        "lb", 5#, "EA", 12#), "12 EA; 5 LB", vbTextCompare) = 0)
     fixtureStage = "Batch1SinkComplete"
     actualOutputAccepted = actualOutputAccepted And _
         StageReusableTestActualOutputs(4.25)
@@ -8854,6 +8900,10 @@ Public Function TestReusableProductionRunActionContract() As String
         "|RunInstructionsVisible=" & CStr(runInstructionsVisible) & _
         "|WholeRecipeStatus=" & CStr(wholeRecipeStatus) & _
         "|EightPaletteRows=" & CStr(eightPaletteRows) & _
+        "|UpstreamWaitThenReady=" & CStr(upstreamWaitThenReady) & _
+        "|RoutedInputVisible=" & CStr(routedInputVisible) & _
+        "|RoutedInputDetails=" & CStr(routedInputDetails) & _
+        "|GroupedUsedGoods=" & CStr(groupedUsedGoods) & _
         "|CheckedIn=" & CStr(checkedIn) & "|Completed=" & CStr(completed) & _
         "|Refreshed=" & CStr(refreshed) & "|NextBatch=" & CStr(nextBatch)
 CleanExit:
@@ -8867,6 +8917,335 @@ FixtureFailed:
 Failed:
     TestReusableProductionRunActionContract = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
     Resume CleanExit
+End Function
+
+Public Function TestChaiForkConvergenceRunActionContract() As String
+    On Error GoTo Failed
+
+    Dim token As String
+    Dim teaId As String
+    Dim spiceId As String
+    Dim cookId As String
+    Dim bottlingId As String
+    Dim recipeId As String
+    Dim rowIndex As Long
+    Dim runLocation As String
+    Dim rawSystemKey As String
+    Dim rawQty As Double
+    Dim setupReport As String
+    Dim teaNodeId As String
+    Dim spiceNodeId As String
+    Dim cookNodeId As String
+    Dim bottlingNodeId As String
+    Dim initialWaiting As Boolean
+    Dim runIdentityAfterTea As String
+    Dim runIdentityAfterRefresh As String
+    Dim runIdentityAfterNavigation As String
+    Dim brewedTeaKey As String
+    Dim spiceBlendKey As String
+    Dim concentrateKey As String
+    Dim bottledKey As String
+    Dim routedCookInputs As Boolean
+    Dim routedBottleInput As Boolean
+    Dim upstreamConsumed As Boolean
+    Dim finalBottlingCompleted As Boolean
+    Dim allFourComplete As Boolean
+    Dim runNotRestarted As Boolean
+    Dim finalKeyCreated As Boolean
+    Dim i As Long
+    Dim fixtureStage As String
+
+    If Not mBuilt Then BuildLayout
+    mReusableActionTestInProgress = True
+    token = UCase$(Right$(CleanControlName(BuildFormGuid()), 10))
+    teaId = "CHAI-TEA-" & token
+    spiceId = "CHAI-SPICE-" & token
+    cookId = "CHAI-COOK-" & token
+    bottlingId = "CHAI-BOTTLE-" & token
+
+    fixtureStage = "CreateTea"
+    If Not CreateChaiProcessForTest(teaId, "Chai Tea Brewing " & token, _
+            Array(Array("Black Tea", "SKU-RUN-RAW", "LB", "1")), _
+            "Brewed Black Tea", "SKU-CHAI-TEA-" & token, 1#, "LB") Then GoTo FixtureFailed
+    fixtureStage = "CreateSpice"
+    If Not CreateChaiProcessForTest(spiceId, "Chai Spice Blending " & token, _
+            Array(Array("Chai Spices", "SKU-RUN-RAW", "LB", "1")), _
+            "Classic Chai Spice Blend", "SKU-CHAI-SPICE-" & token, 1#, "LB") Then GoTo FixtureFailed
+    fixtureStage = "CreateConvergence"
+    If Not CreateChaiProcessForTest(cookId, "Chai Convergence " & token, _
+            Array(Array("Brewed Black Tea", "SKU-CHAI-TEA-" & token, "LB", "1"), _
+                  Array("Classic Chai Spice Blend", "SKU-CHAI-SPICE-" & token, "LB", "1")), _
+            "Chai Concentrate", "SKU-CHAI-CONCENTRATE-" & token, 2#, "LB") Then GoTo FixtureFailed
+    fixtureStage = "CreateBottling"
+    If Not CreateChaiProcessForTest(bottlingId, "Chai Final Bottling " & token, _
+            Array(Array("Chai Concentrate", "SKU-CHAI-CONCENTRATE-" & token, "LB", "2")), _
+            "64oz Classic Chai Bottle", "SKU-CHAI-64OZ-" & token, 1#, "EA") Then GoTo FixtureFailed
+
+    fixtureStage = "CreateRecipe"
+    ClearRecipeDraft False
+    mBtnRecipeNew_Click
+    recipeId = Trim$(mTxtReusableRecipeId.Text)
+    mTxtReusableRecipeName.Text = "Classic Chai Fork Convergence " & token
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, teaId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, spiceId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, cookId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    rowIndex = FindIdentityListRow(mLstReleasedProcesses, bottlingId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstReleasedProcesses.ListIndex = rowIndex
+    mBtnRecipeAddProcess_Click
+    If mLstRecipeNodes.ListCount <> 4 Then GoTo FixtureFailed
+    teaNodeId = NzStr(mLstRecipeNodes.List(0, 0))
+    spiceNodeId = NzStr(mLstRecipeNodes.List(1, 0))
+    cookNodeId = NzStr(mLstRecipeNodes.List(2, 0))
+    bottlingNodeId = NzStr(mLstRecipeNodes.List(3, 0))
+    fixtureStage = "ConnectTea"
+    If Not ConnectChaiTestNodes(teaNodeId, "001") Then GoTo FixtureFailed
+    fixtureStage = "ConnectSpice"
+    If Not ConnectChaiTestNodes(spiceNodeId, "001") Then GoTo FixtureFailed
+    fixtureStage = "ConnectBottling"
+    If Not ConnectChaiTestNodes(cookNodeId, "001") Then GoTo FixtureFailed
+    fixtureStage = "VerifyConnections=" & CStr(mLstRecipeConnections.ListCount)
+    If mLstRecipeConnections.ListCount <> 3 Then GoTo FixtureFailed
+    mBtnRecipeAutoOrder_Click
+    mBtnRecipeSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then GoTo FixtureFailed
+    mBtnRecipeRelease_Click
+    If InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) = 0 Then GoTo FixtureFailed
+
+    If mCmbRunLocation.ListCount > 0 Then
+        runLocation = NzStr(mCmbRunLocation.List(0))
+    Else
+        runLocation = "PRODUCTION"
+        mCmbRunLocation.AddItem runLocation
+        mCmbTreeRunLocation.AddItem runLocation
+    End If
+    fixtureStage = "ResolveRaw"
+    If Not ResolveReusableRunFixtureEntity("SKU-RUN-RAW", runLocation, _
+            rawSystemKey, rawQty, setupReport) Then GoTo FixtureFailed
+    If rawQty < 2# Then GoTo FixtureFailed
+
+    fixtureStage = "LoadRecipe"
+    RefreshReusableDesignLists
+    rowIndex = FindIdentityListRow(mLstLoaderRecipes, recipeId, "1")
+    If rowIndex < 0 Then GoTo FixtureFailed
+    mLstLoaderRecipes.ListIndex = rowIndex
+    mBtnLoaderLoad_Click
+    If Not modProductionReusableRun.ReusableRunIsLoaded() Then GoTo FixtureFailed
+    For i = 0 To mLstLoaderLines.ListCount - 1
+        If StrComp(NzStr(mLstLoaderLines.List(i, 0)), _
+                "Chai Tea Brewing " & token, vbTextCompare) = 0 Then _
+            teaNodeId = NzStr(mLstLoaderLines.List(i, 1))
+        If StrComp(NzStr(mLstLoaderLines.List(i, 0)), _
+                "Chai Spice Blending " & token, vbTextCompare) = 0 Then _
+            spiceNodeId = NzStr(mLstLoaderLines.List(i, 1))
+        If StrComp(NzStr(mLstLoaderLines.List(i, 0)), _
+                "Chai Convergence " & token, vbTextCompare) = 0 Then _
+            cookNodeId = NzStr(mLstLoaderLines.List(i, 1))
+        If StrComp(NzStr(mLstLoaderLines.List(i, 0)), _
+                "Chai Final Bottling " & token, vbTextCompare) = 0 Then _
+            bottlingNodeId = NzStr(mLstLoaderLines.List(i, 1))
+    Next i
+    If teaNodeId = "" Or spiceNodeId = "" Or cookNodeId = "" Or _
+       bottlingNodeId = "" Then GoTo FixtureFailed
+    initialWaiting = LoaderHasReusableStatus("WAITING UPSTREAM")
+    If Not initialWaiting Then GoTo FixtureFailed
+
+    fixtureStage = "CompleteTea"
+    If Not CompleteChaiTestProcess("Chai Tea Brewing " & token, 1#) Then GoTo FixtureFailed
+    brewedTeaKey = modProductionReusableRun.ReusableRunOutputSystemKey(teaNodeId, "001")
+    If brewedTeaKey = "" Then brewedTeaKey = ReusableOutputSystemKeyForTest( _
+        "Chai Tea Brewing " & token, "Brewed Black Tea")
+    runIdentityAfterTea = modProductionReusableRun.ReusableRunIdentityForTest()
+    mBtnManagerRefresh_Click
+    runIdentityAfterRefresh = modProductionReusableRun.ReusableRunIdentityForTest()
+    SelectComboText mCmbRunProcess, "Chai Spice Blending " & token
+    mCmbRunProcess_Change
+    runIdentityAfterNavigation = modProductionReusableRun.ReusableRunIdentityForTest()
+    fixtureStage = "CompleteSpice"
+    If Not CompleteChaiTestProcess("Chai Spice Blending " & token, 1#) Then GoTo FixtureFailed
+    spiceBlendKey = modProductionReusableRun.ReusableRunOutputSystemKey(spiceNodeId, "001")
+    If spiceBlendKey = "" Then spiceBlendKey = ReusableOutputSystemKeyForTest( _
+        "Chai Spice Blending " & token, "Classic Chai Spice Blend")
+
+    fixtureStage = "CompleteConvergence"
+    SelectComboText mCmbRunProcess, "Chai Convergence " & token
+    mCmbRunProcess_Change
+    mBtnManagerCheckIn_Click
+    routedCookInputs = modProductionReusableRun.ReusableRunIsCheckedIn() And _
+        ManagerCheckHasRoutedInputForTest(brewedTeaKey, "Chai Tea Brewing " & token, _
+            "Brewed Black Tea", "Brewed Black Tea") And _
+        ManagerCheckHasRoutedInputForTest(spiceBlendKey, "Chai Spice Blending " & token, _
+            "Classic Chai Spice Blend", "Classic Chai Spice Blend")
+    If Not routedCookInputs Then _
+        setupReport = "BrewedKey=" & brewedTeaKey & "|SpiceKey=" & spiceBlendKey & _
+            "|CheckRows=" & ManagerCheckRowsSummaryForTest()
+    If Not routedCookInputs Then GoTo FixtureFailed
+    If Not StageReusableTestActualOutputs(2#) Then GoTo FixtureFailed
+    mBtnManagerApplyOutput_Click
+    If Not modProductionReusableRun.ReusableRunIsProcessComplete("Chai Convergence " & token) Then GoTo FixtureFailed
+    concentrateKey = modProductionReusableRun.ReusableRunOutputSystemKey(cookNodeId, "001")
+    If concentrateKey = "" Then concentrateKey = ReusableOutputSystemKeyForTest( _
+        "Chai Convergence " & token, "Chai Concentrate")
+    upstreamConsumed = _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(brewedTeaKey)) < 0.0000001) And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(spiceBlendKey)) < 0.0000001)
+    If Not upstreamConsumed Then GoTo FixtureFailed
+
+    fixtureStage = "CompleteBottling"
+    mBtnManagerRefresh_Click
+    SelectComboText mCmbRunProcess, "Chai Final Bottling " & token
+    mCmbRunProcess_Change
+    mBtnManagerCheckIn_Click
+    routedBottleInput = modProductionReusableRun.ReusableRunIsCheckedIn() And _
+        ManagerCheckHasRoutedInputForTest(concentrateKey, "Chai Convergence " & token, _
+            "Chai Concentrate", "Chai Concentrate")
+    If Not routedBottleInput Then GoTo FixtureFailed
+    If Not StageReusableTestActualOutputs(1#) Then GoTo FixtureFailed
+    mBtnManagerApplyOutput_Click
+    bottledKey = modProductionReusableRun.ReusableRunOutputSystemKey(bottlingNodeId, "001")
+    If bottledKey = "" Then bottledKey = ReusableOutputSystemKeyForTest( _
+        "Chai Final Bottling " & token, "64oz Classic Chai Bottle")
+    finalKeyCreated = (bottledKey <> "") And _
+        (Abs(modProductionReusableRun.ReusableRunExactEntityQty(bottledKey) - 1#) < 0.0000001)
+    finalBottlingCompleted = modProductionReusableRun.ReusableRunIsProcessComplete( _
+        "Chai Final Bottling " & token) And modProductionReusableRun.ReusableRunIsCompleted()
+    allFourComplete = finalBottlingCompleted And _
+        modProductionReusableRun.ReusableRunIsProcessComplete("Chai Tea Brewing " & token) And _
+        modProductionReusableRun.ReusableRunIsProcessComplete("Chai Spice Blending " & token) And _
+        modProductionReusableRun.ReusableRunIsProcessComplete("Chai Convergence " & token)
+    runNotRestarted = (runIdentityAfterTea <> "") And _
+        (StrComp(runIdentityAfterTea, runIdentityAfterRefresh, vbTextCompare) = 0) And _
+        (StrComp(runIdentityAfterTea, runIdentityAfterNavigation, vbTextCompare) = 0) And _
+        (InStr(1, runIdentityAfterTea, "|Batch=1", vbTextCompare) > 0)
+
+    TestChaiForkConvergenceRunActionContract = "OK|Recipe=" & recipeId & _
+        "|ChaiInitialWaitingUpstream=" & CStr(initialWaiting) & _
+        "|ChaiRoutedConvergenceInputs=" & CStr(routedCookInputs) & _
+        "|ChaiUpstreamExactKeysConsumed=" & CStr(upstreamConsumed) & _
+        "|ChaiFinalBottlingRoutedInput=" & CStr(routedBottleInput) & _
+        "|ChaiFinalOutputNewKey=" & CStr(finalKeyCreated) & _
+        "|ChaiFourProcessesCompleted=" & CStr(allFourComplete) & _
+        "|ChaiFinalBottlingCompleted=" & CStr(finalBottlingCompleted) & _
+        "|ChaiRunNotRestarted=" & CStr(runNotRestarted)
+CleanExit:
+    mReusableActionTestInProgress = False
+    Exit Function
+FixtureFailed:
+    TestChaiForkConvergenceRunActionContract = "FAIL|FixtureStage=" & fixtureStage & _
+        "|Fixture=" & setupReport & _
+        "|Status=" & Replace$(Replace$(TestStatusText(), vbCr, " "), vbLf, " ")
+    GoTo CleanExit
+Failed:
+    TestChaiForkConvergenceRunActionContract = "FAIL|" & CStr(Err.Number) & _
+        "|" & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function CreateChaiProcessForTest(ByVal processId As String, _
+                                          ByVal processName As String, _
+                                          ByVal requirements As Variant, _
+                                          ByVal outputName As String, _
+                                          ByVal outputItemCode As String, _
+                                          ByVal outputQty As Double, _
+                                          ByVal outputUom As String) As Boolean
+    Dim requirement As Variant
+    Dim alternative As Object
+    Dim requirementId As String
+
+    ClearProcessDraft False
+    mTxtProcessId.Text = processId
+    mTxtProcessVersion.Text = "1"
+    mTxtProcessName.Text = processName
+    For Each requirement In requirements
+        requirementId = Format$(mLstProcessRequirements.ListCount + 1, "000")
+        mTxtRequirementId.Text = requirementId
+        mTxtRequirementName.Text = CStr(requirement(0))
+        mTxtRequirementQty.Text = CStr(requirement(3))
+        mTxtRequirementUom.Text = CStr(requirement(2))
+        mBtnProcessRequirementAdd_Click
+        Set alternative = NewReusableRecord("ALTERNATIVE")
+        alternative("RequirementId") = requirementId
+        alternative("ITEM_CODE") = CStr(requirement(1))
+        mProcessAlternatives.Add alternative
+    Next requirement
+    mTxtProcessOutputId.Text = "001"
+    mTxtProcessOutputName.Text = outputName
+    mTxtProcessOutputItemCode.Text = outputItemCode
+    mTxtProcessOutputQty.Text = FormatRunNumber(outputQty)
+    RefreshProcessOutputUomCatalog outputUom
+    mBtnProcessOutputAdd_Click
+    mBtnProcessSave_Click
+    If InStr(1, TestStatusText(), " is DRAFT", vbTextCompare) = 0 Then Exit Function
+    mBtnProcessRelease_Click
+    CreateChaiProcessForTest = (InStr(1, TestStatusText(), " is RELEASED", vbTextCompare) > 0)
+End Function
+
+Private Function ConnectChaiTestNodes(ByVal sourceNodeId As String, _
+                                      ByVal outputId As String) As Boolean
+    SelectComboText mCmbConnectionFromNode, sourceNodeId
+    mCmbConnectionFromNode_Change
+    SelectComboText mCmbConnectionOutput, outputId
+    mCmbConnectionOutput_Change
+    If Trim$(ConnectionTargetNodeId()) = "" Or Trim$(ConnectionRequirementId()) = "" Then Exit Function
+    mBtnRecipeConnect_Click
+    ConnectChaiTestNodes = _
+        (InStr(1, TestStatusText(), "connection staged", vbTextCompare) > 0) Or _
+        (InStr(1, TestStatusText(), "connected", vbTextCompare) > 0)
+End Function
+
+Private Function CompleteChaiTestProcess(ByVal processName As String, _
+                                         ByVal externalQty As Double) As Boolean
+    SelectComboText mCmbRunProcess, processName
+    mCmbRunProcess_Change
+    If externalQty > 0# Then
+        mLstRunPalette.ListIndex = FindReusablePaletteItemName("Production Raw Material")
+        If mLstRunPalette.ListIndex < 0 Then Exit Function
+        mTxtPaletteSplit.Text = "100"
+        mTxtPaletteQty.Text = FormatRunNumber(externalQty)
+        mBtnRunApplyPalette_Click
+    End If
+    mBtnManagerCheckIn_Click
+    If Not modProductionReusableRun.ReusableRunIsCheckedIn() Then Exit Function
+    If Not StageReusableTestActualOutputs(1#) Then Exit Function
+    mBtnManagerApplyOutput_Click
+    CompleteChaiTestProcess = modProductionReusableRun.ReusableRunIsProcessComplete(processName)
+End Function
+
+Public Function TestEaWholeUnitActionContract() As String
+    On Error GoTo Failed
+
+    Dim beforeCount As Long
+    Dim requirementRejected As Boolean
+
+    If Not mBuilt Then BuildLayout
+    beforeCount = mLstProcessRequirements.ListCount
+    mTxtRequirementId.Text = "EA-FRACTION"
+    mTxtRequirementName.Text = "Fractional count test"
+    mTxtRequirementQty.Text = "1.5"
+    mTxtRequirementPercent.Text = ""
+    mTxtRequirementYieldBasis.Text = ""
+    mTxtRequirementUom.Text = "ea"
+    mBtnProcessRequirementAdd_Click
+    requirementRejected = (mLstProcessRequirements.ListCount = beforeCount And _
+        InStr(1, TestStatusText(), "requires a whole quantity", vbTextCompare) > 0)
+
+    TestEaWholeUnitActionContract = IIf(requirementRejected, "OK", "FAIL") & _
+        "|RequirementHandlerRejected=" & CStr(requirementRejected)
+    Exit Function
+
+Failed:
+    TestEaWholeUnitActionContract = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
 End Function
 
 Public Function TestReusableProductionRestartActionContract( _
@@ -9086,6 +9465,42 @@ Private Function LoaderHasReusableStatus(ByVal expectedStatus As String) As Bool
     Next i
 End Function
 
+Private Function ManagerCheckHasRoutedInputForTest(ByVal systemKey As String, _
+                                                    ByVal sourceProcess As String, _
+                                                    ByVal sourceOutput As String, _
+                                                    ByVal requirementName As String) As Boolean
+    Dim i As Long
+
+    For i = 0 To mLstManagerCheck.ListCount - 1
+        If StrComp(NzStr(mLstManagerCheck.List(i, 0)), "ROUTED", vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstManagerCheck.List(i, 3)), systemKey, vbTextCompare) = 0 _
+           And InStr(1, NzStr(mLstManagerCheck.List(i, 1)), requirementName, vbTextCompare) > 0 _
+           And InStr(1, NzStr(mLstManagerCheck.List(i, 2)), sourceProcess, vbTextCompare) > 0 _
+           And InStr(1, NzStr(mLstManagerCheck.List(i, 2)), sourceOutput, vbTextCompare) > 0 _
+           And IsNumeric(mLstManagerCheck.List(i, 7)) _
+           And IsNumeric(mLstManagerCheck.List(i, 8)) Then
+            ManagerCheckHasRoutedInputForTest = True
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ManagerCheckRowsSummaryForTest() As String
+    Dim i As Long
+
+    For i = 0 To mLstManagerCheck.ListCount - 1
+        If ManagerCheckRowsSummaryForTest <> "" Then _
+            ManagerCheckRowsSummaryForTest = ManagerCheckRowsSummaryForTest & ";"
+        ManagerCheckRowsSummaryForTest = ManagerCheckRowsSummaryForTest & _
+            NzStr(mLstManagerCheck.List(i, 0)) & "/" & _
+            NzStr(mLstManagerCheck.List(i, 1)) & "/" & _
+            NzStr(mLstManagerCheck.List(i, 2)) & "/" & _
+            NzStr(mLstManagerCheck.List(i, 3)) & "/" & _
+            NzStr(mLstManagerCheck.List(i, 7)) & "/" & _
+            NzStr(mLstManagerCheck.List(i, 8))
+    Next i
+End Function
+
 Private Function ReusableRunFixtureAvailableQty(ByVal itemCode As String, _
                                                 ByVal locationValue As String) As Double
     Dim entities As Variant
@@ -9117,6 +9532,19 @@ Private Function CaptureReusableOutputKeys() As Object
         End If
     Next i
     Set CaptureReusableOutputKeys = result
+End Function
+
+Private Function ReusableOutputSystemKeyForTest(ByVal processName As String, _
+                                                ByVal outputName As String) As String
+    Dim i As Long
+
+    For i = 0 To mLstManagerOutput.ListCount - 1
+        If StrComp(NzStr(mLstManagerOutput.List(i, 0)), processName, vbTextCompare) = 0 _
+           And StrComp(NzStr(mLstManagerOutput.List(i, 1)), outputName, vbTextCompare) = 0 Then
+            ReusableOutputSystemKeyForTest = Trim$(NzStr(mLstManagerOutput.List(i, 8)))
+            Exit Function
+        End If
+    Next i
 End Function
 
 Private Function StageReusableTestActualOutputs(ByVal finishedActualQty As Double) As Boolean
@@ -9181,7 +9609,7 @@ Private Function ProductionRunSystemKeyHeadersReadable() As Boolean
     Dim checkHeader As MSForms.Label
     Dim outputHeader As MSForms.Label
 
-    Set checkHeader = mPages.Pages(3).Controls("hdrManagerCheck1")
+    Set checkHeader = mPages.Pages(3).Controls("hdrManagerCheck4")
     Set outputHeader = mPages.Pages(3).Controls("hdrManagerOutput9")
     ProductionRunSystemKeyHeadersReadable = _
         AssignmentSystemKeyReadable() And _

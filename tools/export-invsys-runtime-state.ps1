@@ -9,11 +9,59 @@ param(
 
     [string]$SchemaPath = "",
 
+    [Int64]$ExcelHwnd = 0,
+
     [switch]$IncludeRowValues
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0
+
+if ($null -eq ("InvSysRuntimeNative" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class InvSysRuntimeNative
+{
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("oleacc.dll")]
+    public static extern int AccessibleObjectFromWindow(
+        IntPtr hwnd,
+        int objectId,
+        ref Guid iid,
+        [In, Out, MarshalAs(UnmanagedType.IUnknown)] ref object nativeObject);
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumChildWindows(
+        IntPtr hWnd,
+        EnumWindowsProc callback,
+        IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetClassName(
+        IntPtr hWnd,
+        System.Text.StringBuilder text,
+        int maxCount);
+
+    public static IntPtr FindExcelGridWindow(IntPtr mainWindow)
+    {
+        IntPtr found = IntPtr.Zero;
+        EnumChildWindows(mainWindow, delegate(IntPtr candidate, IntPtr ignored) {
+            var className = new System.Text.StringBuilder(256);
+            GetClassName(candidate, className, className.Capacity);
+            if (string.Equals(className.ToString(), "EXCEL7", StringComparison.Ordinal)) {
+                found = candidate;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+"@
+}
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
@@ -318,10 +366,56 @@ function Get-ComTableRows {
     return $rows.ToArray()
 }
 
+function Get-ExcelApplicationForHwnd {
+    param([Int64]$Hwnd)
+
+    if ($Hwnd -le 0) {
+        throw "Excel window handle must be positive."
+    }
+
+    $nativeObject = $null
+    $excel = $null
+    $gridWindow = [InvSysRuntimeNative]::FindExcelGridWindow([IntPtr]$Hwnd)
+    if ($gridWindow -eq [IntPtr]::Zero) {
+        throw "Could not locate an Excel automation child window for handle $Hwnd."
+    }
+    $dispatchId = [Guid]::Parse("00020400-0000-0000-C000-000000000046")
+    $result = [InvSysRuntimeNative]::AccessibleObjectFromWindow(
+        $gridWindow,
+        -16,
+        [ref]$dispatchId,
+        [ref]$nativeObject)
+    if ($result -ne 0 -or $null -eq $nativeObject) {
+        throw "Could not attach to Excel window handle $Hwnd."
+    }
+
+    try {
+        try {
+            $excel = $nativeObject.Application
+        }
+        catch {
+            $excel = $nativeObject
+            $nativeObject = $null
+        }
+        return $excel
+    }
+    finally {
+        if ($null -ne $nativeObject -and
+            [Runtime.InteropServices.Marshal]::IsComObject($nativeObject)) {
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($nativeObject)
+        }
+    }
+}
+
 function Get-LiveRawInput {
     $excel = $null
     try {
-        $excel = [Runtime.InteropServices.Marshal]::GetActiveObject("Excel.Application")
+        if ($ExcelHwnd -gt 0) {
+            $excel = Get-ExcelApplicationForHwnd -Hwnd $ExcelHwnd
+        }
+        else {
+            $excel = [Runtime.InteropServices.Marshal]::GetActiveObject("Excel.Application")
+        }
     }
     catch {
         return [ordered]@{

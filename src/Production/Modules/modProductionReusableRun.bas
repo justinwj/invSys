@@ -4,6 +4,8 @@ Option Explicit
 Private Const EVENT_TYPE_PROD_CONSUME As String = "PROD_CONSUME"
 Private Const EVENT_TYPE_PROD_COMPLETE As String = "PROD_COMPLETE"
 Private Const QTY_TOLERANCE As Double = 0.0000001
+Private Const RUN_CHECK_SOURCE_PROCESS_OUTPUT As String = "Source Process / Output"
+Private Const RUN_CHECK_REMAINING_BALANCE As String = "Remaining Balance"
 
 Private mLoaded As Boolean
 Private mCheckedIn As Boolean
@@ -358,6 +360,7 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
     Dim removeIds As Collection
     Dim removeId As Variant
     Dim planId As Variant
+    Dim uomReport As String
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -370,6 +373,11 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
     End If
     If qty < 0 Then
         report = "Allocation quantity cannot be negative."
+        Exit Function
+    End If
+    If Not modUomSettings.ValidateQuantityForUom(qty, _
+            RunRecordText(requirement, "UOM"), uomReport) Then
+        report = uomReport
         Exit Function
     End If
 
@@ -490,6 +498,7 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
     Dim otherEntityQty As Double
     Dim allocationId As String
     Dim nonCounted As Boolean
+    Dim uomReport As String
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -502,6 +511,11 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
     End If
     If qty < 0 Then
         report = "Allocation quantity cannot be negative."
+        Exit Function
+    End If
+    If Not modUomSettings.ValidateQuantityForUom(qty, _
+            RunRecordText(requirement, "UOM"), uomReport) Then
+        report = uomReport
         Exit Function
     End If
     nonCounted = ExactEntityIsNonCounted(systemKey)
@@ -647,30 +661,56 @@ Public Function ReusableRunManagerCheckRows() As Variant
     Dim systemKey As String
     Dim qty As Double
     Dim totalRows As Long
+    Dim keyParts() As String
+    Dim node As Object
+    Dim requirement As Object
+    Dim routedRow As Variant
+    Dim columnIndex As Long
 
     If Not mCheckedIn Or mAllocations Is Nothing Then Exit Function
     If mCheckedInNodeId = "" Then
-        totalRows = mAllocations.Count
+        totalRows = mAllocations.Count + RoutedInputCount("")
     Else
-        totalRows = AllocationCountForNode(mCheckedInNodeId)
+        totalRows = AllocationCountForNode(mCheckedInNodeId) + RoutedInputCount(mCheckedInNodeId)
     End If
     If totalRows = 0 Then Exit Function
     entity = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
-    ReDim result(1 To totalRows, 1 To 6)
+    ReDim result(1 To totalRows, 1 To 9)
     For Each key In mAllocations.Keys
         If mCheckedInNodeId <> "" Then
             If Not AllocationBelongsToNode(CStr(key), mCheckedInNodeId) Then GoTo NextAllocation
         End If
         rowIndex = rowIndex + 1
+        keyParts = Split(CStr(key), vbTab)
         systemKey = AllocationSystemKey(CStr(key))
         qty = CDbl(mAllocations(key))
-        result(rowIndex, 1) = systemKey
-        result(rowIndex, 2) = ExactEntityField(entity, systemKey, 3)
-        result(rowIndex, 3) = ExactEntityField(entity, systemKey, 4)
-        result(rowIndex, 4) = ExactEntityField(entity, systemKey, 5)
-        result(rowIndex, 5) = qty
-        result(rowIndex, 6) = ExactEntityInventoryDisplayForKey(entity, systemKey)
+        Set node = FindNode(keyParts(0))
+        Set requirement = FindRequirement(keyParts(0), keyParts(1))
+        result(rowIndex, 1) = "EXTERNAL"
+        result(rowIndex, 2) = RunRecordText(node, "ProcessName") & " / " & _
+                              RunRecordText(requirement, "RequirementName")
+        result(rowIndex, 4) = systemKey
+        result(rowIndex, 5) = ExactEntityField(entity, systemKey, 3)
+        result(rowIndex, 6) = ExactEntityField(entity, systemKey, 4)
+        result(rowIndex, 7) = ExactEntityField(entity, systemKey, 5)
+        result(rowIndex, 8) = qty
+        result(rowIndex, 9) = ExactEntityInventoryDisplayForKey(entity, systemKey)
 NextAllocation:
+    Next key
+    For Each key In mRequirements
+        Set requirement = key
+        If mCheckedInNodeId <> "" Then
+            If StrComp(RunRecordText(requirement, "ProcessNodeId"), mCheckedInNodeId, vbTextCompare) <> 0 Then GoTo NextRoutedRequirement
+        End If
+        If Not RequirementHasIncomingConnection(RunRecordText(requirement, "ProcessNodeId"), _
+                                                 RunRecordText(requirement, "RequirementId")) Then GoTo NextRoutedRequirement
+        routedRow = BuildRoutedInputCheckRow(requirement, entity)
+        If IsEmpty(routedRow) Then GoTo NextRoutedRequirement
+        rowIndex = rowIndex + 1
+        For columnIndex = LBound(routedRow) To UBound(routedRow)
+            result(rowIndex, columnIndex) = routedRow(columnIndex)
+        Next columnIndex
+NextRoutedRequirement:
     Next key
     If rowIndex = 0 Then Exit Function
     ReusableRunManagerCheckRows = result
@@ -699,7 +739,7 @@ Public Function ReusableRunOutputRows() As Variant
         result(rowIndex, 3) = RunRecordText(history, "UOM")
         result(rowIndex, 4) = RunRecordNumber(history, "ActualQty")
         result(rowIndex, 5) = CLng(RunRecordNumber(history, "BatchNumber"))
-        result(rowIndex, 6) = RunRecordNumber(history, "UsedGoods")
+        result(rowIndex, 6) = RunRecordText(history, "UsedGoods")
         result(rowIndex, 7) = RunRecordNumber(history, "ProcessTotal")
         result(rowIndex, 8) = RunRecordText(history, "Recall")
         result(rowIndex, 9) = RunRecordText(history, "System_Key")
@@ -714,8 +754,8 @@ Public Function ReusableRunOutputRows() As Variant
             result(rowIndex, 2) = RunRecordText(output, "OutputName")
             result(rowIndex, 3) = RunRecordText(output, "UOM")
             result(rowIndex, 5) = mBatchNumber
-            result(rowIndex, 6) = ProcessUsedGoodsQty( _
-                RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "UOM"))
+            result(rowIndex, 6) = ProcessUsedGoodsDisplay( _
+                RunRecordText(output, "ProcessNodeId"))
             result(rowIndex, 7) = ProcessOutputTotal( _
                 RunRecordText(output, "ProcessName"), RunRecordText(output, "OutputName"), _
                 RunRecordText(output, "UOM"))
@@ -763,6 +803,7 @@ Public Function StageReusableRunActualOutput(ByVal outputIndex As Long, _
     Dim output As Object
     Dim outputKey As String
     Dim actualQty As Double
+    Dim uomReport As String
 
     If Not mLoaded Then
         report = "Load a released Recipe before entering Actual Output."
@@ -794,6 +835,11 @@ Public Function StageReusableRunActualOutput(ByVal outputIndex As Long, _
     actualQty = CDbl(quantityText)
     If actualQty <= 0 Then
         report = "Actual Output must be a number greater than zero."
+        Exit Function
+    End If
+    If Not modUomSettings.ValidateQuantityForUom(actualQty, _
+            RunRecordText(output, "UOM"), uomReport) Then
+        report = uomReport
         Exit Function
     End If
 
@@ -1064,6 +1110,13 @@ End Function
 
 Public Function ReusableRunLastSummary() As String
     ReusableRunLastSummary = mLastSummary
+End Function
+
+Public Function ReusableRunIdentityForTest() As String
+    ReusableRunIdentityForTest = "RecipeId=" & mRecipeId & _
+        "|RecipeVersion=" & mRecipeVersion & _
+        "|RunId=" & mRunId & _
+        "|Batch=" & CStr(mBatchNumber)
 End Function
 
 Public Function ReusableRunOutputSystemKey(ByVal processNodeId As String, _
@@ -1430,6 +1483,53 @@ Private Function IncomingConnectionForRequirement(ByVal nodeId As String, _
     Next rawConnection
 End Function
 
+Private Function RoutedInputCount(ByVal nodeId As String) As Long
+    Dim rawRequirement As Variant
+    Dim requirement As Object
+
+    For Each rawRequirement In mRequirements
+        Set requirement = rawRequirement
+        If nodeId = "" Or StrComp(RunRecordText(requirement, "ProcessNodeId"), nodeId, vbTextCompare) = 0 Then
+            If RequirementHasIncomingConnection(RunRecordText(requirement, "ProcessNodeId"), _
+                                                 RunRecordText(requirement, "RequirementId")) Then
+                RoutedInputCount = RoutedInputCount + 1
+            End If
+        End If
+    Next rawRequirement
+End Function
+
+Private Function BuildRoutedInputCheckRow(ByVal requirement As Object, _
+                                           ByVal entityRows As Variant) As Variant
+    Dim connection As Object
+    Dim downstreamNode As Object
+    Dim sourceNode As Object
+    Dim sourceOutput As Object
+    Dim sourceKey As String
+    Dim result(1 To 9) As Variant
+
+    Set connection = IncomingConnectionForRequirement( _
+        RunRecordText(requirement, "ProcessNodeId"), RunRecordText(requirement, "RequirementId"))
+    If connection Is Nothing Then Exit Function
+    Set downstreamNode = FindNode(RunRecordText(requirement, "ProcessNodeId"))
+    Set sourceNode = FindNode(RunRecordText(connection, "FromProcessNodeId"))
+    Set sourceOutput = FindOutput(RunRecordText(connection, "FromProcessNodeId"), _
+                                  RunRecordText(connection, "FromOutputId"))
+    sourceKey = OutputKeyForConnection(connection)
+
+    result(1) = "ROUTED"
+    result(2) = RunRecordText(downstreamNode, "ProcessName") & _
+                " / " & RunRecordText(requirement, "RequirementName")
+    result(3) = RunRecordText(sourceNode, "ProcessName") & " / " & _
+                RunRecordText(sourceOutput, "OutputName")
+    result(4) = sourceKey
+    result(5) = ExactEntityField(entityRows, sourceKey, 3)
+    result(6) = ExactEntityField(entityRows, sourceKey, 4)
+    result(7) = RunRecordText(sourceOutput, "UOM")
+    result(8) = ScaledConnectionQty(connection)
+    result(9) = ExactEntityInventoryDisplayForKey(entityRows, sourceKey)
+    BuildRoutedInputCheckRow = result
+End Function
+
 Private Function OutputKeyForConnection(ByVal connection As Object) As String
     Dim key As String
     If connection Is Nothing Then Exit Function
@@ -1762,8 +1862,8 @@ Private Sub CaptureCompletedOutputHistory()
         record("UOM") = RunRecordText(output, "UOM")
         record("ActualQty") = ActualOutputQty(output)
         record("BatchNumber") = mBatchNumber
-        record("UsedGoods") = ProcessUsedGoodsQty( _
-            RunRecordText(output, "ProcessNodeId"), RunRecordText(output, "UOM"))
+        record("UsedGoods") = ProcessUsedGoodsDisplay( _
+            RunRecordText(output, "ProcessNodeId"))
         record("Recall") = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
         record("System_Key") = CStr(mOutputKeys(outputKey))
         mOutputHistory.Add record
@@ -1789,7 +1889,7 @@ Private Sub CaptureCompletedNodeOutputHistory(ByVal nodeId As String)
         record("UOM") = RunRecordText(output, "UOM")
         record("ActualQty") = ActualOutputQty(output)
         record("BatchNumber") = mBatchNumber
-        record("UsedGoods") = ProcessUsedGoodsQty(nodeId, RunRecordText(output, "UOM"))
+        record("UsedGoods") = ProcessUsedGoodsDisplay(nodeId)
         record("Recall") = mRecipeId & "-B" & Format$(mBatchNumber, "0000")
         record("System_Key") = CStr(mOutputKeys(outputKey))
         mOutputHistory.Add record
@@ -1800,19 +1900,80 @@ NextOutput:
     Next rawOutput
 End Sub
 
-Private Function ProcessUsedGoodsQty(ByVal nodeId As String, ByVal outputUom As String) As Double
+Private Function ProcessUsedGoodsDisplay(ByVal nodeId As String) As String
+    Dim groups As Object
+
+    Set groups = UsedGoodsByNormalizedUom(nodeId)
+    ProcessUsedGoodsDisplay = FormatUsedGoodsGroups(groups)
+End Function
+
+Public Function ReusableRunUsedGoodsDisplayForTest(ByVal firstUom As String, _
+                                                    ByVal firstQty As Double, _
+                                                    ByVal secondUom As String, _
+                                                    ByVal secondQty As Double) As String
+    Dim groups As Object
+
+    Set groups = NewTextDictionary()
+    groups(UCase$(Trim$(firstUom))) = firstQty
+    groups(UCase$(Trim$(secondUom))) = secondQty
+    ReusableRunUsedGoodsDisplayForTest = FormatUsedGoodsGroups(groups)
+End Function
+
+Private Function FormatUsedGoodsGroups(ByVal groups As Object) As String
+    Dim keys As Variant
+    Dim i As Long
+    Dim j As Long
+    Dim swapValue As Variant
+
+    If groups Is Nothing Or groups.Count = 0 Then Exit Function
+    keys = groups.Keys
+    For i = LBound(keys) To UBound(keys) - 1
+        For j = i + 1 To UBound(keys)
+            If StrComp(CStr(keys(i)), CStr(keys(j)), vbTextCompare) > 0 Then
+                swapValue = keys(i)
+                keys(i) = keys(j)
+                keys(j) = swapValue
+            End If
+        Next j
+    Next i
+    For i = LBound(keys) To UBound(keys)
+        If FormatUsedGoodsGroups <> "" Then FormatUsedGoodsGroups = FormatUsedGoodsGroups & "; "
+        FormatUsedGoodsGroups = FormatUsedGoodsGroups & _
+            FormatUsedGoodsQuantity(CDbl(groups(CStr(keys(i))))) & " " & CStr(keys(i))
+    Next i
+End Function
+
+Private Function FormatUsedGoodsQuantity(ByVal quantity As Double) As String
+    Dim decimalSeparator As String
+
+    FormatUsedGoodsQuantity = FormatRunNumberLocal(quantity)
+    decimalSeparator = CStr(Application.International(xlDecimalSeparator))
+    If decimalSeparator <> "" Then
+        If Right$(FormatUsedGoodsQuantity, Len(decimalSeparator)) = decimalSeparator Then _
+            FormatUsedGoodsQuantity = Left$(FormatUsedGoodsQuantity, _
+                                            Len(FormatUsedGoodsQuantity) - Len(decimalSeparator))
+    End If
+End Function
+
+Private Function UsedGoodsByNormalizedUom(ByVal nodeId As String) As Object
     Dim rawRequirement As Variant
     Dim requirement As Object
     Dim requirementUom As String
+    Dim groups As Object
+
+    Set groups = NewTextDictionary()
 
     For Each rawRequirement In mRequirements
         Set requirement = rawRequirement
         If StrComp(RunRecordText(requirement, "ProcessNodeId"), nodeId, vbTextCompare) = 0 Then
-            requirementUom = RunRecordText(requirement, "UOM")
-            If UomCompatible(requirementUom, outputUom) Then _
-                ProcessUsedGoodsQty = ProcessUsedGoodsQty + ScaledRecordQty(requirement)
+            requirementUom = UCase$(Trim$(RunRecordText(requirement, "UOM")))
+            If requirementUom <> "" Then
+                If Not groups.Exists(requirementUom) Then groups.Add requirementUom, 0#
+                groups(requirementUom) = CDbl(groups(requirementUom)) + ScaledRecordQty(requirement)
+            End If
         End If
     Next rawRequirement
+    Set UsedGoodsByNormalizedUom = groups
 End Function
 
 Private Function ProcessOutputTotal(ByVal processName As String, _

@@ -112,6 +112,7 @@ try {
         (Join-Path $repo "src/Core/Modules/modRibbonRuntimeStatus.bas"),
         (Join-Path $repo "src/Core/Modules/modRoleUiAccess.bas"),
         (Join-Path $repo "src/Core/Modules/modUiQuiet.bas"),
+        (Join-Path $repo "src/Core/Modules/modUomSettings.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventorySchema.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryPublisher.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryBridgeApi.bas"),
