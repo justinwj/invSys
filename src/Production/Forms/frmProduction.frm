@@ -15,12 +15,16 @@ Attribute VB_Exposed = False
 '@RuntimeStubUserFormCode
 Option Explicit
 
-'@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=690 DefaultWidth=1110 DefaultHeight=690 ExpandedWidth=1350 ExpandedHeight=750
+'@FormLayout Strategy=WINDOWS_API_ANCHORS MinWidth=1110 MinHeight=800 DefaultWidth=1110 DefaultHeight=800 ExpandedWidth=1350 ExpandedHeight=980
 Private Const RUN_LOADER_RECIPE_WIDTHS As String = "0 pt;120 pt;130 pt"
 Private Const RUN_LOADER_LINE_WIDTHS As String = "110 pt;0 pt;45 pt;155 pt;45 pt;45 pt;50 pt;95 pt;0 pt"
 Private Const RUN_PALETTE_WIDTHS As String = "0 pt;0 pt;235 pt;0 pt;315 pt;60 pt;65 pt;50 pt;120 pt;165 pt"
 Private Const RUN_OUTPUT_WIDTHS As String = "120 pt;190 pt;48 pt;72 pt;45 pt;72 pt;82 pt;100 pt;240 pt"
 Private Const RUN_CHECK_WIDTHS As String = "52 pt;150 pt;170 pt;150 pt;72 pt;130 pt;50 pt;72 pt;90 pt"
+Private Const RUN_LIST_CHECK_MIN_HEIGHT As Single = 102
+Private Const RUN_LIST_INSTRUCTIONS_MIN_HEIGHT As Single = 52
+Private Const RUN_LIST_CHECK_READABLE_HEIGHT As Single = 96
+Private Const RUN_LIST_INSTRUCTIONS_READABLE_HEIGHT As Single = 48
 Private Const BATCH_SCALE_MIN_PERCENT As Double = 0.001
 Private Const BATCH_SCALE_MAX_PERCENT As Double = 1000
 
@@ -221,11 +225,11 @@ Private mBuilderLineTableRowCount As Long
 
 Private Const ASSIGN_INVENTORY_MAX_VISIBLE As Long = 250
 Private Const PRODUCTION_MIN_WIDTH As Double = 1110
-Private Const PRODUCTION_MIN_HEIGHT As Double = 690
+Private Const PRODUCTION_MIN_HEIGHT As Double = 800
 Private Const PRODUCTION_DEFAULT_WIDTH As Double = 1110
-Private Const PRODUCTION_DEFAULT_HEIGHT As Double = 690
+Private Const PRODUCTION_DEFAULT_HEIGHT As Double = 800
 Private Const PRODUCTION_LAYOUT_TEST_MAX_WIDTH As Double = 1350
-Private Const PRODUCTION_LAYOUT_TEST_MAX_HEIGHT As Double = 750
+Private Const PRODUCTION_LAYOUT_TEST_MAX_HEIGHT As Double = 980
 Private Const PRODUCTION_DEFAULT_ROW_BUDGET As Long = 50
 Private Const PRODUCTION_MAX_ROW_BUDGET As Long = 1000
 Private Const RUN_TREE_PARENT_MARKER As String = "__RUN_TREE_PARENT__"
@@ -362,6 +366,71 @@ End Function
 Public Function TestCurrentLayoutGeometryReport(Optional ByVal pageIndex As Long = 2) As String
     TestCurrentLayoutGeometryReport = _
         BuildLayoutGeometryReport(Me.Width, Me.Height, pageIndex)
+End Function
+
+Public Function TestRunListResponsiveLayoutReportForSize() As String
+    Dim originalWidth As Double
+    Dim originalHeight As Double
+    Dim baselineRecipeHeight As Double
+    Dim baselinePlanHeight As Double
+    Dim baselinePaletteHeight As Double
+    Dim baselineCheckHeight As Double
+    Dim baselineInstructionHeight As Double
+    Dim baselineOutputHeight As Double
+    Dim readableRows As Boolean
+    Dim listsGrew As Boolean
+    Dim instructionLeftStable As Boolean
+    Dim headersAligned As Boolean
+    Dim geometryHealthy As Boolean
+
+    If Not mBuilt Then BuildLayout
+    originalWidth = Me.Width
+    originalHeight = Me.Height
+
+    Me.Width = PRODUCTION_DEFAULT_WIDTH
+    Me.Height = PRODUCTION_DEFAULT_HEIGHT
+    ResizeProductionLayout
+    baselineRecipeHeight = mLstLoaderRecipes.Height
+    baselinePlanHeight = mLstLoaderLines.Height
+    baselinePaletteHeight = mLstRunPalette.Height
+    baselineCheckHeight = mLstManagerCheck.Height
+    baselineInstructionHeight = mLstRunInstructions.Height
+    baselineOutputHeight = mLstManagerOutput.Height
+    readableRows = baselineCheckHeight >= RUN_LIST_CHECK_READABLE_HEIGHT And _
+                   baselineInstructionHeight >= RUN_LIST_INSTRUCTIONS_READABLE_HEIGHT
+    headersAligned = RunListHeaderBandAligned("ManagerCheck", mLstManagerCheck) And _
+                     RunListHeaderBandAligned("RunInstructions", mLstRunInstructions) And _
+                     RunListHeaderBandAligned("ManagerOutput", mLstManagerOutput)
+
+    Me.Width = PRODUCTION_LAYOUT_TEST_MAX_WIDTH
+    Me.Height = PRODUCTION_LAYOUT_TEST_MAX_HEIGHT
+    ResizeProductionLayout
+    listsGrew = mLstLoaderRecipes.Height > baselineRecipeHeight And _
+                mLstLoaderLines.Height > baselinePlanHeight And _
+                mLstRunPalette.Height > baselinePaletteHeight And _
+                mLstManagerCheck.Height > baselineCheckHeight And _
+                mLstRunInstructions.Height > baselineInstructionHeight And _
+                mLstManagerOutput.Height > baselineOutputHeight
+    instructionLeftStable = Abs(mLstRunInstructions.Left - mLstManagerCheck.Left) < 0.1
+    headersAligned = headersAligned And _
+                     RunListHeaderBandAligned("ManagerCheck", mLstManagerCheck) And _
+                     RunListHeaderBandAligned("RunInstructions", mLstRunInstructions) And _
+                     RunListHeaderBandAligned("ManagerOutput", mLstManagerOutput)
+    geometryHealthy = Left$(BuildLayoutGeometryReport(Me.Width, Me.Height, 3), 3) = "OK|"
+
+    Me.Width = originalWidth
+    Me.Height = originalHeight
+    ResizeProductionLayout
+
+    TestRunListResponsiveLayoutReportForSize = "OK" & _
+        "|CheckEightRows=" & CStr(readableRows) & _
+        "|InstructionsFourRows=" & CStr(readableRows) & _
+        "|CheckHeight=" & Format$(baselineCheckHeight, "0.0") & _
+        "|InstructionHeight=" & Format$(baselineInstructionHeight, "0.0") & _
+        "|AllListsGrew=" & CStr(listsGrew) & _
+        "|InstructionLeftStable=" & CStr(instructionLeftStable) & _
+        "|HeadersAligned=" & CStr(headersAligned) & _
+        "|GeometryHealthy=" & CStr(geometryHealthy)
 End Function
 
 Private Function BuildLayoutGeometryReport(ByVal requestedWidth As Double, _
@@ -898,7 +967,7 @@ Private Sub BuildLayout()
         .Left = 12
         .Top = 10
         .Width = 1070
-        .Height = 575
+        .Height = PRODUCTION_MIN_HEIGHT - 115
     End With
     Do While mPages.Pages.Count < 5
         mPages.Pages.Add
@@ -918,7 +987,7 @@ Private Sub BuildLayout()
     Set mTxtStatus = Me.Controls.Add("Forms.TextBox.1", "txtProductionStatus", True)
     With mTxtStatus
         .Left = 12
-        .Top = 596
+        .Top = PRODUCTION_MIN_HEIGHT - 94
         .Width = 900
         .Height = 42
         .MultiLine = True
@@ -926,7 +995,8 @@ Private Sub BuildLayout()
         .Locked = True
         .Text = ""
     End With
-    Set mBtnClose = AddButton(Me, "btnProductionClose", "Close", 930, 596, 150, 42)
+    Set mBtnClose = AddButton(Me, "btnProductionClose", "Close", 930, _
+        PRODUCTION_MIN_HEIGHT - 94, 150, 42)
 
     ConfigureProductionAnchors
     mBuilt = True
@@ -1242,24 +1312,24 @@ Private Sub BuildLoaderPage(ByVal pg As MSForms.Page)
 
     AddLabel pg, "Inventory Check", 12, 352, 150, 16
     AddColumnHeaders pg, "ManagerCheck", Array("Type", "Process / Requirement", "Source Process / Output", "System_Key", "Code", "Item", "UOM", "Committed / Used", "Remaining Balance"), 12, 370, RUN_CHECK_WIDTHS
-    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 386, 1018, 28, 9, RUN_CHECK_WIDTHS)
-    AddLabel pg, "Selected Process Instructions", 12, 418, 220, 16
+    Set mLstManagerCheck = AddList(pg, "lstManagerCheck", 12, 386, 1018, RUN_LIST_CHECK_MIN_HEIGHT, 9, RUN_CHECK_WIDTHS)
+    AddLabel pg, "Selected Process Instructions", 12, 492, 220, 16
     AddColumnHeaders pg, "RunInstructions", Array("Step", "Instruction"), _
-        12, 436, "45 pt;973 pt"
-    Set mLstRunInstructions = AddList(pg, "lstRunInstructions", 12, 452, 1018, 18, 2, _
+        12, 510, "45 pt;973 pt"
+    Set mLstRunInstructions = AddList(pg, "lstRunInstructions", 12, 526, 1018, RUN_LIST_INSTRUCTIONS_MIN_HEIGHT, 2, _
         "45 pt;973 pt")
 
-    AddLabel pg, "Production Output", 12, 474, 170, 16
-    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 492, RUN_OUTPUT_WIDTHS
-    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 508, 1018, 18, 9, RUN_OUTPUT_WIDTHS)
+    AddLabel pg, "Production Output", 12, 584, 170, 16
+    AddColumnHeaders pg, "ManagerOutput", Array("Process", "Output", "UOM", "Last Actual", "Batch", "Used Goods", "Process Total", "Recall", "System_Key"), 12, 602, RUN_OUTPUT_WIDTHS
+    Set mLstManagerOutput = AddList(pg, "lstManagerOutput", 12, 618, 1018, 18, 9, RUN_OUTPUT_WIDTHS)
 
-    AddLabel pg, "Actual Output", 12, 530, 80, 16
-    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 528, 105, 22)
-    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 528, 95, 24)
-    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 528, 120, 24)
-    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 528, 95, 24)
-    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 528, 120, 24)
-    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 528, 120, 24)
+    AddLabel pg, "Actual Output", 12, 640, 80, 16
+    Set mTxtOutputReal = AddText(pg, "txtOutputReal", 100, 638, 105, 22)
+    Set mBtnManagerCheckIn = AddButton(pg, "btnManagerCheckIn", "Check In", 230, 638, 95, 24)
+    Set mBtnManagerApplyOutput = AddButton(pg, "btnManagerApplyOutput", "Complete Run", 340, 638, 120, 24)
+    Set mBtnManagerRefresh = AddButton(pg, "btnManagerRefresh", "Refresh", 480, 638, 95, 24)
+    Set mBtnManagerNext = AddButton(pg, "btnManagerNext", "Next Batch", 595, 638, 120, 24)
+    Set mBtnManagerPrint = AddButton(pg, "btnManagerPrint", "Print Recall", 735, 638, 120, 24)
 End Sub
 
 Private Sub BuildRunTreePage(ByVal pg As MSForms.Page)
@@ -1443,27 +1513,93 @@ End Sub
 
 Private Sub ConfigureRunListAnchors()
     Dim leftRightTop As Long
-    Dim leftBottom As Long
 
     leftRightTop = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
-    leftBottom = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_BOTTOM
+    ConfigureRunListProportionalLayout leftRightTop
+End Sub
 
-    mLayout.RegisterControl mLstLoaderLines, leftRightTop
-    mLayout.RegisterControl mBtnRunApplyPalette, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
-    mLayout.RegisterControl mTxtBatchScalePercent, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
-    mLayout.RegisterControl mBtnApplyBatchScale, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
-    mLayout.RegisterControl mLstRunPalette, leftRightTop
-    mLayout.RegisterControl mLstManagerCheck, leftRightTop
-    mLayout.RegisterControl mLstRunInstructions, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
-    mLayout.RegisterControl mLstManagerOutput, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or _
-                                              OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
-    mLayout.RegisterControl mTxtOutputReal, leftBottom
-    mLayout.RegisterControl mBtnManagerCheckIn, leftBottom
-    mLayout.RegisterControl mBtnManagerApplyOutput, leftBottom
-    mLayout.RegisterControl mBtnManagerRefresh, leftBottom
-    mLayout.RegisterControl mBtnManagerNext, leftBottom
-    mLayout.RegisterControl mBtnManagerPrint, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
-    AddCaptionAnchors mPages.Pages(3), "Actual Output", leftBottom
+Private Sub ConfigureRunListProportionalLayout(ByVal leftRightTop As Long)
+    Dim leftTop As Long
+    Dim rightTop As Long
+
+    leftTop = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    rightTop = OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_TOP
+
+    ' The five vertical bands share added/removed page height.  This keeps the
+    ' operator's recipes, plan, palette, audit check, instructions, and output
+    ' readable together instead of assigning all growth to Production Output.
+    mLayout.RegisterProportionalVerticalControl mLstLoaderRecipes, leftTop, 0, 0.2
+    mLayout.RegisterProportionalVerticalControl mLstLoaderLines, leftRightTop, 0, 0.2
+    RegisterRunListHeaderBand "LoaderLines", 0
+
+    RegisterRunListCaptionBand "Batch scale %", leftTop, 0.2
+    RegisterRunListCaptionBand "Process filter", leftTop, 0.2
+    RegisterRunListCaptionBand "Run Location", leftTop, 0.2
+    RegisterRunListCaptionBand "% of Requirement", leftTop, 0.2
+    RegisterRunListCaptionBand "Qty", leftTop, 0.2
+    RegisterRunListCaptionBand "Acceptable Inventory For Run", leftTop, 0.2
+    mLayout.RegisterProportionalVerticalControl mTxtBatchScalePercent, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mBtnApplyBatchScale, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mChkRunTargetOutputScale, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mCmbRunTargetOutput, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mTxtRunTargetOutputQty, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mCmbRunProcess, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mCmbRunLocation, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mTxtPaletteSplit, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mTxtPaletteQty, leftTop, 0.2, 0
+    mLayout.RegisterProportionalVerticalControl mBtnRunApplyPalette, rightTop, 0.2, 0
+    RegisterRunListHeaderBand "RunPalette", 0.2
+    mLayout.RegisterProportionalVerticalControl mLstRunPalette, leftRightTop, 0.2, 0.2
+
+    RegisterRunListCaptionBand "Inventory Check", leftTop, 0.4
+    RegisterRunListHeaderBand "ManagerCheck", 0.4
+    mLayout.RegisterProportionalVerticalControl mLstManagerCheck, leftRightTop, 0.4, 0.2
+
+    RegisterRunListCaptionBand "Selected Process Instructions", leftTop, 0.6
+    RegisterRunListHeaderBand "RunInstructions", 0.6
+    mLayout.RegisterProportionalVerticalControl mLstRunInstructions, leftRightTop, 0.6, 0.2
+
+    RegisterRunListCaptionBand "Production Output", leftTop, 0.8
+    RegisterRunListHeaderBand "ManagerOutput", 0.8
+    mLayout.RegisterProportionalVerticalControl mLstManagerOutput, leftRightTop, 0.8, 0.2
+
+    RegisterRunListCaptionBand "Actual Output", leftTop, 1
+    mLayout.RegisterProportionalVerticalControl mTxtOutputReal, leftTop, 1, 0
+    mLayout.RegisterProportionalVerticalControl mBtnManagerCheckIn, leftTop, 1, 0
+    mLayout.RegisterProportionalVerticalControl mBtnManagerApplyOutput, leftTop, 1, 0
+    mLayout.RegisterProportionalVerticalControl mBtnManagerRefresh, leftTop, 1, 0
+    mLayout.RegisterProportionalVerticalControl mBtnManagerNext, leftTop, 1, 0
+    mLayout.RegisterProportionalVerticalControl mBtnManagerPrint, rightTop, 1, 0
+End Sub
+
+Private Sub RegisterRunListCaptionBand(ByVal caption As String, ByVal horizontalAnchorMask As Long, _
+                                       ByVal verticalTopFactor As Double)
+    Dim ctl As MSForms.Control
+
+    For Each ctl In mPages.Pages(3).Controls
+        If TypeName(ctl) = "Label" Then
+            If StrComp(CStr(ctl.Caption), caption, vbTextCompare) = 0 Then
+                mLayout.RegisterProportionalVerticalControl ctl, horizontalAnchorMask, _
+                                                           verticalTopFactor, 0
+            End If
+        End If
+    Next ctl
+End Sub
+
+Private Sub RegisterRunListHeaderBand(ByVal groupName As String, ByVal verticalTopFactor As Double)
+    Dim ctl As MSForms.Control
+    Dim prefix As String
+    Dim leftTop As Long
+
+    prefix = "hdr" & CleanControlName(groupName)
+    leftTop = OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    For Each ctl In mPages.Pages(3).Controls
+        If TypeName(ctl) = "Label" Then
+            If StrComp(Left$(ctl.Name, Len(prefix)), prefix, vbTextCompare) = 0 Then
+                mLayout.RegisterProportionalVerticalControl ctl, leftTop, verticalTopFactor, 0
+            End If
+        End If
+    Next ctl
 End Sub
 
 Private Sub ConfigureRunTreeAnchors()
@@ -1481,17 +1617,21 @@ Private Sub ConfigureRunTreeAnchors()
     mLayout.RegisterControl mBtnRunTreeCollapseAll, OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
 End Sub
 
-Private Sub AddCaptionAnchors(ByVal parent As Object, ByVal caption As String, ByVal anchorMask As Long)
-    Dim ctl As MSForms.Control
+Private Function RunListHeaderBandAligned(ByVal groupName As String, _
+                                           ByVal targetList As MSForms.ListBox) As Boolean
+    Dim firstHeader As MSForms.Label
+    Dim expectedHeaderTop As Double
 
-    For Each ctl In parent.Controls
-        If TypeName(ctl) = "Label" Then
-            If StrComp(CStr(ctl.Caption), caption, vbTextCompare) = 0 Then
-                mLayout.RegisterControl ctl, anchorMask
-            End If
-        End If
-    Next ctl
-End Sub
+    On Error GoTo NotAligned
+    Set firstHeader = mPages.Pages(3).Controls("hdr" & CleanControlName(groupName) & "1")
+    expectedHeaderTop = targetList.Top - 16
+    RunListHeaderBandAligned = Abs(firstHeader.Top - expectedHeaderTop) < 0.1 And _
+                               Abs(firstHeader.Left - (targetList.Left + 2)) < 0.1
+    Exit Function
+
+NotAligned:
+    RunListHeaderBandAligned = False
+End Function
 
 Private Function CountOutOfBoundsControls(ByVal parent As Object, ByRef issueDetail As String) As Long
     Dim ctl As Object

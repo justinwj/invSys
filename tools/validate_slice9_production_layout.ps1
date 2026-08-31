@@ -201,9 +201,9 @@ function Assert-MaximizedContentFillsClient {
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $screenshotLinkPrefix = Split-Path -Leaf ([IO.Path]::GetFullPath($OutputDirectory))
 $cases = @(
-    [pscustomobject]@{ Name = "minimum"; Width = 900.0; Height = 600.0; Screenshot = "production-minimum.png" },
-    [pscustomobject]@{ Name = "default"; Width = 1110.0; Height = 690.0; Screenshot = "production-default.png" },
-    [pscustomobject]@{ Name = "expanded"; Width = 1350.0; Height = 750.0; Screenshot = "production-expanded.png" }
+    [pscustomobject]@{ Name = "minimum"; Width = 900.0; Height = 700.0; Screenshot = "production-minimum.png" },
+    [pscustomobject]@{ Name = "default"; Width = 1110.0; Height = 800.0; Screenshot = "production-default.png" },
+    [pscustomobject]@{ Name = "expanded"; Width = 1350.0; Height = 980.0; Screenshot = "production-expanded.png" }
 )
 
 $excel = $null
@@ -241,7 +241,7 @@ try {
             $pageReports.Add($report)
         }
 
-        $report = [string]$excel.Run($showMacro, $case.Width, $case.Height, 2)
+        $report = [string]$excel.Run($showMacro, $case.Width, $case.Height, 3)
         Assert-HealthyGeometryReport -Name "$($case.Name)/screenshot" -Report $report
         $handle = Wait-ForLayoutWindow -ExpectedProcessId ([int]$excelProcessId)
         $screenshotPath = Join-Path $OutputDirectory $case.Screenshot
@@ -325,7 +325,7 @@ $lines.Add("# Slice 9 Production Layout Runtime Results")
 $lines.Add("")
 $lines.Add("- Packaged geometry: PASS (3 sizes x 5 pages; zero out-of-bounds and zero interactive-control overlaps)")
 $lines.Add("- Native window behavior: PASS (minimize, restore, maximize, restore)")
-$lines.Add("- Screenshots: PASS (minimum/default/expanded Ingredients Assignment page)")
+$lines.Add("- Screenshots: PASS (minimum/default/expanded Production Run - List page)")
 $lines.Add("")
 $lines.Add("| Case | Requested points | Pages | Screenshot |")
 $lines.Add("|---|---:|---:|---|")

@@ -1139,6 +1139,19 @@ try {
                     $workflowControlReport -match '(?:^|\|)Max=1000%(?:\||$)' -and
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
+                [IO.File]::WriteAllText($progressPath, "invoke Production Run List responsive-layout handler")
+                $productionRunListLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "mProduction.RunProductionRunListResponsiveLayoutTest")
+                $productionRunListLayoutPassed = $productionRunListLayoutReport -match '^OK\|' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)CheckEightRows=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)InstructionsFourRows=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)AllListsGrew=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)InstructionLeftStable=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)HeadersAligned=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)GeometryHealthy=True(?:\||$)'
+                $workflowControlPassed = $workflowControlPassed -and $productionRunListLayoutPassed
+                $observedText += " || PRODUCTION_RUN_LIST_LAYOUT=" + $productionRunListLayoutReport
                 if ($WorkbookState -eq "ProductionReusable") {
                     [IO.File]::WriteAllText($progressPath, "invoke Production EA whole-unit handler")
                     $productionEaWholeUnitReport = [string](Run-WorkbookMacro -Excel $excel `

@@ -1,9 +1,9 @@
 # invSys Reviewed Cleanup Backlog
 
 - Schema: 1.0.0
-- Baseline: 2026-08-31T00:59:29Z
-- Scanner candidates: 1050
-- Reviewed candidates: 1052
+- Baseline: 2026-08-31T21:35:55Z
+- Scanner candidates: 1052
+- Reviewed candidates: 1054
 - Approved deletions: 0
 - Automatic deletion allowed: False
 
@@ -12,7 +12,7 @@
 | Workstream | Candidates | Scope |
 |---|---:|---|
 | RECEIVING | 34 | Receiving-owned forms, services, and role package source. |
-| PRODUCTION | 209 | Production-owned forms, services, and role package source. |
+| PRODUCTION | 211 | Production-owned forms, services, and role package source. |
 | SHIPPING | 156 | Shipping and Boxing forms, services, and role package source. |
 | SHARED_OPERATIONS | 64 | Cross-role or future invSys.Operations packaging work. |
 | CORE | 285 | Headless shared runtime and developer-support source in Core. |
@@ -48,12 +48,12 @@
 | src/Core/Modules/modWarehouseSync.bas | Core | 1753 |
 | src/Core/Modules/MouseScroll.bas | Core | 1132 |
 | src/DesignsDomain/Modules/modDesignsApply.bas | DesignsDomain | 1568 |
-| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2739 |
+| src/InventoryDomain/Modules/modInventoryApply.bas | InventoryDomain | 2882 |
 | src/InventoryDomain/Modules/modInvMan.bas | InventoryDomain | 1016 |
-| src/Production/Forms/frmProduction.frm | Production | 10447 |
+| src/Production/Forms/frmProduction.frm | Production | 11015 |
 | src/Production/Modules/modProductionProcessWorksheet.bas | Production | 1319 |
-| src/Production/Modules/modProductionReusableRun.bas | Production | 2327 |
-| src/Production/Modules/mProduction.bas | Production | 13155 |
+| src/Production/Modules/modProductionReusableRun.bas | Production | 2488 |
+| src/Production/Modules/mProduction.bas | Production | 13204 |
 | src/Receiving/Forms/frmReceiving.frm | Receiving | 1260 |
 | src/Receiving/Modules/modTS_Received.bas | Receiving | 1575 |
 | src/Shipping/Forms/frmShipmentsTally.frm | Shipping | 3025 |
@@ -662,6 +662,7 @@
 | module-size:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | module-size:src_Production_Modules_mProduction.bas:mProduction | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.ExerciseReusableProductionFormActions | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
+| procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestChaiForkConvergenceRunActionContract | PRODUCTION | SPLIT_MODULE | MEDIUM | PLANNED |
 | procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestReusableProductionRunActionContract | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
 | procedure-size:src_Production_Modules_modProductionProcessWorksheet.bas:modProductionProcessWorksheet.ReadProcessDraftFromWorksheet | PRODUCTION | SPLIT_MODULE | MEDIUM | PLANNED |
 | procedure-size:src_Production_Modules_mProduction.bas:mProduction.BuildPaletteTablesForRecipeChooser | PRODUCTION | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |
@@ -859,6 +860,7 @@
 | root:src_Production_Modules_mProduction.bas:mProduction.HandlePaletteRecipeSelected | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeChooser | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.LoadRecipeFromRecipes | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
+| root:src_Production_Modules_mProduction.bas:mProduction.RunChaiForkConvergenceRunActionContractTest | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionIngredientPaletteRuntimeRoundTrip | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | root:src_Production_Modules_mProduction.bas:mProduction.TestProductionInventoryPickerPrefersCanonicalRuntime | PRODUCTION | RETAIN_DYNAMIC_ROOT | LOW | RETAIN |
 | module-size:src_Receiving_Forms_frmReceiving.frm:frmReceiving | RECEIVING | SPLIT_MODULE | MEDIUM | REQUIRES_PROTECTING_TEST |

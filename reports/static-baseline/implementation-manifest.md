@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-31T00:59:29Z
+- Generated: 2026-08-31T21:35:55Z
 - Packages: 6
 - Components: 154
-- Procedures: 5253
+- Procedures: 5284
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -353,6 +353,7 @@
 | RunBatch | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
 | RunBatchForAutomation | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
 | RunBatchReportForAutomation | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
+| RunChaiForkConvergenceRunActionContractTest | CROSS_XLAM_BRIDGE | tools/contracts/vba-dynamic-roots.json |
 | RunConfigTests | TEST_ENTRY | tests/unit/TestCoreConfig.bas |
 | RunConfirmWritesTesterIntegration | TEST_ENTRY | tests/integration/TestConfirmWritesTesterEntry.bas |
 | RunCoreItemSearchTests | TEST_ENTRY | tests/unit/TestCoreItemSearch.bas |

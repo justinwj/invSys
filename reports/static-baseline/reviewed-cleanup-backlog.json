@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-31T00:59:29Z",
+    "generatedAtUtc":  "2026-08-31T21:35:55Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "b144d22a7379483857dff6cf837766a118ecfa38625e95fac62eaf1e54511d37",
-                          "maintenanceCandidatesSha256":  "0f674ee95c7f3b5826ee8468573a8fc0501abb7f762d4a9abb88a607e76d10ca"
+                          "implementationManifestSha256":  "2619b5e86a97bd0338f357ae11f0b239319d74ec359f5dcfac136cc1dd5e8b5e",
+                          "maintenanceCandidatesSha256":  "004485dfc0046827023ddb120f319d86dcecec4c54210c3b16d9bfe4d2a232c8"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1050,
-                    "reviewedCandidateCount":  1052,
+                    "scannerCandidateCount":  1052,
+                    "reviewedCandidateCount":  1054,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  209,
+                            "candidateCount":  211,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -203,7 +203,7 @@
                                                   "sourcePath":  "src/InventoryDomain/Modules/modInventoryApply.bas",
                                                   "componentName":  "modInventoryApply",
                                                   "packageKey":  "InventoryDomain",
-                                                  "baselineLineCount":  2739,
+                                                  "baselineLineCount":  2882,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,7 +217,7 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  10447,
+                                                  "baselineLineCount":  11015,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -231,14 +231,14 @@
                                                   "sourcePath":  "src/Production/Modules/modProductionReusableRun.bas",
                                                   "componentName":  "modProductionReusableRun",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  2327,
+                                                  "baselineLineCount":  2488,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13155,
+                                                  "baselineLineCount":  13204,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -14300,6 +14300,7 @@
                                                   "BuildSourceSyncCacheKeyApply",
                                                   "CanonicalRuntimeRowWouldChangeApply",
                                                   "CatalogSkuIsNonCountedInTableApply",
+                                                  "CatalogUomForSkuApply",
                                                   "ClearProjectionRows",
                                                   "CloseWorkbookQuietlyApply",
                                                   "ComposeLineNote",
@@ -14323,6 +14324,7 @@
                                                   "GetSourceSyncStampApply",
                                                   "HideWorkbookWindowsApply",
                                                   "InferWarehouseIdFromWorkbookNameApply",
+                                                  "InventoryEaWholeUnitContractForAutomation",
                                                   "InventoryLogEventExistsApply",
                                                   "InventoryRetirementContractForAutomation",
                                                   "InventorySystemKeyExistsApply",
@@ -14379,10 +14381,12 @@
                                                   "TryGetEventDate",
                                                   "TryGetEventDouble",
                                                   "TryGetEventValue",
+                                                  "UomForSkuInTableApply",
                                                   "ValidateAdminShipmentReconcileLine",
                                                   "ValidateEventDoesNotCreateNegativeInventory",
                                                   "ValidateRetirementPayloadLineApply",
                                                   "ValidateSkuExists",
+                                                  "ValidateWholeUnitQuantityApply",
                                                   "ValuesDifferNumericApply",
                                                   "ValuesDifferTextApply",
                                                   "WorkbookHasListObjectApply",
@@ -15992,7 +15996,6 @@
                                                   "ActiveRunQtyTextBox",
                                                   "ActiveRunSplitTextBox",
                                                   "AddButton",
-                                                  "AddCaptionAnchors",
                                                   "AddColumnHeaders",
                                                   "AddCombo",
                                                   "AddLabel",
@@ -16064,6 +16067,7 @@
                                                   "ColumnWidthPoints",
                                                   "ComboText",
                                                   "CompatibleTargetContainsForTest",
+                                                  "CompleteChaiTestProcess",
                                                   "CompleteProductionRun",
                                                   "ConfigureAssignmentAnchors",
                                                   "ConfigureCompatibleTargetCombo",
@@ -16073,7 +16077,9 @@
                                                   "ConfigureRecipeLineInputs",
                                                   "ConfigureReusableDesignerAnchors",
                                                   "ConfigureRunListAnchors",
+                                                  "ConfigureRunListProportionalLayout",
                                                   "ConfigureRunTreeAnchors",
+                                                  "ConnectChaiTestNodes",
                                                   "ConnectionOutputDisplayName",
                                                   "ConnectionOutputId",
                                                   "ConnectionRequirementId",
@@ -16083,6 +16089,7 @@
                                                   "CopyRunPaletteListRow",
                                                   "CountOutOfBoundsControls",
                                                   "CountOverlappingInteractiveControls",
+                                                  "CreateChaiProcessForTest",
                                                   "CreateReusableRunRawInventory",
                                                   "CurrentRecipeRowBudget",
                                                   "EnsureComboValueForActionTest",
@@ -16150,6 +16157,8 @@
                                                   "LoadSelectedRunPaletteRow",
                                                   "LoggedOutputStats",
                                                   "ManagedItemDisplayForAssignmentCode",
+                                                  "ManagerCheckHasRoutedInputForTest",
+                                                  "ManagerCheckRowsSummaryForTest",
                                                   "MaxDoubleForm",
                                                   "MaxLongLocal",
                                                   "mBtnApplyBatchScale_Click",
@@ -16340,6 +16349,8 @@
                                                   "RefreshRunLocationChoices",
                                                   "RefreshRunPaletteState",
                                                   "RefreshRunProcessChoices",
+                                                  "RegisterRunListCaptionBand",
+                                                  "RegisterRunListHeaderBand",
                                                   "RemoveReusableInventoryAlternative",
                                                   "RemoveSelectedAllowedRow",
                                                   "RemoveSelectedListRow",
@@ -16356,6 +16367,7 @@
                                                   "ReusableActiveOutputRowCount",
                                                   "ReusableOutputListValueForBatch",
                                                   "ReusableOutputRowsForBatch",
+                                                  "ReusableOutputSystemKeyForTest",
                                                   "ReusablePaletteRowsForItemName",
                                                   "ReusableRunFixtureAvailableQty",
                                                   "ReusableRunProcessNameForNode",
@@ -16369,6 +16381,7 @@
                                                   "RunIngredientMatchesFilter",
                                                   "RunInventoryAvailableDisplay",
                                                   "RunItemCodeFromList",
+                                                  "RunListHeaderBandAligned",
                                                   "RunLocationChoiceRequired",
                                                   "RunProcessFromPaletteList",
                                                   "RunProcessMatchesFilter",
@@ -16414,7 +16427,9 @@
                                                   "TestAssignmentItemRowsGrowWithoutTableCollision",
                                                   "TestAssignmentOutputSelectionClearsStaging",
                                                   "TestBatchScaleContract",
+                                                  "TestChaiForkConvergenceRunActionContract",
                                                   "TestCurrentLayoutGeometryReport",
+                                                  "TestEaWholeUnitActionContract",
                                                   "TestFillAssignmentIoCount",
                                                   "TestFilterAssignmentInventoryCount",
                                                   "TestInitializeForWorkbook",
@@ -16440,6 +16455,7 @@
                                                   "TestReusableProductionRestartActionContract",
                                                   "TestReusableProductionRunActionContract",
                                                   "TestReusableProductionSurfaceContract",
+                                                  "TestRunListResponsiveLayoutReportForSize",
                                                   "TestRunPaletteCanonicalItemCodeStorage",
                                                   "TestRunTwoConsecutiveBatchesForWorkbook",
                                                   "TestSelectedProductionOutputTableRow",
@@ -16458,6 +16474,7 @@
                                                   "ValidateRecipeDraft",
                                                   "ValidateRunAllocationLocations",
                                                   "ValidateRunAllocationsComplete",
+                                                  "ValidateWholeQuantityForUom",
                                                   "WorkbookHasSheet",
                                                   "WritableAssignmentItemRow",
                                                   "WriteConnectionEditorToList",
@@ -16587,6 +16604,7 @@
                                                   "BeginNextReusableBatch",
                                                   "BuildNodeCompleteItems",
                                                   "BuildNodeConsumeItems",
+                                                  "BuildRoutedInputCheckRow",
                                                   "CaptureCompletedNodeOutputHistory",
                                                   "CaptureCompletedOutputHistory",
                                                   "CaptureLastActualOutputs",
@@ -16608,6 +16626,8 @@
                                                   "FindOutput",
                                                   "FindRequirement",
                                                   "FormatRunNumberLocal",
+                                                  "FormatUsedGoodsGroups",
+                                                  "FormatUsedGoodsQuantity",
                                                   "IncomingConnectionForRequirement",
                                                   "JsonRunNumber",
                                                   "LoadNodeProcessDefinitions",
@@ -16619,7 +16639,7 @@
                                                   "OutputKeyForConnection",
                                                   "ProcessOutputTotal",
                                                   "ProcessReadinessStatus",
-                                                  "ProcessUsedGoodsQty",
+                                                  "ProcessUsedGoodsDisplay",
                                                   "RequirementAllowsItem",
                                                   "RequirementHasAlternative",
                                                   "RequirementHasIncomingConnection",
@@ -16628,6 +16648,7 @@
                                                   "ReusableRunBatchNumber",
                                                   "ReusableRunExactAllocationCountForRequirement",
                                                   "ReusableRunExactEntityQty",
+                                                  "ReusableRunIdentityForTest",
                                                   "ReusableRunInstructionRows",
                                                   "ReusableRunInventoryDisplayForTest",
                                                   "ReusableRunIsCheckedIn",
@@ -16645,6 +16666,8 @@
                                                   "ReusableRunPlannedOutput",
                                                   "ReusableRunRequirementQty",
                                                   "ReusableRunScalePercent",
+                                                  "ReusableRunUsedGoodsDisplayForTest",
+                                                  "RoutedInputCount",
                                                   "RunEventNote",
                                                   "RunItemNote",
                                                   "RunRecordNumber",
@@ -16658,6 +16681,7 @@
                                                   "StockBucketKeyForEntity",
                                                   "TotalExternalAllocation",
                                                   "UomCompatible",
+                                                  "UsedGoodsByNormalizedUom",
                                                   "ValidateLoadedRunGraph",
                                                   "ValidateProcessAllocationsLive",
                                                   "ValidateProcessRequirementsReady",
@@ -17070,12 +17094,15 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunChaiForkConvergenceRunActionContractTest",
+                                                  "RunEaWholeUnitActionContractTest",
                                                   "RunProcessEditExportContractTest",
                                                   "RunProcessWorksheetBulkImportContractTest",
                                                   "RunProcessWorksheetOutputPickerContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProcessWorksheetWorkbenchContractTest",
                                                   "RunProductionBatchScaleContractTest",
+                                                  "RunProductionRunListResponsiveLayoutTest",
                                                   "RunReusableProductionFormActionContractTest",
                                                   "RunReusableProductionRestartActionContractTest",
                                                   "RunReusableProductionRunActionContractTest",
@@ -17161,6 +17188,29 @@
                            "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
                            "protectingTests":  [
 
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
+                       },
+                       {
+                           "id":  "procedure-size:src_Production_Forms_frmProduction.frm:frmProduction.TestChaiForkConvergenceRunActionContract",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "SPLIT_MODULE",
+                           "disposition":  "SPLIT_MODULE",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "PLANNED",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "TestChaiForkConvergenceRunActionContract"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure exceeds the 200-line new-procedure threshold.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4axRoutedIntermediate.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Extract one coherent service behind the current public contract and ratchet the original module below its baseline."
@@ -20151,7 +20201,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-EaWholeUnitInvariant.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -21693,6 +21743,29 @@
                            "componentName":  "mProduction",
                            "procedureNames":  [
                                                   "LoadRecipeFromRecipes"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Modules_mProduction.bas:mProduction.RunChaiForkConvergenceRunActionContractTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "RunChaiForkConvergenceRunActionContractTest"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Modules/mProduction.bas"

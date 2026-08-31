@@ -534,6 +534,23 @@ Public Function CurrentProductionLayoutValidationReport( _
         mProductionLayoutValidationForm.TestCurrentLayoutGeometryReport(pageIndex)
 End Function
 
+Public Function RunProductionRunListResponsiveLayoutTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionRunListResponsiveLayoutTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionRunListResponsiveLayoutTest = _
+            frmProduction.TestRunListResponsiveLayoutReportForSize()
+    End If
+    Exit Function
+
+Failed:
+    RunProductionRunListResponsiveLayoutTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Workbook, _
                                                           ByVal inputItemCode As String, _
                                                           ByVal inputItemName As String, _

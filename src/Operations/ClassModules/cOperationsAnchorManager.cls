@@ -50,6 +50,23 @@ Public Sub RegisterControl(ByVal targetControl As Object, ByVal anchorMask As Lo
     mItems.Add item
 End Sub
 
+Public Sub RegisterProportionalVerticalControl(ByVal targetControl As Object, _
+                                               ByVal horizontalAnchorMask As Long, _
+                                               ByVal verticalTopFactor As Double, _
+                                               ByVal verticalHeightFactor As Double)
+    Dim item As cOperationsAnchorItem
+
+    If mItems Is Nothing Then
+        Err.Raise vbObjectError + 7525, "cOperationsAnchorManager.RegisterProportionalVerticalControl", _
+                  "Configure the anchor manager before registering controls."
+    End If
+
+    Set item = New cOperationsAnchorItem
+    item.CaptureProportionalVerticalAnchor targetControl, horizontalAnchorMask, _
+                                           verticalTopFactor, verticalHeightFactor
+    mItems.Add item
+End Sub
+
 Public Sub ApplyAnchoredLayout()
     Dim item As cOperationsAnchorItem
 #If VBA7 Then
