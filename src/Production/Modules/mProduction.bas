@@ -394,6 +394,23 @@ Failed:
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
+Public Function RunProcessEditExportContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessEditExportContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessEditExportContractTest = _
+            frmProduction.TestProcessEditExportContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessEditExportContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function RunReusableProductionFormActionContractTest() As String
     On Error GoTo Failed
 

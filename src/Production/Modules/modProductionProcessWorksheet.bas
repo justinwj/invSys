@@ -409,7 +409,8 @@ Public Function FindSelectedProcessWorksheetTable(ByVal wb As Workbook, _
 
     tableName = ""
     Set tableNames = FindSelectedProcessWorksheetTables(wb, report)
-    If tableNames Is Nothing Or tableNames.Count = 0 Then Exit Function
+    If tableNames Is Nothing Then Exit Function
+    If tableNames.Count = 0 Then Exit Function
     tableName = CStr(tableNames(1))
     FindSelectedProcessWorksheetTable = True
 End Function

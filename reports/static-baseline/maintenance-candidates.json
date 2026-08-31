@@ -1,11 +1,11 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "maintenance-candidates",
-    "generatedAtUtc":  "2026-08-16T20:00:00Z",
+    "generatedAtUtc":  "2026-08-31T00:59:29Z",
     "baseline":  {
                      "componentCount":  154,
-                     "procedureCount":  5249,
-                     "lineCount":  117693,
+                     "procedureCount":  5253,
+                     "lineCount":  118003,
                      "literalApplicationRunCount":  8,
                      "unresolvedApplicationRunCount":  45,
                      "duplicateBodyCandidateCount":  189
@@ -10470,7 +10470,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1"
                                                ],
                            "reviewRequired":  true
                        },
@@ -10538,6 +10538,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],
@@ -10557,6 +10558,7 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],
@@ -14830,6 +14832,7 @@
                                                   "FillListFromArray",
                                                   "FillListFromTable",
                                                   "FindIdentityListRow",
+                                                  "FindProcessComponentEditorRow",
                                                   "FindProductionOutputTableRow",
                                                   "FindRecipeOutputFlowRowForTest",
                                                   "FindReusablePaletteItemName",
@@ -15113,6 +15116,7 @@
                                                   "SelectReusableAssignmentRequirement",
                                                   "SetAllRunTreeGroupsCollapsed",
                                                   "SetCellByHeader",
+                                                  "SetEditableProcessDraftVersion",
                                                   "SetFirstRowValue",
                                                   "SetLineIo",
                                                   "SetOperatorWorkbook",
@@ -15145,6 +15149,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessEditExportContract",
                                                   "TestProcessWorksheetBulkImportContract",
                                                   "TestProcessWorksheetOutputPickerContract",
                                                   "TestProcessWorksheetRoundTripContract",
@@ -15775,6 +15780,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessEditExportContractTest",
                                                   "RunProcessWorksheetBulkImportContractTest",
                                                   "RunProcessWorksheetOutputPickerContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",

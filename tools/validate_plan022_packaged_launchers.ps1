@@ -7,7 +7,8 @@ param(
     [string]$CallbackFilter = "",
     [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")]
     [string]$WorkbookState = "NoEligible",
-    [switch]$ProductionRunOnly
+    [switch]$ProductionRunOnly,
+    [switch]$ProductionEditExportOnly
 )
 
 Set-StrictMode -Version Latest
@@ -632,6 +633,13 @@ if ($ProductionRunOnly -and
     ($WorkbookState -ne "ProductionReusable" -or $CallbackFilter -ne "Production")) {
     throw "ProductionRunOnly requires -WorkbookState ProductionReusable -CallbackFilter Production."
 }
+if ($ProductionEditExportOnly -and
+    ($WorkbookState -ne "ProductionReusable" -or $CallbackFilter -ne "Production")) {
+    throw "ProductionEditExportOnly requires -WorkbookState ProductionReusable -CallbackFilter Production."
+}
+if ($ProductionRunOnly -and $ProductionEditExportOnly) {
+    throw "ProductionRunOnly and ProductionEditExportOnly are mutually exclusive."
+}
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -1132,6 +1140,21 @@ try {
                     $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
                 $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
                 if ($WorkbookState -eq "ProductionReusable") {
+                    if ($ProductionEditExportOnly) {
+                    [IO.File]::WriteAllText($progressPath, "invoke focused Production released Process edit and export")
+                    $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessEditExportContractTest")
+                    $productionEditExportPassed = $productionEditExportReport -match '^OK\|' -and
+                        $productionEditExportReport -match '(?:^|\|)ReleasedProcessEditable=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExistingProcessExported=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExportRoundTrip=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputDesignVersionRebased=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputYieldRebased=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEditExportPassed
+                    $observedText += " || PRODUCTION_PROCESS_EDIT_EXPORT=" + $productionEditExportReport
+                    }
+                    else {
                     if (-not $ProductionRunOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke Production reusable-surface contract")
                     $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
@@ -1161,6 +1184,19 @@ try {
                         $productionWorkbenchReport -match '(?:^|\|)ItemSearch=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionWorkbenchPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKBENCH=" + $productionWorkbenchReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production released Process edit and export")
+                    $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessEditExportContractTest")
+                    $productionEditExportPassed = $productionEditExportReport -match '^OK\|' -and
+                        $productionEditExportReport -match '(?:^|\|)ReleasedProcessEditable=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExistingProcessExported=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExportRoundTrip=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputDesignVersionRebased=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputYieldRebased=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEditExportPassed
+                    $observedText += " || PRODUCTION_PROCESS_EDIT_EXPORT=" + $productionEditExportReport
 
                     [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet bulk import")
                     $productionBulkImportReport = [string](Run-WorkbookMacro -Excel $excel `
@@ -1307,6 +1343,7 @@ try {
                     $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
                     $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
                     }
+                    }
                 }
             }
             if (@($secondCapture.WindowText).Count -gt 0) {
@@ -1395,7 +1432,8 @@ try {
         [IO.File]::WriteAllText($progressPath, "completed " + $callback.Macro)
     }
 
-    if ($WorkbookState -eq "ProductionReusable" -and -not $ProductionRunOnly) {
+    if ($WorkbookState -eq "ProductionReusable" -and -not $ProductionRunOnly -and
+        -not $ProductionEditExportOnly) {
         $currentStep = "restart reusable Production in a clean Excel process"
         [IO.File]::WriteAllText($progressPath, $currentStep)
         if ([string]::IsNullOrWhiteSpace($reusableRecipeId)) {
@@ -1558,6 +1596,9 @@ finally {
     }
     elseif ($WorkbookState -eq "ProductionReusable" -and $ProductionRunOnly) {
         "# Plan 022 Slice 4av Focused Packaged Production Evidence"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable" -and $ProductionEditExportOnly) {
+        "# Plan 022 Slice 4aw Focused Packaged Production Evidence"
     }
     elseif ($WorkbookState -eq "ProductionReusable") {
         "# Plan 022 Slice 4x Packaged Reusable Production Evidence"

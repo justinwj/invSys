@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-16T20:00:00Z",
+    "generatedAtUtc":  "2026-08-31T00:59:29Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "662d7e3a67ff12c73bf4b92226f97e539d48d990f6ef08c9bd5c33ef729fe6d1",
-                          "maintenanceCandidatesSha256":  "742176da707d0ffc8b5cc7d9a32692dc3976889fa9630127025b99b49124471d"
+                          "implementationManifestSha256":  "b144d22a7379483857dff6cf837766a118ecfa38625e95fac62eaf1e54511d37",
+                          "maintenanceCandidatesSha256":  "0f674ee95c7f3b5826ee8468573a8fc0501abb7f762d4a9abb88a607e76d10ca"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -217,14 +217,14 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  10155,
+                                                  "baselineLineCount":  10447,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                   "componentName":  "modProductionProcessWorksheet",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  1318,
+                                                  "baselineLineCount":  1319,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -238,7 +238,7 @@
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13138,
+                                                  "baselineLineCount":  13155,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -16104,6 +16104,7 @@
                                                   "FillListFromArray",
                                                   "FillListFromTable",
                                                   "FindIdentityListRow",
+                                                  "FindProcessComponentEditorRow",
                                                   "FindProductionOutputTableRow",
                                                   "FindRecipeOutputFlowRowForTest",
                                                   "FindReusablePaletteItemName",
@@ -16387,6 +16388,7 @@
                                                   "SelectReusableAssignmentRequirement",
                                                   "SetAllRunTreeGroupsCollapsed",
                                                   "SetCellByHeader",
+                                                  "SetEditableProcessDraftVersion",
                                                   "SetFirstRowValue",
                                                   "SetLineIo",
                                                   "SetOperatorWorkbook",
@@ -16419,6 +16421,7 @@
                                                   "TestLayoutGeometryReportForSize",
                                                   "TestPageCount",
                                                   "TestPrepareLayoutForScreenshot",
+                                                  "TestProcessEditExportContract",
                                                   "TestProcessWorksheetBulkImportContract",
                                                   "TestProcessWorksheetOutputPickerContract",
                                                   "TestProcessWorksheetRoundTripContract",
@@ -17067,6 +17070,7 @@
                                                   "RestoreProductionOutputCell",
                                                   "RestoreProductionOutputCompletionValues",
                                                   "RowCountCacheKey",
+                                                  "RunProcessEditExportContractTest",
                                                   "RunProcessWorksheetBulkImportContractTest",
                                                   "RunProcessWorksheetOutputPickerContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
@@ -20262,7 +20266,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
-
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1"
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -20354,6 +20358,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],
@@ -20379,6 +20384,7 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4anMixedUomProcess.ps1",
+                                                   "tests/tooling/Test-Plan022Slice4awProcessEditExport.ps1",
                                                    "tests/tooling/Test-Plan022Slice4yProcessWorksheet.ps1",
                                                    "tests/tooling/Test-Plan022Slice4zProcessWorkbench.ps1"
                                                ],
