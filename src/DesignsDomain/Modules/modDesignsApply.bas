@@ -167,7 +167,7 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
     reusableTables = Array("tblProcesses", "tblProcessRequirements", _
         "tblProcessIngredientAlternatives", "tblProcessOutputs", _
         "tblProcessInstructions", "tblRecipes", "tblRecipeProcesses", _
-        "tblRecipeConnections")
+        "tblRecipeConnections", "tblRecipeOutputRegulations")
     For Each reusableTableName In reusableTables
         ClearDesignTableRows FindDesignsApplyTable(designsWb, CStr(reusableTableName))
     Next reusableTableName
@@ -394,13 +394,17 @@ Private Function ValidateProcessSavePayload(ByVal payload As Collection, _
                 errorMessage = "Each Process requirement requires identity, name, and UOM."
                 Exit Function
             End If
-            If Not PayloadPositiveNumber(item, "Qty") _
+            If Not ValidateProcessQuantityMode(item, "RequirementQtyMode", _
+                    errorCode, errorMessage) Then Exit Function
+            If Not ProcessRecordIsActual(item, "RequirementQtyMode") _
+               And Not PayloadPositiveNumber(item, "Qty") _
                And Not PayloadPositiveNumber(item, "Percent") Then
                 errorCode = "INVALID_PROCESS_REQUIREMENT"
                 errorMessage = "Each Process requirement requires a positive quantity or percentage."
                 Exit Function
             End If
-            If PayloadPositiveNumber(item, "Percent") _
+            If Not ProcessRecordIsActual(item, "RequirementQtyMode") _
+               And PayloadPositiveNumber(item, "Percent") _
                And Not PayloadPositiveNumber(item, "YieldBasis") Then
                 errorCode = "INVALID_PROCESS_REQUIREMENT"
                 errorMessage = "A percentage Process requirement requires a positive yield basis."
@@ -416,18 +420,24 @@ Private Function ValidateProcessSavePayload(ByVal payload As Collection, _
                 errorMessage = "Each Process output requires identity, item code, and UOM."
                 Exit Function
             End If
-            If Not PayloadPositiveNumber(item, "Qty") _
+            If Not ValidateProcessQuantityMode(item, "OutputQtyMode", _
+                    errorCode, errorMessage) Then Exit Function
+            If Not ProcessRecordIsActual(item, "OutputQtyMode") _
+               And Not PayloadPositiveNumber(item, "Qty") _
                And Not PayloadPositiveNumber(item, "Percent") Then
                 errorCode = "INVALID_PROCESS_OUTPUT"
                 errorMessage = "Each Process output requires a positive quantity or percentage."
                 Exit Function
             End If
-            If PayloadPositiveNumber(item, "Percent") _
+            If Not ProcessRecordIsActual(item, "OutputQtyMode") _
+               And PayloadPositiveNumber(item, "Percent") _
                And Not PayloadPositiveNumber(item, "YieldBasis") Then
                 errorCode = "INVALID_PROCESS_OUTPUT"
                 errorMessage = "A percentage Process output requires a positive yield basis."
                 Exit Function
             End If
+            If Not ValidateOutputRegulation(item, PayloadText(item, "UOM"), _
+                    errorCode, errorMessage) Then Exit Function
         End If
     Next item
     If outputCount = 0 Then
@@ -454,6 +464,17 @@ Private Function ValidateRecipeSavePayload(ByVal payload As Collection, _
     For Each item In payload
         If StrComp(PayloadText(item, "RecordType"), "PROCESS_NODE", vbTextCompare) = 0 Then
             nodeCount = nodeCount + 1
+        ElseIf StrComp(PayloadText(item, "RecordType"), "OUTPUT_REGULATION", vbTextCompare) = 0 Then
+            If PayloadText(item, "ProcessNodeId") = "" _
+               Or PayloadText(item, "ProcessId") = "" _
+               Or PayloadText(item, "ProcessVersion") = "" _
+               Or PayloadText(item, "OutputId") = "" Then
+                errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                errorMessage = "A Recipe output regulation requires node, Process version, and output identity."
+                Exit Function
+            End If
+            If Not ValidateOutputRegulation(item, PayloadText(item, "UOM"), _
+                    errorCode, errorMessage) Then Exit Function
         End If
     Next item
     If nodeCount = 0 Then
@@ -660,6 +681,7 @@ Private Sub ProjectProcessPayloadItem(ByVal wb As Workbook, ByVal processId As S
             SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
             SetDesignTableValue lo, lr.Index, "YieldBasis", PayloadText(item, "YieldBasis")
             SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+            SetDesignTableValue lo, lr.Index, "RequirementQtyMode", PayloadText(item, "RequirementQtyMode")
         Case "ALTERNATIVE"
             alternativeOrdinal = alternativeOrdinal + 1
             Set lo = FindDesignsApplyTable(wb, "tblProcessIngredientAlternatives")
@@ -683,6 +705,10 @@ Private Sub ProjectProcessPayloadItem(ByVal wb As Workbook, ByVal processId As S
             SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
             SetDesignTableValue lo, lr.Index, "YieldBasis", PayloadText(item, "YieldBasis")
             SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+            SetDesignTableValue lo, lr.Index, "OutputQtyMode", PayloadText(item, "OutputQtyMode")
+            SetDesignTableValue lo, lr.Index, "OutputRegulationEnabled", PayloadValue(item, "OutputRegulationEnabled")
+            SetDesignTableValue lo, lr.Index, "OutputFloorQty", PayloadValue(item, "OutputFloorQty")
+            SetDesignTableValue lo, lr.Index, "OutputCeilingQty", PayloadValue(item, "OutputCeilingQty")
         Case "INSTRUCTION"
             Set lo = FindDesignsApplyTable(wb, "tblProcessInstructions")
             Set lr = lo.ListRows.Add
@@ -721,6 +747,18 @@ Private Sub ProjectRecipePayloadItem(ByVal wb As Workbook, ByVal recipeId As Str
         SetDesignTableValue lo, lr.Index, "Qty", PayloadValue(item, "Qty")
         SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
         SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+    ElseIf recordType = "OUTPUT_REGULATION" Then
+        Set lo = FindDesignsApplyTable(wb, "tblRecipeOutputRegulations")
+        Set lr = lo.ListRows.Add
+        SetDesignTableValue lo, lr.Index, "RecipeId", recipeId
+        SetDesignTableValue lo, lr.Index, "RecipeVersion", recipeVersion
+        SetDesignTableValue lo, lr.Index, "ProcessNodeId", PayloadText(item, "ProcessNodeId")
+        SetDesignTableValue lo, lr.Index, "ProcessId", PayloadText(item, "ProcessId")
+        SetDesignTableValue lo, lr.Index, "ProcessVersion", PayloadText(item, "ProcessVersion")
+        SetDesignTableValue lo, lr.Index, "OutputId", PayloadText(item, "OutputId")
+        SetDesignTableValue lo, lr.Index, "OutputRegulationEnabled", PayloadValue(item, "OutputRegulationEnabled")
+        SetDesignTableValue lo, lr.Index, "OutputFloorQty", PayloadValue(item, "OutputFloorQty")
+        SetDesignTableValue lo, lr.Index, "OutputCeilingQty", PayloadValue(item, "OutputCeilingQty")
     End If
 End Sub
 
@@ -899,6 +937,8 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
     Dim outputItemCode As String
     Dim outputUom As String
     Dim requirementUom As String
+    Dim outputQtyMode As String
+    Dim requirementQtyMode As String
     Dim outputQty As Double
     Dim outputPercent As Double
     Dim requirementQty As Double
@@ -908,10 +948,14 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
     Dim currentRouted As Double
     Dim alternativeCount As Long
     Dim itemAccepted As Boolean
+    Dim loOutputs As ListObject
+    Dim loOutputRegulations As ListObject
 
     Set loNodes = FindDesignsApplyTable(wb, "tblRecipeProcesses")
     Set loConnections = FindDesignsApplyTable(wb, "tblRecipeConnections")
     Set loRequirements = FindDesignsApplyTable(wb, "tblProcessRequirements")
+    Set loOutputs = FindDesignsApplyTable(wb, "tblProcessOutputs")
+    Set loOutputRegulations = FindDesignsApplyTable(wb, "tblRecipeOutputRegulations")
     Set nodes = CreateObject("Scripting.Dictionary")
     Set ordinals = CreateObject("Scripting.Dictionary")
     Set connectedRequirements = CreateObject("Scripting.Dictionary")
@@ -999,14 +1043,14 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
                 End If
                 If Not TryGetProcessOutputForRecipe(wb, CStr(sourceInfo("ProcessId")), _
                         CStr(sourceInfo("ProcessVersion")), outputId, outputItemCode, _
-                        outputUom, outputQty, outputPercent) Then
+                        outputUom, outputQty, outputPercent, outputQtyMode) Then
                     errorCode = "RECIPE_CONNECTION_INVALID"
                     errorMessage = "A Recipe connection references an output that is not declared by its Process version."
                     Exit Function
                 End If
                 If Not TryGetProcessRequirementForRecipe(wb, CStr(targetInfo("ProcessId")), _
                         CStr(targetInfo("ProcessVersion")), requirementId, requirementUom, _
-                        requirementQty, requirementPercent) Then
+                        requirementQty, requirementPercent, requirementQtyMode) Then
                     errorCode = "RECIPE_CONNECTION_INVALID"
                     errorMessage = "A Recipe connection references a requirement that is not declared by its Process version."
                     Exit Function
@@ -1016,6 +1060,11 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
                    Or StrComp(connectionUom, requirementUom, vbTextCompare) <> 0 Then
                     errorCode = "RECIPE_CONNECTION_INCOMPATIBLE"
                     errorMessage = "Connection UOM must match both the output and downstream requirement."
+                    Exit Function
+                End If
+                If StrComp(requirementQtyMode, "ACTUAL", vbTextCompare) = 0 Then
+                    errorCode = "RECIPE_CONNECTION_QUANTITY"
+                    errorMessage = "ACTUAL requirement cannot receive a Recipe connection."
                     Exit Function
                 End If
                 GetRequirementAlternativeInfo wb, CStr(targetInfo("ProcessId")), _
@@ -1036,7 +1085,7 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
                 routeKey = UCase$(fromNodeKey & "|" & outputId)
                 If TryPositiveDouble(ReadDesignTableValue(loConnections, connectionValues, r, "Qty"), _
                         connectionQty) Then
-                    If outputQty <= 0 Or (requirementQty > 0 _
+                    If (StrComp(outputQtyMode, "ACTUAL", vbTextCompare) <> 0 And outputQty <= 0) Or (requirementQty > 0 _
                        And Abs(connectionQty - requirementQty) > 0.0000001) Then
                         errorCode = "RECIPE_CONNECTION_QUANTITY"
                         errorMessage = "Connection quantity must use and satisfy the output and requirement quantity basis."
@@ -1044,7 +1093,8 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
                     End If
                     currentRouted = connectionQty
                     If routedQty.Exists(routeKey) Then currentRouted = currentRouted + CDbl(routedQty(routeKey))
-                    If currentRouted - outputQty > 0.0000001 Then
+                    If StrComp(outputQtyMode, "ACTUAL", vbTextCompare) <> 0 _
+                       And currentRouted - outputQty > 0.0000001 Then
                         errorCode = "RECIPE_OUTPUT_OVERALLOCATED"
                         errorMessage = "Routed connection quantity exceeds the Process output yield."
                         Exit Function
@@ -1052,6 +1102,11 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
                     routedQty(routeKey) = currentRouted
                 ElseIf TryPositiveDouble(ReadDesignTableValue(loConnections, connectionValues, r, "Percent"), _
                         connectionPercent) Then
+                    If StrComp(outputQtyMode, "ACTUAL", vbTextCompare) = 0 Then
+                        errorCode = "RECIPE_CONNECTION_QUANTITY"
+                        errorMessage = "ACTUAL output cannot use a percentage Recipe connection."
+                        Exit Function
+                    End If
                     If outputPercent <= 0 Or (requirementPercent > 0 _
                        And Abs(connectionPercent - requirementPercent) > 0.0000001) Then
                         errorCode = "RECIPE_CONNECTION_QUANTITY"
@@ -1097,7 +1152,138 @@ Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
             Next r
         Next nodeKey
     End If
+    If Not ValidateRecipeOutputRegulations(wb, recipeId, recipeVersion, nodes, routedQty, _
+            loOutputs, loOutputRegulations, errorCode, errorMessage) Then Exit Function
     ValidateRecipeReleaseContract = True
+End Function
+
+Private Function ProcessRecordIsActual(ByVal item As Object, ByVal fieldName As String) As Boolean
+    ProcessRecordIsActual = (StrComp(Trim$(PayloadText(item, fieldName)), "ACTUAL", vbTextCompare) = 0)
+End Function
+
+Private Function ValidateProcessQuantityMode(ByVal item As Object, ByVal fieldName As String, _
+                                             ByRef errorCode As String, _
+                                             ByRef errorMessage As String) As Boolean
+    Dim modeText As String
+    modeText = UCase$(Trim$(PayloadText(item, fieldName)))
+    If modeText = "" Or modeText = "FIXED" Then
+        ValidateProcessQuantityMode = True
+        Exit Function
+    End If
+    If modeText <> "ACTUAL" Then
+        errorCode = "INVALID_PROCESS_QUANTITY_MODE"
+        errorMessage = fieldName & " must be FIXED or ACTUAL."
+        Exit Function
+    End If
+    If PayloadPositiveNumber(item, "Qty") Or PayloadPositiveNumber(item, "Percent") _
+       Or PayloadPositiveNumber(item, "YieldBasis") Then
+        errorCode = "INVALID_PROCESS_QUANTITY_MODE"
+        errorMessage = "ACTUAL quantity mode cannot carry Qty, Percent, or YieldBasis."
+        Exit Function
+    End If
+    ValidateProcessQuantityMode = True
+End Function
+
+Private Function ValidateOutputRegulation(ByVal item As Object, ByVal uom As String, _
+                                          ByRef errorCode As String, _
+                                          ByRef errorMessage As String) As Boolean
+    Dim floorQty As Double
+    Dim ceilingQty As Double
+    If Not PayloadTrue(item, "OutputRegulationEnabled") Then
+        ValidateOutputRegulation = True
+        Exit Function
+    End If
+    If Not TryPositiveDouble(PayloadValue(item, "OutputFloorQty"), floorQty) _
+       Or Not TryPositiveDouble(PayloadValue(item, "OutputCeilingQty"), ceilingQty) _
+       Or floorQty - ceilingQty > 0.0000001 Then
+        errorCode = "INVALID_OUTPUT_REGULATION"
+        errorMessage = "Enabled output regulation requires positive floor and ceiling with floor not above ceiling."
+        Exit Function
+    End If
+    If IsEachUom(uom) And (Abs(floorQty - Fix(floorQty)) > 0.0000001 _
+       Or Abs(ceilingQty - Fix(ceilingQty)) > 0.0000001) Then
+        errorCode = "INVALID_OUTPUT_REGULATION"
+        errorMessage = "EA output regulation floor and ceiling must be whole units."
+        Exit Function
+    End If
+    ValidateOutputRegulation = True
+End Function
+
+Private Function ValidateRecipeOutputRegulations(ByVal wb As Workbook, _
+                                                 ByVal recipeId As String, _
+                                                 ByVal recipeVersion As String, _
+                                                 ByVal nodes As Object, _
+                                                 ByVal routedQty As Object, _
+                                                 ByVal loOutputs As ListObject, _
+                                                 ByVal loOverrides As ListObject, _
+                                                 ByRef errorCode As String, _
+                                                 ByRef errorMessage As String) As Boolean
+    Dim overrides As Object, values As Variant, outputValues As Variant
+    Dim nodeKey As Variant, nodeInfo As Object, routeKey As String
+    Dim r As Long, processNodeId As String, outputId As String, key As String
+    Dim enabled As Boolean, floorQty As Double, ceilingQty As Double, routed As Double
+    Dim uom As String, item As Object
+    Set overrides = CreateObject("Scripting.Dictionary")
+    overrides.CompareMode = vbTextCompare
+    If Not loOverrides Is Nothing And Not loOverrides.DataBodyRange Is Nothing Then
+        values = loOverrides.DataBodyRange.Value2
+        For r = 1 To UBound(values, 1)
+            If ReusableProjectionRowMatches(loOverrides, values, r, "RecipeId", "RecipeVersion", recipeId, recipeVersion) Then
+                processNodeId = ReadDesignTableText(loOverrides, values, r, "ProcessNodeId")
+                outputId = ReadDesignTableText(loOverrides, values, r, "OutputId")
+                key = UCase$(processNodeId & "|" & outputId)
+                If Not nodes.Exists(processNodeId) Or overrides.Exists(key) Then
+                    errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                    errorMessage = "Recipe output regulations must reference one unique selected Process output."
+                    Exit Function
+                End If
+                Set nodeInfo = nodes(processNodeId)
+                If StrComp(ReadDesignTableText(loOverrides, values, r, "ProcessId"), CStr(nodeInfo("ProcessId")), vbTextCompare) <> 0 _
+                   Or StrComp(ReadDesignTableText(loOverrides, values, r, "ProcessVersion"), CStr(nodeInfo("ProcessVersion")), vbTextCompare) <> 0 Then
+                    errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                    errorMessage = "Recipe output regulation Process identity must match its node."
+                    Exit Function
+                End If
+                Set item = CreateObject("Scripting.Dictionary")
+                item.CompareMode = vbTextCompare
+                item("OutputRegulationEnabled") = ReadDesignTableValue(loOverrides, values, r, "OutputRegulationEnabled")
+                item("OutputFloorQty") = ReadDesignTableValue(loOverrides, values, r, "OutputFloorQty")
+                item("OutputCeilingQty") = ReadDesignTableValue(loOverrides, values, r, "OutputCeilingQty")
+                overrides.Add key, item
+            End If
+        Next r
+    End If
+    If loOutputs Is Nothing Or loOutputs.DataBodyRange Is Nothing Then Exit Function
+    outputValues = loOutputs.DataBodyRange.Value2
+    For Each nodeKey In nodes.Keys
+        Set nodeInfo = nodes(CStr(nodeKey))
+        For r = 1 To UBound(outputValues, 1)
+            If ReusableProjectionRowMatches(loOutputs, outputValues, r, "ProcessId", "ProcessVersion", CStr(nodeInfo("ProcessId")), CStr(nodeInfo("ProcessVersion"))) Then
+                outputId = ReadDesignTableText(loOutputs, outputValues, r, "OutputId")
+                key = UCase$(CStr(nodeKey) & "|" & outputId)
+                uom = ReadDesignTableText(loOutputs, outputValues, r, "UOM")
+                Set item = CreateObject("Scripting.Dictionary")
+                item.CompareMode = vbTextCompare
+                item("OutputRegulationEnabled") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputRegulationEnabled")
+                item("OutputFloorQty") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputFloorQty")
+                item("OutputCeilingQty") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputCeilingQty")
+                If overrides.Exists(key) Then Set item = overrides(key)
+                If Not ValidateOutputRegulation(item, uom, errorCode, errorMessage) Then Exit Function
+                If PayloadTrue(item, "OutputRegulationEnabled") Then
+                    Call TryPositiveDouble(PayloadValue(item, "OutputCeilingQty"), ceilingQty)
+                    routeKey = UCase$(CStr(nodeKey) & "|" & outputId)
+                    routed = 0#
+                    If routedQty.Exists(routeKey) Then routed = CDbl(routedQty(routeKey))
+                    If ceilingQty + 0.0000001 < routed Then
+                        errorCode = "ROUTED_COMMITMENT_EXCEEDS_CEILING"
+                        errorMessage = "An output regulation ceiling may not be below its routed downstream commitment."
+                        Exit Function
+                    End If
+                End If
+            End If
+        Next r
+    Next nodeKey
+    ValidateRecipeOutputRegulations = True
 End Function
 
 Private Function HasReleasedRecipeDependency(ByVal wb As Workbook, _
@@ -1159,7 +1345,8 @@ Private Function TryGetProcessOutputForRecipe(ByVal wb As Workbook, _
                                               ByRef itemCode As String, _
                                               ByRef uom As String, _
                                               ByRef qty As Double, _
-                                              ByRef percent As Double) As Boolean
+                                              ByRef percent As Double, _
+                                              ByRef qtyMode As String) As Boolean
     Dim lo As ListObject
     Dim values As Variant
     Dim r As Long
@@ -1175,6 +1362,8 @@ Private Function TryGetProcessOutputForRecipe(ByVal wb As Workbook, _
             uom = ReadDesignTableText(lo, values, r, "UOM")
             Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Qty"), qty)
             Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Percent"), percent)
+            qtyMode = ReadDesignTableText(lo, values, r, "OutputQtyMode")
+            If qtyMode = "" Then qtyMode = "FIXED"
             TryGetProcessOutputForRecipe = True
             Exit Function
         End If
@@ -1187,7 +1376,8 @@ Private Function TryGetProcessRequirementForRecipe(ByVal wb As Workbook, _
                                                    ByVal requirementId As String, _
                                                    ByRef uom As String, _
                                                    ByRef qty As Double, _
-                                                   ByRef percent As Double) As Boolean
+                                                   ByRef percent As Double, _
+                                                   ByRef qtyMode As String) As Boolean
     Dim lo As ListObject
     Dim values As Variant
     Dim r As Long
@@ -1202,6 +1392,8 @@ Private Function TryGetProcessRequirementForRecipe(ByVal wb As Workbook, _
             uom = ReadDesignTableText(lo, values, r, "UOM")
             Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Qty"), qty)
             Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Percent"), percent)
+            qtyMode = ReadDesignTableText(lo, values, r, "RequirementQtyMode")
+            If qtyMode = "" Then qtyMode = "FIXED"
             TryGetProcessRequirementForRecipe = True
             Exit Function
         End If
@@ -1412,6 +1604,21 @@ Private Function PayloadValue(ByVal item As Object, ByVal key As String) As Vari
     If Not item.Exists(key) Then Exit Function
     PayloadValue = item(key)
 CleanExit:
+End Function
+
+Private Function PayloadTrue(ByVal item As Object, ByVal key As String) As Boolean
+    Dim valueIn As Variant
+    valueIn = PayloadValue(item, key)
+    If VarType(valueIn) = vbBoolean Then
+        PayloadTrue = CBool(valueIn)
+    Else
+        PayloadTrue = (StrComp(Trim$(CStr(valueIn)), "true", vbTextCompare) = 0 _
+            Or Trim$(CStr(valueIn)) = "1")
+    End If
+End Function
+
+Private Function IsEachUom(ByVal uom As String) As Boolean
+    IsEachUom = (StrComp(Trim$(uom), "EA", vbTextCompare) = 0)
 End Function
 
 Private Function ParseDesignPayload(ByVal jsonText As String, ByRef errorMessage As String) As Collection

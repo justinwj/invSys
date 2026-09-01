@@ -20,8 +20,11 @@ Private mRequirements As Collection
 Private mAlternatives As Collection
 Private mOutputs As Collection
 Private mConnections As Collection
+Private mOutputRegulations As Collection
 Private mInstructions As Collection
 Private mAllocations As Object
+Private mAllocationNativeQuantities As Object
+Private mAllocationConversionAudit As Object
 Private mOutputKeys As Object
 Private mActualOutputQty As Object
 Private mLastOutputQty As Object
@@ -33,6 +36,8 @@ Private mEventIds As String
 Private mAppliedCount As Long
 Private mProcessorReports As String
 Private mLastSummary As String
+Private mBatchNote As String
+Private mBatchNoteFrozen As Boolean
 
 Public Sub ClearReusableRun()
     mLoaded = False
@@ -49,8 +54,11 @@ Public Sub ClearReusableRun()
     Set mAlternatives = New Collection
     Set mOutputs = New Collection
     Set mConnections = New Collection
+    Set mOutputRegulations = New Collection
     Set mInstructions = New Collection
     Set mAllocations = NewTextDictionary()
+    Set mAllocationNativeQuantities = NewTextDictionary()
+    Set mAllocationConversionAudit = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
     Set mLastOutputQty = NewTextDictionary()
@@ -62,6 +70,8 @@ Public Sub ClearReusableRun()
     mAppliedCount = 0
     mProcessorReports = ""
     mLastSummary = ""
+    mBatchNote = ""
+    mBatchNoteFrozen = False
 End Sub
 
 Public Function LoadReleasedReusableRecipe(ByVal recipeId As String, _
@@ -118,6 +128,8 @@ Public Function LoadReleasedReusableRecipe(ByVal recipeId As String, _
                 AddNodeInExecutionOrder node
             Case "CONNECTION"
                 mConnections.Add CloneRunRecord(record)
+            Case "OUTPUT_REGULATION"
+                mOutputRegulations.Add CloneRunRecord(record)
         End Select
     Next rawRecord
     If mNodes.Count = 0 Then
@@ -125,6 +137,7 @@ Public Function LoadReleasedReusableRecipe(ByVal recipeId As String, _
         Exit Function
     End If
     If Not LoadNodeProcessDefinitions(report) Then Exit Function
+    If Not ApplyRecipeOutputRegulationOverrides(report) Then Exit Function
     If Not ValidateLoadedRunGraph(report) Then Exit Function
 
     mLoaded = True
@@ -156,6 +169,8 @@ Public Function ApplyReusableRunScale(ByVal scalePercent As Double, _
     End If
     mScalePercent = scalePercent
     Set mAllocations = NewTextDictionary()
+    Set mAllocationNativeQuantities = NewTextDictionary()
+    Set mAllocationConversionAudit = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
     Set mCompletedNodes = NewTextDictionary()
@@ -168,6 +183,8 @@ Public Function ApplyReusableRunScale(ByVal scalePercent As Double, _
     mCheckedInNodeId = ""
     mCompleted = False
     mLastSummary = ""
+    mBatchNote = ""
+    mBatchNoteFrozen = False
     report = "Batch scale applied: " & FormatRunNumberLocal(scalePercent) & _
              "%. Exact-key allocations were cleared and recalculated requirements are ready."
     ApplyReusableRunScale = True
@@ -266,6 +283,9 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
     Dim bucket As Variant
     Dim allocatedQty As Double
     Dim requiredQty As Double
+    Dim conversionFactor As Double
+    Dim conversionVersion As String
+    Dim conversionReport As String
 
     If Not mLoaded Then Exit Function
     entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
@@ -283,6 +303,8 @@ Public Function ReusableRunPaletteRows(Optional ByVal locationFilter As String =
         For entityRow = LBound(entities, 1) To UBound(entities, 1)
             itemCode = Trim$(CStr(entities(entityRow, 3)))
             If Not RequirementAllowsItem(nodeId, requirementId, itemCode, CStr(entities(entityRow, 2))) Then GoTo NextEntity
+            If Not modUomSettings.GetUomConversion(CStr(entities(entityRow, 5)), _
+                    RunRecordText(requirement, "UOM"), conversionFactor, conversionVersion, conversionReport) Then GoTo NextEntity
             If locationFilter <> "" Then
                 If StrComp(locationFilter, Trim$(CStr(entities(entityRow, 7))), vbTextCompare) <> 0 Then GoTo NextEntity
             End If
@@ -315,8 +337,15 @@ NextEntity:
             If allocatedQty > QTY_TOLERANCE And requiredQty > 0 Then _
                 result(outRow, 6) = allocatedQty / requiredQty * 100#
             If allocatedQty > QTY_TOLERANCE Then result(outRow, 7) = allocatedQty
-            result(outRow, 8) = IIf(Trim$(CStr(bucket(2))) <> "", bucket(2), RunRecordText(requirement, "UOM"))
+            result(outRow, 8) = IIf(Trim$(CStr(bucket(2))) <> "", bucket(2), RunRecordText(requirement, "UOM")) & _
+                                " / " & RunRecordText(requirement, "UOM")
             result(outRow, 9) = StockBucketAvailableDisplay(CDbl(bucket(4)), CBool(bucket(5)), CStr(bucket(6)))
+            If CBool(bucket(5)) Then
+                result(outRow, 9) = CStr(bucket(6))
+            ElseIf modUomSettings.GetUomConversion(CStr(bucket(2)), RunRecordText(requirement, "UOM"), _
+                    conversionFactor, conversionVersion, conversionReport) Then
+                result(outRow, 9) = result(outRow, 9) & " / " & FormatRunNumberLocal(CDbl(bucket(4)) * conversionFactor)
+            End If
             result(outRow, 10) = bucket(3)
         Next rawBucketKey
 NextRequirement:
@@ -361,6 +390,8 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
     Dim removeId As Variant
     Dim planId As Variant
     Dim uomReport As String
+    Dim conversionFactor As Double
+    Dim conversionVersion As String
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -396,6 +427,16 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
         report = "The selected stock bucket is not acceptable for this requirement."
         Exit Function
     End If
+    If Not modUomSettings.GetUomConversion(CStr(entities(representativeRow, 5)), _
+            RunRecordText(requirement, "UOM"), conversionFactor, conversionVersion, uomReport) Then
+        report = uomReport
+        Exit Function
+    End If
+    If StrComp(CStr(entities(representativeRow, 5)), RunRecordText(requirement, "UOM"), vbTextCompare) <> 0 Then
+        ApplyReusableRunStockAllocation = ApplyReusableRunAllocation(processNodeId, requirementId, _
+            representativeSystemKey, qty, report)
+        Exit Function
+    End If
 
     bucketKey = StockBucketKeyForEntity(entities, representativeRow)
     nonCounted = EntityRowIsNonCounted(entities, representativeRow)
@@ -425,7 +466,7 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
     requiredQty = ScaledRecordQty(requirement)
     otherRequirementQty = AllocationTotalForRequirement(processNodeId, requirementId, "") - _
         currentBucketAllocation
-    If otherRequirementQty + qty > requiredQty + QTY_TOLERANCE Then
+    If Not RequirementIsActual(requirement) And otherRequirementQty + qty > requiredQty + QTY_TOLERANCE Then
         report = "Allocation exceeds the scaled requirement of " & FormatRunNumberLocal(requiredQty) & "."
         Exit Function
     End If
@@ -468,10 +509,11 @@ Public Function ApplyReusableRunStockAllocation(ByVal processNodeId As String, _
     End If
 
     For Each removeId In removeIds
-        If mAllocations.Exists(CStr(removeId)) Then mAllocations.Remove CStr(removeId)
+        RemoveAllocation CStr(removeId)
     Next removeId
     For Each planId In planned.Keys
-        mAllocations.Add CStr(planId), CDbl(planned(planId))
+        SaveAllocation CStr(planId), CDbl(planned(planId)), CDbl(planned(planId)), _
+            conversionVersion, conversionFactor
     Next planId
     mCheckedIn = False
     mCheckedInNodeId = ""
@@ -499,6 +541,10 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
     Dim allocationId As String
     Dim nonCounted As Boolean
     Dim uomReport As String
+    Dim nativeUom As String
+    Dim conversionFactor As Double
+    Dim catalogVersion As String
+    Dim nativeQty As Double
 
     If Not mLoaded Then
         report = "Load a released Recipe first."
@@ -518,6 +564,21 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
         report = uomReport
         Exit Function
     End If
+    nativeUom = ExactEntityUom(systemKey)
+    If nativeUom = "" Then
+        report = "The selected System_Key is no longer available. Refresh Production Run."
+        Exit Function
+    End If
+    If Not modUomSettings.GetUomConversion(nativeUom, RunRecordText(requirement, "UOM"), _
+            conversionFactor, catalogVersion, uomReport) Then
+        report = uomReport
+        Exit Function
+    End If
+    nativeQty = qty / conversionFactor
+    If Not modUomSettings.ValidateQuantityForUom(nativeQty, nativeUom, uomReport) Then
+        report = uomReport
+        Exit Function
+    End If
     nonCounted = ExactEntityIsNonCounted(systemKey)
     availableQty = ExactEntityAvailableQty(systemKey)
     If Not nonCounted And availableQty <= 0 And qty > 0 Then
@@ -527,27 +588,27 @@ Public Function ApplyReusableRunAllocation(ByVal processNodeId As String, _
     requiredQty = ScaledRecordQty(requirement)
     allocationId = AllocationKey(processNodeId, requirementId, systemKey)
     otherRequirementQty = AllocationTotalForRequirement(processNodeId, requirementId, allocationId)
-    If otherRequirementQty + qty > requiredQty + QTY_TOLERANCE Then
+    If Not RequirementIsActual(requirement) And otherRequirementQty + qty > requiredQty + QTY_TOLERANCE Then
         report = "Allocation exceeds the scaled requirement of " & FormatRunNumberLocal(requiredQty) & "."
         Exit Function
     End If
     otherEntityQty = AllocationTotalForEntity(systemKey, allocationId)
-    If Not nonCounted And otherEntityQty + qty > availableQty + QTY_TOLERANCE Then
+    If Not nonCounted And otherEntityQty + nativeQty > availableQty + QTY_TOLERANCE Then
         report = "Allocation exceeds exact entity availability of " & FormatRunNumberLocal(availableQty) & "."
         Exit Function
     End If
     If qty <= QTY_TOLERANCE Then
-        If mAllocations.Exists(allocationId) Then mAllocations.Remove allocationId
-    ElseIf mAllocations.Exists(allocationId) Then
-        mAllocations(allocationId) = qty
+        RemoveAllocation allocationId
     Else
-        mAllocations.Add allocationId, qty
+        SaveAllocation allocationId, qty, nativeQty, catalogVersion, conversionFactor
     End If
     mCheckedIn = False
     mCheckedInNodeId = ""
     mCompleted = False
-    report = "Exact inventory allocation saved: " & FormatRunNumberLocal(qty) & _
-             " of " & FormatRunNumberLocal(requiredQty) & "."
+    report = "Exact inventory allocation saved: " & FormatRunNumberLocal(qty) & " " & _
+             RunRecordText(requirement, "UOM") & " requiring " & _
+             FormatRunNumberLocal(nativeQty) & " " & nativeUom & _
+             " from the exact System_Key."
     ApplyReusableRunAllocation = True
 End Function
 
@@ -613,6 +674,7 @@ Public Function CheckInReusableRun(ByVal runLocation As String, _
         End If
     Next key
     mCheckedIn = True
+    mBatchNoteFrozen = True
     report = "Checked in " & FormatRunNumberLocal(TotalExternalAllocation()) & _
              " units using " & CStr(mAllocations.Count) & " exact System_Key allocation(s)."
     CheckInReusableRun = True
@@ -646,6 +708,7 @@ Public Function CheckInReusableProcess(ByVal processName As String, _
     If Not ValidateProcessAllocationsLive(node, runLocation, report) Then Exit Function
 
     mCheckedIn = True
+    mBatchNoteFrozen = True
     mCheckedInNodeId = nodeId
     report = "Checked in Process " & RunRecordText(node, "ProcessName") & _
              " using " & CStr(AllocationCountForNode(nodeId)) & _
@@ -666,6 +729,9 @@ Public Function ReusableRunManagerCheckRows() As Variant
     Dim requirement As Object
     Dim routedRow As Variant
     Dim columnIndex As Long
+    Dim nativeQty As Double
+    Dim requirementUom As String
+    Dim stockUom As String
 
     If Not mCheckedIn Or mAllocations Is Nothing Then Exit Function
     If mCheckedInNodeId = "" Then
@@ -692,8 +758,17 @@ Public Function ReusableRunManagerCheckRows() As Variant
         result(rowIndex, 4) = systemKey
         result(rowIndex, 5) = ExactEntityField(entity, systemKey, 3)
         result(rowIndex, 6) = ExactEntityField(entity, systemKey, 4)
-        result(rowIndex, 7) = ExactEntityField(entity, systemKey, 5)
-        result(rowIndex, 8) = qty
+        requirementUom = RunRecordText(requirement, "UOM")
+        stockUom = ExactEntityField(entity, systemKey, 5)
+        nativeQty = NativeAllocationQty(CStr(key))
+        If StrComp(requirementUom, stockUom, vbTextCompare) = 0 Then
+            result(rowIndex, 7) = stockUom
+            result(rowIndex, 8) = qty
+        Else
+            result(rowIndex, 7) = requirementUom & " / " & stockUom
+            result(rowIndex, 8) = FormatRunNumberLocal(qty) & " / " & _
+                                  FormatRunNumberLocal(nativeQty)
+        End If
         result(rowIndex, 9) = ExactEntityInventoryDisplayForKey(entity, systemKey)
 NextAllocation:
     Next key
@@ -1066,11 +1141,15 @@ Public Function BeginNextReusableBatch(Optional ByRef report As String = "") As 
     End If
     mBatchNumber = mBatchNumber + 1
     Set mAllocations = NewTextDictionary()
+    Set mAllocationNativeQuantities = NewTextDictionary()
+    Set mAllocationConversionAudit = NewTextDictionary()
     Set mOutputKeys = NewTextDictionary()
     Set mActualOutputQty = NewTextDictionary()
     Set mCompletedNodes = NewTextDictionary()
     mCheckedInNodeId = ""
     mRunId = ""
+    mBatchNote = ""
+    mBatchNoteFrozen = False
     mEventIds = ""
     mAppliedCount = 0
     mProcessorReports = ""
@@ -1079,6 +1158,29 @@ Public Function BeginNextReusableBatch(Optional ByRef report As String = "") As 
     mLastSummary = ""
     report = "Next Batch " & CStr(mBatchNumber) & " is ready; exact-key allocations were cleared."
     BeginNextReusableBatch = True
+End Function
+
+Public Function SetReusableRunBatchNote(ByVal batchNote As String, _
+                                        Optional ByRef report As String = "") As Boolean
+    batchNote = Trim$(batchNote)
+    If Len(batchNote) > 500 Then
+        report = "Batch Note must be 500 characters or fewer."
+        Exit Function
+    End If
+    If mBatchNoteFrozen And StrComp(batchNote, mBatchNote, vbBinaryCompare) <> 0 Then
+        report = "Batch Note is frozen after Check In for this batch. Start Next Batch to use a different note."
+        Exit Function
+    End If
+    mBatchNote = batchNote
+    SetReusableRunBatchNote = True
+End Function
+
+Public Function ReusableRunBatchNote() As String
+    ReusableRunBatchNote = mBatchNote
+End Function
+
+Public Function ReusableRunBatchNoteFrozen() As Boolean
+    ReusableRunBatchNoteFrozen = mBatchNoteFrozen
 End Function
 
 Public Function ReusableRunIsLoaded() As Boolean
@@ -1208,6 +1310,10 @@ Private Function ValidateLoadedRunGraph(ByRef report As String) As Boolean
     Dim sourceOutput As Object
     Dim sourceNode As Object
     Dim targetNode As Object
+    Dim rawOutput As Variant
+    Dim output As Object
+    Dim floorQty As Double
+    Dim ceilingQty As Double
 
     If mOutputs.Count < mNodes.Count Then
         report = "Every Process must declare at least one output."
@@ -1244,11 +1350,34 @@ Private Function ValidateLoadedRunGraph(ByRef report As String) As Boolean
                 Exit Function
             End If
         End If
-        If ScaledRecordQty(requirement) <= 0 Then
+        If Not RequirementIsActual(requirement) And ScaledRecordQty(requirement) <= 0 Then
             report = "Requirement quantity could not be resolved for " & RunRecordText(requirement, "RequirementName") & "."
             Exit Function
         End If
     Next rawRequirement
+    For Each rawOutput In mOutputs
+        Set output = rawOutput
+        If OutputRegulationEnabled(output) Then
+            floorQty = RunRecordNumber(output, "OutputFloorQty")
+            ceilingQty = RunRecordNumber(output, "OutputCeilingQty")
+            If floorQty <= 0 Or ceilingQty <= 0 Or floorQty - ceilingQty > QTY_TOLERANCE Then
+                report = "Enabled output regulation requires a positive floor not above its ceiling."
+                Exit Function
+            End If
+            If UCase$(Trim$(RunRecordText(output, "UOM"))) = "EA" _
+               And (Abs(floorQty - Fix(floorQty)) > QTY_TOLERANCE _
+                    Or Abs(ceilingQty - Fix(ceilingQty)) > QTY_TOLERANCE) Then
+                report = "EA output regulation floor and ceiling must be whole units."
+                Exit Function
+            End If
+            If ScaledOutputRegulationCeiling(output) + QTY_TOLERANCE < _
+                    OutgoingQtyForOutput(RunRecordText(output, "ProcessNodeId"), _
+                                         RunRecordText(output, "OutputId")) Then
+                report = "Output regulation ceiling is below its routed downstream commitment."
+                Exit Function
+            End If
+        End If
+    Next rawOutput
     ValidateLoadedRunGraph = True
 End Function
 
@@ -1339,13 +1468,24 @@ Private Function RequirementReadinessStatus(ByVal requirement As Object, _
         Exit Function
     End If
     allocatedQty = AllocationTotalForRequirement(nodeId, requirementId, "")
-    If Abs(allocatedQty - requiredQty) <= QTY_TOLERANCE Then
+    If RequirementIsActual(requirement) Then
+        If allocatedQty > QTY_TOLERANCE Then
+            RequirementReadinessStatus = "READY"
+        Else
+            RequirementReadinessStatus = "NEEDS ACTUAL INPUT"
+        End If
+    ElseIf Abs(allocatedQty - requiredQty) <= QTY_TOLERANCE Then
         RequirementReadinessStatus = "READY"
     ElseIf AvailableStockForRequirement(requirement, locationFilter) + QTY_TOLERANCE < requiredQty Then
         RequirementReadinessStatus = "! INSUFFICIENT"
     Else
         RequirementReadinessStatus = "NEEDS ALLOCATION"
     End If
+End Function
+
+Private Function RequirementIsActual(ByVal requirement As Object) As Boolean
+    RequirementIsActual = (StrComp(RunRecordText(requirement, "RequirementQtyMode"), _
+        "ACTUAL", vbTextCompare) = 0)
 End Function
 
 Private Function ValidateProcessRequirementsReady(ByVal node As Object, _
@@ -1381,7 +1521,12 @@ Private Function ValidateProcessRequirementsReady(ByVal node As Object, _
         Else
             requiredQty = ScaledRecordQty(requirement)
             allocatedQty = AllocationTotalForRequirement(nodeId, requirementId, "")
-            If Abs(allocatedQty - requiredQty) > QTY_TOLERANCE Then
+            If RequirementIsActual(requirement) And allocatedQty <= QTY_TOLERANCE Then
+                report = "Actual requirement requires a measured external allocation for " & _
+                         RunRecordText(requirement, "RequirementName") & "."
+                Exit Function
+            End If
+            If Not RequirementIsActual(requirement) And Abs(allocatedQty - requiredQty) > QTY_TOLERANCE Then
                 report = "Inventory is insufficient or unresolved for " & _
                          RunRecordText(requirement, "RequirementName") & ". Required=" & _
                          FormatRunNumberLocal(requiredQty) & "; allocated=" & _
@@ -1440,11 +1585,16 @@ Private Function AvailableStockForRequirement(ByVal requirement As Object, _
     Dim reservedOther As Double
     Dim currentAllocation As Double
     Dim allocationId As String
+    Dim nativeUom As String
+    Dim requirementUom As String
+    Dim conversionFactor As Double
+    Dim conversionReport As String
 
     entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
     If Not IsArray(entities) Then Exit Function
     nodeId = RunRecordText(requirement, "ProcessNodeId")
     requirementId = RunRecordText(requirement, "RequirementId")
+    requirementUom = RunRecordText(requirement, "UOM")
     locationFilter = Trim$(locationFilter)
     For entityRow = LBound(entities, 1) To UBound(entities, 1)
         If locationFilter <> "" Then
@@ -1457,14 +1607,19 @@ Private Function AvailableStockForRequirement(ByVal requirement As Object, _
             Exit Function
         End If
         systemKey = Trim$(CStr(entities(entityRow, 1)))
+        nativeUom = Trim$(CStr(entities(entityRow, 5)))
+        conversionFactor = 0#
+        conversionReport = ""
+        If Not modUomSettings.GetUomConversion(nativeUom, requirementUom, _
+                conversionFactor, , conversionReport) Then GoTo NextEntity
         availableQty = 0#
         If IsNumeric(entities(entityRow, 6)) Then availableQty = CDbl(entities(entityRow, 6))
         allocationId = AllocationKey(nodeId, requirementId, systemKey)
-        currentAllocation = 0#
-        If mAllocations.Exists(allocationId) Then currentAllocation = CDbl(mAllocations(allocationId))
+        currentAllocation = NativeAllocationQty(allocationId)
         reservedOther = AllocationTotalForEntity(systemKey, "") - currentAllocation
         If availableQty > reservedOther Then _
-            AvailableStockForRequirement = AvailableStockForRequirement + availableQty - reservedOther
+            AvailableStockForRequirement = AvailableStockForRequirement + _
+                (availableQty - reservedOther) * conversionFactor
 NextEntity:
     Next entityRow
 End Function
@@ -1563,7 +1718,7 @@ Private Function AllocationTotalForEntityForNode(ByVal systemKey As String, _
     For Each key In mAllocations.Keys
         If AllocationBelongsToNode(CStr(key), nodeId) Then
             If StrComp(AllocationSystemKey(CStr(key)), systemKey, vbTextCompare) = 0 Then _
-                AllocationTotalForEntityForNode = AllocationTotalForEntityForNode + CDbl(mAllocations(key))
+                AllocationTotalForEntityForNode = AllocationTotalForEntityForNode + NativeAllocationQty(CStr(key))
         End If
     Next key
 End Function
@@ -1608,11 +1763,20 @@ Private Function BuildNodeConsumeItems(ByVal node As Object, ByVal runLocation A
             If UBound(allocationParts) = 2 Then
                 If StrComp(allocationParts(0), RunRecordText(node, "ProcessNodeId"), vbTextCompare) = 0 _
                    And StrComp(allocationParts(1), RunRecordText(requirement, "RequirementId"), vbTextCompare) = 0 Then
-                    qty = CDbl(mAllocations(key))
+                    qty = NativeAllocationQty(CStr(key))
                     Set item = modProductionJson.CreateProductionDeltaPayloadItem( _
                         allocationParts(2), CStr(ExactEntityField(entityRows, allocationParts(2), 2)), _
                         qty, CStr(ExactEntityField(entityRows, allocationParts(2), 7)), _
                         RunItemNote(runId, node, RunRecordText(requirement, "RequirementId")), "USED")
+                    item("RequirementQty") = CDbl(mAllocations(key))
+                    item("RequirementUOM") = RunRecordText(requirement, "UOM")
+                    item("StockUOM") = CStr(ExactEntityField(entityRows, allocationParts(2), 5))
+                    If Not mAllocationConversionAudit Is Nothing Then
+                        If mAllocationConversionAudit.Exists(CStr(key)) Then
+                            item("ConversionCatalogVersion") = Split(CStr(mAllocationConversionAudit(CStr(key))), vbTab)(0)
+                            item("ConversionFactor") = CDbl(Split(CStr(mAllocationConversionAudit(CStr(key))), vbTab)(1))
+                        End If
+                    End If
                     items.Add item
                 End If
             End If
@@ -1757,7 +1921,6 @@ Private Function ValidateReusableActualOutputs(ByRef report As String) As Boolea
     Dim output As Object
     Dim outputKey As String
     Dim actualQty As Double
-    Dim committedQty As Double
 
     For Each rawOutput In mOutputs
         Set output = rawOutput
@@ -1774,15 +1937,7 @@ Private Function ValidateReusableActualOutputs(ByRef report As String) As Boolea
                      " must be greater than zero."
             Exit Function
         End If
-        committedQty = OutgoingQtyForOutput(RunRecordText(output, "ProcessNodeId"), _
-                                            RunRecordText(output, "OutputId"))
-        If actualQty + QTY_TOLERANCE < committedQty Then
-            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
-                     " is below its routed downstream commitment. Actual=" & _
-                     FormatRunNumberLocal(actualQty) & "; committed=" & _
-                     FormatRunNumberLocal(committedQty) & "."
-            Exit Function
-        End If
+        If Not ValidateReusableActualOutput(output, actualQty, report) Then Exit Function
     Next rawOutput
     ValidateReusableActualOutputs = True
 End Function
@@ -1793,7 +1948,6 @@ Private Function ValidateReusableActualOutputsForNode(ByVal nodeId As String, _
     Dim output As Object
     Dim outputKey As String
     Dim actualQty As Double
-    Dim committedQty As Double
     Dim foundOutput As Boolean
 
     For Each rawOutput In mOutputs
@@ -1812,12 +1966,7 @@ Private Function ValidateReusableActualOutputsForNode(ByVal nodeId As String, _
                      " must be greater than zero."
             Exit Function
         End If
-        committedQty = OutgoingQtyForOutput(nodeId, RunRecordText(output, "OutputId"))
-        If actualQty + QTY_TOLERANCE < committedQty Then
-            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
-                     " is below its routed downstream commitment."
-            Exit Function
-        End If
+        If Not ValidateReusableActualOutput(output, actualQty, report) Then Exit Function
 NextOutput:
     Next rawOutput
     If Not foundOutput Then
@@ -1825,6 +1974,95 @@ NextOutput:
         Exit Function
     End If
     ValidateReusableActualOutputsForNode = True
+End Function
+
+Private Function ValidateReusableActualOutput(ByVal output As Object, _
+                                              ByVal actualQty As Double, _
+                                              ByRef report As String) As Boolean
+    Dim committedQty As Double
+    Dim effectiveFloor As Double
+    Dim ceilingQty As Double
+
+    committedQty = OutgoingQtyForOutput(RunRecordText(output, "ProcessNodeId"), _
+                                        RunRecordText(output, "OutputId"))
+    If actualQty + QTY_TOLERANCE < committedQty Then
+        report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                 " is below its routed downstream commitment. Actual=" & _
+                 FormatRunNumberLocal(actualQty) & "; committed=" & _
+                 FormatRunNumberLocal(committedQty) & "."
+        Exit Function
+    End If
+    If OutputRegulationEnabled(output) Then
+        effectiveFloor = EffectiveOutputRegulationFloor(output)
+        ceilingQty = ScaledOutputRegulationCeiling(output)
+        If actualQty + QTY_TOLERANCE < effectiveFloor Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " is below its regulated floor. Actual=" & FormatRunNumberLocal(actualQty) & _
+                     "; floor=" & FormatRunNumberLocal(effectiveFloor) & "."
+            Exit Function
+        End If
+        If actualQty - QTY_TOLERANCE > ceilingQty Then
+            report = "Actual Output for " & RunRecordText(output, "OutputName") & _
+                     " is above its regulated ceiling. Actual=" & FormatRunNumberLocal(actualQty) & _
+                     "; ceiling=" & FormatRunNumberLocal(ceilingQty) & "."
+            Exit Function
+        End If
+    End If
+    ValidateReusableActualOutput = True
+End Function
+
+Private Function OutputRegulationEnabled(ByVal output As Object) As Boolean
+    Dim valueIn As Variant
+    If output Is Nothing Then Exit Function
+    If Not output.Exists("OutputRegulationEnabled") Then Exit Function
+    valueIn = output("OutputRegulationEnabled")
+    If VarType(valueIn) = vbBoolean Then
+        OutputRegulationEnabled = CBool(valueIn)
+    Else
+        OutputRegulationEnabled = (StrComp(Trim$(CStr(valueIn)), "true", vbTextCompare) = 0 _
+            Or Trim$(CStr(valueIn)) = "1")
+    End If
+End Function
+
+Private Function EffectiveOutputRegulationFloor(ByVal output As Object) As Double
+    Dim floorQty As Double
+    Dim committedQty As Double
+    floorQty = RunRecordNumber(output, "OutputFloorQty") * mScalePercent / 100#
+    committedQty = OutgoingQtyForOutput(RunRecordText(output, "ProcessNodeId"), _
+                                        RunRecordText(output, "OutputId"))
+    If committedQty > floorQty Then floorQty = committedQty
+    EffectiveOutputRegulationFloor = floorQty
+End Function
+
+Private Function ScaledOutputRegulationCeiling(ByVal output As Object) As Double
+    ScaledOutputRegulationCeiling = RunRecordNumber(output, "OutputCeilingQty") * _
+                                   mScalePercent / 100#
+End Function
+
+Private Function ApplyRecipeOutputRegulationOverrides(ByRef report As String) As Boolean
+    Dim rawRegulation As Variant
+    Dim regulation As Object
+    Dim output As Object
+    Dim overrideKey As String
+
+    For Each rawRegulation In mOutputRegulations
+        Set regulation = rawRegulation
+        Set output = FindOutput(RunRecordText(regulation, "ProcessNodeId"), _
+                                RunRecordText(regulation, "OutputId"))
+        If output Is Nothing Then
+            report = "Recipe output regulation references an output that is not declared by its pinned Process version."
+            Exit Function
+        End If
+        If StrComp(RunRecordText(regulation, "ProcessId"), RunRecordText(output, "ProcessId"), vbTextCompare) <> 0 _
+           Or StrComp(RunRecordText(regulation, "ProcessVersion"), RunRecordText(output, "ProcessVersion"), vbTextCompare) <> 0 Then
+            report = "Recipe output regulation Process identity does not match its output."
+            Exit Function
+        End If
+        output("OutputRegulationEnabled") = RunRecordValue(regulation, "OutputRegulationEnabled")
+        output("OutputFloorQty") = RunRecordValue(regulation, "OutputFloorQty")
+        output("OutputCeilingQty") = RunRecordValue(regulation, "OutputCeilingQty")
+    Next rawRegulation
+    ApplyRecipeOutputRegulationOverrides = True
 End Function
 
 Private Function ActualOutputQty(ByVal output As Object) As Double
@@ -2275,9 +2513,58 @@ Private Function AllocationTotalForEntity(ByVal systemKey As String, ByVal exclu
     For Each key In mAllocations.Keys
         If StrComp(CStr(key), excludedKey, vbTextCompare) <> 0 _
            And StrComp(AllocationSystemKey(CStr(key)), systemKey, vbTextCompare) = 0 Then
-            AllocationTotalForEntity = AllocationTotalForEntity + CDbl(mAllocations(key))
+            AllocationTotalForEntity = AllocationTotalForEntity + NativeAllocationQty(CStr(key))
         End If
     Next key
+End Function
+
+Private Function NativeAllocationQty(ByVal allocationId As String) As Double
+    If Not mAllocationNativeQuantities Is Nothing Then
+        If mAllocationNativeQuantities.Exists(allocationId) Then
+            NativeAllocationQty = CDbl(mAllocationNativeQuantities(allocationId))
+            Exit Function
+        End If
+    End If
+    If Not mAllocations Is Nothing Then
+        If mAllocations.Exists(allocationId) Then NativeAllocationQty = CDbl(mAllocations(allocationId))
+    End If
+End Function
+
+Private Sub SaveAllocation(ByVal allocationId As String, ByVal requirementQty As Double, _
+                           ByVal nativeQty As Double, ByVal catalogVersion As String, _
+                           ByVal conversionFactor As Double)
+    If mAllocations.Exists(allocationId) Then
+        mAllocations(allocationId) = requirementQty
+    Else
+        mAllocations.Add allocationId, requirementQty
+    End If
+    If mAllocationNativeQuantities Is Nothing Then Set mAllocationNativeQuantities = NewTextDictionary()
+    If mAllocationNativeQuantities.Exists(allocationId) Then
+        mAllocationNativeQuantities(allocationId) = nativeQty
+    Else
+        mAllocationNativeQuantities.Add allocationId, nativeQty
+    End If
+    If mAllocationConversionAudit Is Nothing Then Set mAllocationConversionAudit = NewTextDictionary()
+    If mAllocationConversionAudit.Exists(allocationId) Then
+        mAllocationConversionAudit(allocationId) = catalogVersion & vbTab & CStr(conversionFactor)
+    Else
+        mAllocationConversionAudit.Add allocationId, catalogVersion & vbTab & CStr(conversionFactor)
+    End If
+End Sub
+
+Private Sub RemoveAllocation(ByVal allocationId As String)
+    If Not mAllocations Is Nothing Then If mAllocations.Exists(allocationId) Then mAllocations.Remove allocationId
+    If Not mAllocationNativeQuantities Is Nothing Then If mAllocationNativeQuantities.Exists(allocationId) Then mAllocationNativeQuantities.Remove allocationId
+    If Not mAllocationConversionAudit Is Nothing Then If mAllocationConversionAudit.Exists(allocationId) Then mAllocationConversionAudit.Remove allocationId
+End Sub
+
+Private Function ExactEntityUom(ByVal systemKey As String) As String
+    Dim entities As Variant
+    Dim rowIndex As Long
+    entities = modInventoryDomainBridge.ListAvailableInventoryEntitiesBridge("")
+    If Not IsArray(entities) Then Exit Function
+    rowIndex = FindExactEntityRow(entities, systemKey)
+    If rowIndex > 0 Then ExactEntityUom = Trim$(CStr(entities(rowIndex, 5)))
 End Function
 
 Public Function ReusableRunExactAllocationCountForRequirement(ByVal nodeId As String, _
@@ -2446,6 +2733,11 @@ Private Function RunRecordText(ByVal record As Object, ByVal fieldName As String
     End If
 End Function
 
+Private Function RunRecordValue(ByVal record As Object, ByVal fieldName As String) As Variant
+    If record Is Nothing Then Exit Function
+    If record.Exists(fieldName) Then RunRecordValue = record(fieldName)
+End Function
+
 Private Function RunRecordNumber(ByVal record As Object, ByVal fieldName As String) As Double
     If record Is Nothing Then Exit Function
     If record.Exists(fieldName) Then
@@ -2465,6 +2757,7 @@ Private Function RunEventNote(ByVal runId As String, ByVal node As Object, _
                               ByVal stageName As String) As String
     RunEventNote = "PRODUCTION_REUSABLE_RUN|RunId=" & runId & "|Recipe=" & mRecipeId & _
                    "|RecipeVersion=" & mRecipeVersion & "|Batch=" & CStr(mBatchNumber) & _
+                   "|BatchNote=" & mBatchNote & _
                    "|ProcessNode=" & RunRecordText(node, "ProcessNodeId") & _
                    "|Process=" & RunRecordText(node, "ProcessId") & _
                    "|ProcessVersion=" & RunRecordText(node, "ProcessVersion") & _

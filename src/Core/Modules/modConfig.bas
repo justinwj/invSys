@@ -1043,6 +1043,7 @@ Private Function EnsureConfigTables(ByVal wb As Workbook) As Boolean
 
     whHeaders = Array( _
         "WarehouseId", "WarehouseName", "Timezone", "DefaultLocation", _
+        "UomCatalog", "UomConversionCatalog", "UomConversionCatalogVersion", _
         "BatchSize", "LockTimeoutMinutes", "HeartbeatIntervalSeconds", "MaxLockHoldMinutes", _
         "SnapshotCadence", "BackupCadence", "PathDataRoot", "PathBackupRoot", "PathSharePointRoot", "WarehouseStatus", "RetiredAtUTC", _
         "DesignsEnabled", "PoisonRetryMax", "AuthCacheTTLSeconds", "ProcessorServiceUserId", _
@@ -1194,6 +1195,9 @@ Private Sub SeedConfigDefaults(ByVal wb As Workbook, ByVal warehouseId As String
     EnsureConfigCellDefault loWh, 1, "WarehouseName", resolvedWh
     EnsureConfigCellDefault loWh, 1, "Timezone", "UTC"
     EnsureConfigCellDefault loWh, 1, "DefaultLocation", "A1"
+    EnsureConfigCellDefault loWh, 1, "UomCatalog", "EA|LB|LBS|OZ|KG|G|GAL|QT|PT|L|ML|CS"
+    EnsureConfigCellDefault loWh, 1, "UomConversionCatalog", ""
+    EnsureConfigCellDefault loWh, 1, "UomConversionCatalogVersion", 1
     EnsureConfigCellDefault loWh, 1, "BatchSize", 500
     EnsureConfigCellDefault loWh, 1, "LockTimeoutMinutes", 3
     EnsureConfigCellDefault loWh, 1, "HeartbeatIntervalSeconds", 30

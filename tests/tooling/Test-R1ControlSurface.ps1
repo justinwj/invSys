@@ -77,10 +77,10 @@ $viewerModuleText = if (Test-Path -LiteralPath $viewerModulePath) {
     Get-Content -Raw -LiteralPath $viewerModulePath
 } else { "" }
 Add-Check "Viewer.RibbonVisibleForSignedInUsers" `
-    (($buildText -match 'Label\s*=\s*"Inventory Viewer"') -and
+    (($buildText -match 'Label\s*=\s*"Viewer"') -and
      ($buildText -match 'Macro\s*=\s*"modInventoryViewer\.OpenInventoryViewer"') -and
      ($buildText -notmatch 'Inventory Viewer"[^\r\n]*RequiredCapability')) `
-    "Operations exposes Inventory Viewer without a role capability restriction; the action itself requires sign-in."
+    "Operations exposes Viewer without a role capability restriction; the action itself requires sign-in."
 Add-Check "Viewer.PublicAction" `
     (($viewerModuleText -match 'Public Sub OpenInventoryViewer') -and
      ($viewerModuleText -match 'RequireCurrentUser|CurrentUser|modAuth\.IsSignedIn')) `

@@ -71,13 +71,15 @@ $checks = @(
         Contract = "Inventory Viewer exposes a read-only Events tab covering canonical inventory events plus current box-design and held-shipment activity."
     },
     [pscustomobject]@{
-        Check = "Viewer.Tabs.ExactlyInventoryAndEvents"
+        Check = "Viewer.Tabs.InventoryEventsAndListBoxTable"
         Passed = ($viewerBuild -notmatch 'Tabs\.Add\s+"tabInventory"') -and
             ($viewerBuild -notmatch 'Tabs\.Add\s+"tabEvents"') -and
+            ($viewerBuild -match 'Tabs\.Add\s+"tabListBoxTable"') -and
+            ($viewerBuild -match 'ListBox->Table') -and
             ($viewerEventsTest -match 'TabCount=') -and
             ($viewerEventsTest -match 'TabCaptions=') -and
             ($viewerEventsTest -match 'SelectedTab=')
-        Contract = "The runtime Viewer does not append duplicate placeholder pages, exposes exactly Inventory and Events, and its public Events action selects the operator-visible Events tab."
+        Contract = "The runtime Viewer retains one Inventory and one Events page, adds the approved ListBox->Table page, and its public Events action selects the operator-visible Events tab."
     },
     [pscustomobject]@{
         Check = "Viewer.Layout.GuardsNativeWindowState"

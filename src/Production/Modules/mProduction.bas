@@ -259,9 +259,9 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
     Call modProductionFormWindow.EnableResizable(frm, True, True)
     windowStyle = modProductionFormWindow.DiagnoseWindowStyle(frm)
 
-    If pageCount <> 5 Then
+    If pageCount <> 6 Then
         Err.Raise vbObjectError + 7312, "ProductionFormInitializeSmokeForWorkbook", _
-                  "Production form page count was " & CStr(pageCount) & "; expected 5."
+                  "Production form page count was " & CStr(pageCount) & "; expected 6."
     End If
     If InStr(1, statusText, "failed", vbTextCompare) > 0 Then
         Err.Raise vbObjectError + 7313, "ProductionFormInitializeSmokeForWorkbook", statusText
@@ -473,6 +473,81 @@ Public Function RunEaWholeUnitActionContractTest() As String
 
 Failed:
     RunEaWholeUnitActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionOutputRegulationActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionOutputRegulationActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionOutputRegulationActionContractTest = _
+            frmProduction.TestProductionOutputRegulationActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionOutputRegulationActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionVariableQuantityModeActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionVariableQuantityModeActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionVariableQuantityModeActionContractTest = _
+            frmProduction.TestProductionVariableQuantityModeActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionVariableQuantityModeActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionExternalStockUomConversionActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionExternalStockUomConversionActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionExternalStockUomConversionActionContractTest = _
+            frmProduction.TestProductionExternalStockUomConversionActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionExternalStockUomConversionActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionExternalStockUomWorksheetHandlerContractTest() As String
+    On Error GoTo Failed
+
+    RunProductionExternalStockUomWorksheetHandlerContractTest = _
+        frmProduction.TestProductionExternalStockUomConversionActionContract()
+    Exit Function
+Failed:
+    RunProductionExternalStockUomWorksheetHandlerContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionBatchNoteHandlerContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionBatchNoteHandlerContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionBatchNoteHandlerContractTest = _
+            frmProduction.TestProductionBatchNoteHandlerContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionBatchNoteHandlerContractTest = _
         "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 

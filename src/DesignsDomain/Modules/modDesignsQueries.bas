@@ -197,6 +197,7 @@ Public Function GetRecipeGraph(ByVal recipeId As String, _
     If recordCount = 0 Then Exit Function
     AppendRecipeProcessesQuery wb, recipeId, recipeVersion, jsonOut, recordCount
     AppendRecipeConnectionsQuery wb, recipeId, recipeVersion, jsonOut, recordCount
+    AppendRecipeOutputRegulationsQuery wb, recipeId, recipeVersion, jsonOut, recordCount
     GetRecipeGraph = jsonOut & "]"
     Exit Function
 
@@ -315,7 +316,8 @@ Private Sub AppendProcessRequirementsQuery(ByVal wb As Workbook, _
                 JsonValuePairQuery("Qty", ReadDesignValueQuery(lo, values, r, "Qty")) & "," & _
                 JsonValuePairQuery("Percent", ReadDesignValueQuery(lo, values, r, "Percent")) & "," & _
                 JsonTextPairQuery("YieldBasis", ReadDesignCellQuery(lo, values, r, "YieldBasis")) & "," & _
-                JsonTextPairQuery("UOM", ReadDesignCellQuery(lo, values, r, "UOM")) & "}"
+                JsonTextPairQuery("UOM", ReadDesignCellQuery(lo, values, r, "UOM")) & "," & _
+                JsonTextPairQuery("RequirementQtyMode", ReadDesignCellQuery(lo, values, r, "RequirementQtyMode")) & "}"
         End If
     Next r
 End Sub
@@ -367,7 +369,11 @@ Private Sub AppendProcessOutputsQuery(ByVal wb As Workbook, _
                 JsonValuePairQuery("Qty", ReadDesignValueQuery(lo, values, r, "Qty")) & "," & _
                 JsonValuePairQuery("Percent", ReadDesignValueQuery(lo, values, r, "Percent")) & "," & _
                 JsonTextPairQuery("YieldBasis", ReadDesignCellQuery(lo, values, r, "YieldBasis")) & "," & _
-                JsonTextPairQuery("UOM", ReadDesignCellQuery(lo, values, r, "UOM")) & "}"
+                JsonTextPairQuery("UOM", ReadDesignCellQuery(lo, values, r, "UOM")) & "," & _
+                JsonTextPairQuery("OutputQtyMode", ReadDesignCellQuery(lo, values, r, "OutputQtyMode")) & "," & _
+                JsonValuePairQuery("OutputRegulationEnabled", ReadDesignValueQuery(lo, values, r, "OutputRegulationEnabled")) & "," & _
+                JsonValuePairQuery("OutputFloorQty", ReadDesignValueQuery(lo, values, r, "OutputFloorQty")) & "," & _
+                JsonValuePairQuery("OutputCeilingQty", ReadDesignValueQuery(lo, values, r, "OutputCeilingQty")) & "}"
         End If
     Next r
 End Sub
@@ -441,6 +447,33 @@ Private Sub AppendRecipeConnectionsQuery(ByVal wb As Workbook, _
                 JsonValuePairQuery("Qty", ReadDesignValueQuery(lo, values, r, "Qty")) & "," & _
                 JsonValuePairQuery("Percent", ReadDesignValueQuery(lo, values, r, "Percent")) & "," & _
                 JsonTextPairQuery("UOM", ReadDesignCellQuery(lo, values, r, "UOM")) & "}"
+        End If
+    Next r
+End Sub
+
+Private Sub AppendRecipeOutputRegulationsQuery(ByVal wb As Workbook, _
+                                                ByVal recipeId As String, _
+                                                ByVal recipeVersion As String, _
+                                                ByRef jsonOut As String, _
+                                                ByRef recordCount As Long)
+    Dim lo As ListObject
+    Dim values As Variant
+    Dim r As Long
+    Set lo = FindDesignsTableQuery(wb, "tblRecipeOutputRegulations")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    values = lo.DataBodyRange.Value2
+    For r = 1 To UBound(values, 1)
+        If ReusableRowMatchesQuery(lo, values, r, "RecipeId", _
+                "RecipeVersion", recipeId, recipeVersion) Then
+            AppendJsonRecordQuery jsonOut, recordCount, _
+                "{""RecordType"":""OUTPUT_REGULATION""," & _
+                JsonTextPairQuery("ProcessNodeId", ReadDesignCellQuery(lo, values, r, "ProcessNodeId")) & "," & _
+                JsonTextPairQuery("ProcessId", ReadDesignCellQuery(lo, values, r, "ProcessId")) & "," & _
+                JsonTextPairQuery("ProcessVersion", ReadDesignCellQuery(lo, values, r, "ProcessVersion")) & "," & _
+                JsonTextPairQuery("OutputId", ReadDesignCellQuery(lo, values, r, "OutputId")) & "," & _
+                JsonValuePairQuery("OutputRegulationEnabled", ReadDesignValueQuery(lo, values, r, "OutputRegulationEnabled")) & "," & _
+                JsonValuePairQuery("OutputFloorQty", ReadDesignValueQuery(lo, values, r, "OutputFloorQty")) & "," & _
+                JsonValuePairQuery("OutputCeilingQty", ReadDesignValueQuery(lo, values, r, "OutputCeilingQty")) & "}"
         End If
     Next r
 End Sub

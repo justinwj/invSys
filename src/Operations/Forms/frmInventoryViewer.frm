@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmInventoryViewer
-   Caption         =   "Inventory Viewer"
+   Caption         =   "Viewer"
    ClientHeight    =   6420
    ClientLeft      =   120
    ClientTop       =   465
@@ -23,6 +23,7 @@ Private WithEvents mTxtSearch As MSForms.TextBox
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
 Private WithEvents mTabs As MSForms.TabStrip
+Private WithEvents mBtnExportListBox As MSForms.CommandButton
 Private mCboEventRange As MSForms.ComboBox
 Private mLstInventory As MSForms.ListBox
 Private mLblTitle As MSForms.Label
@@ -30,6 +31,9 @@ Private mLblHeaders As MSForms.Label
 Private mLblStatus As MSForms.Label
 Private mLblEventRange As MSForms.Label
 Private mLblEventRangeHelp As MSForms.Label
+Private mLblExportListBox As MSForms.Label
+Private mTxtExportListBox As MSForms.TextBox
+Private mHeaderLabels As Collection
 Private mLayout As cOperationsAnchorManager
 Private mWarehouseId As String
 Private mRows As Variant
@@ -49,10 +53,12 @@ Private Sub UserForm_Activate()
         mResizeInitialized = True
     End If
     If Not mLayout Is Nothing Then mLayout.ApplyAnchoredLayout
+    ConfigureViewerHeaderGeometry
 End Sub
 
 Private Sub UserForm_Layout()
     If Not mLayout Is Nothing Then mLayout.ApplyAnchoredLayout
+    ConfigureViewerHeaderGeometry
 End Sub
 
 Private Sub UserForm_Terminate()
@@ -62,7 +68,7 @@ End Sub
 
 Public Sub SetWarehouse(ByVal warehouseId As String)
     mWarehouseId = Trim$(warehouseId)
-    Me.Caption = "Inventory Viewer - " & mWarehouseId
+    Me.Caption = "Viewer - " & mWarehouseId
 End Sub
 
 Public Sub SetGeneration(ByVal generation As Long)
@@ -184,7 +190,7 @@ Public Function TestEventsReport(Optional ByVal rangeText As String = "") As Str
     End If
     TestEventsReport = "OK|Title=" & mLblTitle.Caption & _
         "|TabCount=" & CStr(mTabs.Tabs.Count) & _
-        "|TabCaptions=" & mTabs.Tabs(0).Caption & "," & mTabs.Tabs(1).Caption & _
+        "|TabCaptions=" & mTabs.Tabs(0).Caption & "," & mTabs.Tabs(1).Caption & "," & mTabs.Tabs(2).Caption & _
         "|SelectedTab=" & mTabs.Tabs(mTabs.Value).Caption & _
         "|VisibleRows=" & CStr(mLstInventory.ListCount) & _
         "|ReadableDates=" & CStr(readableDates) & _
@@ -197,7 +203,38 @@ Public Function TestEventsReport(Optional ByVal rangeText As String = "") As Str
         "|EventRange=" & CStr(mCboEventRange.Value) & _
         "|RangeControlVisible=" & CStr(mCboEventRange.Visible) & _
         "|Columns=" & CStr(mLstInventory.ColumnCount) & _
+        "|EventHeaderAligned=" & CStr(ViewerEventHeadersAlignedForTest()) & _
         "|ReadOnly=True|Generation=" & CStr(mGeneration)
+End Function
+
+Public Function ExportViewerListBoxToTable(ByVal listBoxName As String, _
+                                           ByRef report As String) As Boolean
+    Dim headers As Variant
+
+    If StrComp(Trim$(listBoxName), "lstInventory", vbTextCompare) <> 0 Then
+        report = "Viewer declares lstInventory. Enter that ListBox name, or open another declared Operations list."
+        Exit Function
+    End If
+    headers = ViewerVisibleHeaders()
+    ExportViewerListBoxToTable = modListBoxTableExport.ExportVisibleListBoxToNewTable( _
+        mLstInventory, headers, report)
+End Function
+
+Public Function TestListBoxTableAction(ByRef report As String) As Boolean
+    If Not mBuilt Then BuildLayout
+    mTabs.Value = 0
+    ApplyViewerTab
+    TestListBoxTableAction = ExportViewerListBoxToTable("lstInventory", report)
+End Function
+
+Private Function ViewerVisibleHeaders() As Variant
+    If Not mTabs Is Nothing Then
+        If mTabs.Value = 1 Then
+            ViewerVisibleHeaders = Array("Date", "Event", "Reference", "Item", "Qty", "UOM", "Location", "Condition", "User", "Details")
+            Exit Function
+        End If
+    End If
+    ViewerVisibleHeaders = Array("Item Code", "Item", "UOM", "Quantity", "Location", "Condition")
 End Function
 
 Private Sub BuildLayout()
@@ -213,6 +250,7 @@ Private Sub BuildLayout()
         .Move 12, 8, 820, 24
         .Tabs(0).Caption = "Inventory"
         .Tabs(1).Caption = "Events"
+        .Tabs.Add "tabListBoxTable", "ListBox->Table"
         .Value = 0
     End With
     Set mLblTitle = AddLabel("lblTitle", "Current inventory levels", 12, 40, 360, 22, True)
@@ -262,6 +300,9 @@ Private Sub BuildLayout()
     Set mLblEventRangeHelp = AddLabel("lblEventRangeHelp", _
         "Choose Day, Week, Month, or type a whole number of days; select Refresh to apply.", _
         276, 110, 556, 18, False)
+    Set mLblExportListBox = AddLabel("lblExportListBox", "ListBox name", 12, 110, 96, 18, True)
+    Set mTxtExportListBox = AddTextBox("txtExportListBox", 112, 104, 330, 24)
+    Set mBtnExportListBox = AddButton("btnExportListBox", "Export ListBox to Table", 454, 104, 170, 24)
     Set mLblHeaders = AddLabel("lblHeaders", _
         "Item Code                         Item                                  UOM       Quantity       Location                  Condition", _
         12, 140, 820, 18, True)
@@ -271,6 +312,8 @@ Private Sub BuildLayout()
         .ColumnWidths = "135 pt;190 pt;52 pt;72 pt;120 pt;74 pt"
         .IntegralHeight = False
     End With
+    Set mHeaderLabels = New Collection
+    ConfigureViewerHeaderGeometry
     Set mLblStatus = AddLabel("lblStatus", "Select Refresh to load the current published snapshot.", 12, 470, 680, 32, False)
     Set mBtnClose = AddButton("btnClose", "Close", 740, 466, 92, 30)
 
@@ -283,6 +326,9 @@ Private Sub BuildLayout()
     mLayout.RegisterControl mLblEventRange, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mCboEventRange, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLblEventRangeHelp, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
+    mLayout.RegisterControl mLblExportListBox, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mTxtExportListBox, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
+    mLayout.RegisterControl mBtnExportListBox, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP
     mLayout.RegisterControl mLblHeaders, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT
     mLayout.RegisterControl mLstInventory, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_TOP Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
     mLayout.RegisterControl mLblStatus, OPERATIONS_ANCHOR_LEFT Or OPERATIONS_ANCHOR_RIGHT Or OPERATIONS_ANCHOR_BOTTOM
@@ -298,25 +344,46 @@ End Sub
 Private Sub ApplyViewerTab()
     If mTabs Is Nothing Then Exit Sub
     mTxtSearch.Value = vbNullString
+    mLblHeaders.Visible = False
+    mLblExportListBox.Visible = False
+    mTxtExportListBox.Visible = False
+    mBtnExportListBox.Visible = False
     If mTabs.Value = 1 Then
+        mTxtSearch.Visible = True
+        mBtnRefresh.Visible = True
+        mLstInventory.Visible = True
         mLblEventRange.Visible = True
         mCboEventRange.Visible = True
         mLblEventRangeHelp.Visible = True
         mLblTitle.Caption = "Inventory and shipping events"
-        mLblHeaders.Caption = "Date                 Event             Reference        Item                    Qty      UOM    Location       Condition    User          Details"
         mLstInventory.ColumnCount = 10
         mLstInventory.ColumnWidths = "105 pt;82 pt;92 pt;130 pt;52 pt;46 pt;82 pt;72 pt;72 pt;190 pt"
         RefreshEvents
+    ElseIf mTabs.Value = 2 Then
+        mTxtSearch.Visible = False
+        mBtnRefresh.Visible = False
+        mLstInventory.Visible = False
+        mLblEventRange.Visible = False
+        mCboEventRange.Visible = False
+        mLblEventRangeHelp.Visible = False
+        mLblTitle.Caption = "ListBox->Table"
+        mLblExportListBox.Visible = True
+        mTxtExportListBox.Visible = True
+        mBtnExportListBox.Visible = True
+        mLblStatus.Caption = "Enter a declared open ListBox name, then export its displayed columns to a new worksheet table."
     Else
+        mTxtSearch.Visible = True
+        mBtnRefresh.Visible = True
+        mLstInventory.Visible = True
         mLblEventRange.Visible = False
         mCboEventRange.Visible = False
         mLblEventRangeHelp.Visible = False
         mLblTitle.Caption = "Current inventory levels"
-        mLblHeaders.Caption = "Item Code                         Item                                  UOM       Quantity       Location                  Condition"
         mLstInventory.ColumnCount = 6
         mLstInventory.ColumnWidths = "135 pt;190 pt;52 pt;72 pt;120 pt;74 pt"
         RefreshInventory
     End If
+    ConfigureViewerHeaderGeometry
 End Sub
 
 Private Sub mTxtSearch_Change()
@@ -330,6 +397,73 @@ Private Sub mBtnRefresh_Click()
         RefreshInventory
     End If
 End Sub
+
+Private Sub mBtnExportListBox_Click()
+    Dim report As String
+    If modInventoryViewer.ExportDeclaredListBoxToTable(Trim$(mTxtExportListBox.Text), report) Then
+        mLblStatus.Caption = report
+    Else
+        mLblStatus.Caption = report
+    End If
+End Sub
+
+Private Sub ConfigureViewerHeaderGeometry()
+    Dim captions As Variant
+    Dim widths As Variant
+    Dim idx As Long
+    Dim widthValue As Single
+    Dim leftValue As Single
+    Dim header As MSForms.Label
+
+    If mLstInventory Is Nothing Then Exit Sub
+    If mHeaderLabels Is Nothing Then Set mHeaderLabels = New Collection
+    If Not mTabs Is Nothing Then
+        If mTabs.Value = 1 Then
+            captions = Array("Date", "Event", "Reference", "Item", "Qty", "UOM", "Location", "Condition", "User", "Details")
+        Else
+            captions = Array("Item Code", "Item", "UOM", "Quantity", "Location", "Condition")
+        End If
+    Else
+        captions = Array("Item Code", "Item", "UOM", "Quantity", "Location", "Condition")
+    End If
+    widths = Split(mLstInventory.ColumnWidths, ";")
+    leftValue = mLstInventory.Left
+    For idx = LBound(captions) To UBound(captions)
+        If idx + 1 > mHeaderLabels.Count Then
+            Set header = AddLabel("hdrViewerColumn" & CStr(idx + 1), "", leftValue, _
+                mLstInventory.Top - 20, 20, 18, True)
+            header.Font.Size = 8
+            mHeaderLabels.Add header
+        Else
+            Set header = mHeaderLabels(idx + 1)
+        End If
+        widthValue = CSng(Val(Replace$(Trim$(CStr(widths(idx))), "pt", "")))
+        header.Caption = CStr(captions(idx))
+        header.Move leftValue, mLstInventory.Top - 20, widthValue, 18
+        header.Visible = (mTabs Is Nothing Or mTabs.Value <> 2)
+        leftValue = leftValue + widthValue
+    Next idx
+    For idx = UBound(captions) + 2 To mHeaderLabels.Count
+        mHeaderLabels(idx).Visible = False
+    Next idx
+End Sub
+
+Private Function ViewerEventHeadersAlignedForTest() As Boolean
+    Dim widths As Variant
+    Dim idx As Long
+    Dim leftValue As Single
+
+    If mTabs Is Nothing Or mTabs.Value <> 1 Then Exit Function
+    If mHeaderLabels Is Nothing Then Exit Function
+    widths = Split(mLstInventory.ColumnWidths, ";")
+    leftValue = mLstInventory.Left
+    For idx = 0 To 9
+        If idx + 1 > mHeaderLabels.Count Then Exit Function
+        If Abs(mHeaderLabels(idx + 1).Left - leftValue) > 0.5 Then Exit Function
+        leftValue = leftValue + CSng(Val(Replace$(Trim$(CStr(widths(idx))), "pt", "")))
+    Next idx
+    ViewerEventHeadersAlignedForTest = True
+End Function
 
 Private Sub mBtnClose_Click()
     Unload Me

@@ -19,7 +19,7 @@ End Type
 
 Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
     Dim idx As Long
-    ReDim defs(1 To 28)
+    ReDim defs(1 To 30)
     idx = 0
 
     AddConfigKey defs, idx, "WarehouseId", CONFIG_TYPE_STRING, "", True, CONFIG_SCOPE_WAREHOUSE
@@ -27,6 +27,8 @@ Public Function GetConfigSchema(ByRef defs() As ConfigKeyDef) As Long
     AddConfigKey defs, idx, "Timezone", CONFIG_TYPE_STRING, "UTC", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "DefaultLocation", CONFIG_TYPE_STRING, "", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "UomCatalog", CONFIG_TYPE_STRING, "EA|LB|LBS|OZ|KG|G|GAL|QT|PT|L|ML|CS", False, CONFIG_SCOPE_WAREHOUSE
+    AddConfigKey defs, idx, "UomConversionCatalog", CONFIG_TYPE_STRING, "", False, CONFIG_SCOPE_WAREHOUSE
+    AddConfigKey defs, idx, "UomConversionCatalogVersion", CONFIG_TYPE_LONG, "1", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "BatchSize", CONFIG_TYPE_LONG, "500", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "LockTimeoutMinutes", CONFIG_TYPE_LONG, "3", False, CONFIG_SCOPE_WAREHOUSE
     AddConfigKey defs, idx, "HeartbeatIntervalSeconds", CONFIG_TYPE_LONG, "30", False, CONFIG_SCOPE_WAREHOUSE

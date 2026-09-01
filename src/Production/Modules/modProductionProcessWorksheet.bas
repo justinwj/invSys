@@ -18,9 +18,10 @@ Private Const COL_DESIGN_ID As Long = 8
 Private Const COL_DESIGN_VERSION As Long = 9
 Private Const COL_INSTRUCTION As Long = 10
 Private Const COL_REQUIREMENT_ID As Long = 11
-Private Const COL_OUTPUT_SKU As Long = 12
-Private Const COL_ACCEPTABLE_ITEM As Long = 13
-Private Const COL_ACCEPTED_SKU As Long = 14
+Private Const COL_QTY_MODE As Long = 12
+Private Const COL_OUTPUT_SKU As Long = 13
+Private Const COL_ACCEPTABLE_ITEM As Long = 14
+Private Const COL_ACCEPTED_SKU As Long = 15
 Private Const FIRST_ALTERNATIVE_PAIR As Long = 1
 Private Const DEFAULT_ALTERNATIVE_PAIRS As Long = 4
 
@@ -85,7 +86,7 @@ Public Function SendProcessDraftToWorksheet(ByVal wb As Workbook, _
     ws.Cells(tableTopRow + 2, 1).Value2 = "Description"
     ws.Cells(tableTopRow + 2, 2).Value2 = description
     ws.Cells(tableTopRow + 3, 1).Value2 = _
-        "INPUT quantities are grouped by UOM. Each group's batch basis and percentages calculate automatically."
+        "FIXED INPUT quantities calculate by UOM. ACTUAL inputs/outputs stay blank until Check In/Actual Output; do not enter a planned Qty."
 
     WriteWorksheetHeaders ws, tableHeaderRow, alternativePairCount
     Set tableRange = ws.Range(ws.Cells(tableHeaderRow, 1), _
@@ -144,6 +145,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
     Dim designVersion As String
     Dim uom As String
     Dim instructionText As String
+    Dim qtyMode As String
     Dim qty As Double
     Dim percentValue As Double
     Dim basisQty As Double
@@ -210,6 +212,8 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
         requirementId = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_REQUIREMENT_ID)))
         uom = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_UOM)))
         instructionText = Trim$(WorksheetValue(lo, rowIndex, COL_INSTRUCTION))
+        qtyMode = UCase$(Trim$(WorksheetValue(lo, rowIndex, COL_QTY_MODE)))
+        If qtyMode = "" Then qtyMode = "FIXED"
         hasQty = TryPositiveWorksheetNumber(WorksheetValue(lo, rowIndex, COL_QTY), qty)
         hasPercent = TryPositiveWorksheetNumber(WorksheetValue(lo, rowIndex, COL_PERCENT), percentValue)
         Call TryPositiveWorksheetNumber(WorksheetValue(lo, rowIndex, COL_BASIS_QTY), basisQty)
@@ -225,11 +229,19 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                     report = uom & " UOM is not in the Recipe UOM Catalog."
                     Exit Function
                 End If
-                If Not hasQty And Not hasPercent Then
+                If qtyMode <> "FIXED" And qtyMode <> "ACTUAL" Then
+                    report = "Qty Mode must be FIXED or ACTUAL."
+                    Exit Function
+                End If
+                If qtyMode = "ACTUAL" And (hasQty Or hasPercent Or basisQty > 0) Then
+                    report = "Variable -- determined at Check In INPUT cannot carry Qty, Percent, or Batch basis."
+                    Exit Function
+                End If
+                If qtyMode = "FIXED" And Not hasQty And Not hasPercent Then
                     report = "Each INPUT row needs a positive quantity or percentage."
                     Exit Function
                 End If
-                If hasPercent And basisQty <= 0 Then
+                If qtyMode = "FIXED" And hasPercent And basisQty <= 0 Then
                     report = "Each percentage INPUT needs a positive Batch basis quantity."
                     Exit Function
                 End If
@@ -238,11 +250,13 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                     Exit Function
                 End If
                 usedRowIds.Add rowId, True
-                inputUoms(uom) = True
+                If qtyMode = "FIXED" Then inputUoms(uom) = True
                 inputRowCount = inputRowCount + 1
-                If Not inputPercentTotals.Exists(uom) Then inputPercentTotals.Add uom, 0#
-                If hasPercent Then _
-                    inputPercentTotals(uom) = CDbl(inputPercentTotals(uom)) + percentValue
+                If qtyMode = "FIXED" Then
+                    If Not inputPercentTotals.Exists(uom) Then inputPercentTotals.Add uom, 0#
+                    If hasPercent Then _
+                        inputPercentTotals(uom) = CDbl(inputPercentTotals(uom)) + percentValue
+                End If
                 Set record = NewWorksheetRecord("REQUIREMENT")
                 record("RequirementId") = rowId
                 record("RequirementName") = rowName
@@ -250,6 +264,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 If hasPercent Then record("Percent") = percentValue
                 If basisQty > 0 Then record("YieldBasis") = basisQty
                 record("UOM") = uom
+                record("RequirementQtyMode") = qtyMode
                 records.Add record
                 AppendWorksheetAlternativeRecords lo, rowIndex, rowId, records
             Case "OUTPUT"
@@ -264,11 +279,19 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                     report = uom & " UOM is not in the Recipe UOM Catalog."
                     Exit Function
                 End If
-                If Not hasQty And Not hasPercent Then
+                If qtyMode <> "FIXED" And qtyMode <> "ACTUAL" Then
+                    report = "Qty Mode must be FIXED or ACTUAL."
+                    Exit Function
+                End If
+                If qtyMode = "ACTUAL" And (hasQty Or hasPercent Or basisQty > 0) Then
+                    report = "Variable -- determined by Actual Output OUTPUT cannot carry Qty, Percent, or Yield basis."
+                    Exit Function
+                End If
+                If qtyMode = "FIXED" And Not hasQty And Not hasPercent Then
                     report = "Each OUTPUT row needs a positive quantity or percentage."
                     Exit Function
                 End If
-                If hasPercent And basisQty <= 0 Then
+                If qtyMode = "FIXED" And hasPercent And basisQty <= 0 Then
                     report = "Each percentage OUTPUT needs a positive Yield basis quantity."
                     Exit Function
                 End If
@@ -290,6 +313,7 @@ Public Function ReadProcessDraftFromWorksheet(ByVal wb As Workbook, _
                 If hasPercent Then record("Percent") = percentValue
                 If basisQty > 0 Then record("YieldBasis") = basisQty
                 record("UOM") = uom
+                record("OutputQtyMode") = qtyMode
                 records.Add record
             Case "INSTRUCTION"
                 rowId = ResolveWorksheetRowId(rowId, usedRowIds)
@@ -705,6 +729,7 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
                 rowRecord("Percent") = modProductionReusableDesigns.ReusableRecordValue(record, "Percent")
                 rowRecord("BasisQty") = modProductionReusableDesigns.ReusableRecordValue(record, "YieldBasis")
                 rowRecord("UOM") = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+                rowRecord("QtyMode") = CellText(modProductionReusableDesigns.ReusableRecordValue(record, "RequirementQtyMode"))
                 rows.Add rowRecord
             Case "ALTERNATIVE"
                 Call AttachAlternativeToRequirementRow(rows, _
@@ -727,6 +752,7 @@ Private Function BuildWorksheetRows(ByVal payloadJson As String, _
                 rowRecord("Percent") = modProductionReusableDesigns.ReusableRecordValue(record, "Percent")
                 rowRecord("BasisQty") = modProductionReusableDesigns.ReusableRecordValue(record, "YieldBasis")
                 rowRecord("UOM") = modProductionReusableDesigns.ReusableRecordText(record, "UOM")
+                rowRecord("QtyMode") = CellText(modProductionReusableDesigns.ReusableRecordValue(record, "OutputQtyMode"))
                 rowRecord("DesignId") = modProductionReusableDesigns.ReusableRecordText(record, "ComponentDesignId")
                 rowRecord("DesignVersion") = modProductionReusableDesigns.ReusableRecordText(record, "ComponentDesignVersion")
                 rows.Add rowRecord
@@ -804,6 +830,7 @@ Private Function NewWorksheetRecord(ByVal recordType As String) As Object
     record("DesignVersion") = ""
     record("Instruction") = ""
     record("RequirementId") = ""
+    record("QtyMode") = "FIXED"
     For pairNumber = FIRST_ALTERNATIVE_PAIR To DEFAULT_ALTERNATIVE_PAIRS
         record("AcceptableItem" & CStr(pairNumber)) = ""
         record("AcceptedSku" & CStr(pairNumber)) = ""
@@ -857,6 +884,7 @@ Private Sub WriteWorksheetRecord(ByVal lo As ListObject, ByVal rowIndex As Long,
         .Cells(rowIndex, COL_DESIGN_VERSION).Value2 = record("DesignVersion")
         .Cells(rowIndex, COL_INSTRUCTION).Value2 = record("Instruction")
         .Cells(rowIndex, COL_REQUIREMENT_ID).Value2 = record("RequirementId")
+        .Cells(rowIndex, COL_QTY_MODE).Value2 = record("QtyMode")
         .Cells(rowIndex, COL_OUTPUT_SKU).Value2 = DictionaryText(record, "OutputSku")
         For pairNumber = FIRST_ALTERNATIVE_PAIR To AlternativePairCount(lo)
             .Cells(rowIndex, AlternativeItemColumnIndex(pairNumber)).Value2 = _
@@ -885,6 +913,7 @@ Private Sub ApplyProcessWorksheetManagedColumns(ByVal lo As ListObject)
     Application.AutoCorrect.AutoFillFormulasInLists = True
     ApplyProcessWorksheetTextIdentityFormats lo
     ApplyRecordTypeValidation lo
+    ApplyQtyModeValidation lo
     ApplyProcessWorksheetUomValidation lo
     EnsureWorksheetRowIds lo
     processIdCell = lo.Parent.Cells(lo.HeaderRowRange.Row - TABLE_HEADER_OFFSET + 1, 5).Address(True, True)
@@ -893,9 +922,9 @@ Private Sub ApplyProcessWorksheetManagedColumns(ByVal lo As ListObject)
     lo.ListColumns("Requirement ID").DataBodyRange.NumberFormat = "General"
     lo.ListColumns("Design ID").DataBodyRange.NumberFormat = "General"
     lo.ListColumns("Basis Qty").DataBodyRange.Formula = _
-        "=IF(UPPER([@[Record Type]])=""INPUT"",IFERROR(SUMIFS([Qty],[Record Type],""INPUT"",[UOM],[@UOM]),""""),"""")"
+        "=IF(AND(UPPER([@[Record Type]])=""INPUT"",UPPER([@[Qty Mode]])<>""ACTUAL""),IFERROR(SUMIFS([Qty],[Record Type],""INPUT"",[UOM],[@UOM]),""""),"""")"
     lo.ListColumns("Percent").DataBodyRange.Formula = _
-        "=IF(UPPER([@[Record Type]])=""INPUT"",IFERROR([@Qty]/[@[Basis Qty]]*100,""""),"""")"
+        "=IF(AND(UPPER([@[Record Type]])=""INPUT"",UPPER([@[Qty Mode]])<>""ACTUAL""),IFERROR([@Qty]/[@[Basis Qty]]*100,""""),"""")"
     lo.ListColumns("Design ID").DataBodyRange.Formula = _
         "=IF(AND(UPPER([@[Record Type]])=""OUTPUT"",[@ID]<>""""),""D-""&" & processIdCell & "&""-""&[@ID],"""")"
     lo.ListColumns("Design Version").DataBodyRange.Formula = _
@@ -915,6 +944,20 @@ CleanExit:
     Application.EnableEvents = priorEvents
     mApplyingManagedColumns = False
     On Error GoTo 0
+End Sub
+
+Private Sub ApplyQtyModeValidation(ByVal lo As ListObject)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    With lo.ListColumns("Qty Mode").DataBodyRange.Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+             Operator:=xlBetween, Formula1:="FIXED,ACTUAL"
+        .IgnoreBlank = True
+        .InCellDropdown = True
+        .ShowError = True
+        .ErrorTitle = "Choose quantity mode"
+        .ErrorMessage = "Select FIXED or ACTUAL."
+    End With
 End Sub
 
 Private Sub ApplyRecordTypeValidation(ByVal lo As ListObject)
@@ -1004,7 +1047,7 @@ Private Sub WriteWorksheetHeaders(ByVal ws As Worksheet, ByVal headerRow As Long
 
     headers = Array("Record Type", "ID", "Name", "Qty", "Percent", _
                     "Basis Qty", "UOM", "Design ID", "Design Version", "Instruction", _
-                    "Requirement ID", "Output SKU")
+                    "Requirement ID", "Qty Mode", "Output SKU")
     For index = LBound(headers) To UBound(headers)
         ws.Cells(headerRow, index + 1).Value2 = headers(index)
     Next index

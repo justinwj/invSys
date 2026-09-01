@@ -1163,6 +1163,26 @@ try {
                         $productionEaWholeUnitReport -match '(?:^|\|)RequirementHandlerRejected=True(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionEaWholeUnitPassed
                     $observedText += " || PRODUCTION_EA_WHOLE_UNIT=" + $productionEaWholeUnitReport
+                    [IO.File]::WriteAllText($progressPath, "invoke Production output regulation settings handler")
+                    $productionOutputRegulationReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProductionOutputRegulationActionContractTest")
+                    $productionOutputRegulationPassed = $productionOutputRegulationReport -match '^OK\|' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)SettingsPage=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)VersionedDefault=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)FractionalEaRejected=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)CompletionHandler=ValidateReusableActualOutput(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionOutputRegulationPassed
+                    $observedText += " || PRODUCTION_OUTPUT_REGULATION=" + $productionOutputRegulationReport
+                    [IO.File]::WriteAllText($progressPath, "invoke Production variable quantity mode handler")
+                    $productionVariableQuantityReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProductionVariableQuantityModeActionContractTest")
+                    $productionVariableQuantityPassed = $productionVariableQuantityReport -match '^OK\|' -and
+                        $productionVariableQuantityReport -match '(?:^|\|)RequirementActual=True(?:\||$)' -and
+                        $productionVariableQuantityReport -match '(?:^|\|)OutputActual=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionVariableQuantityPassed
+                    $observedText += " || PRODUCTION_VARIABLE_QUANTITY=" + $productionVariableQuantityReport
                     if ($ProductionEditExportOnly) {
                     [IO.File]::WriteAllText($progressPath, "invoke focused Production released Process edit and export")
                     $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
@@ -1184,9 +1204,10 @@ try {
                         -WorkbookName $operationsName `
                         -MacroName "mProduction.RunReusableProductionSurfaceContractTest")
                     $productionDesignPassed = $productionDesignReport -match '^OK\|' -and
-                        $productionDesignReport -match '(?:^|\|)Pages=5(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)Pages=6(?:\||$)' -and
                         $productionDesignReport -match '(?:^|\|)ProcessDesigner=True(?:\||$)' -and
                         $productionDesignReport -match '(?:^|\|)RecipeDesigner=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)ProductionSettings=True(?:\||$)' -and
                         $productionDesignReport -match '(?:^|\|)LegacyRecipeBuilder=False(?:\||$)'
                     $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
                     $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
@@ -1353,6 +1374,8 @@ try {
                         -MacroName "mProduction.RunChaiForkConvergenceRunActionContractTest")
                     $chaiRunPassed = $chaiRunReport -match '^OK\|' -and
                         $chaiRunReport -match '(?:^|\|)ChaiInitialWaitingUpstream=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiBatchNoteFrozen=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiBatchNoteRetained=True(?:\||$)' -and
                         $chaiRunReport -match '(?:^|\|)ChaiRoutedConvergenceInputs=True(?:\||$)' -and
                         $chaiRunReport -match '(?:^|\|)ChaiUpstreamExactKeysConsumed=True(?:\||$)' -and
                         $chaiRunReport -match '(?:^|\|)ChaiFinalBottlingRoutedInput=True(?:\||$)' -and

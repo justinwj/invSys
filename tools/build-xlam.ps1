@@ -468,7 +468,10 @@ function Add-RibbonCallbacksModule {
     [void]$lines.Add("    Select Case control.ID")
 
     foreach ($group in $RibbonConfig.Groups) {
-        foreach ($button in $group.Buttons) {
+        $callbackButtons = @()
+        if ($group.ContainsKey("Buttons")) { $callbackButtons += @($group.Buttons) }
+        if ($group.ContainsKey("PostStatusMenuButtons")) { $callbackButtons += @($group.PostStatusMenuButtons) }
+        foreach ($button in $callbackButtons) {
             [void]$lines.Add(("        Case ""{0}""" -f $button.Id))
             if ($button.ContainsKey("RequiredCapability") -and -not [string]::IsNullOrWhiteSpace($button.RequiredCapability)) {
                 [void]$lines.Add(("            If Not modRoleUiAccess.RequireCurrentUserCapabilityCached(""{0}"", ""Current user does not have {0} for this warehouse/station."") Then Exit Sub" -f $button.RequiredCapability))
@@ -640,6 +643,30 @@ function Get-RibbonXml {
                 [void]$xml.AppendLine("            <menuSeparator id=""sepRuntimeContextRefresh""/>")
                 [void]$xml.AppendLine(("            <button id=""{0}"" label=""Refresh / Details"" imageMso=""Refresh"" onAction=""RibbonRuntimeStatusRefresh""/>" -f $menu.RefreshButtonId))
                 [void]$xml.AppendLine("          </menu>")
+            }
+        }
+        if ($group.ContainsKey("PostStatusMenuButtons")) {
+            foreach ($button in $group.PostStatusMenuButtons) {
+                if ($null -eq $button) { continue }
+                $imageXml = ""
+                $showImage = "false"
+                $screentipXml = ""
+                $labelXml = (' label="{0}"' -f $button.Label)
+                if ($button.ContainsKey("ImageMso") -and -not [string]::IsNullOrWhiteSpace($button.ImageMso)) {
+                    $imageXml = (' imageMso="{0}"' -f $button.ImageMso)
+                    $showImage = "true"
+                }
+                if ($button.ContainsKey("Screentip") -and -not [string]::IsNullOrWhiteSpace($button.Screentip)) {
+                    $screentipXml = (' screentip="{0}"' -f $button.Screentip)
+                }
+                if ($button.ContainsKey("GetLabel") -and -not [string]::IsNullOrWhiteSpace($button.GetLabel)) {
+                    $labelXml = (' getLabel="{0}"' -f $button.GetLabel)
+                }
+                $enabledXml = ""
+                if ($button.ContainsKey("RequiredCapability") -and -not [string]::IsNullOrWhiteSpace($button.RequiredCapability)) {
+                    $enabledXml = (' getEnabled="{0}"' -f $enabledCallbackName)
+                }
+                [void]$xml.AppendLine(("          <button id=""{0}""{1} size=""large"" showImage=""{2}""{3}{4}{5} onAction=""{6}""/>" -f $button.Id, $labelXml, $showImage, $imageXml, $screentipXml, $enabledXml, $RibbonConfig.CallbackName))
             }
         }
         [void]$xml.AppendLine("        </group>")
@@ -883,7 +910,9 @@ $projectMap = @(
                         }
                     )
                     Buttons = @(
-                        @{ Id = "btnOperationsServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
+                        @{ Id = "btnOperationsServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" }
+                    )
+                    PostStatusMenuButtons = @(
                         @{ Id = "btnOperationsCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" }
                     )
                     StatusLabels = @(
@@ -895,7 +924,7 @@ $projectMap = @(
                     Id      = "grpOperationsOverview"
                     Label   = "Overview"
                     Buttons = @(
-                        @{ Id = "btnOperationsInventoryViewer"; Label = "Inventory Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "PivotTableInsert"; Screentip = "View current inventory levels" }
+                        @{ Id = "btnOperationsInventoryViewer"; Label = "Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "PivotTableInsert"; Screentip = "View current inventory levels" }
                     )
                 },
                 @{

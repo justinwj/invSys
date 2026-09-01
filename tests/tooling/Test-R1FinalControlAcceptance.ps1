@@ -31,7 +31,7 @@ function Get-VbaProcedureText {
 
 Add-Check "Viewer.RibbonIcon" `
     ($buildText -match 'btnOperationsInventoryViewer[^\r\n]*ImageMso\s*=\s*"PivotTableInsert"') `
-    "Inventory Viewer uses a built-in Excel icon that is visible in the Operations ribbon."
+    "Viewer uses a built-in Excel icon that is visible in the Operations ribbon."
 
 $boxingLists = @(
     "mLstBoxBuilderDesigns",

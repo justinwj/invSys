@@ -256,6 +256,13 @@ try {
     $filterReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerFilterForTest" `
         -Arguments @("SKU-SHIP"))
+    $step = "export Viewer ListBox to a new worksheet table"
+    $listBoxExportReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+        -MacroName "modInventoryViewer.RunInventoryViewerListBoxTableActionForTest")
+    $listBoxExportWb = $excel.ActiveWorkbook
+    if ($null -ne $listBoxExportWb -and $listBoxExportWb.Name -ne $operationsName) {
+        $listBoxExportWb.Close($false)
+    }
     $eventsReport = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
         -MacroName "modInventoryViewer.RunInventoryViewerEventsForTest")
 
@@ -317,15 +324,20 @@ try {
     $filterOk = $filterReport -match '^OK\|' -and
         $filterReport -match '(?:^|\|)VisibleRows=1(?:\||$)' -and
         $filterReport -match '(?:^|\|)Generation=1(?:\||$)'
+    $listBoxExportOk = $listBoxExportReport -match '^OK\|' -and
+        $listBoxExportReport -match '(?:^|\|)ListBox->Table=True(?:\||$)' -and
+        $listBoxExportReport -match '(?:^|\|)Exported=True(?:\||$)' -and
+        $listBoxExportReport -match 'new unsaved workbook'
     $snapshotAdvanced = $snapshotHashBefore -ne $snapshotHashPublished
     $snapshotUnchanged = $snapshotHashPublished -eq $snapshotHashAfter
     $eventsOk = $eventsReport -match '^OK\|' -and
-        $eventsReport -match '(?:^|\|)TabCount=2(?:\||$)' -and
-        $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)TabCount=3(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)TabCaptions=Inventory,Events,ListBox->Table(?:\||$)' -and
         $eventsReport -match '(?:^|\|)SelectedTab=Events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)Title=Inventory and shipping events(?:\||$)' -and
         $eventsReport -match '(?:^|\|)VisibleRows=6(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ReadableDates=6(?:\||$)' -and
+        $eventsReport -match '(?:^|\|)EventHeaderAligned=True(?:\||$)' -and
         $eventsReport -match '(?:^|\|)FirstReference=PROD-OUTPUT-VIEWER(?:\||$)' -and
         $eventsReport -match '(?:^|\|)RemoveRows=1(?:\||$)' -and
         $eventsReport -match '(?:^|\|)ShipmentHeldRows=0(?:\||$)' -and
@@ -364,12 +376,13 @@ try {
     $facts.FirstActionRows = if ($firstOk) { 3 } else { 0 }
     $facts.RepeatedLaunchReusedGeneration = $secondReused
     $facts.FilterVisibleRows = if ($filterOk) { 1 } else { 0 }
+    $facts.ListBoxTableExport = $listBoxExportOk
     $facts.EventsVisibleRows = if ($eventsOk) { 6 } else { 0 }
     $facts.RefreshedEventsVisibleRows = if ($refreshedEventsOk) { 7 } else { 0 }
     $facts.NewestPublishedReference = if ($refreshedEventsOk) { "BOL-VIEWER-NEW" } else { "Unexpected" }
     $facts.ReadableEventDates = $eventsOk -and $refreshedEventsOk
-    $facts.ViewerTabCount = if ($eventsOk) { 2 } else { 0 }
-    $facts.ViewerTabCaptions = if ($eventsOk) { "Inventory,Events" } else { "Unexpected" }
+    $facts.ViewerTabCount = if ($eventsOk) { 3 } else { 0 }
+    $facts.ViewerTabCaptions = if ($eventsOk) { "Inventory,Events,ListBox->Table" } else { "Unexpected" }
     $facts.SelectedViewerTab = if ($eventsOk) { "Events" } else { "Unexpected" }
     $facts.RemoveEventsVisible = $eventsOk
     $facts.InternalReservationHidden = $eventsOk
@@ -381,6 +394,7 @@ try {
     $facts.InvalidRememberedRangeFallsBackToAll = $invalidRememberedFallbackOk
     $facts.SnapshotHashUnchanged = $snapshotUnchanged
     $facts.NewPublicationChangedSnapshot = $snapshotAdvanced
+    if (-not $listBoxExportOk) { $facts.ListBoxTableExportReport = $listBoxExportReport }
     if (-not $eventsOk) { $facts.InitialEventsReport = $eventsReport }
     if (-not $refreshedEventsOk) { $facts.RefreshedEventsReport = $refreshedEventsReport }
     if (-not $dateFiltersOk) {
@@ -393,12 +407,12 @@ try {
     $passed = $configLoaded -and $authLoaded -and
         $targetResult.StartsWith("OK|") -and $targetPathsSet -and
         $signInResult.StartsWith("OK|") -and $snapshotCreated -and
-        $firstOk -and $secondReused -and $filterOk -and $eventsOk -and
+        $firstOk -and $secondReused -and $filterOk -and $listBoxExportOk -and $eventsOk -and
         $refreshedEventsOk -and $dateFiltersOk -and $rememberedRangeOk -and
         $invalidRememberedFallbackOk -and
         $snapshotAdvanced -and $snapshotUnchanged
     $detail = if ($passed) {
-        "The public Operations Viewer action loaded readable Receipt, Production input/output, and Shipping Remove events, excluded the internal SHIP_RESERVE fixture from the operator-action log, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
+        "The public Operations Viewer action exported the displayed ListBox to a new unsaved worksheet table, loaded readable Receipt, Production input/output, and Shipping Remove events, excluded the internal SHIP_RESERVE fixture from the operator-action log, refreshed the already-open Events page to show a newly published receipt first, applied All/Day/Week/Month/custom rolling-day filters, restored custom 14 days after form close/reopen, kept Events read-only, and left the new snapshot byte-for-byte unchanged."
     } else {
         "The packaged Viewer contract failed at step '$step'."
     }

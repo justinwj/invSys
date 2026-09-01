@@ -14,6 +14,7 @@ Private Const SHEET_PROCESS_INSTRUCTIONS As String = "ProcessInstructions"
 Private Const SHEET_RECIPES As String = "Recipes"
 Private Const SHEET_RECIPE_PROCESSES As String = "RecipeProcesses"
 Private Const SHEET_RECIPE_CONNECTIONS As String = "RecipeConnections"
+Private Const SHEET_RECIPE_OUTPUT_REGULATIONS As String = "RecipeOutputRegulations"
 
 Private Const TABLE_DESIGNS As String = "tblDesigns"
 Private Const TABLE_LINES As String = "tblDesignLines"
@@ -28,6 +29,7 @@ Private Const TABLE_PROCESS_INSTRUCTIONS As String = "tblProcessInstructions"
 Private Const TABLE_RECIPES As String = "tblRecipes"
 Private Const TABLE_RECIPE_PROCESSES As String = "tblRecipeProcesses"
 Private Const TABLE_RECIPE_CONNECTIONS As String = "tblRecipeConnections"
+Private Const TABLE_RECIPE_OUTPUT_REGULATIONS As String = "tblRecipeOutputRegulations"
 
 Public Function EnsureDesignsSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                     Optional ByRef report As String = "") As Boolean
@@ -57,6 +59,7 @@ Public Function EnsureDesignsSchema(Optional ByVal targetWb As Workbook = Nothin
     EnsureRecipesTable wb
     EnsureRecipeProcessesTable wb
     EnsureRecipeConnectionsTable wb
+    EnsureRecipeOutputRegulationsTable wb
     report = "OK"
     EnsureDesignsSchema = True
     Exit Function
@@ -90,13 +93,13 @@ Public Function ValidateDesignsSchema(ByVal targetWb As Workbook) As String
         Array("ProcessId", "ProcessVersion", "ProcessName", "Status", "SourceEventID"))
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_REQUIREMENTS, _
-        Array("ProcessId", "ProcessVersion", "RequirementId", "RequirementName", "Qty", "Percent", "YieldBasis", "UOM"))
+        Array("ProcessId", "ProcessVersion", "RequirementId", "RequirementName", "Qty", "Percent", "YieldBasis", "UOM", "RequirementQtyMode"))
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_ALTERNATIVES, _
         Array("ProcessId", "ProcessVersion", "RequirementId", "AlternativeOrdinal", "ITEM_CODE"))
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_OUTPUTS, _
-        Array("ProcessId", "ProcessVersion", "OutputId", "OutputName", "ITEM_CODE", "Qty", "Percent", "YieldBasis", "UOM"))
+        Array("ProcessId", "ProcessVersion", "OutputId", "OutputName", "ITEM_CODE", "Qty", "Percent", "YieldBasis", "UOM", "OutputQtyMode", "OutputRegulationEnabled", "OutputFloorQty", "OutputCeilingQty"))
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_PROCESS_INSTRUCTIONS, _
         Array("ProcessId", "ProcessVersion", "InstructionOrdinal", "Instruction"))
@@ -109,6 +112,9 @@ Public Function ValidateDesignsSchema(ByVal targetWb As Workbook) As String
     If ValidateDesignsSchema <> "" Then Exit Function
     ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_RECIPE_CONNECTIONS, _
         Array("RecipeId", "RecipeVersion", "FromProcessNodeId", "FromOutputId", "ToProcessNodeId", "ToRequirementId", "Qty", "Percent", "UOM"))
+    If ValidateDesignsSchema <> "" Then Exit Function
+    ValidateDesignsSchema = ValidateRequiredTable(targetWb, TABLE_RECIPE_OUTPUT_REGULATIONS, _
+        Array("RecipeId", "RecipeVersion", "ProcessNodeId", "ProcessId", "ProcessVersion", "OutputId", "OutputRegulationEnabled", "OutputFloorQty", "OutputCeilingQty"))
 End Function
 
 Private Sub EnsureDesignsTable(ByVal wb As Workbook)
@@ -152,7 +158,7 @@ End Sub
 Private Sub EnsureProcessRequirementsTable(ByVal wb As Workbook)
     EnsureTable wb, SHEET_PROCESS_REQUIREMENTS, TABLE_PROCESS_REQUIREMENTS, Array( _
         "ProcessId", "ProcessVersion", "RequirementId", "RequirementName", _
-        "Qty", "Percent", "YieldBasis", "UOM")
+        "Qty", "Percent", "YieldBasis", "UOM", "RequirementQtyMode")
 End Sub
 
 Private Sub EnsureProcessAlternativesTable(ByVal wb As Workbook)
@@ -164,7 +170,8 @@ Private Sub EnsureProcessOutputsTable(ByVal wb As Workbook)
     EnsureTable wb, SHEET_PROCESS_OUTPUTS, TABLE_PROCESS_OUTPUTS, Array( _
         "ProcessId", "ProcessVersion", "OutputId", "OutputName", "ITEM_CODE", _
         "ComponentDesignId", "ComponentDesignVersion", "Qty", "Percent", _
-        "YieldBasis", "UOM")
+        "YieldBasis", "UOM", "OutputQtyMode", "OutputRegulationEnabled", "OutputFloorQty", _
+        "OutputCeilingQty")
 End Sub
 
 Private Sub EnsureProcessInstructionsTable(ByVal wb As Workbook)
@@ -189,6 +196,13 @@ Private Sub EnsureRecipeConnectionsTable(ByVal wb As Workbook)
     EnsureTable wb, SHEET_RECIPE_CONNECTIONS, TABLE_RECIPE_CONNECTIONS, Array( _
         "RecipeId", "RecipeVersion", "FromProcessNodeId", "FromOutputId", _
         "ToProcessNodeId", "ToRequirementId", "Qty", "Percent", "UOM")
+End Sub
+
+Private Sub EnsureRecipeOutputRegulationsTable(ByVal wb As Workbook)
+    EnsureTable wb, SHEET_RECIPE_OUTPUT_REGULATIONS, TABLE_RECIPE_OUTPUT_REGULATIONS, Array( _
+        "RecipeId", "RecipeVersion", "ProcessNodeId", "ProcessId", _
+        "ProcessVersion", "OutputId", "OutputRegulationEnabled", _
+        "OutputFloorQty", "OutputCeilingQty")
 End Sub
 
 Private Sub EnsureTable(ByVal wb As Workbook, ByVal sheetName As String, _
