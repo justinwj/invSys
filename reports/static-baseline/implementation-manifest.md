@@ -1,10 +1,10 @@
 # invSys Static Implementation Manifest
 
 - Schema: 1.0.0
-- Generated: 2026-08-31T22:07:40Z
+- Generated: 2026-09-01T20:50:38Z
 - Packages: 6
-- Components: 154
-- Procedures: 5285
+- Components: 156
+- Procedures: 5360
 - Literal Application.Run targets: 8
 - Unresolved dynamic calls: 45
 
@@ -16,7 +16,7 @@
 | Core | invSys_Core | invSys.Core.xlam | 57 |
 | DesignsDomain | invSys_Designs_Domain | invSys.Designs.Domain.xlam | 14 |
 | InventoryDomain | invSys_Inventory_Domain | invSys.Inventory.Domain.xlam | 10 |
-| Operations | invSys_Operations | invSys.Operations.xlam | 39 |
+| Operations | invSys_Operations | invSys.Operations.xlam | 41 |
 | OperationsShadow | invSys_Operations_Shadow | invSys.Operations.xlam | 0 |
 
 ## Dynamic roots
@@ -146,6 +146,7 @@
 | mBtnDeleteGenerated_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnDeleteItem_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnEditMode_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnExportListBox_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnGeneratePin_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHistory_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnHistorySheet_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -177,6 +178,8 @@
 | mBtnOK_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpen_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnOpenReceiving_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnOutputRegulationApply_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnOutputRegulationClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessClear_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessInstructionAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnProcessInstructionDown_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -249,6 +252,8 @@
 | mBtnSharePointHelper_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnStage_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomAdd_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnUomCatalogRetrieve_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mBtnUomCatalogSend_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomRemove_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUomReset_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mBtnUpdate_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -269,6 +274,10 @@
 | mCmbEditItem_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbEditItem_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbLineIo_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbOutputRegulationNode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbOutputRegulationScope_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbProcessOutputQtyMode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mCmbRequirementQtyMode_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbRunLocation_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbRunProcess_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mCmbTreeRunLocation_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -289,6 +298,7 @@
 | mLstHold_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstLoaderLines_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstManagerOutput_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mLstOutputRegulations_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstProcesses_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstProcessInstructions_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mLstProcessOutputs_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -326,6 +336,7 @@
 | mTxtPaletteSplit_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtPicker_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtQty_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| mTxtRunBatchNote_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtSearch_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | mTxtTreePaletteQty_Change | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
@@ -340,6 +351,7 @@
 | optArchiveOnly_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | optArchiveRetire_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
 | optArchiveRetireDelete_Click | USERFORM_EVENT | tools/contracts/vba-dynamic-roots.json |
+| ProcessRecordIsActual | PROCESSOR_HANDLER | tools/contracts/vba-dynamic-roots.json |
 | RibbonAccessStatusGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonCurrentUserGetLabel | RIBBON_CALLBACK | tools/build-xlam.ps1 |
 | RibbonOnActionAdmin | RIBBON_CALLBACK | tools/build-xlam.ps1 |

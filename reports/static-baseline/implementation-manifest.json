@@ -1,7 +1,7 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "implementation-manifest",
-    "generatedAtUtc":  "2026-09-01T08:45:56Z",
+    "generatedAtUtc":  "2026-09-01T20:50:38Z",
     "sourceRoot":  "src",
     "packages":  [
                      {
@@ -133134,6 +133134,7 @@
                                                  "tests/integration/test_ReceivingReadiness.bas",
                                                  "tests/integration/test_RetireMigrate.bas",
                                                  "tests/integration/test_TesterBundle.bas",
+                                                 "tests/tooling/Test-Phase6TwoWarehouseProofHarness.ps1",
                                                  "tests/tooling/Test-Plan022LauncherContracts.ps1",
                                                  "tests/tooling/Test-Plan022Slice4aiAdminInventoryWorksheet.ps1",
                                                  "tests/tooling/Test-Plan022Slice4akAdminAddVisibilityDropdowns.ps1",
@@ -137224,6 +137225,7 @@
                            {
                                "entryPoint":  "RunHQAggregation",
                                "testPaths":  [
+                                                 "tests/tooling/Test-Phase6TwoWarehouseProofHarness.ps1",
                                                  "tests/unit/TestPhase5HqBoundary.bas",
                                                  "tests/unit/TestPhase5Sync.bas"
                                              ]

@@ -1,10 +1,10 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "reviewed-cleanup-backlog",
-    "generatedAtUtc":  "2026-08-31T22:07:40Z",
+    "generatedAtUtc":  "2026-09-01T20:50:38Z",
     "sourceReports":  {
-                          "implementationManifestSha256":  "b69ee73365f7ee3177847e5c5416312f33326797261a4a6a6d371981144c2e2f",
-                          "maintenanceCandidatesSha256":  "8b63abed9d1369286499f6b7f25e0d8dd6de7d7f34029eeaec2e57e61d151f49"
+                          "implementationManifestSha256":  "b4dff683f545b14787e2d70ac1222601c5e026bf9102e2cddab92e36d6b53430",
+                          "maintenanceCandidatesSha256":  "bcc88890f90e06d999778082160fed17a7c024853c27ef6602e8777c922ee01d"
                       },
     "policy":  {
                    "automaticDeletionAllowed":  false,
@@ -13,8 +13,8 @@
                    "scannerConfidenceIsDeletionAuthority":  false
                },
     "summary":  {
-                    "scannerCandidateCount":  1052,
-                    "reviewedCandidateCount":  1054,
+                    "scannerCandidateCount":  1066,
+                    "reviewedCandidateCount":  1068,
                     "manualCandidateCount":  2,
                     "approvedDeletionCount":  0,
                     "highConfidenceDeletionCount":  0
@@ -27,7 +27,7 @@
                         },
                         {
                             "name":  "PRODUCTION",
-                            "candidateCount":  211,
+                            "candidateCount":  222,
                             "reason":  "Production-owned forms, services, and role package source."
                         },
                         {
@@ -42,12 +42,12 @@
                         },
                         {
                             "name":  "CORE",
-                            "candidateCount":  285,
+                            "candidateCount":  286,
                             "reason":  "Headless shared runtime and developer-support source in Core."
                         },
                         {
                             "name":  "DOMAINS",
-                            "candidateCount":  67,
+                            "candidateCount":  68,
                             "reason":  "Inventory and Designs Domain authority source."
                         },
                         {
@@ -57,7 +57,7 @@
                         },
                         {
                             "name":  "DEVELOPER_TOOLING",
-                            "candidateCount":  13,
+                            "candidateCount":  14,
                             "reason":  "Build, scan, report, and other developer-only tooling."
                         },
                         {
@@ -133,7 +133,7 @@
                                                   "sourcePath":  "src/Core/Modules/modConfig.bas",
                                                   "componentName":  "modConfig",
                                                   "packageKey":  "Core",
-                                                  "baselineLineCount":  1679,
+                                                  "baselineLineCount":  1683,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -196,7 +196,7 @@
                                                   "sourcePath":  "src/DesignsDomain/Modules/modDesignsApply.bas",
                                                   "componentName":  "modDesignsApply",
                                                   "packageKey":  "DesignsDomain",
-                                                  "baselineLineCount":  1568,
+                                                  "baselineLineCount":  1775,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -217,28 +217,28 @@
                                                   "sourcePath":  "src/Production/Forms/frmProduction.frm",
                                                   "componentName":  "frmProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  11049,
+                                                  "baselineLineCount":  11700,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/modProductionProcessWorksheet.bas",
                                                   "componentName":  "modProductionProcessWorksheet",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  1319,
+                                                  "baselineLineCount":  1362,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/modProductionReusableRun.bas",
                                                   "componentName":  "modProductionReusableRun",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  2488,
+                                                  "baselineLineCount":  2781,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
                                                   "sourcePath":  "src/Production/Modules/mProduction.bas",
                                                   "componentName":  "mProduction",
                                                   "packageKey":  "Production",
-                                                  "baselineLineCount":  13204,
+                                                  "baselineLineCount":  13279,
                                                   "growthAllowedWithoutException":  false
                                               },
                                               {
@@ -12196,6 +12196,29 @@
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
                        },
                        {
+                           "id":  "reachability:src_Core_Modules_modUomSettings.bas:modUomSettings.TestUomCatalogConversionContract",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "CORE",
+                           "componentName":  "modUomSettings",
+                           "procedureNames":  [
+                                                  "TestUomCatalogConversionContract"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Core/Modules/modUomSettings.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Core_Modules_modUR_ExcelIntegration.bas:modUR_ExcelIntegration.DisableEvents",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "REMOVE",
@@ -13943,6 +13966,29 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mBtnExportListBox_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "DEVELOPER_TOOLING",
+                           "componentName":  "frmInventoryViewer",
+                           "procedureNames":  [
+                                                  "mBtnExportListBox_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Operations/Forms/frmInventoryViewer.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_Operations_Forms_frmInventoryViewer.frm:frmInventoryViewer.mBtnRefresh_Click",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -14225,6 +14271,7 @@
                                                   "GetEventTextDesign",
                                                   "GetRequirementAlternativeInfo",
                                                   "HasReleasedRecipeDependency",
+                                                  "IsEachUom",
                                                   "IsReusableProductionEvent",
                                                   "IsTextDesignIdentityColumn",
                                                   "NextDesignAppliedSeq",
@@ -14235,7 +14282,9 @@
                                                   "PayloadHasLine",
                                                   "PayloadPositiveNumber",
                                                   "PayloadText",
+                                                  "PayloadTrue",
                                                   "PayloadValue",
+                                                  "ProcessRecordIsActual",
                                                   "ProjectProcessPayloadItem",
                                                   "ProjectRecipePayloadItem",
                                                   "ReadDesignTableText",
@@ -14253,7 +14302,10 @@
                                                   "TryGetProcessRequirementForRecipe",
                                                   "TryPositiveDouble",
                                                   "ValidateLifecycleTransition",
+                                                  "ValidateOutputRegulation",
+                                                  "ValidateProcessQuantityMode",
                                                   "ValidateProcessSavePayload",
+                                                  "ValidateRecipeOutputRegulations",
                                                   "ValidateRecipeReleaseContract",
                                                   "ValidateRecipeSavePayload"
                                               ],
@@ -15644,6 +15696,29 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_DesignsDomain_Modules_modDesignsApply.bas:modDesignsApply.ProcessRecordIsActual",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "DOMAINS",
+                           "componentName":  "modDesignsApply",
+                           "procedureNames":  [
+                                                  "ProcessRecordIsActual"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/DesignsDomain/Modules/modDesignsApply.bas"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_DesignsDomain_Modules_modDesignsInit.bas:modDesignsInit.Auto_Open",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -15980,6 +16055,30 @@
                            "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
                        },
                        {
+                           "id":  "duplicate:dbcd6807f0f8543d:ApplyQtyModeValidation+ApplyRecordTypeValidation",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "REPLACE_DUPLICATE",
+                           "disposition":  "REPLACE_DUPLICATE",
+                           "scannerConfidence":  "HIGH",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "REQUIRES_PROTECTING_TEST",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "modProductionProcessWorksheet",
+                           "procedureNames":  [
+                                                  "ApplyQtyModeValidation",
+                                                  "ApplyRecordTypeValidation"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/modProductionProcessWorksheet.bas"
+                                           ],
+                           "reason":  "Normalized procedure bodies are identical; review before consolidation. Scanner confidence alone is not deletion authority; no protecting test is currently associated with this candidate.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Choose one typed implementation boundary and protect every affected caller before consolidating duplicate bodies."
+                       },
+                       {
                            "id":  "module-size:src_Production_Forms_frmProduction.frm:frmProduction",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "SPLIT_MODULE",
@@ -16001,6 +16100,7 @@
                                                   "AddLabel",
                                                   "AddList",
                                                   "AddNumericReusableField",
+                                                  "AddOutputRegulationListRow",
                                                   "AddProcessOutputRecord",
                                                   "AddProcessRequirementRecord",
                                                   "AddRecipeBuilderLine",
@@ -16019,6 +16119,8 @@
                                                   "AddUniqueComboItem",
                                                   "AppendLayoutIssue",
                                                   "ApplyBatchScaleToRunList",
+                                                  "ApplyOutputQtyMode",
+                                                  "ApplyRequirementQtyMode",
                                                   "ApplyReusablePaletteProcessProjection",
                                                   "ApplyRunAllocationOverride",
                                                   "ApplySelectedProductionOutput",
@@ -16034,6 +16136,7 @@
                                                   "BuildLayout",
                                                   "BuildLayoutGeometryReport",
                                                   "BuildLoaderPage",
+                                                  "BuildOutputRegulationSettingsPage",
                                                   "BuildProcessDesignerPage",
                                                   "BuildProcessPayload",
                                                   "BuildRecipeBuilderPage",
@@ -16114,6 +16217,7 @@
                                                   "FindProcessComponentEditorRow",
                                                   "FindProductionOutputTableRow",
                                                   "FindRecipeOutputFlowRowForTest",
+                                                  "FindRecipeOutputRegulation",
                                                   "FindReusablePaletteItemName",
                                                   "FindReusablePaletteSystemKey",
                                                   "FirstNonBlankCheckRow",
@@ -16192,6 +16296,8 @@
                                                   "mBtnManagerNext_Click",
                                                   "mBtnManagerPrint_Click",
                                                   "mBtnManagerRefresh_Click",
+                                                  "mBtnOutputRegulationApply_Click",
+                                                  "mBtnOutputRegulationClear_Click",
                                                   "mBtnProcessClear_Click",
                                                   "mBtnProcessInstructionAdd_Click",
                                                   "mBtnProcessInstructionDown_Click",
@@ -16239,10 +16345,16 @@
                                                   "mBtnRunTreeApplyPalette_Click",
                                                   "mBtnRunTreeCollapseAll_Click",
                                                   "mBtnRunTreeExpandAll_Click",
+                                                  "mBtnUomCatalogRetrieve_Click",
+                                                  "mBtnUomCatalogSend_Click",
                                                   "mCmbConnectionFromNode_Change",
                                                   "mCmbConnectionOutput_Change",
                                                   "mCmbConnectionToNode_Change",
                                                   "mCmbLineIo_Change",
+                                                  "mCmbOutputRegulationNode_Change",
+                                                  "mCmbOutputRegulationScope_Change",
+                                                  "mCmbProcessOutputQtyMode_Change",
+                                                  "mCmbRequirementQtyMode_Change",
                                                   "mCmbRunLocation_Change",
                                                   "mCmbRunProcess_Change",
                                                   "mCmbTreeRunLocation_Change",
@@ -16253,6 +16365,7 @@
                                                   "mLstBuilderRecipes_Click",
                                                   "mLstLoaderLines_Click",
                                                   "mLstManagerOutput_Click",
+                                                  "mLstOutputRegulations_Click",
                                                   "mLstProcesses_Click",
                                                   "mLstProcessInstructions_Click",
                                                   "mLstProcessOutputs_Click",
@@ -16268,6 +16381,7 @@
                                                   "mTxtOutputReal_Change",
                                                   "mTxtPaletteQty_Change",
                                                   "mTxtPaletteSplit_Change",
+                                                  "mTxtRunBatchNote_Change",
                                                   "mTxtTreePaletteQty_Change",
                                                   "mTxtTreePaletteSplit_Change",
                                                   "NewReusableRecord",
@@ -16286,6 +16400,8 @@
                                                   "NzDblLocal",
                                                   "NzStr",
                                                   "OrderedRunProcesses",
+                                                  "OutputQtyMode",
+                                                  "OutputRegulationRecipeScope",
                                                   "OutputUomIsCatalogValue",
                                                   "PaletteQtyTextChanged",
                                                   "PaletteSplitTextChanged",
@@ -16299,6 +16415,7 @@
                                                   "ProcessComponentIdentityExists",
                                                   "ProcessKey",
                                                   "ProcessNameForIdentity",
+                                                  "ProcessOutputRegulationValue",
                                                   "ProcessRecordsForRecipeNode",
                                                   "ProcessRecordsHaveAlternative",
                                                   "ProcessRecordsHaveAlternativeItem",
@@ -16334,6 +16451,7 @@
                                                   "RefreshLoaderState",
                                                   "RefreshManagerState",
                                                   "RefreshOutputDesignIdentity",
+                                                  "RefreshOutputRegulationSettings",
                                                   "RefreshProcessOutputUomCatalog",
                                                   "RefreshProductionInventoryReadModel",
                                                   "RefreshProductionOutputList",
@@ -16351,6 +16469,7 @@
                                                   "RefreshRunProcessChoices",
                                                   "RegisterRunListCaptionBand",
                                                   "RegisterRunListHeaderBand",
+                                                  "RemoveRecipeOutputRegulation",
                                                   "RemoveReusableInventoryAlternative",
                                                   "RemoveSelectedAllowedRow",
                                                   "RemoveSelectedListRow",
@@ -16358,6 +16477,7 @@
                                                   "RemoveSelectedRecipeNode",
                                                   "RenumberInstructionOrdinals",
                                                   "RenumberRecipeExecutionOrder",
+                                                  "RequirementQtyMode",
                                                   "ResequenceRecipeBuilderLines",
                                                   "ResetInventoryCache",
                                                   "ResizeProductionLayout",
@@ -16369,6 +16489,7 @@
                                                   "ReusableOutputRowsForBatch",
                                                   "ReusableOutputSystemKeyForTest",
                                                   "ReusablePaletteRowsForItemName",
+                                                  "ReusableRecordBoolean",
                                                   "ReusableRunFixtureAvailableQty",
                                                   "ReusableRunProcessNameForNode",
                                                   "RunAllocationGroupKeyFromList",
@@ -16376,6 +16497,7 @@
                                                   "RunAllocationPercentForGroup",
                                                   "RunAllocationStatusText",
                                                   "RunBaseQtyFromList",
+                                                  "RunBatchNoteTestEventContract",
                                                   "RunChoiceLocationAllowed",
                                                   "RunChoiceWouldExceedInventory",
                                                   "RunIngredientMatchesFilter",
@@ -16407,6 +16529,7 @@
                                                   "SetLineIo",
                                                   "SetOperatorWorkbook",
                                                   "SetPaletteTextSilently",
+                                                  "SetProcessOutputRegulation",
                                                   "SetRowValue",
                                                   "SetRunAllocationVisualState",
                                                   "SetRunLocationForActionTest",
@@ -16420,6 +16543,7 @@
                                                   "StoreRunProcess",
                                                   "SubmitProcessAction",
                                                   "SubmitRecipeAction",
+                                                  "SyncReusableRunBatchNote",
                                                   "SyncRunAllocationToPaletteList",
                                                   "SyncRunLocationCombo",
                                                   "SyncRunProcessCombo",
@@ -16442,9 +16566,13 @@
                                                   "TestProcessWorksheetOutputPickerContract",
                                                   "TestProcessWorksheetRoundTripContract",
                                                   "TestProcessWorksheetWorkbenchContract",
+                                                  "TestProductionBatchNoteHandlerContract",
                                                   "TestProductionCheckRowsRecognizeSkuIdentity",
+                                                  "TestProductionExternalStockUomConversionActionContract",
                                                   "TestProductionOutputDisplayedBatch",
+                                                  "TestProductionOutputRegulationActionContract",
                                                   "TestProductionRunLocationAllowed",
+                                                  "TestProductionVariableQuantityModeActionContract",
                                                   "TestRecipeBuilderHasInstructionIo",
                                                   "TestRecipeBuilderLifecycleAndHeadersReady",
                                                   "TestRecipeBuilderLineActionsFitLayout",
@@ -16516,6 +16644,7 @@
                                                   "ApplyProcessWorksheetManagedColumns",
                                                   "ApplyProcessWorksheetTextIdentityFormats",
                                                   "ApplyProcessWorksheetUomValidation",
+                                                  "ApplyQtyModeValidation",
                                                   "ApplyRecordTypeValidation",
                                                   "AttachAlternativeToRequirementRow",
                                                   "BuildManagedItemNameBySku",
@@ -16596,6 +16725,7 @@
                                                   "AllocationTotalForRequirement",
                                                   "AppendEventId",
                                                   "AppendProcessorReport",
+                                                  "ApplyRecipeOutputRegulationOverrides",
                                                   "ApplyReusableRunAllocation",
                                                   "ApplyReusableRunScale",
                                                   "ApplyReusableRunStockAllocation",
@@ -16615,12 +16745,14 @@
                                                   "CloneRunRecord",
                                                   "CompleteReusableProcess",
                                                   "CompleteReusableRun",
+                                                  "EffectiveOutputRegulationFloor",
                                                   "EntityRowIsNonCounted",
                                                   "ExactEntityAvailableQty",
                                                   "ExactEntityField",
                                                   "ExactEntityInventoryDisplay",
                                                   "ExactEntityInventoryDisplayForKey",
                                                   "ExactEntityIsNonCounted",
+                                                  "ExactEntityUom",
                                                   "FindExactEntityRow",
                                                   "FindNode",
                                                   "FindNodeByProcessName",
@@ -16633,19 +16765,25 @@
                                                   "JsonRunNumber",
                                                   "LoadNodeProcessDefinitions",
                                                   "LoadReleasedReusableRecipe",
+                                                  "NativeAllocationQty",
                                                   "NewTextDictionary",
                                                   "NodeIsComplete",
                                                   "OutgoingQtyForOutput",
                                                   "OutputIdentityKey",
                                                   "OutputKeyForConnection",
+                                                  "OutputRegulationEnabled",
                                                   "ProcessOutputTotal",
                                                   "ProcessReadinessStatus",
                                                   "ProcessUsedGoodsDisplay",
+                                                  "RemoveAllocation",
                                                   "RequirementAllowsItem",
                                                   "RequirementHasAlternative",
                                                   "RequirementHasIncomingConnection",
+                                                  "RequirementIsActual",
                                                   "RequirementReadinessStatus",
                                                   "ReusableRunActualOutput",
+                                                  "ReusableRunBatchNote",
+                                                  "ReusableRunBatchNoteFrozen",
                                                   "ReusableRunBatchNumber",
                                                   "ReusableRunExactAllocationCountForRequirement",
                                                   "ReusableRunExactEntityQty",
@@ -16673,8 +16811,12 @@
                                                   "RunItemNote",
                                                   "RunRecordNumber",
                                                   "RunRecordText",
+                                                  "RunRecordValue",
+                                                  "SaveAllocation",
                                                   "ScaledConnectionQty",
+                                                  "ScaledOutputRegulationCeiling",
                                                   "ScaledRecordQty",
+                                                  "SetReusableRunBatchNote",
                                                   "StageReusableRunActualOutput",
                                                   "StockBucketAllocatedQty",
                                                   "StockBucketAvailableDisplay",
@@ -16686,6 +16828,7 @@
                                                   "ValidateLoadedRunGraph",
                                                   "ValidateProcessAllocationsLive",
                                                   "ValidateProcessRequirementsReady",
+                                                  "ValidateReusableActualOutput",
                                                   "ValidateReusableActualOutputs",
                                                   "ValidateReusableActualOutputsForNode",
                                                   "VerifyCompletedOutputBalances",
@@ -17102,8 +17245,13 @@
                                                   "RunProcessWorksheetOutputPickerContractTest",
                                                   "RunProcessWorksheetRoundTripContractTest",
                                                   "RunProcessWorksheetWorkbenchContractTest",
+                                                  "RunProductionBatchNoteHandlerContractTest",
                                                   "RunProductionBatchScaleContractTest",
+                                                  "RunProductionExternalStockUomConversionActionContractTest",
+                                                  "RunProductionExternalStockUomWorksheetHandlerContractTest",
+                                                  "RunProductionOutputRegulationActionContractTest",
                                                   "RunProductionRunListResponsiveLayoutTest",
+                                                  "RunProductionVariableQuantityModeActionContractTest",
                                                   "RunReusableProductionFormActionContractTest",
                                                   "RunReusableProductionRestartActionContractTest",
                                                   "RunReusableProductionRunActionContractTest",
@@ -17836,29 +17984,6 @@
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Write a focused test for the nearest public entry point, prove compile and regression GREEN, then request reviewed deletion."
-                       },
-                       {
-                           "id":  "reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ApplyReusableRunAllocation",
-                           "origin":  "SCANNER",
-                           "scannerCandidateType":  "UNRESOLVED",
-                           "disposition":  "UNRESOLVED",
-                           "scannerConfidence":  "MEDIUM",
-                           "reviewedConfidence":  "MEDIUM",
-                           "reviewStatus":  "MANUAL_INVESTIGATION",
-                           "workstream":  "PRODUCTION",
-                           "componentName":  "modProductionReusableRun",
-                           "procedureNames":  [
-                                                  "ApplyReusableRunAllocation"
-                                              ],
-                           "sourcePaths":  [
-                                               "src/Production/Modules/modProductionReusableRun.bas"
-                                           ],
-                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
-                           "protectingTests":  [
-
-                                               ],
-                           "deletionApproved":  false,
-                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
                            "id":  "reachability:src_Production_Modules_modProductionReusableRun.bas:modProductionReusableRun.ReusableRunLastSummary",
@@ -18896,6 +19021,29 @@
                            "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
                        },
                        {
+                           "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RunProductionExternalStockUomConversionActionContractTest",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "UNRESOLVED",
+                           "disposition":  "UNRESOLVED",
+                           "scannerConfidence":  "MEDIUM",
+                           "reviewedConfidence":  "MEDIUM",
+                           "reviewStatus":  "MANUAL_INVESTIGATION",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "mProduction",
+                           "procedureNames":  [
+                                                  "RunProductionExternalStockUomConversionActionContractTest"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Modules/mProduction.bas"
+                                           ],
+                           "reason":  "No direct, dynamic-root, or test reference was found, but public visibility requires review.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Investigate callers, callbacks, package ownership, and protecting tests before selecting a source change."
+                       },
+                       {
                            "id":  "reachability:src_Production_Modules_mProduction.bas:mProduction.RunReusableProductionFormActionContractTest",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "UNRESOLVED",
@@ -19742,6 +19890,7 @@
                                            ],
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4bcBatchNotesViewerListExport.ps1",
                                                    "tests/tooling/Test-Slice5BehaviorLocks.ps1"
                                                ],
                            "deletionApproved":  false,
@@ -19805,6 +19954,52 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "mBtnManagerRefresh_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnOutputRegulationApply_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnOutputRegulationApply_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnOutputRegulationClear_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnOutputRegulationClear_Click"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -20903,6 +21098,52 @@
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
                        },
                        {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnUomCatalogRetrieve_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnUomCatalogRetrieve_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4bbExternalStockUomConversion.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mBtnUomCatalogSend_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mBtnUomCatalogSend_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+                                                   "tests/tooling/Test-Plan022Slice4bbExternalStockUomConversion.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
                            "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbConnectionFromNode_Change",
                            "origin":  "SCANNER",
                            "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
@@ -20983,6 +21224,98 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "mCmbLineIo_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbOutputRegulationNode_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbOutputRegulationNode_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbOutputRegulationScope_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbOutputRegulationScope_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbProcessOutputQtyMode_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbProcessOutputQtyMode_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mCmbRequirementQtyMode_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mCmbRequirementQtyMode_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"
@@ -21220,6 +21553,29 @@
                            "reason":  "Procedure is a registered or discovered dynamic root.",
                            "protectingTests":  [
                                                    "tests/tooling/Test-Plan022Slice4agProductionActualOutput.ps1"
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mLstOutputRegulations_Click",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mLstOutputRegulations_Click"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
                                                ],
                            "deletionApproved":  false,
                            "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
@@ -21489,6 +21845,29 @@
                            "componentName":  "frmProduction",
                            "procedureNames":  [
                                                   "mTxtPaletteSplit_Change"
+                                              ],
+                           "sourcePaths":  [
+                                               "src/Production/Forms/frmProduction.frm"
+                                           ],
+                           "reason":  "Procedure is a registered or discovered dynamic root.",
+                           "protectingTests":  [
+
+                                               ],
+                           "deletionApproved":  false,
+                           "nextAction":  "Retain the procedure and keep its registry or discovered root evidence current."
+                       },
+                       {
+                           "id":  "root:src_Production_Forms_frmProduction.frm:frmProduction.mTxtRunBatchNote_Change",
+                           "origin":  "SCANNER",
+                           "scannerCandidateType":  "RETAIN_DYNAMIC_ROOT",
+                           "disposition":  "RETAIN_DYNAMIC_ROOT",
+                           "scannerConfidence":  "LOW",
+                           "reviewedConfidence":  "LOW",
+                           "reviewStatus":  "RETAIN",
+                           "workstream":  "PRODUCTION",
+                           "componentName":  "frmProduction",
+                           "procedureNames":  [
+                                                  "mTxtRunBatchNote_Change"
                                               ],
                            "sourcePaths":  [
                                                "src/Production/Forms/frmProduction.frm"

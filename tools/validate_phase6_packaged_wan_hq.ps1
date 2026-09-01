@@ -710,8 +710,10 @@ try {
 
     $agg1Ok = [bool](Run-WorkbookMacro -Excel $excelHq -WorkbookName $wbSetHq["invSys.Core.xlam"].Name -MacroName "modHqAggregator.RunHQAggregation" -Arguments @($shareRoot, "", ""))
     $wbGlobal1 = $excelHq.Workbooks.Open((Join-Path $shareRoot "Global\\invSys.Global.InventorySnapshot.xlsb"))
-    $loGlobal1 = Get-ListObjectSafe -Worksheet (Get-WorksheetSafe -Workbook $wbGlobal1 -WorksheetName "GlobalInventorySnapshot") -TableName "tblGlobalInventorySnapshot"
-    $loStatus1 = Get-ListObjectSafe -Worksheet (Get-WorksheetSafe -Workbook $wbGlobal1 -WorksheetName "GlobalSnapshotStatus") -TableName "tblGlobalSnapshotStatus"
+    $wsGlobal1 = Get-WorksheetSafe -Workbook $wbGlobal1 -WorksheetName "GlobalInventorySnapshot"
+    $wsStatus1 = Get-WorksheetSafe -Workbook $wbGlobal1 -WorksheetName "GlobalSnapshotStatus"
+    $loGlobal1 = Get-ListObjectSafe -Worksheet $wsGlobal1 -TableName "tblGlobalInventorySnapshot"
+    $loStatus1 = Get-ListObjectSafe -Worksheet $wsStatus1 -TableName "tblGlobalSnapshotStatus"
     $rowA1 = Find-RowIndexByWarehouseSku -ListObject $loGlobal1 -WarehouseId "WH97" -Sku $sku
     $rowB1 = Find-RowIndexByWarehouseSku -ListObject $loGlobal1 -WarehouseId "WH98" -Sku $sku
     $globalIdentity1 = (Get-ColumnIndexSafe -ListObject $loGlobal1 -ColumnName "System_Key") -gt 0
@@ -721,7 +723,21 @@ try {
     $entityCountB1 = Get-WarehouseSkuEntityCount -ListObject $loGlobal1 -WarehouseId "WH98" -Sku $sku
     $agg1Pass = $agg1Ok -and $globalIdentity1 -and $rowA1 -gt 0 -and $rowB1 -gt 0 -and $qtyA1 -eq 5 -and $qtyB1 -eq 8 -and $entityCountA1 -eq 1 -and $entityCountB1 -eq 1 -and ([int](Get-RowValueSafe -ListObject $loStatus1 -RowIndex 1 -ColumnName "WarehouseCount")) -eq 2
     Add-ResultRow -Rows $resultRows -Check "Aggregate.Initial" -Passed $agg1Pass -Detail ("SystemKeyColumn=" + $globalIdentity1 + "; QtyA=" + $qtyA1 + "; QtyB=" + $qtyB1 + "; EntityCountA=" + $entityCountA1 + "; EntityCountB=" + $entityCountB1)
+    # Release every COM reference before the catch-up aggregation overwrites
+    # the read-only global output in this same HQ Excel instance.
     try { $wbGlobal1.Close($false) } catch {}
+    Release-ComObject $loGlobal1
+    Release-ComObject $loStatus1
+    Release-ComObject $wsGlobal1
+    Release-ComObject $wsStatus1
+    Release-ComObject $wbGlobal1
+    $loGlobal1 = $null
+    $loStatus1 = $null
+    $wsGlobal1 = $null
+    $wsStatus1 = $null
+    $wbGlobal1 = $null
+    [GC]::Collect()
+    [GC]::WaitForPendingFinalizers()
 
     Start-Sleep -Milliseconds 1100
     $queueB2 = Seed-InboxReceiveRowOpen -Excel $excelB -CoreWorkbook $wbSetB["invSys.Core.xlam"] -InboxPath (Join-Path $rootB "invSys.Inbox.Receiving.S2.xlsb") -WarehouseId "WH98" -StationId "S2" -Sku $sku -Qty 3 -Location "B1" -Note "wan-hq-wh98-catchup"
@@ -731,8 +747,10 @@ try {
 
     $agg2Ok = [bool](Run-WorkbookMacro -Excel $excelHq -WorkbookName $wbSetHq["invSys.Core.xlam"].Name -MacroName "modHqAggregator.RunHQAggregation" -Arguments @($shareRoot, "", ""))
     $wbGlobal2 = $excelHq.Workbooks.Open((Join-Path $shareRoot "Global\\invSys.Global.InventorySnapshot.xlsb"))
-    $loGlobal2 = Get-ListObjectSafe -Worksheet (Get-WorksheetSafe -Workbook $wbGlobal2 -WorksheetName "GlobalInventorySnapshot") -TableName "tblGlobalInventorySnapshot"
-    $loStatus2 = Get-ListObjectSafe -Worksheet (Get-WorksheetSafe -Workbook $wbGlobal2 -WorksheetName "GlobalSnapshotStatus") -TableName "tblGlobalSnapshotStatus"
+    $wsGlobal2 = Get-WorksheetSafe -Workbook $wbGlobal2 -WorksheetName "GlobalInventorySnapshot"
+    $wsStatus2 = Get-WorksheetSafe -Workbook $wbGlobal2 -WorksheetName "GlobalSnapshotStatus"
+    $loGlobal2 = Get-ListObjectSafe -Worksheet $wsGlobal2 -TableName "tblGlobalInventorySnapshot"
+    $loStatus2 = Get-ListObjectSafe -Worksheet $wsStatus2 -TableName "tblGlobalSnapshotStatus"
     $rowA2 = Find-RowIndexByWarehouseSku -ListObject $loGlobal2 -WarehouseId "WH97" -Sku $sku
     $rowB2 = Find-RowIndexByWarehouseSku -ListObject $loGlobal2 -WarehouseId "WH98" -Sku $sku
     $globalIdentity2 = (Get-ColumnIndexSafe -ListObject $loGlobal2 -ColumnName "System_Key") -gt 0
@@ -743,6 +761,14 @@ try {
     $agg2Pass = $agg2Ok -and $globalIdentity2 -and $rowA2 -gt 0 -and $rowB2 -gt 0 -and $qtyA2 -eq 5 -and $qtyB2 -eq 11 -and $entityCountA2 -eq 1 -and $entityCountB2 -eq 2 -and ([int](Get-RowValueSafe -ListObject $loStatus2 -RowIndex 1 -ColumnName "SkippedSnapshotFileCount")) -eq 0
     Add-ResultRow -Rows $resultRows -Check "Aggregate.Catchup" -Passed $agg2Pass -Detail ("SystemKeyColumn=" + $globalIdentity2 + "; QtyA=" + $qtyA2 + "; QtyB=" + $qtyB2 + "; EntityCountA=" + $entityCountA2 + "; EntityCountB=" + $entityCountB2)
     try { $wbGlobal2.Close($false) } catch {}
+    Release-ComObject $loGlobal2
+    Release-ComObject $loStatus2
+    Release-ComObject $wsGlobal2
+    Release-ComObject $wsStatus2
+    Release-ComObject $wbGlobal2
+}
+catch {
+    Add-ResultRow -Rows $resultRows -Check "Harness.Exception" -Passed $false -Detail $_.Exception.Message
 }
 finally {
     $summary = Write-Results -ResultPath $resultPath -Rows $resultRows -DeployPath $deployPath -SessionRoot $sessionRoot
