@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmAddInventoryItem
-   Caption         =   "invSys Admin - Add Inventory Item"
+   Caption         =   "invSys Admin - Add/Edit Inventory Items"
    ClientHeight    =   6100
    ClientLeft      =   110
    ClientTop       =   450
@@ -27,6 +27,12 @@ Private WithEvents mBtnAddMode As MSForms.CommandButton
 Attribute mBtnAddMode.VB_VarHelpID = -1
 Private WithEvents mBtnEditMode As MSForms.CommandButton
 Attribute mBtnEditMode.VB_VarHelpID = -1
+Private WithEvents mBtnDeleteItem As MSForms.CommandButton
+Attribute mBtnDeleteItem.VB_VarHelpID = -1
+Private WithEvents mBtnCreateInventoryTable As MSForms.CommandButton
+Attribute mBtnCreateInventoryTable.VB_VarHelpID = -1
+Private WithEvents mBtnUploadInventoryTable As MSForms.CommandButton
+Attribute mBtnUploadInventoryTable.VB_VarHelpID = -1
 Private WithEvents mCmbEditItem As MSForms.ComboBox
 Attribute mCmbEditItem.VB_VarHelpID = -1
 Private WithEvents mLstEditItemResults As MSForms.ListBox
@@ -57,9 +63,9 @@ Private mLblCustomValue As MSForms.Label
 Private mLblGenerated As MSForms.Label
 Private mLblStatus As MSForms.Label
 Private mTxtItemName As MSForms.TextBox
-Private mTxtLocation As MSForms.TextBox
+Private mCmbLocation As MSForms.ComboBox
 Private mTxtDescription As MSForms.TextBox
-Private mTxtCategory As MSForms.TextBox
+Private mCmbCategory As MSForms.ComboBox
 Private mTxtVendorName As MSForms.TextBox
 Private mTxtVendorCode As MSForms.TextBox
 Private mTxtExternalCode As MSForms.TextBox
@@ -85,6 +91,13 @@ Private mPreviousUom As String
 Private mInitStep As String
 Private mAllowUomPrompt As Boolean
 Private mImagePlaceholderActive As Boolean
+Private mOperatorWorkbook As Workbook
+Private mLastInventoryTableName As String
+Private mLastInventoryWorksheetReport As String
+Private mConfiguredDefaultLocation As String
+Private mDeleteRequested As Boolean
+Private mDeleteReason As String
+Private mDeleteAutomation As Boolean
 
 Private Const ANCHOR_LEFT As Long = 1
 Private Const ANCHOR_TOP As Long = 2
@@ -116,6 +129,14 @@ Public Property Get EditMode() As Boolean
     EditMode = mEditMode
 End Property
 
+Public Property Get DeleteRequested() As Boolean
+    DeleteRequested = mDeleteRequested
+End Property
+
+Public Property Get DeleteReason() As String
+    DeleteReason = mDeleteReason
+End Property
+
 Public Property Get ItemName() As String
     ItemName = Trim$(CStr(mTxtItemName.Value))
 End Property
@@ -134,7 +155,7 @@ Public Property Get NonCountedItem() As Boolean
 End Property
 
 Public Property Get LocationValue() As String
-    LocationValue = Trim$(CStr(mTxtLocation.Value))
+    LocationValue = Trim$(CStr(mCmbLocation.Value))
 End Property
 
 Public Property Get DescriptionValue() As String
@@ -142,7 +163,7 @@ Public Property Get DescriptionValue() As String
 End Property
 
 Public Property Get Category() As String
-    Category = Trim$(CStr(mTxtCategory.Value))
+    Category = Trim$(CStr(mCmbCategory.Value))
 End Property
 
 Public Property Get VendorName() As String
@@ -196,6 +217,216 @@ Public Sub TestSetQuantityMode(ByVal quantityMode As String)
     ApplyQuantityModeState
 End Sub
 
+Public Function TestEditItemComboSelectionContract() As String
+    On Error GoTo Failed
+
+    Dim comboSelected As Boolean
+    Dim fieldsLoaded As Boolean
+    Dim utilityReady As Boolean
+    Dim validationReady As Boolean
+    Dim fields As Object
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "NEW-SKU", 999, "CLEARVIEW"
+    testStage = "AddCatalogItem"
+    AddCatalogItem "DEMO-RAW-FILTERED-WATER", "7", "Filtered Water", "LB", _
+        "Clearview", "clean double filtered water", "Utility", "", "UTILITY", _
+        "", "", "TRUE", "INVENTORY", "19400"
+    testStage = "EditMode"
+    mEditMode = True
+    ApplyModeLayout
+
+    testStage = "SelectCombo"
+    mLoading = True
+    mCmbEditItem.ListIndex = 0
+    mLoading = False
+    mCmbEditItem_Change
+
+    testStage = "VerifySelection"
+    comboSelected = (mSelectedEditSku = "DEMO-RAW-FILTERED-WATER")
+    fieldsLoaded = (ItemName = "Filtered Water" And Uom = "LB" And _
+                    DescriptionValue = "clean double filtered water")
+    TestSetQuantityMode QTY_OPTION_UTILITY
+    testStage = "CustomFields"
+    Set fields = Me.CustomFields
+    utilityReady = (NonCountedItem And StartingQty = 0 And _
+                    CStr(fields("TRACK_QTY")) = "FALSE" And _
+                    CStr(fields("ITEM_KIND")) = "UTILITY")
+    testStage = "Validate"
+    validationReady = ValidateForm()
+
+    TestEditItemComboSelectionContract = IIf(comboSelected And fieldsLoaded And _
+        utilityReady And validationReady, "OK", "FAIL") & _
+        "|ComboSelected=" & CStr(comboSelected) & _
+        "|FieldsLoaded=" & CStr(fieldsLoaded) & _
+        "|UtilityReady=" & CStr(utilityReady) & _
+        "|ValidationReady=" & CStr(validationReady)
+    Exit Function
+
+Failed:
+    TestEditItemComboSelectionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
+Public Function TestAddItemVisibilityDropdownContract() As String
+    On Error GoTo Failed
+
+    Dim locationDropdown As Boolean
+    Dim categoryDropdown As Boolean
+    Dim submitHandler As Boolean
+    Dim zeroQtyAccepted As Boolean
+    Dim negativeRejected As Boolean
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    testStage = "CatalogOptions"
+    AddCatalogItem "SKU-RAW", "1", "Raw Material", "LB", "SECONDARY", _
+        "", "", "", "RAW", "", "", "TRUE", "INVENTORY", "10"
+    AddCatalogItem "SKU-FINISHED", "2", "Finished Good", "EA", "CLEARVIEW", _
+        "", "", "", "FINISHED", "", "", "TRUE", "INVENTORY", "5"
+
+    locationDropdown = (TypeName(mCmbLocation) = "ComboBox" And _
+        ComboContainsValue(mCmbLocation, "CLEARVIEW") And _
+        ComboContainsValue(mCmbLocation, "SECONDARY"))
+    categoryDropdown = (TypeName(mCmbCategory) = "ComboBox" And _
+        ComboContainsValue(mCmbCategory, "RAW") And _
+        ComboContainsValue(mCmbCategory, "FINISHED"))
+
+    testStage = "SubmitHandler"
+    mTxtItemName.Value = "Honey"
+    mCmbUom.Value = "LB"
+    mTxtQty.Value = "0"
+    mCmbLocation.Value = "CLEARVIEW"
+    mCmbCategory.Value = "RAW"
+    mBtnOK_Click
+    submitHandler = (mAccepted And ItemName = "Honey" And _
+        LocationValue = "CLEARVIEW" And Category = "RAW")
+    zeroQtyAccepted = (submitHandler And StartingQty = 0)
+
+    testStage = "NegativeValidation"
+    mAccepted = False
+    mTxtQty.Value = "-1"
+    mBtnOK_Click
+    negativeRejected = (Not mAccepted And _
+        InStr(1, mLblStatus.Caption, "cannot be negative", vbTextCompare) > 0)
+
+    TestAddItemVisibilityDropdownContract = IIf(locationDropdown And categoryDropdown And _
+        submitHandler And zeroQtyAccepted And negativeRejected, "OK", "FAIL") & _
+        "|SubmitHandler=" & CStr(submitHandler) & _
+        "|ZeroQtyAccepted=" & CStr(zeroQtyAccepted) & _
+        "|NegativeRejected=" & CStr(negativeRejected) & _
+        "|LocationDropdown=" & CStr(locationDropdown) & _
+        "|CategoryDropdown=" & CStr(categoryDropdown)
+    Exit Function
+
+Failed:
+    TestAddItemVisibilityDropdownContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
+Public Function TestInventoryDeleteActionContract() As String
+    On Error GoTo Failed
+
+    Dim deleteVisible As Boolean
+    Dim deleteEnabled As Boolean
+    Dim deleteHandler As Boolean
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    AddCatalogItem "SKU-HONEY", "1", "Honey", "LB", "CLEARVIEW", _
+        "", "", "", "RAW", "", "", "TRUE", "INVENTORY", "25"
+    testStage = "EditMode"
+    mEditMode = True
+    ApplyModeLayout
+    mLoading = True
+    mCmbEditItem.ListIndex = 0
+    mLoading = False
+    mCmbEditItem_Change
+    deleteVisible = mBtnDeleteItem.Visible
+    deleteEnabled = mBtnDeleteItem.Enabled
+
+    testStage = "DeleteHandler"
+    mDeleteAutomation = True
+    mBtnDeleteItem_Click
+    mDeleteAutomation = False
+    deleteHandler = (mAccepted And mDeleteRequested And _
+        mSelectedEditSku = "SKU-HONEY" And mDeleteReason = "Packaged deletion contract")
+
+    TestInventoryDeleteActionContract = IIf(deleteVisible And deleteEnabled And _
+        deleteHandler, "OK", "FAIL") & _
+        "|DeleteVisible=" & CStr(deleteVisible) & _
+        "|DeleteEnabled=" & CStr(deleteEnabled) & _
+        "|DeleteHandler=" & CStr(deleteHandler)
+    Exit Function
+
+Failed:
+    mDeleteAutomation = False
+    TestInventoryDeleteActionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
+Public Function TestInventoryWorksheetActionContract(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    Dim tableCreated As Boolean
+    Dim rowsPrepared As Boolean
+    Dim tableSelected As Boolean
+    Dim capturedWorkbook As Boolean
+    Dim evidence As String
+    Dim testStage As String
+
+    testStage = "Configure"
+    Configure "WH-TEST", "S1", "admin", "ITM-WHTE-000999", 999, "CLEARVIEW"
+    SetOperatorWorkbook operatorWb
+    capturedWorkbook = Not mOperatorWorkbook Is Nothing
+    modAdminInventoryWorksheet.BeginInventoryWorksheetAutomation "EXISTING-SKU"
+
+    testStage = "CreateHandler"
+    mBtnCreateInventoryTable_Click
+    tableCreated = (mLastInventoryTableName <> "" And _
+        modAdminInventoryWorksheet.CountInventoryWorksheetTables(operatorWb) = 1)
+    testStage = "Populate"
+    rowsPrepared = modAdminInventoryWorksheet.PopulateInventoryWorksheetContractRowsForTest( _
+        operatorWb, mLastInventoryTableName)
+    tableSelected = modAdminInventoryWorksheet.SelectInventoryWorksheetTableForTest( _
+        operatorWb, mLastInventoryTableName)
+    testStage = "UploadHandler"
+    mBtnUploadInventoryTable_Click
+    evidence = modAdminInventoryWorksheet.LastInventoryWorksheetAutomationReport()
+    modAdminInventoryWorksheet.EndInventoryWorksheetAutomation
+
+    If tableCreated And rowsPrepared And tableSelected And capturedWorkbook And _
+            InStr(1, evidence, "Preflight=True", vbTextCompare) > 0 And _
+            InStr(1, evidence, "Utility=True", vbTextCompare) > 0 And _
+            InStr(1, evidence, "ExactEdit=True", vbTextCompare) > 0 Then
+        TestInventoryWorksheetActionContract = "OK|" & evidence & _
+            "|CapturedWorkbook=True|CreateHandler=True|UploadHandler=True"
+    Else
+        TestInventoryWorksheetActionContract = "FAIL|TableCreated=" & CStr(tableCreated) & _
+            "|RowsPrepared=" & CStr(rowsPrepared) & _
+            "|TableSelected=" & CStr(tableSelected) & _
+            "|CapturedWorkbook=" & CStr(capturedWorkbook) & _
+            "|Evidence=" & evidence
+    End If
+    Exit Function
+
+Failed:
+    modAdminInventoryWorksheet.EndInventoryWorksheetAutomation
+    TestInventoryWorksheetActionContract = "FAIL|Stage=" & testStage & _
+        "|Error=" & CStr(Err.Number) & " " & Err.Description
+End Function
+
+Public Sub SetOperatorWorkbook(ByVal wb As Workbook)
+    On Error GoTo Unavailable
+    If wb Is Nothing Then Exit Sub
+    If wb.Worksheets.Count < 1 Then Exit Sub
+    Set mOperatorWorkbook = wb
+Unavailable:
+End Sub
+
 Public Sub Configure(ByVal warehouseId As Variant, _
                      ByVal stationId As Variant, _
                      ByVal userId As Variant, _
@@ -214,6 +445,9 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mUserId = SafeFormText(userId)
     mGeneratedSku = SafeFormText(generatedSku)
     mGeneratedRow = CLng(Val(SafeFormText(generatedRow)))
+    mDeleteRequested = False
+    mDeleteReason = ""
+    mConfiguredDefaultLocation = SafeFormText(defaultLocation)
     Set mCatalogItems = New Collection
     mAccepted = False
     mEditMode = False
@@ -228,9 +462,10 @@ Public Sub Configure(ByVal warehouseId As Variant, _
     mCmbUom.Value = "EA"
     mPreviousUom = "EA"
     mTxtQty.Value = "1"
-    mTxtLocation.Value = SafeFormText(defaultLocation)
+    LoadInventoryDimensionOptions
+    mCmbLocation.Value = mConfiguredDefaultLocation
     mTxtDescription.Value = ""
-    mTxtCategory.Value = ""
+    mCmbCategory.Value = ""
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
@@ -305,6 +540,7 @@ Public Sub AddCatalogItem(ByVal sku As String, _
 
     mLoading = True
     LoadUomOptions
+    LoadInventoryDimensionOptions
     If selectedUom <> "" Then
         mCmbUom.Value = selectedUom
     ElseIf Not mEditMode Then
@@ -343,17 +579,19 @@ End Sub
 
 Private Sub UserForm_Terminate()
     Set mAnchors = Nothing
+    Set mOperatorWorkbook = Nothing
 End Sub
 
 Private Sub EnsureControls()
     If Not mBtnOK Is Nothing Then Exit Sub
 
-    Me.Caption = "invSys Admin - Add Inventory Item"
+    Me.Caption = "invSys Admin - Add/Edit Inventory Items"
     Me.Width = 575
     Me.Height = 665
 
-    Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item")
+    Set mBtnAddMode = AddButton("btnAddMode", 14, 10, 118, 24, "Add Item Mode")
     Set mBtnEditMode = AddButton("btnEditMode", 138, 10, 118, 24, "Edit Item")
+    Set mBtnDeleteItem = AddButton("btnDeleteItem", 262, 10, 100, 24, "Delete Item")
 
     Set mLblTitle = AddLabel("lblTitle", 14, 44, 530, 20, "Add inventory item")
     mLblTitle.Font.Bold = True
@@ -383,9 +621,13 @@ Private Sub EnsureControls()
     LoadQuantityOptions
 
     Set mLblLocation = AddLabel("lblLocation", 14, 222, 126, 18, "Default location")
-    Set mTxtLocation = AddTextBox("txtLocation", 146, 218, 120, 22)
+    Set mCmbLocation = AddCombo("cmbLocation", 146, 218, 120, 22)
+    mCmbLocation.Style = fmStyleDropDownCombo
+    mCmbLocation.MatchEntry = fmMatchEntryComplete
     Set mLblCategory = AddLabel("lblCategory", 288, 222, 92, 18, "Category")
-    Set mTxtCategory = AddTextBox("txtCategory", 386, 218, 152, 22)
+    Set mCmbCategory = AddCombo("cmbCategory", 386, 218, 152, 22)
+    mCmbCategory.Style = fmStyleDropDownCombo
+    mCmbCategory.MatchEntry = fmMatchEntryComplete
 
     Set mLblDescription = AddLabel("lblDescription", 14, 254, 126, 18, "Description")
     Set mTxtDescription = AddTextBox("txtDescription", 146, 250, 392, 22)
@@ -417,6 +659,8 @@ Private Sub EnsureControls()
 
     Set mLblStatus = AddLabel("lblStatus", 146, 550, 328, 28, "")
     mLblStatus.ForeColor = 255
+    Set mBtnCreateInventoryTable = AddButton("btnCreateInventoryTable", 14, 594, 154, 28, "Create Inventory Table")
+    Set mBtnUploadInventoryTable = AddButton("btnUploadInventoryTable", 174, 594, 192, 28, "Upload Selected Inventory Table")
     Set mBtnOK = AddButton("btnOK", 374, 594, 78, 28, "Add Item")
     Set mBtnCancel = AddButton("btnCancel", 460, 594, 78, 28, "Cancel")
 
@@ -429,6 +673,9 @@ Private Sub InitializeAddInventoryAnchors()
 
     mAnchors.Add mBtnAddMode, ANCHOR_LEFT Or ANCHOR_TOP
     mAnchors.Add mBtnEditMode, ANCHOR_LEFT Or ANCHOR_TOP
+    mAnchors.Add mBtnDeleteItem, ANCHOR_LEFT Or ANCHOR_TOP
+    mAnchors.Add mBtnCreateInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
+    mAnchors.Add mBtnUploadInventoryTable, ANCHOR_LEFT Or ANCHOR_BOTTOM
     mAnchors.Add mLblContext, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mLblGenerated, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
     mAnchors.Add mCmbEditItem, ANCHOR_LEFT Or ANCHOR_TOP Or ANCHOR_RIGHT
@@ -517,6 +764,57 @@ NextItem:
     Next item
     mCmbEditItem.ListRows = MaxLongAdminForm(1, MinLongAdminForm(12, mCmbEditItem.ListCount))
 End Sub
+
+Private Sub LoadInventoryDimensionOptions()
+    Dim selectedLocation As String
+    Dim selectedCategory As String
+    Dim seenLocations As Object
+    Dim seenCategories As Object
+    Dim item As Variant
+
+    If mCmbLocation Is Nothing Or mCmbCategory Is Nothing Then Exit Sub
+    selectedLocation = Trim$(CStr(mCmbLocation.Value))
+    selectedCategory = Trim$(CStr(mCmbCategory.Value))
+    Set seenLocations = CreateObject("Scripting.Dictionary")
+    seenLocations.CompareMode = vbTextCompare
+    Set seenCategories = CreateObject("Scripting.Dictionary")
+    seenCategories.CompareMode = vbTextCompare
+
+    mCmbLocation.Clear
+    mCmbCategory.Clear
+    AddDimensionOption mCmbLocation, seenLocations, mConfiguredDefaultLocation
+    If Not mCatalogItems Is Nothing Then
+        For Each item In mCatalogItems
+            AddDimensionOption mCmbLocation, seenLocations, CatalogField(item, "LOCATION")
+            AddDimensionOption mCmbCategory, seenCategories, CatalogField(item, "CATEGORY")
+        Next item
+    End If
+    If selectedLocation <> "" Then mCmbLocation.Value = selectedLocation
+    If selectedCategory <> "" Then mCmbCategory.Value = selectedCategory
+End Sub
+
+Private Sub AddDimensionOption(ByVal targetCombo As MSForms.ComboBox, _
+                               ByVal seen As Object, _
+                               ByVal valueText As String)
+    valueText = Trim$(valueText)
+    If valueText = "" Then Exit Sub
+    If seen.Exists(valueText) Then Exit Sub
+    seen.Add valueText, True
+    targetCombo.AddItem valueText
+End Sub
+
+Private Function ComboContainsValue(ByVal targetCombo As MSForms.ComboBox, _
+                                    ByVal valueText As String) As Boolean
+    Dim i As Long
+
+    If targetCombo Is Nothing Then Exit Function
+    For i = 0 To targetCombo.ListCount - 1
+        If StrComp(Trim$(CStr(targetCombo.List(i))), Trim$(valueText), vbTextCompare) = 0 Then
+            ComboContainsValue = True
+            Exit Function
+        End If
+    Next i
+End Function
 
 Private Sub ShowEditItemSearchResults(ByVal searchText As String)
     Dim i As Long
@@ -720,11 +1018,65 @@ Private Sub mBtnRemoveField_Click()
     If mLstCustomFields.ListIndex >= 0 Then mLstCustomFields.RemoveItem mLstCustomFields.ListIndex
 End Sub
 
+Private Sub mBtnCreateInventoryTable_Click()
+    Dim report As String
+    Dim tableName As String
+
+    On Error GoTo Failed
+    If mOperatorWorkbook Is Nothing Then
+        mLblStatus.Caption = "The captured Admin operator workbook is unavailable."
+        Exit Sub
+    End If
+    If modAdminInventoryWorksheet.CreateInventoryWorksheetTable( _
+            mOperatorWorkbook, tableName, report) Then
+        mLastInventoryTableName = tableName
+        mAccepted = False
+    End If
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+    If Not modAdminInventoryWorksheet.InventoryWorksheetAutomationEnabled() Then _
+        MsgBox report, IIf(tableName <> "", vbInformation, vbExclamation), "invSys Admin"
+    If tableName <> "" Then Me.Hide
+    Exit Sub
+
+Failed:
+    report = "Inventory worksheet creation failed: " & Err.Description
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+End Sub
+
+Private Sub mBtnUploadInventoryTable_Click()
+    Dim report As String
+    Dim succeeded As Boolean
+
+    On Error GoTo Failed
+    If mOperatorWorkbook Is Nothing Then
+        mLblStatus.Caption = "The captured Admin operator workbook is unavailable."
+        Exit Sub
+    End If
+    succeeded = modAdminInventoryWorksheet.UploadSelectedInventoryWorksheetTable( _
+        mOperatorWorkbook, mWarehouseId, mStationId, mUserId, report)
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+    If Not modAdminInventoryWorksheet.InventoryWorksheetAutomationEnabled() Then _
+        MsgBox report, IIf(succeeded, vbInformation, vbExclamation), "invSys Admin"
+    mAccepted = False
+    Me.Hide
+    Exit Sub
+
+Failed:
+    report = "Inventory worksheet upload failed: " & Err.Description
+    mLastInventoryWorksheetReport = report
+    mLblStatus.Caption = report
+End Sub
+
 Private Sub mBtnOK_Click()
     If Not ValidateForm Then Exit Sub
     If mEditMode Then
         If Not PromptForEditReason Then Exit Sub
     End If
+    mDeleteRequested = False
+    mDeleteReason = ""
     mAccepted = True
     Me.Hide
 End Sub
@@ -757,6 +1109,38 @@ Private Sub mBtnEditMode_Click()
     ApplyModeLayout
 End Sub
 
+Private Sub mBtnDeleteItem_Click()
+    Dim answer As VbMsgBoxResult
+    Dim reason As String
+
+    If Not mEditMode Or mSelectedEditSku = "" Then
+        mLblStatus.Caption = "Choose an inventory item to delete."
+        Exit Sub
+    End If
+    If mDeleteAutomation Then
+        answer = vbYes
+        reason = "Packaged deletion contract"
+    Else
+        answer = MsgBox("Delete '" & ItemName & "' (" & mSelectedEditSku & _
+            ") from managed inventory?" & vbCrLf & vbCrLf & _
+            "All active exact inventory entities for this item will be retired. " & _
+            "Catalog and event history will be retained.", _
+            vbQuestion Or vbYesNo Or vbDefaultButton2, "invSys Admin - Delete Item")
+        If answer <> vbYes Then Exit Sub
+        reason = Trim$(InputBox("Why is this item being deleted from managed inventory?", _
+            "invSys Admin - Delete Item"))
+    End If
+    If Trim$(reason) = "" Then
+        mLblStatus.Caption = "Why the deletion is required."
+        Exit Sub
+    End If
+
+    mDeleteReason = Trim$(reason)
+    mDeleteRequested = True
+    mAccepted = True
+    Me.Hide
+End Sub
+
 Private Sub mCmbEditItem_Change()
     On Error GoTo CleanFail
 
@@ -765,6 +1149,7 @@ Private Sub mCmbEditItem_Change()
     If mLoading Then Exit Sub
     If Not mEditMode Then Exit Sub
     If mFilteringEditItems Then Exit Sub
+    If CommitSelectedEditItemFromCombo() Then Exit Sub
     searchText = Trim$(CStr(mCmbEditItem.Text))
     mFilteringEditItems = True
     mLoading = True
@@ -786,6 +1171,7 @@ End Sub
 Private Sub mCmbEditItem_Click()
     If mLoading Then Exit Sub
     If Not mEditMode Then Exit Sub
+    If CommitSelectedEditItemFromCombo() Then Exit Sub
     ShowEditItemSearchResults CStr(mCmbEditItem.Text)
 End Sub
 
@@ -806,6 +1192,24 @@ Private Sub mLstEditItemResults_Click()
 
     displayText = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 0))
     sku = CStr(mLstEditItemResults.List(mLstEditItemResults.ListIndex, 1))
+    CommitEditItemSelection displayText, sku
+End Sub
+
+Private Function CommitSelectedEditItemFromCombo() As Boolean
+    Dim selectedIndex As Long
+
+    If mCmbEditItem Is Nothing Then Exit Function
+    selectedIndex = mCmbEditItem.ListIndex
+    If selectedIndex < 0 Then Exit Function
+    CommitSelectedEditItemFromCombo = CommitEditItemSelection( _
+        CStr(mCmbEditItem.List(selectedIndex, 0)), _
+        CStr(mCmbEditItem.List(selectedIndex, 1)))
+End Function
+
+Private Function CommitEditItemSelection(ByVal displayText As String, _
+                                         ByVal sku As String) As Boolean
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
     HideEditItemSearchResults
 
     mLoading = True
@@ -814,7 +1218,9 @@ Private Sub mLstEditItemResults_Click()
     mLoading = False
 
     LoadSelectedEditItemBySku sku
-End Sub
+    If Not mBtnDeleteItem Is Nothing Then mBtnDeleteItem.Enabled = (mSelectedEditSku <> "")
+    CommitEditItemSelection = (StrComp(mSelectedEditSku, sku, vbTextCompare) = 0)
+End Function
 
 Private Sub mCmbUom_Change()
     Dim newUom As String
@@ -910,8 +1316,8 @@ Private Sub ApplyQuantityModeState()
     mTxtQty.Enabled = True
     If NonCountedItem Then
         mLblQty.Caption = "Qty mode"
-        If Not mTxtCategory Is Nothing Then
-            If Trim$(CStr(mTxtCategory.Value)) = "" Then mTxtCategory.Value = NonCountedItemKind()
+        If Not mCmbCategory Is Nothing Then
+            If Trim$(CStr(mCmbCategory.Value)) = "" Then mCmbCategory.Value = NonCountedItemKind()
         End If
         If UCase$(QuantityModeText()) = "UTILITY" Then
             If Not mTxtVendorName Is Nothing Then
@@ -944,6 +1350,10 @@ Private Sub ApplyModeLayout()
     If mBtnOK Is Nothing Then Exit Sub
     mLblEditItem.Visible = mEditMode
     mCmbEditItem.Visible = mEditMode
+    If Not mBtnDeleteItem Is Nothing Then
+        mBtnDeleteItem.Visible = mEditMode
+        mBtnDeleteItem.Enabled = (mEditMode And mSelectedEditSku <> "")
+    End If
     HideEditItemSearchResults
     If Not mLblEditReason Is Nothing Then mLblEditReason.Visible = False
     If Not mTxtEditReason Is Nothing Then mTxtEditReason.Visible = False
@@ -960,6 +1370,8 @@ Private Sub ApplyModeLayout()
     End If
     If Not mEditMode Then
         mSelectedEditSku = ""
+        mDeleteRequested = False
+        mDeleteReason = ""
         If mGeneratedRow < 0 Then mGeneratedRow = 0
     ElseIf mCmbEditItem.ListIndex < 0 Then
         ClearEditableFields
@@ -974,9 +1386,9 @@ Private Sub ClearEditableFields()
     mCmbUom.Value = "EA"
     mPreviousUom = "EA"
     mTxtQty.Value = ""
-    mTxtLocation.Value = ""
+    mCmbLocation.Value = ""
     mTxtDescription.Value = ""
-    mTxtCategory.Value = ""
+    mCmbCategory.Value = ""
     mTxtVendorName.Value = ""
     mTxtVendorCode.Value = ""
     mTxtExternalCode.Value = ""
@@ -986,6 +1398,7 @@ Private Sub ClearEditableFields()
     mTxtCustomName.Value = ""
     mTxtCustomValue.Value = ""
     mLstCustomFields.Clear
+    If Not mBtnDeleteItem Is Nothing Then mBtnDeleteItem.Enabled = False
 End Sub
 
 Private Sub LoadSelectedEditItem()
@@ -1016,9 +1429,9 @@ Private Sub LoadSelectedEditItemBySku(ByVal sku As String)
         mPreviousUom = "EA"
     End If
     mTxtQty.Value = ""
-    mTxtLocation.Value = CatalogField(item, "LOCATION")
+    mCmbLocation.Value = CatalogField(item, "LOCATION")
     mTxtDescription.Value = CatalogField(item, "DESCRIPTION")
-    mTxtCategory.Value = CatalogField(item, "CATEGORY")
+    mCmbCategory.Value = CatalogField(item, "CATEGORY")
     mTxtVendorName.Value = CatalogField(item, "VENDOR(s)")
     mTxtVendorCode.Value = CatalogField(item, "VENDOR_CODE")
     mTxtExternalCode.Value = CatalogField(item, "EXTERNAL_CODE")
@@ -1044,6 +1457,8 @@ End Sub
 
 Private Sub mBtnCancel_Click()
     mAccepted = False
+    mDeleteRequested = False
+    mDeleteReason = ""
     Me.Hide
 End Sub
 
@@ -1077,8 +1492,8 @@ Private Function ValidateForm() As Boolean
             mLblStatus.Caption = "Starting quantity must be numeric or a mode like Utility."
             Exit Function
         End If
-        If StartingQty <= 0 Then
-            mLblStatus.Caption = "Starting quantity must be greater than zero."
+        If StartingQty < 0 Then
+            mLblStatus.Caption = "Starting quantity cannot be negative."
             Exit Function
         End If
     ElseIf Trim$(CStr(mTxtQty.Value)) <> "" And Not NonCountedItem Then

@@ -253,6 +253,37 @@ Public Function GetDesignBomForStatus(ByVal designId As String, _
             designId, designVersion, requiredStatus, Nothing)
 End Function
 
+Public Function ListProcesses(Optional ByVal statusFilter As String = "", _
+                              Optional ByVal designsWb As Workbook = Nothing) As Variant
+    ListProcesses = modDesignsDomainBridge.ListProcessesBridge(designsWb, statusFilter)
+End Function
+
+Public Function GetProcessVersion(ByVal processId As String, _
+                                  ByVal processVersion As String, _
+                                  Optional ByVal designsWb As Workbook = Nothing) As String
+    GetProcessVersion = modDesignsDomainBridge.GetProcessVersionBridge( _
+        processId, processVersion, designsWb)
+End Function
+
+Public Function ListRecipes(Optional ByVal statusFilter As String = "", _
+                            Optional ByVal designsWb As Workbook = Nothing) As Variant
+    ListRecipes = modDesignsDomainBridge.ListRecipesBridge(designsWb, statusFilter)
+End Function
+
+Public Function GetRecipeGraph(ByVal recipeId As String, _
+                               ByVal recipeVersion As String, _
+                               Optional ByVal designsWb As Workbook = Nothing) As String
+    GetRecipeGraph = modDesignsDomainBridge.GetRecipeGraphBridge( _
+        recipeId, recipeVersion, designsWb)
+End Function
+
+Public Function ValidateReleasedRecipe(ByVal recipeId As String, _
+                                       ByVal recipeVersion As String, _
+                                       Optional ByVal designsWb As Workbook = Nothing) As String
+    ValidateReleasedRecipe = modDesignsDomainBridge.ValidateReleasedRecipeBridgeEncoded( _
+        recipeId, recipeVersion, designsWb)
+End Function
+
 Private Function ResolveOpenWorkbook(ByVal workbookName As String) As Workbook
     Dim wb As Workbook
 

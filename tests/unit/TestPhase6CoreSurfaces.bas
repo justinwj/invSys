@@ -161,6 +161,269 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn() As Long
+    Dim rootPath As String
+    Dim configPath As String
+    Dim authPath As String
+    Dim legacyStation As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_dnas_computer_station")
+    configPath = rootPath & "\WH73.invSys.Config.xlsb"
+    authPath = rootPath & "\WH73.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+    legacyStation = "S1"
+    If StrComp(computerStation, legacyStation, vbTextCompare) = 0 Then legacyStation = "LEGACY-S1"
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH73", legacyStation, rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH73", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH73", computerStation, "fixture_user", "Fixture User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "fixture_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    If StrComp(target.WarehouseId, "WH73", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(target.StationId, computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+    If Not modConfig.LoadConfig("WH73", computerStation) Then GoTo CleanExit
+    If StrComp(modConfig.GetStationId(), computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+
+    authStatus = modAuth.ValidateUserCredentialForTarget("fixture_user", "fixture-pin", target)
+    If authStatus = AUTH_OK And modAuth.IsSignedIn() Then
+        TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH73"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_legacy_s1_signin")
+    authPath = rootPath & "\WH7M.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7M", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7M", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7M", "S1", "legacy_admin", "Legacy Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7M", "S1", "legacy_admin", "Legacy Admin", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "legacy_admin", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("legacy_admin", "fixture-pin", target, "ADMIN_MAINT")
+
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    If authStatus = AUTH_OK _
+       And modAuth.IsSignedIn() _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "ADMIN_MAINT", "WH7M", computerStation) > 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "RECEIVE_POST", "WH7M", computerStation) > 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_admin", "ADMIN_MAINT", "WH7M", "S1") > 0 Then
+        TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7M"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_no_legacy_cap")
+    authPath = rootPath & "\WH7N.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7N", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7N", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7N", "S1", "legacy_operator", "Legacy Operator", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "legacy_operator", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("legacy_operator", "fixture-pin", target, "ADMIN_MAINT")
+
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    If authStatus = AUTH_NO_CAPABILITIES _
+       And Not modAuth.IsSignedIn() _
+       And FindCapabilityRowForTest(loCaps, "legacy_operator", "ADMIN_MAINT", "WH7N", computerStation) = 0 _
+       And FindCapabilityRowForTest(loCaps, "legacy_operator", "RECEIVE_POST", "WH7N", computerStation) = 0 Then
+        TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7N"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestAdminSignIn_CurrentComputerPreservesExplicitDeny() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim loCaps As ListObject
+    Dim denyRow As Long
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_admin_preserve_deny")
+    authPath = rootPath & "\WH7P.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH7P", "S1", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH7P", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If StrComp(computerStation, "S1", vbTextCompare) = 0 Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7P", "S1", "denied_admin", "Denied Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH7P", computerStation, "denied_admin", "Denied Admin", "ADMIN", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    Set loCaps = FindTableByName(wbAuth, "tblCapabilities")
+    denyRow = FindCapabilityRowForTest(loCaps, "denied_admin", "ADMIN_MAINT", "WH7P", computerStation)
+    If denyRow = 0 Then GoTo CleanExit
+    SetTableCell loCaps, denyRow, "Status", "DENY"
+    TestPhase2Helpers.SetUserPinHash wbAuth, "denied_admin", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, computerStation, False)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("denied_admin", "fixture-pin", target, "ADMIN_MAINT")
+
+    denyRow = FindCapabilityRowForTest(loCaps, "denied_admin", "ADMIN_MAINT", "WH7P", computerStation)
+    If authStatus = AUTH_NO_CAPABILITIES _
+       And Not modAuth.IsSignedIn() _
+       And denyRow > 0 _
+       And StrComp(CStr(GetTableValue(loCaps, denyRow, "Status")), "DENY", vbTextCompare) = 0 Then
+        TestAdminSignIn_CurrentComputerPreservesExplicitDeny = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH7P"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim legacyStation As String
+    Dim computerStation As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim selectionResult As String
+    Dim authStatus As AuthStatusCode
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_ribbon_computer_station")
+    authPath = rootPath & "\WH72.invSys.Auth.xlsb"
+    computerStation = modStationIdentity.CurrentComputerStationId()
+    legacyStation = "S1"
+    If StrComp(computerStation, legacyStation, vbTextCompare) = 0 Then legacyStation = "LEGACY-S1"
+
+    On Error GoTo CleanFail
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH72", legacyStation, rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH72", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Or computerStation = "" Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH72", computerStation, "ribbon_user", "Ribbon User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "ribbon_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    selectionResult = modRibbonRuntimeStatus.SelectWarehouseTargetTextForAutomation( _
+        "WH72|" & computerStation & "|" & rootPath)
+    If Left$(selectionResult, 3) <> "OK|" Then GoTo CleanExit
+    Set target = modNasConnection.GetCurrentTarget()
+    If target Is Nothing Then GoTo CleanExit
+    If StrComp(target.WarehouseId, "WH72", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(target.StationId, computerStation, vbTextCompare) <> 0 Then GoTo CleanExit
+
+    authStatus = modAuth.ValidateUserCredentialForTarget("ribbon_user", "fixture-pin", target)
+    If authStatus = AUTH_OK And modAuth.IsSignedIn() Then
+        TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn = 1
+    End If
+
+CleanExit:
+    modAuth.SignOut
+    modNasConnection.ForgetTarget "WH72"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
 Public Function TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots() As Long
     Dim rootPath As String
     Dim inboxRootA As String
@@ -877,10 +1140,19 @@ Public Function TestRoleWriteCurrent_RejectsMissingCapability() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S16", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH90") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH90") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("dilbert", "123456", target)
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     payloadJson = modRoleEventWriter.BuildPayloadJson( _
         modRoleEventWriter.CreatePayloadItem(1, "SKU-RM-NOCAP", 1, "A1", "no-cap"))
@@ -891,6 +1163,8 @@ Public Function TestRoleWriteCurrent_RejectsMissingCapability() As Long
        And eventIdOut = "" _
        And InStr(1, report, "lacks SHIP_POST", vbTextCompare) > 0 Then
         TestRoleWriteCurrent_RejectsMissingCapability = 1
+    Else
+        mLastTestFailure = "Expected SHIP_POST denial; queued=" & CStr(queued) & "; event=" & eventIdOut & "; report=" & report
     End If
 
 CleanExit:
@@ -983,10 +1257,19 @@ Public Function TestRoleWriteCurrent_AllowsSignedInReceivePost() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S18", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH92") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH92") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("dilbert", "123456", target, "RECEIVE_POST")
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     report = ""
     queued = modRoleEventWriter.QueueReceiveEventCurrent("", "SKU-RM-ALLOW", 2, "A1", "allowed", eventIdOut, report)
@@ -995,6 +1278,8 @@ Public Function TestRoleWriteCurrent_AllowsSignedInReceivePost() As Long
        And eventIdOut <> "" _
        And report = "" Then
         TestRoleWriteCurrent_AllowsSignedInReceivePost = 1
+    Else
+        mLastTestFailure = "Expected RECEIVE_POST queue; queued=" & CStr(queued) & "; event=" & eventIdOut & "; report=" & report
     End If
 
 CleanExit:
@@ -1034,10 +1319,19 @@ Public Function TestAuthSignOut_ClearsUserButKeepsWarehouseTarget() As Long
     wbAuth.Save
 
     statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S19", True)
-    If statusCode <> NAS_OK Then GoTo CleanExit
-    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH93") Then GoTo CleanExit
+    If statusCode <> NAS_OK Then
+        mLastTestFailure = "Target selection failed: " & CStr(statusCode) & " / " & modNasConnection.GetLastConnectionAttemptStatus()
+        GoTo CleanExit
+    End If
+    If Not modNasConnection.SetCurrentTargetPathsForTest("\\test-nas\invSysWH1", "\\test-nas\invSysWH1\WH93") Then
+        mLastTestFailure = "Could not mark the fixture target as NAS-backed."
+        GoTo CleanExit
+    End If
     authStatus = modAuth.ValidateUserCredentialForTarget("calvin", "123456", target, "RECEIVE_POST")
-    If authStatus <> AUTH_OK Then GoTo CleanExit
+    If authStatus <> AUTH_OK Then
+        mLastTestFailure = "Fixture sign-in failed: " & CStr(authStatus)
+        GoTo CleanExit
+    End If
 
     modAuth.SignOut
     Set targetAfterSignOut = modNasConnection.GetCurrentTarget()
@@ -1050,10 +1344,101 @@ Public Function TestAuthSignOut_ClearsUserButKeepsWarehouseTarget() As Long
             TestAuthSignOut_ClearsUserButKeepsWarehouseTarget = 1
         End If
     End If
+    If TestAuthSignOut_ClearsUserButKeepsWarehouseTarget = 0 Then
+        If targetAfterSignOut Is Nothing Then
+            mLastTestFailure = "Target disappeared after sign-out."
+        Else
+            mLastTestFailure = "Unexpected sign-out state: user=" & modAuth.GetCurrentUserId() & _
+                               "; warehouse=" & targetAfterSignOut.WarehouseId & _
+                               "; station=" & targetAfterSignOut.StationId & _
+                               "; allowed=" & CStr(modNasConnection.IsCurrentTargetAllowed(True))
+        End If
+    End If
 
 CleanExit:
     modAuth.SignOut
     modNasConnection.ForgetTarget "WH93"
+    modNasConnection.ForgetRoot rootPath
+    modNasConnection.ClearWarehouseTarget
+    CloseWorkbookIfOpen wbCfg
+    CloseWorkbookIfOpen wbAuth
+    DeleteRuntimeRoot rootPath
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRibbonSessionLabels_DisconnectedUseExplicitNames() As Long
+    Dim prerequisite As String
+
+    On Error GoTo CleanFail
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ClearWarehouseTarget
+
+    prerequisite = modRoleEventWriter.InvSysSignInPrerequisiteForAutomation()
+    If modRibbonRuntimeStatus.GetServerSessionActionLabel() <> "Server Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetAccessStatusLabel("lblOperationsAccessStatus") <> "Access: Server Sign In required" Then GoTo CleanExit
+    If Left$(prerequisite, 8) <> "BLOCKED|" Then GoTo CleanExit
+    If InStr(1, prerequisite, "Use Server Sign In before invSys Sign In", vbTextCompare) = 0 Then GoTo CleanExit
+
+    TestRibbonSessionLabels_DisconnectedUseExplicitNames = 1
+
+CleanExit:
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ClearWarehouseTarget
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestServerSignOutAction_ClearsUserTargetAndAccess() As Long
+    Dim rootPath As String
+    Dim authPath As String
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim target As WarehouseTarget
+    Dim statusCode As NasStatusCode
+    Dim authStatus As AuthStatusCode
+    Dim actionResult As String
+    Dim report As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_server_signout_action")
+    authPath = rootPath & "\WH4L.invSys.Auth.xlsb"
+
+    On Error GoTo CleanFail
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    Set wbCfg = modRuntimeWorkbooks.OpenOrCreateConfigWorkbookRuntime("WH4L", "S4L", rootPath, report)
+    Set wbAuth = modRuntimeWorkbooks.OpenOrCreateAuthWorkbookRuntime("WH4L", "svc_processor", rootPath, report)
+    If wbCfg Is Nothing Or wbAuth Is Nothing Then GoTo CleanExit
+    If Not modAuth.EnsureStationRoleAuth("WH4L", "S4L", "session_user", "Session User", "RECEIVE", authPath, "svc_processor", report:=report) Then GoTo CleanExit
+    TestPhase2Helpers.SetUserPinHash wbAuth, "session_user", modAuth.HashUserCredential("fixture-pin")
+    wbAuth.Save
+
+    statusCode = modNasConnection.SelectWarehouseTarget(rootPath, rootPath, target, "S4L", True)
+    If statusCode <> NAS_OK Or target Is Nothing Then GoTo CleanExit
+    authStatus = modAuth.ValidateUserCredentialForTarget("session_user", "fixture-pin", target, "RECEIVE_POST")
+    If authStatus <> AUTH_OK Or Not modAuth.IsSignedIn() Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign Out" Then GoTo CleanExit
+
+    actionResult = modRoleEventWriter.SignOutServerSessionForAutomation()
+    If Left$(actionResult, 3) <> "OK|" Then GoTo CleanExit
+    If modAuth.IsSignedIn() Then GoTo CleanExit
+    If modNasConnection.IsTargetResolved() Then GoTo CleanExit
+    If modNasConnection.HasConnectedUncRoot() Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetServerSessionActionLabel() <> "Server Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetCurrentUserActionLabel() <> "invSys Sign In" Then GoTo CleanExit
+    If modRibbonRuntimeStatus.GetAccessStatusLabel("lblOperationsAccessStatus") <> "Access: Server Sign In required" Then GoTo CleanExit
+
+    TestServerSignOutAction_ClearsUserTargetAndAccess = 1
+
+CleanExit:
+    modAuth.SignOut
+    modRoleEventWriter.SetCurrentUserId vbNullString
+    modNasConnection.ForgetTarget "WH4L"
     modNasConnection.ForgetRoot rootPath
     modNasConnection.ClearWarehouseTarget
     CloseWorkbookIfOpen wbCfg
@@ -10217,6 +10602,148 @@ CleanFail:
     Resume CleanExit
 End Function
 
+Public Function TestShippingAdd_CurrentSchemaReservesBySystemKey() As Long
+    Dim rootPath As String
+    Dim currentUser As String
+    Dim wbOps As Workbook
+    Dim report As String
+    Dim failureReason As String
+    Dim loInv As ListObject
+    Dim loShip As ListObject
+    Dim ok As Boolean
+    Dim inventoryRowIndex As Long
+    Dim systemKey As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_ship_add_system_key")
+    currentUser = "calvin"
+    systemKey = "SYS-SKU-EXACT-ADD"
+
+    On Error GoTo CleanFail
+    If Not PrepareShippingPostSessionForTest(rootPath, "WH-SYSKEY", "S-SYSKEY", currentUser, failureReason) Then GoTo CleanExit
+
+    Set wbOps = Application.Workbooks.Add(xlWBATWorksheet)
+    If Not modRoleWorkbookSurfaces.EnsureShippingWorkbookSurface(wbOps, report) Then GoTo CleanExit
+    Set loInv = FindTableByName(wbOps, "invSys")
+    Set loShip = FindTableByName(wbOps, "ShipmentsTally")
+    If loInv Is Nothing Or loShip Is Nothing Then
+        failureReason = "Shipping current-schema tables were not created."
+        GoTo CleanExit
+    End If
+    If GetTableColumnIndexForTest(loInv, "ROW") <> 0 Or _
+       GetTableColumnIndexForTest(loShip, "ROW") <> 0 Then
+        failureReason = "Managed Shipping test surfaces unexpectedly exposed ROW."
+        GoTo CleanExit
+    End If
+
+    AddInvSysSeedRow loInv, 0, "SKU-EXACT-ADD", "Exact Key Box", "EA", "CLEARVIEW", 10
+    inventoryRowIndex = loInv.ListRows.Count
+    wbOps.Activate
+    ok = RunShippingCommitLineForTest( _
+        "SHIP", "ADD", 0, "REF-EXACT-ADD", "Exact Key Box", 2, systemKey, _
+        "EA", "CLEARVIEW", "v1", "UPS", report, 10, 10)
+    If Not ok Then
+        failureReason = "Current-schema Shipping Add failed: " & report
+        GoTo CleanExit
+    End If
+    If Abs(NzDblForTest(GetTableValue(loInv, inventoryRowIndex, "SHIPMENTS")) - 2#) > 0.0000001 Then
+        failureReason = "Shipping Add did not reserve 2 units on the exact System_Key inventory entity."
+        GoTo CleanExit
+    End If
+    If StrComp(CStr(GetTableValue(loShip, 1, "System_Key")), systemKey, vbBinaryCompare) <> 0 Then
+        failureReason = "The staged shipment row did not preserve the selected System_Key."
+        GoTo CleanExit
+    End If
+
+    TestShippingAdd_CurrentSchemaReservesBySystemKey = 1
+
+CleanExit:
+    CloseWorkbookIfOpen wbOps
+    If failureReason <> "" Then
+        On Error GoTo 0
+        Err.Raise vbObjectError + 7210, "TestShippingAdd_CurrentSchemaReservesBySystemKey", failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
+Public Function TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey() As Long
+    Dim rootPath As String
+    Dim wbInv As Workbook
+    Dim evt As Object
+    Dim loEntities As ListObject
+    Dim loLog As ListObject
+    Dim rowDamaged As Long
+    Dim rowGood As Long
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim failureReason As String
+
+    rootPath = BuildRuntimeTestRoot("phase6_inventory_disposition")
+    On Error GoTo CleanFail
+    Set wbInv = CreateCanonicalInventoryWorkbookForTest(rootPath, "WH122", Array("SKU-DISPOSITION"))
+    If wbInv Is Nothing Then failureReason = "Canonical inventory workbook was not created.": GoTo CleanExit
+
+    Set evt = CreateReceiveEventForTest("EVT-DISP-DAMAGED", "WH122", "S22", "user1", "SKU-DISPOSITION", 100, "CLEARVIEW", "seed damaged")
+    evt("Condition") = "DAMAGED"
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-001", statusOut, errorCode, errorMessage) Then
+        failureReason = "DAMAGED seed failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+    Set evt = CreateReceiveEventForTest("EVT-DISP-GOOD", "WH122", "S22", "user1", "SKU-DISPOSITION", 100, "CLEARVIEW", "seed good")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-002", statusOut, errorCode, errorMessage) Then
+        failureReason = "GOOD seed failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set evt = CreateDispositionEventForTest("EVT-DISP-RETURN", "RETURN", "SYS-EVT-DISP-DAMAGED", 50, "DAMAGED")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-003", statusOut, errorCode, errorMessage) Then
+        failureReason = "RETURN apply failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+    Set evt = CreateDispositionEventForTest("EVT-DISP-DUMP", "DUMP", "SYS-EVT-DISP-DAMAGED", 25, "DAMAGED")
+    If Not modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-004", statusOut, errorCode, errorMessage) Then
+        failureReason = "DUMP apply failed: " & errorCode & "|" & errorMessage
+        GoTo CleanExit
+    End If
+
+    Set loEntities = FindTableByName(wbInv, "tblInventoryEntities")
+    Set loLog = FindTableByName(wbInv, "tblInventoryLog")
+    rowDamaged = FindRowByColumnValueInTable(loEntities, "System_Key", "SYS-EVT-DISP-DAMAGED")
+    rowGood = FindRowByColumnValueInTable(loEntities, "System_Key", "SYS-EVT-DISP-GOOD")
+    If rowDamaged = 0 Or rowGood = 0 Then failureReason = "Disposition changed or lost durable identity.": GoTo CleanExit
+    If CDbl(GetTableValue(loEntities, rowDamaged, "QtyOnHand")) <> 25 Then failureReason = "DAMAGED quantity was not depleted to 25.": GoTo CleanExit
+    If CDbl(GetTableValue(loEntities, rowGood, "QtyOnHand")) <> 100 Then failureReason = "GOOD quantity changed during DAMAGED disposition.": GoTo CleanExit
+    If SumInventoryLogQtyDeltaForTest(loLog, "RETURN", "SKU-DISPOSITION") <> -50 Then failureReason = "RETURN audit delta was not -50.": GoTo CleanExit
+    If SumInventoryLogQtyDeltaForTest(loLog, "DUMP", "SKU-DISPOSITION") <> -25 Then failureReason = "DUMP audit delta was not -25.": GoTo CleanExit
+
+    Set evt = CreateDispositionEventForTest("EVT-DISP-OVERDRAW", "RETURN", "SYS-EVT-DISP-DAMAGED", 26, "DAMAGED")
+    errorCode = "": errorMessage = ""
+    If modInventoryApply.ApplyEvent(evt, wbInv, "RUN-DISP-005", statusOut, errorCode, errorMessage) Then
+        failureReason = "Exact-key overdraw was accepted."
+        GoTo CleanExit
+    End If
+    If StrComp(errorCode, "INSUFFICIENT_ENTITY_INVENTORY", vbBinaryCompare) <> 0 Then
+        failureReason = "Exact-key overdraw returned " & errorCode & " instead of INSUFFICIENT_ENTITY_INVENTORY."
+        GoTo CleanExit
+    End If
+
+    TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey = 1
+
+CleanExit:
+    CloseWorkbookIfOpen wbInv
+    DeleteRuntimeRoot rootPath
+    If failureReason <> "" Then
+        Debug.Print "TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey: " & failureReason
+    End If
+    Exit Function
+CleanFail:
+    If failureReason = "" Then failureReason = Err.Description
+    Resume CleanExit
+End Function
+
 Private Function GetTableValue(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant
     Dim colIndex As Long
 
@@ -11278,7 +11805,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                               ByVal refNumber As String, _
                                               ByVal itemName As String, _
                                               ByVal qtyValue As Double, _
-                                              ByVal rowValue As Long, _
+                                              ByVal systemKey As Variant, _
                                               ByVal uomValue As String, _
                                               ByVal locationValue As String, _
                                               ByVal descriptionValue As String, _
@@ -11291,8 +11818,11 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
     Dim noShippables As Variant
     Dim resultText As String
     Dim tabPos As Long
+    Dim effectiveSystemKey As String
 
     Set targetWb = ActiveWorkbook
+    effectiveSystemKey = ResolveShippingCommitSystemKeyForTest( _
+        targetWb, itemName, systemKey)
     macroName = ShippingMacroNameForTest("ShipmentsFormCommitLineTraceForTest")
     If Not targetWb Is Nothing Then targetWb.Activate
     If IsMissing(displayedAvailableQty) Then
@@ -11303,7 +11833,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -11316,7 +11846,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -11332,7 +11862,7 @@ Private Function RunShippingCommitLineForTest(ByVal targetName As String, _
                                           refNumber, _
                                           itemName, _
                                           qtyValue, _
-                                          rowValue, _
+                                          effectiveSystemKey, _
                                           uomValue, _
                                           locationValue, _
                                           descriptionValue, _
@@ -11903,6 +12433,39 @@ Private Function RunShippingProjectedOverlayTextForTest(ByVal packageRow As Long
     If Not targetWb Is Nothing Then targetWb.Activate
 End Function
 
+Private Function ResolveShippingCommitSystemKeyForTest(ByVal targetWb As Workbook, _
+                                                        ByVal itemName As String, _
+                                                        ByVal suppliedIdentity As Variant) As String
+    Dim suppliedText As String
+    Dim loInv As ListObject
+    Dim cItem As Long
+    Dim cSystemKey As Long
+    Dim r As Long
+
+    suppliedText = Trim$(CStr(suppliedIdentity))
+    ResolveShippingCommitSystemKeyForTest = suppliedText
+    If suppliedText = "" Or Not IsNumeric(suppliedIdentity) Then Exit Function
+    If targetWb Is Nothing Then Exit Function
+
+    Set loInv = FindTableByName(targetWb, "invSys")
+    If loInv Is Nothing Then Exit Function
+    If loInv.DataBodyRange Is Nothing Then Exit Function
+    cItem = GetTableColumnIndexForTest(loInv, "ITEM")
+    cSystemKey = GetTableColumnIndexForTest(loInv, "System_Key")
+    If cItem = 0 Or cSystemKey = 0 Then Exit Function
+
+    For r = 1 To loInv.DataBodyRange.Rows.Count
+        If StrComp(Trim$(CStr(loInv.DataBodyRange.Cells(r, cItem).Value)), _
+                   Trim$(itemName), vbTextCompare) = 0 Then
+            suppliedText = Trim$(CStr(loInv.DataBodyRange.Cells(r, cSystemKey).Value))
+            If suppliedText <> "" Then
+                ResolveShippingCommitSystemKeyForTest = suppliedText
+                Exit Function
+            End If
+        End If
+    Next r
+End Function
+
 Private Function RunShippingSystemKeyProjectedOverlayTextForTest(ByVal systemKey As String, _
                                                                  ByVal versionLabel As String, _
                                                                  ByVal backendText As String) As String
@@ -12030,6 +12593,100 @@ Private Function CountShipmentRowsForTest(ByVal lo As ListObject, _
             CountShipmentRowsForTest = CountShipmentRowsForTest + 1
         End If
     Next r
+End Function
+
+Public Function TestConfigAuthRead_HealthySchemasRemainSaved() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim rootPath As String
+    Dim configPath As String
+    Dim authPath As String
+    Dim configBefore As Date
+    Dim authBefore As Date
+    Dim report As String
+
+    On Error GoTo CleanExit
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("phase6_read_save")
+    configPath = rootPath & "\WHREADSAVE.invSys.Config.xlsb"
+    authPath = rootPath & "\WHREADSAVE.invSys.Auth.xlsb"
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHREADSAVE", "S1", rootPath)
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHREADSAVE", rootPath)
+    If Not modConfig.EnsureConfigSchema(wbCfg, "WHREADSAVE", "S1", report) Then GoTo CleanExit
+    If Not modAuth.EnsureAuthSchema(wbAuth, "WHREADSAVE", "svc_processor", report) Then GoTo CleanExit
+    wbCfg.Save
+    wbAuth.Save
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    Set wbAuth = Nothing
+    Set wbCfg = Nothing
+    configBefore = FileDateTime(configPath)
+    authBefore = FileDateTime(authPath)
+    Application.Wait Now + TimeSerial(0, 0, 2)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+
+    If Not modConfig.LoadConfig("WHREADSAVE", "S1") Then GoTo CleanExit
+    If FileDateTime(configPath) <> configBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 2
+        GoTo CleanExit
+    End If
+    If Not modAuth.LoadAuth("WHREADSAVE") Then GoTo CleanExit
+    If FileDateTime(authPath) <> authBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 3
+        GoTo CleanExit
+    End If
+    If FileDateTime(configPath) = configBefore _
+       And FileDateTime(authPath) = authBefore Then
+        TestConfigAuthRead_HealthySchemasRemainSaved = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
+End Function
+
+Public Function TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves() As Long
+    Dim wbCfg As Workbook
+    Dim wbAuth As Workbook
+    Dim wbInv As Workbook
+    Dim wbInbox As Workbook
+    Dim rootPath As String
+    Dim report As String
+    Dim processed As Long
+
+    On Error GoTo CleanExit
+    rootPath = TestPhase2Helpers.BuildUniqueTestFolder("phase6_receive_save_batch")
+    Set wbCfg = TestPhase2Helpers.BuildCanonicalConfigWorkbook("WHBATCHSAVE", "S1", rootPath)
+    Set wbAuth = TestPhase2Helpers.BuildCanonicalAuthWorkbook("WHBATCHSAVE", rootPath)
+    Set wbInv = TestPhase2Helpers.BuildCanonicalInventoryWorkbook("WHBATCHSAVE", rootPath, Array("SKU-001"))
+    Set wbInbox = TestPhase2Helpers.BuildCanonicalReceiveInboxWorkbook("S1", rootPath)
+    modRuntimeWorkbooks.SetCoreDataRootOverride rootPath
+
+    TestPhase2Helpers.AddCapability wbAuth, "user1", "RECEIVE_POST", "WHBATCHSAVE", "S1", "ACTIVE"
+    TestPhase2Helpers.AddCapability wbAuth, "svc_processor", "INBOX_PROCESS", "WHBATCHSAVE", "*", "ACTIVE"
+    wbAuth.Save
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-1", Now, "WHBATCHSAVE", "S1", "user1", "SKU-001", 1, "A1", "batch one"
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-2", DateAdd("s", 1, Now), "WHBATCHSAVE", "S1", "user1", "SKU-001", 2, "A1", "batch two"
+    TestPhase2Helpers.AddInboxReceiveRow wbInbox, "EVT-BATCH-SAVE-3", DateAdd("s", 2, Now), "WHBATCHSAVE", "S1", "user1", "SKU-001", 3, "A1", "batch three"
+    processed = modProcessor.RunBatch("WHBATCHSAVE", 500, report)
+
+    If processed = 3 _
+       And InStr(1, report, "EventPersistenceSaves=3", vbBinaryCompare) > 0 Then
+        TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves = 1
+    End If
+
+CleanExit:
+    modRuntimeWorkbooks.ClearCoreDataRootOverride
+    TestPhase2Helpers.CloseNoSave wbInbox
+    TestPhase2Helpers.CloseNoSave wbInv
+    TestPhase2Helpers.CloseNoSave wbAuth
+    TestPhase2Helpers.CloseNoSave wbCfg
+    On Error Resume Next
+    If rootPath <> "" Then CreateObject("Scripting.FileSystemObject").DeleteFolder rootPath, True
+    On Error GoTo 0
 End Function
 
 Private Function FindShipmentRowForTest(ByVal lo As ListObject, _
@@ -12403,6 +13060,32 @@ Private Function CreateReceiveEventForTest(ByVal eventId As String, _
     evt("AttributesJson") = ""
     evt("Note") = noteVal
     Set CreateReceiveEventForTest = evt
+End Function
+
+Private Function CreateDispositionEventForTest(ByVal eventId As String, _
+                                               ByVal eventType As String, _
+                                               ByVal systemKey As String, _
+                                               ByVal qty As Double, _
+                                               ByVal conditionValue As String) As Object
+    Dim evt As Object
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = eventType
+    evt("CreatedAtUTC") = Now
+    evt("WarehouseId") = "WH122"
+    evt("StationId") = "S22"
+    evt("UserId") = "user1"
+    evt("SourceInbox") = "phase6-disposition-inbox"
+    evt("System_Key") = systemKey
+    evt("SKU") = "SKU-DISPOSITION"
+    evt("Qty") = qty
+    evt("Location") = "CLEARVIEW"
+    evt("Condition") = conditionValue
+    evt("AttributesJson") = ""
+    evt("Note") = eventType & " disposition test"
+    Set CreateDispositionEventForTest = evt
 End Function
 
 Private Function CreatePayloadEventForTest(ByVal eventId As String, _

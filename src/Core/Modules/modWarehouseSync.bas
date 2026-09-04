@@ -6,6 +6,8 @@ Private Const TABLE_OUTBOX As String = "tblOutboxEvents"
 
 Private Const SHEET_SNAPSHOT As String = "InventorySnapshot"
 Private Const TABLE_SNAPSHOT As String = "tblInventorySnapshot"
+Private Const SHEET_SNAPSHOT_EVENTS As String = "InventoryEvents"
+Private Const TABLE_SNAPSHOT_EVENTS As String = "tblInventoryEvents"
 Private Const SNAPSHOT_SOURCE_LOG As String = "LOG_FALLBACK"
 Private Const SNAPSHOT_SOURCE_PROJECTION As String = "PROJECTION"
 Private Const SNAPSHOT_SOURCE_MANAGED_SURFACE As String = "MANAGED_SURFACE"
@@ -91,6 +93,85 @@ FailAppend:
     If openedTransient Then CloseWorkbookQuietlySync wbOutbox
     On Error GoTo 0
     report = "AppendEventToOutbox failed: " & Err.Description
+End Function
+
+Public Function AppendEventsToOutboxBatch(ByVal events As Collection, _
+                                          Optional ByVal inventoryWb As Workbook = Nothing, _
+                                          Optional ByVal runId As String = "", _
+                                          Optional ByRef report As String = "") As Boolean
+    On Error GoTo Failed
+
+    Dim firstEvent As Object
+    Dim evt As Variant
+    Dim eventObject As Object
+    Dim warehouseId As String
+    Dim eventId As String
+    Dim wbOutbox As Workbook
+    Dim loOutbox As ListObject
+    Dim appliedMeta As Object
+    Dim openPaths As Object
+    Dim openedTransient As Boolean
+    Dim rowIndex As Long
+    Dim targetRow As ListRow
+
+    If events Is Nothing Or events.Count = 0 Then
+        report = "OK|Rows=0|Saves=0"
+        AppendEventsToOutboxBatch = True
+        Exit Function
+    End If
+    Set firstEvent = events(1)
+    warehouseId = GetEventStringSync(firstEvent, "WarehouseId")
+    Set openPaths = CaptureOpenWorkbookPathsSync()
+    Set wbOutbox = ResolveOutboxWorkbook(warehouseId, Nothing, True)
+    If wbOutbox Is Nothing Then
+        report = "Outbox workbook not found."
+        Exit Function
+    End If
+    openedTransient = Not WorkbookWasAlreadyOpenSync(openPaths, wbOutbox)
+    If openedTransient Then HideWorkbookWindowsSync wbOutbox
+    If Not EnsureOutboxSchema(wbOutbox, report) Then GoTo CleanExit
+    Set loOutbox = wbOutbox.Worksheets(SHEET_OUTBOX).ListObjects(TABLE_OUTBOX)
+    EnsureTableSheetEditableSync loOutbox, TABLE_OUTBOX
+
+    For Each evt In events
+        Set eventObject = evt
+        eventId = GetEventStringSync(eventObject, "EventID")
+        If eventId = "" Then
+            report = "Outbox batch row requires EventID."
+            GoTo CleanExit
+        End If
+        Set appliedMeta = ResolveAppliedMeta(eventId, inventoryWb)
+        If appliedMeta Is Nothing Then
+            report = "Applied metadata not found for EventID " & eventId
+            GoTo CleanExit
+        End If
+        rowIndex = FindRowByValueSync(loOutbox, "EventID", eventId)
+        If rowIndex = 0 Then
+            Set targetRow = loOutbox.ListRows.Add
+            rowIndex = targetRow.Index
+        End If
+        SetTableRowValueSync loOutbox, rowIndex, "EventID", eventId
+        SetTableRowValueSync loOutbox, rowIndex, "UndoOfEventId", GetEventStringSync(eventObject, "UndoOfEventId")
+        SetTableRowValueSync loOutbox, rowIndex, "EventType", GetEventStringSync(eventObject, "EventType")
+        SetTableRowValueSync loOutbox, rowIndex, "WarehouseId", warehouseId
+        SetTableRowValueSync loOutbox, rowIndex, "StationId", GetEventStringSync(eventObject, "StationId")
+        SetTableRowValueSync loOutbox, rowIndex, "OccurredAtUTC", GetEventValueSync(eventObject, "CreatedAtUTC")
+        SetTableRowValueSync loOutbox, rowIndex, "AppliedAtUTC", appliedMeta("AppliedAtUTC")
+        SetTableRowValueSync loOutbox, rowIndex, "AppliedByUserId", GetEventStringSync(eventObject, "UserId")
+        SetTableRowValueSync loOutbox, rowIndex, "RunId", ResolveStringSync(appliedMeta, "RunId", runId)
+        SetTableRowValueSync loOutbox, rowIndex, "DeltaJson", BuildDeltaJsonForOutbox(eventObject)
+    Next evt
+
+    SaveWorkbookSync wbOutbox
+    report = "OK|Rows=" & CStr(events.Count) & "|Saves=1"
+    AppendEventsToOutboxBatch = True
+CleanExit:
+    If openedTransient Then CloseWorkbookQuietlySync wbOutbox
+    Exit Function
+
+Failed:
+    report = "AppendEventsToOutboxBatch failed: " & Err.Description
+    Resume CleanExit
 End Function
 
 Public Function EnsureOutboxSchema(Optional ByVal targetWb As Workbook = Nothing, _
@@ -188,6 +269,7 @@ Public Function GenerateWarehouseSnapshot(Optional ByVal warehouseId As String =
     savePath = wbSnap.FullName
     If Not EnsureSnapshotSchema(wbSnap, report) Then GoTo CleanExit
     WriteSnapshotRows wbSnap, warehouseId, snapshotRows
+    WriteSnapshotEventRows wbSnap, wbInv
     wbSnap.Save
 
     If Trim$(perfRunId) <> "" Then PerfMarkSafeSync perfRunId, "SnapshotWrite", CLng((Timer - t0) * 1000)
@@ -320,7 +402,7 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     headers = Array("WarehouseId", "System_Key", "SKU", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", _
                     "Condition", "InventoryState", "AttributesJson", "RECEIVED", "USED", "MADE", "SHIPMENTS", _
                     "QtyOnHand", "QtyAvailable", "LocationSummary", "LastAppliedAtUTC")
-    NormalizeWorkbookSheetsSync wb, Array(SHEET_SNAPSHOT)
+    NormalizeWorkbookSheetsSync wb, Array(SHEET_SNAPSHOT, SHEET_SNAPSHOT_EVENTS)
     Set ws = EnsureWorksheetSync(wb, SHEET_SNAPSHOT)
     EnsureWorksheetEditableSync ws
 
@@ -343,6 +425,7 @@ Private Function EnsureSnapshotSchema(ByVal wb As Workbook, ByRef report As Stri
     RemoveListColumnIfPresentSync lo, "ROW"
     RemoveBlankSeedRowSync lo
     ApplySnapshotColumnFormatsSync lo
+    EnsureSnapshotEventSchema wb
 
     report = "OK"
     EnsureSnapshotSchema = True
@@ -500,6 +583,59 @@ ContinueEntityLoop:
 
     Set BuildSnapshotRowsFromProjectionsSync = rows
 End Function
+
+Private Sub EnsureSnapshotEventSchema(ByVal wb As Workbook)
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim headers As Variant
+    Dim startCell As Range
+    Dim i As Long
+
+    headers = Array("EventID", "EventType", "OccurredAtUTC", "AppliedAtUTC", "StationId", "UserId", _
+                    "System_Key", "SKU", "QtyDelta", "Location", "Condition", "Note")
+    Set ws = EnsureWorksheetSync(wb, SHEET_SNAPSHOT_EVENTS)
+    EnsureWorksheetEditableSync ws
+    On Error Resume Next
+    Set lo = ws.ListObjects(TABLE_SNAPSHOT_EVENTS)
+    On Error GoTo 0
+    If lo Is Nothing Then
+        Set startCell = GetNextTableStartCellSync(ws)
+        For i = LBound(headers) To UBound(headers)
+            startCell.Offset(0, i - LBound(headers)).Value = headers(i)
+        Next i
+        Set lo = ws.ListObjects.Add(xlSrcRange, ws.Range(startCell, startCell.Offset(1, UBound(headers) - LBound(headers))), , xlYes)
+        lo.Name = TABLE_SNAPSHOT_EVENTS
+    End If
+    For i = LBound(headers) To UBound(headers)
+        EnsureListColumnSync lo, CStr(headers(i))
+    Next i
+    RemoveListColumnIfPresentSync lo, "ROW"
+    RemoveBlankSeedRowSync lo
+End Sub
+
+Private Sub WriteSnapshotEventRows(ByVal snapshotWb As Workbook, ByVal inventoryWb As Workbook)
+    Dim sourceTable As ListObject
+    Dim targetTable As ListObject
+    Dim headers As Variant
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    headers = Array("EventID", "EventType", "OccurredAtUTC", "AppliedAtUTC", "StationId", "UserId", _
+                    "System_Key", "SKU", "QtyDelta", "Location", "Condition", "Note")
+    Set targetTable = snapshotWb.Worksheets(SHEET_SNAPSHOT_EVENTS).ListObjects(TABLE_SNAPSHOT_EVENTS)
+    DeleteAllRowsSync targetTable
+    Set sourceTable = FindListObjectByNameSync(inventoryWb, "tblInventoryLog")
+    If sourceTable Is Nothing Or sourceTable.DataBodyRange Is Nothing Then Exit Sub
+
+    For rowIndex = 1 To sourceTable.ListRows.Count
+        EnsureTableSheetEditableSync targetTable, TABLE_SNAPSHOT_EVENTS
+        targetTable.ListRows.Add
+        For columnIndex = LBound(headers) To UBound(headers)
+            SetTableRowValueSync targetTable, targetTable.ListRows.Count, CStr(headers(columnIndex)), _
+                GetCellByColumnSync(sourceTable, rowIndex, CStr(headers(columnIndex)))
+        Next columnIndex
+    Next rowIndex
+End Sub
 
 Private Function BuildSnapshotRowsFromLogSync(ByVal wbInv As Workbook, ByVal warehouseId As String) As Object
     Dim loLog As ListObject

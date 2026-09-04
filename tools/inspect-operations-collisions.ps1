@@ -278,8 +278,7 @@ $lines = @(
     "- Unresolved collisions: $($unresolved.Count)",
     "",
     "The shadow import excludes only the reviewed standalone startup wrappers",
-    "and the unreferenced legacy search-form template recorded in the",
-    "machine-readable resolution contract.",
+    "recorded in the machine-readable resolution contract.",
     ""
 )
 if ($allCollisions.Count -eq 0) {

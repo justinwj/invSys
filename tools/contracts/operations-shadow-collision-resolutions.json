@@ -3,8 +3,7 @@
   "shadowExcludedFileNames": [
     "modReceivingAutoOpen.bas",
     "modProductionAutoOpen.bas",
-    "modShippingAutoOpen.bas",
-    "ufDynItemSearchTemplate.frm"
+    "modShippingAutoOpen.bas"
   ],
   "resolutions": [
     {
@@ -13,15 +12,6 @@
       "reason": "Role application-event classes retain independent state and now have role-qualified component names.",
       "protectingTests": [
         "tools/validate_phase6_packaged_xlams.ps1",
-        "tools/validate-operations-shadow.ps1"
-      ]
-    },
-    {
-      "collisionId": "COMPONENT:ufDynItemSearchTemplate",
-      "disposition": "EXCLUDED_UNUSED_TEMPLATE",
-      "reason": "The empty designer template has no runtime references; each role keeps its role-specific search form.",
-      "protectingTests": [
-        "tests/tooling/Test-Slice6ShadowOperations.ps1",
         "tools/validate-operations-shadow.ps1"
       ]
     },

@@ -133,6 +133,30 @@ function Get-RibbonLabelControls {
     return $result
 }
 
+function Get-RibbonDropDowns {
+    param([string]$CustomUiXml)
+
+    if ([string]::IsNullOrWhiteSpace($CustomUiXml)) { return @{} }
+
+    $doc = New-Object System.Xml.XmlDocument
+    $doc.LoadXml($CustomUiXml)
+    $ns = New-Object System.Xml.XmlNamespaceManager($doc.NameTable)
+    $ns.AddNamespace("cu", "http://schemas.microsoft.com/office/2006/01/customui")
+
+    $result = @{}
+    foreach ($dropDown in $doc.SelectNodes("//cu:dropDown", $ns)) {
+        $result[$dropDown.id] = [pscustomobject]@{
+            Id = [string]$dropDown.id
+            Label = [string]$dropDown.label
+            GetItemCount = [string]$dropDown.getItemCount
+            GetItemLabel = [string]$dropDown.getItemLabel
+            GetSelectedItemIndex = [string]$dropDown.getSelectedItemIndex
+            OnAction = [string]$dropDown.onAction
+        }
+    }
+    return $result
+}
+
 function Get-ModuleText {
     param(
         [object]$Workbook,
@@ -212,9 +236,8 @@ $ribbonSpecs = @(
             @{ Id = "lblOperationsAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
         )
         Buttons = @(
-            @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; Execute = $false },
-            @{ Id = "btnOperationsCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
+            @{ Id = "btnOperationsServerSession"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; Execute = $false; Screentip = "Sign in to or sign out of warehouse server storage" },
+            @{ Id = "btnOperationsCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability"; Execute = $false; Screentip = "Sign in to or sign out of invSys" },
             @{ Id = "btnOperationsReceivingForm"; Label = "Receiving"; Macro = "modTS_Received.ShowReceivingForm"; Execute = $false; RequiredCapability = "RECEIVE_POST" },
             @{ Id = "btnOperationsProductionForm"; Label = "Production"; Macro = "mProduction.BtnOpenProductionForm"; Execute = $false; RequiredCapability = "PROD_POST" },
             @{ Id = "btnOperationsShippingForm"; Label = "Shipping"; Macro = "modTS_Shipments.BtnOpenShipmentsForm"; Execute = $false; RequiredCapability = "SHIP_POST" }
@@ -250,23 +273,27 @@ $ribbonSpecs = @(
         File = "invSys.Admin.xlam"
         Callback = "RibbonOnActionAdmin"
         EnabledCallback = "RibbonRequiredCapabilityGetEnabledAdmin"
+        WarehouseSelector = @{
+            Id = "ddAdminWarehouseTarget"
+            Label = "Send To"
+        }
         StatusLabels = @(
             @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
             @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
         )
         Buttons = @(
             @{ Id = "btnAdminOpen"; Label = "Admin Console"; Macro = "modAdmin.Admin_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminConnectServer"; Label = "Connect Server"; DirectAction = 'modRoleEventWriter.ConnectWarehouseStorageForCapability "ADMIN_MAINT"'; Execute = $false },
-            @{ Id = "btnAdminCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.PromptSetCurrentUserForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in as an invSys user" },
-            @{ Id = "btnAdminSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; Execute = $false },
+            @{ Id = "btnAdminServerSession"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = 'modRoleEventWriter.ToggleServerSessionForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in to or sign out of warehouse server storage" },
+            @{ Id = "btnAdminCurrentUser"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = 'modRoleEventWriter.ToggleCurrentInvSysUserForCapability "ADMIN_MAINT"'; Execute = $false; Screentip = "Sign in to or sign out of invSys" },
             @{ Id = "btnAdminUsers"; Label = "Users and Roles"; Macro = "modAdmin.Open_CreateDeleteUser"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminSettings"; Label = "Settings"; Macro = "modAdmin.Open_Settings"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminWarehouseRoot"; Label = "Add Warehouse Root"; Macro = "modAdmin.Add_WarehouseDirectoryRoot"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminCreateWarehouse"; Label = "Create New Warehouse"; Macro = "modAdmin.Open_CreateWarehouse"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminSetupTesterStation"; Label = "Setup Tester Station"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminAddInventoryItem"; Label = "Add Inventory Item"; Macro = "modAdmin.Add_InventoryItem"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
-            @{ Id = "btnAdminSeedInventory"; Label = "Seed Demo Inventory"; Macro = "modAdmin.Seed_DemoInventory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminSetupTesterStation"; Label = "Test Environment Setup"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminAddInventoryItem"; Label = "Add/Edit Inventory Items"; Macro = "modAdmin.Add_InventoryItem"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminSeedInventory"; Label = "Demo Inventory"; Macro = "modAdmin.Seed_DemoInventory"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
+            @{ Id = "btnAdminDesignLifecycle"; Label = "Design Lifecycle"; Macro = "modAdminDesignLifecycle.Admin_DesignLifecycle_Click"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminVerifyAddinsPublished"; Label = "Verify Add-ins Published"; Macro = "modAdmin.Verify_AddinsPublished"; Execute = $false; RequiredCapability = "ADMIN_MAINT" },
             @{ Id = "btnAdminRetireMigrateWarehouse"; Label = "Retire / Migrate Warehouse"; Macro = "modAdmin.Admin_RetireMigrateWarehouse_Click"; Execute = $false; Screentip = "Archive, migrate, retire, or delete a warehouse runtime"; RequiredCapability = "ADMIN_MAINT" }
         )
@@ -334,8 +361,29 @@ try {
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).RibbonXml" -Passed $true -Detail "customUI/customUI.xml present."
         $buttons = Get-RibbonButtons -CustomUiXml $customUiXml
         $labels = Get-RibbonLabelControls -CustomUiXml $customUiXml
+        $dropDowns = Get-RibbonDropDowns -CustomUiXml $customUiXml
         $callbackModuleText = Get-ModuleText -Workbook $wb -ComponentName "modRibbonGenerated"
         Add-ResultRow -Rows $resultRows -Check "$($spec.Name).CallbackModule" -Passed (-not [string]::IsNullOrWhiteSpace($callbackModuleText)) -Detail "modRibbonGenerated"
+
+        if ($spec.ContainsKey("WarehouseSelector")) {
+            $selector = $spec.WarehouseSelector
+            $selectorId = [string]$selector.Id
+            if ($dropDowns.ContainsKey($selectorId)) {
+                $dropDown = $dropDowns[$selectorId]
+                $selectorOk = $dropDown.Label -eq $selector.Label -and
+                    $dropDown.GetItemCount -eq "RibbonWarehouseGetItemCount" -and
+                    $dropDown.GetItemLabel -eq "RibbonWarehouseGetItemLabel" -and
+                    $dropDown.GetSelectedItemIndex -eq "RibbonWarehouseGetSelectedItemIndex" -and
+                    $dropDown.OnAction -eq "RibbonWarehouseOnAction"
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelector.$selectorId" -Passed $selectorOk -Detail "Label=$($dropDown.Label); OnAction=$($dropDown.OnAction)"
+            }
+            else {
+                Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelector.$selectorId" -Passed $false -Detail "Warehouse selector missing from Ribbon XML."
+            }
+            $callbackOk = $callbackModuleText.Contains("Public Sub RibbonWarehouseOnAction") -and
+                $callbackModuleText.Contains("modRibbonRuntimeStatus.SelectWarehouseTarget selectedIndex")
+            Add-ResultRow -Rows $resultRows -Check "$($spec.Name).WarehouseSelectorCallback.$selectorId" -Passed $callbackOk -Detail "RibbonWarehouseOnAction -> SelectWarehouseTarget"
+        }
 
         if ($spec.ContainsKey("StatusLabels")) {
             foreach ($statusLabel in $spec.StatusLabels) {

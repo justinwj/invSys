@@ -8,13 +8,11 @@ Option Explicit
     Private Declare PtrSafe Function SetWindowLongPtr Lib "user32" Alias "SetWindowLongPtrA" (ByVal hwnd As LongPtr, ByVal nIndex As Long, ByVal dwNewLong As LongPtr) As LongPtr
     Private Declare PtrSafe Function SetWindowPos Lib "user32" (ByVal hwnd As LongPtr, ByVal hWndInsertAfter As LongPtr, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
     Private Declare PtrSafe Function IUnknown_GetWindow Lib "shlwapi" Alias "#172" (ByVal pIUnk As IUnknown, ByRef hwnd As LongPtr) As Long
-    Private Declare PtrSafe Function GetDpiForWindow Lib "user32" (ByVal hwnd As LongPtr) As Long
 #Else
     Private Declare Function GetWindowLongPtr Lib "user32" Alias "GetWindowLongA" (ByVal hwnd As Long, ByVal nIndex As Long) As Long
     Private Declare Function SetWindowLongPtr Lib "user32" Alias "SetWindowLongA" (ByVal hwnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
     Private Declare Function SetWindowPos Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
     Private Declare Function IUnknown_GetWindow Lib "shlwapi" Alias "#172" (ByVal pIUnk As IUnknown, ByRef hwnd As Long) As Long
-    Private Declare Function GetDpiForWindow Lib "user32" (ByVal hwnd As Long) As Long
 #End If
 
 Private Const GWL_STYLE As Long = -16
@@ -49,36 +47,10 @@ FailEnable:
 End Function
 
 Public Function ApplyDpiLayoutZoom(ByVal productionForm As Object) As Long
-#If Mac Then
-    ApplyDpiLayoutZoom = 100
-#Else
-    Dim hwnd As LongPtr
-    Dim windowDpi As Long
-    Dim zoomPercent As Long
-
-    On Error GoTo UseDefault
-    hwnd = ResolveProductionFormWindowHandle(productionForm)
-    If hwnd = 0 Then GoTo UseDefault
-    windowDpi = GetDpiForWindow(hwnd)
-    If windowDpi <= 0 Then GoTo UseDefault
-
-    If windowDpi <= 96 Then
-        zoomPercent = 100
-    Else
-        zoomPercent = CLng((96# * 90#) / CDbl(windowDpi))
-    End If
-    If zoomPercent < 50 Then zoomPercent = 50
-    If zoomPercent > 100 Then zoomPercent = 100
-    CallByName productionForm, "Zoom", VbLet, zoomPercent
-    ApplyDpiLayoutZoom = zoomPercent
-    Exit Function
-
-UseDefault:
     On Error Resume Next
     CallByName productionForm, "Zoom", VbLet, 100
     On Error GoTo 0
     ApplyDpiLayoutZoom = 100
-#End If
 End Function
 
 Public Function DiagnoseWindowStyle(ByVal productionForm As Object) As String

@@ -428,6 +428,8 @@ try {
     $componentSpecs = @(
         @{ File = "invSys.Core.xlam"; Component = "modInventoryDomainBridge"; Exists = $true },
         @{ File = "invSys.Core.xlam"; Component = "modDesignsDomainBridge"; Exists = $true },
+        @{ File = "invSys.Core.xlam"; Component = "modInventoryViewerData"; Exists = $true },
+        @{ File = "invSys.Core.xlam"; Component = "frmItemSearch"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryApply"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInventoryQueries"; Exists = $true },
         @{ File = "invSys.Inventory.Domain.xlam"; Component = "modInvMan"; Exists = $false },
@@ -436,7 +438,25 @@ try {
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsQueries"; Exists = $true },
         @{ File = "invSys.Designs.Domain.xlam"; Component = "modDesignsSchema"; Exists = $true },
         @{ File = "invSys.Admin.xlam"; Component = "modAdminConsole"; Exists = $true },
-        @{ File = "invSys.Admin.xlam"; Component = "modAdminDesignLifecycle"; Exists = $true }
+        @{ File = "invSys.Admin.xlam"; Component = "modAdminDesignLifecycle"; Exists = $true },
+        @{ File = "invSys.Operations.xlam"; Component = "modInventoryViewer"; Exists = $true },
+        @{ File = "invSys.Operations.xlam"; Component = "frmInventoryViewer"; Exists = $true },
+        @{ File = "invSys.Admin.xlam"; Component = "frmAdminControls"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "frmAdminEmail"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "frmEditUser"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "ufAdminItemSearch"; Exists = $false },
+        @{ File = "invSys.Admin.xlam"; Component = "ufDynItemSearchTemplate"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmCreateRecipeTable"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmCreateSubstitutionList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmIngredientPalette"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmSubstitution"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufProductionItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmReceivingSavedList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufReceivingItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmShippingCreateList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "frmShippingSavedList"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufShippingItemSearch"; Exists = $false },
+        @{ File = "invSys.Operations.xlam"; Component = "ufDynItemSearchTemplate"; Exists = $false }
     )
     foreach ($componentSpec in $componentSpecs) {
         if (-not $workbookMap.ContainsKey($componentSpec.File)) {
@@ -551,9 +571,87 @@ try {
         catch {
             Add-ResultRow -Rows $resultRows -Check "Admin.DesignLifecycle.LegacyMigrationControl" -Passed $false -Detail $_.Exception.Message
         }
+        try {
+            $editSelection = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryEditSelectionContractForAutomation")
+            $editSelectionPassed = $editSelection -match '^OK\|' -and
+                $editSelection -match '(?:^|\|)ComboSelected=True(?:\||$)' -and
+                $editSelection -match '(?:^|\|)FieldsLoaded=True(?:\||$)' -and
+                $editSelection -match '(?:^|\|)UtilityReady=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $editSelectionPassed -Detail $editSelection
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.EditItemComboSelection" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
+            $adminAdd = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryAddVisibilityDropdownContractForAutomation")
+            $adminAddPassed = $adminAdd -match '^OK\|' -and
+                $adminAdd -match '(?:^|\|)SubmitHandler=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)ExactEntityCreate=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)ZeroQtyAccepted=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)NegativeRejected=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)LocationDropdown=True(?:\||$)' -and
+                $adminAdd -match '(?:^|\|)CategoryDropdown=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $adminAddPassed -Detail $adminAdd
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryZeroStartingQuantity" -Passed $adminAddPassed -Detail $adminAdd
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryAddVisibilityDropdowns" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
+            $inventoryDelete = [string]$excel.Run("'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryDeleteContractForAutomation")
+            $inventoryDeletePassed = $inventoryDelete -match '^OK\|' -and
+                $inventoryDelete -match '(?:^|\|)DeleteHandler=True(?:\||$)' -and
+                $inventoryDelete -match '(?:^|\|)ExactKey=True(?:\||$)' -and
+                $inventoryDelete -match '(?:^|\|)UtilityZeroDelta=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryDeleteItem" -Passed $inventoryDeletePassed -Detail $inventoryDelete
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryDeleteItem" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
+            $inventoryWorksheetWb = $excel.Workbooks.Add()
+            $targetWorkbooks.Add($inventoryWorksheetWb) | Out-Null
+            $inventoryWorksheetPath = Join-Path $targetRoot "Admin.Inventory.Worksheet.Contract.xlsx"
+            $inventoryWorksheetWb.SaveAs($inventoryWorksheetPath, 51)
+            $inventoryWorksheetWb.Activate()
+            $inventoryWorksheet = [string]$excel.Run(
+                "'$($workbookMap["invSys.Admin.xlam"].Name)'!modAdmin.InventoryWorksheetContractForAutomation",
+                $inventoryWorksheetWb)
+            $inventoryWorksheetPassed = $inventoryWorksheet -match '^OK\|' -and
+                $inventoryWorksheet -match '(?:^|\|)TableCreated=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)Preflight=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)Utility=True(?:\||$)' -and
+                $inventoryWorksheet -match '(?:^|\|)ZeroCounted=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryWorksheetActions" -Passed $inventoryWorksheetPassed -Detail $inventoryWorksheet
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "Admin.InventoryWorksheetActions" -Passed $false -Detail $_.Exception.Message
+        }
     }
 
     if ($workbookMap.ContainsKey("invSys.Core.xlam") -and $workbookMap.ContainsKey("invSys.Inventory.Domain.xlam")) {
+        try {
+            $inventoryZeroCreate = [string]$excel.Run("'$($workbookMap["invSys.Inventory.Domain.xlam"].Name)'!modInventoryApply.InventoryZeroCreateContractForAutomation")
+            $inventoryZeroCreatePassed = $inventoryZeroCreate -match '^OK\|' -and
+                $inventoryZeroCreate -match '(?:^|\|)ZeroEntityActive=True(?:\||$)' -and
+                $inventoryZeroCreate -match '(?:^|\|)ZeroVisible=True(?:\||$)' -and
+                $inventoryZeroCreate -match '(?:^|\|)NegativeRejected=True(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryZeroCreate" -Passed $inventoryZeroCreatePassed -Detail $inventoryZeroCreate
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryZeroCreate" -Passed $false -Detail $_.Exception.Message
+        }
+        try {
+            $inventoryRetirement = [string]$excel.Run("'$($workbookMap["invSys.Inventory.Domain.xlam"].Name)'!modInventoryApply.InventoryRetirementContractForAutomation")
+            $inventoryRetirementPassed = $inventoryRetirement -match '^OK\|' -and
+                $inventoryRetirement -match '(?:^|\|)CountedRetired=True(?:\||$)' -and
+                $inventoryRetirement -match '(?:^|\|)UtilityRetired=True(?:\||$)' -and
+                $inventoryRetirement -match '(?:^|\|)ActiveRows=0(?:\||$)'
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryRetirement" -Passed $inventoryRetirementPassed -Detail $inventoryRetirement
+        }
+        catch {
+            Add-ResultRow -Rows $resultRows -Check "InventoryDomain.InventoryRetirement" -Passed $false -Detail $_.Exception.Message
+        }
         try {
             $workbookMap["invSys.Inventory.Domain.xlam"].Close($false)
             $diagnosticMacro = "'$($workbookMap["invSys.Core.xlam"].Name)'!modInventoryDomainBridge.DiagnoseInventoryDomainBridge"

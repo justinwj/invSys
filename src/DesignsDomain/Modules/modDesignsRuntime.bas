@@ -56,7 +56,7 @@ Public Function ResolveDesignsWorkbook(Optional ByVal warehouseId As String = ""
         Exit Function
     End If
     If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then Exit Function
-    If Not wb.ReadOnly Then wb.Save
+    If Not wb.ReadOnly And Not wb.Saved Then wb.Save
     KeepCanonicalDesignsAuthorityInternal wb, priorWb
     Set ResolveDesignsWorkbook = wb
     report = "OK"

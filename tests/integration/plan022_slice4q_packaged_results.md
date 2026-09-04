@@ -1,0 +1,12 @@
+# Plan 022 Slice 4q Packaged Results
+
+- Passed: 5
+- Failed: 0
+
+| Check | Result | Detail |
+|---|---|---|
+| Packaged.ReceivingSurface | PASS | Generated operator surface accepts the expanded Receiving schema. |
+| Packaged.ReturnsTabContract | PASS | OK\|Selected=Returns\|AddCaption=Add Disposition\|ConditionVisible=True\|ReturnReasonVisible=True\|DispositionVisible=True\|DispositionDefault=RETURN\|DispositionOptions=RETURN,DUMP\|HistoryTitle=Return Entries History\|TallyTitle=Return Tally\|AggregateTitle=Aggregate Returns\|ItemConditionColumn=True\|ReceiptEventType=RETURN |
+| Packaged.OutboundDispositionFormAction | PASS | OK\|ReceiptAction=True\|StagedRows=1\|ReceiptType=RETURN\|Condition=DAMAGED\|Reason=TEST RETURN |
+| Packaged.ReturnProjection | PASS | Rebuilt=True; Rows=1; Ref=RETURN-TEST, RETURN-SECOND; Qty=3; Condition=DAMAGED; Reason=TEST RETURN |
+| Packaged.DemoInventorySilentClose | PASS | OK\|Seed=True\|DeleteInventory=True\|UploadDataSet=True\|DeleteDataSet=True\|R1Protected=True\|Cancel=False\|CloseIsSilent=True |

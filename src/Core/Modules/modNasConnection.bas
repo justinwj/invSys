@@ -236,6 +236,8 @@ End Function
 
 Public Sub DisconnectNasRoot(ByVal rootPath As String, Optional ByVal disconnectWindowsSession As Boolean = False)
     Dim shareRoot As String
+    Dim sessionRoot As Variant
+    Dim sessionRoots As Variant
 
     rootPath = NormalizeFolderNas(rootPath)
     If rootPath = "" Then Exit Sub
@@ -246,11 +248,44 @@ Public Sub DisconnectNasRoot(ByVal rootPath As String, Optional ByVal disconnect
     End If
 
     EnsureSessionRootsNas
-    If m_SessionRoots.Exists(rootPath) Then m_SessionRoots.Remove rootPath
     shareRoot = ResolveShareRootNas(rootPath)
-    If shareRoot <> "" And m_SessionRoots.Exists(shareRoot) Then m_SessionRoots.Remove shareRoot
+    sessionRoots = m_SessionRoots.Keys
+    For Each sessionRoot In sessionRoots
+        If SamePathNas(CStr(sessionRoot), rootPath) _
+           Or (shareRoot <> "" And SamePathNas(ResolveShareRootNas(CStr(sessionRoot)), shareRoot)) Then
+            m_SessionRoots.Remove CStr(sessionRoot)
+        End If
+    Next sessionRoot
     If disconnectWindowsSession And shareRoot <> "" Then WNetCancelConnection2 shareRoot, 0, True
 End Sub
+
+Public Function DisconnectCurrentNasSession(Optional ByVal disconnectWindowsSession As Boolean = True) As String
+    Dim target As WarehouseTarget
+    Dim rootPath As String
+
+    On Error GoTo FailDisconnect
+    Set target = CloneTargetNas(m_CurrentTarget)
+    If Not target Is Nothing Then
+        rootPath = NormalizeFolderNas(target.HubRoot)
+        If rootPath = "" Then rootPath = NormalizeFolderNas(target.RuntimeRoot)
+    End If
+    If rootPath = "" Then rootPath = FirstConnectedUncRootNas()
+
+    If rootPath <> "" Then
+        DisconnectNasRoot rootPath, disconnectWindowsSession
+    Else
+        ClearWarehouseTarget
+    End If
+    Set m_StaleTarget = Nothing
+    SetStatusNas WH_NO_TARGET, "Disconnected from warehouse server."
+    DisconnectCurrentNasSession = "OK|Disconnected=True"
+    Exit Function
+
+FailDisconnect:
+    ClearWarehouseTarget
+    SetStatusNas NAS_TARGET_UNREACHABLE, "Warehouse server disconnect failed: " & Err.Description
+    DisconnectCurrentNasSession = "FAIL|" & m_LastStatusText
+End Function
 
 Public Sub ForgetRoot(ByVal rootPath As String)
     rootPath = NormalizeFolderNas(rootPath)
@@ -307,6 +342,9 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
     Dim whName As String
     Dim resolvedStation As String
     Dim statusCode As NasStatusCode
+    Dim stationReport As String
+    Dim priorRootOverride As String
+    Dim priorTarget As WarehouseTarget
 
     Set outTarget = Nothing
     hubRoot = NormalizeFolderNas(hubRoot)
@@ -342,6 +380,20 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
     End If
 
     statusCode = ReadConfigIdentityNas(configPath, stationId, whId, whName, resolvedStation)
+    If statusCode = WH_TARGET_INCOMPLETE And IsCurrentComputerStationNas(stationId) Then
+        authPath = FindWarehouseWorkbookNas(runtimeRoot, whId, "Auth")
+        If authPath = "" Or Not WorkbookReadableNas(authPath) Then
+            SetStatusNas WH_AUTH_NOT_FOUND, "Warehouse auth workbook was not readable."
+            SelectWarehouseTarget = WH_AUTH_NOT_FOUND
+            Exit Function
+        End If
+        If Not modConfig.EnsureStationConfigEntry(whId, stationId, stationId, "", "RECEIVE", configPath, runtimeRoot, stationReport) Then
+            SetStatusNas WH_TARGET_INCOMPLETE, "This computer could not be registered as the warehouse station: " & stationReport
+            SelectWarehouseTarget = WH_TARGET_INCOMPLETE
+            Exit Function
+        End If
+        statusCode = ReadConfigIdentityNas(configPath, stationId, whId, whName, resolvedStation)
+    End If
     If statusCode <> NAS_OK Then
         If statusCode = WH_TARGET_INCOMPLETE Then
             SetStatusNas statusCode, "The requested StationId is not configured for this warehouse."
@@ -385,10 +437,19 @@ Public Function SelectWarehouseTarget(ByVal hubRoot As String, _
         .LastResolvedUTC = Now
     End With
 
+    Set priorTarget = CloneTargetNas(m_CurrentTarget)
+    priorRootOverride = modRuntimeWorkbooks.GetCoreDataRootOverride()
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
+    If Not modConfig.LoadConfig(whId, resolvedStation) Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride priorRootOverride
+        SetStatusNas WH_CONFIG_INVALID, "Warehouse config could not be loaded for station " & resolvedStation & "."
+        Set outTarget = Nothing
+        SelectWarehouseTarget = WH_CONFIG_INVALID
+        Exit Function
+    End If
+    If WarehouseTargetIdentityChangedNas(priorTarget, outTarget) Then modAuth.SignOut
     Set m_CurrentTarget = CloneTargetNas(outTarget)
     Set m_StaleTarget = Nothing
-    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
-    modConfig.LoadConfig whId, resolvedStation
     RememberTarget outTarget
     SetStatusNas NAS_OK, "Connected to " & TargetDisplayNas(outTarget) & "."
     SelectWarehouseTarget = NAS_OK
@@ -544,13 +605,7 @@ Public Function EnsureWarehouseTargetInteractive(Optional ByVal reason As String
 End Function
 
 Public Sub ClearWarehouseTarget()
-    On Error Resume Next
-    Application.Run "'" & ThisWorkbook.Name & "'!modAuth.SignOut"
-    If Err.Number <> 0 Then
-        Err.Clear
-        Application.Run "modAuth.SignOut"
-    End If
-    On Error GoTo 0
+    modAuth.SignOut
     Set m_CurrentTarget = Nothing
     modRuntimeWorkbooks.ClearCoreDataRootOverride
     SetStatusNas WH_NO_TARGET, "No warehouse target selected."
@@ -721,6 +776,7 @@ Public Function SetCurrentTargetPathsForTest(ByVal hubRoot As String, ByVal runt
     If m_CurrentTarget Is Nothing Then Exit Function
     m_CurrentTarget.HubRoot = hubRoot
     m_CurrentTarget.RuntimeRoot = runtimeRoot
+    modRuntimeWorkbooks.SetCoreDataRootOverride runtimeRoot
     SetCurrentTargetPathsForTest = True
 End Function
 
@@ -1297,6 +1353,22 @@ Private Function FindStationRowNas(ByVal lo As ListObject, ByVal warehouseId As 
     Next i
 End Function
 
+Private Function FirstConnectedUncRootNas() As String
+    Dim rootPath As Variant
+
+    EnsureSessionRootsNas
+    For Each rootPath In m_SessionRoots.Keys
+        If IsUncPathNas(CStr(rootPath)) Then
+            FirstConnectedUncRootNas = CStr(rootPath)
+            Exit Function
+        End If
+    Next rootPath
+End Function
+
+Public Function GetLastConnectionAttemptStatus() As String
+    GetLastConnectionAttemptStatus = m_LastStatusText
+End Function
+
 Private Function TableValueNas(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As String
     On Error Resume Next
     TableValueNas = Trim$(CStr(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value))
@@ -1369,6 +1441,28 @@ Private Function TargetDisplayNas(ByVal target As WarehouseTarget) As String
         TargetDisplayNas = TargetDisplayNas & " (" & target.WarehouseName & ")"
     End If
     If target.RuntimeRoot <> "" Then TargetDisplayNas = TargetDisplayNas & " at " & target.RuntimeRoot
+End Function
+
+Private Function IsCurrentComputerStationNas(ByVal stationId As String) As Boolean
+    Dim computerStation As String
+
+    computerStation = Trim$(modStationIdentity.CurrentComputerStationId())
+    If computerStation = "" Then Exit Function
+    IsCurrentComputerStationNas = (StrComp(Trim$(stationId), computerStation, vbTextCompare) = 0)
+End Function
+
+Private Function WarehouseTargetIdentityChangedNas(ByVal priorTarget As WarehouseTarget, _
+                                                   ByVal selectedTarget As WarehouseTarget) As Boolean
+    If selectedTarget Is Nothing Then Exit Function
+    If priorTarget Is Nothing Then
+        WarehouseTargetIdentityChangedNas = True
+        Exit Function
+    End If
+
+    WarehouseTargetIdentityChangedNas = _
+        (StrComp(Trim$(priorTarget.WarehouseId), Trim$(selectedTarget.WarehouseId), vbTextCompare) <> 0) Or _
+        (StrComp(Trim$(priorTarget.StationId), Trim$(selectedTarget.StationId), vbTextCompare) <> 0) Or _
+        (StrComp(NormalizeFolderNas(priorTarget.RuntimeRoot), NormalizeFolderNas(selectedTarget.RuntimeRoot), vbTextCompare) <> 0)
 End Function
 
 Private Sub SetStatusNas(ByVal statusCode As NasStatusCode, ByVal statusText As String)

@@ -69,6 +69,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     Dim loCatalog As ListObject
     Dim loBalance As ListObject
     Dim loLocation As ListObject
+    Dim loEntities As ListObject
     Dim catalogRows As Variant
     Dim locationRows As Variant
     Dim result() As Variant
@@ -86,6 +87,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     Dim catalogLocation As String
     Dim description As String
     Dim category As String
+    Dim catalogState As String
     Dim locationValue As String
     Dim qtyOnHand As Variant
     Dim matchedLocation As Boolean
@@ -97,6 +99,7 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
     If loCatalog Is Nothing Or loCatalog.DataBodyRange Is Nothing Then Exit Function
     Set loBalance = FindInventoryQueryTable(wb, "tblSkuBalance")
     Set loLocation = FindInventoryQueryTable(wb, "tblLocationBalance")
+    Set loEntities = FindInventoryQueryTable(wb, "tblInventoryEntities")
 
     catalogRows = loCatalog.DataBodyRange.Value
     maxRows = UBound(catalogRows, 1)
@@ -118,9 +121,13 @@ Public Function ListInventoryPickerItems(Optional ByVal filterText As String = "
         catalogLocation = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "LOCATION"))
         description = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "DESCRIPTION"))
         category = InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "CATEGORY"))
+        catalogState = UCase$(InventoryQueryText(catalogRows, r, InventoryQueryColumn(loCatalog, "CATALOG_STATE")))
+        If catalogState = "RETIRED" Then GoTo NextCatalogRow
         If itemCode = "" Then itemCode = sku
         If sku = "" Then sku = itemCode
         If itemName = "" And itemCode = "" Then GoTo NextCatalogRow
+        If systemKey = "" Then systemKey = ResolveInventoryQueryRepresentativeSystemKey(loEntities, sku)
+        If systemKey = "" Then GoTo NextCatalogRow
 
         haystack = LCase$(systemKey & " " & itemCode & " " & itemName & " " & uom & " " & _
                               catalogLocation & " " & description & " " & category)
@@ -164,6 +171,158 @@ NextCatalogRow:
     Next r
     ListInventoryPickerItems = trimmed
 CleanFail:
+End Function
+
+Private Function ResolveInventoryQueryRepresentativeSystemKey(ByVal loEntities As ListObject, _
+                                                              ByVal sku As String) As String
+    Dim rowIndex As Long
+    Dim candidateKey As String
+    Dim inventoryState As String
+    Dim qtyOnHand As Double
+
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
+    sku = Trim$(sku)
+    If sku = "" Then Exit Function
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If StrComp(Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, "SKU"))), _
+                sku, vbTextCompare) = 0 Then
+            inventoryState = UCase$(Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, _
+                "InventoryState"))))
+            If inventoryState = "" Or inventoryState = "ACTIVE" Then
+                candidateKey = Trim$(CStr(ReadInventoryQueryValue(loEntities, rowIndex, "System_Key")))
+                If candidateKey <> "" Then
+                    If ResolveInventoryQueryRepresentativeSystemKey = "" Then _
+                        ResolveInventoryQueryRepresentativeSystemKey = candidateKey
+                    qtyOnHand = NzInventoryQueryNumber(ReadInventoryQueryValue(loEntities, rowIndex, _
+                        "QtyOnHand"))
+                    If qtyOnHand > 0 Then
+                        ResolveInventoryQueryRepresentativeSystemKey = candidateKey
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Next rowIndex
+End Function
+
+Public Function ListAvailableInventoryEntities(Optional ByVal filterText As String = "", _
+                                               Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+
+    Dim wb As Workbook
+    Dim loEntities As ListObject
+    Dim loCatalog As ListObject
+    Dim entityRows As Variant
+    Dim result() As Variant
+    Dim trimmed() As Variant
+    Dim r As Long
+    Dim c As Long
+    Dim catalogRow As Long
+    Dim outRow As Long
+    Dim systemKey As String
+    Dim sku As String
+    Dim itemCode As String
+    Dim itemName As String
+    Dim uom As String
+    Dim description As String
+    Dim qtyOnHand As Double
+    Dim locationValue As String
+    Dim conditionValue As String
+    Dim inventoryState As String
+    Dim attributesJson As String
+    Dim trackQty As String
+    Dim itemKind As String
+    Dim categoryValue As String
+    Dim nonCounted As Boolean
+    Dim haystack As String
+
+    Set wb = modInventoryApply.ResolveInventoryWorkbook("", inventoryWb)
+    If wb Is Nothing Then Exit Function
+    Set loEntities = FindInventoryQueryTable(wb, "tblInventoryEntities")
+    If loEntities Is Nothing Or loEntities.DataBodyRange Is Nothing Then Exit Function
+    Set loCatalog = FindInventoryQueryTable(wb, "tblSkuCatalog")
+    entityRows = loEntities.DataBodyRange.Value2
+    ReDim result(1 To UBound(entityRows, 1), 1 To 13)
+    filterText = LCase$(Trim$(filterText))
+
+    For r = 1 To UBound(entityRows, 1)
+        systemKey = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "System_Key"))
+        sku = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "SKU"))
+        qtyOnHand = NzInventoryQueryNumber(entityRows(r, InventoryQueryColumn(loEntities, "QtyOnHand")))
+        locationValue = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "Location"))
+        conditionValue = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "Condition"))
+        inventoryState = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "InventoryState"))
+        attributesJson = InventoryQueryText(entityRows, r, InventoryQueryColumn(loEntities, "AttributesJson"))
+        trackQty = ""
+        itemKind = ""
+        categoryValue = ""
+        nonCounted = False
+        If systemKey = "" Or sku = "" Then GoTo NextEntity
+
+        catalogRow = FindInventoryQueryRow(loCatalog, "SKU", sku)
+        If catalogRow > 0 Then
+            itemCode = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM_CODE")))
+            itemName = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM")))
+            uom = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "UOM")))
+            description = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "DESCRIPTION")))
+            trackQty = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "TRACK_QTY")))
+            itemKind = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "ITEM_KIND")))
+            categoryValue = Trim$(CStr(ReadInventoryQueryValue(loCatalog, catalogRow, "CATEGORY")))
+        Else
+            itemCode = sku
+            itemName = sku
+            uom = ""
+            description = ""
+        End If
+        nonCounted = InventoryQueryCatalogIsNonCounted(trackQty, itemKind, categoryValue)
+        If qtyOnHand <= 0 And Not nonCounted Then GoTo NextEntity
+        If inventoryState <> "" And StrComp(inventoryState, "ACTIVE", vbTextCompare) <> 0 Then GoTo NextEntity
+        If itemCode = "" Then itemCode = sku
+        If itemName = "" Then itemName = itemCode
+        haystack = LCase$(systemKey & " " & sku & " " & itemCode & " " & itemName & " " & _
+                          uom & " " & locationValue & " " & conditionValue & " " & description & " " & _
+                          trackQty & " " & itemKind & " " & categoryValue)
+        If filterText <> "" Then
+            If InStr(1, haystack, filterText, vbTextCompare) = 0 Then GoTo NextEntity
+        End If
+
+        outRow = outRow + 1
+        result(outRow, 1) = systemKey
+        result(outRow, 2) = sku
+        result(outRow, 3) = itemCode
+        result(outRow, 4) = itemName
+        result(outRow, 5) = uom
+        result(outRow, 6) = qtyOnHand
+        result(outRow, 7) = locationValue
+        result(outRow, 8) = conditionValue
+        result(outRow, 9) = inventoryState
+        result(outRow, 10) = attributesJson
+        result(outRow, 11) = trackQty
+        result(outRow, 12) = itemKind
+        result(outRow, 13) = categoryValue
+NextEntity:
+    Next r
+
+    If outRow = 0 Then Exit Function
+    ReDim trimmed(1 To outRow, 1 To 13)
+    For r = 1 To outRow
+        For c = 1 To 13
+            trimmed(r, c) = result(r, c)
+        Next c
+    Next r
+    ListAvailableInventoryEntities = trimmed
+CleanFail:
+End Function
+
+Private Function InventoryQueryCatalogIsNonCounted(ByVal trackQty As String, _
+                                                   ByVal itemKind As String, _
+                                                   ByVal categoryValue As String) As Boolean
+    trackQty = UCase$(Trim$(trackQty))
+    itemKind = UCase$(Trim$(itemKind))
+    categoryValue = UCase$(Trim$(categoryValue))
+    InventoryQueryCatalogIsNonCounted = (trackQty = "FALSE" Or trackQty = "NO" Or trackQty = "0" _
+        Or itemKind = "UTILITY" Or itemKind = "SERVICE" Or itemKind = "NON_COUNTED" _
+        Or categoryValue = "UTILITY" Or categoryValue = "SERVICE")
 End Function
 
 Private Sub AddInventoryPickerResultRow(ByRef result() As Variant, ByRef outRow As Long, _
@@ -233,7 +392,11 @@ End Function
 
 Private Function ReadInventoryQueryValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                          ByVal columnName As String) As Variant
-    ReadInventoryQueryValue = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value
+    Dim columnIndex As Long
+
+    columnIndex = InventoryQueryColumn(lo, columnName)
+    If columnIndex = 0 Then Exit Function
+    ReadInventoryQueryValue = lo.DataBodyRange.Cells(rowIndex, columnIndex).Value
 End Function
 
 Private Function NzInventoryQueryNumber(ByVal valueIn As Variant) As Double

@@ -896,16 +896,22 @@ function New-InventoryWorkbook {
         "SKU-SHIP" = 20
         "SKU-SUGAR" = 100
         "SKU-COMP" = 10
+        "SKU-RUN-RAW" = 20
+        "SKU-RUN-STALE" = 6
     }
     $seedLocations = @{
         "SKU-SHIP" = "DOCK"
         "SKU-SUGAR" = "BIN-A"
         "SKU-COMP" = "LINE"
+        "SKU-RUN-RAW" = "LINE"
+        "SKU-RUN-STALE" = "LINE"
     }
     $seedSystemKeys = @{
         "SKU-SHIP" = "SYS-LIVE-SHIP"
         "SKU-SUGAR" = "SYS-LIVE-SUGAR"
         "SKU-COMP" = "SYS-LIVE-COMP"
+        "SKU-RUN-RAW" = "SYS-LIVE-PRODUCTION-RUN-RAW"
+        "SKU-RUN-STALE" = "SYS-LIVE-PRODUCTION-RUN-STALE"
     }
     $seedSeq = 0
     foreach ($sku in $SkuRows) {
@@ -1213,7 +1219,8 @@ try {
         "DESCRIPTION" = "Receive Widget"; "RECEIVED" = 0; "TOTAL INV" = 10; "LAST EDITED" = ""; "TOTAL INV LAST EDIT" = ""; "TIMESTAMP" = ""
     }
     Add-ListObjectRow -ListObject $loReceivedTally -Values @{
-        "REF_NUMBER" = "REF-LIVE-001"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7;
+        "REF_NUMBER" = "REF-LIVE-001"; "RECEIPT_TYPE" = "RECEIPT"; "ITEMS" = "Receive Widget"; "QUANTITY" = 7;
+        "UOM" = "EA"; "LOCATION" = "A1"; "LOT_NUMBER" = ""; "Condition" = "GOOD"; "RETURN_REASON" = "";
         "System_Key" = "SYS-LIVE-REC-NEW"; "ITEM_CODE" = "SKU-REC"; "Source_System_Key" = "SYS-LIVE-REC-SOURCE";
         "EventId" = "EVT-LIVE-REC-001"; "WorkflowState" = "STAGED"
     }
@@ -1255,7 +1262,8 @@ try {
         -and ($aggReceivedRowsAfter -eq 0) `
         -and (([double](Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName "RECEIVED")) -eq 0)
     $receiveBoundOk = $receiveFormActionReport.Contains("BoundWorkbook=$([string]$wbReceive.Name)")
-    Add-ResultRow -Rows $resultRows -Check "Receiving.FormAction.ConfirmWrites.CapturedWorkbook" -Passed ($receiveConfirmSucceeded -and $receiveLocalOk -and $receiveBoundOk) -Detail "Action=$receiveFormActionReport; CapabilityAfter=$receiveCapabilityAfter; ReceivedTallyRows=$receivedTallyRowsAfter; AggregateReceivedRows=$aggReceivedRowsAfter; RECEIVED=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'RECEIVED')); TOTAL_INV=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'TOTAL INV')); QtyOnHand=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'QtyOnHand')); SourceType=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'SourceType')); IsStale=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'IsStale')); LogRows=$(Get-RowCountSafe $loReceiveLog)"
+    $receiveQuietOk = $receiveFormActionReport.Contains("QuietDuring=True") -and $receiveFormActionReport.Contains("QuietRestored=True")
+    Add-ResultRow -Rows $resultRows -Check "Receiving.FormAction.ConfirmWrites.CapturedWorkbook" -Passed ($receiveConfirmSucceeded -and $receiveLocalOk -and $receiveBoundOk -and $receiveQuietOk) -Detail "Action=$receiveFormActionReport; CapabilityAfter=$receiveCapabilityAfter; ReceivedTallyRows=$receivedTallyRowsAfter; AggregateReceivedRows=$aggReceivedRowsAfter; RECEIVED=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'RECEIVED')); TOTAL_INV=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'TOTAL INV')); QtyOnHand=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'QtyOnHand')); SourceType=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'SourceType')); IsStale=$((Get-RowValueSafe -ListObject $loReceiveInv -RowIndex 1 -ColumnName 'IsStale')); LogRows=$(Get-RowCountSafe $loReceiveLog)"
 
     $purchasingStagingBefore = Get-RowCountSafe $loReceivedTally
     $purchasingAggregateBefore = Get-RowCountSafe $loAggReceived
@@ -1326,9 +1334,12 @@ try {
         "ITEMS" = "Ship Widget"; "QUANTITY" = 5; "System_Key" = "SYS-LIVE-SHIP"; "UOM" = "EA"; "LOCATION" = "DOCK";
         "DESCRIPTION" = "Ship Widget"; "AREA" = "Shipments"; "CARRIER" = "UPS"
     }
+    $shipCanonicalBeforeQty = [double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV")
+    $shipRequestedQty = [double](Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName "QUANTITY")
+    $shipExpectedCanonicalQty = $shipCanonicalBeforeQty - $shipRequestedQty
     $shipToShipmentsPreflightOk = ((Get-RowCountSafe $loShipments) -eq 1) `
-        -and ([double](Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName "QUANTITY") -eq 5) `
-        -and ([double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV") -eq 20)
+        -and ($shipRequestedQty -eq 5) `
+        -and ($shipCanonicalBeforeQty -eq 20)
     Add-ResultRow -Rows $resultRows -Check "Shipping.Form.Stage" -Passed $shipToShipmentsPreflightOk -Detail "ShipmentRows=$(Get-RowCountSafe $loShipments); ShipSystemKey=$((Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName 'System_Key')); ShipQty=$((Get-RowValueSafe -ListObject $loShipments -RowIndex 1 -ColumnName 'QUANTITY')); InvSystemKey=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'System_Key')); InvCode=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'ITEM_CODE')); InvTOTAL_INV=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'TOTAL INV'))"
 
     $shipInboxBefore = Get-RowCountSafe $loInboxShip
@@ -1356,6 +1367,9 @@ try {
     $shipBoundOk = $shipSentReport.Contains("BoundWorkbook=$([string]$wbShip.Name)")
     $shipLocalOk = $shipSentReport.Contains("Shipments sent:") -and $shipBoundOk -and ($shipmentRowsAfter -eq 0)
     Add-ResultRow -Rows $resultRows -Check "Shipping.FormAction.ShipmentsSent.CapturedWorkbook" -Passed $shipLocalOk -Detail "Report=$shipSentReport; ShipmentRows=$shipmentRowsAfter; SHIPMENTS=$((Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName 'SHIPMENTS'))"
+
+    $shipCanonicalVisibleQty = [double](Get-RowValueSafe -ListObject $loShipInv -RowIndex 1 -ColumnName "TOTAL INV")
+    Add-ResultRow -Rows $resultRows -Check "Shipping.FormAction.ShipmentsSent.CanonicalReadModel" -Passed ($shipCanonicalVisibleQty -eq $shipExpectedCanonicalQty) -Detail "ExpectedTOTAL_INV=$shipExpectedCanonicalQty; ActualTOTAL_INV=$shipCanonicalVisibleQty; Report=$shipSentReport"
 
     $shipInboxAfter = Get-RowCountSafe $loInboxShip
     $shipQueuedRow = 0

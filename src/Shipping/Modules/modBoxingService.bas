@@ -20,33 +20,33 @@ Public Function LoadBoxMakerChoices(ByVal operatorWb As Workbook, _
 End Function
 
 Public Function LoadBoxDesignVersions(ByVal operatorWb As Workbook, _
-                                      ByVal packageRow As Long) As Variant
-    If operatorWb Is Nothing Or packageRow <= 0 Then Exit Function
+                                      ByVal packageSystemKey As String) As Variant
+    If operatorWb Is Nothing Or Trim$(packageSystemKey) = "" Then Exit Function
     LoadBoxDesignVersions = modTS_Shipments.BoxBuilderFormLoadVersions( _
-        packageRow, operatorWb)
+        packageSystemKey, operatorWb)
 End Function
 
 Public Function LoadBoxDesignComponents(ByVal operatorWb As Workbook, _
-                                        ByVal packageRow As Long, _
+                                        ByVal packageSystemKey As String, _
                                         ByVal versionLabel As String) As Variant
-    If operatorWb Is Nothing Or packageRow <= 0 Then Exit Function
+    If operatorWb Is Nothing Or Trim$(packageSystemKey) = "" Then Exit Function
     LoadBoxDesignComponents = modTS_Shipments.BoxBuilderFormLoadVersionComponents( _
-        packageRow, versionLabel, operatorWb)
+        packageSystemKey, versionLabel, operatorWb)
 End Function
 
 Public Function LoadBoxMakerVersions(ByVal operatorWb As Workbook, _
-                                     ByVal packageRow As Long) As Variant
-    If operatorWb Is Nothing Or packageRow <= 0 Then Exit Function
+                                     ByVal packageSystemKey As String) As Variant
+    If operatorWb Is Nothing Or Trim$(packageSystemKey) = "" Then Exit Function
     LoadBoxMakerVersions = modTS_Shipments.BoxMakerFormLoadVersions( _
-        packageRow, operatorWb)
+        packageSystemKey, operatorWb)
 End Function
 
 Public Function LoadBoxMakerComponents(ByVal operatorWb As Workbook, _
-                                       ByVal packageRow As Long, _
+                                       ByVal packageSystemKey As String, _
                                        ByVal versionLabel As String) As Variant
-    If operatorWb Is Nothing Or packageRow <= 0 Then Exit Function
+    If operatorWb Is Nothing Or Trim$(packageSystemKey) = "" Then Exit Function
     LoadBoxMakerComponents = modTS_Shipments.BoxMakerFormLoadVersionComponents( _
-        packageRow, versionLabel, operatorWb)
+        packageSystemKey, versionLabel, operatorWb)
 End Function
 
 Public Function LoadComponentChoices(ByVal operatorWb As Workbook) As Variant
@@ -64,6 +64,11 @@ Public Function SaveBoxDesign(ByVal operatorWb As Workbook, _
                               ByVal versionLabel As String, _
                               ByVal statusText As String, _
                               ByRef report As String) As Boolean
+    On Error GoTo Fail
+
+    Dim quietStarted As Boolean
+    Dim failureReason As String
+
     If operatorWb Is Nothing Then
         report = "The captured Shipping operator workbook was not provided."
         Exit Function
@@ -77,50 +82,62 @@ Public Function SaveBoxDesign(ByVal operatorWb As Workbook, _
         Exit Function
     End If
 
+    modUiQuiet.BeginQuietUi operatorWb
+    quietStarted = True
     modTS_Shipments.CommitBoxBuilderFormState _
         boxName, boxUom, boxLocation, boxDescription, componentRows, _
         saveAction, versionLabel, statusText, operatorWb
+    modUiQuiet.EndQuietUi
+    quietStarted = False
     report = "Box design action completed."
     SaveBoxDesign = True
+    Exit Function
+
+Fail:
+    failureReason = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    report = "Box design action failed: " & failureReason
 End Function
 
 Public Function DeleteBoxDesignVersion(ByVal operatorWb As Workbook, _
-                                       ByVal packageRow As Long, _
+                                       ByVal packageSystemKey As String, _
                                        ByVal versionLabel As String, _
                                        ByRef report As String) As Boolean
-    If Not ValidateBoxMaintenanceRequest(operatorWb, packageRow, report) Then Exit Function
+    If Not ValidateBoxMaintenanceRequest(operatorWb, packageSystemKey, report) Then Exit Function
     If Trim$(versionLabel) = "" Then
-        report = "Select a box version before deleting."
+        report = "Select a box alternative before deleting."
         Exit Function
     End If
     DeleteBoxDesignVersion = modTS_Shipments.DeleteBoxDesignVersionForWorkbook( _
-        operatorWb, packageRow, versionLabel, report)
+        operatorWb, packageSystemKey, versionLabel, report)
 End Function
 
 Public Function ArchiveBoxDesign(ByVal operatorWb As Workbook, _
-                                 ByVal packageRow As Long, _
+                                 ByVal packageSystemKey As String, _
                                  ByRef report As String) As Boolean
-    If Not ValidateBoxMaintenanceRequest(operatorWb, packageRow, report) Then Exit Function
+    If Not ValidateBoxMaintenanceRequest(operatorWb, packageSystemKey, report) Then Exit Function
     ArchiveBoxDesign = modTS_Shipments.ArchiveBoxDesignForWorkbook( _
-        operatorWb, packageRow, report)
+        operatorWb, packageSystemKey, report)
 End Function
 
 Public Function DeleteBoxDesign(ByVal operatorWb As Workbook, _
-                                ByVal packageRow As Long, _
+                                ByVal packageSystemKey As String, _
                                 ByRef report As String) As Boolean
-    If Not ValidateBoxMaintenanceRequest(operatorWb, packageRow, report) Then Exit Function
+    If Not ValidateBoxMaintenanceRequest(operatorWb, packageSystemKey, report) Then Exit Function
     DeleteBoxDesign = modTS_Shipments.DeleteBoxDesignForWorkbook( _
-        operatorWb, packageRow, report)
+        operatorWb, packageSystemKey, report)
 End Function
 
 Private Function ValidateBoxMaintenanceRequest(ByVal operatorWb As Workbook, _
-                                               ByVal packageRow As Long, _
+                                               ByVal packageSystemKey As String, _
                                                ByRef report As String) As Boolean
     If operatorWb Is Nothing Then
         report = "The captured Shipping operator workbook was not provided."
         Exit Function
     End If
-    If packageRow <= 0 Then
+    If Trim$(packageSystemKey) = "" Then
         report = "Select a saved box design."
         Exit Function
     End If
@@ -132,7 +149,7 @@ Private Function ValidateBoxMaintenanceRequest(ByVal operatorWb As Workbook, _
 End Function
 
 Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
-                                   ByVal packageRow As Long, _
+                                   ByVal packageSystemKey As String, _
                                    ByVal boxName As String, _
                                    ByVal boxUom As String, _
                                    ByVal boxLocation As String, _
@@ -142,7 +159,11 @@ Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
                                    ByVal componentRows As Variant, _
                                    ByVal actionText As String, _
                                    ByRef report As String) As Boolean
+    On Error GoTo Fail
+
     Dim syncCompleted As Boolean
+    Dim quietStarted As Boolean
+    Dim failureReason As String
 
     If operatorWb Is Nothing Then
         report = "The captured Shipping operator workbook was not provided."
@@ -152,10 +173,22 @@ Public Function PostBoxMakerAction(ByVal operatorWb As Workbook, _
         report = "SHIP_POST capability is required."
         Exit Function
     End If
+    modUiQuiet.BeginQuietUi operatorWb
+    quietStarted = True
     PostBoxMakerAction = modTS_Shipments.CommitBoxMakerFormAction( _
-        packageRow, boxName, boxUom, boxLocation, boxDescription, _
+        packageSystemKey, boxName, boxUom, boxLocation, boxDescription, _
         versionLabel, boxQty, componentRows, report, actionText, _
         syncCompleted, Empty, operatorWb)
+    modUiQuiet.EndQuietUi
+    quietStarted = False
+    Exit Function
+
+Fail:
+    failureReason = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    report = "Box Maker action failed: " & failureReason
 End Function
 
 Public Function RunRelease1BoxingActionForTest(ByVal operatorWb As Workbook, _
@@ -165,18 +198,35 @@ Public Function RunRelease1BoxingActionForTest(ByVal operatorWb As Workbook, _
                                                ByVal boxQty As Double, _
                                                ByVal componentQtyPerBox As Double) As String
     Dim componentRows(1 To 1, 1 To 8) As Variant
+    Dim componentSystemKey As String
+    Dim packageSystemKey As String
     Dim report As String
     Dim succeeded As Boolean
 
+    componentSystemKey = _
+        modTS_Shipments.ResolveBoxingInventorySystemKeyForSku( _
+            operatorWb, componentSku)
+    If componentSystemKey = "" Then
+        RunRelease1BoxingActionForTest = _
+            "FAIL|Component System_Key was not resolved for " & componentSku
+        Exit Function
+    End If
+    packageSystemKey = modRoleEventWriter.CreateSystemKey()
+    If packageSystemKey = "" Then
+        RunRelease1BoxingActionForTest = _
+            "FAIL|Package System_Key could not be created."
+        Exit Function
+    End If
+
     componentRows(1, 2) = componentSku
     componentRows(1, 3) = componentSku
-    componentRows(1, 4) = 1
+    componentRows(1, 4) = componentSystemKey
     componentRows(1, 5) = componentQtyPerBox
     componentRows(1, 6) = "EA"
     componentRows(1, 7) = "BIN-A"
     componentRows(1, 8) = "Release 1 packaged component"
 
-    succeeded = PostBoxMakerAction(operatorWb, 1, packageSku, "EA", _
+    succeeded = PostBoxMakerAction(operatorWb, packageSystemKey, packageSku, "EA", _
         "BIN-B", "Release 1 versioned box", versionLabel, boxQty, _
         componentRows, "MAKE", report)
     If succeeded Then

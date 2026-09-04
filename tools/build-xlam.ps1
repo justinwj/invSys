@@ -468,7 +468,10 @@ function Add-RibbonCallbacksModule {
     [void]$lines.Add("    Select Case control.ID")
 
     foreach ($group in $RibbonConfig.Groups) {
-        foreach ($button in $group.Buttons) {
+        $callbackButtons = @()
+        if ($group.ContainsKey("Buttons")) { $callbackButtons += @($group.Buttons) }
+        if ($group.ContainsKey("PostStatusMenuButtons")) { $callbackButtons += @($group.PostStatusMenuButtons) }
+        foreach ($button in $callbackButtons) {
             [void]$lines.Add(("        Case ""{0}""" -f $button.Id))
             if ($button.ContainsKey("RequiredCapability") -and -not [string]::IsNullOrWhiteSpace($button.RequiredCapability)) {
                 [void]$lines.Add(("            If Not modRoleUiAccess.RequireCurrentUserCapabilityCached(""{0}"", ""Current user does not have {0} for this warehouse/station."") Then Exit Sub" -f $button.RequiredCapability))
@@ -504,14 +507,11 @@ function Add-RibbonCallbacksModule {
     [void]$lines.Add("End Sub")
     [void]$lines.Add("")
     [void]$lines.Add("Public Sub RibbonCurrentUserGetLabel(control As IRibbonControl, ByRef returnedVal)")
-    [void]$lines.Add("    Dim displayName As String")
-    [void]$lines.Add("    If modAuth.IsSignedIn() Then")
-    [void]$lines.Add('        displayName = Trim$(modAuth.GetCurrentUserDisplayName())')
-    [void]$lines.Add('        If displayName = "" Then displayName = "<not signed in>"')
-    [void]$lines.Add('        returnedVal = "User: " & displayName')
-    [void]$lines.Add("    Else")
-    [void]$lines.Add('        returnedVal = "Sign In"')
-    [void]$lines.Add("    End If")
+    [void]$lines.Add("    returnedVal = modRibbonRuntimeStatus.GetCurrentUserActionLabel()")
+    [void]$lines.Add("End Sub")
+    [void]$lines.Add("")
+    [void]$lines.Add("Public Sub RibbonServerSessionGetLabel(control As IRibbonControl, ByRef returnedVal)")
+    [void]$lines.Add("    returnedVal = modRibbonRuntimeStatus.GetServerSessionActionLabel()")
     [void]$lines.Add("End Sub")
     [void]$lines.Add("")
     [void]$lines.Add("Public Sub " + $enabledCallbackName + "(control As IRibbonControl, ByRef returnedVal As Variant)")
@@ -643,6 +643,30 @@ function Get-RibbonXml {
                 [void]$xml.AppendLine("            <menuSeparator id=""sepRuntimeContextRefresh""/>")
                 [void]$xml.AppendLine(("            <button id=""{0}"" label=""Refresh / Details"" imageMso=""Refresh"" onAction=""RibbonRuntimeStatusRefresh""/>" -f $menu.RefreshButtonId))
                 [void]$xml.AppendLine("          </menu>")
+            }
+        }
+        if ($group.ContainsKey("PostStatusMenuButtons")) {
+            foreach ($button in $group.PostStatusMenuButtons) {
+                if ($null -eq $button) { continue }
+                $imageXml = ""
+                $showImage = "false"
+                $screentipXml = ""
+                $labelXml = (' label="{0}"' -f $button.Label)
+                if ($button.ContainsKey("ImageMso") -and -not [string]::IsNullOrWhiteSpace($button.ImageMso)) {
+                    $imageXml = (' imageMso="{0}"' -f $button.ImageMso)
+                    $showImage = "true"
+                }
+                if ($button.ContainsKey("Screentip") -and -not [string]::IsNullOrWhiteSpace($button.Screentip)) {
+                    $screentipXml = (' screentip="{0}"' -f $button.Screentip)
+                }
+                if ($button.ContainsKey("GetLabel") -and -not [string]::IsNullOrWhiteSpace($button.GetLabel)) {
+                    $labelXml = (' getLabel="{0}"' -f $button.GetLabel)
+                }
+                $enabledXml = ""
+                if ($button.ContainsKey("RequiredCapability") -and -not [string]::IsNullOrWhiteSpace($button.RequiredCapability)) {
+                    $enabledXml = (' getEnabled="{0}"' -f $enabledCallbackName)
+                }
+                [void]$xml.AppendLine(("          <button id=""{0}""{1} size=""large"" showImage=""{2}""{3}{4}{5} onAction=""{6}""/>" -f $button.Id, $labelXml, $showImage, $imageXml, $screentipXml, $enabledXml, $RibbonConfig.CallbackName))
             }
         }
         [void]$xml.AppendLine("        </group>")
@@ -844,8 +868,7 @@ $projectMap = @(
         ExcludeFiles = @(
             "modReceivingAutoOpen.bas",
             "modProductionAutoOpen.bas",
-            "modShippingAutoOpen.bas",
-            "ufDynItemSearchTemplate.frm"
+            "modShippingAutoOpen.bas"
         )
         References = @("Core")
         Sheets     = @(
@@ -887,13 +910,21 @@ $projectMap = @(
                         }
                     )
                     Buttons = @(
-                        @{ Id = "btnOperationsConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability"; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnOperationsCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnOperationsSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" }
+                        @{ Id = "btnOperationsServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability"; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" }
+                    )
+                    PostStatusMenuButtons = @(
+                        @{ Id = "btnOperationsCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability"; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" }
                     )
                     StatusLabels = @(
                         @{ Id = "lblOperationsServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
                         @{ Id = "lblOperationsAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+                    )
+                },
+                @{
+                    Id      = "grpOperationsOverview"
+                    Label   = "Overview"
+                    Buttons = @(
+                        @{ Id = "btnOperationsInventoryViewer"; Label = "Viewer"; Macro = "modInventoryViewer.OpenInventoryViewer"; ImageMso = "PivotTableInsert"; Screentip = "View current inventory levels" }
                     )
                 },
                 @{
@@ -935,8 +966,7 @@ $projectMap = @(
         ExcludeFiles = @(
             "modReceivingAutoOpen.bas",
             "modProductionAutoOpen.bas",
-            "modShippingAutoOpen.bas",
-            "ufDynItemSearchTemplate.frm"
+            "modShippingAutoOpen.bas"
         )
         References = @("Core")
         Sheets     = @(
@@ -966,30 +996,38 @@ $projectMap = @(
             EnabledCallbackName = "RibbonRequiredCapabilityGetEnabledAdmin"
             Groups = @(
                 @{
+                    Id      = "grpAdminSession"
+                    Label   = "Session"
+                    WarehouseSelector = @{
+                        Id = "ddAdminWarehouseTarget"
+                        Label = "Send To"
+                    }
+                    Buttons = @(
+                        @{ Id = "btnAdminServerSession"; Label = "Server Sign In"; GetLabel = "RibbonServerSessionGetLabel"; DirectAction = "modRoleEventWriter.ToggleServerSessionForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Sign in to or sign out of warehouse server storage" },
+                        @{ Id = "btnAdminCurrentUser"; Label = "invSys Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.ToggleCurrentInvSysUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in to or sign out of invSys" }
+                    )
+                    StatusLabels = @(
+                        @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
+                        @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
+                    )
+                }
+                @{
                     Id      = "grpAdminActions"
                     Label   = "Actions"
                     Buttons = @(
                         @{ Id = "btnAdminOpen"; Label = "Admin Console"; Macro = "modAdmin.Admin_Click"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminConnectServer"; Label = "Connect Server"; DirectAction = "modRoleEventWriter.ConnectWarehouseStorageForCapability ""ADMIN_MAINT"""; ImageMso = "FileOpen"; Screentip = "Connect to warehouse storage" },
-                        @{ Id = "btnAdminCurrentUser"; Label = "Sign In"; GetLabel = "RibbonCurrentUserGetLabel"; DirectAction = "modRoleEventWriter.PromptSetCurrentUserForCapability ""ADMIN_MAINT"""; ImageMso = "AddressBook"; Screentip = "Sign in as an invSys user" },
-                        @{ Id = "btnAdminSignOut"; Label = "Sign Out"; DirectAction = "modRoleEventWriter.SignOutCurrentUser"; ImageMso = "Clear"; Screentip = "Sign out of invSys without disconnecting storage" },
                         @{ Id = "btnAdminUsers"; Label = "Users and Roles"; Macro = "modAdmin.Open_CreateDeleteUser"; ImageMso = "FileOpen"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminSettings"; Label = "Settings"; Macro = "modAdmin.Open_Settings"; ImageMso = "FileProperties"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminWarehouses"; Label = "View Warehouses"; Macro = "modAdmin.Open_WarehouseDirectory"; ImageMso = "TablePropertiesDialog"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminWarehouseRoot"; Label = "Add Warehouse Root"; Macro = "modAdmin.Add_WarehouseDirectoryRoot"; ImageMso = "Folder"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminCreateWarehouse"; Label = "Create New Warehouse"; Macro = "modAdmin.Open_CreateWarehouse"; ImageMso = "FileNew"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminSetupTesterStation"; Label = "Setup Tester Station"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; ImageMso = "CreateForm"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminAddInventoryItem"; Label = "Add Inventory Item"; Macro = "modAdmin.Add_InventoryItem"; ImageMso = "TableInsertRowsAbove"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminSeedInventory"; Label = "Seed Demo Inventory"; Macro = "modAdmin.Seed_DemoInventory"; ImageMso = "TableInsertRowsAbove"; RequiredCapability = "ADMIN_MAINT" },
+                        @{ Id = "btnAdminSetupTesterStation"; Label = "Test Environment Setup"; Macro = "modAdmin.Admin_SetupTesterStation_Click"; ImageMso = "CreateForm"; Screentip = "Provision an isolated warehouse and operator workbook for diagnostics and regression testing"; RequiredCapability = "ADMIN_MAINT" },
+                        @{ Id = "btnAdminAddInventoryItem"; Label = "Add/Edit Inventory Items"; Macro = "modAdmin.Add_InventoryItem"; ImageMso = "TableInsertRowsAbove"; RequiredCapability = "ADMIN_MAINT" },
+                        @{ Id = "btnAdminSeedInventory"; Label = "Demo Inventory"; Macro = "modAdmin.Seed_DemoInventory"; ImageMso = "TableInsertRowsAbove"; Screentip = "Seed, delete, or upload guarded demo inventory"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminShipmentReconcile"; Label = "Shipment Reconcile"; Macro = "modAdminShipmentReconcile.OpenShipmentReconcileTool"; ImageMso = "RefreshAll"; Screentip = "Queue an audited admin correction linked to a Shipments Sent event"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminReleaseDesign"; Label = "Release Design"; Macro = "modAdminDesignLifecycle.Admin_ReleaseDesignVersion_Click"; ImageMso = "AcceptInvitation"; Screentip = "Release an immutable Designs Domain version through an inbox event"; RequiredCapability = "ADMIN_MAINT" },
-                        @{ Id = "btnAdminObsoleteDesign"; Label = "Obsolete Design"; Macro = "modAdminDesignLifecycle.Admin_ObsoleteDesignVersion_Click"; ImageMso = "Delete"; Screentip = "Obsolete a Designs Domain version through an inbox event"; RequiredCapability = "ADMIN_MAINT" },
+                        @{ Id = "btnAdminDesignLifecycle"; Label = "Design Lifecycle"; Macro = "modAdminDesignLifecycle.Admin_DesignLifecycle_Click"; ImageMso = "AcceptInvitation"; Screentip = "Release or obsolete immutable Designs Domain recipes"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminVerifyAddinsPublished"; Label = "Verify Add-ins Published"; Macro = "modAdmin.Verify_AddinsPublished"; ImageMso = "FileDocumentInspect"; RequiredCapability = "ADMIN_MAINT" },
                         @{ Id = "btnAdminRetireMigrateWarehouse"; Label = "Retire / Migrate Warehouse"; Macro = "modAdmin.Admin_RetireMigrateWarehouse_Click"; ImageMso = "DeleteSite"; Screentip = "Archive, migrate, retire, or delete a warehouse runtime"; RequiredCapability = "ADMIN_MAINT" }
-                    )
-                    StatusLabels = @(
-                        @{ Id = "lblAdminServerStatus"; GetLabel = "RibbonServerStatusGetLabel" },
-                        @{ Id = "lblAdminAccessStatus"; GetLabel = "RibbonAccessStatusGetLabel" }
                     )
                 }
             )

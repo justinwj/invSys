@@ -72,6 +72,7 @@ Private mRowCountCache As Object
 Private mPaletteTableMeta As Object
 Private mHiddenSystems As Collection
 Private mRecipePicker As Object
+Private mProcessItemPicker As Object
 Private mPickerRouter As Object
 Private mSystemGroupsInit As Boolean
 Private mSystemGroupNames(1 To 4) As String
@@ -258,13 +259,9 @@ Public Function ProductionFormInitializeSmokeForWorkbook(ByVal operatorWb As Wor
     Call modProductionFormWindow.EnableResizable(frm, True, True)
     windowStyle = modProductionFormWindow.DiagnoseWindowStyle(frm)
 
-    If pageCount <> 4 Then
+    If pageCount <> 6 Then
         Err.Raise vbObjectError + 7312, "ProductionFormInitializeSmokeForWorkbook", _
-                  "Production form page count was " & CStr(pageCount) & "; expected 4."
-    End If
-    If frm.TestRecipeBuilderHasInstructionIo() <> 1 Then
-        Err.Raise vbObjectError + 7316, "ProductionFormInitializeSmokeForWorkbook", _
-                  "Recipe Builder does not expose the INSTRUCTION line type."
+                  "Production form page count was " & CStr(pageCount) & "; expected 6."
     End If
     If InStr(1, statusText, "failed", vbTextCompare) > 0 Then
         Err.Raise vbObjectError + 7313, "ProductionFormInitializeSmokeForWorkbook", statusText
@@ -294,6 +291,283 @@ CleanExit:
 ErrHandler:
     ProductionFormInitializeSmokeForWorkbook = "FAIL|" & CStr(Err.Number) & "|" & Err.Description
     Resume CleanExit
+End Function
+
+Public Function RunProductionBatchScaleContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionBatchScaleContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionBatchScaleContractTest = frmProduction.TestBatchScaleContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProductionBatchScaleContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunReusableProductionSurfaceContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionSurfaceContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionSurfaceContractTest = _
+            frmProduction.TestReusableProductionSurfaceContract()
+    End If
+    Exit Function
+
+Failed:
+    RunReusableProductionSurfaceContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProcessWorksheetRoundTripContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetRoundTripContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetRoundTripContractTest = _
+            frmProduction.TestProcessWorksheetRoundTripContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetRoundTripContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProcessWorksheetWorkbenchContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetWorkbenchContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetWorkbenchContractTest = _
+            frmProduction.TestProcessWorksheetWorkbenchContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetWorkbenchContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProcessWorksheetBulkImportContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetBulkImportContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetBulkImportContractTest = _
+            frmProduction.TestProcessWorksheetBulkImportContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetBulkImportContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProcessWorksheetOutputPickerContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessWorksheetOutputPickerContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessWorksheetOutputPickerContractTest = _
+            frmProduction.TestProcessWorksheetOutputPickerContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessWorksheetOutputPickerContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProcessEditExportContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProcessEditExportContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProcessEditExportContractTest = _
+            frmProduction.TestProcessEditExportContract()
+    End If
+    Exit Function
+
+Failed:
+    RunProcessEditExportContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunReusableProductionFormActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionFormActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionFormActionContractTest = _
+            frmProduction.TestReusableProductionFormActionContract()
+    End If
+    Exit Function
+
+Failed:
+    RunReusableProductionFormActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunReusableProductionRunActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionRunActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionRunActionContractTest = _
+            frmProduction.TestReusableProductionRunActionContract()
+    End If
+    Exit Function
+Failed:
+    RunReusableProductionRunActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunChaiForkConvergenceRunActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunChaiForkConvergenceRunActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunChaiForkConvergenceRunActionContractTest = _
+            frmProduction.TestChaiForkConvergenceRunActionContract()
+    End If
+    Exit Function
+Failed:
+    RunChaiForkConvergenceRunActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunEaWholeUnitActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunEaWholeUnitActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunEaWholeUnitActionContractTest = frmProduction.TestEaWholeUnitActionContract()
+    End If
+    Exit Function
+
+Failed:
+    RunEaWholeUnitActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionOutputRegulationActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionOutputRegulationActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionOutputRegulationActionContractTest = _
+            frmProduction.TestProductionOutputRegulationActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionOutputRegulationActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionVariableQuantityModeActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionVariableQuantityModeActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionVariableQuantityModeActionContractTest = _
+            frmProduction.TestProductionVariableQuantityModeActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionVariableQuantityModeActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionExternalStockUomConversionActionContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionExternalStockUomConversionActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionExternalStockUomConversionActionContractTest = _
+            frmProduction.TestProductionExternalStockUomConversionActionContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionExternalStockUomConversionActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionExternalStockUomWorksheetHandlerContractTest() As String
+    On Error GoTo Failed
+
+    RunProductionExternalStockUomWorksheetHandlerContractTest = _
+        frmProduction.TestProductionExternalStockUomConversionActionContract()
+    Exit Function
+Failed:
+    RunProductionExternalStockUomWorksheetHandlerContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunProductionBatchNoteHandlerContractTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionBatchNoteHandlerContractTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionBatchNoteHandlerContractTest = _
+            frmProduction.TestProductionBatchNoteHandlerContract()
+    End If
+    Exit Function
+Failed:
+    RunProductionBatchNoteHandlerContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function RunReusableProductionRestartActionContractTest( _
+    ByVal recipeId As String, ByVal recipeVersion As String, _
+    ByVal expectedWorkbookFullName As String) As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunReusableProductionRestartActionContractTest = "FAIL|FormNotOpen"
+    Else
+        RunReusableProductionRestartActionContractTest = _
+            frmProduction.TestReusableProductionRestartActionContract( _
+                recipeId, recipeVersion, expectedWorkbookFullName)
+    End If
+    Exit Function
+Failed:
+    RunReusableProductionRestartActionContractTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
 End Function
 
 Public Function ShowProductionLayoutForValidation(ByVal requestedWidth As Double, _
@@ -335,6 +609,23 @@ Public Function CurrentProductionLayoutValidationReport( _
         mProductionLayoutValidationForm.TestCurrentLayoutGeometryReport(pageIndex)
 End Function
 
+Public Function RunProductionRunListResponsiveLayoutTest() As String
+    On Error GoTo Failed
+
+    BtnOpenProductionForm
+    If Not frmProduction.Visible Then
+        RunProductionRunListResponsiveLayoutTest = "FAIL|FormNotOpen"
+    Else
+        RunProductionRunListResponsiveLayoutTest = _
+            frmProduction.TestRunListResponsiveLayoutReportForSize()
+    End If
+    Exit Function
+
+Failed:
+    RunProductionRunListResponsiveLayoutTest = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
 Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Workbook, _
                                                           ByVal inputItemCode As String, _
                                                           ByVal inputItemName As String, _
@@ -345,11 +636,20 @@ Public Function ProductionFormTwoBatchActionReportForTest(ByVal operatorWb As Wo
                                                           Optional ByVal activatedWb As Workbook = Nothing) As String
     Dim frm As frmProduction
 
+    On Error GoTo FailAction
     Set frm = New frmProduction
     ProductionFormTwoBatchActionReportForTest = _
         frm.TestRunTwoConsecutiveBatchesForWorkbook(operatorWb, inputItemCode, _
             inputItemName, inputQty, inputUom, inputLocation, outputQty, activatedWb)
     Unload frm
+    Exit Function
+
+FailAction:
+    ProductionFormTwoBatchActionReportForTest = "FAIL|Error=" & CStr(Err.Number) & _
+        "|Source=" & Err.Source & "|Description=" & Err.Description
+    On Error Resume Next
+    If Not frm Is Nothing Then Unload frm
+    On Error GoTo 0
 End Function
 
 ' ===== Worksheet event entry points =====
@@ -358,6 +658,37 @@ Public Sub HandleProductionSelectionChange(ByVal target As Range)
     If Not IsOnProductionSheet(target) Then Exit Sub
     EnsurePickerRouter
     mPickerRouter.HandleSelectionChange target
+End Sub
+
+Public Sub ShowProductionProcessItemSearch(ByVal target As Range)
+    If target Is Nothing Then Exit Sub
+    If Not modProductionProcessWorksheet.IsProcessWorksheetItemSearchTarget(target) Then Exit Sub
+    If mProcessItemPicker Is Nothing Then Set mProcessItemPicker = CreateDynItemSearch()
+    mProcessItemPicker.UseRoleProfile "production"
+    mProcessItemPicker.ShowForCell target
+End Sub
+
+Public Function ProductionProcessItemSearchVisibleForTest() As Boolean
+    If mProcessItemPicker Is Nothing Then Exit Function
+    ProductionProcessItemSearchVisibleForTest = _
+        CBool(mProcessItemPicker.IsSearchVisible())
+End Function
+
+Public Function ProductionProcessItemSearchResultCountForTest() As Long
+    If mProcessItemPicker Is Nothing Then Exit Function
+    ProductionProcessItemSearchResultCountForTest = _
+        CLng(mProcessItemPicker.SearchResultCount())
+End Function
+
+Public Function CommitFirstProductionProcessItemSearchResultForTest() As Boolean
+    If mProcessItemPicker Is Nothing Then Exit Function
+    CommitFirstProductionProcessItemSearchResultForTest = _
+        CBool(mProcessItemPicker.CommitFirstSearchResultForTest())
+End Function
+
+Public Sub CloseProductionProcessItemSearchForTest()
+    If mProcessItemPicker Is Nothing Then Exit Sub
+    mProcessItemPicker.CloseSearch
 End Sub
 
 Public Sub HandleProductionBeforeDoubleClick(ByVal target As Range, ByRef Cancel As Boolean)
@@ -1274,6 +1605,11 @@ End Function
 
 '@TestOnlyBegin
 Public Function TestNextBase36RecipeId(ByVal usedIds As Variant) As String
+    TestNextBase36RecipeId = NextBase36Identifier(usedIds)
+End Function
+'@TestOnlyEnd
+
+Public Function NextBase36Identifier(ByVal usedIds As Variant) As String
     Dim used As Object
     Dim i As Long
     Dim candidateValue As Long
@@ -1288,12 +1624,24 @@ Public Function TestNextBase36RecipeId(ByVal usedIds As Variant) As String
     For candidateValue = 1 To 46655
         candidateId = ToBase36RecipeId(candidateValue)
         If Not used.Exists(candidateId) Then
-            TestNextBase36RecipeId = candidateId
+            NextBase36Identifier = candidateId
             Exit Function
         End If
     Next candidateValue
 End Function
-'@TestOnlyEnd
+
+Public Function IsBase36Identifier(ByVal valueText As String) As Boolean
+    Dim index As Long
+    Dim currentChar As String
+
+    valueText = UCase$(Trim$(valueText))
+    If Len(valueText) <> 3 Or valueText = "000" Then Exit Function
+    For index = 1 To 3
+        currentChar = Mid$(valueText, index, 1)
+        If InStr(1, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", currentChar, vbBinaryCompare) = 0 Then Exit Function
+    Next index
+    IsBase36Identifier = True
+End Function
 
 Public Function GenerateRecipeIdForCurrentWorkbook() As String
     GenerateRecipeIdForCurrentWorkbook = GenerateRecipeId()
@@ -1351,11 +1699,11 @@ Public Sub LoadRecipeChooser(ByVal recipeId As String)
                              ") is " & ValueOrPlaceholderProduction(unavailableStatus, "not released") & _
                              "." & vbCrLf & vbCrLf & _
                              "Production can load only RELEASED Designs Domain versions. " & _
-                             "Use Admin > Release Design to release this version."
+                             "Use Admin > Design Lifecycle to release this design."
             Else
                 syncReport = "Recipe Design ID " & recipeId & _
                              " is not present in the Designs Domain." & vbCrLf & vbCrLf & _
-                             "For an existing legacy recipe, use Admin > Release Design > " & _
+                             "For an existing legacy recipe, use Admin > Design Lifecycle > " & _
                              "Import Legacy Recipes, then release the imported version."
             End If
             MsgBox syncReport, vbExclamation, "Production Designs"
@@ -1873,7 +2221,7 @@ Public Sub BtnLoadRecipe()
         Exit Sub
     End If
     If mRecipePicker Is Nothing Then Set mRecipePicker = CreateDynItemSearch()
-    mRecipePicker.UseTemplateForm "ufProductionItemSearch"
+    mRecipePicker.UseRoleProfile "production"
     mRecipePicker.ShowForRecipeCell targetCell
 End Sub
 
@@ -2450,6 +2798,9 @@ End Function
 
 Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber As Long, Optional ByRef report As String = "") As Boolean
     Dim completionStep As String
+    Dim quietStarted As Boolean
+    Dim failureNumber As Long
+    Dim failureDescription As String
 
     On Error GoTo ErrHandler
 
@@ -2509,8 +2860,12 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
 
     completionStep = "executing the typed Production completion service"
     Dim completionResult As cProductionCompletionResult
+    modUiQuiet.BeginQuietUi wsProd.Parent
+    quietStarted = True
     Set completionResult = modProductionCompletionService.ExecuteProductionSession( _
         wsProd.Parent, productionSession, errNotes)
+    modUiQuiet.EndQuietUi
+    quietStarted = False
 
     completionStep = "restoring completed output values after inventory refresh"
     RestoreProductionOutputCompletionValues loOut, pendingOutputValues
@@ -2540,11 +2895,18 @@ Public Function CompleteProductionRunAfterCheckInForOutput(ByVal outputRowNumber
     CompleteProductionRunAfterCheckInForOutput = True
     report = "ConsumeEvent=" & consumeEventId & "; CompleteEvent=" & completeEventId
     If errNotes <> "" Then report = report & "; " & errNotes
+    report = report & vbCrLf & _
+             "Persistence summary: Production inbox events saved; processor durability saves retained."
     Exit Function
 
 ErrHandler:
+    failureNumber = Err.Number
+    failureDescription = Err.Description
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
     report = "CompleteProductionRunAfterCheckInForOutput failed while " & completionStep & _
-        ": " & CStr(Err.Number) & " - " & Err.Description
+        ": " & CStr(failureNumber) & " - " & failureDescription
 End Function
 
 Public Function CompleteProductionRunAfterCheckInForOutputResult(ByVal outputRowNumber As Long) As String
@@ -9315,11 +9677,16 @@ NextSourceRow:
 
         .Columns("A:I").AutoFit
         .Range("D2").NumberFormat = "yyyy-mm-dd hh:mm:ss"
+        ' PageSetup can raise 1004 when the workstation has no usable default
+        ' printer. The recall table remains valid; only print-page preferences
+        ' are optional in that environment.
+        On Error Resume Next
         .PageSetup.Orientation = xlLandscape
         .PageSetup.Zoom = False
         .PageSetup.FitToPagesWide = 1
         .PageSetup.FitToPagesTall = False
         .PageSetup.PrintArea = .Range("A1").Resize(tableRange.Rows.Count + 4, tableRange.Columns.Count).Address
+        On Error GoTo 0
     End With
 
     RenderRecallCodesReport = rowCount

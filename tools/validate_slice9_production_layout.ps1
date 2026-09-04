@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$DeployRoot = "deploy/current",
     [string]$OutputDirectory = "",
     [string]$ResultPath = ""
 )
@@ -14,8 +15,14 @@ if ([string]::IsNullOrWhiteSpace($ResultPath)) {
     $ResultPath = Join-Path $repo "tests/integration/slice9_layout_results.md"
 }
 
-$corePath = Join-Path $repo "deploy/current/invSys.Core.xlam"
-$productionPath = Join-Path $repo "deploy/current/invSys.Operations.xlam"
+$resolvedDeployRoot = if ([IO.Path]::IsPathRooted($DeployRoot)) {
+    [IO.Path]::GetFullPath($DeployRoot)
+}
+else {
+    [IO.Path]::GetFullPath((Join-Path $repo $DeployRoot))
+}
+$corePath = Join-Path $resolvedDeployRoot "invSys.Core.xlam"
+$productionPath = Join-Path $resolvedDeployRoot "invSys.Operations.xlam"
 foreach ($required in @($corePath, $productionPath)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
         throw "Required packaged add-in is missing: $required"
@@ -40,6 +47,8 @@ public static class Slice9NativeWindow {
     public static extern IntPtr FindWindow(string className, string windowName);
     [DllImport("user32.dll", SetLastError=true)]
     public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
+    [DllImport("user32.dll", SetLastError=true)]
+    public static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll", SetLastError=true)]
     public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
     [DllImport("user32.dll")]
@@ -116,8 +125,18 @@ function Save-WindowScreenshot {
     Start-Sleep -Milliseconds 150
     $bitmap = New-Object Drawing.Bitmap($width, $height)
     $graphics = [Drawing.Graphics]::FromImage($bitmap)
+    $captured = $false
     try {
-        $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+        $hdc = $graphics.GetHdc()
+        try {
+            $captured = [Slice9NativeWindow]::PrintWindow($Handle, $hdc, 2)
+        }
+        finally {
+            $graphics.ReleaseHdc($hdc)
+        }
+        if (-not $captured) {
+            $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+        }
     }
     finally {
         $graphics.Dispose()
@@ -135,6 +154,7 @@ function Assert-HealthyGeometryReport {
     if (-not $Report.StartsWith("OK|", [StringComparison]::OrdinalIgnoreCase) -or
         $Report -notmatch '\|OutOfBounds=0\|' -or
         $Report -notmatch '\|Overlap=0\|' -or
+        $Report -notmatch '\|Zoom=100\|' -or
         $Report -notmatch 'Resizable=True' -or
         $Report -notmatch 'Minimize=True' -or
         $Report -notmatch 'Maximize=True') {
@@ -142,11 +162,48 @@ function Assert-HealthyGeometryReport {
     }
 }
 
+function Assert-MaximizedContentFillsClient {
+    param(
+        [IntPtr]$Handle,
+        [string]$Report,
+        [double]$MinimumFillRatio = 0.9
+    )
+
+    $clientRect = New-Object Slice9NativeWindow+RECT
+    if (-not [Slice9NativeWindow]::GetClientRect($Handle, [ref]$clientRect)) {
+        throw "Could not read the maximized Production client bounds."
+    }
+    # MSForms reports form geometry in 72-point units against the Win32
+    # 96-DPI logical coordinate space, including when Windows scales the
+    # rendered pixels for a high-DPI display.
+    $clientWidthPoints = ($clientRect.Right - $clientRect.Left) * 72.0 / 96.0
+    $clientHeightPoints = ($clientRect.Bottom - $clientRect.Top) * 72.0 / 96.0
+
+    if ($Report -notmatch '\|Actual=([0-9]+(?:[\.,][0-9]+)?)x([0-9]+(?:[\.,][0-9]+)?)\|') {
+        throw "The maximized Production report did not expose its live form dimensions: $Report"
+    }
+    $actualWidth = [double]::Parse(
+        $Matches[1].Replace(',', '.'), [Globalization.CultureInfo]::InvariantCulture)
+    $actualHeight = [double]::Parse(
+        $Matches[2].Replace(',', '.'), [Globalization.CultureInfo]::InvariantCulture)
+    $widthRatio = if ($clientWidthPoints -gt 0) { $actualWidth / $clientWidthPoints } else { 0 }
+    $heightRatio = if ($clientHeightPoints -gt 0) { $actualHeight / $clientHeightPoints } else { 0 }
+
+    $detail = "Actual=${actualWidth}x${actualHeight}pt; " +
+        "Client=$([math]::Round($clientWidthPoints, 1))x$([math]::Round($clientHeightPoints, 1))pt; " +
+        "Fill=$([math]::Round($widthRatio, 3))x$([math]::Round($heightRatio, 3))"
+    if ($widthRatio -lt $MinimumFillRatio -or $heightRatio -lt $MinimumFillRatio) {
+        throw "Maximized Production controls did not resize with the native window ($detail; required ratio $MinimumFillRatio)."
+    }
+    return $detail
+}
+
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+$screenshotLinkPrefix = Split-Path -Leaf ([IO.Path]::GetFullPath($OutputDirectory))
 $cases = @(
-    [pscustomobject]@{ Name = "minimum"; Width = 900.0; Height = 600.0; Screenshot = "production-minimum.png" },
-    [pscustomobject]@{ Name = "default"; Width = 1110.0; Height = 690.0; Screenshot = "production-default.png" },
-    [pscustomobject]@{ Name = "expanded"; Width = 1350.0; Height = 750.0; Screenshot = "production-expanded.png" }
+    [pscustomobject]@{ Name = "minimum"; Width = 900.0; Height = 700.0; Screenshot = "production-minimum.png" },
+    [pscustomobject]@{ Name = "default"; Width = 1110.0; Height = 800.0; Screenshot = "production-default.png" },
+    [pscustomobject]@{ Name = "expanded"; Width = 1350.0; Height = 980.0; Screenshot = "production-expanded.png" }
 )
 
 $excel = $null
@@ -176,7 +233,7 @@ try {
     foreach ($case in $cases) {
         Write-Host ("Geometry case: " + $case.Name)
         $pageReports = New-Object System.Collections.Generic.List[string]
-        for ($pageIndex = 0; $pageIndex -lt 4; $pageIndex++) {
+        for ($pageIndex = 0; $pageIndex -lt 5; $pageIndex++) {
             Write-Host ("  Page " + $pageIndex)
             $report = [string]$excel.Run(
                 $showMacro, $case.Width, $case.Height, [int]$pageIndex)
@@ -184,7 +241,7 @@ try {
             $pageReports.Add($report)
         }
 
-        $report = [string]$excel.Run($showMacro, $case.Width, $case.Height, 2)
+        $report = [string]$excel.Run($showMacro, $case.Width, $case.Height, 3)
         Assert-HealthyGeometryReport -Name "$($case.Name)/screenshot" -Report $report
         $handle = Wait-ForLayoutWindow -ExpectedProcessId ([int]$excelProcessId)
         $screenshotPath = Join-Path $OutputDirectory $case.Screenshot
@@ -194,9 +251,9 @@ try {
         $geometryRows.Add([pscustomobject]@{
             Case = $case.Name
             Requested = "$($case.Width)x$($case.Height)"
-            Pages = 4
+            Pages = 5
             Report = $report
-            Screenshot = "slice9-layout/$($case.Screenshot)"
+            Screenshot = "$screenshotLinkPrefix/$($case.Screenshot)"
         })
     }
 
@@ -226,11 +283,17 @@ try {
     $nativeRows.Add([pscustomobject]@{ Action = "Maximize"; Passed = $maximized })
     if (-not $maximized) { throw "Production form did not enter the maximized state." }
 
-    for ($pageIndex = 0; $pageIndex -lt 4; $pageIndex++) {
+    for ($pageIndex = 0; $pageIndex -lt 5; $pageIndex++) {
         Write-Host ("  Maximized page " + $pageIndex)
         $maximizedReport = [string]$excel.Run($currentMacro, [int]$pageIndex)
         Assert-HealthyGeometryReport -Name "maximized/page-$pageIndex" -Report $maximizedReport
+        $fillDetail = Assert-MaximizedContentFillsClient -Handle $handle -Report $maximizedReport
+        Write-Host ("  Maximized content fill: " + $fillDetail)
     }
+    $nativeRows.Add([pscustomobject]@{
+        Action = "MaximizedContentFill"
+        Passed = $true
+    })
 
     Write-Host "  Restore after maximize"
     [void][Slice9NativeWindow]::ShowWindow($handle, 9)
@@ -260,9 +323,9 @@ finally {
 $lines = New-Object System.Collections.Generic.List[string]
 $lines.Add("# Slice 9 Production Layout Runtime Results")
 $lines.Add("")
-$lines.Add("- Packaged geometry: PASS (3 sizes x 4 pages; zero out-of-bounds and zero interactive-control overlaps)")
+$lines.Add("- Packaged geometry: PASS (3 sizes x 5 pages; zero out-of-bounds and zero interactive-control overlaps)")
 $lines.Add("- Native window behavior: PASS (minimize, restore, maximize, restore)")
-$lines.Add("- Screenshots: PASS (minimum/default/expanded production-run page)")
+$lines.Add("- Screenshots: PASS (minimum/default/expanded Production Run - List page)")
 $lines.Add("")
 $lines.Add("| Case | Requested points | Pages | Screenshot |")
 $lines.Add("|---|---:|---:|---|")

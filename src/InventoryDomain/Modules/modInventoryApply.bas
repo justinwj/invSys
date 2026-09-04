@@ -5,6 +5,8 @@ Public Const APPLY_STATUS_APPLIED As String = "APPLIED"
 Public Const APPLY_STATUS_SKIP_DUP As String = "SKIP_DUP"
 
 Public Const EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Public Const EVENT_TYPE_RETURN As String = "RETURN"
+Public Const EVENT_TYPE_DUMP As String = "DUMP"
 Public Const EVENT_TYPE_SHIP As String = "SHIP"
 Public Const EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Public Const EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -24,7 +26,8 @@ Public Function ApplyEvent(ByVal evt As Object, _
                            Optional ByVal runId As String = "", _
                            Optional ByRef statusOut As String = "", _
                            Optional ByRef errorCode As String = "", _
-                           Optional ByRef errorMessage As String = "") As Boolean
+                           Optional ByRef errorMessage As String = "", _
+                           Optional ByVal deferSave As Boolean = False) As Boolean
     On Error GoTo FailApply
 
     Dim wb As Workbook
@@ -140,6 +143,7 @@ Public Function ApplyEvent(ByVal evt As Object, _
         SetTableRowValue loLog, r.Index, "QtyDelta", CDbl(lineItem("QtyDelta"))
         SetTableRowValue loLog, r.Index, "Location", CStr(lineItem("Location"))
         SetTableRowValue loLog, r.Index, "Condition", CStr(lineItem("Condition"))
+        SetTableRowValue loLog, r.Index, "InventoryState", SafeTrimApply(GetDictionaryValue(lineItem, "InventoryState"))
         SetTableRowValue loLog, r.Index, "AttributesJson", CStr(lineItem("AttributesJson"))
         SetTableRowValue loLog, r.Index, "Note", CStr(lineItem("Note"))
     Next lineItem
@@ -155,7 +159,7 @@ Public Function ApplyEvent(ByVal evt As Object, _
 
     RebuildInventoryProjections wb
     RefreshLedgerStatus wb, warehouseId, appliedSeq, eventId, appliedAt
-    SaveInventoryWorkbookIfWritable wb
+    If Not deferSave Then SaveInventoryWorkbookIfWritable wb
     statusOut = APPLY_STATUS_APPLIED
     ApplyEvent = True
 
@@ -439,6 +443,8 @@ Private Function BuildApplyLines(ByVal evt As Object, _
     Select Case eventType
         Case EVENT_TYPE_RECEIVE
             Set BuildApplyLines = BuildReceiveLines(evt, wb, errorCode, errorMessage)
+        Case EVENT_TYPE_RETURN, EVENT_TYPE_DUMP
+            Set BuildApplyLines = BuildDispositionLines(evt, wb, eventType, errorCode, errorMessage)
         Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE, EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, EVENT_TYPE_ADMIN_INVENTORY_ADJUST, EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX, EVENT_TYPE_PROD_CONSUME, EVENT_TYPE_PROD_COMPLETE, EVENT_TYPE_MIGRATION_SEED, EVENT_TYPE_INVENTORY_CREATE
             Set BuildApplyLines = BuildPayloadLines(evt, wb, eventType, errorCode, errorMessage)
         Case Else
@@ -480,6 +486,7 @@ Private Function BuildReceiveLines(ByVal evt As Object, _
         errorMessage = "SKU not found in inventory catalog."
         Exit Function
     End If
+    If Not ValidateWholeUnitQuantityApply(wb, sku, "", qty, errorCode, errorMessage) Then Exit Function
     If systemKey = "" Then
         errorCode = "INVALID_SYSTEM_KEY"
         errorMessage = "RECEIVE requires a nonblank System_Key generated at the receiving creation boundary."
@@ -522,6 +529,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
     Dim ioType As String
     Dim systemKey As String
     Dim conditionValue As String
+    Dim inventoryState As String
     Dim attributesJson As String
     Dim seenSystemKeys As Object
 
@@ -575,6 +583,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         End If
         If eventType = EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE Or eventType = EVENT_TYPE_ADMIN_INVENTORY_ADJUST Then
             If qty = 0 Then
+                If eventType = EVENT_TYPE_ADMIN_INVENTORY_ADJUST And PayloadLineIsRetirementApply(rawItem) Then GoTo QtyAccepted
                 errorCode = "INVALID_QTY"
                 errorMessage = eventType & " Qty must be the signed inventory correction delta and cannot be zero."
                 Set BuildPayloadLines = Nothing
@@ -583,6 +592,7 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         Else
             If qty <= 0 Then
                 If eventType = EVENT_TYPE_MIGRATION_SEED And qty = 0 And PayloadLineIsNonCountedApply(rawItem) Then GoTo QtyAccepted
+                If eventType = EVENT_TYPE_INVENTORY_CREATE And qty = 0 Then GoTo QtyAccepted
                 errorCode = "INVALID_QTY"
                 errorMessage = "Payload Qty must be greater than zero."
                 Set BuildPayloadLines = Nothing
@@ -591,7 +601,9 @@ Private Function BuildPayloadLines(ByVal evt As Object, _
         End If
 QtyAccepted:
         rawItem("SKU") = sku
-        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_INVENTORY_CREATE Or eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Then
+        If eventType = EVENT_TYPE_MIGRATION_SEED Or eventType = EVENT_TYPE_INVENTORY_CREATE Or _
+           eventType = EVENT_TYPE_BOX_BUILD Or eventType = EVENT_TYPE_BOX_UNBOX Or _
+           eventType = EVENT_TYPE_PROD_COMPLETE Then
             EnsureSkuCatalogFromPayloadLineApply wb, rawItem
         End If
         If Not ValidateSkuExists(wb, sku) Then
@@ -600,6 +612,11 @@ QtyAccepted:
         If Not ValidateSkuExists(wb, sku) Then
             errorCode = "INVALID_SKU"
             errorMessage = "SKU '" & sku & "' not found in inventory catalog."
+            Set BuildPayloadLines = Nothing
+            Exit Function
+        End If
+        If Not ValidateWholeUnitQuantityApply(wb, sku, _
+                SafeTrimApply(GetDictionaryValue(rawItem, "UOM")), qty, errorCode, errorMessage) Then
             Set BuildPayloadLines = Nothing
             Exit Function
         End If
@@ -618,6 +635,7 @@ QtyAccepted:
         noteVal = ComposeLineNote(eventType, rawItem, GetEventString(evt, "Note"))
         systemKey = SafeTrimApply(GetDictionaryValue(rawItem, "System_Key"))
         conditionValue = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "Condition")))
+        inventoryState = UCase$(SafeTrimApply(GetDictionaryValue(rawItem, "InventoryState")))
         attributesJson = SafeTrimApply(GetDictionaryValue(rawItem, "AttributesJson"))
         If eventType = EVENT_TYPE_INVENTORY_CREATE Then
             If systemKey = "" Then
@@ -635,6 +653,14 @@ QtyAccepted:
             seenSystemKeys.Add systemKey, True
             If conditionValue = "" Then conditionValue = "GOOD"
         End If
+        If PayloadLineIsRetirementApply(rawItem) Then
+            If Not ValidateRetirementPayloadLineApply(wb, sku, qty, systemKey, _
+                    locationVal, conditionValue, attributesJson, errorCode, errorMessage) Then
+                Set BuildPayloadLines = Nothing
+                Exit Function
+            End If
+            inventoryState = "RETIRED"
+        End If
 
         Set lineItem = CreateObject("Scripting.Dictionary")
         lineItem.CompareMode = vbTextCompare
@@ -643,10 +669,397 @@ QtyAccepted:
         lineItem("QtyDelta") = qtyDelta
         lineItem("Location") = locationVal
         lineItem("Condition") = conditionValue
+        lineItem("InventoryState") = inventoryState
         lineItem("AttributesJson") = attributesJson
         lineItem("Note") = noteVal
         BuildPayloadLines.Add lineItem
     Next rawItem
+End Function
+
+Public Function InventoryEaWholeUnitContractForAutomation() As String
+    Dim wb As Workbook
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim wholeEaAccepted As Boolean
+    Dim fractionalPayloadRejected As Boolean
+    Dim fractionalReceiveRejected As Boolean
+    Dim fractionalLbAccepted As Boolean
+
+    On Error GoTo Failed
+    Set wb = Application.Workbooks.Add
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then Err.Raise 5, , report
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-EA-WHOLE", "SKU-EA-WHOLE", 2, "CLEARVIEW", "GOOD", "", _
+        "EA whole-unit contract")
+    item("ITEM_CODE") = "SKU-EA-WHOLE"
+    item("ITEM") = "EA whole-unit item"
+    item("UOM") = "ea"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-EA-WHOLE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    wholeEaAccepted = ApplyEvent(evt, wb, "RUN-EA-WHOLE", statusOut, errorCode, errorMessage)
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-EA-FRACTION", "SKU-EA-FRACTION", 0.5, "CLEARVIEW", "GOOD", "", _
+        "fractional EA payload contract")
+    item("ITEM_CODE") = "SKU-EA-FRACTION"
+    item("ITEM") = "Fractional EA item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-EA-FRACTION", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    fractionalPayloadRejected = (Not ApplyEvent(evt, wb, "RUN-EA-FRACTION", _
+        statusOut, errorCode, errorMessage) And errorCode = "FRACTIONAL_EA_QTY")
+
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = "EVT-EA-RECEIVE-FRACTION"
+    evt("EventType") = EVENT_TYPE_RECEIVE
+    evt("WarehouseId") = "WH-EA-CONTRACT"
+    evt("StationId") = "S1"
+    evt("UserId") = "automation"
+    evt("CreatedAtUTC") = Now
+    evt("SKU") = "SKU-EA-WHOLE"
+    evt("System_Key") = "SYS-EA-RECEIVE-FRACTION"
+    evt("Qty") = 1.5
+    evt("Location") = "CLEARVIEW"
+    evt("Condition") = "GOOD"
+    errorCode = ""
+    errorMessage = ""
+    fractionalReceiveRejected = (Not ApplyEvent(evt, wb, "RUN-EA-RECEIVE", _
+        statusOut, errorCode, errorMessage) And errorCode = "FRACTIONAL_EA_QTY")
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-LB-FRACTION", "SKU-LB-FRACTION", 0.5, "CLEARVIEW", "GOOD", "", _
+        "fractional LB payload contract")
+    item("ITEM_CODE") = "SKU-LB-FRACTION"
+    item("ITEM") = "Fractional LB item"
+    item("UOM") = "LB"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-LB-FRACTION", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    fractionalLbAccepted = ApplyEvent(evt, wb, "RUN-LB-FRACTION", _
+        statusOut, errorCode, errorMessage)
+
+    InventoryEaWholeUnitContractForAutomation = IIf(wholeEaAccepted And _
+        fractionalPayloadRejected And fractionalReceiveRejected And fractionalLbAccepted, "OK", "FAIL") & _
+        "|WholeEaAccepted=" & CStr(wholeEaAccepted) & _
+        "|FractionalPayloadRejected=" & CStr(fractionalPayloadRejected) & _
+        "|FractionalReceiveRejected=" & CStr(fractionalReceiveRejected) & _
+        "|FractionalLbAccepted=" & CStr(fractionalLbAccepted)
+
+CleanExit:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    InventoryEaWholeUnitContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    Resume CleanExit
+End Function
+
+Public Function InventoryZeroCreateContractForAutomation() As String
+    Dim wb As Workbook
+    Dim payloadItems As Collection
+    Dim item As Object
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim loEntities As ListObject
+    Dim rowIndex As Long
+    Dim zeroEntityActive As Boolean
+    Dim zeroVisible As Boolean
+    Dim negativeRejected As Boolean
+    Dim availableRows As Variant
+
+    On Error GoTo Failed
+    Set wb = Application.Workbooks.Add
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then Err.Raise 5, , report
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-ZERO-CREATE", "SKU-ZERO-CREATE", 0, "CLEARVIEW", "GOOD", "", _
+        "zero starting quantity contract")
+    item("ITEM_CODE") = "SKU-ZERO-CREATE"
+    item("ITEM") = "Zero Starting Item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-ZERO-CREATE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    If Not ApplyEvent(evt, wb, "RUN-ZERO-CREATE", statusOut, errorCode, errorMessage) Then _
+        Err.Raise 5, , errorCode & "|" & errorMessage
+
+    Set loEntities = FindListObjectByNameApply(wb, "tblInventoryEntities")
+    For rowIndex = 1 To loEntities.ListRows.Count
+        If SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, "System_Key")) = _
+                "SYS-ZERO-CREATE" Then
+            zeroEntityActive = (SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, _
+                "InventoryState")) = "ACTIVE" And _
+                Abs(NzDblApply(GetCellByColumnApply(loEntities, rowIndex, "QtyOnHand"))) < 0.0000001)
+            Exit For
+        End If
+    Next rowIndex
+    availableRows = modInventoryQueries.ListInventoryPickerItems("", wb)
+    zeroVisible = AutomationAvailableRowsContainKeyApply(availableRows, "SYS-ZERO-CREATE")
+
+    Set payloadItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-NEGATIVE-CREATE", "SKU-NEGATIVE-CREATE", -1, "CLEARVIEW", "GOOD", "", _
+        "negative starting quantity contract")
+    item("ITEM_CODE") = "SKU-NEGATIVE-CREATE"
+    item("ITEM") = "Negative Starting Item"
+    item("UOM") = "EA"
+    payloadItems.Add item
+    Set evt = BuildInventoryZeroCreateAutomationEventApply( _
+        "EVT-NEGATIVE-CREATE", modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems))
+    errorCode = ""
+    errorMessage = ""
+    negativeRejected = (Not ApplyEvent(evt, wb, "RUN-NEGATIVE-CREATE", _
+        statusOut, errorCode, errorMessage) And errorCode = "INVALID_QTY")
+
+    InventoryZeroCreateContractForAutomation = IIf(zeroEntityActive And zeroVisible And _
+        negativeRejected, "OK", "FAIL") & _
+        "|ZeroEntityActive=" & CStr(zeroEntityActive) & _
+        "|ZeroVisible=" & CStr(zeroVisible) & _
+        "|NegativeRejected=" & CStr(negativeRejected)
+
+CleanExit:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    InventoryZeroCreateContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & _
+        " " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function BuildInventoryZeroCreateAutomationEventApply(ByVal eventId As String, _
+                                                               ByVal payloadJson As String) As Object
+    Dim evt As Object
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = EVENT_TYPE_INVENTORY_CREATE
+    evt("WarehouseId") = "WH-ZERO-CONTRACT"
+    evt("StationId") = "S1"
+    evt("UserId") = "admin"
+    evt("CreatedAtUTC") = Now
+    evt("PayloadJson") = payloadJson
+    evt("SourceInbox") = "zero-create-contract"
+    evt("Note") = "zero starting quantity contract"
+    Set BuildInventoryZeroCreateAutomationEventApply = evt
+End Function
+
+Private Function AutomationAvailableRowsContainKeyApply(ByVal rows As Variant, _
+                                                        ByVal systemKey As String) As Boolean
+    Dim rowIndex As Long
+    On Error GoTo NotFound
+    If Not IsArray(rows) Then Exit Function
+    For rowIndex = LBound(rows, 1) To UBound(rows, 1)
+        If StrComp(SafeTrimApply(rows(rowIndex, 1)), systemKey, vbTextCompare) = 0 Then
+            AutomationAvailableRowsContainKeyApply = True
+            Exit Function
+        End If
+    Next rowIndex
+NotFound:
+End Function
+
+Public Function InventoryRetirementContractForAutomation() As String
+    Dim wb As Workbook
+    Dim createItems As Collection
+    Dim retireItems As Collection
+    Dim item As Object
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim report As String
+    Dim loEntities As ListObject
+    Dim rowIndex As Long
+    Dim systemKey As String
+    Dim countedRetired As Boolean
+    Dim utilityRetired As Boolean
+    Dim activeRows As Variant
+
+    On Error GoTo Failed
+    Set wb = Application.Workbooks.Add
+    If Not modInventorySchema.EnsureInventorySchema(wb, report) Then Err.Raise 5, , report
+
+    Set createItems = New Collection
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-RETIRE-COUNTED", "SKU-RETIRE-COUNTED", 25, "CLEARVIEW", "GOOD", "", "retire contract")
+    item("ITEM_CODE") = "SKU-RETIRE-COUNTED"
+    item("ITEM") = "Retire Counted"
+    item("UOM") = "LB"
+    createItems.Add item
+    Set item = modRoleEventWriter.CreateInventoryEntityPayloadItem( _
+        "SYS-RETIRE-UTILITY", "SKU-RETIRE-UTILITY", 0, "CLEARVIEW", "GOOD", "", "retire contract")
+    item("ITEM_CODE") = "SKU-RETIRE-UTILITY"
+    item("ITEM") = "Retire Utility"
+    item("UOM") = "GAL"
+    item("TRACK_QTY") = "FALSE"
+    item("ITEM_KIND") = "UTILITY"
+    createItems.Add item
+    Set evt = BuildInventoryRetirementAutomationEventApply("EVT-RETIRE-CREATE", _
+        EVENT_TYPE_INVENTORY_CREATE, modRoleEventWriter.BuildPayloadJsonFromCollection(createItems))
+    If Not ApplyEvent(evt, wb, "RUN-RETIRE-CREATE", statusOut, errorCode, errorMessage) Then _
+        Err.Raise 5, , errorCode & "|" & errorMessage
+
+    Set retireItems = New Collection
+    Set item = CreateObject("Scripting.Dictionary")
+    item.CompareMode = vbTextCompare
+    item("System_Key") = "SYS-RETIRE-COUNTED"
+    item("SKU") = "SKU-RETIRE-COUNTED"
+    item("Qty") = -25
+    item("Location") = "CLEARVIEW"
+    item("Condition") = "GOOD"
+    item("IoType") = "RETIRE"
+    item("InventoryState") = "RETIRED"
+    item("Note") = "retire contract"
+    retireItems.Add item
+    Set item = CreateObject("Scripting.Dictionary")
+    item.CompareMode = vbTextCompare
+    item("System_Key") = "SYS-RETIRE-UTILITY"
+    item("SKU") = "SKU-RETIRE-UTILITY"
+    item("Qty") = 0
+    item("Location") = "CLEARVIEW"
+    item("Condition") = "GOOD"
+    item("IoType") = "RETIRE"
+    item("InventoryState") = "RETIRED"
+    item("Note") = "retire contract"
+    retireItems.Add item
+    Set evt = BuildInventoryRetirementAutomationEventApply("EVT-RETIRE-APPLY", _
+        EVENT_TYPE_ADMIN_INVENTORY_ADJUST, modRoleEventWriter.BuildPayloadJsonFromCollection(retireItems))
+    If Not ApplyEvent(evt, wb, "RUN-RETIRE-APPLY", statusOut, errorCode, errorMessage) Then _
+        Err.Raise 5, , errorCode & "|" & errorMessage
+
+    Set loEntities = FindListObjectByNameApply(wb, "tblInventoryEntities")
+    For rowIndex = 1 To loEntities.ListRows.Count
+        systemKey = SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, "System_Key"))
+        If systemKey = "SYS-RETIRE-COUNTED" Then
+            countedRetired = (SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, "InventoryState")) = "RETIRED" And _
+                Abs(NzDblApply(GetCellByColumnApply(loEntities, rowIndex, "QtyOnHand"))) < 0.0000001)
+        ElseIf systemKey = "SYS-RETIRE-UTILITY" Then
+            utilityRetired = (SafeTrimApply(GetCellByColumnApply(loEntities, rowIndex, "InventoryState")) = "RETIRED" And _
+                Abs(NzDblApply(GetCellByColumnApply(loEntities, rowIndex, "QtyOnHand"))) < 0.0000001)
+        End If
+    Next rowIndex
+    activeRows = modInventoryQueries.ListAvailableInventoryEntities("", wb)
+    InventoryRetirementContractForAutomation = IIf(countedRetired And utilityRetired And IsEmpty(activeRows), _
+        "OK", "FAIL") & "|CountedRetired=" & CStr(countedRetired) & _
+        "|UtilityRetired=" & CStr(utilityRetired) & "|ActiveRows=" & IIf(IsEmpty(activeRows), "0", "NONZERO")
+
+CleanExit:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Exit Function
+
+Failed:
+    InventoryRetirementContractForAutomation = "FAIL|Error=" & CStr(Err.Number) & " " & Err.Description
+    Resume CleanExit
+End Function
+
+Private Function BuildInventoryRetirementAutomationEventApply(ByVal eventId As String, _
+                                                              ByVal eventType As String, _
+                                                              ByVal payloadJson As String) As Object
+    Dim evt As Object
+    Set evt = CreateObject("Scripting.Dictionary")
+    evt.CompareMode = vbTextCompare
+    evt("EventID") = eventId
+    evt("EventType") = eventType
+    evt("WarehouseId") = "WH-RETIRE-CONTRACT"
+    evt("StationId") = "S1"
+    evt("UserId") = "admin"
+    evt("CreatedAtUTC") = Now
+    evt("PayloadJson") = payloadJson
+    evt("SourceInbox") = "retirement-contract"
+    evt("Note") = "retirement contract"
+    Set BuildInventoryRetirementAutomationEventApply = evt
+End Function
+
+Private Function PayloadLineIsRetirementApply(ByVal rawItem As Object) As Boolean
+    If rawItem Is Nothing Then Exit Function
+    PayloadLineIsRetirementApply = _
+        (StrComp(SafeTrimApply(GetDictionaryValue(rawItem, "InventoryState")), _
+                 "RETIRED", vbTextCompare) = 0)
+End Function
+
+Private Function ValidateRetirementPayloadLineApply(ByVal wb As Workbook, _
+                                                    ByVal sku As String, _
+                                                    ByVal qty As Double, _
+                                                    ByVal systemKey As String, _
+                                                    ByRef locationValue As String, _
+                                                    ByRef conditionValue As String, _
+                                                    ByRef attributesJson As String, _
+                                                    ByRef errorCode As String, _
+                                                    ByRef errorMessage As String) As Boolean
+    Dim currentQty As Double
+    Dim entitySku As String
+    Dim entityLocation As String
+    Dim entityCondition As String
+    Dim entityAttributes As String
+    Dim entityState As String
+    Dim loLog As ListObject
+
+    systemKey = SafeTrimApply(systemKey)
+    If systemKey = "" Then
+        errorCode = "INVALID_SYSTEM_KEY"
+        errorMessage = "Inventory retirement requires the exact existing System_Key."
+        Exit Function
+    End If
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    If Not ResolveEntityStateFromLogApply(loLog, systemKey, currentQty, entitySku, _
+            entityLocation, entityCondition, entityAttributes, entityState) Then
+        errorCode = "SYSTEM_KEY_NOT_FOUND"
+        errorMessage = "Inventory retirement target System_Key was not found."
+        Exit Function
+    End If
+    If StrComp(entityState, "RETIRED", vbTextCompare) = 0 Then
+        errorCode = "ENTITY_RETIRED"
+        errorMessage = "Inventory retirement target is already retired."
+        Exit Function
+    End If
+    If StrComp(entitySku, sku, vbTextCompare) <> 0 Then
+        errorCode = "ENTITY_ATTRIBUTE_MISMATCH"
+        errorMessage = "Inventory retirement must preserve the target entity SKU."
+        Exit Function
+    End If
+    If currentQty > 0.0000001 Then
+        If Abs(qty + currentQty) > 0.0000001 Then
+            errorCode = "INVALID_QTY"
+            errorMessage = "Inventory retirement must deplete the exact entity balance."
+            Exit Function
+        End If
+    ElseIf Abs(qty) > 0.0000001 Then
+        errorCode = "INVALID_QTY"
+        errorMessage = "A zero-balance inventory retirement requires a zero delta."
+        Exit Function
+    End If
+
+    locationValue = entityLocation
+    conditionValue = entityCondition
+    attributesJson = entityAttributes
+    ValidateRetirementPayloadLineApply = True
 End Function
 
 Private Function PayloadSkuIsNonCountedApply(ByVal wb As Workbook, ByVal sku As String) As Boolean
@@ -808,6 +1221,109 @@ Private Function InventoryLogEventExistsApply(ByVal wb As Workbook, ByVal eventI
     Next rowIndex
 End Function
 
+Private Function BuildDispositionLines(ByVal evt As Object, _
+                                       ByVal wb As Workbook, _
+                                       ByVal eventType As String, _
+                                       ByRef errorCode As String, _
+                                       ByRef errorMessage As String) As Collection
+    Dim loLog As ListObject
+    Dim lineItem As Object
+    Dim systemKey As String
+    Dim sku As String
+    Dim locationValue As String
+    Dim conditionValue As String
+    Dim entitySku As String
+    Dim entityLocation As String
+    Dim entityCondition As String
+    Dim entityAttributes As String
+    Dim qty As Double
+    Dim currentQty As Double
+
+    systemKey = GetEventString(evt, "System_Key")
+    sku = GetEventString(evt, "SKU")
+    locationValue = GetEventString(evt, "Location")
+    conditionValue = UCase$(GetEventString(evt, "Condition"))
+    If systemKey = "" Then
+        errorCode = "INVALID_SYSTEM_KEY"
+        errorMessage = eventType & " requires the exact existing System_Key."
+        Exit Function
+    End If
+    If sku = "" Then
+        errorCode = "INVALID_SKU"
+        errorMessage = eventType & " requires SKU."
+        Exit Function
+    End If
+    If Not TryGetEventDouble(evt, "Qty", qty) Or qty <= 0 Then
+        errorCode = "INVALID_QTY"
+        errorMessage = eventType & " Qty must be greater than zero."
+        Exit Function
+    End If
+
+    Set loLog = FindListObjectByNameApply(wb, "tblInventoryLog")
+    If Not ResolveEntityStateFromLogApply(loLog, systemKey, currentQty, entitySku, _
+                                         entityLocation, entityCondition, entityAttributes) Then
+        errorCode = "SYSTEM_KEY_NOT_FOUND"
+        errorMessage = eventType & " target System_Key was not found."
+        Exit Function
+    End If
+    If StrComp(entitySku, sku, vbTextCompare) <> 0 _
+       Or StrComp(entityLocation, locationValue, vbTextCompare) <> 0 _
+       Or StrComp(entityCondition, conditionValue, vbTextCompare) <> 0 Then
+        errorCode = "ENTITY_ATTRIBUTE_MISMATCH"
+        errorMessage = eventType & " must preserve the target entity's SKU, Location, and Condition."
+        Exit Function
+    End If
+    If Not ValidateWholeUnitQuantityApply(wb, entitySku, "", qty, errorCode, errorMessage) Then Exit Function
+    If currentQty + 0.0000001 < qty Then
+        errorCode = "INSUFFICIENT_ENTITY_INVENTORY"
+        errorMessage = eventType & " would overdraw System_Key '" & systemKey & "'. Current=" & _
+                       Format$(currentQty, "0.###") & "; Requested=" & Format$(qty, "0.###") & "."
+        Exit Function
+    End If
+
+    Set BuildDispositionLines = New Collection
+    Set lineItem = CreateObject("Scripting.Dictionary")
+    lineItem.CompareMode = vbTextCompare
+    lineItem("System_Key") = systemKey
+    lineItem("SKU") = entitySku
+    lineItem("QtyDelta") = -qty
+    lineItem("Location") = entityLocation
+    lineItem("Condition") = entityCondition
+    lineItem("AttributesJson") = entityAttributes
+    lineItem("Note") = GetEventString(evt, "Note")
+    BuildDispositionLines.Add lineItem
+End Function
+
+Private Function ResolveEntityStateFromLogApply(ByVal loLog As ListObject, _
+                                                ByVal systemKey As String, _
+                                                ByRef qtyOnHand As Double, _
+                                                ByRef sku As String, _
+                                                ByRef locationValue As String, _
+                                                ByRef conditionValue As String, _
+                                                ByRef attributesJson As String, _
+                                                Optional ByRef inventoryState As String) As Boolean
+    Dim rowIndex As Long
+
+    If loLog Is Nothing Or loLog.DataBodyRange Is Nothing Then Exit Function
+    For rowIndex = 1 To loLog.ListRows.Count
+        If StrComp(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "System_Key")), _
+                   systemKey, vbBinaryCompare) = 0 Then
+            ResolveEntityStateFromLogApply = True
+            qtyOnHand = qtyOnHand + NzDblApply(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU")) <> "" Then _
+                sku = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "SKU"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location")) <> "" Then _
+                locationValue = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")) <> "" Then _
+                conditionValue = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson")) <> "" Then _
+                attributesJson = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson"))
+            If SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "InventoryState")) <> "" Then _
+                inventoryState = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "InventoryState")))
+        End If
+    Next rowIndex
+End Function
+
 Private Function InventorySystemKeyExistsApply(ByVal wb As Workbook, ByVal systemKey As String) As Boolean
     Dim loLog As ListObject
     Dim rowIndex As Long
@@ -865,9 +1381,9 @@ Private Function ResolvePayloadQtyDelta(ByVal eventType As String, _
                 ResolvePayloadQtyDelta = qty
             End If
         Case EVENT_TYPE_ADMIN_INVENTORY_ADJUST
-            If ioType <> "" And ioType <> "ADJUST" And ioType <> "RECONCILE" Then
+            If ioType <> "" And ioType <> "ADJUST" And ioType <> "RECONCILE" And ioType <> "RETIRE" Then
                 errorCode = "INVALID_PAYLOAD"
-                errorMessage = "ADMIN_INVENTORY_ADJUST payload line items may only use IoType ADJUST or RECONCILE."
+                errorMessage = "ADMIN_INVENTORY_ADJUST payload line items may only use IoType ADJUST, RECONCILE, or RETIRE."
             Else
                 ResolvePayloadQtyDelta = qty
             End If
@@ -1229,6 +1745,45 @@ Private Function ValidateSkuExists(ByVal wb As Workbook, ByVal sku As String) As
     End If
 
     If Not hasCatalog Then ValidateSkuExists = True
+End Function
+
+Private Function ValidateWholeUnitQuantityApply(ByVal wb As Workbook, _
+                                                ByVal sku As String, _
+                                                ByVal suppliedUom As String, _
+                                                ByVal quantity As Double, _
+                                                ByRef errorCode As String, _
+                                                ByRef errorMessage As String) As Boolean
+    Dim effectiveUom As String
+    Dim uomReport As String
+
+    effectiveUom = CatalogUomForSkuApply(wb, sku)
+    If effectiveUom = "" Then effectiveUom = suppliedUom
+    If Not modUomSettings.ValidateQuantityForUom(quantity, effectiveUom, uomReport) Then
+        errorCode = "FRACTIONAL_EA_QTY"
+        errorMessage = uomReport
+        Exit Function
+    End If
+    ValidateWholeUnitQuantityApply = True
+End Function
+
+Private Function CatalogUomForSkuApply(ByVal wb As Workbook, ByVal sku As String) As String
+    CatalogUomForSkuApply = UomForSkuInTableApply( _
+        FindListObjectByNameApply(wb, "tblSkuCatalog"), sku)
+    If CatalogUomForSkuApply = "" Then _
+        CatalogUomForSkuApply = UomForSkuInTableApply(FindListObjectByNameApply(wb, "invSys"), sku)
+    If CatalogUomForSkuApply = "" Then _
+        CatalogUomForSkuApply = UomForSkuInTableApply( _
+            FindListObjectByNameApply(wb, "tblItemSearchIndex"), sku)
+End Function
+
+Private Function UomForSkuInTableApply(ByVal lo As ListObject, ByVal sku As String) As String
+    Dim rowIndex As Long
+
+    If lo Is Nothing Then Exit Function
+    rowIndex = FindRowByColumnValueApply(lo, "SKU", sku)
+    If rowIndex = 0 Then rowIndex = FindRowByColumnValueApply(lo, "ITEM_CODE", sku)
+    If rowIndex = 0 Then Exit Function
+    UomForSkuInTableApply = SafeTrimApply(GetCellByColumnApply(lo, rowIndex, "UOM"))
 End Function
 
 Private Sub EnsureSkuCatalogFromPayloadLineApply(ByVal wb As Workbook, ByVal rawItem As Object)
@@ -1878,6 +2433,8 @@ Private Sub ResolveLatestMovementValuesApply(ByVal latestEventType As Object, _
             receivedOut = qty
         Case EVENT_TYPE_SHIP, EVENT_TYPE_SHIP_RESERVE, EVENT_TYPE_SHIP_RELEASE
             shipmentsOut = qty
+        Case EVENT_TYPE_RETURN, EVENT_TYPE_DUMP
+            usedOut = Abs(qty)
         Case EVENT_TYPE_BOX_BUILD, EVENT_TYPE_BOX_UNBOX
             madeOut = qty
         Case EVENT_TYPE_PROD_CONSUME
@@ -2068,6 +2625,7 @@ Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
     Dim sku As String
     Dim locationVal As String
     Dim conditionValue As String
+    Dim inventoryState As String
     Dim attributesJson As String
     Dim qtyDelta As Double
     Dim appliedAt As Variant
@@ -2106,6 +2664,7 @@ Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
             If IsNumeric(GetCellByColumnApply(loLog, rowIndex, "QtyDelta")) Then qtyDelta = CDbl(GetCellByColumnApply(loLog, rowIndex, "QtyDelta"))
             locationVal = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Location"))
             conditionValue = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "Condition")))
+            inventoryState = UCase$(SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "InventoryState")))
             attributesJson = SafeTrimApply(GetCellByColumnApply(loLog, rowIndex, "AttributesJson"))
             appliedAt = GetCellByColumnApply(loLog, rowIndex, "AppliedAtUTC")
 
@@ -2117,10 +2676,13 @@ Private Sub RebuildInventoryProjections(ByVal wb As Workbook)
                     entity.CompareMode = vbTextCompare
                     entity("System_Key") = systemKey
                     entity("QtyOnHand") = 0#
+                    entity("Retired") = False
                     entities.Add systemKey, entity
                 End If
                 entity("SKU") = sku
+                entity("NonCounted") = PayloadSkuIsNonCountedApply(wb, sku)
                 entity("QtyOnHand") = CDbl(entity("QtyOnHand")) + qtyDelta
+                If inventoryState = "RETIRED" Then entity("Retired") = True
                 If locationVal <> "" Then entity("Location") = locationVal
                 If conditionValue <> "" Then entity("Condition") = conditionValue
                 If attributesJson <> "" Then entity("AttributesJson") = attributesJson
@@ -2161,7 +2723,10 @@ Private Sub RewriteEntityProjectionTable(ByVal lo As ListObject, ByVal entities 
         SetTableRowValue lo, r.Index, "QtyOnHand", qtyOnHand
         If entity.Exists("Location") Then SetTableRowValue lo, r.Index, "Location", CStr(entity("Location"))
         If entity.Exists("Condition") Then SetTableRowValue lo, r.Index, "Condition", CStr(entity("Condition"))
-        SetTableRowValue lo, r.Index, "InventoryState", IIf(qtyOnHand > 0, "ACTIVE", "DEPLETED")
+        SetTableRowValue lo, r.Index, "InventoryState", _
+            IIf(entity.Exists("Retired") And CBool(entity("Retired")), "RETIRED", _
+                IIf(qtyOnHand >= 0 Or (entity.Exists("NonCounted") And CBool(entity("NonCounted"))), _
+                    "ACTIVE", "DEPLETED"))
         If entity.Exists("AttributesJson") Then SetTableRowValue lo, r.Index, "AttributesJson", CStr(entity("AttributesJson"))
         If entity.Exists("LastAppliedUTC") Then SetTableRowValue lo, r.Index, "LastAppliedUTC", entity("LastAppliedUTC")
     Next key

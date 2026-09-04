@@ -115,13 +115,20 @@ Public Function ApplyInventoryEventBridge(ByVal evt As Object, _
                                          Optional ByVal runId As String = "", _
                                          Optional ByRef statusOut As String = "", _
                                          Optional ByRef errorCode As String = "", _
-                                         Optional ByRef errorMessage As String = "") As Boolean
+                                         Optional ByRef errorMessage As String = "", _
+                                         Optional ByVal deferSave As Boolean = False) As Boolean
     Dim encoded As String
 
     On Error GoTo FailApply
     If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge(GetBridgeString(evt, "WarehouseId"))
 
-    encoded = CStr(RunInventoryDomainMacro3("modInventoryBridgeApi.ApplyEventBridgeEncoded", evt, inventoryWb, runId))
+    If deferSave Then
+        encoded = CStr(RunInventoryDomainMacro3( _
+            "modInventoryBridgeApi.ApplyEventBridgeEncodedDeferred", evt, inventoryWb, runId))
+    Else
+        encoded = CStr(RunInventoryDomainMacro3( _
+            "modInventoryBridgeApi.ApplyEventBridgeEncoded", evt, inventoryWb, runId))
+    End If
     ApplyInventoryEventBridge = DecodeApplyBridgeEncoded(encoded, statusOut, errorCode, errorMessage)
     Exit Function
 
@@ -253,6 +260,16 @@ End Function
 
 Private Function RunInventoryDomainMacro3(ByVal macroName As String, ByVal arg0 As Variant, ByVal arg1 As Variant, ByVal arg2 As Variant) As Variant
     RunInventoryDomainMacro3 = RunInventoryDomainMacroFallback3(macroName, arg0, arg1, arg2)
+End Function
+
+Public Function ListAvailableInventoryEntitiesBridge(Optional ByVal filterText As String = "", _
+                                                     Optional ByVal inventoryWb As Workbook = Nothing) As Variant
+    On Error GoTo CleanFail
+    If inventoryWb Is Nothing Then Set inventoryWb = ResolveInventoryWorkbookBridge("")
+    If inventoryWb Is Nothing Then Exit Function
+    ListAvailableInventoryEntitiesBridge = RunInventoryDomainMacro2( _
+        "modInventoryBridgeApi.ListAvailableInventoryEntitiesBridgeResult", filterText, inventoryWb)
+CleanFail:
 End Function
 
 Private Function ResolveInventoryDomainMacroName(ByVal macroName As String) As String
@@ -467,7 +484,7 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
     EnsureTableWithHeadersLocal wb, "InventoryLog", "tblInventoryLog", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "EventType", "OccurredAtUTC", "AppliedAtUTC", _
               "WarehouseId", "StationId", "UserId", "System_Key", "SKU", "QtyDelta", "Location", _
-              "Condition", "AttributesJson", "Note"), issues
+              "Condition", "InventoryState", "AttributesJson", "Note"), issues
     EnsureTableWithHeadersLocal wb, "AppliedEvents", "tblAppliedEvents", _
         Array("EventID", "UndoOfEventId", "AppliedSeq", "AppliedAtUTC", "RunId", "SourceInbox", "Status"), issues
     EnsureTableWithHeadersLocal wb, "Locks", "tblLocks", _
@@ -480,7 +497,7 @@ Private Function EnsureInventorySchemaLocal(ByVal wb As Workbook, ByRef report A
     EnsureTableWithHeadersLocal wb, "LocationBalance", "tblLocationBalance", _
         Array("SKU", "Location", "Condition", "QtyOnHand", "LastAppliedUTC"), issues
     EnsureTableWithHeadersLocal wb, "SkuCatalog", "tblSkuCatalog", _
-        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY"), issues
+        Array("SKU", "ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "VENDOR(s)", "VENDOR_CODE", "CATEGORY", "CATALOG_STATE"), issues
 
     RemoveProhibitedRowHeadersLocal wb, issues
 

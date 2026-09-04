@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmSetupTesterStation 
-   Caption         =   "Setup Tester Station"
+   Caption         =   "Test Environment Setup"
    ClientHeight    =   3040
    ClientLeft      =   110
    ClientTop       =   450
@@ -231,10 +231,10 @@ Private Sub mBtnDeleteGenerated_Click()
         Exit Sub
     End If
 
-    prompt = "Delete Tester Station generated files for Warehouse '" & spec.WarehouseId & "'?" & vbCrLf & _
+    prompt = "Delete Test Environment generated files for Warehouse '" & spec.WarehouseId & "'?" & vbCrLf & _
              "Hub: " & spec.PathLocal & vbCrLf & _
              "This will delete only known tester-generated files and empty tester folders."
-    response = MsgBox(prompt, vbQuestion Or vbYesNo Or vbDefaultButton2, "Delete Tester Station Generated")
+    response = MsgBox(prompt, vbQuestion Or vbYesNo Or vbDefaultButton2, "Delete Test Environment Files")
     If response <> vbYes Then Exit Sub
 
     Me.btnOK.Enabled = False
@@ -251,9 +251,9 @@ Private Sub mBtnDeleteGenerated_Click()
         End If
         Me.btnOK.Caption = "Setup"
         Me.btnCancel.Caption = "Close"
-        ShowSummary "Tester Station generated files deleted." & vbCrLf & CompactCleanupReportForm(report), COLOR_SUCCESS
+        ShowSummary "Test Environment generated files deleted." & vbCrLf & CompactCleanupReportForm(report), COLOR_SUCCESS
     Else
-        ShowSummary "Tester Station cleanup failed." & vbCrLf & CompactCleanupReportForm(report), COLOR_ERROR
+        ShowSummary "Test Environment cleanup failed." & vbCrLf & CompactCleanupReportForm(report), COLOR_ERROR
     End If
 
     Me.btnOK.Enabled = True
@@ -270,7 +270,7 @@ End Sub
 Private Sub ConfigureShellLayout()
     Dim ctl As Control
 
-    Me.Caption = "Setup Tester Station"
+    Me.Caption = "Test Environment Setup"
     Me.Width = 600
     Me.Height = 500
     Me.StartUpPosition = 1
@@ -420,7 +420,7 @@ Private Sub CreateDynamicControls()
         .Top = 440
         .Width = 138
         .Caption = "Delete Generated"
-        .ControlTipText = "Delete Tester Station generated files for the selected tester warehouse."
+        .ControlTipText = "Delete generated files for the selected isolated test warehouse."
         .Visible = True
         .Enabled = True
     End With

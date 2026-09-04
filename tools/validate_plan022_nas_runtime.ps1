@@ -552,7 +552,11 @@ if (-not (Test-Path -LiteralPath $nasRoot -PathType Container)) {
 }
 $rootFingerprint = Get-PathFingerprint -Path $nasRoot
 $warehouseId = "WHT" + (($NasTestLeaf -split "-")[-1]).Substring(0, 6)
-$stationId = "S1"
+$stationId = if ([string]::IsNullOrWhiteSpace($env:COMPUTERNAME)) {
+    "LOCAL-COMPUTER"
+} else {
+    $env:COMPUTERNAME.Trim()
+}
 $uatUser = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) {
     "plan022-user"
 } else {
@@ -725,6 +729,23 @@ for ($sessionNumber = 1; $sessionNumber -le 2; $sessionNumber++) {
                 "ConfigLoaded=$configLoaded; AuthLoaded=$authLoaded; Result=$signIn"
             )
         }
+        $selectedServerStatus = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetServerStatusLabel" `
+            -Arguments @("lblOperationsServerStatus"))
+        $selectedServerAction = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetServerSessionActionLabel")
+        $selectedInvSysAction = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetCurrentUserActionLabel")
+        Add-Check -Rows $results -Check "Session$sessionNumber.RibbonSelectedTarget" `
+            -Passed (
+                $selectedServerStatus -eq "Server: Connected - Send To $warehouseId / $stationId" -and
+                $selectedServerAction -eq "Server Sign Out" -and
+                $selectedInvSysAction -eq "invSys Sign Out"
+            ) `
+            -Detail "Selected warehouse and both session layers were immediately reflected by Ribbon callbacks."
         $operatorRootOverrideSet = [bool](Run-WorkbookMacro -Excel $excel `
             -WorkbookName ([string]$core.Name) `
             -MacroName "modWarehouseBootstrap.SetLocalOperatorRootOverrideForAutomation" `
@@ -877,6 +898,38 @@ for ($sessionNumber = 1; $sessionNumber -le 2; $sessionNumber++) {
                 "Selected warehouse=$warehouseId; station=$stationId; source=NAS; " +
                 "root fingerprint=$rootFingerprint."
             )
+
+        $sessionStep = "sign out invSys and disconnect server session"
+        $serverSignOut = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRoleEventWriter.SignOutServerSessionForAutomation" `
+            -Arguments @($true))
+        $serverConnectedAfter = [bool](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modNasConnection.HasConnectedUncRoot")
+        $targetSelectedAfter = [bool](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modNasConnection.IsTargetResolved")
+        $serverActionAfter = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetServerSessionActionLabel")
+        $invSysActionAfter = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetCurrentUserActionLabel")
+        $accessStatusAfter = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName ([string]$core.Name) `
+            -MacroName "modRibbonRuntimeStatus.GetAccessStatusLabel" `
+            -Arguments @("lblOperationsAccessStatus"))
+        Add-Check -Rows $results -Check "Session$sessionNumber.ServerSignOut" `
+            -Passed (
+                $serverSignOut.StartsWith("OK|") -and
+                -not $serverConnectedAfter -and
+                -not $targetSelectedAfter -and
+                $serverActionAfter -eq "Server Sign In" -and
+                $invSysActionAfter -eq "invSys Sign In" -and
+                $accessStatusAfter -eq "Access: Server Sign In required"
+            ) `
+            -Detail "Server Sign Out cleared invSys authentication, selected target, and the session SMB connection."
     }
     catch {
         $message = [string]$_.Exception.Message

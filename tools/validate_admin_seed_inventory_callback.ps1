@@ -9,6 +9,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$expectedDemoCount = 24
 
 function Import-FunctionDefinitions {
     param([string]$ScriptPath)
@@ -149,16 +150,16 @@ public static class InvSysSeedNative
             while ((Get-Date) -lt $stopAt) {
                 Start-Sleep -Milliseconds 200
                 if (-not $seen.ContainsKey("ACTION|SeedFormOK")) {
-                    if ($shell.AppActivate("invSys Admin - Seed Inventory")) {
+                    if ($shell.AppActivate("invSys Admin - Demo Inventory")) {
                         Start-Sleep -Milliseconds 200
-                        $shell.SendKeys("{TAB 4}~")
+                        $shell.SendKeys("{TAB 3}~")
                         $seen["ACTION|SeedFormOK"] = $true
-                        Write-Output "WINDOW|ThunderDFrame|invSys Admin - Seed Inventory"
+                        Write-Output "WINDOW|ThunderDFrame|invSys Admin - Demo Inventory"
                         Write-Output "ACTION|SeedFormOK"
                     }
                 }
                 elseif (-not $seen.ContainsKey("ACTION|ResultDialogOK")) {
-                    if ($shell.AppActivate("invSys Admin - Seed Inventory")) {
+                    if ($shell.AppActivate("invSys Admin - Demo Inventory")) {
                         $formAbsentChecks = 0
                     }
                     else {
@@ -174,14 +175,14 @@ public static class InvSysSeedNative
                 $seedForm = [InvSysSeedNative]::FindWindow(
                     $processId,
                     "ThunderDFrame",
-                    "invSys Admin - Seed Inventory"
+                    "invSys Admin - Demo Inventory"
                 )
                 if ($seedForm -ne [IntPtr]::Zero -and
                     -not $seen.ContainsKey("ACTION|SeedFormOK")) {
-                    Write-Output "WINDOW|ThunderDFrame|invSys Admin - Seed Inventory"
-                    if ($shell.AppActivate("invSys Admin - Seed Inventory")) {
+                    Write-Output "WINDOW|ThunderDFrame|invSys Admin - Demo Inventory"
+                    if ($shell.AppActivate("invSys Admin - Demo Inventory")) {
                         Start-Sleep -Milliseconds 200
-                        $shell.SendKeys("{TAB 4}~")
+                        $shell.SendKeys("{TAB 3}~")
                         $seen["ACTION|SeedFormOK"] = $true
                         Write-Output "ACTION|SeedFormOK"
                     }
@@ -229,6 +230,7 @@ function Find-ListObjectInWorkbook {
         [string]$TableName
     )
 
+    if ($null -eq $Workbook) { return $null }
     foreach ($worksheet in $Workbook.Worksheets) {
         foreach ($listObject in $worksheet.ListObjects) {
             if ([string]$listObject.Name -eq $TableName) {
@@ -398,6 +400,7 @@ $requiredHelpers = @(
     "New-ConfigWorkbook",
     "New-AuthWorkbook",
     "New-InventoryWorkbook",
+    "New-OperationalWorkbook",
     "Get-WorksheetSafe",
     "Get-ListObjectSafe",
     "Get-ColumnIndexSafe",
@@ -417,13 +420,19 @@ $runtimeRoot = Join-Path ([IO.Path]::GetTempPath()) (
     "invsys-admin-seed-callback-" + [guid]::NewGuid().ToString("N")
 )
 $warehouseId = "WHS" + [guid]::NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant()
-$stationId = "S1"
+$stationId = if ([string]::IsNullOrWhiteSpace($env:COMPUTERNAME)) {
+    "LOCAL-COMPUTER"
+} else {
+    $env:COMPUTERNAME.Trim()
+}
 $testUser = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) { "user1" } else { $env:USERNAME }
 $testPin = [guid]::NewGuid().ToString("N")
 $testPinHash = Get-InvSysCredentialHash -Credential $testPin
 $configPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Config.xlsb")
 $authPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Auth.xlsb")
 $inventoryPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Data.Inventory.xlsb")
+$snapshotPath = Join-Path $runtimeRoot ($warehouseId + ".invSys.Snapshot.Inventory.xlsb")
+$operatorPath = Join-Path $runtimeRoot ($warehouseId + "." + $stationId + ".Receiving.Operator.xlsb")
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -479,20 +488,28 @@ try {
     }
     $authWb.Save()
 
-    $currentStep = "open packaged add-ins"
-    foreach ($packageName in $packageNames) {
+    $currentStep = "open Core package and isolate its runtime root"
+    $packageName = "invSys.Core.xlam"
+    $packagePath = Join-Path $deployPath $packageName
+    $packageWb = $excel.Workbooks.Open($packagePath)
+    $opened.Add($packageWb) | Out-Null
+    $packages[$packageName] = $packageWb
+    $coreName = [string]$packageWb.Name
+    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+        -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" `
+        -Arguments @($runtimeRoot))
+
+    $currentStep = "open remaining packaged add-ins"
+    foreach ($packageName in @($packageNames | Where-Object { $_ -ne "invSys.Core.xlam" })) {
         $packagePath = Join-Path $deployPath $packageName
         $packageWb = $excel.Workbooks.Open($packagePath)
         $opened.Add($packageWb) | Out-Null
         $packages[$packageName] = $packageWb
     }
 
-    $coreName = [string]$packages["invSys.Core.xlam"].Name
+    $operationsName = [string]$packages["invSys.Operations.xlam"].Name
     $adminName = [string]$packages["invSys.Admin.xlam"].Name
     $currentStep = "configure isolated target and sign in"
-    [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
-        -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" `
-        -Arguments @($runtimeRoot))
     $configLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
         -MacroName "modConfig.LoadConfig" -Arguments @($warehouseId, $stationId))
     $authLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
@@ -537,14 +554,11 @@ try {
     $currentStep = "invoke public Admin seed callback"
     if ($EvidencePhase -eq "GREEN") {
         try {
-            [void](Run-WorkbookMacro -Excel $excel `
+            $callbackResult = [string](Run-WorkbookMacro -Excel $excel `
                 -WorkbookName $adminName `
-                -MacroName "modAdmin.SetSeedInventorySelectionForAutomation" `
-                -Arguments @($warehouseId, $stationId, $testUser))
-            [void](Run-WorkbookMacro -Excel $excel -WorkbookName $adminName `
-                -MacroName "modAdmin.Seed_DemoInventory")
-            $callbackResult = "OK|Returned"
-            $uiEvidence = @("ACTION|InjectedFormSelectionThroughSeed_DemoInventory")
+                -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+                -Arguments @($warehouseId, $stationId, $testUser, "SEED", "", $false))
+            $uiEvidence = @("ACTION|SeedThroughPublicDemoInventoryCallback")
         }
         catch {
             $callbackError = $_.Exception.Message
@@ -604,7 +618,226 @@ try {
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $conditions = @(Get-ColumnValues -ListObject $entities -ColumnName "Condition")
         $uniqueKeyCount = @($keys | Sort-Object -Unique).Count
-        $allGood = $conditions.Count -eq 3 -and @($conditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $allGood = $conditions.Count -eq $expectedDemoCount -and @($conditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $catalog = Find-ListObjectInWorkbook -Workbook $inspectionWb `
+            -TableName "tblSkuCatalog"
+        $catalogCount = if ($null -eq $catalog) { 0 } else { [int]$catalog.ListRows.Count }
+        $catalogCategories = @(Get-ColumnValues -ListObject $catalog -ColumnName "CATEGORY")
+        $requiredCategories = @("raw", "wip", "shippable", "packaging.ship")
+        $catalogCoverage = $catalogCount -eq $expectedDemoCount -and
+            @($requiredCategories | Where-Object { $_ -notin $catalogCategories }).Count -eq 0
+
+        $currentStep = "inspect published snapshot"
+        $snapshotWb = Find-OpenWorkbookByPath -Excel $excel -Path $snapshotPath
+        if ($null -eq $snapshotWb -and (Test-Path -LiteralPath $snapshotPath -PathType Leaf)) {
+            $snapshotWb = $excel.Workbooks.Open($snapshotPath, 0, $true)
+            $opened.Add($snapshotWb) | Out-Null
+        }
+        $snapshotTable = Find-ListObjectInWorkbook -Workbook $snapshotWb `
+            -TableName "tblInventorySnapshot"
+        $snapshotCount = if ($null -eq $snapshotTable) { 0 } else { [int]$snapshotTable.ListRows.Count }
+        $snapshotKeys = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "System_Key" |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $snapshotConditions = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "Condition")
+        $snapshotCategories = @(Get-ColumnValues -ListObject $snapshotTable -ColumnName "CATEGORY")
+        $snapshotUniqueKeyCount = @($snapshotKeys | Sort-Object -Unique).Count
+        $snapshotAllGood = $snapshotConditions.Count -eq $expectedDemoCount -and
+            @($snapshotConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $snapshotCategoryCoverage = @($requiredCategories | Where-Object {
+            $_ -notin $snapshotCategories
+        }).Count -eq 0
+        $snapshotMatchesCanonical = $snapshotUniqueKeyCount -eq $uniqueKeyCount -and
+            @(Compare-Object -ReferenceObject @($keys | Sort-Object) `
+                -DifferenceObject @($snapshotKeys | Sort-Object)).Count -eq 0
+
+        $currentStep = "refresh saved Receiving operator read model"
+        $operatorWb = New-OperationalWorkbook -Excel $excel `
+            -NameHint "SeedReceivingOps" -Path $operatorPath
+        $opened.Add($operatorWb) | Out-Null
+        $surfaceEnsured = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.EnsureReceivingWorkbookSurface" `
+            -Arguments @($operatorWb.Name, ""))
+        $refreshSucceeded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.RefreshInventoryReadModel" `
+            -Arguments @($operatorWb.Name, $warehouseId, "LOCAL"))
+        $operatorTable = Find-ListObjectInWorkbook -Workbook $operatorWb -TableName "invSys"
+        $operatorCount = if ($null -eq $operatorTable) { 0 } else { [int]$operatorTable.ListRows.Count }
+        $operatorKeys = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "System_Key" |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $operatorConditions = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "Condition")
+        $operatorCategories = @(Get-ColumnValues -ListObject $operatorTable -ColumnName "CATEGORY")
+        $operatorUniqueKeyCount = @($operatorKeys | Sort-Object -Unique).Count
+        $operatorAllGood = $operatorConditions.Count -eq $expectedDemoCount -and
+            @($operatorConditions | Where-Object { $_ -ne "GOOD" }).Count -eq 0
+        $operatorCategoryCoverage = @($requiredCategories | Where-Object {
+            $_ -notin $operatorCategories
+        }).Count -eq 0
+        $operatorMatchesSnapshot = $operatorUniqueKeyCount -eq $snapshotUniqueKeyCount -and
+            @(Compare-Object -ReferenceObject @($snapshotKeys | Sort-Object) `
+                -DifferenceObject @($operatorKeys | Sort-Object)).Count -eq 0
+        $formRefreshReport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+            -Arguments @($operatorWb.Name, "DEMO-"))
+        $formVisibleRows = if ($formRefreshReport -match '(?:^|\|)VisibleRows=(\d+)(?:\||$)') {
+            [int]$Matches[1]
+        }
+        else {
+            0
+        }
+        $operatorWb.Save()
+
+        $inspectionWb.Close($false)
+        if ($null -ne $snapshotWb) { $snapshotWb.Close($false) }
+
+        $currentStep = "exercise packaged demo inventory lifecycle actions"
+        $formContract = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.DemoInventoryFormContractForAutomation")
+        $repeatSeedResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "SEED", "", $false))
+        $stateAfterRepeatSeed = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $repeatSeedIdempotent = $repeatSeedResult.StartsWith("OK|") -and
+            $repeatSeedResult -match '(?:^|\|)Created=0(?:\||$)' -and
+            $stateAfterRepeatSeed -match '(?:^|\|)Active=24(?:\||$)' -and
+            $stateAfterRepeatSeed -match '(?:^|\|)ActiveGroups=24(?:\||$)'
+
+        $deleteResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE", "", $true))
+        $stateAfterDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $viewerAfterDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $coreName `
+            -MacroName "modInventoryViewerData.LoadCurrentInventoryViewerData")
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.RefreshInventoryReadModel" `
+            -Arguments @($operatorWb.Name, $warehouseId, "LOCAL"))
+        $receivingAfterDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+            -Arguments @($operatorWb.Name, "DEMO-"))
+        $deleteDepleted = $deleteResult.StartsWith("OK|") -and
+            $stateAfterDelete -match '(?:^|\|)Active=0(?:\||$)' -and
+            $stateAfterDelete -match '(?:^|\|)Entities=24(?:\||$)' -and
+            $viewerAfterDelete -match '^OK\t[^\t]*\t[^\t]*\t0(?:\r?\n|$)' -and
+            $receivingAfterDelete -match '(?:^|\|)VisibleRows=0(?:\||$)'
+
+        $uploadCsvPath = Join-Path $runtimeRoot "demo-inventory-upload.csv"
+        $uploadCsv = @(
+            'ITEM_CODE,ITEM,QTY,UOM,LOCATION,CONDITION,DESCRIPTION,CATEGORY,VENDOR',
+            'DEMO-UPLOAD-VALIDATION,Uploaded Demo Item,7,each,UPLOAD-A1,GOOD,Packaged lifecycle upload fixture,packaging.ship,Demo Vendor'
+        ) -join "`r`n"
+        [IO.File]::WriteAllText($uploadCsvPath, ($uploadCsv + "`r`n"), (New-Object Text.UTF8Encoding($false)))
+        $currentStep = "import uploaded demo inventory data set"
+        $dataSetImportResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "UPLOAD_DATASET", $uploadCsvPath, $false))
+        $storedUploadCsvPath = Join-Path $runtimeRoot "admin\demo-inventory-data-sets\demo-inventory-upload.csv"
+        $dataSetsAfterImport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation" `
+            -Arguments @($runtimeRoot))
+        $dataSetImported = $dataSetImportResult.StartsWith("OK|") -and
+            (Test-Path -LiteralPath $storedUploadCsvPath -PathType Leaf) -and
+            $dataSetsAfterImport -match '(?:^|\|)R1=Protected(?:\||$)' -and
+            $dataSetsAfterImport -match '(?:^|\|)Uploaded=1(?:\||$)'
+        $currentStep = "seed from selected stored data set"
+        $uploadResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $storedUploadCsvPath, $false))
+        $stateAfterUpload = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $viewerAfterUpload = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $coreName `
+            -MacroName "modInventoryViewerData.LoadCurrentInventoryViewerData")
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modOperationsPrimitiveBridge.RefreshInventoryReadModel" `
+            -Arguments @($operatorWb.Name, $warehouseId, "LOCAL"))
+        $receivingAfterUpload = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+            -Arguments @($operatorWb.Name, "DEMO-"))
+        $uploadCreated = $uploadResult.StartsWith("OK|") -and
+            $uploadResult -match '(?:^|\|)Created=1(?:\||$)' -and
+            $stateAfterUpload -match '(?:^|\|)Active=1(?:\||$)' -and
+            $stateAfterUpload -match '(?:^|\|)Entities=25(?:\||$)' -and
+            $viewerAfterUpload -match '^OK\t[^\t]*\t[^\t]*\t1(?:\r?\n|$)' -and
+            $receivingAfterUpload -match '(?:^|\|)VisibleRows=1(?:\||$)'
+
+        $repeatUploadResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "SEED", $storedUploadCsvPath, $false))
+        $stateAfterRepeatUpload = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $uploadIdempotent = $repeatUploadResult.StartsWith("OK|") -and
+            $repeatUploadResult -match '(?:^|\|)Created=0(?:\||$)' -and
+            $stateAfterRepeatUpload -match '(?:^|\|)Active=1(?:\||$)' -and
+            $stateAfterRepeatUpload -match '(?:^|\|)Entities=25(?:\||$)'
+
+        $currentStep = "delete uploaded data set definition"
+        $deleteDataSetResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE_DATASET", $storedUploadCsvPath, $true))
+        $dataSetsAfterDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryDataSetsForAutomation" `
+            -Arguments @($runtimeRoot))
+        $stateAfterDataSetDelete = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $r1DeleteResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE_DATASET", "", $true))
+        $dataSetDeletePassed = $deleteDataSetResult.StartsWith("OK|") -and
+            -not (Test-Path -LiteralPath $storedUploadCsvPath -PathType Leaf) -and
+            $dataSetsAfterDelete -match '(?:^|\|)Uploaded=0(?:\||$)' -and
+            $stateAfterDataSetDelete -match '(?:^|\|)Active=1(?:\||$)' -and
+            $r1DeleteResult.StartsWith("FAIL|") -and
+            $r1DeleteResult -match '(?i)built-in R1 Workflow Kit cannot be deleted'
+
+        $currentStep = "reject invalid uploaded data set and cancelled inventory delete"
+        $invalidCsvPath = Join-Path $runtimeRoot "invalid-demo-inventory-upload.csv"
+        $invalidCsv = @(
+            'ITEM_CODE,ITEM,QTY,UOM,LOCATION',
+            'REAL-INVENTORY,Must Not Import,1,each,UPLOAD-A1'
+        ) -join "`r`n"
+        [IO.File]::WriteAllText($invalidCsvPath, ($invalidCsv + "`r`n"), (New-Object Text.UTF8Encoding($false)))
+        $invalidUploadResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "UPLOAD_DATASET", $invalidCsvPath, $false))
+        $cancelDeleteResult = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdmin.RunDemoInventoryActionCallbackForAutomation" `
+            -Arguments @($warehouseId, $stationId, $testUser, "DELETE", "", $false))
+        $stateAfterGuards = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $adminName `
+            -MacroName "modAdminInventorySeed.DescribeDemoInventoryStateForAutomation" `
+            -Arguments @($warehouseId))
+        $destructiveGuardsPassed = $invalidUploadResult.StartsWith("FAIL|") -and
+            $cancelDeleteResult.StartsWith("CANCEL|") -and
+            $stateAfterGuards -match '(?:^|\|)Active=1(?:\||$)' -and
+            $stateAfterGuards -match '(?:^|\|)Entities=25(?:\||$)'
+
         $callbackSucceeded = $callbackResult.StartsWith("OK|")
         $successUi = if ($EvidencePhase -eq "GREEN") {
             $callbackSucceeded
@@ -619,20 +852,58 @@ try {
         $facts.EntityCount = $entityCount
         $facts.UniqueSystemKeys = $uniqueKeyCount
         $facts.AllConditionsGood = $allGood
+        $facts.CatalogRows = $catalogCount
+        $facts.CatalogCategoryCoverage = $catalogCoverage
+        $facts.SnapshotFileCreated = Test-Path -LiteralPath $snapshotPath -PathType Leaf
+        $facts.SnapshotRows = $snapshotCount
+        $facts.SnapshotUniqueSystemKeys = $snapshotUniqueKeyCount
+        $facts.SnapshotAllConditionsGood = $snapshotAllGood
+        $facts.SnapshotCategoryCoverage = $snapshotCategoryCoverage
+        $facts.SnapshotMatchesCanonical = $snapshotMatchesCanonical
+        $facts.ReceivingSurfaceEnsured = $surfaceEnsured
+        $facts.OperatorRefreshSucceeded = $refreshSucceeded
+        $facts.OperatorRowsAfterRefresh = $operatorCount
+        $facts.OperatorUniqueSystemKeys = $operatorUniqueKeyCount
+        $facts.OperatorAllConditionsGood = $operatorAllGood
+        $facts.OperatorCategoryCoverage = $operatorCategoryCoverage
+        $facts.OperatorMatchesSnapshot = $operatorMatchesSnapshot
+        $facts.ReceivingRefreshFormAction = if ($formRefreshReport.StartsWith("OK|")) { "OK|<redacted-detail>" } else { $formRefreshReport }
+        $facts.ReceivingVisibleDemoRows = $formVisibleRows
         $facts.ConfigSurfaceChanged = $configSurfaceChanged
         $facts.ConfigHashUnchanged = $configHashBefore -eq $configHashAfter
         $facts.AuthHashUnchanged = $authHashBefore -eq $authHashAfter
         $facts.AuthTableDataUnchanged = $authDataBefore -eq $authDataAfter
         $facts.InventoryHashChanged = $inventoryHashBefore -ne $inventoryHashAfter
+        $facts.DemoInventoryFormActions = if ($formContract.StartsWith("OK|")) { "OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True" } else { $formContract }
+        $facts.RepeatedSeedIdempotent = $repeatSeedIdempotent
+        $facts.DeleteDepletedActiveDemoInventory = $deleteDepleted
+        $facts.DataSetImportedAndSelectable = $dataSetImported
+        $facts.UploadCreatedOneDemoEntity = $uploadCreated
+        $facts.RepeatedUploadIdempotent = $uploadIdempotent
+        $facts.DataSetDeletedInventoryRetainedAndR1Protected = $dataSetDeletePassed
+        $facts.UploadAndDeleteGuards = $destructiveGuardsPassed
 
         $passed = [string]::IsNullOrWhiteSpace($callbackError) -and
             $successUi -and -not $configSurfaceChanged -and
-            $entityCount -eq 3 -and $uniqueKeyCount -eq 3 -and
-            $allGood -and $configHashBefore -eq $configHashAfter -and
+            $entityCount -eq $expectedDemoCount -and $uniqueKeyCount -eq $expectedDemoCount -and
+            $allGood -and $catalogCoverage -and
+            $snapshotCount -eq $expectedDemoCount -and
+            $snapshotUniqueKeyCount -eq $expectedDemoCount -and $snapshotAllGood -and
+            $snapshotCategoryCoverage -and
+            $snapshotMatchesCanonical -and $surfaceEnsured -and $refreshSucceeded -and
+            $operatorCount -eq $expectedDemoCount -and $operatorUniqueKeyCount -eq $expectedDemoCount -and
+            $operatorAllGood -and $operatorCategoryCoverage -and
+            $operatorMatchesSnapshot -and
+            $formRefreshReport.StartsWith("OK|") -and $formVisibleRows -eq $expectedDemoCount -and
+            $formContract.StartsWith("OK|") -and $repeatSeedIdempotent -and
+            $deleteDepleted -and $dataSetImported -and $uploadCreated -and
+            $uploadIdempotent -and $dataSetDeletePassed -and
+            $destructiveGuardsPassed -and
+            $configHashBefore -eq $configHashAfter -and
             $authDataBefore -eq $authDataAfter -and
             $inventoryHashBefore -ne $inventoryHashAfter
         if ($passed) {
-            $detail = "The public ribbon callback completed with an injected form selection and seeded three D14 entities without using the active canonical config workbook as an Admin surface."
+            $detail = "The public Demo Inventory callback seeded the R1 kit idempotently, managed a selectable uploaded CSV library, protected R1 from deletion, deleted an uploaded definition without changing seeded stock, and retained the snapshot/Receiving contract."
         }
         else {
             $detail = "The public ribbon callback failed its packaged behavioral contract at step '$currentStep'."

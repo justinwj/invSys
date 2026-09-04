@@ -9,6 +9,8 @@ Public Const INBOX_STATUS_POISON As String = "POISON"
 Private Const PROC_APPLY_STATUS_APPLIED As String = "APPLIED"
 Private Const PROC_APPLY_STATUS_SKIP_DUP As String = "SKIP_DUP"
 Private Const PROC_EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Private Const PROC_EVENT_TYPE_RETURN As String = "RETURN"
+Private Const PROC_EVENT_TYPE_DUMP As String = "DUMP"
 Private Const PROC_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const PROC_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const PROC_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -23,6 +25,12 @@ Private Const PROC_EVENT_TYPE_INVENTORY_CREATE As String = "INVENTORY_CREATE"
 Private Const PROC_EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
 Private Const PROC_EVENT_TYPE_DESIGN_RELEASE As String = "DESIGN_RELEASE"
 Private Const PROC_EVENT_TYPE_DESIGN_OBSOLETE As String = "DESIGN_OBSOLETE"
+Private Const PROC_EVENT_TYPE_PROCESS_SAVE As String = "PROCESS_SAVE"
+Private Const PROC_EVENT_TYPE_PROCESS_RELEASE As String = "PROCESS_RELEASE"
+Private Const PROC_EVENT_TYPE_PROCESS_OBSOLETE As String = "PROCESS_OBSOLETE"
+Private Const PROC_EVENT_TYPE_RECIPE_SAVE As String = "RECIPE_SAVE"
+Private Const PROC_EVENT_TYPE_RECIPE_RELEASE As String = "RECIPE_RELEASE"
+Private Const PROC_EVENT_TYPE_RECIPE_OBSOLETE As String = "RECIPE_OBSOLETE"
 
 Private Const SHEET_INBOX_RECEIVE As String = "InboxReceive"
 Private Const SHEET_INBOX_SHIP As String = "InboxShip"
@@ -69,6 +77,10 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     Dim designsWb As Workbook
     Dim designsOpenedTransient As Boolean
     Dim eventApplied As Boolean
+    Dim targetOutboxEvents As Collection
+    Dim targetInboxDirty As Boolean
+    Dim targetInventoryDirty As Boolean
+    Dim eventPersistenceSaves As Long
 
     If Not EnsurePhase2Context(warehouseId, report) Then Exit Function
 
@@ -127,6 +139,9 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
     PerfMarkSafeProcessor runId, "Dequeue", CLng((Timer - phaseStart) * 1000)
     phaseStart = Timer
     For Each target In inboxTargets
+        Set targetOutboxEvents = New Collection
+        targetInboxDirty = False
+        targetInventoryDirty = False
         If Not EnsureInboxTargetSchema(target("Workbook"), CStr(target("TableName")), report) Then GoTo ContinueInbox
 
         Set loInbox = FindListObjectByNameProcessor(target("Workbook"), CStr(target("TableName")))
@@ -140,21 +155,24 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
 
             Set evt = BuildInboxEvent(loInbox, rowIndex, target("Workbook").Name, CStr(target("TableName")), CStr(target("DefaultEventType")))
             If evt Is Nothing Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT", "Unable to read inbox row."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT", "Unable to read inbox row.", True
+                targetInboxDirty = True
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
 
             capability = CapabilityForEventType(GetDictionaryString(evt, "EventType"))
             If capability = "" Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "INVALID_EVENT_TYPE", "Unsupported EventType.", True
+                targetInboxDirty = True
                 lastPoisonDetail = "INVALID_EVENT_TYPE: Unsupported EventType."
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
 
             If Not modAuth.HasProvisionedCapabilityForSystem(capability, GetDictionaryString(evt, "UserId"), GetDictionaryString(evt, "WarehouseId"), GetDictionaryString(evt, "StationId")) Then
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks " & capability & " capability."
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "AUTH_DENIED", "Event creator lacks " & capability & " capability.", True
+                targetInboxDirty = True
                 poisonCount = poisonCount + 1
                 GoTo MaybeHeartbeat
             End If
@@ -179,28 +197,31 @@ Public Function RunBatch(Optional ByVal warehouseId As String = "", _
                         evt, designsWb, runId, statusOut, errorCode, errorMessage)
                 End If
             Else
-                eventApplied = ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage)
+                eventApplied = ApplyInventoryEventBridge(evt, inventoryWb, runId, statusOut, errorCode, errorMessage, True)
             End If
 
             If eventApplied Then
                 Select Case UCase$(statusOut)
                     Case PROC_APPLY_STATUS_APPLIED
-                        artifactReport = vbNullString
-                        If Not AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED
+                        targetOutboxEvents.Add evt
+                        If Not IsDesignEventTypeProcessor(GetDictionaryString(evt, "EventType")) Then targetInventoryDirty = True
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_PROCESSED, , , True
+                        targetInboxDirty = True
                         RunBatch = RunBatch + 1
                     Case PROC_APPLY_STATUS_SKIP_DUP
-                        artifactReport = vbNullString
-                        If Not AppendEventToOutbox(evt, inventoryWb, Nothing, runId, artifactReport) Then artifactWarnings = artifactWarnings + 1
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_SKIP_DUP
+                        targetOutboxEvents.Add evt
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_SKIP_DUP, , , True
+                        targetInboxDirty = True
                         skipDupCount = skipDupCount + 1
                     Case Else
-                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "UNKNOWN_APPLY_STATUS", "Unknown apply status."
+                        UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, "UNKNOWN_APPLY_STATUS", "Unknown apply status.", True
+                        targetInboxDirty = True
                         lastPoisonDetail = "UNKNOWN_APPLY_STATUS: Unknown apply status."
                         poisonCount = poisonCount + 1
                 End Select
             Else
-                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, errorCode, errorMessage
+                UpdateInboxRowStatus loInbox, rowIndex, INBOX_STATUS_POISON, errorCode, errorMessage, True
+                targetInboxDirty = True
                 lastPoisonDetail = errorCode & ": " & errorMessage
                 poisonCount = poisonCount + 1
             End If
@@ -214,17 +235,34 @@ MaybeHeartbeat:
 ContinueRow:
         Next rowIndex
 
+        If targetInventoryDirty Then
+            SaveWorkbookProcessor inventoryWb
+            eventPersistenceSaves = eventPersistenceSaves + 1
+        End If
+        If targetOutboxEvents.Count > 0 Then
+            artifactReport = vbNullString
+            If AppendEventsToOutboxBatch(targetOutboxEvents, inventoryWb, runId, artifactReport) Then
+                eventPersistenceSaves = eventPersistenceSaves + 1
+            Else
+                artifactWarnings = artifactWarnings + 1
+            End If
+        End If
+        If targetInboxDirty Then
+            SaveWorkbookProcessor target("Workbook")
+            eventPersistenceSaves = eventPersistenceSaves + 1
+        End If
+
         If RunBatch >= batchSize Then
-            CloseInboxTargetIfNeeded target
+            CloseInboxTargetIfNeeded target, False
             Exit For
         End If
 ContinueInbox:
-        CloseInboxTargetIfNeeded target
+        CloseInboxTargetIfNeeded target, False
     Next target
 
     PerfMarkSafeProcessor runId, "Apply", CLng((Timer - phaseStart) * 1000)
     If PerfIsTransactionActiveSafeProcessor() Then MarkSegmentSafeProcessor "ProcessorApplyLoop"
-    report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId
+    report = "Applied=" & CStr(RunBatch) & "; SkipDup=" & CStr(skipDupCount) & "; Poison=" & CStr(poisonCount) & "; RunId=" & runId & "; EventPersistenceSaves=" & CStr(eventPersistenceSaves)
     If lastPoisonDetail <> "" Then report = report & "; LastPoison=" & lastPoisonDetail
     If localStagingReport <> "" And InStr(1, localStagingReport, "No local staged inbox rows", vbTextCompare) = 0 Then
         report = report & "; LocalStagingSync=" & IIf(localStagingOk, "OK", "WARN") & " (" & localStagingReport & ")"
@@ -898,7 +936,7 @@ End Function
 
 Private Function InboxWorkbookNameProcessor(ByVal eventType As String, ByVal stationId As String) As String
     Select Case UCase$(SafeTrimProcessor(eventType))
-        Case PROC_EVENT_TYPE_RECEIVE
+        Case PROC_EVENT_TYPE_RECEIVE, PROC_EVENT_TYPE_RETURN, PROC_EVENT_TYPE_DUMP
             InboxWorkbookNameProcessor = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameProcessor = "invSys.Inbox.Shipping." & stationId & ".xlsb"
@@ -931,11 +969,11 @@ Private Function OpenInboxWorkbookForProcessor(ByVal fullPath As String) As Work
     HideProcessorWorkbookWindows OpenInboxWorkbookForProcessor
 End Function
 
-Private Sub CloseInboxTargetIfNeeded(ByVal target As Variant)
+Private Sub CloseInboxTargetIfNeeded(ByVal target As Variant, Optional ByVal saveChanges As Boolean = True)
     If IsObject(target) Then
         If target.Exists("CloseWhenDone") Then
             If CBool(target("CloseWhenDone")) Then
-                CloseProcessorWorkbookIfNeeded target("Workbook"), True
+                CloseProcessorWorkbookIfNeeded target("Workbook"), saveChanges
             End If
         End If
     End If
@@ -1044,12 +1082,31 @@ Private Function BuildInboxEvent(ByVal lo As ListObject, _
     evt("Location") = GetCellByColumnProcessor(lo, rowIndex, "Location")
     evt("Condition") = GetCellByColumnProcessor(lo, rowIndex, "Condition")
     evt("AttributesJson") = GetCellByColumnProcessor(lo, rowIndex, "AttributesJson")
-    evt("DesignId") = GetCellByColumnProcessor(lo, rowIndex, "DesignId")
+    evt("DesignId") = CanonicalReusableDesignEventIdProcessor( _
+        CStr(evt("EventType")), GetCellByColumnProcessor(lo, rowIndex, "DesignId"))
     evt("DesignVersion") = GetCellByColumnProcessor(lo, rowIndex, "DesignVersion")
     evt("Note") = GetCellByColumnProcessor(lo, rowIndex, "Note")
     evt("PayloadJson") = GetCellByColumnProcessor(lo, rowIndex, "PayloadJson")
     evt("SourceInbox") = workbookName & ":" & tableName
     Set BuildInboxEvent = evt
+End Function
+
+Private Function CanonicalReusableDesignEventIdProcessor(ByVal eventType As String, _
+                                                         ByVal designId As Variant) As String
+    Dim textValue As String
+    Dim numericValue As Long
+
+    textValue = UCase$(SafeTrimProcessor(designId))
+    eventType = UCase$(Trim$(eventType))
+    If (Left$(eventType, 8) = "PROCESS_" Or Left$(eventType, 7) = "RECIPE_") _
+       And Len(textValue) <= 3 And IsNumeric(textValue) Then
+        numericValue = CLng(CDbl(textValue))
+        If numericValue > 0 And numericValue <= 46655 Then
+            CanonicalReusableDesignEventIdProcessor = Right$("000" & CStr(numericValue), 3)
+            Exit Function
+        End If
+    End If
+    CanonicalReusableDesignEventIdProcessor = textValue
 End Function
 
 Private Function GetInboxEventType(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal defaultEventType As String) As String
@@ -1104,13 +1161,15 @@ End Sub
 
 Private Function CapabilityForEventType(ByVal eventType As String) As String
     Select Case UCase$(SafeTrimProcessor(eventType))
-        Case PROC_EVENT_TYPE_RECEIVE
+        Case PROC_EVENT_TYPE_RECEIVE, PROC_EVENT_TYPE_RETURN, PROC_EVENT_TYPE_DUMP
             CapabilityForEventType = "RECEIVE_POST"
         Case PROC_EVENT_TYPE_SHIP, PROC_EVENT_TYPE_SHIP_RESERVE, PROC_EVENT_TYPE_SHIP_RELEASE, PROC_EVENT_TYPE_BOX_BUILD, PROC_EVENT_TYPE_BOX_UNBOX
             CapabilityForEventType = "SHIP_POST"
         Case PROC_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE
             CapabilityForEventType = "ADMIN_MAINT"
-        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_DESIGN_CREATE
+        Case PROC_EVENT_TYPE_PROD_CONSUME, PROC_EVENT_TYPE_PROD_COMPLETE, PROC_EVENT_TYPE_DESIGN_CREATE, _
+             PROC_EVENT_TYPE_PROCESS_SAVE, PROC_EVENT_TYPE_PROCESS_RELEASE, PROC_EVENT_TYPE_PROCESS_OBSOLETE, _
+             PROC_EVENT_TYPE_RECIPE_SAVE, PROC_EVENT_TYPE_RECIPE_RELEASE, PROC_EVENT_TYPE_RECIPE_OBSOLETE
             CapabilityForEventType = "PROD_POST"
         Case PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE, PROC_EVENT_TYPE_MIGRATION_SEED, PROC_EVENT_TYPE_INVENTORY_CREATE, PROC_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventType = "ADMIN_MAINT"
@@ -1119,13 +1178,16 @@ End Function
 
 Private Function IsDesignEventTypeProcessor(ByVal eventType As String) As Boolean
     Select Case UCase$(SafeTrimProcessor(eventType))
-        Case PROC_EVENT_TYPE_DESIGN_CREATE, PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE
+        Case PROC_EVENT_TYPE_DESIGN_CREATE, PROC_EVENT_TYPE_DESIGN_RELEASE, PROC_EVENT_TYPE_DESIGN_OBSOLETE, _
+             PROC_EVENT_TYPE_PROCESS_SAVE, PROC_EVENT_TYPE_PROCESS_RELEASE, PROC_EVENT_TYPE_PROCESS_OBSOLETE, _
+             PROC_EVENT_TYPE_RECIPE_SAVE, PROC_EVENT_TYPE_RECIPE_RELEASE, PROC_EVENT_TYPE_RECIPE_OBSOLETE
             IsDesignEventTypeProcessor = True
     End Select
 End Function
 
 Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal newStatus As String, _
-                                 Optional ByVal errorCode As String = "", Optional ByVal errorMessage As String = "")
+                                 Optional ByVal errorCode As String = "", Optional ByVal errorMessage As String = "", _
+                                 Optional ByVal deferSave As Boolean = False)
     Dim retryCount As Long
     Dim eventId As String
     If lo Is Nothing Then Exit Sub
@@ -1152,7 +1214,7 @@ Private Sub UpdateInboxRowStatus(ByVal lo As ListObject, ByVal rowIndex As Long,
     End Select
 
     SetSheetProtectionProcessor lo.Parent, True
-    SaveWorkbookProcessor lo.Parent.Parent
+    If Not deferSave Then SaveWorkbookProcessor lo.Parent.Parent
     LogDiagnosticSafeProcessor "INBOX-STATUS", "Workbook=" & lo.Parent.Parent.Name & "|Table=" & lo.Name & "|EventID=" & eventId & "|Status=" & newStatus & "|ErrorCode=" & errorCode & "|ErrorMessage=" & errorMessage
 End Sub
 

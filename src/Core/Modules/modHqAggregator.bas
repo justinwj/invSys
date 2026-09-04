@@ -99,6 +99,7 @@ Private Sub MergeSnapshotRow(ByVal globalRows As Object, _
     End If
 
     entry("WarehouseId") = GetCellByColumnHq(lo, rowIndex, "WarehouseId")
+    entry("System_Key") = GetCellByColumnHq(lo, rowIndex, "System_Key")
     entry("SKU") = GetCellByColumnHq(lo, rowIndex, "SKU")
     entry("QtyOnHand") = GetCellByColumnHq(lo, rowIndex, "QtyOnHand")
     entry("LastAppliedAtUTC") = GetCellByColumnHq(lo, rowIndex, "LastAppliedAtUTC")
@@ -131,7 +132,7 @@ Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
 
     Set wb = Application.Workbooks.Add
     generatedAt = Now
-    snapHeaders = Array("WarehouseId", "SKU", "QtyOnHand", "LastAppliedAtUTC", "SourceSnapshot")
+    snapHeaders = Array("WarehouseId", "System_Key", "SKU", "QtyOnHand", "LastAppliedAtUTC", "SourceSnapshot")
     statusHeaders = Array("Scope", "AuthorityLevel", "AuthoritativeStore", "VisibilityRule", "GeneratedAtUTC", _
                           "SnapshotsFolder", "SnapshotFileCount", "SkippedSnapshotFileCount", "WarehouseCount")
 
@@ -151,6 +152,7 @@ Private Sub WriteGlobalSnapshotWorkbook(ByVal outputPath As String, _
         loSnap.ListRows.Add
         rowIndex = loSnap.ListRows.Count
         SetTableRowValueHq loSnap, rowIndex, "WarehouseId", globalRows(key)("WarehouseId")
+        SetTableRowValueHq loSnap, rowIndex, "System_Key", globalRows(key)("System_Key")
         SetTableRowValueHq loSnap, rowIndex, "SKU", globalRows(key)("SKU")
         SetTableRowValueHq loSnap, rowIndex, "QtyOnHand", globalRows(key)("QtyOnHand")
         SetTableRowValueHq loSnap, rowIndex, "LastAppliedAtUTC", globalRows(key)("LastAppliedAtUTC")
@@ -197,6 +199,7 @@ Private Function TryMergeSnapshotFileHq(ByVal snapshotsFolder As String, _
     Dim lo As ListObject
     Dim i As Long
     Dim key As String
+    Dim systemKey As String
     Dim failureReason As String
 
     On Error GoTo FailOpen
@@ -209,8 +212,11 @@ Private Function TryMergeSnapshotFileHq(ByVal snapshotsFolder As String, _
     If Not lo Is Nothing Then
         For i = 1 To lo.ListRows.Count
             If SafeTrimHq(GetCellByColumnHq(lo, i, "SKU")) <> "" Then
-                key = SafeTrimHq(GetCellByColumnHq(lo, i, "WarehouseId")) & "|" & SafeTrimHq(GetCellByColumnHq(lo, i, "SKU"))
-                MergeSnapshotRow globalRows, key, lo, i, fileName
+                systemKey = SafeTrimHq(GetCellByColumnHq(lo, i, "System_Key"))
+                If systemKey <> "" Then
+                    key = SafeTrimHq(GetCellByColumnHq(lo, i, "WarehouseId")) & "|" & systemKey
+                    MergeSnapshotRow globalRows, key, lo, i, fileName
+                End If
             End If
         Next i
     End If

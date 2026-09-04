@@ -53,9 +53,9 @@ Add-Check "Production.Layout.NoResizeCoordinateArithmetic" `
 
 Add-Check "Production.Layout.GeometryContract" `
     (($formText -match '(?i)PRODUCTION_MIN_WIDTH\s+As\s+Double\s*=\s*1110') -and
-     ($formText -match '(?i)PRODUCTION_MIN_HEIGHT\s+As\s+Double\s*=\s*690') -and
+     ($formText -match '(?i)PRODUCTION_MIN_HEIGHT\s+As\s+Double\s*=\s*800') -and
      ($formText -match '(?i)PRODUCTION_LAYOUT_TEST_MAX_WIDTH\s+As\s+Double\s*=\s*1350') -and
-     ($formText -match '(?i)PRODUCTION_LAYOUT_TEST_MAX_HEIGHT\s+As\s+Double\s*=\s*750')) `
+     ($formText -match '(?i)PRODUCTION_LAYOUT_TEST_MAX_HEIGHT\s+As\s+Double\s*=\s*980')) `
     "Minimum/default/expanded acceptance sizes must be explicit and stable."
 
 Add-Check "Production.Layout.NativeWindowBehavior" `
@@ -64,9 +64,10 @@ Add-Check "Production.Layout.NativeWindowBehavior" `
      ($windowText -match '(?i)WS_MINIMIZEBOX') -and
      ($windowText -match '(?i)WS_MAXIMIZEBOX') -and
      ($windowText -match '(?i)ApplyDpiLayoutZoom') -and
-     ($windowText -match '(?i)GetDpiForWindow') -and
+     ($windowText -notmatch '(?i)GetDpiForWindow') -and
+     ($windowText -match '(?is)ApplyDpiLayoutZoom.*?CallByName\s+productionForm\s*,\s*"Zoom"\s*,\s*VbLet\s*,\s*100') -and
      ($windowText -match '(?i)DiagnoseWindowStyle')) `
-    "The operator form must retain Windows resize, minimize, maximize, DPI-normalized layout, and diagnostic support."
+    "The operator form must retain Windows resize, minimize, maximize, 100% anchor-layout zoom, and diagnostic support."
 
 Add-Check "Production.Layout.OperationsComposition" `
     (($buildText -match '(?is)Key\s*=\s*"Operations".*?SourceDirs\s*=\s*@\(.*?src/Operations.*?src/Production.*?src/Shipping') -and
@@ -87,9 +88,9 @@ if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
         $manifestHasLayout =
             ([string]$productionForm.layout.strategy -eq "WINDOWS_API_ANCHORS") -and
             ([double]$productionForm.layout.minimum.width -eq 1110) -and
-            ([double]$productionForm.layout.minimum.height -eq 690) -and
+            ([double]$productionForm.layout.minimum.height -eq 800) -and
             ([double]$productionForm.layout.expandedTest.width -eq 1350) -and
-            ([double]$productionForm.layout.expandedTest.height -eq 750)
+            ([double]$productionForm.layout.expandedTest.height -eq 980)
     }
 }
 Add-Check "Production.Layout.StaticManifestEvidence" $manifestHasLayout `

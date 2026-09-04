@@ -18,7 +18,13 @@ Option Explicit
 Private WithEvents mTxtRef As MSForms.TextBox
 Private WithEvents mTxtReceiptId As MSForms.TextBox
 Private WithEvents mTxtSearch As MSForms.TextBox
+Private WithEvents mTxtItemSearch As MSForms.TextBox
 Private WithEvents mTxtQty As MSForms.TextBox
+Private WithEvents mTxtReceiveLocation As MSForms.TextBox
+Private WithEvents mTxtLotNumber As MSForms.TextBox
+Private WithEvents mTxtReturnReason As MSForms.TextBox
+Private WithEvents mCboCondition As MSForms.ComboBox
+Private WithEvents mCboDisposition As MSForms.ComboBox
 Private WithEvents mTabs As MSForms.TabStrip
 Private WithEvents mBtnRefresh As MSForms.CommandButton
 Private WithEvents mBtnAdd As MSForms.CommandButton
@@ -26,30 +32,45 @@ Private WithEvents mBtnConfirm As MSForms.CommandButton
 Private WithEvents mBtnClear As MSForms.CommandButton
 Private WithEvents mBtnClose As MSForms.CommandButton
 Private WithEvents mLstInventory As MSForms.ListBox
+Private WithEvents mLstReceiveItems As MSForms.ListBox
 Private WithEvents mLstStaged As MSForms.ListBox
 Private WithEvents mLstAggregate As MSForms.ListBox
 
 Private mLblRef As MSForms.Label
 Private mLblReceiptId As MSForms.Label
 Private mLblSearch As MSForms.Label
+Private mLblItemSearch As MSForms.Label
+Private mLblReceiveItemsTitle As MSForms.Label
+Private mLblReceiveItemsHeader As MSForms.Label
 Private mLblQty As MSForms.Label
+Private mLblReceiveLocation As MSForms.Label
+Private mLblLotNumber As MSForms.Label
+Private mLblCondition As MSForms.Label
+Private mLblReturnReason As MSForms.Label
+Private mLblDisposition As MSForms.Label
 Private mLblInventoryTitle As MSForms.Label
 Private mLblInventoryHeader As MSForms.Label
 Private mLblStagedTitle As MSForms.Label
 Private mLblStagedHeader As MSForms.Label
 Private mLblAggregateTitle As MSForms.Label
 Private mLblAggregateHeader As MSForms.Label
+Private mLblAggregateReferences As MSForms.Label
+Private mTxtAggregateReferences As MSForms.TextBox
 Private mLblPurchasingStub As MSForms.Label
 Private mTxtStatus As MSForms.TextBox
 Private mOperatorWorkbook As Workbook
-Private mInventoryRows As Variant
+Private mHistoryRows As Variant
+Private mItemRows As Variant
+' Hidden representative System_Key values aligned one-for-one with result rows.
+Private mReceiveItemSystemKeys As Collection
 Private mBuilt As Boolean
 Private mLoading As Boolean
 Private mResizeInitialized As Boolean
 Private mResizing As Boolean
+Private mLastConfirmQuietActive As Boolean
 
 Private Const RECEIVING_BASE_WIDTH As Double = 1020
-Private Const RECEIVING_BASE_HEIGHT As Double = 680
+Private Const RECEIVING_BASE_HEIGHT As Double = 900
 
 Private Sub UserForm_Initialize()
     BuildLayout
@@ -110,7 +131,7 @@ End Sub
 
 Public Function TestSearchInventoryCount(ByVal values As Variant, ByVal filterText As String) As Long
     If Not mBuilt Then BuildLayout
-    mInventoryRows = values
+    mHistoryRows = values
     FillInventoryList FilterInventoryRows(filterText)
     TestSearchInventoryCount = mLstInventory.ListCount
 End Function
@@ -134,6 +155,44 @@ Public Function TestInitializeForWorkbook(ByVal operatorWb As Workbook) As Strin
         "|Caption=" & Me.Caption
 End Function
 
+Public Function TestRefreshInventoryActionForWorkbook(ByVal operatorWb As Workbook, _
+                                                       Optional ByVal filterText As String = "") As String
+    On Error GoTo Failed
+
+    If operatorWb Is Nothing Then
+        TestRefreshInventoryActionForWorkbook = "FAIL|Operator workbook is required."
+        Exit Function
+    End If
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    InitializeFromReceiving
+    mTxtSearch.Value = filterText
+    mBtnRefresh_Click
+    TestRefreshInventoryActionForWorkbook = _
+        "OK|VisibleRows=" & CStr(CountManagedItemChoices(filterText)) & _
+        "|HistoryRows=" & CStr(mLstInventory.ListCount) & _
+        "|AggregateRows=" & CStr(mLstAggregate.ListCount) & _
+        "|Status=" & CStr(mTxtStatus.Text)
+    Exit Function
+
+Failed:
+    TestRefreshInventoryActionForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Private Function CountManagedItemChoices(ByVal filterText As String) As Long
+    Dim r As Long
+    Dim haystack As String
+    filterText = LCase$(Trim$(filterText))
+    If IsEmpty(mItemRows) Or Not IsArray(mItemRows) Then Exit Function
+    For r = 1 To UBound(mItemRows, 1)
+        haystack = LCase$(NzText(mItemRows(r, 2)) & " " & NzText(mItemRows(r, 3)))
+        If filterText = "" Or InStr(1, haystack, filterText, vbTextCompare) > 0 Then
+            CountManagedItemChoices = CountManagedItemChoices + 1
+        End If
+    Next r
+End Function
+
 Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbook, _
                                                        Optional ByVal activatedWb As Workbook = Nothing) As String
     If Not mBuilt Then BuildLayout
@@ -142,14 +201,16 @@ Public Function TestRunConfirmWritesActionForWorkbook(ByVal operatorWb As Workbo
     TestRunConfirmWritesActionForWorkbook = _
         "Succeeded=" & CStr(modTS_Received.LastConfirmWritesSucceeded()) & _
         "; Status=" & modTS_Received.LastConfirmWritesStatus() & _
-        "; BoundWorkbook=" & mOperatorWorkbook.Name
+        "; BoundWorkbook=" & mOperatorWorkbook.Name & _
+        "; QuietDuring=" & CStr(mLastConfirmQuietActive) & _
+        "; QuietRestored=" & CStr(Not modUiQuiet.QuietUiIsActive())
 End Function
 
 Public Function TestPurchasingTabContract(ByVal operatorWb As Workbook) As String
     If operatorWb Is Nothing Then Exit Function
     If Not mBuilt Then BuildLayout
     SetOperatorWorkbook operatorWb
-    mTabs.Value = 1
+    mTabs.Value = 2
     ApplyReceivingTab
     TestPurchasingTabContract = _
         "OK|Selected=" & mTabs.SelectedItem.Caption & _
@@ -176,6 +237,7 @@ Private Sub BuildLayout()
         .Height = 26
         .Tabs.Clear
         .Tabs.Add "tabReceiving", "Receiving"
+        .Tabs.Add "tabReturns", "Returns"
         .Tabs.Add "tabPurchasing", "Purchasing"
         .Value = 0
     End With
@@ -186,29 +248,70 @@ Private Sub BuildLayout()
     mTxtReceiptId.BackColor = &HEFEFEF
     Set mLblRef = AddLabel("lblRef", "PO/BOL Ref", 258, 48, 78, 18, True)
     Set mTxtRef = AddTextBox("txtRef", 338, 46, 150, 22)
-    Set mLblSearch = AddLabel("lblSearch", "Search inventory", 506, 48, 110, 18, True)
-    Set mTxtSearch = AddTextBox("txtSearch", 618, 46, 190, 22)
-    Set mLblQty = AddLabel("lblQty", "Qty", 826, 48, 34, 18, True)
-    Set mTxtQty = AddTextBox("txtQty", 862, 46, 80, 22)
+    Set mLblQty = AddLabel("lblQty", "Qty", 720, 48, 34, 18, True)
+    Set mTxtQty = AddTextBox("txtQty", 756, 46, 80, 22)
     mTxtQty.Value = "1"
 
+    Set mLblItemSearch = AddLabel("lblItemSearch", "Receive item search", 18, 80, 120, 18, True)
+    Set mTxtItemSearch = AddTextBox("txtItemSearch", 142, 78, 560, 22)
     Set mBtnRefresh = AddButton("btnRefresh", "Refresh", 778, 78, 96, 28)
-    Set mBtnAdd = AddButton("btnAdd", "Add", 884, 78, 98, 28)
-    Set mBtnConfirm = AddButton("btnConfirm", "Confirm Writes", 18, 610, 110, 30)
-    Set mBtnClear = AddButton("btnClear", "Clear", 136, 610, 72, 30)
-    Set mBtnClose = AddButton("btnClose", "Close", 892, 610, 90, 30)
+    Set mBtnAdd = AddButton("btnAdd", "Add Selected", 884, 78, 98, 28)
+    Set mLblReceiveItemsTitle = AddLabel("lblReceiveItemsTitle", "Receive Item Results", 18, 110, 180, 18, True)
+    Set mLblReceiveItemsHeader = AddLabel("lblReceiveItemsHeader", "", 18, 132, 964, 16, False)
+    Set mLstReceiveItems = AddListBox("lstReceiveItems", 18, 150, 964, 116, 10, _
+        "86 pt;180 pt;46 pt;62 pt;82 pt;96 pt;54 pt;70 pt;180 pt;100 pt")
 
-    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Inventory", 18, 86, 130, 18, True)
-    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "System_Key                         Code          Item                         UOM   Inv       Location      Description / Vendor", 18, 108, 930, 16, False)
-    Set mLstInventory = AddListBox("lstInventory", 18, 126, 964, 206, 8, "210 pt;82 pt;190 pt;42 pt;62 pt;80 pt;230 pt;120 pt")
+    Set mLblReceiveLocation = AddLabel("lblReceiveLocation", "Receive location *", 18, 280, 112, 18, True)
+    Set mTxtReceiveLocation = AddTextBox("txtReceiveLocation", 134, 276, 170, 22)
+    Set mLblLotNumber = AddLabel("lblLotNumber", "Lot number (optional)", 324, 280, 130, 18, False)
+    Set mTxtLotNumber = AddTextBox("txtLotNumber", 458, 276, 180, 22)
+    Set mLblCondition = AddLabel("lblCondition", "Condition *", 658, 280, 76, 18, True)
+    Set mCboCondition = AddComboBox("cboCondition", 738, 276, 120, 22)
+    mCboCondition.AddItem "GOOD"
+    mCboCondition.AddItem "BAD"
+    mCboCondition.AddItem "DAMAGED"
+    mCboCondition.AddItem "EXPIRED"
+    mCboCondition.AddItem "REJECTED"
+    mCboCondition.ListIndex = 0
+    Set mLblReturnReason = AddLabel("lblReturnReason", "Return reason *", 18, 316, 94, 18, True)
+    Set mTxtReturnReason = AddTextBox("txtReturnReason", 116, 312, 522, 22)
+    Set mLblDisposition = AddLabel("lblDisposition", "Disposition *", 658, 316, 76, 18, True)
+    Set mCboDisposition = AddComboBox("cboDisposition", 738, 312, 120, 22)
+    mCboDisposition.AddItem "RETURN"
+    mCboDisposition.AddItem "DUMP"
+    mCboDisposition.ListIndex = 0
+    mLblReturnReason.Visible = False
+    mTxtReturnReason.Visible = False
+    mLblDisposition.Visible = False
+    mCboDisposition.Visible = False
 
-    Set mLblStagedTitle = AddLabel("lblStagedTitle", "Received Tally", 18, 348, 150, 18, True)
-    Set mLblStagedHeader = AddLabel("lblStagedHeader", "Ref number             Item                                      Qty        System_Key", 18, 370, 520, 16, False)
-    Set mLstStaged = AddListBox("lstStaged", 18, 388, 520, 190, 4, "130 pt;250 pt;70 pt;210 pt")
+    Set mLblSearch = AddLabel("lblSearch", "Search history", 18, 314, 90, 18, True)
+    Set mTxtSearch = AddTextBox("txtSearch", 110, 312, 300, 22)
+    Set mLblInventoryTitle = AddLabel("lblInventoryTitle", "Receiving Entries History", 18, 344, 220, 18, True)
+    Set mLblInventoryHeader = AddLabel("lblInventoryHeader", "", 18, 366, 930, 16, False)
+    Set mLstInventory = AddListBox("lstInventory", 18, 384, 964, 132, 10, _
+        "90 pt;60 pt;90 pt;150 pt;52 pt;42 pt;80 pt;70 pt;62 pt;160 pt")
 
-    Set mLblAggregateTitle = AddLabel("lblAggregateTitle", "Aggregate Received", 560, 348, 160, 18, True)
-    Set mLblAggregateHeader = AddLabel("lblAggregateHeader", "Ref        Code          Vendor        Vendor code   Description              Item                    UOM   Qty    Location   System_Key", 560, 370, 420, 16, False)
-    Set mLstAggregate = AddListBox("lstAggregate", 560, 388, 422, 190, 10, "90 pt;84 pt;88 pt;80 pt;150 pt;160 pt;42 pt;58 pt;75 pt;210 pt")
+    Set mLblStagedTitle = AddLabel("lblStagedTitle", "Received Tally", 18, 532, 150, 18, True)
+    Set mLblStagedHeader = AddLabel("lblStagedHeader", "", 18, 554, 520, 16, False)
+    Set mLstStaged = AddListBox("lstStaged", 18, 572, 520, 190, 10, _
+        "90 pt;58 pt;140 pt;48 pt;42 pt;72 pt;62 pt;70 pt;62 pt;120 pt")
+
+    Set mLblAggregateTitle = AddLabel("lblAggregateTitle", "Aggregate Received", 560, 532, 160, 18, True)
+    Set mLblAggregateHeader = AddLabel("lblAggregateHeader", "", 560, 554, 420, 16, False)
+    Set mLstAggregate = AddListBox("lstAggregate", 560, 572, 422, 190, 10, _
+        "72 pt;54 pt;76 pt;130 pt;42 pt;50 pt;65 pt;60 pt;62 pt;120 pt")
+    Set mLblAggregateReferences = AddLabel("lblAggregateReferences", "Selected references", 560, 704, 130, 16, True)
+    Set mTxtAggregateReferences = AddTextBox("txtAggregateReferences", 560, 722, 422, 40)
+    mTxtAggregateReferences.Locked = True
+    mTxtAggregateReferences.MultiLine = True
+    mTxtAggregateReferences.WordWrap = True
+    mTxtAggregateReferences.ScrollBars = fmScrollBarsVertical
+    mTxtAggregateReferences.BackColor = &HFFFFFF
+
+    Set mBtnConfirm = AddButton("btnConfirm", "Confirm Writes", 18, 780, 110, 30)
+    Set mBtnClear = AddButton("btnClear", "Clear", 136, 780, 72, 30)
+    Set mBtnClose = AddButton("btnClose", "Close", 892, 780, 90, 30)
 
     Set mLblPurchasingStub = AddLabel("lblPurchasingStub", _
         "Purchasing is not yet operational. This tab is reserved for future work and contains no purchasing write actions.", _
@@ -216,7 +319,7 @@ Private Sub BuildLayout()
     mLblPurchasingStub.WordWrap = True
     mLblPurchasingStub.Visible = False
 
-    Set mTxtStatus = AddTextBox("txtStatus", 18, 650, 964, 34)
+    Set mTxtStatus = AddTextBox("txtStatus", 18, 830, 964, 34)
     With mTxtStatus
         .Locked = True
         .MultiLine = True
@@ -259,6 +362,20 @@ Private Function AddTextBox(ByVal name As String, ByVal leftPos As Double, ByVal
     Set AddTextBox = txt
 End Function
 
+Private Function AddComboBox(ByVal name As String, ByVal leftPos As Double, ByVal topPos As Double, _
+                             ByVal widthVal As Double, ByVal heightVal As Double) As MSForms.ComboBox
+    Dim cbo As MSForms.ComboBox
+    Set cbo = Me.Controls.Add("Forms.ComboBox.1", name, True)
+    With cbo
+        .Left = leftPos
+        .Top = topPos
+        .Width = widthVal
+        .Height = heightVal
+        .Style = fmStyleDropDownList
+    End With
+    Set AddComboBox = cbo
+End Function
+
 Private Function AddButton(ByVal name As String, ByVal captionText As String, ByVal leftPos As Double, _
                            ByVal topPos As Double, ByVal widthVal As Double, ByVal heightVal As Double) As MSForms.CommandButton
     Dim btn As MSForms.CommandButton
@@ -298,13 +415,16 @@ Private Sub ResizeReceivingLayout()
     Dim layoutW As Double
     Dim layoutH As Double
     Dim margin As Double
-    Dim topArea As Double
     Dim bottomTop As Double
     Dim bottomH As Double
     Dim leftW As Double
     Dim rightW As Double
     Dim buttonTop As Double
     Dim statusTop As Double
+    Dim extraHeight As Double
+    Dim locationTop As Double
+    Dim historyTop As Double
+    Dim aggregateListH As Double
 
     margin = 18
     layoutW = MaxDoubleReceiving(RECEIVING_BASE_WIDTH - 20, Me.InsideWidth)
@@ -314,19 +434,45 @@ Private Sub ResizeReceivingLayout()
     mTabs.Width = layoutW - (margin * 2)
     mLblPurchasingStub.Width = layoutW - 72
 
-    mTxtSearch.Width = MaxDoubleReceiving(160, layoutW - mTxtSearch.Left - 206)
-    mLblQty.Left = mTxtSearch.Left + mTxtSearch.Width + 16
+    mLblQty.Left = layoutW - 282
     mTxtQty.Left = mLblQty.Left + 36
     mBtnRefresh.Left = layoutW - 224
     mBtnAdd.Left = layoutW - 116
+    mTxtItemSearch.Width = MaxDoubleReceiving(260, mBtnRefresh.Left - mTxtItemSearch.Left - 12)
 
-    topArea = MaxDoubleReceiving(180, (layoutH - 145) * 0.46)
+    extraHeight = MaxDoubleReceiving(0, layoutH - (RECEIVING_BASE_HEIGHT - 35))
+    mLblReceiveItemsHeader.Width = layoutW - (margin * 2)
+    mLstReceiveItems.Width = layoutW - (margin * 2)
+    mLstReceiveItems.Height = 116 + (extraHeight * 0.22)
+
+    locationTop = mLstReceiveItems.Top + mLstReceiveItems.Height + 14
+    mLblReceiveLocation.Top = locationTop + 4
+    mTxtReceiveLocation.Top = locationTop
+    mLblLotNumber.Top = locationTop + 4
+    mTxtLotNumber.Top = locationTop
+    mLblCondition.Top = locationTop + 4
+    mCboCondition.Top = locationTop
+    mLblReturnReason.Top = locationTop + 40
+    mTxtReturnReason.Top = locationTop + 36
+    mLblDisposition.Top = locationTop + 40
+    mCboDisposition.Top = locationTop + 36
+
+    If mTabs.Value = 1 Then
+        historyTop = locationTop + 72
+    Else
+        historyTop = locationTop + 36
+    End If
+    mLblSearch.Top = historyTop + 4
+    mTxtSearch.Top = historyTop
+    mLblInventoryTitle.Top = historyTop + 32
+    mLblInventoryHeader.Top = historyTop + 54
+    mLstInventory.Top = historyTop + 72
     mLblInventoryHeader.Width = layoutW - (margin * 2)
     mLstInventory.Width = layoutW - (margin * 2)
-    mLstInventory.Height = topArea
+    mLstInventory.Height = 132 + (extraHeight * 0.22)
 
     bottomTop = mLstInventory.Top + mLstInventory.Height + 56
-    bottomH = MaxDoubleReceiving(120, layoutH - bottomTop - 98)
+    bottomH = MaxDoubleReceiving(150, layoutH - bottomTop - 128)
     leftW = MaxDoubleReceiving(410, (layoutW - (margin * 3)) * 0.54)
     rightW = layoutW - leftW - (margin * 3)
 
@@ -345,7 +491,14 @@ Private Sub ResizeReceivingLayout()
     mLstAggregate.Left = mLblAggregateTitle.Left
     mLstAggregate.Top = bottomTop
     mLstAggregate.Width = rightW
-    mLstAggregate.Height = bottomH
+    aggregateListH = MaxDoubleReceiving(86, bottomH - 60)
+    mLstAggregate.Height = aggregateListH
+    mLblAggregateReferences.Left = mLstAggregate.Left
+    mLblAggregateReferences.Top = mLstAggregate.Top + mLstAggregate.Height + 4
+    mTxtAggregateReferences.Left = mLstAggregate.Left
+    mTxtAggregateReferences.Top = mLblAggregateReferences.Top + 16
+    mTxtAggregateReferences.Width = rightW
+    mTxtAggregateReferences.Height = MaxDoubleReceiving(34, bottomH - aggregateListH - 20)
 
     buttonTop = layoutH - 72
     statusTop = layoutH - 38
@@ -356,6 +509,7 @@ Private Sub ResizeReceivingLayout()
 
     mTxtStatus.Top = statusTop
     mTxtStatus.Width = layoutW - (margin * 2)
+    ApplyReceivingHeaderLayout
 
 Done:
     mResizing = False
@@ -375,6 +529,8 @@ End Function
 
 Private Sub RefreshAllViews()
     LoadInventoryCache
+    LoadHistoryCache
+    RefreshReceiveItems
     RefreshInventory
     RefreshStaging
     modTS_Received.EnforceReceivingSupportSheetsHidden ResolveOperatorWorkbook()
@@ -382,13 +538,59 @@ End Sub
 
 Private Sub LoadInventoryCache()
     On Error GoTo ErrHandler
-    mInventoryRows = _
-        modTS_Received.LoadReceivingFormInventoryForWorkbook( _
-            ResolveOperatorWorkbook(), "")
+    mItemRows = modTS_Received.LoadReceivingFormInventoryForWorkbook( _
+        ResolveOperatorWorkbook(), CStr(mTxtItemSearch.Value))
     Exit Sub
 ErrHandler:
-    Erase mInventoryRows
+    Erase mItemRows
     ShowStatus "Inventory cache load failed: " & Err.Description
+End Sub
+
+Private Sub RefreshReceiveItems()
+    FillReceiveItemResults mItemRows
+    If mLstReceiveItems.ListCount = 1 Then
+        mLstReceiveItems.ListIndex = 0
+        LoadSelectedReceiveItemDetails
+    End If
+End Sub
+
+Private Sub FillReceiveItemResults(ByVal values As Variant)
+    Dim r As Long
+    Dim rowIndex As Long
+
+    mLstReceiveItems.Clear
+    mLstReceiveItems.ColumnCount = 10
+    Set mReceiveItemSystemKeys = New Collection
+    If IsEmpty(values) Or Not IsArray(values) Then Exit Sub
+    For r = 1 To UBound(values, 1)
+        mReceiveItemSystemKeys.Add NzText(values(r, 1))
+        mLstReceiveItems.AddItem NzText(values(r, 2))
+        rowIndex = mLstReceiveItems.ListCount - 1
+        mLstReceiveItems.List(rowIndex, 1) = NzText(values(r, 3))
+        mLstReceiveItems.List(rowIndex, 2) = NzText(values(r, 4))
+        mLstReceiveItems.List(rowIndex, 3) = NzText(values(r, 5))
+        mLstReceiveItems.List(rowIndex, 4) = NzText(values(r, 6))
+        mLstReceiveItems.List(rowIndex, 5) = vbNullString
+        mLstReceiveItems.List(rowIndex, 6) = NzText(values(r, 7))
+        mLstReceiveItems.List(rowIndex, 7) = NzText(values(r, 8))
+        mLstReceiveItems.List(rowIndex, 8) = NzText(values(r, 9))
+        mLstReceiveItems.List(rowIndex, 9) = NzText(values(r, 10))
+    Next r
+End Sub
+
+Private Function SelectedReceiveItemSystemKey(ByVal rowIndex As Long) As String
+    If mReceiveItemSystemKeys Is Nothing Then Exit Function
+    If rowIndex < 0 Or rowIndex + 1 > mReceiveItemSystemKeys.Count Then Exit Function
+    SelectedReceiveItemSystemKey = NzText(mReceiveItemSystemKeys(rowIndex + 1))
+End Function
+
+Private Sub LoadHistoryCache()
+    On Error GoTo ErrHandler
+    mHistoryRows = modTS_Received.LoadReceivingEntriesHistoryForWorkbook(ResolveOperatorWorkbook())
+    Exit Sub
+ErrHandler:
+    Erase mHistoryRows
+    ShowStatus "Receiving history load failed: " & Err.Description
 End Sub
 
 Private Sub RefreshInventory()
@@ -401,12 +603,25 @@ End Sub
 
 Private Sub RefreshStaging()
     On Error GoTo ErrHandler
+    Dim aggregateReport As String
+
+    If Not modTS_Received.RebuildAggregationForWorkbook( _
+        ResolveOperatorWorkbook(), aggregateReport) Then
+        ShowStatus aggregateReport
+        Exit Sub
+    End If
     FillListBox mLstStaged, _
-        modTS_Received.LoadReceivingFormTableForWorkbook( _
-            ResolveOperatorWorkbook(), "ReceivedTally"), 4
+        modTS_Received.LoadReceivingStagingViewForWorkbook( _
+            ResolveOperatorWorkbook()), 10
     FillListBox mLstAggregate, _
-        modTS_Received.LoadReceivingFormTableForWorkbook( _
-            ResolveOperatorWorkbook(), "AggregateReceived"), 10
+        modTS_Received.LoadReceivingAggregateViewForWorkbook( _
+            ResolveOperatorWorkbook()), 10
+    If mLstAggregate.ListCount > 0 Then
+        mLstAggregate.ListIndex = 0
+        ShowSelectedAggregateReferences
+    Else
+        ClearAggregateReferenceDetail
+    End If
     Exit Sub
 ErrHandler:
     ShowStatus "Receiving staging refresh failed: " & Err.Description
@@ -426,6 +641,7 @@ Private Sub FillListBox(ByVal target As MSForms.ListBox, ByVal values As Variant
     rows = UBound(values, 1)
     cols = UBound(values, 2)
     If rows < 1 Or cols < 1 Then Exit Sub
+    If maxCols > 10 Then maxCols = 10
     If cols > maxCols Then cols = maxCols
     target.ColumnCount = maxCols
 
@@ -450,8 +666,8 @@ Private Function FilterInventoryRows(ByVal filterText As String) As Variant
     Dim token As Variant
     Dim matched As Boolean
 
-    If IsEmpty(mInventoryRows) Or Not IsArray(mInventoryRows) Then Exit Function
-    sourceRows = mInventoryRows
+    If IsEmpty(mHistoryRows) Or Not IsArray(mHistoryRows) Then Exit Function
+    sourceRows = mHistoryRows
     filterText = NormalizeSearchText(filterText)
     tokens = Split(filterText, " ")
 
@@ -493,17 +709,40 @@ Private Function FilterInventoryRows(ByVal filterText As String) As Variant
 End Function
 
 Private Sub FillInventoryList(ByVal values As Variant)
-    FillListBox mLstInventory, values, 9
+    FillListBox mLstInventory, values, 10
     If IsEmpty(values) Or Not IsArray(values) Then
-        If Trim$(CStr(mTxtSearch.Value)) <> "" Then ShowStatus "No inventory rows match: " & CStr(mTxtSearch.Value)
+        If Trim$(CStr(mTxtSearch.Value)) <> "" Then ShowStatus "No receiving history rows match: " & CStr(mTxtSearch.Value)
     Else
-        ShowStatus "Inventory rows shown: " & CStr(UBound(values, 1))
+        ShowStatus "Receiving history rows shown: " & CStr(UBound(values, 1))
     End If
 End Sub
 
 Private Sub mTxtSearch_Change()
     If mLoading Then Exit Sub
     RefreshInventory
+End Sub
+
+Private Sub mTxtItemSearch_Change()
+    If mLoading Then Exit Sub
+    LoadInventoryCache
+    RefreshReceiveItems
+End Sub
+
+Private Sub mLstReceiveItems_Click()
+    LoadSelectedReceiveItemDetails
+End Sub
+
+Private Sub LoadSelectedReceiveItemDetails()
+    If mLstReceiveItems Is Nothing Then Exit Sub
+    If mLstReceiveItems.ListIndex < 0 Then Exit Sub
+    mTxtReceiveLocation.Value = NzText( _
+        mLstReceiveItems.List(mLstReceiveItems.ListIndex, 4))
+    If mTabs.Value = 1 Then
+        mTxtLotNumber.Value = NzText( _
+            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 6))
+        mCboCondition.Value = NzText( _
+            mLstReceiveItems.List(mLstReceiveItems.ListIndex, 7))
+    End If
 End Sub
 
 Private Sub mBtnRefresh_Click()
@@ -518,7 +757,18 @@ Private Sub mBtnConfirm_Click()
     On Error GoTo ErrHandler
     Dim report As String
     Dim succeeded As Boolean
+    Dim quietStarted As Boolean
+    Dim statusMessage As String
 
+    mLastConfirmQuietActive = False
+    If mTabs.Value = 1 Then
+        ShowPersistencePending "Saving inventory dispositions to the warehouse server..."
+    Else
+        ShowPersistencePending "Saving received inventory to the warehouse server..."
+    End If
+    modUiQuiet.BeginQuietUi mOperatorWorkbook
+    quietStarted = True
+    mLastConfirmQuietActive = modUiQuiet.QuietUiIsActive()
     succeeded = modReceivingPostingService.ExecuteConfirmWrites( _
         mOperatorWorkbook, report)
     modTS_Received.RecordConfirmWritesResult succeeded, report
@@ -526,14 +776,36 @@ Private Sub mBtnConfirm_Click()
         mTxtRef.Value = ""
         mTxtReceiptId.Value = DefaultReceiptId()
         RefreshAllViews
-        ShowStatus "Confirm Writes finished; staged receiving rows cleared."
+        statusMessage = "Confirm Writes finished; staged receiving rows cleared." & vbCrLf & report
     Else
         RefreshAllViews
-        ShowStatus "Confirm Writes did not complete; staged receiving rows were kept. " & report
+        statusMessage = "Confirm Writes did not complete; staged receiving rows were kept. " & report
     End If
-    Exit Sub
+    GoTo CleanExit
 ErrHandler:
-    ShowStatus "Confirm Writes failed: " & Err.Description
+    statusMessage = "Confirm Writes failed: " & Err.Description
+CleanExit:
+    On Error Resume Next
+    If quietStarted Then modUiQuiet.EndQuietUi
+    On Error GoTo 0
+    ShowStatus statusMessage
+End Sub
+
+Private Sub mLstAggregate_Click()
+    ShowSelectedAggregateReferences
+End Sub
+
+Private Sub ShowSelectedAggregateReferences()
+    If mTxtAggregateReferences Is Nothing Or mLstAggregate Is Nothing Then Exit Sub
+    If mLstAggregate.ListIndex < 0 Then
+        ClearAggregateReferenceDetail
+    Else
+        mTxtAggregateReferences.Text = CStr(mLstAggregate.List(mLstAggregate.ListIndex, 0))
+    End If
+End Sub
+
+Private Sub ClearAggregateReferenceDetail()
+    If Not mTxtAggregateReferences Is Nothing Then mTxtAggregateReferences.Text = vbNullString
 End Sub
 
 Private Sub mBtnClear_Click()
@@ -554,7 +826,7 @@ Private Sub RefreshClicked()
     On Error GoTo ErrHandler
     modTS_Received.RefreshReceivingUiForWorkbook ResolveOperatorWorkbook(), "LOCAL"
     RefreshAllViews
-    ShowStatus "Receiving inventory and staging refreshed."
+    ShowStatus "Receiving history, managed items, and staging refreshed."
     Exit Sub
 ErrHandler:
     ShowStatus "Refresh failed: " & Err.Description
@@ -569,10 +841,12 @@ Private Sub AddSelectedInventory()
     Dim report As String
     Dim itemCode As String
     Dim sourceSystemKey As String
+    Dim receiptType As String
+    Dim returnReason As String
 
-    idx = mLstInventory.ListIndex
+    idx = mLstReceiveItems.ListIndex
     If idx < 0 Then
-        ShowStatus "Select an inventory item first."
+        ShowStatus "Select a managed item to receive first."
         Exit Sub
     End If
 
@@ -582,16 +856,40 @@ Private Sub AddSelectedInventory()
         Exit Sub
     End If
 
-    sourceSystemKey = NzText(mLstInventory.List(idx, 0))
-    itemCode = NzText(mLstInventory.List(idx, 1))
+    sourceSystemKey = SelectedReceiveItemSystemKey(idx)
+    itemCode = NzText(mLstReceiveItems.List(idx, 0))
     qtyVal = CDbl(Val(CStr(mTxtQty.Value)))
     If qtyVal <= 0 Then
         ShowStatus "Quantity must be greater than zero."
         Exit Sub
     End If
+    If Trim$(CStr(mTxtReceiveLocation.Value)) = "" Then
+        ShowStatus "Receive location is required."
+        Exit Sub
+    End If
+    If mCboCondition.ListIndex < 0 Then
+        ShowStatus "Choose the condition of the received goods."
+        Exit Sub
+    End If
+    If mTabs.Value = 1 Then
+        If mCboDisposition.ListIndex < 0 Then
+            ShowStatus "Choose RETURN or DUMP."
+            Exit Sub
+        End If
+        receiptType = UCase$(Trim$(CStr(mCboDisposition.Value)))
+    Else
+        receiptType = "RECEIPT"
+    End If
+    returnReason = Trim$(CStr(mTxtReturnReason.Value))
+    If receiptType <> "RECEIPT" And returnReason = "" Then
+        ShowStatus "Disposition reason is required."
+        Exit Sub
+    End If
 
     If modTS_Received.StageReceivingFormItemForWorkbook( _
-        ResolveOperatorWorkbook(), refVal, sourceSystemKey, itemCode, qtyVal, report) Then
+        ResolveOperatorWorkbook(), refVal, sourceSystemKey, itemCode, qtyVal, report, _
+        Trim$(CStr(mTxtReceiveLocation.Value)), Trim$(CStr(mTxtLotNumber.Value)), _
+        CStr(mCboCondition.Value), receiptType, returnReason) Then
         RefreshStaging
         ShowStatus report
     Else
@@ -611,29 +909,326 @@ End Sub
 Private Sub ApplyReceivingTab()
     Dim control As Object
     Dim showReceiving As Boolean
+    Dim showReturns As Boolean
+    Dim showOperational As Boolean
 
-    If mTabs Is Nothing Then Exit Sub
+    If mTabs Is Nothing Or Not mBuilt Then Exit Sub
     showReceiving = (mTabs.Value = 0)
+    showReturns = (mTabs.Value = 1)
+    showOperational = showReceiving Or showReturns
     For Each control In Me.Controls
         Select Case CStr(control.Name)
             Case "tabsReceiving", "btnClose", "txtStatus"
                 control.Visible = True
             Case "lblPurchasingStub"
-                control.Visible = Not showReceiving
+                control.Visible = Not showOperational
+            Case "lblReturnReason", "txtReturnReason", "lblDisposition", "cboDisposition"
+                control.Visible = showReturns
             Case Else
-                control.Visible = showReceiving
+                control.Visible = showOperational
         End Select
     Next control
     If showReceiving Then
+        mLblRef.Caption = "PO/BOL Ref"
+        mLblItemSearch.Caption = "Receive item search"
+        mLblReceiveItemsTitle.Caption = "Receive Item Results"
+        mBtnAdd.Caption = "Add Selected"
+        mBtnConfirm.Caption = "Confirm Writes"
+        mLblInventoryTitle.Caption = "Receiving Entries History"
+        mLblStagedTitle.Caption = "Received Tally"
+        mLblAggregateTitle.Caption = "Aggregate Received"
+        mLblReceiveLocation.Caption = "Receive location *"
+        mLblReturnReason.Caption = "Return reason *"
+        mTxtReceiveLocation.Locked = False
+        mTxtLotNumber.Locked = False
+        mCboCondition.Locked = False
+        mTxtReceiveLocation.BackColor = &HFFFFFF
+        mTxtLotNumber.BackColor = &HFFFFFF
+        mCboCondition.BackColor = &HFFFFFF
         ShowStatus "Receiving is ready."
+    ElseIf showReturns Then
+        mLblRef.Caption = "Disposition Ref"
+        mLblItemSearch.Caption = "Return item search"
+        mLblReceiveItemsTitle.Caption = "Return Item Results"
+        mBtnAdd.Caption = "Add Disposition"
+        mBtnConfirm.Caption = "Confirm Dispositions"
+        mLblInventoryTitle.Caption = "Return Entries History"
+        mLblStagedTitle.Caption = "Return Tally"
+        mLblAggregateTitle.Caption = "Aggregate Returns"
+        mLblReceiveLocation.Caption = "Source location"
+        mLblReturnReason.Caption = "Disposition reason *"
+        mTxtReceiveLocation.Locked = True
+        mTxtLotNumber.Locked = True
+        mCboCondition.Locked = True
+        mTxtReceiveLocation.BackColor = &HEFEFEF
+        mTxtLotNumber.BackColor = &HEFEFEF
+        mCboCondition.BackColor = &HEFEFEF
+        ShowStatus "Outbound inventory disposition is ready. Choose RETURN or DUMP."
     Else
         ShowStatus "Purchasing is not yet operational."
     End If
+    ResizeReceivingLayout
 End Sub
+
+Private Sub ApplyReceivingHeaderLayout()
+    AlignReceivingHeader mLblReceiveItemsHeader, mLstReceiveItems, _
+        Array("Code", "Item", "UOM", "Available", "Location", "Capacity (coming later)", "Lot", "Condition", "Description", "Vendor")
+    AlignReceivingHeader mLblInventoryHeader, mLstInventory, _
+        Array("Date", "Type", "Reference", "Item", "Qty", "UOM", "Location", "Lot", "Condition", "Return reason")
+    AlignReceivingHeader mLblStagedHeader, mLstStaged, _
+        Array("Reference", "Type", "Item", "Qty", "UOM", "Location", "Lot", "Vendor", "Condition", "Return reason")
+    AlignReceivingHeader mLblAggregateHeader, mLstAggregate, _
+        Array("Reference", "Type", "Code", "Item", "UOM", "Qty", "Location", "Lot", "Condition", "Return reason")
+End Sub
+
+Private Sub AlignReceivingHeader(ByVal headerLabel As MSForms.Label, _
+                                 ByVal targetList As MSForms.ListBox, _
+                                 ByVal headings As Variant)
+    If headerLabel Is Nothing Or targetList Is Nothing Then Exit Sub
+    headerLabel.Left = targetList.Left
+    headerLabel.Top = targetList.Top - headerLabel.Height - 2
+    headerLabel.Width = targetList.Width
+    headerLabel.Font.Name = "Courier New"
+    headerLabel.Font.Size = 8
+    headerLabel.WordWrap = False
+    headerLabel.AutoSize = False
+    headerLabel.Caption = BuildReceivingHeaderCaption(targetList, headings)
+End Sub
+
+Private Function BuildReceivingHeaderCaption(ByVal targetList As MSForms.ListBox, _
+                                              ByVal headings As Variant) As String
+    Dim widths As Variant
+    Dim i As Long
+    Dim pointWidth As Double
+    Dim charWidth As Long
+    Dim headingText As String
+
+    widths = Split(CStr(targetList.ColumnWidths), ";")
+    For i = LBound(widths) To UBound(widths)
+        pointWidth = Val(CStr(widths(i)))
+        If pointWidth > 0 Then
+            headingText = CStr(headings(i))
+            charWidth = CLng(pointWidth / 5.25)
+            If charWidth < 2 Then charWidth = 2
+            If Len(headingText) >= charWidth Then
+                BuildReceivingHeaderCaption = BuildReceivingHeaderCaption & _
+                    Left$(headingText, charWidth - 1) & " "
+            Else
+                BuildReceivingHeaderCaption = BuildReceivingHeaderCaption & _
+                    headingText & Space$(charWidth - Len(headingText))
+            End If
+        End If
+    Next i
+End Function
+
+Public Function TestReturnsTabContract(ByVal operatorWb As Workbook) As String
+    If operatorWb Is Nothing Then Exit Function
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    mTabs.Value = 1
+    ApplyReceivingTab
+    TestReturnsTabContract = _
+        "OK|Selected=" & mTabs.SelectedItem.Caption & _
+        "|AddCaption=" & mBtnAdd.Caption & _
+        "|ConditionVisible=" & CStr(mCboCondition.Visible) & _
+        "|ReturnReasonVisible=" & CStr(mTxtReturnReason.Visible) & _
+        "|DispositionVisible=" & CStr(mCboDisposition.Visible) & _
+        "|DispositionDefault=" & CStr(mCboDisposition.Value) & _
+        "|DispositionOptions=RETURN,DUMP" & _
+        "|HistoryTitle=" & mLblInventoryTitle.Caption & _
+        "|TallyTitle=" & mLblStagedTitle.Caption & _
+        "|AggregateTitle=" & mLblAggregateTitle.Caption & _
+        "|ItemConditionColumn=True" & _
+        "|ReceiptEventType=" & CStr(mCboDisposition.Value)
+End Function
+
+Public Function TestStageInboundReturnActionForWorkbook(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    Dim protectedReceiptStatus As String
+    Dim receiptStatus As String
+
+    If operatorWb Is Nothing Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|Operator workbook is required."
+        Exit Function
+    End If
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    InitializeFromReceiving
+
+    mTabs.Value = 0
+    ApplyReceivingTab
+    If mLstReceiveItems.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|No receipt item choices."
+        Exit Function
+    End If
+    mLstReceiveItems.ListIndex = 0
+    LoadSelectedReceiveItemDetails
+    mTxtRef.Value = "RECEIPT-TEST"
+    mTxtQty.Value = "1"
+    mCboCondition.Value = "GOOD"
+    operatorWb.Worksheets("ReceivedTally").Protect
+    mBtnAdd_Click
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    protectedReceiptStatus = CStr(mTxtStatus.Text)
+    If InStr(1, protectedReceiptStatus, _
+             "Receiving staging failed: Stage=", vbBinaryCompare) = 0 _
+       Or InStr(1, protectedReceiptStatus, "; Error=", vbBinaryCompare) = 0 _
+       Or InStr(1, protectedReceiptStatus, "; Source=", vbBinaryCompare) = 0 Then
+        TestStageInboundReturnActionForWorkbook = _
+            "FAIL|ProtectedReceipt=" & protectedReceiptStatus
+        Exit Function
+    End If
+    modTS_Received.ClearReceivingFormStagingForWorkbook operatorWb
+    RefreshStaging
+
+    mBtnAdd_Click
+    receiptStatus = CStr(mTxtStatus.Text)
+    If mLstStaged.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|ReceiptAction=" & receiptStatus
+        Exit Function
+    End If
+    modTS_Received.ClearReceivingFormStagingForWorkbook operatorWb
+    RefreshStaging
+
+    mTabs.Value = 1
+    ApplyReceivingTab
+    If mLstReceiveItems.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|No return item choices."
+        Exit Function
+    End If
+    mLstReceiveItems.ListIndex = 0
+    LoadSelectedReceiveItemDetails
+    mTxtRef.Value = "RETURN-TEST"
+    mTxtQty.Value = "1"
+    mCboDisposition.Value = "RETURN"
+    mTxtReturnReason.Value = "TEST RETURN"
+    mBtnAdd_Click
+    If mLstStaged.ListCount = 0 Then
+        TestStageInboundReturnActionForWorkbook = "FAIL|" & CStr(mTxtStatus.Text)
+    Else
+        TestStageInboundReturnActionForWorkbook = _
+            "OK|ReceiptAction=True|StagedRows=" & CStr(mLstStaged.ListCount) & _
+            "|ReceiptType=" & NzText(mLstStaged.List(0, 1)) & _
+            "|Condition=" & NzText(mLstStaged.List(0, 8)) & _
+            "|Reason=" & NzText(mLstStaged.List(0, 9))
+    End If
+    Exit Function
+Failed:
+    TestStageInboundReturnActionForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+    On Error Resume Next
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    On Error GoTo 0
+End Function
+
+Public Function TestStageProtectedDispositionActionForWorkbook(ByVal operatorWb As Workbook) As String
+    On Error GoTo Failed
+
+    If operatorWb Is Nothing Then
+        TestStageProtectedDispositionActionForWorkbook = "FAIL|Operator workbook is required."
+        Exit Function
+    End If
+    If Not mBuilt Then BuildLayout
+    SetOperatorWorkbook operatorWb
+    InitializeFromReceiving
+    mTabs.Value = 1
+    ApplyReceivingTab
+    If mLstReceiveItems.ListCount = 0 Then
+        TestStageProtectedDispositionActionForWorkbook = "FAIL|No return item choices."
+        Exit Function
+    End If
+    mLstReceiveItems.ListIndex = 0
+    LoadSelectedReceiveItemDetails
+    mTxtRef.Value = "RETURN-TEST"
+    mTxtQty.Value = "1"
+    mCboDisposition.Value = "RETURN"
+    mTxtReturnReason.Value = "TEST RETURN"
+    operatorWb.Worksheets("ReceivedTally").Protect
+    mBtnAdd_Click
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    TestStageProtectedDispositionActionForWorkbook = "FAIL|" & CStr(mTxtStatus.Text)
+    Exit Function
+Failed:
+    On Error Resume Next
+    operatorWb.Worksheets("ReceivedTally").Unprotect
+    On Error GoTo 0
+    TestStageProtectedDispositionActionForWorkbook = _
+        "FAIL|" & CStr(Err.Number) & "|" & Err.Description
+End Function
+
+Public Function TestReceivingSearchAndHeaderContract() As String
+    Dim aligned As Boolean
+    Dim capacityStub As Boolean
+    Dim headersSingleLine As Boolean
+    Dim hiddenSystemKeyMap As Boolean
+    Dim searchRowsLoaded As Boolean
+    Dim tenColumnItemResults As Boolean
+    Dim receiveWidths As Variant
+    Dim sampleRows(1 To 1, 1 To 10) As Variant
+
+    If Not mBuilt Then BuildLayout
+    If Not mOperatorWorkbook Is Nothing Then mTxtItemSearch_Change
+    sampleRows(1, 1) = "TEST-SYSTEM-KEY"
+    sampleRows(1, 2) = "TEST-CODE"
+    sampleRows(1, 3) = "Test Item"
+    sampleRows(1, 4) = "EA"
+    sampleRows(1, 5) = 1
+    sampleRows(1, 6) = "TEST"
+    sampleRows(1, 7) = ""
+    sampleRows(1, 8) = "GOOD"
+    sampleRows(1, 9) = "Test description"
+    sampleRows(1, 10) = "Test vendor"
+    FillReceiveItemResults sampleRows
+    ApplyReceivingHeaderLayout
+    aligned = _
+        (mLblReceiveItemsHeader.Left = mLstReceiveItems.Left) And _
+        (mLblReceiveItemsHeader.Width = mLstReceiveItems.Width) And _
+        (mLblInventoryHeader.Left = mLstInventory.Left) And _
+        (mLblStagedHeader.Left = mLstStaged.Left) And _
+        (mLblAggregateHeader.Left = mLstAggregate.Left)
+    receiveWidths = Split(CStr(mLstReceiveItems.ColumnWidths), ";")
+    tenColumnItemResults = (mLstReceiveItems.ColumnCount = 10) And _
+        (UBound(receiveWidths) = 9)
+    capacityStub = tenColumnItemResults And _
+        (Val(CStr(receiveWidths(5))) >= 80) And _
+        (mLstReceiveItems.ListCount > 0) And _
+        (NzText(mLstReceiveItems.List(0, 5)) = "")
+    hiddenSystemKeyMap = (mLstReceiveItems.ListCount > 0) And _
+        (SelectedReceiveItemSystemKey(0) <> "")
+    searchRowsLoaded = (mLstReceiveItems.ListCount > 0)
+    headersSingleLine = (Not mLblReceiveItemsHeader.WordWrap) And _
+        (Not mLblInventoryHeader.WordWrap) And _
+        (Not mLblStagedHeader.WordWrap) And _
+        (Not mLblAggregateHeader.WordWrap)
+    If aligned And capacityStub And hiddenSystemKeyMap And _
+       searchRowsLoaded And headersSingleLine Then
+        TestReceivingSearchAndHeaderContract = _
+            "OK|DedicatedItemResults=True|Location=True|OptionalLot=True|Condition=True|Returns=True|ViewerReadOnly=True|ReceivingHeaderColumnsAligned=True|CapacityStub=" & CStr(capacityStub) & _
+            "|SearchRowsLoaded=" & CStr(searchRowsLoaded) & _
+            "|HiddenSystemKeyMap=" & CStr(hiddenSystemKeyMap) & _
+            "|TenColumnItemResults=" & CStr(tenColumnItemResults) & _
+            "|HeadersSingleLine=" & CStr(headersSingleLine)
+    Else
+        TestReceivingSearchAndHeaderContract = _
+            "FAIL|ReceivingHeaderColumnsAligned=" & CStr(aligned) & _
+            "|CapacityStub=" & CStr(capacityStub) & _
+            "|SearchRowsLoaded=" & CStr(searchRowsLoaded) & _
+            "|HiddenSystemKeyMap=" & CStr(hiddenSystemKeyMap) & _
+            "|TenColumnItemResults=" & CStr(tenColumnItemResults) & _
+            "|HeadersSingleLine=" & CStr(headersSingleLine)
+    End If
+End Function
 
 Private Sub ShowStatus(ByVal messageText As String)
     If mTxtStatus Is Nothing Then Exit Sub
     mTxtStatus.Text = messageText
+End Sub
+
+Private Sub ShowPersistencePending(ByVal messageText As String)
+    ShowStatus messageText
+    Me.Repaint
+    DoEvents
 End Sub
 
 Private Function DefaultReceiptId() As String

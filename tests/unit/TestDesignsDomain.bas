@@ -35,7 +35,589 @@ Public Function TestDesignsSchema_IsIdempotent() As Long
     beforeCount = CountDesignsTestTables(wb)
     If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
     afterCount = CountDesignsTestTables(wb)
-    If beforeCount = 5 And afterCount = beforeCount Then TestDesignsSchema_IsIdempotent = 1
+    If beforeCount = 13 And afterCount = beforeCount Then TestDesignsSchema_IsIdempotent = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReusableProductionSchema_CreatesProcessRecipeProjections() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim tableNames As Variant
+    Dim tableName As Variant
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    tableNames = Array("tblProcesses", "tblProcessRequirements", _
+        "tblProcessIngredientAlternatives", "tblProcessOutputs", _
+        "tblProcessInstructions", "tblRecipes", "tblRecipeProcesses", _
+        "tblRecipeConnections")
+    For Each tableName In tableNames
+        If FindDesignsTestTable(wb, CStr(tableName)) Is Nothing Then GoTo CleanExit
+    Next tableName
+    TestReusableProductionSchema_CreatesProcessRecipeProjections = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProcessSave_AppliesReusableMultiOutputDefinition() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim evt As Object
+    Dim loProcesses As ListObject
+    Dim loOutputs As ListObject
+    Dim payloadJson As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = _
+        "[{""RecordType"":""PROCESS"",""ProcessName"":""Blend Base""}," & _
+        "{""RecordType"":""REQUIREMENT"",""RequirementId"":""REQ-RAW"",""RequirementName"":""Raw"",""Qty"":10,""UOM"":""LB""}," & _
+        "{""RecordType"":""ALTERNATIVE"",""RequirementId"":""REQ-RAW"",""ITEM_CODE"":""SKU-RAW-A""}," & _
+        "{""RecordType"":""OUTPUT"",""OutputId"":""OUT-MAIN"",""OutputName"":""Main Blend"",""ITEM_CODE"":""SKU-BLEND"",""Qty"":8,""UOM"":""LB""}," & _
+        "{""RecordType"":""OUTPUT"",""OutputId"":""OUT-CO"",""OutputName"":""Co Product"",""ITEM_CODE"":""SKU-CO"",""Qty"":2,""UOM"":""LB""}," & _
+        "{""RecordType"":""INSTRUCTION"",""InstructionOrdinal"":1,""Instruction"":""Blend""}]"
+    Set evt = BuildDesignsTestEvent("PROC-EVT-1", "PROCESS_SAVE", _
+        "PROC-BLEND", "1", payloadJson)
+    If Not modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-PROC-1", _
+            statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    Set loProcesses = FindDesignsTestTable(wb, "tblProcesses")
+    Set loOutputs = FindDesignsTestTable(wb, "tblProcessOutputs")
+    If loProcesses Is Nothing Or loOutputs Is Nothing Then GoTo CleanExit
+    If loProcesses.ListRows.Count <> 1 Then GoTo CleanExit
+    If loOutputs.ListRows.Count <> 2 Then GoTo CleanExit
+    TestProcessSave_AppliesReusableMultiOutputDefinition = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProcessSave_RejectsDefinitionWithoutOutput() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim evt As Object
+    Dim payloadJson As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = _
+        "[{""RecordType"":""PROCESS"",""ProcessName"":""Invalid""}," & _
+        "{""RecordType"":""REQUIREMENT"",""RequirementId"":""REQ-1"",""RequirementName"":""Raw"",""Qty"":1,""UOM"":""EA""}]"
+    Set evt = BuildDesignsTestEvent("PROC-EVT-NO-OUTPUT", "PROCESS_SAVE", _
+        "PROC-INVALID", "1", payloadJson)
+    If modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-PROC-NO-OUTPUT", _
+            statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    If StrComp(errorCode, "PROCESS_OUTPUT_REQUIRED", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestProcessSave_RejectsDefinitionWithoutOutput = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRecipeSave_RejectsCircularProcessGraph() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim statusOut As String
+    Dim errorCode As String
+    Dim errorMessage As String
+    Dim evt As Object
+    Dim payloadJson As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""Circular""}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""PROC-A"",""ProcessVersion"":""1"",""ExecutionOrdinal"":1}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""B"",""ProcessId"":""PROC-B"",""ProcessVersion"":""1"",""ExecutionOrdinal"":2}," & _
+        "{""RecordType"":""CONNECTION"",""FromProcessNodeId"":""A"",""FromOutputId"":""OUT-A"",""ToProcessNodeId"":""B"",""ToRequirementId"":""REQ-B"",""Qty"":1,""UOM"":""EA""}," & _
+        "{""RecordType"":""CONNECTION"",""FromProcessNodeId"":""B"",""FromOutputId"":""OUT-B"",""ToProcessNodeId"":""A"",""ToRequirementId"":""REQ-A"",""Qty"":1,""UOM"":""EA""}]"
+    Set evt = BuildDesignsTestEvent("RECIPE-EVT-CYCLE", "RECIPE_SAVE", _
+        "RECIPE-CYCLE", "1", payloadJson)
+    If modDesignsApply.ApplyDesignEvent(evt, wb, "RUN-RECIPE-CYCLE", _
+            statusOut, errorCode, errorMessage) Then GoTo CleanExit
+    If StrComp(errorCode, "RECIPE_CYCLE", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestRecipeSave_RejectsCircularProcessGraph = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestProcessLifecycle_ReleasesObsoletesAndReusesVersions() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim payloadJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = ReusableProcessPayloadForTest( _
+        "Reusable Blend", "REQ-RAW", "SKU-RAW", 4, "LB", _
+        "OUT-BLEND", "SKU-BLEND", 4, "LB", True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-REUSE-V1", _
+            "PROC-REUSE", "1", payloadJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "PROC-REUSE-V2-SAVE", _
+            "PROCESS_SAVE", "PROC-REUSE", "2", payloadJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "PROC-REUSE-V1-OBSOLETE", _
+            "PROCESS_OBSOLETE", "PROC-REUSE", "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(ReusableStatusForTest(wb, "tblProcesses", "ProcessId", _
+            "ProcessVersion", "PROC-REUSE", "1"), "OBSOLETE", vbTextCompare) <> 0 Then GoTo CleanExit
+    If StrComp(ReusableStatusForTest(wb, "tblProcesses", "ProcessId", _
+            "ProcessVersion", "PROC-REUSE", "2"), "DRAFT", vbTextCompare) <> 0 Then GoTo CleanExit
+    If CountReusableRowsForTest(wb, "tblProcessIngredientAlternatives", _
+            "ProcessId", "ProcessVersion", "PROC-REUSE", "2") <> 1 Then GoTo CleanExit
+    TestProcessLifecycle_ReleasesObsoletesAndReusesVersions = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRecipeRelease_RejectsMissingOrUnreleasedProcessVersion() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim payloadJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = ReusableProcessPayloadForTest( _
+        "Draft Only", "", "", 0, "", "OUT-DRAFT", "SKU-DRAFT", 1, "EA", False)
+    If Not ApplyReusableEventForTest(wb, "PROC-DRAFT-SAVE", "PROCESS_SAVE", _
+            "PROC-DRAFT", "1", payloadJson, errorCode) Then GoTo CleanExit
+    recipeJson = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""Draft Reference""}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""PROC-DRAFT"",""ProcessVersion"":""1"",""ExecutionOrdinal"":1}]"
+    If Not ApplyReusableEventForTest(wb, "RECIPE-DRAFT-SAVE", "RECIPE_SAVE", _
+            "RECIPE-DRAFT", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If ApplyReusableEventForTest(wb, "RECIPE-DRAFT-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-DRAFT", "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(errorCode, "RECIPE_PROCESS_NOT_RELEASED", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestRecipeRelease_RejectsMissingOrUnreleasedProcessVersion = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRecipeRelease_RejectsUnresolvedExternalRequirement() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim processJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    processJson = ReusableProcessPayloadForTest( _
+        "Needs Assignment", "REQ-OPEN", "", 1, "EA", _
+        "OUT-OPEN", "SKU-OPEN", 1, "EA", False)
+    If Not SaveReleaseProcessForTest(wb, "PROC-OPEN", _
+            "PROC-OPEN", "1", processJson, errorCode) Then GoTo CleanExit
+    recipeJson = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""Unresolved""}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""PROC-OPEN"",""ProcessVersion"":""1"",""ExecutionOrdinal"":1}]"
+    If Not ApplyReusableEventForTest(wb, "RECIPE-OPEN-SAVE", "RECIPE_SAVE", _
+            "RECIPE-OPEN", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If ApplyReusableEventForTest(wb, "RECIPE-OPEN-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-OPEN", "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(errorCode, "RECIPE_UNRESOLVED_REQUIREMENT", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestRecipeRelease_RejectsUnresolvedExternalRequirement = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRecipeRelease_RejectsIncompatibleConnection() As Long
+    TestRecipeRelease_RejectsIncompatibleConnection = _
+        RunInvalidRecipeConnectionTest("INCOMPATIBLE", 5, "LB", 5, "EA", _
+            5, "LB", 1, 2, "RECIPE_CONNECTION_INCOMPATIBLE")
+End Function
+
+Public Function TestRecipeRelease_RejectsOutputOverallocation() As Long
+    TestRecipeRelease_RejectsOutputOverallocation = _
+        RunInvalidRecipeConnectionTest("OVERALLOCATED", 5, "LB", 6, "LB", _
+            6, "LB", 1, 2, "RECIPE_OUTPUT_OVERALLOCATED")
+End Function
+
+Public Function TestRecipeRelease_RejectsContradictoryExecutionOrder() As Long
+    TestRecipeRelease_RejectsContradictoryExecutionOrder = _
+        RunInvalidRecipeConnectionTest("BAD-ORDER", 5, "LB", 5, "LB", _
+            5, "LB", 2, 1, "RECIPE_EXECUTION_ORDER")
+End Function
+
+Public Function TestProcessObsolete_RejectsReleasedRecipeDependency() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim sourceJson As String
+    Dim sinkJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    sourceJson = ReusableProcessPayloadForTest( _
+        "Source", "", "", 0, "", "OUT-A", "SKU-A", 5, "LB", False)
+    sinkJson = ReusableProcessPayloadForTest( _
+        "Sink", "REQ-B", "SKU-A", 5, "LB", "OUT-B", "SKU-B", 5, "LB", True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-DEP-A", _
+            "PROC-DEP-A", "1", sourceJson, errorCode) Then GoTo CleanExit
+    If Not SaveReleaseProcessForTest(wb, "PROC-DEP-B", _
+            "PROC-DEP-B", "1", sinkJson, errorCode) Then GoTo CleanExit
+    recipeJson = TwoNodeRecipePayloadForTest( _
+        "Dependency", "PROC-DEP-A", "PROC-DEP-B", 5, "LB", 1, 2)
+    If Not ApplyReusableEventForTest(wb, "RECIPE-DEP-SAVE", "RECIPE_SAVE", _
+            "RECIPE-DEP", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-DEP-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-DEP", "1", "", errorCode) Then GoTo CleanExit
+    If ApplyReusableEventForTest(wb, "PROC-DEP-A-OBSOLETE", "PROCESS_OBSOLETE", _
+            "PROC-DEP-A", "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(errorCode, "PROCESS_HAS_RELEASED_RECIPE_DEPENDENCY", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestProcessObsolete_RejectsReleasedRecipeDependency = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestRecipeLifecycle_ReleasesValidGraphAndThenObsoletes() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim sourceJson As String
+    Dim sinkJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    sourceJson = ReusableProcessPayloadForTest( _
+        "Source", "", "", 0, "", "OUT-A", "SKU-A", 5, "LB", False)
+    sinkJson = ReusableProcessPayloadForTest( _
+        "Sink", "REQ-B", "SKU-A", 5, "LB", "OUT-B", "SKU-B", 5, "LB", True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-VALID-A", _
+            "PROC-VALID-A", "1", sourceJson, errorCode) Then GoTo CleanExit
+    If Not SaveReleaseProcessForTest(wb, "PROC-VALID-B", _
+            "PROC-VALID-B", "1", sinkJson, errorCode) Then GoTo CleanExit
+    recipeJson = TwoNodeRecipePayloadForTest( _
+        "Valid Graph", "PROC-VALID-A", "PROC-VALID-B", 5, "LB", 1, 2)
+    If Not ApplyReusableEventForTest(wb, "RECIPE-VALID-SAVE", "RECIPE_SAVE", _
+            "RECIPE-VALID", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-VALID-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-VALID", "1", "", errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-VALID-OBSOLETE", "RECIPE_OBSOLETE", _
+            "RECIPE-VALID", "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(ReusableStatusForTest(wb, "tblRecipes", "RecipeId", _
+            "RecipeVersion", "RECIPE-VALID", "1"), "OBSOLETE", vbTextCompare) <> 0 Then GoTo CleanExit
+    TestRecipeLifecycle_ReleasesValidGraphAndThenObsoletes = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReusableProcessQueries_BridgeListsReleasedAndReturnsVersionReadOnly() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim payloadJson As String
+    Dim errorCode As String
+    Dim processes As Variant
+    Dim encodedVersion As Variant
+    Dim rowsBefore As Long
+    Dim macroHost As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    payloadJson = _
+        "[{""RecordType"":""PROCESS"",""ProcessName"":""Query Blend"",""Description"":""Reusable query fixture""}," & _
+        "{""RecordType"":""REQUIREMENT"",""RequirementId"":""REQ-RAW"",""RequirementName"":""Raw"",""Qty"":10,""UOM"":""LB""}," & _
+        "{""RecordType"":""ALTERNATIVE"",""RequirementId"":""REQ-RAW"",""ITEM_CODE"":""SKU-RAW-A""}," & _
+        "{""RecordType"":""OUTPUT"",""OutputId"":""OUT-MAIN"",""OutputName"":""Main"",""ITEM_CODE"":""SKU-MAIN"",""Qty"":8,""UOM"":""LB""}," & _
+        "{""RecordType"":""OUTPUT"",""OutputId"":""OUT-CO"",""OutputName"":""Co Product"",""ITEM_CODE"":""SKU-CO"",""Qty"":2,""UOM"":""LB""}," & _
+        "{""RecordType"":""INSTRUCTION"",""InstructionOrdinal"":1,""Instruction"":""Blend""}]"
+    If Not SaveReleaseProcessForTest(wb, "PROC-QUERY-V1", _
+            "PROC-QUERY", "1", payloadJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "PROC-QUERY-V2-SAVE", _
+            "PROCESS_SAVE", "PROC-QUERY", "2", payloadJson, errorCode) Then GoTo CleanExit
+
+    rowsBefore = CountReusableProductionRowsForTest(wb)
+    macroHost = "'" & Replace$(ThisWorkbook.Name, "'", "''") & "'!"
+    processes = Application.Run(macroHost & _
+        "modDesignsBridgeApi.ListProcessesBridgeResult", wb, "RELEASED")
+    encodedVersion = Application.Run(macroHost & _
+        "modDesignsBridgeApi.GetProcessVersionBridgeEncoded", "PROC-QUERY", "1", wb)
+
+    If Not IsUsableDesignsTestArray(processes) Then GoTo CleanExit
+    If UBound(processes, 1) <> 1 Then GoTo CleanExit
+    If CStr(processes(1, 1)) <> "PROC-QUERY" Then GoTo CleanExit
+    If CStr(processes(1, 2)) <> "1" Then GoTo CleanExit
+    If StrComp(CStr(processes(1, 5)), "RELEASED", vbTextCompare) <> 0 Then GoTo CleanExit
+    If VarType(encodedVersion) <> vbString Then GoTo CleanExit
+    If InStr(1, CStr(encodedVersion), """ProcessId"":""PROC-QUERY""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If InStr(1, CStr(encodedVersion), """RecordType"":""OUTPUT""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If InStr(1, CStr(encodedVersion), """OutputId"":""OUT-CO""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If CountReusableProductionRowsForTest(wb) <> rowsBefore Then GoTo CleanExit
+    TestReusableProcessQueries_BridgeListsReleasedAndReturnsVersionReadOnly = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReusableRecipeQueries_BridgeListsReleasedGraphAndValidatesReadOnly() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim sourceJson As String
+    Dim sinkJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+    Dim recipes As Variant
+    Dim encodedGraph As Variant
+    Dim encodedValidation As Variant
+    Dim rowsBefore As Long
+    Dim macroHost As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    sourceJson = ReusableProcessPayloadForTest( _
+        "Query Source", "", "", 0, "", "OUT-A", "SKU-A", 5, "LB", False)
+    sinkJson = ReusableProcessPayloadForTest( _
+        "Query Sink", "REQ-B", "SKU-A", 5, "LB", "OUT-B", "SKU-B", 5, "LB", True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-QUERY-A", _
+            "PROC-QUERY-A", "1", sourceJson, errorCode) Then GoTo CleanExit
+    If Not SaveReleaseProcessForTest(wb, "PROC-QUERY-B", _
+            "PROC-QUERY-B", "1", sinkJson, errorCode) Then GoTo CleanExit
+    recipeJson = TwoNodeRecipePayloadForTest( _
+        "Query Graph", "PROC-QUERY-A", "PROC-QUERY-B", 5, "LB", 1, 2)
+    If Not ApplyReusableEventForTest(wb, "RECIPE-QUERY-SAVE", "RECIPE_SAVE", _
+            "RECIPE-QUERY", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-QUERY-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-QUERY", "1", "", errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-QUERY-DRAFT", "RECIPE_SAVE", _
+            "RECIPE-QUERY", "2", recipeJson, errorCode) Then GoTo CleanExit
+
+    rowsBefore = CountReusableProductionRowsForTest(wb)
+    macroHost = "'" & Replace$(ThisWorkbook.Name, "'", "''") & "'!"
+    recipes = Application.Run(macroHost & _
+        "modDesignsBridgeApi.ListRecipesBridgeResult", wb, "RELEASED")
+    encodedGraph = Application.Run(macroHost & _
+        "modDesignsBridgeApi.GetRecipeGraphBridgeEncoded", "RECIPE-QUERY", "1", wb)
+    encodedValidation = Application.Run(macroHost & _
+        "modDesignsBridgeApi.ValidateReleasedRecipeBridgeEncoded", "RECIPE-QUERY", "1", wb)
+
+    If Not IsUsableDesignsTestArray(recipes) Then GoTo CleanExit
+    If UBound(recipes, 1) <> 1 Then GoTo CleanExit
+    If CStr(recipes(1, 1)) <> "RECIPE-QUERY" Then GoTo CleanExit
+    If CStr(recipes(1, 2)) <> "1" Then GoTo CleanExit
+    If StrComp(CStr(recipes(1, 5)), "RELEASED", vbTextCompare) <> 0 Then GoTo CleanExit
+    If VarType(encodedGraph) <> vbString Then GoTo CleanExit
+    If InStr(1, CStr(encodedGraph), """RecordType"":""PROCESS_NODE""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If InStr(1, CStr(encodedGraph), """RecordType"":""CONNECTION""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If VarType(encodedValidation) <> vbString Then GoTo CleanExit
+    If Left$(CStr(encodedValidation), 4) <> "1" & vbTab & "OK" Then GoTo CleanExit
+    If CountReusableProductionRowsForTest(wb) <> rowsBefore Then GoTo CleanExit
+    TestReusableRecipeQueries_BridgeListsReleasedGraphAndValidatesReadOnly = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestValidateReleasedRecipe_BridgeRejectsDraftWithoutMutation() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim processJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+    Dim encodedValidation As Variant
+    Dim rowsBefore As Long
+    Dim macroHost As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    processJson = ReusableProcessPayloadForTest( _
+        "Draft Validation", "", "", 0, "", "OUT-DRAFT", "SKU-DRAFT", 1, "EA", False)
+    If Not SaveReleaseProcessForTest(wb, "PROC-VALIDATE-DRAFT", _
+            "PROC-VALIDATE-DRAFT", "1", processJson, errorCode) Then GoTo CleanExit
+    recipeJson = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""Draft Validation""}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""PROC-VALIDATE-DRAFT"",""ProcessVersion"":""1"",""ExecutionOrdinal"":1}]"
+    If Not ApplyReusableEventForTest(wb, "RECIPE-VALIDATE-DRAFT-SAVE", _
+            "RECIPE_SAVE", "RECIPE-VALIDATE-DRAFT", "1", recipeJson, errorCode) Then GoTo CleanExit
+
+    rowsBefore = CountReusableProductionRowsForTest(wb)
+    macroHost = "'" & Replace$(ThisWorkbook.Name, "'", "''") & "'!"
+    encodedValidation = Application.Run(macroHost & _
+        "modDesignsBridgeApi.ValidateReleasedRecipeBridgeEncoded", _
+        "RECIPE-VALIDATE-DRAFT", "1", wb)
+    If VarType(encodedValidation) <> vbString Then GoTo CleanExit
+    If Left$(CStr(encodedValidation), Len("0" & vbTab & "RECIPE_NOT_RELEASED")) <> _
+            "0" & vbTab & "RECIPE_NOT_RELEASED" Then GoTo CleanExit
+    If CountReusableProductionRowsForTest(wb) <> rowsBefore Then GoTo CleanExit
+    TestValidateReleasedRecipe_BridgeRejectsDraftWithoutMutation = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReusableProductionQueries_CoreDomainBridgeRoundTripsPrimitiveResults() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim sourceJson As String
+    Dim sinkJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+    Dim processes As Variant
+    Dim recipes As Variant
+    Dim processVersion As Variant
+    Dim recipeGraph As Variant
+    Dim validationResult As Variant
+    Dim macroHost As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    sourceJson = ReusableProcessPayloadForTest( _
+        "Core Source", "", "", 0, "", "OUT-A", "SKU-A", 5, "LB", False)
+    sinkJson = ReusableProcessPayloadForTest( _
+        "Core Sink", "REQ-B", "SKU-A", 5, "LB", "OUT-B", "SKU-B", 5, "LB", True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-CORE-A", _
+            "PROC-CORE-A", "1", sourceJson, errorCode) Then GoTo CleanExit
+    If Not SaveReleaseProcessForTest(wb, "PROC-CORE-B", _
+            "PROC-CORE-B", "1", sinkJson, errorCode) Then GoTo CleanExit
+    recipeJson = TwoNodeRecipePayloadForTest( _
+        "Core Graph", "PROC-CORE-A", "PROC-CORE-B", 5, "LB", 1, 2)
+    If Not ApplyReusableEventForTest(wb, "RECIPE-CORE-SAVE", "RECIPE_SAVE", _
+            "RECIPE-CORE", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-CORE-RELEASE", "RECIPE_RELEASE", _
+            "RECIPE-CORE", "1", "", errorCode) Then GoTo CleanExit
+
+    macroHost = "'" & Replace$(ThisWorkbook.Name, "'", "''") & "'!"
+    processes = Application.Run(macroHost & _
+        "modDesignsDomainBridge.ListProcessesBridge", wb, "RELEASED")
+    processVersion = Application.Run(macroHost & _
+        "modDesignsDomainBridge.GetProcessVersionBridge", "PROC-CORE-A", "1", wb)
+    recipes = Application.Run(macroHost & _
+        "modDesignsDomainBridge.ListRecipesBridge", wb, "RELEASED")
+    recipeGraph = Application.Run(macroHost & _
+        "modDesignsDomainBridge.GetRecipeGraphBridge", "RECIPE-CORE", "1", wb)
+    validationResult = Application.Run(macroHost & _
+        "modDesignsDomainBridge.ValidateReleasedRecipeBridgeEncoded", _
+        "RECIPE-CORE", "1", wb)
+
+    If Not IsUsableDesignsTestArray(processes) Then GoTo CleanExit
+    If Not IsUsableDesignsTestArray(recipes) Then GoTo CleanExit
+    If InStr(1, CStr(processVersion), """ProcessId"":""PROC-CORE-A""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If InStr(1, CStr(recipeGraph), """RecipeId"":""RECIPE-CORE""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If Left$(CStr(validationResult), 4) <> "1" & vbTab & "OK" Then GoTo CleanExit
+    TestReusableProductionQueries_CoreDomainBridgeRoundTripsPrimitiveResults = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Public Function TestReusableProductionQueries_OperationsPrimitiveBridgeUsesCoreAuthority() As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim processJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+    Dim processes As Variant
+    Dim recipes As Variant
+    Dim processVersion As Variant
+    Dim recipeGraph As Variant
+    Dim validationResult As Variant
+    Dim macroHost As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    processJson = ReusableProcessPayloadForTest( _
+        "Operations Process", "", "", 0, "", "OUT-OPS", "SKU-OPS", 1, "EA", False)
+    If Not SaveReleaseProcessForTest(wb, "PROC-OPS-BRIDGE", _
+            "PROC-OPS-BRIDGE", "1", processJson, errorCode) Then GoTo CleanExit
+    recipeJson = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""Operations Recipe""}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""PROC-OPS-BRIDGE"",""ProcessVersion"":""1"",""ExecutionOrdinal"":1}]"
+    If Not ApplyReusableEventForTest(wb, "RECIPE-OPS-BRIDGE-SAVE", _
+            "RECIPE_SAVE", "RECIPE-OPS-BRIDGE", "1", recipeJson, errorCode) Then GoTo CleanExit
+    If Not ApplyReusableEventForTest(wb, "RECIPE-OPS-BRIDGE-RELEASE", _
+            "RECIPE_RELEASE", "RECIPE-OPS-BRIDGE", "1", "", errorCode) Then GoTo CleanExit
+
+    macroHost = "'" & Replace$(ThisWorkbook.Name, "'", "''") & "'!"
+    processes = Application.Run(macroHost & _
+        "modOperationsPrimitiveBridge.ListProcesses", "RELEASED", wb)
+    processVersion = Application.Run(macroHost & _
+        "modOperationsPrimitiveBridge.GetProcessVersion", "PROC-OPS-BRIDGE", "1", wb)
+    recipes = Application.Run(macroHost & _
+        "modOperationsPrimitiveBridge.ListRecipes", "RELEASED", wb)
+    recipeGraph = Application.Run(macroHost & _
+        "modOperationsPrimitiveBridge.GetRecipeGraph", "RECIPE-OPS-BRIDGE", "1", wb)
+    validationResult = Application.Run(macroHost & _
+        "modOperationsPrimitiveBridge.ValidateReleasedRecipe", _
+        "RECIPE-OPS-BRIDGE", "1", wb)
+
+    If Not IsUsableDesignsTestArray(processes) Then GoTo CleanExit
+    If Not IsUsableDesignsTestArray(recipes) Then GoTo CleanExit
+    If InStr(1, CStr(processVersion), """OutputId"":""OUT-OPS""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If InStr(1, CStr(recipeGraph), """ProcessId"":""PROC-OPS-BRIDGE""", vbBinaryCompare) = 0 Then GoTo CleanExit
+    If Left$(CStr(validationResult), 4) <> "1" & vbTab & "OK" Then GoTo CleanExit
+    TestReusableProductionQueries_OperationsPrimitiveBridgeUsesCoreAuthority = 1
 
 CleanExit:
     CloseDesignsTestWorkbook wb
@@ -695,6 +1277,179 @@ CleanExit:
     Exit Function
 CleanFail:
     Resume CleanExit
+End Function
+
+Private Function ReusableProcessPayloadForTest(ByVal processName As String, _
+                                               ByVal requirementId As String, _
+                                               ByVal acceptableItemCode As String, _
+                                               ByVal requirementQty As Double, _
+                                               ByVal requirementUom As String, _
+                                               ByVal outputId As String, _
+                                               ByVal outputItemCode As String, _
+                                               ByVal outputQty As Double, _
+                                               ByVal outputUom As String, _
+                                               ByVal includeAlternative As Boolean) As String
+    Dim payloadJson As String
+    payloadJson = "[{""RecordType"":""PROCESS"",""ProcessName"":""" & processName & """}"
+    If requirementId <> "" Then
+        payloadJson = payloadJson & _
+            ",{""RecordType"":""REQUIREMENT"",""RequirementId"":""" & _
+            requirementId & """,""RequirementName"":""Input"",""Qty"":" & _
+            Replace$(CStr(requirementQty), ",", ".") & ",""UOM"":""" & requirementUom & """}"
+        If includeAlternative Then
+            payloadJson = payloadJson & _
+                ",{""RecordType"":""ALTERNATIVE"",""RequirementId"":""" & _
+                requirementId & """,""ITEM_CODE"":""" & acceptableItemCode & """}"
+        End If
+    End If
+    payloadJson = payloadJson & _
+        ",{""RecordType"":""OUTPUT"",""OutputId"":""" & outputId & _
+        """,""OutputName"":""Output"",""ITEM_CODE"":""" & outputItemCode & _
+        """,""Qty"":" & Replace$(CStr(outputQty), ",", ".") & _
+        ",""UOM"":""" & outputUom & """}]"
+    ReusableProcessPayloadForTest = payloadJson
+End Function
+
+Private Function TwoNodeRecipePayloadForTest(ByVal recipeName As String, _
+                                             ByVal sourceProcessId As String, _
+                                             ByVal sinkProcessId As String, _
+                                             ByVal connectionQty As Double, _
+                                             ByVal connectionUom As String, _
+                                             ByVal sourceOrdinal As Long, _
+                                             ByVal sinkOrdinal As Long) As String
+    TwoNodeRecipePayloadForTest = _
+        "[{""RecordType"":""RECIPE"",""RecipeName"":""" & recipeName & """}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""A"",""ProcessId"":""" & sourceProcessId & _
+        """,""ProcessVersion"":""1"",""ExecutionOrdinal"":" & CStr(sourceOrdinal) & "}," & _
+        "{""RecordType"":""PROCESS_NODE"",""ProcessNodeId"":""B"",""ProcessId"":""" & sinkProcessId & _
+        """,""ProcessVersion"":""1"",""ExecutionOrdinal"":" & CStr(sinkOrdinal) & "}," & _
+        "{""RecordType"":""CONNECTION"",""FromProcessNodeId"":""A"",""FromOutputId"":""OUT-A"",""ToProcessNodeId"":""B"",""ToRequirementId"":""REQ-B"",""Qty"":" & _
+        Replace$(CStr(connectionQty), ",", ".") & ",""UOM"":""" & connectionUom & """}]"
+End Function
+
+Private Function RunInvalidRecipeConnectionTest(ByVal token As String, _
+                                                ByVal sourceQty As Double, _
+                                                ByVal sourceUom As String, _
+                                                ByVal sinkQty As Double, _
+                                                ByVal sinkUom As String, _
+                                                ByVal connectionQty As Double, _
+                                                ByVal connectionUom As String, _
+                                                ByVal sourceOrdinal As Long, _
+                                                ByVal sinkOrdinal As Long, _
+                                                ByVal expectedErrorCode As String) As Long
+    Dim wb As Workbook
+    Dim report As String
+    Dim sourceJson As String
+    Dim sinkJson As String
+    Dim recipeJson As String
+    Dim errorCode As String
+
+    Set wb = Application.Workbooks.Add(xlWBATWorksheet)
+    On Error GoTo CleanFail
+    If Not modDesignsSchema.EnsureDesignsSchema(wb, report) Then GoTo CleanExit
+    sourceJson = ReusableProcessPayloadForTest( _
+        "Source", "", "", 0, "", "OUT-A", "SKU-A", sourceQty, sourceUom, False)
+    sinkJson = ReusableProcessPayloadForTest( _
+        "Sink", "REQ-B", "SKU-A", sinkQty, sinkUom, "OUT-B", "SKU-B", sinkQty, sinkUom, True)
+    If Not SaveReleaseProcessForTest(wb, "PROC-" & token & "-A", _
+            "PROC-" & token & "-A", "1", sourceJson, errorCode) Then GoTo CleanExit
+    If Not SaveReleaseProcessForTest(wb, "PROC-" & token & "-B", _
+            "PROC-" & token & "-B", "1", sinkJson, errorCode) Then GoTo CleanExit
+    recipeJson = TwoNodeRecipePayloadForTest( _
+        token, "PROC-" & token & "-A", "PROC-" & token & "-B", _
+        connectionQty, connectionUom, sourceOrdinal, sinkOrdinal)
+    If Not ApplyReusableEventForTest(wb, "RECIPE-" & token & "-SAVE", _
+            "RECIPE_SAVE", "RECIPE-" & token, "1", recipeJson, errorCode) Then GoTo CleanExit
+    If ApplyReusableEventForTest(wb, "RECIPE-" & token & "-RELEASE", _
+            "RECIPE_RELEASE", "RECIPE-" & token, "1", "", errorCode) Then GoTo CleanExit
+    If StrComp(errorCode, expectedErrorCode, vbTextCompare) <> 0 Then GoTo CleanExit
+    RunInvalidRecipeConnectionTest = 1
+
+CleanExit:
+    CloseDesignsTestWorkbook wb
+    Exit Function
+CleanFail:
+    Resume CleanExit
+End Function
+
+Private Function SaveReleaseProcessForTest(ByVal wb As Workbook, ByVal token As String, _
+                                           ByVal processId As String, _
+                                           ByVal processVersion As String, _
+                                           ByVal payloadJson As String, _
+                                           ByRef errorCode As String) As Boolean
+    If Not ApplyReusableEventForTest(wb, token & "-SAVE", "PROCESS_SAVE", _
+            processId, processVersion, payloadJson, errorCode) Then Exit Function
+    If Not ApplyReusableEventForTest(wb, token & "-RELEASE", "PROCESS_RELEASE", _
+            processId, processVersion, "", errorCode) Then Exit Function
+    SaveReleaseProcessForTest = True
+End Function
+
+Private Function ApplyReusableEventForTest(ByVal wb As Workbook, ByVal eventId As String, _
+                                           ByVal eventType As String, ByVal definitionId As String, _
+                                           ByVal definitionVersion As String, ByVal payloadJson As String, _
+                                           ByRef errorCode As String) As Boolean
+    Dim evt As Object
+    Dim statusOut As String
+    Dim errorMessage As String
+
+    errorCode = ""
+    Set evt = BuildDesignsTestEvent(eventId, eventType, definitionId, definitionVersion, payloadJson)
+    ApplyReusableEventForTest = modDesignsApply.ApplyDesignEvent( _
+        evt, wb, "RUN-" & eventId, statusOut, errorCode, errorMessage)
+End Function
+
+Private Function ReusableStatusForTest(ByVal wb As Workbook, ByVal tableName As String, _
+                                       ByVal idColumn As String, ByVal versionColumn As String, _
+                                       ByVal definitionId As String, _
+                                       ByVal definitionVersion As String) As String
+    Dim lo As ListObject
+    Dim r As Long
+    Set lo = FindDesignsTestTable(wb, tableName)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    For r = 1 To lo.ListRows.Count
+        If StrComp(CStr(lo.DataBodyRange.Cells(r, lo.ListColumns(idColumn).Index).Value2), _
+                   definitionId, vbTextCompare) = 0 _
+           And StrComp(CStr(lo.DataBodyRange.Cells(r, lo.ListColumns(versionColumn).Index).Value2), _
+                       definitionVersion, vbTextCompare) = 0 Then
+            ReusableStatusForTest = CStr( _
+                lo.DataBodyRange.Cells(r, lo.ListColumns("Status").Index).Value2)
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function CountReusableRowsForTest(ByVal wb As Workbook, ByVal tableName As String, _
+                                          ByVal idColumn As String, ByVal versionColumn As String, _
+                                          ByVal definitionId As String, _
+                                          ByVal definitionVersion As String) As Long
+    Dim lo As ListObject
+    Dim r As Long
+    Set lo = FindDesignsTestTable(wb, tableName)
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    For r = 1 To lo.ListRows.Count
+        If StrComp(CStr(lo.DataBodyRange.Cells(r, lo.ListColumns(idColumn).Index).Value2), _
+                   definitionId, vbTextCompare) = 0 _
+           And StrComp(CStr(lo.DataBodyRange.Cells(r, lo.ListColumns(versionColumn).Index).Value2), _
+                       definitionVersion, vbTextCompare) = 0 Then
+            CountReusableRowsForTest = CountReusableRowsForTest + 1
+        End If
+    Next r
+End Function
+
+Private Function CountReusableProductionRowsForTest(ByVal wb As Workbook) As Long
+    Dim tableNames As Variant
+    Dim tableName As Variant
+    Dim lo As ListObject
+
+    tableNames = Array("tblProcesses", "tblProcessRequirements", _
+        "tblProcessIngredientAlternatives", "tblProcessOutputs", _
+        "tblProcessInstructions", "tblRecipes", "tblRecipeProcesses", _
+        "tblRecipeConnections")
+    For Each tableName In tableNames
+        Set lo = FindDesignsTestTable(wb, CStr(tableName))
+        If Not lo Is Nothing Then CountReusableProductionRowsForTest = _
+            CountReusableProductionRowsForTest + lo.ListRows.Count
+    Next tableName
 End Function
 
 Private Function FindDesignsTestTable(ByVal wb As Workbook, ByVal tableName As String) As ListObject

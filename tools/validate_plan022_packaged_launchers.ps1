@@ -5,8 +5,10 @@ param(
     [string]$OutputDirectory = "reports/runtime/plan022-slice0",
     [ValidateSet("", "Receiving", "Production", "Shipping")]
     [string]$CallbackFilter = "",
-    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed")]
-    [string]$WorkbookState = "NoEligible"
+    [ValidateSet("NoEligible", "ConfigActive", "SavedEligible", "UnrelatedActive", "CapturedClosed", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")]
+    [string]$WorkbookState = "NoEligible",
+    [switch]$ProductionRunOnly,
+    [switch]$ProductionEditExportOnly
 )
 
 Set-StrictMode -Version Latest
@@ -505,6 +507,139 @@ if ($WorkbookState -eq "ReceivingFormClosed") {
         throw "ReceivingFormClosed supports only -CallbackFilter Receiving."
     }
 }
+
+function Add-ProductionPickerProjectionFixture {
+    param([object]$InventoryWorkbook)
+
+    $wsSku = Get-WorksheetSafe -Workbook $InventoryWorkbook -WorksheetName "SkuCatalog"
+    $loSku = Get-ListObjectSafe -Worksheet $wsSku -TableName "tblSkuCatalog"
+    $wsLog = Get-WorksheetSafe -Workbook $InventoryWorkbook -WorksheetName "InventoryLog"
+    $loLog = Get-ListObjectSafe -Worksheet $wsLog -TableName "tblInventoryLog"
+    if ($null -eq $loSku) { throw "Production picker fixture requires tblSkuCatalog." }
+    if ($null -eq $loLog) { throw "Production picker fixture requires tblInventoryLog." }
+    foreach ($header in @("ITEM_CODE", "ITEM", "UOM", "LOCATION", "DESCRIPTION", "CATEGORY")) {
+        if ((Get-ColumnIndexSafe -ListObject $loSku -ColumnName $header) -eq 0) {
+            $newColumn = $loSku.ListColumns.Add()
+            $newColumn.Name = $header
+        }
+    }
+
+    $fixture = @{
+        "SKU-RUN-RAW" = @("SYS-LIVE-PRODUCTION-RUN-RAW-A", "Production Raw Material", 3.0)
+        "SKU-RUN-STALE" = @("SYS-LIVE-PRODUCTION-RUN-STALE", "Production Stale Material", 6.0)
+    }
+    $entityRows = @()
+    foreach ($sku in @("SKU-RUN-RAW", "SKU-RUN-STALE")) {
+        $rowIndex = 0
+        if ($null -ne $loSku.DataBodyRange) {
+            for ($candidateRow = 1; $candidateRow -le [int]$loSku.ListRows.Count; $candidateRow++) {
+                $candidateSku = [string]$loSku.DataBodyRange.Cells($candidateRow, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "SKU")).Value2
+                if ($candidateSku -eq $sku) { $rowIndex = $candidateRow; break }
+            }
+        }
+        if ($rowIndex -eq 0) {
+            [void]$loSku.ListRows.Add()
+            $rowIndex = [int]$loSku.ListRows.Count
+            $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "SKU")).Value2 = $sku
+        }
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "ITEM_CODE")).Value2 = $sku
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "ITEM")).Value2 = [string]$fixture[$sku][1]
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "UOM")).Value2 = "LB"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "LOCATION")).Value2 = "LINE"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "DESCRIPTION")).Value2 = "isolated packaged picker fixture"
+        $loSku.DataBodyRange.Cells($rowIndex, (Get-ColumnIndexSafe -ListObject $loSku -ColumnName "CATEGORY")).Value2 = "INGREDIENT"
+        $entityRows += ,@([string]$fixture[$sku][0], $sku, [double]$fixture[$sku][2], "LINE", "GOOD", "ACTIVE", "{}", [datetime]::UtcNow)
+    }
+    foreach ($rawPart in @(
+        @("B", 3.0), @("C", 3.0), @("D", 3.0), @("E", 3.0),
+        @("F", 3.0), @("G", 2.0)
+    )) {
+        $entityRows += ,@(
+            "SYS-LIVE-PRODUCTION-RUN-RAW-$($rawPart[0])", "SKU-RUN-RAW",
+            [double]$rawPart[1], "LINE", "GOOD", "ACTIVE", "{}", [datetime]::UtcNow
+        )
+    }
+
+    $rawSeedRow = 0
+    for ($candidateRow = 1; $candidateRow -le [int]$loLog.ListRows.Count; $candidateRow++) {
+        $candidateSku = [string]$loLog.DataBodyRange.Cells(
+            $candidateRow,
+            (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "SKU")
+        ).Value2
+        if ($candidateSku -eq "SKU-RUN-RAW") { $rawSeedRow = $candidateRow; break }
+    }
+    if ($rawSeedRow -eq 0) { throw "Production picker fixture requires the raw seed event." }
+    $fixtureWarehouseId = [string]$loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "WarehouseId")
+    ).Value2
+    $loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "System_Key")
+    ).Value2 = "SYS-LIVE-PRODUCTION-RUN-RAW-A"
+    $loLog.DataBodyRange.Cells(
+        $rawSeedRow,
+        (Get-ColumnIndexSafe -ListObject $loLog -ColumnName "QtyDelta")
+    ).Value2 = 3.0
+    foreach ($rawPart in @(
+        @("B", 3.0), @("C", 3.0), @("D", 3.0), @("E", 3.0),
+        @("F", 3.0), @("G", 2.0)
+    )) {
+        Add-ListObjectRow -ListObject $loLog -Values @{
+            "EventID" = "EVT-LIVE-SEED-SKU-RUN-RAW"
+            "UndoOfEventId" = ""
+            "AppliedSeq" = 1
+            "EventType" = "INVENTORY_CREATE"
+            "OccurredAtUTC" = [datetime]::UtcNow
+            "AppliedAtUTC" = [datetime]::UtcNow
+            "WarehouseId" = $fixtureWarehouseId
+            "StationId" = "S1"
+            "UserId" = "svc_processor"
+            "System_Key" = "SYS-LIVE-PRODUCTION-RUN-RAW-$($rawPart[0])"
+            "SKU" = "SKU-RUN-RAW"
+            "QtyDelta" = [double]$rawPart[1]
+            "Location" = "LINE"
+            "Condition" = "GOOD"
+            "AttributesJson" = "{}"
+            "Note" = "isolated packaged split stock fixture"
+        }
+    }
+
+    $wsEntities = $InventoryWorkbook.Worksheets.Add()
+    $wsEntities.Name = "InventoryEntities"
+    Add-Table -Worksheet $wsEntities -TableName "tblInventoryEntities" -Headers @(
+        "System_Key", "SKU", "QtyOnHand", "Location", "Condition", "InventoryState",
+        "AttributesJson", "LastAppliedUTC"
+    ) -Rows $entityRows | Out-Null
+    $InventoryWorkbook.Save()
+}
+if ($WorkbookState -eq "ShippingLayout") {
+    if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
+        $callbacks = @($callbacks | Where-Object { $_.Name -eq "Shipping" })
+    }
+    elseif ($CallbackFilter -ne "Shipping") {
+        throw "ShippingLayout supports only -CallbackFilter Shipping."
+    }
+}
+if ($WorkbookState -eq "ProductionReusable") {
+    if ([string]::IsNullOrWhiteSpace($CallbackFilter)) {
+        $callbacks = @($callbacks | Where-Object { $_.Name -eq "Production" })
+    }
+    elseif ($CallbackFilter -ne "Production") {
+        throw "ProductionReusable supports only -CallbackFilter Production."
+    }
+}
+if ($ProductionRunOnly -and
+    ($WorkbookState -ne "ProductionReusable" -or $CallbackFilter -ne "Production")) {
+    throw "ProductionRunOnly requires -WorkbookState ProductionReusable -CallbackFilter Production."
+}
+if ($ProductionEditExportOnly -and
+    ($WorkbookState -ne "ProductionReusable" -or $CallbackFilter -ne "Production")) {
+    throw "ProductionEditExportOnly requires -WorkbookState ProductionReusable -CallbackFilter Production."
+}
+if ($ProductionRunOnly -and $ProductionEditExportOnly) {
+    throw "ProductionRunOnly and ProductionEditExportOnly are mutually exclusive."
+}
 $packageNames = @(
     "invSys.Core.xlam",
     "invSys.Inventory.Domain.xlam",
@@ -523,6 +658,9 @@ $stateWb = $null
 $inventoryWb = $null
 $canonicalPaths = @()
 $canonicalHashesBefore = @{}
+$reusableRecipeId = ""
+$reusableRecipeVersion = "2"
+$productionOperatorPath = ""
 
 try {
     [IO.File]::WriteAllText($progressPath, "create runtime root")
@@ -547,6 +685,12 @@ try {
     if ($WorkbookState -eq "ReceivingDurability") {
         $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
             -WarehouseId $warehouseId -SkuRows @("SKU-R1-DURABILITY")
+        $opened.Add($inventoryWb) | Out-Null
+    }
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        $inventoryWb = New-InventoryWorkbook -Excel $excel -Path $inventoryPath `
+            -WarehouseId $warehouseId -SkuRows @("SKU-RUN-RAW", "SKU-RUN-STALE")
+        Add-ProductionPickerProjectionFixture -InventoryWorkbook $inventoryWb
         $opened.Add($inventoryWb) | Out-Null
     }
 
@@ -611,7 +755,7 @@ try {
 
     $currentStep = "prepare workbook state"
     [IO.File]::WriteAllText($progressPath, $currentStep)
-    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed")) {
+    if ($WorkbookState -in @("NoEligible", "ReceivingDurability", "ReceivingFormClosed", "ShippingLayout", "ProductionReusable")) {
         if ($null -ne $inventoryWb) {
             $inventoryWb.Close($true)
         }
@@ -699,7 +843,37 @@ try {
         }
 
         $passed = $false
-        if ($WorkbookState -eq "ReceivingDurability" -and $callback.Name -eq "Receiving") {
+        if ($WorkbookState -eq "ShippingLayout" -and $callback.Name -eq "Shipping") {
+            $statusLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingStatusAnchorTest")
+            $boxingLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingBoxingLayoutTest")
+            $shippingIdentityReport = [string](Run-WorkbookMacro -Excel $excel `
+                -WorkbookName $operationsName `
+                -MacroName "modTS_Shipments.RunShippingSystemKeyIdentityTest")
+            $observedText += " || STATUS_LAYOUT=" + $statusLayoutReport
+            $observedText += " || BOXING_LAYOUT=" + $boxingLayoutReport
+            $observedText += " || SHIPPING_IDENTITY=" + $shippingIdentityReport
+            $passed = [string]::IsNullOrWhiteSpace($capture.Error) -and
+                $statusLayoutReport -match '^OK\|' -and
+                $statusLayoutReport -match '(?:^|\|)TopStable=True(?:\||$)' -and
+                $statusLayoutReport -match '(?:^|\|)HeightStable=True(?:\||$)' -and
+                $statusLayoutReport -match '(?:^|\|)AboveSearch=True(?:\||$)' -and
+                $boxingLayoutReport -match '^OK\|' -and
+                $boxingLayoutReport -match '(?:^|\|)BuilderInventoryGrew=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)MakerDesignsGrew=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)BoxingHeaderWidthsMatchLists=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)HeadersMatch=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)SearchFiltered=True(?:\||$)' -and
+                $boxingLayoutReport -match '(?:^|\|)NonVersionIsNA=True(?:\||$)' -and
+                $shippingIdentityReport -match '^OK\|' -and
+                $shippingIdentityReport -match '(?:^|\|)ControlReady=True(?:\||$)' -and
+                $shippingIdentityReport -match '(?:^|\|)ValuePreserved=True(?:\||$)' -and
+                $shippingIdentityReport -match '(?:^|\|)ReservationUsesKey=True(?:\||$)'
+        }
+        elseif ($WorkbookState -eq "ReceivingDurability" -and $callback.Name -eq "Receiving") {
             $operatorPath = @($newWorkbookPaths | Where-Object {
                 [IO.Path]::GetFullPath($_).StartsWith(
                     [IO.Path]::GetFullPath($operatorRoot),
@@ -715,6 +889,9 @@ try {
             $customHeader = "Custom_R1_Launcher_Persistence"
             $customValue = "PRESERVE"
             $customAdded = $false
+            $historyRowsAdded = 0
+            $receivingHistoryReport = ""
+            $receivingControlReport = ""
             if ($null -ne $operatorWb) {
                 $inventorySheet = Get-WorksheetSafe -Workbook $operatorWb `
                     -WorksheetName "InventoryManagement"
@@ -729,6 +906,45 @@ try {
                     $operatorWb.Save()
                     $customAdded = (Get-ColumnIndexSafe -ListObject $inventoryTable -ColumnName $customHeader) -gt 0
                 }
+                $historySheet = Get-WorksheetSafe -Workbook $operatorWb `
+                    -WorksheetName "ReceivedLog"
+                $historyTable = Get-ListObjectSafe -Worksheet $historySheet `
+                    -TableName "ReceivedLog"
+                if ($null -ne $historyTable) {
+                    foreach ($historyOrdinal in 1..2) {
+                        $historyRow = $historyTable.ListRows.Add()
+                        $historyValues = @{
+                            "ENTRY_DATE" = [DateTime]::UtcNow.AddMinutes(-$historyOrdinal).ToOADate()
+                            "USER" = $testUser
+                            "REF_NUMBER" = "R1-HISTORY-$historyOrdinal"
+                            "ITEMS" = "R1 durability item"
+                            "QUANTITY" = $historyOrdinal
+                            "UOM" = "EA"
+                            "VENDOR" = "R1 test vendor"
+                            "LOCATION" = "TEST"
+                            "ITEM_CODE" = "SKU-R1-DURABILITY"
+                            "System_Key" = "SYS-R1-HISTORY-$historyOrdinal"
+                            "EventId" = "EVT-R1-HISTORY-$historyOrdinal"
+                        }
+                        foreach ($historyColumn in $historyValues.Keys) {
+                            $historyColumnIndex = Get-ColumnIndexSafe `
+                                -ListObject $historyTable -ColumnName $historyColumn
+                            if ($historyColumnIndex -gt 0) {
+                                $historyRow.Range.Cells.Item(1, $historyColumnIndex).Value2 = `
+                                    $historyValues[$historyColumn]
+                            }
+                        }
+                        $historyRowsAdded++
+                    }
+                    $operatorWb.Save()
+                }
+                $receivingHistoryReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "modTS_Received.RunReceivingRefreshFormActionForTest" `
+                    -Arguments @([string]$operatorWb.Name, ""))
+                $receivingControlReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "modTS_Received.RunReceivingSearchAndHeaderContractTest")
             }
             $formsBeforeClose = Get-RoleFormWindowCount -ExcelProcessId $excelProcessId
             if ($null -ne $operatorWb) {
@@ -794,6 +1010,9 @@ try {
             ).Count
             $reopenText = @($reopenCapture.WindowText) -join " // "
             $observedText += " || CUSTOM_ADDED=$customAdded"
+            $observedText += " || RECEIVING_HISTORY_ROWS_ADDED=$historyRowsAdded"
+            $observedText += " || RECEIVING_HISTORY=" + $receivingHistoryReport
+            $observedText += " || RECEIVING_CONTROLS=" + $receivingControlReport
             $observedText += " || REFRESH_OK=$refreshOk"
             $observedText += " || CUSTOM_PRESERVED=$customPreserved"
             $observedText += " || CANONICAL_HASHES_UNCHANGED=$canonicalHashesUnchanged"
@@ -813,6 +1032,22 @@ try {
             $passed = $operatorRootOverrideSet -and
                 $newWorkbooks.Count -eq 1 -and
                 $customAdded -and
+                $historyRowsAdded -eq 2 -and
+                $receivingHistoryReport -match '^OK\|' -and
+                $receivingHistoryReport -match '(?:^|\|)HistoryRows=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsBefore=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)LoaderHistoryRowsAfter=2(?:\||$)' -and
+                $receivingHistoryReport -match '(?:^|\|)DirectHistoryRows=2(?:\||$)' -and
+                $receivingControlReport -match '^OK\|' -and
+                $receivingControlReport -match '(?:^|\|)DedicatedItemResults=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)Location=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)OptionalLot=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)ReceivingHeaderColumnsAligned=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)CapacityStub=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)SearchRowsLoaded=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)HiddenSystemKeyMap=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)TenColumnItemResults=True(?:\||$)' -and
+                $receivingControlReport -match '(?:^|\|)HeadersSingleLine=True(?:\||$)' -and
                 $refreshOk -and
                 $customPreserved -and
                 $canonicalHashesUnchanged -and
@@ -884,13 +1119,299 @@ try {
                 [string]::IsNullOrWhiteSpace($secondCapture.Error) -and
                 $secondText -notmatch "(?i)(failed|automation error)"
         }
-        elseif ($WorkbookState -eq "NoEligible") {
+        elseif ($WorkbookState -in @("NoEligible", "ProductionReusable")) {
+            $workflowControlReport = ""
+            $workflowControlPassed = $true
             $secondBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
             $secondCapture = Invoke-PackagedCallback -Excel $excel `
                 -WorkbookName $operationsName -MacroName $callback.Macro
             $secondAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
             $secondNewWorkbooks = @($secondAfterNames | Where-Object { $_ -notin $secondBeforeNames })
             $observedText += " || SECOND_LAUNCH_NEW_WORKBOOKS=" + $secondNewWorkbooks.Count
+            if ($callback.Name -eq "Production") {
+                [IO.File]::WriteAllText($progressPath, "invoke Production batch-scale contract")
+                $workflowControlReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "mProduction.RunProductionBatchScaleContractTest")
+                $workflowControlPassed = $workflowControlReport -match '^OK\|' -and
+                    $workflowControlReport -match '(?:^|\|)Min=\.001%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)Default=100%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)Max=1000%(?:\||$)' -and
+                    $workflowControlReport -match '(?:^|\|)BoundsRejected=True(?:\||$)'
+                $observedText += " || PRODUCTION_BATCH_SCALE=" + $workflowControlReport
+                [IO.File]::WriteAllText($progressPath, "invoke Production Run List responsive-layout handler")
+                $productionRunListLayoutReport = [string](Run-WorkbookMacro -Excel $excel `
+                    -WorkbookName $operationsName `
+                    -MacroName "mProduction.RunProductionRunListResponsiveLayoutTest")
+                $productionRunListLayoutPassed = $productionRunListLayoutReport -match '^OK\|' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)CheckEightRows=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)InstructionsFourRows=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)AllListsGrew=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)InstructionLeftStable=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)HeadersAligned=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)RunListVerticalScrollbar=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)RunPlanQtyHeaderAligned=True(?:\||$)' -and
+                    $productionRunListLayoutReport -match '(?:^|\|)GeometryHealthy=True(?:\||$)'
+                $workflowControlPassed = $workflowControlPassed -and $productionRunListLayoutPassed
+                $observedText += " || PRODUCTION_RUN_LIST_LAYOUT=" + $productionRunListLayoutReport
+                if ($WorkbookState -eq "ProductionReusable") {
+                    [IO.File]::WriteAllText($progressPath, "invoke Production EA whole-unit handler")
+                    $productionEaWholeUnitReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunEaWholeUnitActionContractTest")
+                    $productionEaWholeUnitPassed = $productionEaWholeUnitReport -match '^OK\|' -and
+                        $productionEaWholeUnitReport -match '(?:^|\|)RequirementHandlerRejected=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEaWholeUnitPassed
+                    $observedText += " || PRODUCTION_EA_WHOLE_UNIT=" + $productionEaWholeUnitReport
+                    [IO.File]::WriteAllText($progressPath, "invoke Production output regulation settings handler")
+                    $productionOutputRegulationReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProductionOutputRegulationActionContractTest")
+                    $productionOutputRegulationPassed = $productionOutputRegulationReport -match '^OK\|' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)SettingsPage=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)VersionedDefault=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)FractionalEaRejected=True(?:\||$)' -and
+                        $productionOutputRegulationReport -match '(?:^|\|)CompletionHandler=ValidateReusableActualOutput(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionOutputRegulationPassed
+                    $observedText += " || PRODUCTION_OUTPUT_REGULATION=" + $productionOutputRegulationReport
+                    [IO.File]::WriteAllText($progressPath, "invoke Production variable quantity mode handler")
+                    $productionVariableQuantityReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProductionVariableQuantityModeActionContractTest")
+                    $productionVariableQuantityPassed = $productionVariableQuantityReport -match '^OK\|' -and
+                        $productionVariableQuantityReport -match '(?:^|\|)RequirementActual=True(?:\||$)' -and
+                        $productionVariableQuantityReport -match '(?:^|\|)OutputActual=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionVariableQuantityPassed
+                    $observedText += " || PRODUCTION_VARIABLE_QUANTITY=" + $productionVariableQuantityReport
+                    if ($ProductionEditExportOnly) {
+                    [IO.File]::WriteAllText($progressPath, "invoke focused Production released Process edit and export")
+                    $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessEditExportContractTest")
+                    $productionEditExportPassed = $productionEditExportReport -match '^OK\|' -and
+                        $productionEditExportReport -match '(?:^|\|)ReleasedProcessEditable=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExistingProcessExported=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExportRoundTrip=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputDesignVersionRebased=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputYieldRebased=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEditExportPassed
+                    $observedText += " || PRODUCTION_PROCESS_EDIT_EXPORT=" + $productionEditExportReport
+                    }
+                    else {
+                    if (-not $ProductionRunOnly) {
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable-surface contract")
+                    $productionDesignReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionSurfaceContractTest")
+                    $productionDesignPassed = $productionDesignReport -match '^OK\|' -and
+                        $productionDesignReport -match '(?:^|\|)Pages=6(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)ProcessDesigner=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)RecipeDesigner=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)ProductionSettings=True(?:\||$)' -and
+                        $productionDesignReport -match '(?:^|\|)LegacyRecipeBuilder=False(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionDesignPassed
+                    $observedText += " || PRODUCTION_REUSABLE_DESIGN=" + $productionDesignReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet workbench")
+                    $productionWorkbenchReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetWorkbenchContractTest")
+                    $productionWorkbenchPassed = $productionWorkbenchReport -match '^OK\|' -and
+                        $productionWorkbenchReport -match '(?:^|\|)SeparateActions=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)MultipleTables=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)SelectedOnly=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)RecordTypeDropdown=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)CalculatedPercent=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)GeneratedDesign=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)ItemCodeRemoved=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)Assignments=True(?:\||$)' -and
+                        $productionWorkbenchReport -match '(?:^|\|)ItemSearch=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionWorkbenchPassed
+                    $observedText += " || PRODUCTION_PROCESS_WORKBENCH=" + $productionWorkbenchReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production released Process edit and export")
+                    $productionEditExportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessEditExportContractTest")
+                    $productionEditExportPassed = $productionEditExportReport -match '^OK\|' -and
+                        $productionEditExportReport -match '(?:^|\|)ReleasedProcessEditable=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExistingProcessExported=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)ExportRoundTrip=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputDesignVersionRebased=True(?:\||$)' -and
+                        $productionEditExportReport -match '(?:^|\|)OutputYieldRebased=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionEditExportPassed
+                    $observedText += " || PRODUCTION_PROCESS_EDIT_EXPORT=" + $productionEditExportReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet bulk import")
+                    $productionBulkImportReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetBulkImportContractTest")
+                    $productionBulkImportPassed = $productionBulkImportReport -match '^OK\|' -and
+                        $productionBulkImportReport -match '(?:^|\|)TextSafeIds=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)RequirementIds=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)UomCatalog=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)NumberedAlternatives=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)AddedAlternative=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)PickerOpened=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)PickerInventoryRows=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)MultiAreaSelection=True(?:\||$)' -and
+                        $productionBulkImportReport -match '(?:^|\|)MultiTableDrafts=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionBulkImportPassed
+                    $observedText += " || PRODUCTION_PROCESS_BULK_IMPORT=" + $productionBulkImportReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet output picker")
+                    $productionOutputPickerReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetOutputPickerContractTest")
+                    $productionOutputPickerPassed = $productionOutputPickerReport -match '^OK\|' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputPickerOpened=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputPickerCommitted=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputSkuHidden=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputSkuRoundTrip=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputNameRetained=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)OutputNamePickerSuppressed=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)UniqueRowIds=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)FirstAssignedIdRetained=True(?:\||$)' -and
+                        $productionOutputPickerReport -match '(?:^|\|)NoPhysicalKey=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionOutputPickerPassed
+                    $observedText += " || PRODUCTION_PROCESS_OUTPUT_PICKER=" + $productionOutputPickerReport
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable lifecycle actions")
+                    $productionActionReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionFormActionContractTest")
+                    $productionActionPassed = $productionActionReport -match '^OK\|' -and
+                        $productionActionReport -match '(?:^|\|)ProcessSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessReleased=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessObsoleted=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessReused=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOrdered=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeReleased=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeObsoleted=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)EditedRecipeVersionRetained=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputNameVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputIdPreserved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeUomCatalog=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionUpdated=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeNodeNamesVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeRequirementNameVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionNamesVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionHeaders=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionsFullWidth=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeFinishedOutputGuidance=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeConnectionSelected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeDisconnected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeSelfReferenceRejected=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeOutputFirstRouting=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeCompatibleTargetsOnly=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeRequirementInternallyBound=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeNoIngredientDropdown=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeForkConvergenceVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeTerminalOutputVisible=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)RecipeStagesDerived=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AlternativesSaved=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)OutputYieldDefaults=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)OutputFlowUsesProcessYield=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessAssignmentHeaders=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AssignmentSystemKeyReadable=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)AcceptableItemsNamed=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessOutputEditorCompact=True(?:\||$)' -and
+                        $productionActionReport -match '(?:^|\|)ProcessOutputUomCatalog=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionActionPassed
+                    $observedText += " || PRODUCTION_REUSABLE_ACTIONS=" + $productionActionReport
+                    }
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production reusable run actions")
+                    $productionRunReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunReusableProductionRunActionContractTest")
+                    $productionRunPassed = $productionRunReport -match '^OK\|' -and
+                        $productionRunReport -match '(?:^|\|)Batches=2(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleMin=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleDefault=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ScaleMax=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ExactInputKeys=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)InsufficiencyRejected=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)StaleRejected=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)DistinctOutputKeys=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)IntermediateConsumed=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)CoProductRemaining=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)PercentageYieldBasis=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ActualOutputAccepted=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LastActualDisplayed=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ActualInventoryQty=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)SystemKeyHeadersReadable=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)BatchHistoryRows=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)ProcessTotal=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)UtilityDisplay=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)MultiProcessRunPlan=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)TargetOutputScaleStub=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LocationStockBuckets=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)LocationStockExactExpansion=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)SelectedProcessOnly=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RunInstructionsVisible=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)WholeRecipeStatus=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)EightPaletteRows=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)UpstreamWaitThenReady=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RoutedInputVisible=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)RoutedInputDetails=True(?:\||$)' -and
+                        $productionRunReport -match '(?:^|\|)GroupedUsedGoods=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $productionRunPassed
+                    $observedText += " || PRODUCTION_REUSABLE_RUN=" + $productionRunReport
+                    if ($productionRunReport -match '(?:^|\|)ReusableRecipe=([^|]+)') {
+                        $reusableRecipeId = [string]$Matches[1]
+                    }
+
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Chai fork/convergence actions")
+                    $chaiRunReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunChaiForkConvergenceRunActionContractTest")
+                    $chaiRunPassed = $chaiRunReport -match '^OK\|' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiInitialWaitingUpstream=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiBatchNoteFrozen=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiBatchNoteRetained=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiRoutedConvergenceInputs=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiUpstreamExactKeysConsumed=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalBottlingRoutedInput=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalOutputNewKey=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFourProcessesCompleted=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiFinalBottlingCompleted=True(?:\||$)' -and
+                        $chaiRunReport -match '(?:^|\|)ChaiRunNotRestarted=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $chaiRunPassed
+                    $observedText += " || PRODUCTION_CHAI_FORK_CONVERGENCE=" + $chaiRunReport
+
+                    if (-not $ProductionRunOnly) {
+                    [IO.File]::WriteAllText($progressPath, "invoke Production Process worksheet round-trip")
+                    $processWorksheetReport = [string](Run-WorkbookMacro -Excel $excel `
+                        -WorkbookName $operationsName `
+                        -MacroName "mProduction.RunProcessWorksheetRoundTripContractTest")
+                    $processWorksheetPassed = $processWorksheetReport -match '^OK\|' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdentityInitialized=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)ProcessIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeIdLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RecipeVersionEditable=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RequirementIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)OutputIdGenerated=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)IdentityControlsLocked=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)WorksheetHandler=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)MixedUomAccepted=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)MixedUomRowsPreserved=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)TableRemoved=True(?:\||$)' -and
+                        $processWorksheetReport -match '(?:^|\|)RepeatRoundTrip=True(?:\||$)'
+                    $workflowControlPassed = $workflowControlPassed -and $processWorksheetPassed
+                    $observedText += " || PRODUCTION_PROCESS_WORKSHEET=" + $processWorksheetReport
+                    }
+                    }
+                }
+            }
             if (@($secondCapture.WindowText).Count -gt 0) {
                 $observedText += " || SECOND_LAUNCH=" + (@($secondCapture.WindowText) -join " // ")
             }
@@ -900,9 +1421,18 @@ try {
                     [StringComparison]::OrdinalIgnoreCase
                 )
             }).Count
+            if ($WorkbookState -eq "ProductionReusable" -and $stationLocalCount -eq 1) {
+                $productionOperatorPath = [string](@($newWorkbookPaths | Where-Object {
+                    [IO.Path]::GetFullPath($_).StartsWith(
+                        [IO.Path]::GetFullPath($operatorRoot),
+                        [StringComparison]::OrdinalIgnoreCase
+                    )
+                })[0])
+            }
             $passed = $operatorRootOverrideSet -and
                 $stationLocalCount -eq 1 -and
                 $secondNewWorkbooks.Count -eq 0 -and
+                $workflowControlPassed -and
                 [string]::IsNullOrWhiteSpace($capture.Error) -and
                 [string]::IsNullOrWhiteSpace($secondCapture.Error) -and
                 $observedText -notmatch "(?i)(failed|Type mismatch|operator workbook)"
@@ -967,6 +1497,152 @@ try {
             -Expected $callback.Expected -Passed $passed -Observed $observedText
         [IO.File]::WriteAllText($progressPath, "completed " + $callback.Macro)
     }
+
+    if ($WorkbookState -eq "ProductionReusable" -and -not $ProductionRunOnly -and
+        -not $ProductionEditExportOnly) {
+        $currentStep = "restart reusable Production in a clean Excel process"
+        [IO.File]::WriteAllText($progressPath, $currentStep)
+        if ([string]::IsNullOrWhiteSpace($reusableRecipeId)) {
+            throw "The first Production session did not report its released reusable Recipe identity."
+        }
+        if ([string]::IsNullOrWhiteSpace($productionOperatorPath) -or
+            -not (Test-Path -LiteralPath $productionOperatorPath -PathType Leaf)) {
+            throw "The first Production session did not create its saved station-local operator workbook."
+        }
+
+        for ($workbookIndex = [int]$excel.Workbooks.Count; $workbookIndex -ge 1; $workbookIndex--) {
+            $restartWb = $null
+            try {
+                $restartWb = $excel.Workbooks.Item($workbookIndex)
+                if (-not [string]::IsNullOrWhiteSpace([string]$restartWb.Path) -and
+                    -not [bool]$restartWb.IsAddin) {
+                    $restartWb.Save()
+                }
+                $restartWb.Close($false)
+            }
+            catch {}
+            Release-ComObject $restartWb
+        }
+        try { $excel.Quit() } catch {}
+        Release-ComObject $excel
+        $excel = $null
+        if ($excelProcessId -gt 0) {
+            Start-Sleep -Milliseconds 750
+            $firstProcess = Get-Process -Id $excelProcessId -ErrorAction SilentlyContinue
+            if ($null -ne $firstProcess -and $firstProcess.ProcessName -eq "EXCEL") {
+                Stop-Process -Id $excelProcessId -Force
+            }
+        }
+
+        $opened = New-Object 'System.Collections.Generic.List[object]'
+        $packages = @{}
+        $excel = New-Object -ComObject Excel.Application
+        $excelProcessId = Get-ExcelProcessId $excel
+        $excel.Visible = $true
+        $excel.DisplayAlerts = $false
+        $excel.EnableEvents = $true
+        $excel.AutomationSecurity = 1
+        foreach ($packageName in $packageNames) {
+            $packagePath = Join-Path $deployPath $packageName
+            $packageWb = $excel.Workbooks.Open($packagePath)
+            $opened.Add($packageWb) | Out-Null
+            $packages[$packageName] = $packageWb
+        }
+
+        $coreName = [string]$packages["invSys.Core.xlam"].Name
+        $operationsName = [string]$packages["invSys.Operations.xlam"].Name
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modRuntimeWorkbooks.SetCoreDataRootOverride" -Arguments @($runtimeRoot))
+        $restartConfigLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modConfig.LoadConfig" -Arguments @($warehouseId, $stationId))
+        $restartAuthLoaded = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modAuth.LoadAuth" -Arguments @($warehouseId))
+        $restartTargetResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modNasConnection.SelectWarehouseTargetForAutomation" `
+            -Arguments @($runtimeRoot, $runtimeRoot, $stationId, $true))
+        $restartTargetPathsSet = [bool](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modNasConnection.SetCurrentTargetPathsForTest" `
+            -Arguments @($testHubRoot, $runtimeRoot))
+        $restartOperatorOverrideSet = [bool](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $coreName `
+            -MacroName "modWarehouseBootstrap.SetLocalOperatorRootOverrideForAutomation" `
+            -Arguments @($operatorRoot))
+        $restartSignInResult = [string](Run-WorkbookMacro -Excel $excel -WorkbookName $coreName `
+            -MacroName "modAuth.SignInCurrentTargetForAutomation" `
+            -Arguments @($testUser, $testPin, "PROD_POST"))
+        [void](Run-WorkbookMacro -Excel $excel -WorkbookName $operationsName `
+            -MacroName "modOperationsInit.Auto_Open")
+
+        $restartBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartCapture = Invoke-PackagedCallback -Excel $excel `
+            -WorkbookName $operationsName -MacroName "mProduction.BtnOpenProductionForm"
+        $restartAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartNewWorkbooks = @(
+            $restartAfterNames | Where-Object { $_ -notin $restartBeforeNames }
+        )
+        $restartNewOperatorWorkbooks = New-Object 'System.Collections.Generic.List[string]'
+        $restartOperatorFullName = ""
+        foreach ($restartName in $restartNewWorkbooks) {
+            try {
+                $candidateFullName = [string]$excel.Workbooks.Item($restartName).FullName
+                if ([IO.Path]::GetFullPath($candidateFullName).StartsWith(
+                        [IO.Path]::GetFullPath($operatorRoot),
+                        [StringComparison]::OrdinalIgnoreCase)) {
+                    $restartNewOperatorWorkbooks.Add($candidateFullName) | Out-Null
+                    $restartOperatorFullName = $candidateFullName
+                }
+            }
+            catch {}
+        }
+        $restartSameOperatorWorkbook = -not [string]::IsNullOrWhiteSpace($restartOperatorFullName) -and
+            [string]::Equals(
+                [IO.Path]::GetFullPath($restartOperatorFullName),
+                [IO.Path]::GetFullPath($productionOperatorPath),
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        $probeBeforeNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $productionRestartReport = [string](Run-WorkbookMacro -Excel $excel `
+            -WorkbookName $operationsName `
+            -MacroName "mProduction.RunReusableProductionRestartActionContractTest" `
+            -Arguments @($reusableRecipeId, $reusableRecipeVersion, $productionOperatorPath))
+        $probeAfterNames = @(Get-OpenWorkbookNames -Excel $excel)
+        $restartProbeNewWorkbooks = @(
+            $probeAfterNames | Where-Object { $_ -notin $probeBeforeNames }
+        ).Count
+        $restartOperatorFileCount = @(
+            Get-ChildItem -LiteralPath $operatorRoot `
+                -Filter "*.Production.Operator.xlsm" -File -Recurse `
+                -ErrorAction SilentlyContinue
+        ).Count
+        $restartPassed = $restartConfigLoaded -and $restartAuthLoaded -and
+            $restartTargetResult.StartsWith('OK|') -and $restartTargetPathsSet -and
+            $restartOperatorOverrideSet -and $restartSignInResult.StartsWith('OK|') -and
+            [string]::IsNullOrWhiteSpace($restartCapture.Error) -and
+            $restartNewOperatorWorkbooks.Count -eq 1 -and $restartSameOperatorWorkbook -and
+            $restartOperatorFileCount -eq 1 -and $restartProbeNewWorkbooks -eq 0 -and
+            $productionRestartReport -match '^OK\|' -and
+            $productionRestartReport -match '(?:^|\|)RecipeFound=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)Loaded=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)SameWorkbook=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)WorksheetRediscovered=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)WorksheetRetrieved=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)MultipleTablesRediscovered=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)SelectedOnly=True(?:\||$)' -and
+            $productionRestartReport -match '(?:^|\|)AllRetrieved=True(?:\||$)'
+        $restartObserved = "PRODUCTION_RESTART=" + $productionRestartReport +
+            " || RestartSameOperatorWorkbook=" + $restartSameOperatorWorkbook +
+            " || RestartNewWorkbooks=" + $restartNewWorkbooks.Count +
+            " || RestartNewOperatorWorkbooks=" + $restartNewOperatorWorkbooks.Count +
+            " || ProbeNewWorkbooks=" + $restartProbeNewWorkbooks +
+            " || OperatorFiles=" + $restartOperatorFileCount
+        if (-not [string]::IsNullOrWhiteSpace($restartCapture.Error)) {
+            $restartObserved += " || COM_ERROR=" + $restartCapture.Error
+        }
+        Add-Evidence -Rows $evidence `
+            -Callback "mProduction.BtnOpenProductionForm [clean restart]" `
+            -Expected "A new Excel process reuses the saved Production workbook and loads the persisted exact released Recipe through the Run List handler." `
+            -Passed $restartPassed -Observed $restartObserved
+    }
 }
 catch {
     Add-Evidence -Rows $evidence -Callback "HARNESS" `
@@ -980,6 +1656,18 @@ finally {
     $reportLines = New-Object System.Collections.Generic.List[string]
     $reportTitle = if ($WorkbookState -eq "ReceivingDurability") {
         "# Plan 022 Slice 1 Receiving Durability Evidence"
+    }
+    elseif ($WorkbookState -eq "ShippingLayout") {
+        "# Plan 022 Slices 4g-4h Shipping Layout Evidence"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable" -and $ProductionRunOnly) {
+        "# Plan 022 Slice 4av Focused Packaged Production Evidence"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable" -and $ProductionEditExportOnly) {
+        "# Plan 022 Slice 4aw Focused Packaged Production Evidence"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        "# Plan 022 Slice 4x Packaged Reusable Production Evidence"
     }
     else {
         "# Plan 022 Slice 0 Packaged Launcher Evidence"
@@ -1005,6 +1693,9 @@ finally {
     $reportFile = if ($WorkbookState -eq "NoEligible") {
         "packaged-launcher-noeligible.md"
     }
+    elseif ($WorkbookState -eq "ShippingLayout") {
+        "shipping-layout.md"
+    }
     elseif ($WorkbookState -eq "CapturedClosed") {
         "packaged-launcher-capturedclosed-$($CallbackFilter.ToLowerInvariant()).md"
     }
@@ -1013,6 +1704,9 @@ finally {
     }
     elseif ($WorkbookState -eq "ReceivingFormClosed") {
         "receiving-launcher-formclosed.md"
+    }
+    elseif ($WorkbookState -eq "ProductionReusable") {
+        "production-reusable-production.md"
     }
     else {
         "packaged-launcher-$($WorkbookState.ToLowerInvariant()).md"

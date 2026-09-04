@@ -401,6 +401,7 @@ try {
         (Join-Path $repo "src/Core/Modules/modLockManager.bas"),
         (Join-Path $repo "src/Core/Modules/modProcessor.bas"),
         (Join-Path $repo "src/Core/Modules/modConfig.bas"),
+        (Join-Path $repo "src/Core/Modules/modStationIdentity.bas"),
         (Join-Path $repo "src/Core/Modules/modUomSettings.bas"),
         (Join-Path $repo "src/Core/Modules/modAuth.bas"),
         (Join-Path $repo "src/InventoryDomain/Modules/modInventoryInit.bas"),
@@ -475,6 +476,11 @@ try {
         "TestPhase6CoreSurfaces.TestNasGetCurrentTarget_ReturnsDeepCopy",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_RequiresStationInboxRejectsBlankStation",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AllowsRoamingBlankStationWithoutInboxRequirement",
+        "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_AutoRegistersCurrentComputerStationAndSignsIn",
+        "TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerCopiesLegacyS1Capabilities",
+        "TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerDoesNotInventMissingLegacyCapability",
+        "TestPhase6CoreSurfaces.TestAdminSignIn_CurrentComputerPreservesExplicitDeny",
+        "TestPhase6CoreSurfaces.TestRibbonWarehouseSelection_CurrentComputerTargetCommitsBeforeSignIn",
         "TestPhase6CoreSurfaces.TestNasSelectWarehouseTarget_TwoStationsHaveIndependentInboxRoots",
         "TestPhase6CoreSurfaces.TestNasScanRoot_ReturnsPathStringsWithoutWarehouseInference",
         "TestPhase6CoreSurfaces.TestNasScanRoot_RejectsMismatchedConfigAuthPair",
@@ -495,6 +501,8 @@ try {
         "TestPhase6CoreSurfaces.TestRoleWriteCurrent_RejectsFallbackTarget",
         "TestPhase6CoreSurfaces.TestRoleWriteCurrent_AllowsSignedInReceivePost",
         "TestPhase6CoreSurfaces.TestAuthSignOut_ClearsUserButKeepsWarehouseTarget",
+        "TestPhase6CoreSurfaces.TestRibbonSessionLabels_DisconnectedUseExplicitNames",
+        "TestPhase6CoreSurfaces.TestServerSignOutAction_ClearsUserTargetAndAccess",
         "TestPhase6CoreSurfaces.TestAuthCanPerform_SignedOutFailsClosedWithLoadedAuth",
         "TestPhase6CoreSurfaces.TestAuthTtlExpiry_FailsClosedForIsSignedInAndCanPerform",
         "TestAddinsPublish.TestVerifyAddinsPublished_AllPresent",
@@ -598,6 +606,7 @@ try {
         "TestPhase6CoreSurfaces.TestBoxBuilderForm_InitializesWithActiveArchiveFilters",
         "TestPhase6CoreSurfaces.TestBoxMakerProjectedComponentInventory_SubtractsRequirementFromNas",
         "TestPhase6CoreSurfaces.TestShippingCommitLine_MergesPostedSameRefBoxVersionCarrier",
+        "TestPhase6CoreSurfaces.TestShippingAdd_CurrentSchemaReservesBySystemKey",
         "TestPhase6CoreSurfaces.TestShippingBoard_TwoAddsSameRefBoxVersionCarrierShowOneRow",
         "TestPhase6CoreSurfaces.TestShippingAdd_DefaultsOrderToWarehouseArea",
         "TestPhase6CoreSurfaces.TestShippingAdd_BlankCarrierRequiresCarrier",
@@ -675,6 +684,7 @@ try {
         "TestPhase6RoleSurfaces.TestEnsureReceivingWorkbookSurface_RecreatesDeletedArtifacts",
         "TestPhase6RoleSurfaces.TestReceivingForm_SearchFiltersInventoryAndKeepsRefExternal",
         "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderUsesSystemKey",
+        "TestPhase6RoleSurfaces.TestReceivingForm_InventoryLoaderAggregatesEntityDuplicates",
         "TestPhase6RoleSurfaces.TestReceivingForm_HidesSupportSheetsAfterFormRefresh",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddStagesSelectedInventoryForConfirm",
         "TestPhase6RoleSurfaces.TestReceivingForm_AddMergesSameRefItemAndSeparatesDifferentRef",
@@ -725,6 +735,23 @@ try {
         "TestProductionSessionService.TestProductionSession_PersistsThroughWorkbookCloseReopen",
         "TestDesignsDomain.TestDesignsSchema_CreatesAndValidatesAuthoritativeTables",
         "TestDesignsDomain.TestDesignsSchema_IsIdempotent",
+        "TestDesignsDomain.TestReusableProductionSchema_CreatesProcessRecipeProjections",
+        "TestDesignsDomain.TestProcessSave_AppliesReusableMultiOutputDefinition",
+        "TestDesignsDomain.TestProcessSave_RejectsDefinitionWithoutOutput",
+        "TestDesignsDomain.TestRecipeSave_RejectsCircularProcessGraph",
+        "TestDesignsDomain.TestProcessLifecycle_ReleasesObsoletesAndReusesVersions",
+        "TestDesignsDomain.TestRecipeRelease_RejectsMissingOrUnreleasedProcessVersion",
+        "TestDesignsDomain.TestRecipeRelease_RejectsUnresolvedExternalRequirement",
+        "TestDesignsDomain.TestRecipeRelease_RejectsIncompatibleConnection",
+        "TestDesignsDomain.TestRecipeRelease_RejectsOutputOverallocation",
+        "TestDesignsDomain.TestRecipeRelease_RejectsContradictoryExecutionOrder",
+        "TestDesignsDomain.TestProcessObsolete_RejectsReleasedRecipeDependency",
+        "TestDesignsDomain.TestRecipeLifecycle_ReleasesValidGraphAndThenObsoletes",
+        "TestDesignsDomain.TestReusableProcessQueries_BridgeListsReleasedAndReturnsVersionReadOnly",
+        "TestDesignsDomain.TestReusableRecipeQueries_BridgeListsReleasedGraphAndValidatesReadOnly",
+        "TestDesignsDomain.TestValidateReleasedRecipe_BridgeRejectsDraftWithoutMutation",
+        "TestDesignsDomain.TestReusableProductionQueries_CoreDomainBridgeRoundTripsPrimitiveResults",
+        "TestDesignsDomain.TestReusableProductionQueries_OperationsPrimitiveBridgeUsesCoreAuthority",
         "TestDesignsDomain.TestDesignsQueries_ListDesignsAndGetBOMAreReadOnly",
         "TestDesignsDomain.TestDesignsQueries_StatusConstrainedBOMRejectsDraftAndObsolete",
         "TestDesignsDomain.TestDesignsDomain_DiagnosticDeclaresNoStartupMutation",
@@ -749,7 +776,16 @@ try {
         "TestReceivingStabilization.TestReceivingWorkflowState_PreservesEventIdentity",
         "TestReceivingStabilization.TestReceivingWorkflowState_RejectsMissingSystemKey",
         "TestReceivingStabilization.TestReceivingStage_GeneratesStableDistinctSystemKeys",
-        "TestReceivingStabilization.TestReceivingPurchasingTab_IsVisibleAndReadOnly"
+        "TestReceivingStabilization.TestReceivingPurchasingTab_IsVisibleAndReadOnly",
+        "TestReceivingStabilization.TestReceivingForm_DeclaresConditionAndInboundReturns",
+        "TestReceivingStabilization.TestReceivingRefresh_RebuildsCompleteAggregate",
+        "TestReceivingStabilization.TestReceivingReturns_StagesThroughFormAction",
+        "TestReceivingStabilization.TestReceivingStage_MixedConditionCreatesDistinctEntities",
+        "TestReceivingStabilization.TestReceivingReturns_UsesReturnTitlesAndConditionColumn",
+        "TestPhase6CoreSurfaces.TestConfigAuthRead_HealthySchemasRemainSaved",
+        "TestPhase6CoreSurfaces.TestProcessor_ReceiveBatchUsesBoundedPersistenceSaves",
+        "TestReceivingStabilization.TestReceivingReturns_StagesExistingDispositionIdentityThroughFormAction",
+        "TestPhase6CoreSurfaces.TestInventoryDisposition_ReturnAndDumpDepleteExactSystemKey"
     )
 
     $totalAvailableTests = $allTests.Count
@@ -811,7 +847,7 @@ try {
             Passed   = ($passed -eq 1)
             Error    = $errorText
         }
-        $resultText = if ($passed -eq 1) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($errorText)) { "FAIL" } else { "FAIL - $errorText" }
+        $resultText = if ($passed -eq 1) { "PASS" } elseif ([string]::IsNullOrWhiteSpace($errorText)) { "FAIL - Returned=$passed" } else { "FAIL - $errorText" }
         Write-TestResultsFile -ResultPath $resultPath -TestRows $testRows -StartAt $StartAt -EndAt $EndAt -TotalAvailable $totalAvailableTests -Complete $false
         Write-HarnessStatus -Phase "Completed test" -Current $testNumber -Total $allTests.Count -Detail "$resultText $testLabel" -StartedAt $scriptStart
     }

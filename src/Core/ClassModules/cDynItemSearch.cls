@@ -25,15 +25,41 @@ Private mCategoryCol As Long
 Private mHasCategory As Boolean
 Private mIngredientRecipeId As String
 Private mAllowedRows As Object
-Private mShippingBomPackageRows As Object
+Private mShippingBomPackageSystemKeys As Object
 Private mShippingBomPackageItems As Object
 Private mLoadedFromShippingBom As Boolean
-Private mTemplateFormName As String
+Private mRoleProfile As String
 Private Const CORE_PICKER_TEMPLATE As String = "frmItemSearch"
 
-Public Sub UseTemplateForm(ByVal formName As String)
-    mTemplateFormName = Trim$(formName)
+Public Sub UseRoleProfile(ByVal roleKey As String)
+    mRoleProfile = LCase$(Trim$(roleKey))
 End Sub
+
+Public Function IsSearchVisible() As Boolean
+    On Error Resume Next
+    If Not uf Is Nothing Then IsSearchVisible = CBool(uf.Visible)
+    On Error GoTo 0
+End Function
+
+Public Sub CloseSearch()
+    On Error Resume Next
+    If Not uf Is Nothing Then uf.Hide
+    On Error GoTo 0
+End Sub
+
+Public Function SearchResultCount() As Long
+    On Error Resume Next
+    If Not lst Is Nothing Then SearchResultCount = lst.ListCount
+    On Error GoTo 0
+End Function
+
+Public Function CommitFirstSearchResultForTest() As Boolean
+    If lst Is Nothing Then Exit Function
+    If lst.ListCount = 0 Then Exit Function
+    lst.ListIndex = 0
+    CommitSelection
+    CommitFirstSearchResultForTest = True
+End Function
 
 Public Sub ShowForCell(ByVal targetCell As Range)
     Debug.Print "cDynItemSearch.ShowForCell entered"
@@ -141,8 +167,7 @@ Private Function BuildForm() As Boolean
     On Error Resume Next
     Err.Clear
 
-    ' Always instantiate from a Core-owned form first. Role-specific forms live
-    ' in other XLAM projects and are not visible here.
+    ' Always instantiate the single Core-owned Release 1 search form.
     Set uf = VBA.UserForms.Add(CORE_PICKER_TEMPLATE)
     If Err.Number <> 0 Then
         Debug.Print "    UserForms.Add('" & CORE_PICKER_TEMPLATE & "') ERROR:", Err.Number, Err.Description
@@ -249,6 +274,10 @@ Private Function BuildForm() As Boolean
     txtDesc.Locked = True
     txtDesc.ScrollBars = 2 'fmScrollBarsVertical
 
+    On Error Resume Next
+    CallByName uf, "ConfigureRuntimeLayout", VbMethod, txtSearch, chkShippable, lst, txtDesc
+    On Error GoTo 0
+
     BuildForm = True
     Debug.Print "    BuildForm SUCCESS"
 End Function
@@ -311,6 +340,8 @@ Private Function LoadItems() As Boolean
         itemsArr = RunRoleMacro1("mProduction.LoadIngredientListForRecipe", mIngredientRecipeId)
     ElseIf LCase$(mPickerMode) = "shipping_component" Then
         itemsArr = LoadShippingComponentItems()
+    ElseIf IsProcessWorksheetPicker() Then
+        itemsArr = LoadProcessManagedInventoryItems()
     ElseIf ShouldUseShippingBomFilter() Then
         itemsArr = LoadShippingBomPackageItems()
         If Not IsEmpty(itemsArr) Then mLoadedFromShippingBom = True
@@ -665,14 +696,14 @@ Private Sub InitShippingBomPackageState(Optional ByVal forceLoad As Boolean = Fa
     Dim wb As Workbook
     Dim ws As Worksheet
     Dim lo As ListObject
-    Dim cPackageRow As Long
+    Dim cPackageSystemKey As Long
     Dim cPackageItem As Long
     Dim cActive As Long
     Dim r As Long
     Dim rowKey As String
     Dim itemKey As String
 
-    Set mShippingBomPackageRows = Nothing
+    Set mShippingBomPackageSystemKeys = Nothing
     Set mShippingBomPackageItems = Nothing
     If Not forceLoad Then
         If Not ShouldUseShippingBomFilter() Then Exit Sub
@@ -686,22 +717,22 @@ Private Sub InitShippingBomPackageState(Optional ByVal forceLoad As Boolean = Fa
     If lo Is Nothing Then Exit Sub
     If lo.DataBodyRange Is Nothing Then Exit Sub
 
-    cPackageRow = ColumnIndex(lo, "PackageRow")
+    cPackageSystemKey = ColumnIndex(lo, "PackageSystemKey")
     cPackageItem = ColumnIndex(lo, "PackageItem")
     cActive = ColumnIndex(lo, "IsActive")
-    If cPackageRow = 0 And cPackageItem = 0 Then Exit Sub
+    If cPackageSystemKey = 0 And cPackageItem = 0 Then Exit Sub
 
-    Set mShippingBomPackageRows = CreateObject("Scripting.Dictionary")
+    Set mShippingBomPackageSystemKeys = CreateObject("Scripting.Dictionary")
     Set mShippingBomPackageItems = CreateObject("Scripting.Dictionary")
 
     For r = 1 To lo.ListRows.Count
         If cActive > 0 Then
             If Not ShippingBomActiveValue(lo.DataBodyRange.Cells(r, cActive).Value) Then GoTo NextPackageStateRow
         End If
-        If cPackageRow > 0 Then
-            rowKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cPackageRow).Value))
+        If cPackageSystemKey > 0 Then
+            rowKey = Trim$(NzStr(lo.DataBodyRange.Cells(r, cPackageSystemKey).Value))
             If rowKey <> "" Then
-                If Not mShippingBomPackageRows.Exists(rowKey) Then mShippingBomPackageRows.Add rowKey, True
+                If Not mShippingBomPackageSystemKeys.Exists(rowKey) Then mShippingBomPackageSystemKeys.Add rowKey, True
             End If
         End If
         If cPackageItem > 0 Then
@@ -727,7 +758,7 @@ Private Function LoadShippingBomPackageItems() As Variant
 
     Dim wb As Workbook
     Dim lo As ListObject
-    Dim cPackageRow As Long
+    Dim cPackageSystemKey As Long
     Dim cPackageItem As Long
     Dim cPackageUom As Long
     Dim cPackageLocation As Long
@@ -751,13 +782,13 @@ Private Function LoadShippingBomPackageItems() As Variant
     If lo Is Nothing Then Exit Function
     If lo.DataBodyRange Is Nothing Then Exit Function
 
-    cPackageRow = ColumnIndex(lo, "PackageRow")
+    cPackageSystemKey = ColumnIndex(lo, "PackageSystemKey")
     cPackageItem = ColumnIndex(lo, "PackageItem")
     cPackageUom = ColumnIndex(lo, "PackageUOM")
     cPackageLocation = ColumnIndex(lo, "PackageLocation")
     cPackageDescription = ColumnIndex(lo, "PackageDescription")
     cActive = ColumnIndex(lo, "IsActive")
-    If cPackageRow = 0 Or cPackageItem = 0 Then Exit Function
+    If cPackageSystemKey = 0 Or cPackageItem = 0 Then Exit Function
 
     src = lo.DataBodyRange.Value
     Set dict = CreateObject("Scripting.Dictionary")
@@ -767,7 +798,7 @@ Private Function LoadShippingBomPackageItems() As Variant
         If cActive > 0 Then
             If Not ShippingBomActiveValue(src(r, cActive)) Then GoTo NextPackage
         End If
-        rowKey = NormalizePickerRowKey(src(r, cPackageRow))
+        rowKey = NormalizePickerRowKey(src(r, cPackageSystemKey))
         itemName = Trim$(NzStr(src(r, cPackageItem)))
         If rowKey = "" And itemName = "" Then GoTo NextPackage
 
@@ -863,12 +894,12 @@ Private Function IsRowListedInShippingBom(ByVal rowIndex As Long) As Boolean
     Dim rowKey As String
     Dim itemKey As String
 
-    If mShippingBomPackageRows Is Nothing And mShippingBomPackageItems Is Nothing Then Exit Function
+    If mShippingBomPackageSystemKeys Is Nothing And mShippingBomPackageItems Is Nothing Then Exit Function
 
     rowKey = Trim$(NzStr(itemsArr(rowIndex, 1)))
-    If Not mShippingBomPackageRows Is Nothing Then
+    If Not mShippingBomPackageSystemKeys Is Nothing Then
         If rowKey <> "" Then
-            If mShippingBomPackageRows.Exists(rowKey) Then
+            If mShippingBomPackageSystemKeys.Exists(rowKey) Then
                 IsRowListedInShippingBom = True
                 Exit Function
             End If
@@ -902,7 +933,7 @@ Private Function ShouldDefaultShippable() As Boolean
 End Function
 
 Private Function CurrentRoleKey() As String
-    CurrentRoleKey = modItemSearch.ResolveSearchRole(mTemplateFormName)
+    CurrentRoleKey = mRoleProfile
 End Function
 
 Private Function LoadManagedInventoryItems(Optional ByVal includeCategory As Boolean = False) As Variant
@@ -1471,7 +1502,46 @@ Public Sub CommitSelection()
             If colRec > 0 Then lo.DataBodyRange.Cells(itemRowIdx, colRec).Value = NzStr(RunRoleMacro0("mProduction.GetPaletteRecipeId"))
             If colIng > 0 Then lo.DataBodyRange.Cells(itemRowIdx, colIng).Value = NzStr(RunRoleMacro0("mProduction.GetPaletteIngredientId"))
         Case Else
-            If tblName = "inventorypalette_generated" Or tblName Like "proc_*_palette" Then
+            If tblName Like "invsys_process_*" Then
+                Dim cProcessRecordType As Long
+                Dim cProcessItem As Long
+                Dim cProcessSku As Long
+                Dim cProcessName As Long
+                Dim cProcessOutputSku As Long
+                Dim processPairNumber As Long
+                Dim processRecordType As String
+                cProcessRecordType = ColumnIndex(lo, "Record Type")
+                If rowIdx > 0 Then
+                    If cProcessRecordType > 0 Then _
+                        processRecordType = UCase$(Trim$(NzStr( _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessRecordType).Value2)))
+                    cProcessName = ColumnIndex(lo, "Name")
+                    cProcessOutputSku = ColumnIndex(lo, "Output SKU")
+                    If processRecordType = "OUTPUT" Then
+                        cProcessItem = ColumnIndex(lo, "Acceptable Managed Item 1")
+                        cProcessSku = ColumnIndex(lo, "Accepted SKU 1")
+                        If cProcessItem > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
+                        If cProcessSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
+                        If cProcessOutputSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessOutputSku).Value2 = itemCode
+                        If cProcessName > 0 Then
+                            If Trim$(NzStr(lo.DataBodyRange.Cells(rowIdx, _
+                                    cProcessName).Value2)) = "" Then _
+                                lo.DataBodyRange.Cells(rowIdx, cProcessName).Value2 = itemName
+                        End If
+                    Else
+                        processPairNumber = ProcessAlternativePairNumber(lo, callbackCell)
+                        cProcessItem = ColumnIndex(lo, "Acceptable Managed Item " & CStr(processPairNumber))
+                        cProcessSku = ColumnIndex(lo, "Accepted SKU " & CStr(processPairNumber))
+                        If cProcessItem > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessItem).Value2 = itemName
+                        If cProcessSku > 0 Then _
+                            lo.DataBodyRange.Cells(rowIdx, cProcessSku).Value2 = itemCode
+                    End If
+                End If
+            ElseIf tblName = "inventorypalette_generated" Or tblName Like "proc_*_palette" Then
                 Dim palItemRow As Long
                 palItemRow = rowIdx
                 If palItemRow = 0 Then palItemRow = EnsureListObjectRow(lo)
@@ -1515,6 +1585,90 @@ Public Sub CommitSelection()
 
     uf.Hide
 End Sub
+
+Private Function ProcessAlternativePairNumber(ByVal lo As ListObject, _
+                                              ByVal targetCell As Range) As Long
+    Dim columnName As String
+    Dim prefix As String
+
+    If lo Is Nothing Or targetCell Is Nothing Then Exit Function
+    prefix = "Acceptable Managed Item "
+    On Error Resume Next
+    columnName = lo.ListColumns(targetCell.Column - lo.Range.Column + 1).Name
+    On Error GoTo 0
+    If Left$(columnName, Len(prefix)) <> prefix Then Exit Function
+    If IsNumeric(Mid$(columnName, Len(prefix) + 1)) Then _
+        ProcessAlternativePairNumber = CLng(Mid$(columnName, Len(prefix) + 1))
+End Function
+
+Private Function IsProcessWorksheetPicker() As Boolean
+    Dim lo As ListObject
+
+    If CurrentRoleKey() <> "production" Then Exit Function
+    If LCase$(mPickerMode) <> "item" Then Exit Function
+    On Error Resume Next
+    If Not callbackCell Is Nothing Then Set lo = callbackCell.ListObject
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Function
+    IsProcessWorksheetPicker = (LCase$(lo.Name) Like "invsys_process_*")
+End Function
+
+Private Function LoadProcessManagedInventoryItems() As Variant
+    Dim sourceRows As Variant
+    Dim result() As Variant
+    Dim trimmed() As Variant
+    Dim seen As Object
+    Dim systemKey As String
+    Dim itemCode As String
+    Dim itemName As String
+    Dim alternativeKey As String
+    Dim r As Long
+    Dim c As Long
+    Dim outRow As Long
+
+    sourceRows = modInventoryDomainBridge.ListInventoryPickerItemsBridge("")
+    If IsEmpty(sourceRows) Then Exit Function
+    If Not IsArray(sourceRows) Then Exit Function
+
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbTextCompare
+    ReDim result(1 To UBound(sourceRows, 1), 1 To 8)
+    For r = LBound(sourceRows, 1) To UBound(sourceRows, 1)
+        systemKey = Trim$(NzStr(sourceRows(r, 1)))
+        itemCode = Trim$(NzStr(sourceRows(r, 7)))
+        itemName = Trim$(NzStr(sourceRows(r, 2)))
+        If systemKey = "" Or itemName = "" Then GoTo NextProcessItem
+
+        alternativeKey = itemCode & vbNullChar & itemName
+        If seen.Exists(alternativeKey) Then GoTo NextProcessItem
+        seen.Add alternativeKey, True
+
+        outRow = outRow + 1
+        result(outRow, 1) = systemKey
+        result(outRow, 2) = itemCode
+        result(outRow, 3) = itemName
+        result(outRow, 4) = NzStr(sourceRows(r, 3))
+        result(outRow, 5) = NzStr(sourceRows(r, 5))
+        result(outRow, 6) = ""
+        result(outRow, 7) = ""
+        result(outRow, 8) = ""
+NextProcessItem:
+    Next r
+
+    If outRow = 0 Then Exit Function
+    If outRow = UBound(result, 1) Then
+        LoadProcessManagedInventoryItems = result
+        Exit Function
+    End If
+
+    ReDim trimmed(1 To outRow, 1 To 8)
+    For r = 1 To outRow
+        For c = 1 To 8
+            trimmed(r, c) = result(r, c)
+        Next c
+    Next r
+    LoadProcessManagedInventoryItems = trimmed
+End Function
 
 Private Function NzStr(v As Variant) As String
     If IsError(v) Or IsNull(v) Or IsEmpty(v) Then NzStr = "" Else NzStr = CStr(v)

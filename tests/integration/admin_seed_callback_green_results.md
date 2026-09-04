@@ -10,20 +10,45 @@
 - CallbackError: <none>
 - CallbackResult: OK|<redacted-detail>
 - CallbackTimedOut: False
+- CatalogCategoryCoverage: True
+- CatalogRows: 24
 - ConfigHashUnchanged: True
 - ConfigLoaded: True
 - ConfigSurfaceChanged: False
-- EntityCount: 3
+- DataSetDeletedInventoryRetainedAndR1Protected: True
+- DataSetImportedAndSelectable: True
+- DeleteDepletedActiveDemoInventory: True
+- DemoInventoryFormActions: OK|Seed=True|DeleteInventory=True|UploadDataSet=True|DeleteDataSet=True|R1Protected=True
+- EntityCount: 24
 - InventoryHashChanged: True
+- OperatorAllConditionsGood: True
+- OperatorCategoryCoverage: True
+- OperatorMatchesSnapshot: True
+- OperatorRefreshSucceeded: True
+- OperatorRowsAfterRefresh: 24
+- OperatorUniqueSystemKeys: 24
+- ReceivingRefreshFormAction: OK|<redacted-detail>
+- ReceivingSurfaceEnsured: True
+- ReceivingVisibleDemoRows: 24
+- RepeatedSeedIdempotent: True
+- RepeatedUploadIdempotent: True
 - SignedIn: True
+- SnapshotAllConditionsGood: True
+- SnapshotCategoryCoverage: True
+- SnapshotFileCreated: True
+- SnapshotMatchesCanonical: True
+- SnapshotRows: 24
+- SnapshotUniqueSystemKeys: 24
 - TargetPathsSet: True
 - TargetSelected: True
-- UniqueSystemKeys: 3
+- UniqueSystemKeys: 24
+- UploadAndDeleteGuards: True
+- UploadCreatedOneDemoEntity: True
 
 ## Observed result
 
-The public ribbon callback completed with an injected form selection and seeded three D14 entities without using the active canonical config workbook as an Admin surface.
+The public Demo Inventory callback seeded the R1 kit idempotently, managed a selectable uploaded CSV library, protected R1 from deletion, deleted an uploaded definition without changing seeded stock, and retained the snapshot/Receiving contract.
 
 ## Captured UI
 
-- `ACTION|InjectedFormSelectionThroughSeed_DemoInventory`
+- `ACTION|SeedThroughPublicDemoInventoryCallback`

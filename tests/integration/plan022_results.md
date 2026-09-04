@@ -5,8 +5,45 @@
 - Dedicated NAS leaf: `Plan022-R1-UAT-20260728-7025AE7B`
 - Root fingerprint: `51101D8F55ED`
 - Warehouse/station: `WHT7025AE` / `S1`
-- Automated status: GREEN
-- User acceptance status: PENDING
+- Automated status: GREEN except known Shipping D14 `ROW` blocker
+- User acceptance status: RED
+
+## 2026-08-04 operator checkpoint
+
+The user returned the visible dedicated-NAS checkpoint against the prepared
+test warehouse/station.
+
+Accepted observations:
+
+- repeated Receiving, Production, and Shipping launches reused their
+  respective operator workbooks; no additional role workbook opened;
+- forms remained bound when another workbook was activated and minimized with
+  their owning workbook; and
+- launcher behavior remained stable after Excel restart.
+
+Failed observations:
+
+- the visible Admin Seed Demo Inventory action returned a report equivalent to
+  `Demo inventory seeded.|Applied=1|Processor=Applied=1; SkipDup=0; Poison=0`,
+  but none of the three demo entities appeared after refresh; the session RunId
+  is intentionally omitted from committed evidence; and
+- the Production form's native window maximized while the MultiPage and child
+  controls remained at a small base-size footprint in the upper-left corner.
+
+A read-only inspection of the saved station-local operator workbook packages
+after the checkpoint found 18 nonblank `System_Key` rows in each role's
+`invSys` table. Sixteen rows used supported demo SKU codes and all 16 recorded
+`Condition=GOOD`; the three current seed codes were present five times each,
+consistent with repeated seed actions creating new durable keys. No workbook
+was opened, refreshed, saved, or closed for this inspection. This narrows the
+remaining Seed failure to the operator-visible form refresh/list contract (or
+the acceptance presentation of those rows), rather than absence of canonical
+or saved operator projection data. The user's visible failure remains RED.
+
+Source review after the checkpoint also found active Shipping `ROW` labels and
+fields in `frmShipmentsTally`, contrary to D14. The checkpoint therefore
+advances launcher reuse/binding/restart evidence but does not complete Plan 022
+or Release 1 acceptance.
 
 ## D13 trace
 
@@ -62,6 +99,24 @@ form selection before calling the same public callback. Preserved evidence:
 - `tests/integration/admin_seed_callback_green_results.md`; and
 - `tools/validate_admin_seed_inventory_callback.ps1`.
 
+After the 2026-08-04 visible checkpoint, the focused callback validator was
+expanded to require the same three unique `System_Key` values and
+`Condition=GOOD` across canonical inventory, the published snapshot, a saved
+Receiving operator workbook, and the Receiving form's actual Refresh click
+handler/list rendering. The final deployed package passed all of those checks,
+including three visible `DEMO-` rows through the real Refresh handler. This
+does not erase the operator's failed visible checkpoint; it proves the seeded
+entities are available when the specified Receiving inventory control is used.
+
+The Production layout validator was expanded to require `Zoom=100` and at
+least 90% DPI-adjusted native client fill after maximize. Its focused RED
+captured the packaged form at `Zoom=60`, reproducing the shrunken-control
+symptom. Removing the DPI-derived form zoom produced GREEN across all four
+pages, three supported sizes, and minimize/restore/maximize/restore. The
+maximized form measured approximately 1451 x 875 points against a 1440 x 847
+point client area, with zero out-of-bounds controls and zero interactive
+overlaps.
+
 ## Automated GREEN
 
 | Evidence | Result |
@@ -75,7 +130,8 @@ form selection before calling the same public callback. Preserved evidence:
 | Packaged RibbonX | 136/136 |
 | Live role workflow | 46/46 |
 | Ordered Release 1 full chain | 30/30 |
-| Packaged Admin Seed Demo Inventory callback | GREEN; 3 unique D14 entities, `Condition=GOOD` |
+| Packaged Admin Seed Demo Inventory callback and Receiving Refresh action | GREEN; 3 unique D14 entities with `Condition=GOOD` match across canonical inventory, snapshot, saved operator workbook, and 3 visible filtered rows |
+| Production native resize | GREEN; 3 sizes x 4 pages, `Zoom=100`, native minimize/restore/maximize/restore, client fill PASS, no out-of-bounds controls or interactive overlaps |
 | Create Warehouse / repeated seed D14 lifecycle | 15/15 |
 | Slice 5 behavior locks | 13/13 |
 | Slices 6, 8, 9, 10, 11, 12, 13, and 14 static locks | 10/10, 14/14, 8/8, 10/10, 11/11, 11/11, 14/14, 9/9 |
@@ -98,25 +154,27 @@ mismatches.
 
 ## Static maintenance review
 
-Relative to the committed baseline:
+The regenerated baseline records:
 
-- components: 164 -> 164;
-- procedures: 4,535 -> 4,560;
-- maintenance candidates: 962 -> 963;
+- components: 164;
+- procedures: 4,562;
+- maintenance candidates: 964;
+- reviewed candidates: 966;
 - duplicate-body groups: 187 -> 187;
-- literal `Application.Run` targets: 9 -> 9; and
-- unresolved dynamic calls: 48 -> 48.
+- literal `Application.Run` targets: 9; and
+- unresolved dynamic calls: 48.
 
-The reviewed +25-procedure exception consists of required operator-workbook
-eligibility/provisioning for all three roles, captured-form/workbook lifecycle,
-safe launcher/Seed callback diagnostics, and the packaged test seams required
-by D13. The one new review-only maintenance candidate is the explicit Admin
-Seed callback automation setter; it remains capability-gated by the unchanged
-queue boundary and is not deletion-authorized. No component, duplicate-body,
-same-project dynamic-call, or unresolved dynamic-call regression was
-introduced.
+Relative to the immediately preceding committed baseline, the two added
+procedures are the Receiving form-action test seam and its packaged wrapper.
+They are required to exercise the same public Refresh handler used by the
+operator. The scanner consequently adds one review-only reachability candidate;
+it is protecting test infrastructure and is not deletion-authorized. Component,
+duplicate-body, `Application.Run`, and unresolved-dynamic-call counts did not
+increase.
 
 ## Remaining completion gate
 
-Plan 022 is not complete until the user performs the single batched acceptance
-checkpoint in the dedicated NAS warehouse and returns the requested evidence.
+Plan 022 is not complete until the operator verifies existing demo rows through
+the Receiving inventory controls and repeats Production maximize/restore on the
+new package. Shipping's separate D14 `ROW` identity conflict also remains open
+and requires its own focused correction before Release 1 acceptance.

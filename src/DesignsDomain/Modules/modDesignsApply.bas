@@ -7,6 +7,12 @@ Public Const DESIGN_STATUS_SKIP_DUP As String = "SKIP_DUP"
 Public Const DESIGN_EVENT_CREATE As String = "DESIGN_CREATE"
 Public Const DESIGN_EVENT_RELEASE As String = "DESIGN_RELEASE"
 Public Const DESIGN_EVENT_OBSOLETE As String = "DESIGN_OBSOLETE"
+Public Const PROCESS_EVENT_SAVE As String = "PROCESS_SAVE"
+Public Const PROCESS_EVENT_RELEASE As String = "PROCESS_RELEASE"
+Public Const PROCESS_EVENT_OBSOLETE As String = "PROCESS_OBSOLETE"
+Public Const RECIPE_EVENT_SAVE As String = "RECIPE_SAVE"
+Public Const RECIPE_EVENT_RELEASE As String = "RECIPE_RELEASE"
+Public Const RECIPE_EVENT_OBSOLETE As String = "RECIPE_OBSOLETE"
 
 Public Function ApplyDesignEvent(ByVal evt As Object, _
                                  Optional ByVal designsWb As Workbook = Nothing, _
@@ -97,6 +103,9 @@ Public Function ApplyDesignEvent(ByVal evt As Object, _
     SetDesignTableValue loEvents, lr.Index, "WarehouseId", GetEventTextDesign(evt, "WarehouseId")
     SetDesignTableValue loEvents, lr.Index, "StationId", GetEventTextDesign(evt, "StationId")
     SetDesignTableValue loEvents, lr.Index, "UserId", GetEventTextDesign(evt, "UserId")
+    SetDesignTableValue loEvents, lr.Index, "DefinitionType", DefinitionTypeForEvent(eventType)
+    SetDesignTableValue loEvents, lr.Index, "DefinitionId", designId
+    SetDesignTableValue loEvents, lr.Index, "DefinitionVersion", designVersion
     SetDesignTableValue loEvents, lr.Index, "DesignId", designId
     SetDesignTableValue loEvents, lr.Index, "DesignVersion", designVersion
     SetDesignTableValue loEvents, lr.Index, "PayloadJson", payloadJson
@@ -133,6 +142,8 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
     Dim loEvents As ListObject
     Dim loDesigns As ListObject
     Dim loLines As ListObject
+    Dim reusableTables As Variant
+    Dim reusableTableName As Variant
     Dim values As Variant
     Dim r As Long
     Dim replayOrder As Variant
@@ -153,6 +164,13 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
     Set loLines = FindDesignsApplyTable(designsWb, "tblDesignLines")
     ClearDesignTableRows loDesigns
     ClearDesignTableRows loLines
+    reusableTables = Array("tblProcesses", "tblProcessRequirements", _
+        "tblProcessIngredientAlternatives", "tblProcessOutputs", _
+        "tblProcessInstructions", "tblRecipes", "tblRecipeProcesses", _
+        "tblRecipeConnections", "tblRecipeOutputRegulations")
+    For Each reusableTableName In reusableTables
+        ClearDesignTableRows FindDesignsApplyTable(designsWb, CStr(reusableTableName))
+    Next reusableTableName
 
     If Not loEvents.DataBodyRange Is Nothing Then
         values = loEvents.DataBodyRange.Value
@@ -163,7 +181,14 @@ Public Function RebuildDesignProjections(ByVal designsWb As Workbook, _
         End If
         For orderIndex = LBound(replayOrder) To UBound(replayOrder)
             r = CLng(replayOrder(orderIndex))
-            If Not ReplayDesignEvent(loEvents, values, r, loDesigns, loLines, errorMessage) Then
+            If IsReusableProductionEvent( _
+                    ReadDesignTableText(loEvents, values, r, "EventType")) Then
+                If Not ReplayReusableProductionEvent( _
+                        loEvents, values, r, designsWb, errorMessage) Then
+                    report = "Projection replay failed at event row " & CStr(r) & ": " & errorMessage
+                    Exit Function
+                End If
+            ElseIf Not ReplayDesignEvent(loEvents, values, r, loDesigns, loLines, errorMessage) Then
                 report = "Projection replay failed at event row " & CStr(r) & ": " & errorMessage
                 Exit Function
             End If
@@ -268,12 +293,202 @@ Private Function ValidateLifecycleTransition(ByVal wb As Workbook, ByVal eventTy
                 errorMessage = "Only an existing, non-obsolete design version can be obsoleted."
                 Exit Function
             End If
+        Case PROCESS_EVENT_SAVE
+            If CurrentReusableDefinitionStatus(wb, "tblProcesses", "ProcessId", _
+                    "ProcessVersion", designId, designVersion) <> "" Then
+                errorCode = "PROCESS_VERSION_EXISTS"
+                errorMessage = "ProcessId and ProcessVersion are immutable once saved."
+                Exit Function
+            End If
+            Set payload = ParseDesignPayload(payloadJson, errorMessage)
+            If Not ValidateProcessSavePayload(payload, errorCode, errorMessage) Then Exit Function
+        Case PROCESS_EVENT_RELEASE
+            If StrComp(CurrentReusableDefinitionStatus(wb, "tblProcesses", _
+                    "ProcessId", "ProcessVersion", designId, designVersion), _
+                    "DRAFT", vbTextCompare) <> 0 Then
+                errorCode = "INVALID_PROCESS_TRANSITION"
+                errorMessage = "Only a DRAFT Process version can be released."
+                Exit Function
+            End If
+        Case PROCESS_EVENT_OBSOLETE
+            currentStatus = CurrentReusableDefinitionStatus(wb, "tblProcesses", _
+                "ProcessId", "ProcessVersion", designId, designVersion)
+            If currentStatus = "" Or StrComp(currentStatus, "OBSOLETE", vbTextCompare) = 0 Then
+                errorCode = "INVALID_PROCESS_TRANSITION"
+                errorMessage = "Only an existing, non-obsolete Process version can be obsoleted."
+                Exit Function
+            End If
+            If HasReleasedRecipeDependency(wb, designId, designVersion) Then
+                errorCode = "PROCESS_HAS_RELEASED_RECIPE_DEPENDENCY"
+                errorMessage = "A Process version referenced by a released Recipe cannot be obsoleted."
+                Exit Function
+            End If
+        Case RECIPE_EVENT_SAVE
+            If CurrentReusableDefinitionStatus(wb, "tblRecipes", "RecipeId", _
+                    "RecipeVersion", designId, designVersion) <> "" Then
+                errorCode = "RECIPE_VERSION_EXISTS"
+                errorMessage = "RecipeId and RecipeVersion are immutable once saved."
+                Exit Function
+            End If
+            Set payload = ParseDesignPayload(payloadJson, errorMessage)
+            If payload Is Nothing Then
+                errorCode = "INVALID_RECIPE_PAYLOAD"
+                If errorMessage = "" Then errorMessage = "RECIPE_SAVE requires a payload."
+                Exit Function
+            End If
+            If RecipePayloadHasCycle(payload) Then
+                errorCode = "RECIPE_CYCLE"
+                errorMessage = "Recipe Process connections contain a circular dependency."
+                Exit Function
+            End If
+            If Not ValidateRecipeSavePayload(payload, errorCode, errorMessage) Then Exit Function
+        Case RECIPE_EVENT_RELEASE
+            If StrComp(CurrentReusableDefinitionStatus(wb, "tblRecipes", _
+                    "RecipeId", "RecipeVersion", designId, designVersion), _
+                    "DRAFT", vbTextCompare) <> 0 Then
+                errorCode = "INVALID_RECIPE_TRANSITION"
+                errorMessage = "Only a DRAFT Recipe version can be released."
+                Exit Function
+            End If
+            If Not ValidateRecipeReleaseContract(wb, designId, designVersion, _
+                    errorCode, errorMessage) Then Exit Function
+        Case RECIPE_EVENT_OBSOLETE
+            currentStatus = CurrentReusableDefinitionStatus(wb, "tblRecipes", _
+                "RecipeId", "RecipeVersion", designId, designVersion)
+            If currentStatus = "" Or StrComp(currentStatus, "OBSOLETE", vbTextCompare) = 0 Then
+                errorCode = "INVALID_RECIPE_TRANSITION"
+                errorMessage = "Only an existing, non-obsolete Recipe version can be obsoleted."
+                Exit Function
+            End If
         Case Else
             errorCode = "INVALID_DESIGN_EVENT_TYPE"
             errorMessage = "Unsupported design event type: " & eventType
             Exit Function
     End Select
     ValidateLifecycleTransition = True
+End Function
+
+Private Function ValidateProcessSavePayload(ByVal payload As Collection, _
+                                            ByRef errorCode As String, _
+                                            ByRef errorMessage As String) As Boolean
+    Dim item As Variant
+    Dim outputCount As Long
+
+    If payload Is Nothing Or payload.Count = 0 Then
+        errorCode = "INVALID_PROCESS_PAYLOAD"
+        errorMessage = "PROCESS_SAVE requires a Process payload."
+        Exit Function
+    End If
+    If StrComp(PayloadText(payload(1), "RecordType"), "PROCESS", vbTextCompare) <> 0 _
+       Or PayloadText(payload(1), "ProcessName") = "" Then
+        errorCode = "INVALID_PROCESS_PAYLOAD"
+        errorMessage = "PROCESS_SAVE requires a PROCESS header with ProcessName."
+        Exit Function
+    End If
+    For Each item In payload
+        If StrComp(PayloadText(item, "RecordType"), "REQUIREMENT", vbTextCompare) = 0 Then
+            If PayloadText(item, "RequirementId") = "" _
+               Or PayloadText(item, "RequirementName") = "" _
+               Or PayloadText(item, "UOM") = "" Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "Each Process requirement requires identity, name, and UOM."
+                Exit Function
+            End If
+            If Not ValidateProcessQuantityMode(item, "RequirementQtyMode", _
+                    errorCode, errorMessage) Then Exit Function
+            If Not ProcessRecordIsActual(item, "RequirementQtyMode") _
+               And Not PayloadPositiveNumber(item, "Qty") _
+               And Not PayloadPositiveNumber(item, "Percent") Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "Each Process requirement requires a positive quantity or percentage."
+                Exit Function
+            End If
+            If Not ProcessRecordIsActual(item, "RequirementQtyMode") _
+               And PayloadPositiveNumber(item, "Percent") _
+               And Not PayloadPositiveNumber(item, "YieldBasis") Then
+                errorCode = "INVALID_PROCESS_REQUIREMENT"
+                errorMessage = "A percentage Process requirement requires a positive yield basis."
+                Exit Function
+            End If
+        ElseIf StrComp(PayloadText(item, "RecordType"), "OUTPUT", vbTextCompare) = 0 Then
+            outputCount = outputCount + 1
+            If PayloadText(item, "OutputId") = "" _
+               Or PayloadText(item, "OutputName") = "" _
+               Or PayloadText(item, "ITEM_CODE") = "" _
+               Or PayloadText(item, "UOM") = "" Then
+                errorCode = "INVALID_PROCESS_OUTPUT"
+                errorMessage = "Each Process output requires identity, item code, and UOM."
+                Exit Function
+            End If
+            If Not ValidateProcessQuantityMode(item, "OutputQtyMode", _
+                    errorCode, errorMessage) Then Exit Function
+            If Not ProcessRecordIsActual(item, "OutputQtyMode") _
+               And Not PayloadPositiveNumber(item, "Qty") _
+               And Not PayloadPositiveNumber(item, "Percent") Then
+                errorCode = "INVALID_PROCESS_OUTPUT"
+                errorMessage = "Each Process output requires a positive quantity or percentage."
+                Exit Function
+            End If
+            If Not ProcessRecordIsActual(item, "OutputQtyMode") _
+               And PayloadPositiveNumber(item, "Percent") _
+               And Not PayloadPositiveNumber(item, "YieldBasis") Then
+                errorCode = "INVALID_PROCESS_OUTPUT"
+                errorMessage = "A percentage Process output requires a positive yield basis."
+                Exit Function
+            End If
+            If Not ValidateOutputRegulation(item, PayloadText(item, "UOM"), _
+                    errorCode, errorMessage) Then Exit Function
+        End If
+    Next item
+    If outputCount = 0 Then
+        errorCode = "PROCESS_OUTPUT_REQUIRED"
+        errorMessage = "Every Process must declare at least one output."
+        Exit Function
+    End If
+    ValidateProcessSavePayload = True
+End Function
+
+Private Function ValidateRecipeSavePayload(ByVal payload As Collection, _
+                                           ByRef errorCode As String, _
+                                           ByRef errorMessage As String) As Boolean
+    Dim item As Variant
+    Dim nodeCount As Long
+
+    If payload.Count = 0 _
+       Or StrComp(PayloadText(payload(1), "RecordType"), "RECIPE", vbTextCompare) <> 0 _
+       Or PayloadText(payload(1), "RecipeName") = "" Then
+        errorCode = "INVALID_RECIPE_PAYLOAD"
+        errorMessage = "RECIPE_SAVE requires a RECIPE header with RecipeName."
+        Exit Function
+    End If
+    For Each item In payload
+        If StrComp(PayloadText(item, "RecordType"), "PROCESS_NODE", vbTextCompare) = 0 Then
+            nodeCount = nodeCount + 1
+        ElseIf StrComp(PayloadText(item, "RecordType"), "OUTPUT_REGULATION", vbTextCompare) = 0 Then
+            If PayloadText(item, "ProcessNodeId") = "" _
+               Or PayloadText(item, "ProcessId") = "" _
+               Or PayloadText(item, "ProcessVersion") = "" _
+               Or PayloadText(item, "OutputId") = "" Then
+                errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                errorMessage = "A Recipe output regulation requires node, Process version, and output identity."
+                Exit Function
+            End If
+            If Not ValidateOutputRegulation(item, PayloadText(item, "UOM"), _
+                    errorCode, errorMessage) Then Exit Function
+        End If
+    Next item
+    If nodeCount = 0 Then
+        errorCode = "RECIPE_PROCESS_REQUIRED"
+        errorMessage = "Every Recipe must select at least one Process."
+        Exit Function
+    End If
+    ValidateRecipeSavePayload = True
+End Function
+
+Private Function PayloadPositiveNumber(ByVal item As Object, ByVal key As String) As Boolean
+    Dim valueIn As Variant
+    valueIn = PayloadValue(item, key)
+    If IsNumeric(valueIn) Then PayloadPositiveNumber = (CDbl(valueIn) > 0)
 End Function
 
 Private Function ReplayDesignEvent(ByVal loEvents As ListObject, ByVal values As Variant, _
@@ -342,6 +557,211 @@ Private Function ReplayDesignEvent(ByVal loEvents As ListObject, ByVal values As
     ReplayDesignEvent = True
 End Function
 
+Private Function ReplayReusableProductionEvent(ByVal loEvents As ListObject, _
+                                               ByVal values As Variant, _
+                                               ByVal rowIndex As Long, _
+                                               ByVal wb As Workbook, _
+                                               ByRef errorMessage As String) As Boolean
+    Dim eventType As String
+    Dim definitionId As String
+    Dim definitionVersion As String
+    Dim userId As String
+    Dim eventId As String
+    Dim appliedAt As Variant
+    Dim payload As Collection
+    Dim item As Variant
+    Dim loHeader As ListObject
+    Dim targetRow As Long
+    Dim lr As ListRow
+    Dim alternativeOrdinal As Long
+
+    eventType = UCase$(ReadDesignTableText(loEvents, values, rowIndex, "EventType"))
+    definitionId = ReadDesignTableText(loEvents, values, rowIndex, "DesignId")
+    definitionVersion = ReadDesignTableText(loEvents, values, rowIndex, "DesignVersion")
+    userId = ReadDesignTableText(loEvents, values, rowIndex, "UserId")
+    eventId = ReadDesignTableText(loEvents, values, rowIndex, "EventID")
+    appliedAt = ReadDesignTableValue(loEvents, values, rowIndex, "AppliedAtUTC")
+
+    Select Case eventType
+        Case PROCESS_EVENT_SAVE
+            Set payload = ParseDesignPayload( _
+                ReadDesignTableText(loEvents, values, rowIndex, "PayloadJson"), errorMessage)
+            If payload Is Nothing Or payload.Count = 0 Then Exit Function
+            Set loHeader = FindDesignsApplyTable(wb, "tblProcesses")
+            Set lr = loHeader.ListRows.Add
+            SetDesignTableValue loHeader, lr.Index, "ProcessId", definitionId
+            SetDesignTableValue loHeader, lr.Index, "ProcessVersion", definitionVersion
+            SetDesignTableValue loHeader, lr.Index, "ProcessName", PayloadText(payload(1), "ProcessName")
+            SetDesignTableValue loHeader, lr.Index, "Description", PayloadText(payload(1), "Description")
+            SetDesignTableValue loHeader, lr.Index, "Status", "DRAFT"
+            SetDesignTableValue loHeader, lr.Index, "CreatedAtUTC", _
+                ReadDesignTableValue(loEvents, values, rowIndex, "OccurredAtUTC")
+            SetDesignTableValue loHeader, lr.Index, "CreatedByUserId", userId
+            SetDesignTableValue loHeader, lr.Index, "SourceEventID", eventId
+            For Each item In payload
+                ProjectProcessPayloadItem wb, definitionId, definitionVersion, _
+                    item, alternativeOrdinal
+            Next item
+        Case PROCESS_EVENT_RELEASE, PROCESS_EVENT_OBSOLETE
+            Set loHeader = FindDesignsApplyTable(wb, "tblProcesses")
+            targetRow = FindReusableDefinitionRow(loHeader, "ProcessId", _
+                "ProcessVersion", definitionId, definitionVersion)
+            If targetRow = 0 Then
+                errorMessage = "Process lifecycle target not found."
+                Exit Function
+            End If
+            If eventType = PROCESS_EVENT_RELEASE Then
+                SetDesignTableValue loHeader, targetRow, "Status", "RELEASED"
+                SetDesignTableValue loHeader, targetRow, "ReleasedAtUTC", appliedAt
+                SetDesignTableValue loHeader, targetRow, "ReleasedByUserId", userId
+            Else
+                SetDesignTableValue loHeader, targetRow, "Status", "OBSOLETE"
+                SetDesignTableValue loHeader, targetRow, "ObsoletedAtUTC", appliedAt
+                SetDesignTableValue loHeader, targetRow, "ObsoletedByUserId", userId
+            End If
+        Case RECIPE_EVENT_SAVE
+            Set payload = ParseDesignPayload( _
+                ReadDesignTableText(loEvents, values, rowIndex, "PayloadJson"), errorMessage)
+            If payload Is Nothing Or payload.Count = 0 Then Exit Function
+            Set loHeader = FindDesignsApplyTable(wb, "tblRecipes")
+            Set lr = loHeader.ListRows.Add
+            SetDesignTableValue loHeader, lr.Index, "RecipeId", definitionId
+            SetDesignTableValue loHeader, lr.Index, "RecipeVersion", definitionVersion
+            SetDesignTableValue loHeader, lr.Index, "RecipeName", PayloadText(payload(1), "RecipeName")
+            SetDesignTableValue loHeader, lr.Index, "Description", PayloadText(payload(1), "Description")
+            SetDesignTableValue loHeader, lr.Index, "Status", "DRAFT"
+            SetDesignTableValue loHeader, lr.Index, "CreatedAtUTC", _
+                ReadDesignTableValue(loEvents, values, rowIndex, "OccurredAtUTC")
+            SetDesignTableValue loHeader, lr.Index, "CreatedByUserId", userId
+            SetDesignTableValue loHeader, lr.Index, "SourceEventID", eventId
+            For Each item In payload
+                ProjectRecipePayloadItem wb, definitionId, definitionVersion, item
+            Next item
+        Case RECIPE_EVENT_RELEASE, RECIPE_EVENT_OBSOLETE
+            Set loHeader = FindDesignsApplyTable(wb, "tblRecipes")
+            targetRow = FindReusableDefinitionRow(loHeader, "RecipeId", _
+                "RecipeVersion", definitionId, definitionVersion)
+            If targetRow = 0 Then
+                errorMessage = "Recipe lifecycle target not found."
+                Exit Function
+            End If
+            If eventType = RECIPE_EVENT_RELEASE Then
+                SetDesignTableValue loHeader, targetRow, "Status", "RELEASED"
+                SetDesignTableValue loHeader, targetRow, "ReleasedAtUTC", appliedAt
+                SetDesignTableValue loHeader, targetRow, "ReleasedByUserId", userId
+            Else
+                SetDesignTableValue loHeader, targetRow, "Status", "OBSOLETE"
+                SetDesignTableValue loHeader, targetRow, "ObsoletedAtUTC", appliedAt
+                SetDesignTableValue loHeader, targetRow, "ObsoletedByUserId", userId
+            End If
+        Case Else
+            errorMessage = "Unsupported reusable Production event type " & eventType
+            Exit Function
+    End Select
+    ReplayReusableProductionEvent = True
+End Function
+
+Private Sub ProjectProcessPayloadItem(ByVal wb As Workbook, ByVal processId As String, _
+                                      ByVal processVersion As String, ByVal item As Object, _
+                                      ByRef alternativeOrdinal As Long)
+    Dim recordType As String
+    Dim lo As ListObject
+    Dim lr As ListRow
+
+    recordType = UCase$(PayloadText(item, "RecordType"))
+    Select Case recordType
+        Case "REQUIREMENT"
+            Set lo = FindDesignsApplyTable(wb, "tblProcessRequirements")
+            Set lr = lo.ListRows.Add
+            SetDesignTableValue lo, lr.Index, "ProcessId", processId
+            SetDesignTableValue lo, lr.Index, "ProcessVersion", processVersion
+            SetDesignTableValue lo, lr.Index, "RequirementId", PayloadText(item, "RequirementId")
+            SetDesignTableValue lo, lr.Index, "RequirementName", PayloadText(item, "RequirementName")
+            SetDesignTableValue lo, lr.Index, "Qty", PayloadValue(item, "Qty")
+            SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
+            SetDesignTableValue lo, lr.Index, "YieldBasis", PayloadText(item, "YieldBasis")
+            SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+            SetDesignTableValue lo, lr.Index, "RequirementQtyMode", PayloadText(item, "RequirementQtyMode")
+        Case "ALTERNATIVE"
+            alternativeOrdinal = alternativeOrdinal + 1
+            Set lo = FindDesignsApplyTable(wb, "tblProcessIngredientAlternatives")
+            Set lr = lo.ListRows.Add
+            SetDesignTableValue lo, lr.Index, "ProcessId", processId
+            SetDesignTableValue lo, lr.Index, "ProcessVersion", processVersion
+            SetDesignTableValue lo, lr.Index, "RequirementId", PayloadText(item, "RequirementId")
+            SetDesignTableValue lo, lr.Index, "AlternativeOrdinal", alternativeOrdinal
+            SetDesignTableValue lo, lr.Index, "ITEM_CODE", PayloadText(item, "ITEM_CODE")
+        Case "OUTPUT"
+            Set lo = FindDesignsApplyTable(wb, "tblProcessOutputs")
+            Set lr = lo.ListRows.Add
+            SetDesignTableValue lo, lr.Index, "ProcessId", processId
+            SetDesignTableValue lo, lr.Index, "ProcessVersion", processVersion
+            SetDesignTableValue lo, lr.Index, "OutputId", PayloadText(item, "OutputId")
+            SetDesignTableValue lo, lr.Index, "OutputName", PayloadText(item, "OutputName")
+            SetDesignTableValue lo, lr.Index, "ITEM_CODE", PayloadText(item, "ITEM_CODE")
+            SetDesignTableValue lo, lr.Index, "ComponentDesignId", PayloadText(item, "ComponentDesignId")
+            SetDesignTableValue lo, lr.Index, "ComponentDesignVersion", PayloadText(item, "ComponentDesignVersion")
+            SetDesignTableValue lo, lr.Index, "Qty", PayloadValue(item, "Qty")
+            SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
+            SetDesignTableValue lo, lr.Index, "YieldBasis", PayloadText(item, "YieldBasis")
+            SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+            SetDesignTableValue lo, lr.Index, "OutputQtyMode", PayloadText(item, "OutputQtyMode")
+            SetDesignTableValue lo, lr.Index, "OutputRegulationEnabled", PayloadValue(item, "OutputRegulationEnabled")
+            SetDesignTableValue lo, lr.Index, "OutputFloorQty", PayloadValue(item, "OutputFloorQty")
+            SetDesignTableValue lo, lr.Index, "OutputCeilingQty", PayloadValue(item, "OutputCeilingQty")
+        Case "INSTRUCTION"
+            Set lo = FindDesignsApplyTable(wb, "tblProcessInstructions")
+            Set lr = lo.ListRows.Add
+            SetDesignTableValue lo, lr.Index, "ProcessId", processId
+            SetDesignTableValue lo, lr.Index, "ProcessVersion", processVersion
+            SetDesignTableValue lo, lr.Index, "InstructionOrdinal", PayloadValue(item, "InstructionOrdinal")
+            SetDesignTableValue lo, lr.Index, "Instruction", PayloadText(item, "Instruction")
+    End Select
+End Sub
+
+Private Sub ProjectRecipePayloadItem(ByVal wb As Workbook, ByVal recipeId As String, _
+                                     ByVal recipeVersion As String, ByVal item As Object)
+    Dim recordType As String
+    Dim lo As ListObject
+    Dim lr As ListRow
+
+    recordType = UCase$(PayloadText(item, "RecordType"))
+    If recordType = "PROCESS_NODE" Then
+        Set lo = FindDesignsApplyTable(wb, "tblRecipeProcesses")
+        Set lr = lo.ListRows.Add
+        SetDesignTableValue lo, lr.Index, "RecipeId", recipeId
+        SetDesignTableValue lo, lr.Index, "RecipeVersion", recipeVersion
+        SetDesignTableValue lo, lr.Index, "ProcessNodeId", PayloadText(item, "ProcessNodeId")
+        SetDesignTableValue lo, lr.Index, "ProcessId", PayloadText(item, "ProcessId")
+        SetDesignTableValue lo, lr.Index, "ProcessVersion", PayloadText(item, "ProcessVersion")
+        SetDesignTableValue lo, lr.Index, "ExecutionOrdinal", PayloadValue(item, "ExecutionOrdinal")
+    ElseIf recordType = "CONNECTION" Then
+        Set lo = FindDesignsApplyTable(wb, "tblRecipeConnections")
+        Set lr = lo.ListRows.Add
+        SetDesignTableValue lo, lr.Index, "RecipeId", recipeId
+        SetDesignTableValue lo, lr.Index, "RecipeVersion", recipeVersion
+        SetDesignTableValue lo, lr.Index, "FromProcessNodeId", PayloadText(item, "FromProcessNodeId")
+        SetDesignTableValue lo, lr.Index, "FromOutputId", PayloadText(item, "FromOutputId")
+        SetDesignTableValue lo, lr.Index, "ToProcessNodeId", PayloadText(item, "ToProcessNodeId")
+        SetDesignTableValue lo, lr.Index, "ToRequirementId", PayloadText(item, "ToRequirementId")
+        SetDesignTableValue lo, lr.Index, "Qty", PayloadValue(item, "Qty")
+        SetDesignTableValue lo, lr.Index, "Percent", PayloadValue(item, "Percent")
+        SetDesignTableValue lo, lr.Index, "UOM", PayloadText(item, "UOM")
+    ElseIf recordType = "OUTPUT_REGULATION" Then
+        Set lo = FindDesignsApplyTable(wb, "tblRecipeOutputRegulations")
+        Set lr = lo.ListRows.Add
+        SetDesignTableValue lo, lr.Index, "RecipeId", recipeId
+        SetDesignTableValue lo, lr.Index, "RecipeVersion", recipeVersion
+        SetDesignTableValue lo, lr.Index, "ProcessNodeId", PayloadText(item, "ProcessNodeId")
+        SetDesignTableValue lo, lr.Index, "ProcessId", PayloadText(item, "ProcessId")
+        SetDesignTableValue lo, lr.Index, "ProcessVersion", PayloadText(item, "ProcessVersion")
+        SetDesignTableValue lo, lr.Index, "OutputId", PayloadText(item, "OutputId")
+        SetDesignTableValue lo, lr.Index, "OutputRegulationEnabled", PayloadValue(item, "OutputRegulationEnabled")
+        SetDesignTableValue lo, lr.Index, "OutputFloorQty", PayloadValue(item, "OutputFloorQty")
+        SetDesignTableValue lo, lr.Index, "OutputCeilingQty", PayloadValue(item, "OutputCeilingQty")
+    End If
+End Sub
+
 Private Sub AddProjectedDesignLine(ByVal lo As ListObject, ByVal designId As String, _
                                    ByVal designVersion As String, ByVal item As Object)
     Dim lr As ListRow
@@ -382,6 +802,661 @@ Private Function CurrentDesignStatus(ByVal wb As Workbook, ByVal designId As Str
             Exit Function
         End If
     Next r
+End Function
+
+Private Function CurrentReusableDefinitionStatus(ByVal wb As Workbook, _
+                                                 ByVal tableName As String, _
+                                                 ByVal idColumn As String, _
+                                                 ByVal versionColumn As String, _
+                                                 ByVal definitionId As String, _
+                                                 ByVal definitionVersion As String) As String
+    Dim lo As ListObject
+    Dim rowIndex As Long
+
+    Set lo = FindDesignsApplyTable(wb, tableName)
+    rowIndex = FindReusableDefinitionRow(lo, idColumn, versionColumn, _
+        definitionId, definitionVersion)
+    If rowIndex > 0 Then
+        CurrentReusableDefinitionStatus = Trim$(CStr( _
+            lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Status").Index).Value2))
+    End If
+End Function
+
+Private Function FindReusableDefinitionRow(ByVal lo As ListObject, _
+                                           ByVal idColumn As String, _
+                                           ByVal versionColumn As String, _
+                                           ByVal definitionId As String, _
+                                           ByVal definitionVersion As String) As Long
+    Dim values As Variant
+    Dim rowIndex As Long
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    values = lo.DataBodyRange.Value2
+    For rowIndex = 1 To UBound(values, 1)
+        If StrComp(ReadDesignTableText(lo, values, rowIndex, idColumn), _
+                   definitionId, vbTextCompare) = 0 _
+           And StrComp(ReadDesignTableText(lo, values, rowIndex, versionColumn), _
+                       definitionVersion, vbTextCompare) = 0 Then
+            FindReusableDefinitionRow = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Function RecipePayloadHasCycle(ByVal payload As Collection) As Boolean
+    Dim nodes As Object
+    Dim inDegree As Object
+    Dim adjacency As Object
+    Dim processed As Object
+    Dim item As Variant
+    Dim nodeId As String
+    Dim fromNode As String
+    Dim toNode As String
+    Dim edges As Collection
+    Dim nodeKey As Variant
+    Dim edgeTarget As Variant
+    Dim foundNode As Boolean
+
+    Set nodes = CreateObject("Scripting.Dictionary")
+    Set inDegree = CreateObject("Scripting.Dictionary")
+    Set adjacency = CreateObject("Scripting.Dictionary")
+    Set processed = CreateObject("Scripting.Dictionary")
+    For Each item In payload
+        If StrComp(PayloadText(item, "RecordType"), "PROCESS_NODE", vbTextCompare) = 0 Then
+            nodeId = PayloadText(item, "ProcessNodeId")
+            If nodeId <> "" And Not nodes.Exists(nodeId) Then
+                nodes.Add nodeId, True
+                inDegree.Add nodeId, 0
+                Set edges = New Collection
+                adjacency.Add nodeId, edges
+            End If
+        End If
+    Next item
+    For Each item In payload
+        If StrComp(PayloadText(item, "RecordType"), "CONNECTION", vbTextCompare) = 0 Then
+            fromNode = PayloadText(item, "FromProcessNodeId")
+            toNode = PayloadText(item, "ToProcessNodeId")
+            If nodes.Exists(fromNode) And nodes.Exists(toNode) Then
+                Set edges = adjacency(fromNode)
+                edges.Add toNode
+                inDegree(toNode) = CLng(inDegree(toNode)) + 1
+            End If
+        End If
+    Next item
+
+    Do
+        foundNode = False
+        For Each nodeKey In nodes.Keys
+            If Not processed.Exists(CStr(nodeKey)) _
+               And CLng(inDegree(CStr(nodeKey))) = 0 Then
+                processed.Add CStr(nodeKey), True
+                Set edges = adjacency(CStr(nodeKey))
+                For Each edgeTarget In edges
+                    inDegree(CStr(edgeTarget)) = CLng(inDegree(CStr(edgeTarget))) - 1
+                Next edgeTarget
+                foundNode = True
+            End If
+        Next nodeKey
+    Loop While foundNode
+    RecipePayloadHasCycle = (processed.Count < nodes.Count)
+End Function
+
+Public Function ValidateRecipeReleaseContract(ByVal wb As Workbook, _
+                                              ByVal recipeId As String, _
+                                              ByVal recipeVersion As String, _
+                                              ByRef errorCode As String, _
+                                              ByRef errorMessage As String) As Boolean
+    Dim loNodes As ListObject
+    Dim loConnections As ListObject
+    Dim loRequirements As ListObject
+    Dim nodeValues As Variant
+    Dim connectionValues As Variant
+    Dim requirementValues As Variant
+    Dim nodes As Object
+    Dim ordinals As Object
+    Dim connectedRequirements As Object
+    Dim routedQty As Object
+    Dim routedPercent As Object
+    Dim nodeInfo As Object
+    Dim sourceInfo As Object
+    Dim targetInfo As Object
+    Dim r As Long
+    Dim nodeKey As Variant
+    Dim processNodeId As String
+    Dim processId As String
+    Dim processVersion As String
+    Dim ordinalValue As Variant
+    Dim ordinalKey As String
+    Dim fromNodeKey As String
+    Dim toNodeKey As String
+    Dim outputId As String
+    Dim requirementId As String
+    Dim routeKey As String
+    Dim targetKey As String
+    Dim connectionUom As String
+    Dim outputItemCode As String
+    Dim outputUom As String
+    Dim requirementUom As String
+    Dim outputQtyMode As String
+    Dim requirementQtyMode As String
+    Dim outputQty As Double
+    Dim outputPercent As Double
+    Dim requirementQty As Double
+    Dim requirementPercent As Double
+    Dim connectionQty As Double
+    Dim connectionPercent As Double
+    Dim currentRouted As Double
+    Dim alternativeCount As Long
+    Dim itemAccepted As Boolean
+    Dim loOutputs As ListObject
+    Dim loOutputRegulations As ListObject
+
+    Set loNodes = FindDesignsApplyTable(wb, "tblRecipeProcesses")
+    Set loConnections = FindDesignsApplyTable(wb, "tblRecipeConnections")
+    Set loRequirements = FindDesignsApplyTable(wb, "tblProcessRequirements")
+    Set loOutputs = FindDesignsApplyTable(wb, "tblProcessOutputs")
+    Set loOutputRegulations = FindDesignsApplyTable(wb, "tblRecipeOutputRegulations")
+    Set nodes = CreateObject("Scripting.Dictionary")
+    Set ordinals = CreateObject("Scripting.Dictionary")
+    Set connectedRequirements = CreateObject("Scripting.Dictionary")
+    Set routedQty = CreateObject("Scripting.Dictionary")
+    Set routedPercent = CreateObject("Scripting.Dictionary")
+    nodes.CompareMode = vbTextCompare
+    ordinals.CompareMode = vbTextCompare
+    connectedRequirements.CompareMode = vbTextCompare
+    routedQty.CompareMode = vbTextCompare
+    routedPercent.CompareMode = vbTextCompare
+
+    If loNodes Is Nothing Or loNodes.DataBodyRange Is Nothing Then
+        errorCode = "RECIPE_PROCESS_REQUIRED"
+        errorMessage = "A Recipe release requires at least one Process node."
+        Exit Function
+    End If
+    nodeValues = loNodes.DataBodyRange.Value2
+    For r = 1 To UBound(nodeValues, 1)
+        If ReusableProjectionRowMatches(loNodes, nodeValues, r, _
+                "RecipeId", "RecipeVersion", recipeId, recipeVersion) Then
+            processNodeId = ReadDesignTableText(loNodes, nodeValues, r, "ProcessNodeId")
+            processId = ReadDesignTableText(loNodes, nodeValues, r, "ProcessId")
+            processVersion = ReadDesignTableText(loNodes, nodeValues, r, "ProcessVersion")
+            ordinalValue = ReadDesignTableValue(loNodes, nodeValues, r, "ExecutionOrdinal")
+            If processNodeId = "" Or processId = "" Or processVersion = "" _
+               Or Not IsNumeric(ordinalValue) Or CLng(ordinalValue) <= 0 Then
+                errorCode = "RECIPE_PROCESS_INVALID"
+                errorMessage = "Each Recipe Process node requires identity, version, and positive execution order."
+                Exit Function
+            End If
+            If nodes.Exists(processNodeId) Then
+                errorCode = "RECIPE_PROCESS_INVALID"
+                errorMessage = "Process node identities must be unique within a Recipe version."
+                Exit Function
+            End If
+            ordinalKey = CStr(CLng(ordinalValue))
+            If ordinals.Exists(ordinalKey) Then
+                errorCode = "RECIPE_EXECUTION_ORDER"
+                errorMessage = "Recipe execution order values must be unique."
+                Exit Function
+            End If
+            If StrComp(CurrentReusableDefinitionStatus(wb, "tblProcesses", _
+                    "ProcessId", "ProcessVersion", processId, processVersion), _
+                    "RELEASED", vbTextCompare) <> 0 Then
+                errorCode = "RECIPE_PROCESS_NOT_RELEASED"
+                errorMessage = "Every Recipe node must pin an existing released Process version."
+                Exit Function
+            End If
+            Set nodeInfo = CreateObject("Scripting.Dictionary")
+            nodeInfo("ProcessId") = processId
+            nodeInfo("ProcessVersion") = processVersion
+            nodeInfo("ExecutionOrdinal") = CLng(ordinalValue)
+            nodes.Add processNodeId, nodeInfo
+            ordinals.Add ordinalKey, True
+        End If
+    Next r
+    If nodes.Count = 0 Then
+        errorCode = "RECIPE_PROCESS_REQUIRED"
+        errorMessage = "A Recipe release requires at least one Process node."
+        Exit Function
+    End If
+
+    If Not loConnections Is Nothing And Not loConnections.DataBodyRange Is Nothing Then
+        connectionValues = loConnections.DataBodyRange.Value2
+        For r = 1 To UBound(connectionValues, 1)
+            If ReusableProjectionRowMatches(loConnections, connectionValues, r, _
+                    "RecipeId", "RecipeVersion", recipeId, recipeVersion) Then
+                fromNodeKey = ReadDesignTableText(loConnections, connectionValues, r, "FromProcessNodeId")
+                toNodeKey = ReadDesignTableText(loConnections, connectionValues, r, "ToProcessNodeId")
+                outputId = ReadDesignTableText(loConnections, connectionValues, r, "FromOutputId")
+                requirementId = ReadDesignTableText(loConnections, connectionValues, r, "ToRequirementId")
+                connectionUom = ReadDesignTableText(loConnections, connectionValues, r, "UOM")
+                If Not nodes.Exists(fromNodeKey) Or Not nodes.Exists(toNodeKey) _
+                   Or outputId = "" Or requirementId = "" Then
+                    errorCode = "RECIPE_CONNECTION_INVALID"
+                    errorMessage = "Every Recipe connection must reference selected Process nodes, an output, and a requirement."
+                    Exit Function
+                End If
+                Set sourceInfo = nodes(fromNodeKey)
+                Set targetInfo = nodes(toNodeKey)
+                If CLng(sourceInfo("ExecutionOrdinal")) >= CLng(targetInfo("ExecutionOrdinal")) Then
+                    errorCode = "RECIPE_EXECUTION_ORDER"
+                    errorMessage = "Recipe execution order must place every source Process before its downstream Process."
+                    Exit Function
+                End If
+                If Not TryGetProcessOutputForRecipe(wb, CStr(sourceInfo("ProcessId")), _
+                        CStr(sourceInfo("ProcessVersion")), outputId, outputItemCode, _
+                        outputUom, outputQty, outputPercent, outputQtyMode) Then
+                    errorCode = "RECIPE_CONNECTION_INVALID"
+                    errorMessage = "A Recipe connection references an output that is not declared by its Process version."
+                    Exit Function
+                End If
+                If Not TryGetProcessRequirementForRecipe(wb, CStr(targetInfo("ProcessId")), _
+                        CStr(targetInfo("ProcessVersion")), requirementId, requirementUom, _
+                        requirementQty, requirementPercent, requirementQtyMode) Then
+                    errorCode = "RECIPE_CONNECTION_INVALID"
+                    errorMessage = "A Recipe connection references a requirement that is not declared by its Process version."
+                    Exit Function
+                End If
+                If connectionUom = "" _
+                   Or StrComp(connectionUom, outputUom, vbTextCompare) <> 0 _
+                   Or StrComp(connectionUom, requirementUom, vbTextCompare) <> 0 Then
+                    errorCode = "RECIPE_CONNECTION_INCOMPATIBLE"
+                    errorMessage = "Connection UOM must match both the output and downstream requirement."
+                    Exit Function
+                End If
+                If StrComp(requirementQtyMode, "ACTUAL", vbTextCompare) = 0 Then
+                    errorCode = "RECIPE_CONNECTION_QUANTITY"
+                    errorMessage = "ACTUAL requirement cannot receive a Recipe connection."
+                    Exit Function
+                End If
+                GetRequirementAlternativeInfo wb, CStr(targetInfo("ProcessId")), _
+                    CStr(targetInfo("ProcessVersion")), requirementId, outputItemCode, _
+                    alternativeCount, itemAccepted
+                If alternativeCount > 0 And Not itemAccepted Then
+                    errorCode = "RECIPE_CONNECTION_INCOMPATIBLE"
+                    errorMessage = "The output item is not an acceptable alternative for the downstream requirement."
+                    Exit Function
+                End If
+                targetKey = UCase$(toNodeKey & "|" & requirementId)
+                If connectedRequirements.Exists(targetKey) Then
+                    errorCode = "RECIPE_REQUIREMENT_MULTIPLE_SOURCES"
+                    errorMessage = "A Process requirement may have only one upstream output connection."
+                    Exit Function
+                End If
+                connectedRequirements.Add targetKey, True
+                routeKey = UCase$(fromNodeKey & "|" & outputId)
+                If TryPositiveDouble(ReadDesignTableValue(loConnections, connectionValues, r, "Qty"), _
+                        connectionQty) Then
+                    If (StrComp(outputQtyMode, "ACTUAL", vbTextCompare) <> 0 And outputQty <= 0) Or (requirementQty > 0 _
+                       And Abs(connectionQty - requirementQty) > 0.0000001) Then
+                        errorCode = "RECIPE_CONNECTION_QUANTITY"
+                        errorMessage = "Connection quantity must use and satisfy the output and requirement quantity basis."
+                        Exit Function
+                    End If
+                    currentRouted = connectionQty
+                    If routedQty.Exists(routeKey) Then currentRouted = currentRouted + CDbl(routedQty(routeKey))
+                    If StrComp(outputQtyMode, "ACTUAL", vbTextCompare) <> 0 _
+                       And currentRouted - outputQty > 0.0000001 Then
+                        errorCode = "RECIPE_OUTPUT_OVERALLOCATED"
+                        errorMessage = "Routed connection quantity exceeds the Process output yield."
+                        Exit Function
+                    End If
+                    routedQty(routeKey) = currentRouted
+                ElseIf TryPositiveDouble(ReadDesignTableValue(loConnections, connectionValues, r, "Percent"), _
+                        connectionPercent) Then
+                    If StrComp(outputQtyMode, "ACTUAL", vbTextCompare) = 0 Then
+                        errorCode = "RECIPE_CONNECTION_QUANTITY"
+                        errorMessage = "ACTUAL output cannot use a percentage Recipe connection."
+                        Exit Function
+                    End If
+                    If outputPercent <= 0 Or (requirementPercent > 0 _
+                       And Abs(connectionPercent - requirementPercent) > 0.0000001) Then
+                        errorCode = "RECIPE_CONNECTION_QUANTITY"
+                        errorMessage = "Connection percentage must use and satisfy the output and requirement percentage basis."
+                        Exit Function
+                    End If
+                    currentRouted = connectionPercent
+                    If routedPercent.Exists(routeKey) Then currentRouted = currentRouted + CDbl(routedPercent(routeKey))
+                    If currentRouted - outputPercent > 0.0000001 Then
+                        errorCode = "RECIPE_OUTPUT_OVERALLOCATED"
+                        errorMessage = "Routed connection percentage exceeds the Process output yield."
+                        Exit Function
+                    End If
+                    routedPercent(routeKey) = currentRouted
+                Else
+                    errorCode = "RECIPE_CONNECTION_QUANTITY"
+                    errorMessage = "Every Recipe connection requires a positive quantity or percentage."
+                    Exit Function
+                End If
+            End If
+        Next r
+    End If
+
+    If Not loRequirements Is Nothing And Not loRequirements.DataBodyRange Is Nothing Then
+        requirementValues = loRequirements.DataBodyRange.Value2
+        For Each nodeKey In nodes.Keys
+            Set nodeInfo = nodes(CStr(nodeKey))
+            For r = 1 To UBound(requirementValues, 1)
+                If ReusableProjectionRowMatches(loRequirements, requirementValues, r, _
+                        "ProcessId", "ProcessVersion", CStr(nodeInfo("ProcessId")), _
+                        CStr(nodeInfo("ProcessVersion"))) Then
+                    requirementId = ReadDesignTableText(loRequirements, requirementValues, r, "RequirementId")
+                    targetKey = UCase$(CStr(nodeKey) & "|" & requirementId)
+                    GetRequirementAlternativeInfo wb, CStr(nodeInfo("ProcessId")), _
+                        CStr(nodeInfo("ProcessVersion")), requirementId, "", _
+                        alternativeCount, itemAccepted
+                    If Not connectedRequirements.Exists(targetKey) And alternativeCount = 0 Then
+                        errorCode = "RECIPE_UNRESOLVED_REQUIREMENT"
+                        errorMessage = "Every Process requirement needs one upstream connection or an acceptable inventory alternative."
+                        Exit Function
+                    End If
+                End If
+            Next r
+        Next nodeKey
+    End If
+    If Not ValidateRecipeOutputRegulations(wb, recipeId, recipeVersion, nodes, routedQty, _
+            loOutputs, loOutputRegulations, errorCode, errorMessage) Then Exit Function
+    ValidateRecipeReleaseContract = True
+End Function
+
+Private Function ProcessRecordIsActual(ByVal item As Object, ByVal fieldName As String) As Boolean
+    ProcessRecordIsActual = (StrComp(Trim$(PayloadText(item, fieldName)), "ACTUAL", vbTextCompare) = 0)
+End Function
+
+Private Function ValidateProcessQuantityMode(ByVal item As Object, ByVal fieldName As String, _
+                                             ByRef errorCode As String, _
+                                             ByRef errorMessage As String) As Boolean
+    Dim modeText As String
+    modeText = UCase$(Trim$(PayloadText(item, fieldName)))
+    If modeText = "" Or modeText = "FIXED" Then
+        ValidateProcessQuantityMode = True
+        Exit Function
+    End If
+    If modeText <> "ACTUAL" Then
+        errorCode = "INVALID_PROCESS_QUANTITY_MODE"
+        errorMessage = fieldName & " must be FIXED or ACTUAL."
+        Exit Function
+    End If
+    If PayloadPositiveNumber(item, "Qty") Or PayloadPositiveNumber(item, "Percent") _
+       Or PayloadPositiveNumber(item, "YieldBasis") Then
+        errorCode = "INVALID_PROCESS_QUANTITY_MODE"
+        errorMessage = "ACTUAL quantity mode cannot carry Qty, Percent, or YieldBasis."
+        Exit Function
+    End If
+    ValidateProcessQuantityMode = True
+End Function
+
+Private Function ValidateOutputRegulation(ByVal item As Object, ByVal uom As String, _
+                                          ByRef errorCode As String, _
+                                          ByRef errorMessage As String) As Boolean
+    Dim floorQty As Double
+    Dim ceilingQty As Double
+    If Not PayloadTrue(item, "OutputRegulationEnabled") Then
+        ValidateOutputRegulation = True
+        Exit Function
+    End If
+    If Not TryPositiveDouble(PayloadValue(item, "OutputFloorQty"), floorQty) _
+       Or Not TryPositiveDouble(PayloadValue(item, "OutputCeilingQty"), ceilingQty) _
+       Or floorQty - ceilingQty > 0.0000001 Then
+        errorCode = "INVALID_OUTPUT_REGULATION"
+        errorMessage = "Enabled output regulation requires positive floor and ceiling with floor not above ceiling."
+        Exit Function
+    End If
+    If IsEachUom(uom) And (Abs(floorQty - Fix(floorQty)) > 0.0000001 _
+       Or Abs(ceilingQty - Fix(ceilingQty)) > 0.0000001) Then
+        errorCode = "INVALID_OUTPUT_REGULATION"
+        errorMessage = "EA output regulation floor and ceiling must be whole units."
+        Exit Function
+    End If
+    ValidateOutputRegulation = True
+End Function
+
+Private Function ValidateRecipeOutputRegulations(ByVal wb As Workbook, _
+                                                 ByVal recipeId As String, _
+                                                 ByVal recipeVersion As String, _
+                                                 ByVal nodes As Object, _
+                                                 ByVal routedQty As Object, _
+                                                 ByVal loOutputs As ListObject, _
+                                                 ByVal loOverrides As ListObject, _
+                                                 ByRef errorCode As String, _
+                                                 ByRef errorMessage As String) As Boolean
+    Dim overrides As Object, values As Variant, outputValues As Variant
+    Dim nodeKey As Variant, nodeInfo As Object, routeKey As String
+    Dim r As Long, processNodeId As String, outputId As String, key As String
+    Dim enabled As Boolean, floorQty As Double, ceilingQty As Double, routed As Double
+    Dim uom As String, item As Object
+    Set overrides = CreateObject("Scripting.Dictionary")
+    overrides.CompareMode = vbTextCompare
+    If Not loOverrides Is Nothing And Not loOverrides.DataBodyRange Is Nothing Then
+        values = loOverrides.DataBodyRange.Value2
+        For r = 1 To UBound(values, 1)
+            If ReusableProjectionRowMatches(loOverrides, values, r, "RecipeId", "RecipeVersion", recipeId, recipeVersion) Then
+                processNodeId = ReadDesignTableText(loOverrides, values, r, "ProcessNodeId")
+                outputId = ReadDesignTableText(loOverrides, values, r, "OutputId")
+                key = UCase$(processNodeId & "|" & outputId)
+                If Not nodes.Exists(processNodeId) Or overrides.Exists(key) Then
+                    errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                    errorMessage = "Recipe output regulations must reference one unique selected Process output."
+                    Exit Function
+                End If
+                Set nodeInfo = nodes(processNodeId)
+                If StrComp(ReadDesignTableText(loOverrides, values, r, "ProcessId"), CStr(nodeInfo("ProcessId")), vbTextCompare) <> 0 _
+                   Or StrComp(ReadDesignTableText(loOverrides, values, r, "ProcessVersion"), CStr(nodeInfo("ProcessVersion")), vbTextCompare) <> 0 Then
+                    errorCode = "INVALID_RECIPE_OUTPUT_REGULATION"
+                    errorMessage = "Recipe output regulation Process identity must match its node."
+                    Exit Function
+                End If
+                Set item = CreateObject("Scripting.Dictionary")
+                item.CompareMode = vbTextCompare
+                item("OutputRegulationEnabled") = ReadDesignTableValue(loOverrides, values, r, "OutputRegulationEnabled")
+                item("OutputFloorQty") = ReadDesignTableValue(loOverrides, values, r, "OutputFloorQty")
+                item("OutputCeilingQty") = ReadDesignTableValue(loOverrides, values, r, "OutputCeilingQty")
+                overrides.Add key, item
+            End If
+        Next r
+    End If
+    If loOutputs Is Nothing Or loOutputs.DataBodyRange Is Nothing Then Exit Function
+    outputValues = loOutputs.DataBodyRange.Value2
+    For Each nodeKey In nodes.Keys
+        Set nodeInfo = nodes(CStr(nodeKey))
+        For r = 1 To UBound(outputValues, 1)
+            If ReusableProjectionRowMatches(loOutputs, outputValues, r, "ProcessId", "ProcessVersion", CStr(nodeInfo("ProcessId")), CStr(nodeInfo("ProcessVersion"))) Then
+                outputId = ReadDesignTableText(loOutputs, outputValues, r, "OutputId")
+                key = UCase$(CStr(nodeKey) & "|" & outputId)
+                uom = ReadDesignTableText(loOutputs, outputValues, r, "UOM")
+                Set item = CreateObject("Scripting.Dictionary")
+                item.CompareMode = vbTextCompare
+                item("OutputRegulationEnabled") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputRegulationEnabled")
+                item("OutputFloorQty") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputFloorQty")
+                item("OutputCeilingQty") = ReadDesignTableValue(loOutputs, outputValues, r, "OutputCeilingQty")
+                If overrides.Exists(key) Then Set item = overrides(key)
+                If Not ValidateOutputRegulation(item, uom, errorCode, errorMessage) Then Exit Function
+                If PayloadTrue(item, "OutputRegulationEnabled") Then
+                    Call TryPositiveDouble(PayloadValue(item, "OutputCeilingQty"), ceilingQty)
+                    routeKey = UCase$(CStr(nodeKey) & "|" & outputId)
+                    routed = 0#
+                    If routedQty.Exists(routeKey) Then routed = CDbl(routedQty(routeKey))
+                    If ceilingQty + 0.0000001 < routed Then
+                        errorCode = "ROUTED_COMMITMENT_EXCEEDS_CEILING"
+                        errorMessage = "An output regulation ceiling may not be below its routed downstream commitment."
+                        Exit Function
+                    End If
+                End If
+            End If
+        Next r
+    Next nodeKey
+    ValidateRecipeOutputRegulations = True
+End Function
+
+Private Function HasReleasedRecipeDependency(ByVal wb As Workbook, _
+                                             ByVal processId As String, _
+                                             ByVal processVersion As String) As Boolean
+    Dim loRecipes As ListObject
+    Dim loNodes As ListObject
+    Dim recipeValues As Variant
+    Dim nodeValues As Variant
+    Dim r As Long
+    Dim n As Long
+    Dim recipeId As String
+    Dim recipeVersion As String
+
+    Set loRecipes = FindDesignsApplyTable(wb, "tblRecipes")
+    Set loNodes = FindDesignsApplyTable(wb, "tblRecipeProcesses")
+    If loRecipes Is Nothing Or loNodes Is Nothing Then Exit Function
+    If loRecipes.DataBodyRange Is Nothing Or loNodes.DataBodyRange Is Nothing Then Exit Function
+    recipeValues = loRecipes.DataBodyRange.Value2
+    nodeValues = loNodes.DataBodyRange.Value2
+    For r = 1 To UBound(recipeValues, 1)
+        If StrComp(ReadDesignTableText(loRecipes, recipeValues, r, "Status"), _
+                "RELEASED", vbTextCompare) = 0 Then
+            recipeId = ReadDesignTableText(loRecipes, recipeValues, r, "RecipeId")
+            recipeVersion = ReadDesignTableText(loRecipes, recipeValues, r, "RecipeVersion")
+            For n = 1 To UBound(nodeValues, 1)
+                If ReusableProjectionRowMatches(loNodes, nodeValues, n, _
+                        "RecipeId", "RecipeVersion", recipeId, recipeVersion) _
+                   And StrComp(ReadDesignTableText(loNodes, nodeValues, n, "ProcessId"), _
+                               processId, vbTextCompare) = 0 _
+                   And StrComp(ReadDesignTableText(loNodes, nodeValues, n, "ProcessVersion"), _
+                               processVersion, vbTextCompare) = 0 Then
+                    HasReleasedRecipeDependency = True
+                    Exit Function
+                End If
+            Next n
+        End If
+    Next r
+End Function
+
+Private Function ReusableProjectionRowMatches(ByVal lo As ListObject, _
+                                              ByVal values As Variant, _
+                                              ByVal rowIndex As Long, _
+                                              ByVal idColumn As String, _
+                                              ByVal versionColumn As String, _
+                                              ByVal definitionId As String, _
+                                              ByVal definitionVersion As String) As Boolean
+    ReusableProjectionRowMatches = _
+        (StrComp(ReadDesignTableText(lo, values, rowIndex, idColumn), _
+                 definitionId, vbTextCompare) = 0 _
+         And StrComp(ReadDesignTableText(lo, values, rowIndex, versionColumn), _
+                     definitionVersion, vbTextCompare) = 0)
+End Function
+
+Private Function TryGetProcessOutputForRecipe(ByVal wb As Workbook, _
+                                              ByVal processId As String, _
+                                              ByVal processVersion As String, _
+                                              ByVal outputId As String, _
+                                              ByRef itemCode As String, _
+                                              ByRef uom As String, _
+                                              ByRef qty As Double, _
+                                              ByRef percent As Double, _
+                                              ByRef qtyMode As String) As Boolean
+    Dim lo As ListObject
+    Dim values As Variant
+    Dim r As Long
+    Set lo = FindDesignsApplyTable(wb, "tblProcessOutputs")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    values = lo.DataBodyRange.Value2
+    For r = 1 To UBound(values, 1)
+        If ReusableProjectionRowMatches(lo, values, r, "ProcessId", _
+                "ProcessVersion", processId, processVersion) _
+           And StrComp(ReadDesignTableText(lo, values, r, "OutputId"), _
+                       outputId, vbTextCompare) = 0 Then
+            itemCode = ReadDesignTableText(lo, values, r, "ITEM_CODE")
+            uom = ReadDesignTableText(lo, values, r, "UOM")
+            Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Qty"), qty)
+            Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Percent"), percent)
+            qtyMode = ReadDesignTableText(lo, values, r, "OutputQtyMode")
+            If qtyMode = "" Then qtyMode = "FIXED"
+            TryGetProcessOutputForRecipe = True
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Function TryGetProcessRequirementForRecipe(ByVal wb As Workbook, _
+                                                   ByVal processId As String, _
+                                                   ByVal processVersion As String, _
+                                                   ByVal requirementId As String, _
+                                                   ByRef uom As String, _
+                                                   ByRef qty As Double, _
+                                                   ByRef percent As Double, _
+                                                   ByRef qtyMode As String) As Boolean
+    Dim lo As ListObject
+    Dim values As Variant
+    Dim r As Long
+    Set lo = FindDesignsApplyTable(wb, "tblProcessRequirements")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    values = lo.DataBodyRange.Value2
+    For r = 1 To UBound(values, 1)
+        If ReusableProjectionRowMatches(lo, values, r, "ProcessId", _
+                "ProcessVersion", processId, processVersion) _
+           And StrComp(ReadDesignTableText(lo, values, r, "RequirementId"), _
+                       requirementId, vbTextCompare) = 0 Then
+            uom = ReadDesignTableText(lo, values, r, "UOM")
+            Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Qty"), qty)
+            Call TryPositiveDouble(ReadDesignTableValue(lo, values, r, "Percent"), percent)
+            qtyMode = ReadDesignTableText(lo, values, r, "RequirementQtyMode")
+            If qtyMode = "" Then qtyMode = "FIXED"
+            TryGetProcessRequirementForRecipe = True
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Sub GetRequirementAlternativeInfo(ByVal wb As Workbook, _
+                                          ByVal processId As String, _
+                                          ByVal processVersion As String, _
+                                          ByVal requirementId As String, _
+                                          ByVal candidateItemCode As String, _
+                                          ByRef alternativeCount As Long, _
+                                          ByRef itemAccepted As Boolean)
+    Dim lo As ListObject
+    Dim values As Variant
+    Dim r As Long
+    Dim itemCode As String
+    alternativeCount = 0
+    itemAccepted = False
+    Set lo = FindDesignsApplyTable(wb, "tblProcessIngredientAlternatives")
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Sub
+    values = lo.DataBodyRange.Value2
+    For r = 1 To UBound(values, 1)
+        If ReusableProjectionRowMatches(lo, values, r, "ProcessId", _
+                "ProcessVersion", processId, processVersion) _
+           And StrComp(ReadDesignTableText(lo, values, r, "RequirementId"), _
+                       requirementId, vbTextCompare) = 0 Then
+            alternativeCount = alternativeCount + 1
+            itemCode = ReadDesignTableText(lo, values, r, "ITEM_CODE")
+            If candidateItemCode <> "" _
+               And StrComp(itemCode, candidateItemCode, vbTextCompare) = 0 Then
+                itemAccepted = True
+            End If
+        End If
+    Next r
+End Sub
+
+Private Function TryPositiveDouble(ByVal valueIn As Variant, _
+                                   ByRef valueOut As Double) As Boolean
+    valueOut = 0
+    If IsNumeric(valueIn) Then
+        valueOut = CDbl(valueIn)
+        TryPositiveDouble = (valueOut > 0)
+    End If
+End Function
+
+Private Function IsReusableProductionEvent(ByVal eventType As String) As Boolean
+    Select Case UCase$(Trim$(eventType))
+        Case PROCESS_EVENT_SAVE, PROCESS_EVENT_RELEASE, PROCESS_EVENT_OBSOLETE, _
+             RECIPE_EVENT_SAVE, RECIPE_EVENT_RELEASE, RECIPE_EVENT_OBSOLETE
+            IsReusableProductionEvent = True
+    End Select
+End Function
+
+Private Function DefinitionTypeForEvent(ByVal eventType As String) As String
+    Select Case UCase$(Trim$(eventType))
+        Case PROCESS_EVENT_SAVE, PROCESS_EVENT_RELEASE, PROCESS_EVENT_OBSOLETE
+            DefinitionTypeForEvent = "PROCESS"
+        Case RECIPE_EVENT_SAVE, RECIPE_EVENT_RELEASE, RECIPE_EVENT_OBSOLETE
+            DefinitionTypeForEvent = "RECIPE"
+        Case Else
+            DefinitionTypeForEvent = "LEGACY_DESIGN"
+    End Select
 End Function
 
 Private Function FindProjectedDesignRow(ByVal lo As ListObject, ByVal designId As String, _
@@ -463,8 +1538,21 @@ End Function
 
 Private Sub SetDesignTableValue(ByVal lo As ListObject, ByVal rowIndex As Long, _
                                 ByVal columnName As String, ByVal valueOut As Variant)
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index).Value = valueOut
+    Dim targetCell As Range
+
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index)
+    If IsTextDesignIdentityColumn(columnName) Then targetCell.NumberFormat = "@"
+    targetCell.Value2 = valueOut
 End Sub
+
+Private Function IsTextDesignIdentityColumn(ByVal columnName As String) As Boolean
+    Select Case LCase$(Trim$(columnName))
+        Case "processid", "recipeid", "requirementid", "outputid", _
+             "processnodeid", "fromoutputid", "torequirementid", _
+             "definitionid", "designid", "componentdesignid"
+            IsTextDesignIdentityColumn = True
+    End Select
+End Function
 
 Private Function ReadDesignTableValue(ByVal lo As ListObject, ByVal values As Variant, _
                                       ByVal rowIndex As Long, ByVal columnName As String) As Variant
@@ -516,6 +1604,21 @@ Private Function PayloadValue(ByVal item As Object, ByVal key As String) As Vari
     If Not item.Exists(key) Then Exit Function
     PayloadValue = item(key)
 CleanExit:
+End Function
+
+Private Function PayloadTrue(ByVal item As Object, ByVal key As String) As Boolean
+    Dim valueIn As Variant
+    valueIn = PayloadValue(item, key)
+    If VarType(valueIn) = vbBoolean Then
+        PayloadTrue = CBool(valueIn)
+    Else
+        PayloadTrue = (StrComp(Trim$(CStr(valueIn)), "true", vbTextCompare) = 0 _
+            Or Trim$(CStr(valueIn)) = "1")
+    End If
+End Function
+
+Private Function IsEachUom(ByVal uom As String) As Boolean
+    IsEachUom = (StrComp(Trim$(uom), "EA", vbTextCompare) = 0)
 End Function
 
 Private Function ParseDesignPayload(ByVal jsonText As String, ByRef errorMessage As String) As Collection

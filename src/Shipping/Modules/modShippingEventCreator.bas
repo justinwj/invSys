@@ -159,11 +159,11 @@ Public Function RebuildShippingAggregatesForWorkbook(ByVal wb As Workbook, Optio
     Dim componentInfo As Object
     Dim arrShip As Variant
     Dim arrBom As Variant
-    Dim cShipRow As Long
+    Dim cShipSystemKey As Long
     Dim cShipQty As Long
     Dim cShipArea As Long
-    Dim cPkgRow As Long
-    Dim cCompRow As Long
+    Dim cPackageSystemKey As Long
+    Dim cComponentSystemKey As Long
     Dim cCompItem As Long
     Dim cCompQty As Long
     Dim cCompUom As Long
@@ -171,7 +171,7 @@ Public Function RebuildShippingAggregatesForWorkbook(ByVal wb As Workbook, Optio
     Dim r As Long
     Dim key As Variant
     Dim qty As Double
-    Dim compRow As Long
+    Dim componentSystemKey As String
     Dim info As Object
     Dim lr As ListRow
 
@@ -192,11 +192,11 @@ Public Function RebuildShippingAggregatesForWorkbook(ByVal wb As Workbook, Optio
         Exit Function
     End If
 
-    cShipRow = ColumnIndexShip(loShip, "ROW")
+    cShipSystemKey = ColumnIndexShip(loShip, "System_Key")
     cShipQty = ColumnIndexShip(loShip, "QUANTITY")
     cShipArea = ColumnIndexShip(loShip, "AREA")
-    If cShipRow = 0 Or cShipQty = 0 Then
-        errNotes = "ShipmentsTally missing ROW/QUANTITY columns."
+    If cShipSystemKey = 0 Or cShipQty = 0 Then
+        errNotes = "ShipmentsTally missing System_Key/QUANTITY columns."
         Exit Function
     End If
 
@@ -206,8 +206,8 @@ Public Function RebuildShippingAggregatesForWorkbook(ByVal wb As Workbook, Optio
         If cShipArea > 0 Then
             If StrComp(NzStrShip(arrShip(r, cShipArea)), "Hold", vbTextCompare) = 0 Then GoTo NextShip
         End If
-        If NzLngShip(arrShip(r, cShipRow)) > 0 And NzDblShip(arrShip(r, cShipQty)) > 0 Then
-            key = CStr(NzLngShip(arrShip(r, cShipRow)))
+        If Trim$(NzStrShip(arrShip(r, cShipSystemKey))) <> "" And NzDblShip(arrShip(r, cShipQty)) > 0 Then
+            key = Trim$(NzStrShip(arrShip(r, cShipSystemKey)))
             If packageQty.Exists(key) Then
                 packageQty(key) = NzDblShip(packageQty(key)) + NzDblShip(arrShip(r, cShipQty))
             Else
@@ -221,14 +221,14 @@ NextShip:
         Exit Function
     End If
 
-    cPkgRow = ColumnIndexShip(loBomView, "PackageRow")
-    cCompRow = ColumnIndexShip(loBomView, "ComponentRow")
+    cPackageSystemKey = ColumnIndexShip(loBomView, "PackageSystemKey")
+    cComponentSystemKey = ColumnIndexShip(loBomView, "ComponentSystemKey")
     cCompItem = ColumnIndexShip(loBomView, "ComponentItem")
     cCompQty = ColumnIndexShip(loBomView, "ComponentQty")
     cCompUom = ColumnIndexShip(loBomView, "ComponentUOM")
     cCompLoc = ColumnIndexShip(loBomView, "ComponentLocation")
-    If cPkgRow = 0 Or cCompRow = 0 Or cCompQty = 0 Then
-        errNotes = "ShippingBOMView missing PackageRow/ComponentRow/ComponentQty columns."
+    If cPackageSystemKey = 0 Or cComponentSystemKey = 0 Or cCompQty = 0 Then
+        errNotes = "ShippingBOMView missing PackageSystemKey/ComponentSystemKey/ComponentQty columns."
         Exit Function
     End If
 
@@ -236,12 +236,12 @@ NextShip:
     Set componentInfo = CreateObject("Scripting.Dictionary")
     arrBom = loBomView.DataBodyRange.Value
     For r = 1 To UBound(arrBom, 1)
-        key = CStr(NzLngShip(arrBom(r, cPkgRow)))
+        key = Trim$(NzStrShip(arrBom(r, cPackageSystemKey)))
         If Not packageQty.Exists(key) Then GoTo NextBom
-        compRow = NzLngShip(arrBom(r, cCompRow))
+        componentSystemKey = Trim$(NzStrShip(arrBom(r, cComponentSystemKey)))
         qty = NzDblShip(arrBom(r, cCompQty)) * NzDblShip(packageQty(key))
-        If compRow <= 0 Or qty <= 0 Then GoTo NextBom
-        key = CStr(compRow)
+        If componentSystemKey = "" Or qty <= 0 Then GoTo NextBom
+        key = componentSystemKey
         If componentQty.Exists(key) Then
             componentQty(key) = NzDblShip(componentQty(key)) + qty
         Else
@@ -272,7 +272,7 @@ NextBom:
     For Each key In componentQty.Keys
         Set info = componentInfo(CStr(key))
         Set lr = loAggBom.ListRows.Add
-        WriteTableCellShip loAggBom, lr.Index, "ROW", CLng(key)
+        WriteTableCellShip loAggBom, lr.Index, "System_Key", CStr(key)
         WriteTableCellShip loAggBom, lr.Index, "ITEM", info("ITEM")
         WriteTableCellShip loAggBom, lr.Index, "QUANTITY", NzDblShip(componentQty(key))
         WriteTableCellShip loAggBom, lr.Index, "UOM", info("UOM")
@@ -303,7 +303,7 @@ Private Function BuildQueueableShipmentsSentDeltas(ByVal invLo As ListObject, By
     Dim aggPack As ListObject
     Dim rowFilter As Object
     Dim arrAgg As Variant
-    Dim cRowAgg As Long
+    Dim cSystemKeyAgg As Long
     Dim r As Long
     Dim filtered As Collection
     Dim delta As Variant
@@ -323,12 +323,13 @@ Private Function BuildQueueableShipmentsSentDeltas(ByVal invLo As ListObject, By
     On Error GoTo 0
     If Not aggPack Is Nothing Then
         If Not aggPack.DataBodyRange Is Nothing Then
-            cRowAgg = ColumnIndexShip(aggPack, "ROW")
-            If cRowAgg > 0 Then
+            cSystemKeyAgg = ColumnIndexShip(aggPack, "System_Key")
+            If cSystemKeyAgg > 0 Then
                 Set rowFilter = CreateObject("Scripting.Dictionary")
                 arrAgg = aggPack.DataBodyRange.Value
                 For r = 1 To UBound(arrAgg, 1)
-                    If NzLngShip(arrAgg(r, cRowAgg)) > 0 Then rowFilter(CStr(NzLngShip(arrAgg(r, cRowAgg)))) = True
+                    If Trim$(NzStrShip(arrAgg(r, cSystemKeyAgg))) <> "" Then _
+                        rowFilter(Trim$(NzStrShip(arrAgg(r, cSystemKeyAgg)))) = True
                 Next r
             End If
         End If
@@ -338,7 +339,7 @@ Private Function BuildQueueableShipmentsSentDeltas(ByVal invLo As ListObject, By
         If rowFilter.Count > 0 Then
             Set filtered = New Collection
             For Each delta In deltasOut
-                If rowFilter.Exists(CStr(delta("ROW"))) Then filtered.Add delta
+                If rowFilter.Exists(NzStrShip(delta("System_Key"))) Then filtered.Add delta
             Next delta
             Set deltasOut = filtered
             If deltasOut.Count = 0 Then
@@ -353,7 +354,7 @@ End Function
 
 Private Function BuildShipmentsSentDeltaPacket(ByVal invLo As ListObject, ByRef errNotes As String) As Collection
     Dim cShip As Long
-    Dim cRow As Long
+    Dim cSystemKey As Long
     Dim cItemCode As Long
     Dim cItemName As Long
     Dim result As Collection
@@ -365,20 +366,20 @@ Private Function BuildShipmentsSentDeltaPacket(ByVal invLo As ListObject, ByRef 
     If invLo Is Nothing Or invLo.DataBodyRange Is Nothing Then Exit Function
 
     cShip = ColumnIndexShip(invLo, "SHIPMENTS")
-    cRow = ColumnIndexShip(invLo, "ROW")
+    cSystemKey = ColumnIndexShip(invLo, "System_Key")
     cItemCode = ColumnIndexShip(invLo, "ITEM_CODE")
     cItemName = ColumnIndexShip(invLo, "ITEM")
-    If cShip = 0 Or cRow = 0 Then
-        errNotes = "invSys table missing SHIPMENTS/ROW columns."
+    If cShip = 0 Or cSystemKey = 0 Then
+        errNotes = "invSys table missing SHIPMENTS/System_Key columns."
         Exit Function
     End If
 
     Set result = New Collection
     arr = invLo.DataBodyRange.Value
     For r = 1 To UBound(arr, 1)
-        If NzLngShip(arr(r, cRow)) = 0 Or NzDblShip(arr(r, cShip)) <= 0 Then GoTo NextRow
+        If Trim$(NzStrShip(arr(r, cSystemKey))) = "" Or NzDblShip(arr(r, cShip)) <= 0 Then GoTo NextRow
         Set delta = CreateObject("Scripting.Dictionary")
-        delta("ROW") = NzLngShip(arr(r, cRow))
+        delta("System_Key") = Trim$(NzStrShip(arr(r, cSystemKey)))
         delta("QTY") = NzDblShip(arr(r, cShip))
         If cItemCode > 0 Then delta("ITEM_CODE") = NzStrShip(arr(r, cItemCode))
         If cItemName > 0 Then delta("ITEM_NAME") = NzStrShip(arr(r, cItemName))
@@ -399,12 +400,15 @@ Private Function BuildPayloadJsonFromDeltasShip(ByVal deltas As Collection) As S
 
     If deltas Is Nothing Then Exit Function
     For Each delta In deltas
-        payloadItems.Add modRoleEventWriter.CreatePayloadItem( _
-            NzLngShip(delta("ROW")), _
-            NzStrShip(delta("ITEM_CODE")), _
-            NzDblShip(delta("QTY")), _
-            "", _
-            NzStrShip(delta("ITEM_NAME")))
+        Dim payloadItem As Object
+        Set payloadItem = CreateObject("Scripting.Dictionary")
+        payloadItem("System_Key") = NzStrShip(delta("System_Key"))
+        payloadItem("ITEM_CODE") = NzStrShip(delta("ITEM_CODE"))
+        payloadItem("ITEM") = NzStrShip(delta("ITEM_NAME"))
+        payloadItem("Quantity") = NzDblShip(delta("QTY"))
+        payloadItem("Location") = ""
+        payloadItem("Condition") = "GOOD"
+        payloadItems.Add payloadItem
     Next delta
     BuildPayloadJsonFromDeltasShip = modRoleEventWriter.BuildPayloadJsonFromCollection(payloadItems)
 End Function
@@ -436,17 +440,18 @@ Private Function FindTableByNameShip(ByVal wb As Workbook, ByVal tableName As St
     Next ws
 End Function
 
-Private Function FindInvListRowByRowValueShip(ByVal invLo As ListObject, ByVal rowValue As Long) As ListRow
-    Dim cRow As Long
+Private Function FindInvListRowBySystemKeyShip(ByVal invLo As ListObject, ByVal systemKey As String) As ListRow
+    Dim cSystemKey As Long
     Dim cel As Range
 
-    If invLo Is Nothing Or rowValue <= 0 Then Exit Function
+    systemKey = Trim$(systemKey)
+    If invLo Is Nothing Or systemKey = "" Then Exit Function
     If invLo.DataBodyRange Is Nothing Then Exit Function
-    cRow = ColumnIndexShip(invLo, "ROW")
-    If cRow = 0 Then Exit Function
-    For Each cel In invLo.ListColumns(cRow).DataBodyRange.Cells
-        If NzLngShip(cel.Value) = rowValue Then
-            Set FindInvListRowByRowValueShip = invLo.ListRows(cel.Row - invLo.DataBodyRange.Row + 1)
+    cSystemKey = ColumnIndexShip(invLo, "System_Key")
+    If cSystemKey = 0 Then Exit Function
+    For Each cel In invLo.ListColumns(cSystemKey).DataBodyRange.Cells
+        If StrComp(Trim$(NzStrShip(cel.Value)), systemKey, vbTextCompare) = 0 Then
+            Set FindInvListRowBySystemKeyShip = invLo.ListRows(cel.Row - invLo.DataBodyRange.Row + 1)
             Exit Function
         End If
     Next cel
@@ -454,16 +459,16 @@ End Function
 
 Private Function BuildShipmentDeltaPacketShip(ByVal invLo As ListObject, ByVal aggPack As ListObject, ByRef errNotes As String) As Collection
     Dim cQtyAgg As Long
-    Dim cRowAgg As Long
+    Dim cSystemKeyAgg As Long
     Dim colTotalInv As Long
     Dim colShipments As Long
-    Dim colRowInv As Long
+    Dim colSystemKeyInv As Long
     Dim colItemCode As Long
     Dim colItemName As Long
     Dim requirements As Object
     Dim arrAgg As Variant
     Dim r As Long
-    Dim rowVal As Long
+    Dim systemKey As String
     Dim qtyVal As Double
     Dim reqKeyStr As String
     Dim result As Collection
@@ -480,29 +485,29 @@ Private Function BuildShipmentDeltaPacketShip(ByVal invLo As ListObject, ByVal a
     If aggPack Is Nothing Or aggPack.DataBodyRange Is Nothing Then Exit Function
 
     cQtyAgg = ColumnIndexShip(aggPack, "QUANTITY")
-    cRowAgg = ColumnIndexShip(aggPack, "ROW")
-    If cQtyAgg = 0 Or cRowAgg = 0 Then
-        errNotes = "AggregatePackages missing QUANTITY/ROW columns."
+    cSystemKeyAgg = ColumnIndexShip(aggPack, "System_Key")
+    If cQtyAgg = 0 Or cSystemKeyAgg = 0 Then
+        errNotes = "AggregatePackages missing QUANTITY/System_Key columns."
         Exit Function
     End If
 
     colTotalInv = ColumnIndexShip(invLo, "TOTAL INV")
     colShipments = ColumnIndexShip(invLo, "SHIPMENTS")
-    colRowInv = ColumnIndexShip(invLo, "ROW")
+    colSystemKeyInv = ColumnIndexShip(invLo, "System_Key")
     colItemCode = ColumnIndexShip(invLo, "ITEM_CODE")
     colItemName = ColumnIndexShip(invLo, "ITEM")
-    If colTotalInv = 0 Or colShipments = 0 Or colRowInv = 0 Then
-        errNotes = "invSys table missing TOTAL INV/SHIPMENTS/ROW columns."
+    If colTotalInv = 0 Or colShipments = 0 Or colSystemKeyInv = 0 Then
+        errNotes = "invSys table missing TOTAL INV/SHIPMENTS/System_Key columns."
         Exit Function
     End If
 
     Set requirements = CreateObject("Scripting.Dictionary")
     arrAgg = aggPack.DataBodyRange.Value
     For r = 1 To UBound(arrAgg, 1)
-        rowVal = NzLngShip(arrAgg(r, cRowAgg))
+        systemKey = Trim$(NzStrShip(arrAgg(r, cSystemKeyAgg)))
         qtyVal = NzDblShip(arrAgg(r, cQtyAgg))
-        If rowVal = 0 Or qtyVal <= 0 Then GoTo NextAgg
-        reqKeyStr = CStr(rowVal)
+        If systemKey = "" Or qtyVal <= 0 Then GoTo NextAgg
+        reqKeyStr = systemKey
         If requirements.Exists(reqKeyStr) Then
             requirements(reqKeyStr) = NzDblShip(requirements(reqKeyStr)) + qtyVal
         Else
@@ -514,9 +519,9 @@ NextAgg:
 
     Set result = New Collection
     For Each shipKey In requirements.Keys
-        Set invRow = FindInvListRowByRowValueShip(invLo, CLng(shipKey))
+        Set invRow = FindInvListRowBySystemKeyShip(invLo, CStr(shipKey))
         If invRow Is Nothing Then
-            AppendNoteShip errNotes, "Package ROW " & shipKey & " not found in invSys."
+            AppendNoteShip errNotes, "Package System_Key '" & shipKey & "' not found in invSys."
             Exit Function
         End If
 
@@ -527,12 +532,12 @@ NextAgg:
 
         available = NzDblShip(invRow.Range.Cells(1, colTotalInv).Value)
         If neededQty > available + 0.0000001 Then
-            AppendNoteShip errNotes, "ROW " & shipKey & " requires " & Format$(neededQty, "0.###") & " but only " & Format$(available, "0.###") & " in TOTAL INV."
+            AppendNoteShip errNotes, "System_Key '" & shipKey & "' requires " & Format$(neededQty, "0.###") & " but only " & Format$(available, "0.###") & " in TOTAL INV."
             Exit Function
         End If
 
         Set delta = CreateObject("Scripting.Dictionary")
-        delta("ROW") = CLng(shipKey)
+        delta("System_Key") = CStr(shipKey)
         delta("QTY") = neededQty
         If colItemCode > 0 Then delta("ITEM_CODE") = NzStrShip(invRow.Range.Cells(1, colItemCode).Value)
         If colItemName > 0 Then delta("ITEM_NAME") = NzStrShip(invRow.Range.Cells(1, colItemName).Value)
@@ -545,10 +550,10 @@ End Function
 
 Private Function ValidateComponentInventoryShip(ByVal invLo As ListObject, ByVal aggBom As ListObject, ByRef shortageMsg As String) As Boolean
     Dim cQty As Long
-    Dim cRow As Long
+    Dim cSystemKey As Long
     Dim arr As Variant
     Dim r As Long
-    Dim rowVal As Long
+    Dim systemKey As String
     Dim requiredQty As Double
     Dim invRow As ListRow
     Dim colTotal As Long
@@ -565,9 +570,9 @@ Private Function ValidateComponentInventoryShip(ByVal invLo As ListObject, ByVal
         Exit Function
     End If
     cQty = ColumnIndexShip(aggBom, "QUANTITY")
-    cRow = ColumnIndexShip(aggBom, "ROW")
-    If cQty = 0 Or cRow = 0 Then
-        shortageMsg = "AggregateBoxBOM missing QUANTITY/ROW columns."
+    cSystemKey = ColumnIndexShip(aggBom, "System_Key")
+    If cQty = 0 Or cSystemKey = 0 Then
+        shortageMsg = "AggregateBoxBOM missing QUANTITY/System_Key columns."
         Exit Function
     End If
     colTotal = ColumnIndexShip(invLo, "TOTAL INV")
@@ -579,18 +584,18 @@ Private Function ValidateComponentInventoryShip(ByVal invLo As ListObject, ByVal
 
     arr = aggBom.DataBodyRange.Value
     For r = 1 To UBound(arr, 1)
-        rowVal = NzLngShip(arr(r, cRow))
+        systemKey = Trim$(NzStrShip(arr(r, cSystemKey)))
         requiredQty = NzDblShip(arr(r, cQty))
-        If rowVal = 0 Or requiredQty <= 0 Then GoTo NextBom
-        Set invRow = FindInvListRowByRowValueShip(invLo, rowVal)
+        If systemKey = "" Or requiredQty <= 0 Then GoTo NextBom
+        Set invRow = FindInvListRowBySystemKeyShip(invLo, systemKey)
         If invRow Is Nothing Then
-            shortageMsg = "Component ROW " & rowVal & " not found in invSys."
+            shortageMsg = "Component System_Key '" & systemKey & "' not found in invSys."
             Exit Function
         End If
         available = NzDblShip(invRow.Range.Cells(1, colTotal).Value)
         If colUsed > 0 Then available = available - NzDblShip(invRow.Range.Cells(1, colUsed).Value)
         If requiredQty > available + 0.0000001 Then
-            shortageMsg = "ROW " & rowVal & " requires " & Format$(requiredQty, "0.###") & " but only " & Format$(available, "0.###") & " available."
+            shortageMsg = "System_Key '" & systemKey & "' requires " & Format$(requiredQty, "0.###") & " but only " & Format$(available, "0.###") & " available."
             Exit Function
         End If
 NextBom:

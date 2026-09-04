@@ -24,10 +24,13 @@ Public Sub InvalidateCurrentUserRibbons()
     On Error Resume Next
     For Each ribbon In mRibbonUis
         ribbon.Invalidate
+        ribbon.InvalidateControl "btnOperationsCurrentUser"
+        ribbon.InvalidateControl "btnOperationsServerSession"
         ribbon.InvalidateControl "btnReceivingCurrentUser"
         ribbon.InvalidateControl "btnShippingCurrentUser"
         ribbon.InvalidateControl "btnProductionCurrentUser"
         ribbon.InvalidateControl "btnAdminCurrentUser"
+        ribbon.InvalidateControl "btnAdminServerSession"
         ribbon.InvalidateControl "btnRuntimeUser"
     Next ribbon
     On Error GoTo 0
@@ -72,6 +75,19 @@ End Function
 Public Function GetAccessStatusLabel(ByVal controlId As String) As String
     Dim capability As String
     Dim errorMessage As String
+
+    If StrComp(Trim$(controlId), "lblOperationsAccessStatus", vbTextCompare) = 0 Then
+        If Not modNasConnection.HasConnectedUncRoot() Then
+            GetAccessStatusLabel = "Access: Server Sign In required"
+        ElseIf Not modNasConnection.IsCurrentTargetAllowed(True) Then
+            GetAccessStatusLabel = "Access: Select warehouse"
+        ElseIf Not modAuth.IsSignedIn() Then
+            GetAccessStatusLabel = "Access: invSys Sign In required"
+        Else
+            GetAccessStatusLabel = "Access: Ready"
+        End If
+        Exit Function
+    End If
 
     capability = AccessCapabilityForControlStatus(controlId)
     If capability = "" Then
@@ -147,31 +163,71 @@ End Function
 Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
     Dim targets As Collection
     Dim targetText As String
+
+    Set targets = GetWarehouseTargetsCachedStatus()
+    If targets.Count = 0 Then
+        MsgBox "No warehouse config workbooks were found. Use Admin > Test Environment Setup or Create New Warehouse first.", vbExclamation, "invSys Warehouse Target"
+        Exit Sub
+    End If
+    If selectedIndex < 0 Or selectedIndex >= targets.Count Then Exit Sub
+
+    targetText = CStr(targets(selectedIndex + 1))
+    Call ApplyWarehouseTargetSelectionStatus(targetText, True)
+End Sub
+
+Public Function GetCurrentUserActionLabel() As String
+    If modAuth.IsSignedIn() Then
+        GetCurrentUserActionLabel = "invSys Sign Out"
+    Else
+        GetCurrentUserActionLabel = "invSys Sign In"
+    End If
+End Function
+
+Public Function GetServerSessionActionLabel() As String
+    If modNasConnection.HasConnectedUncRoot() Then
+        GetServerSessionActionLabel = "Server Sign Out"
+    Else
+        GetServerSessionActionLabel = "Server Sign In"
+    End If
+End Function
+
+Public Function SelectWarehouseTargetTextForAutomation(ByVal targetText As String) As String
+    On Error GoTo FailSelect
+
+    If ApplyWarehouseTargetSelectionStatus(targetText, False) Then
+        SelectWarehouseTargetTextForAutomation = "OK|" & modNasConnection.GetConnectionStatus()
+    Else
+        SelectWarehouseTargetTextForAutomation = "FAIL|" & modNasConnection.GetLastConnectionAttemptStatus()
+    End If
+    Exit Function
+
+FailSelect:
+    SelectWarehouseTargetTextForAutomation = "FAIL|ERROR|" & Err.Description
+End Function
+
+Private Function ApplyWarehouseTargetSelectionStatus(ByVal targetText As String, _
+                                                     ByVal showMessages As Boolean) As Boolean
     Dim targetWh As String
     Dim targetSt As String
     Dim targetRoot As String
     Dim nasTarget As WarehouseTarget
     Dim statusCode As Long
 
-    Set targets = GetWarehouseTargetsCachedStatus()
-    If targets.Count = 0 Then
-        MsgBox "No warehouse config workbooks were found. Use Admin > Setup Tester Station or Create New Warehouse first.", vbExclamation, "invSys Warehouse Target"
-        Exit Sub
-    End If
-    If selectedIndex < 0 Or selectedIndex >= targets.Count Then Exit Sub
-
-    targetText = CStr(targets(selectedIndex + 1))
     targetWh = TargetPartStatus(targetText, 0)
     targetSt = TargetPartStatus(targetText, 1)
     targetRoot = TargetPartStatus(targetText, 2)
+    If targetWh = "" Or targetRoot = "" Then Exit Function
 
     If targetRoot <> "" Then
         statusCode = modNasConnection.SelectWarehouseTarget(targetRoot, targetRoot, nasTarget, targetSt, False)
         If statusCode <> NAS_OK Or (nasTarget Is Nothing) Then
-            MsgBox "Warehouse target could not be selected:" & vbCrLf & _
-                   TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
-                   modNasConnection.GetConnectionStatus(), vbExclamation, "invSys Warehouse Target"
-            Exit Sub
+            If showMessages Then
+                MsgBox "Warehouse target could not be selected:" & vbCrLf & _
+                       TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
+                       "Selection status: " & ValueOrPlaceholderStatus(modNasConnection.GetLastConnectionAttemptStatus()) & vbCrLf & _
+                       "Current target remains: " & modNasConnection.GetConnectionStatus(), vbExclamation, "invSys Warehouse Target"
+            End If
+            Exit Function
         End If
         targetWh = nasTarget.WarehouseId
         targetSt = nasTarget.StationId
@@ -184,16 +240,21 @@ Public Sub SelectWarehouseTarget(ByVal selectedIndex As Long)
         If targetRoot <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride targetRoot
         RememberSelectedWarehouseTargetStatus targetText
         InvalidateWarehouseTargetRibbonsStatus
-        MsgBox "Warehouse target selected:" & vbCrLf & vbCrLf & _
-               TargetLabelStatus(targetText) & vbCrLf & _
-               "Inbox root: " & ValueOrPlaceholderStatus(RuntimeInboxRootStatus()), _
-               vbInformation, "invSys Warehouse Target"
+        If showMessages Then
+            MsgBox "Warehouse target selected:" & vbCrLf & vbCrLf & _
+                   TargetLabelStatus(targetText) & vbCrLf & _
+                   "Inbox root: " & ValueOrPlaceholderStatus(RuntimeInboxRootStatus()), _
+                   vbInformation, "invSys Warehouse Target"
+        End If
+        ApplyWarehouseTargetSelectionStatus = True
     Else
-        MsgBox "Warehouse target could not be loaded:" & vbCrLf & _
-               TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
-               modConfig.Validate(), vbExclamation, "invSys Warehouse Target"
+        If showMessages Then
+            MsgBox "Warehouse target could not be loaded:" & vbCrLf & _
+                   TargetLabelStatus(targetText) & vbCrLf & vbCrLf & _
+                   modConfig.Validate(), vbExclamation, "invSys Warehouse Target"
+        End If
     End If
-End Sub
+End Function
 
 Public Sub InvalidateWarehouseTargets()
     InvalidateWarehouseTargetsCacheStatus
@@ -259,6 +320,13 @@ Private Sub InvalidateWarehouseTargetRibbonsStatus()
 
     On Error Resume Next
     For Each ribbon In mRibbonUis
+        ribbon.Invalidate
+        ribbon.InvalidateControl "ddOperationsWarehouseTarget"
+        ribbon.InvalidateControl "lblOperationsServerStatus"
+        ribbon.InvalidateControl "lblOperationsAccessStatus"
+        ribbon.InvalidateControl "btnOperationsServerSession"
+        ribbon.InvalidateControl "btnOperationsCurrentUser"
+        ribbon.InvalidateControl "ddAdminWarehouseTarget"
         ribbon.InvalidateControl "ddReceivingWarehouseTarget"
         ribbon.InvalidateControl "ddShippingWarehouseTarget"
         ribbon.InvalidateControl "ddProductionWarehouseTarget"
@@ -270,6 +338,8 @@ Private Sub InvalidateWarehouseTargetRibbonsStatus()
         ribbon.InvalidateControl "lblShippingAccessStatus"
         ribbon.InvalidateControl "lblProductionAccessStatus"
         ribbon.InvalidateControl "lblAdminAccessStatus"
+        ribbon.InvalidateControl "btnAdminServerSession"
+        ribbon.InvalidateControl "btnAdminCurrentUser"
         ribbon.InvalidateControl "btnRuntimeWarehouse"
         ribbon.InvalidateControl "btnRuntimeDataRoot"
         ribbon.InvalidateControl "btnRuntimeInboxRoot"
@@ -496,7 +566,7 @@ Private Sub AddConfigFileTargetStatus(ByVal targets As Collection, ByVal seen As
     fileName = FileNameFromPathStatus(configPath)
     whId = WarehouseIdFromConfigNameStatus(fileName)
     If whId = "" Then Exit Sub
-    stId = "S1"
+    stId = modStationIdentity.CurrentComputerStationId()
     rootPath = ParentFolderStatus(configPath)
     AddWarehouseTargetStatus targets, seen, whId, stId, rootPath
 End Sub
@@ -513,12 +583,12 @@ Private Function ConfigWorkbookLooksUsableStatus(ByVal wb As Workbook, ByRef war
 
     warehouseId = SafeTableValueStatus(loWh, 1, "WarehouseId")
     If loSt.DataBodyRange Is Nothing Then
-        stationId = "S1"
+        stationId = modStationIdentity.CurrentComputerStationId()
     Else
         stationId = SafeTableValueStatus(loSt, 1, "StationId")
     End If
     If warehouseId = "" Then warehouseId = WarehouseIdFromConfigNameStatus(wb.Name)
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     ConfigWorkbookLooksUsableStatus = (warehouseId <> "")
 End Function
 
@@ -533,7 +603,7 @@ Private Sub AddWarehouseTargetStatus(ByVal targets As Collection, _
     stationId = Trim$(stationId)
     rootPath = NormalizeFolderForStatus(rootPath)
     If warehouseId = "" Then Exit Sub
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
 
     key = warehouseId & TARGET_DELIM & stationId & TARGET_DELIM & rootPath
     If seen.Exists(key) Then Exit Sub

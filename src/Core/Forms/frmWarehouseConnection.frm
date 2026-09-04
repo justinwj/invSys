@@ -18,8 +18,7 @@ Option Explicit
 Private WithEvents mTxtRoot As MSForms.TextBox
 Private WithEvents mTxtUser As MSForms.TextBox
 Private WithEvents mTxtPassword As MSForms.TextBox
-Private WithEvents mCboStation As MSForms.ComboBox
-Private WithEvents mChkRequireStation As MSForms.CheckBox
+Private mTxtStation As MSForms.TextBox
 Private WithEvents mBtnConnect As MSForms.CommandButton
 Private WithEvents mBtnScan As MSForms.CommandButton
 Private WithEvents mBtnOK As MSForms.CommandButton
@@ -64,10 +63,6 @@ Public Sub InitializeConnectionPrompt(Optional ByVal reason As String = "", _
                                       Optional ByVal requireStationInbox As Boolean = False)
     mReason = Trim$(reason)
     mRequireStationInboxForRole = requireStationInbox
-    If Not mChkRequireStation Is Nothing Then
-        mChkRequireStation.Value = requireStationInbox
-        mChkRequireStation.Enabled = Not requireStationInbox
-    End If
     UpdateStationHelp
     If Not mLblStatus Is Nothing Then
         If mReason <> "" Then
@@ -98,9 +93,11 @@ Private Sub BuildConnectionLayout()
     Set mBtnConnect = AddButton("btnConnect", "Connect", 436, 117, 70, 24)
 
     AddLabel "lblStation", "Station", 18, 156, 84, 18, False
-    Set mCboStation = AddComboBox("cboStation", 104, 152, 80, 22)
-    Set mChkRequireStation = AddCheckBox("chkRequireStation", "Require station inbox", 198, 154, 160, 18)
-    Set mLblStationHelp = AddLabel("lblStationHelp", "", 364, 153, 142, 32, False)
+    Set mTxtStation = AddTextBox("txtStation", 104, 152, 160, 22)
+    mTxtStation.Value = modStationIdentity.CurrentComputerStationId()
+    mTxtStation.Locked = True
+    mTxtStation.BackColor = &HEFEFEF
+    Set mLblStationHelp = AddLabel("lblStationHelp", "", 276, 153, 230, 32, False)
     UpdateStationHelp
 
     AddLabel "lblTargets", "Warehouse runtimes", 18, 194, 130, 18, False
@@ -205,10 +202,12 @@ Private Function AddCheckBox(ByVal controlName As String, _
 End Function
 
 Private Sub mBtnConnect_Click()
+    On Error GoTo ConnectFailed
     Dim statusCode As NasStatusCode
     Dim rootPath As String
     Dim userName As String
     Dim passwordText As String
+    Dim previousCursor As XlMousePointer
 
     rootPath = Trim$(CStr(mTxtRoot.Value))
     userName = Trim$(CStr(mTxtUser.Value))
@@ -218,7 +217,13 @@ Private Sub mBtnConnect_Click()
         Exit Sub
     End If
 
+    ShowStatus "Connecting to warehouse storage. Windows may briefly show Excel as busy while the NAS authenticates...", COLOR_INFO
+    previousCursor = Application.Cursor
+    Application.Cursor = xlWait
+    Me.Repaint
+    DoEvents
     statusCode = modNasConnection.ConnectNasRootWithCredentials(rootPath, userName, passwordText)
+    Application.Cursor = previousCursor
     mTxtPassword.Value = vbNullString
     If statusCode = NAS_OK Then
         ShowStatus "Storage connected. Scan the root, select a warehouse, then continue to invSys sign-in.", COLOR_SUCCESS
@@ -226,6 +231,11 @@ Private Sub mBtnConnect_Click()
     Else
         ShowStatus modNasConnection.GetConnectionStatus(), COLOR_ERROR
     End If
+    Exit Sub
+
+ConnectFailed:
+    Application.Cursor = previousCursor
+    ShowStatus "Warehouse storage connection failed: " & Err.Description, COLOR_ERROR
 End Sub
 
 Private Sub mBtnScan_Click()
@@ -241,8 +251,8 @@ Private Sub mBtnOK_Click()
         ShowStatus "Select a warehouse runtime first.", COLOR_WARNING
         Exit Sub
     End If
-    If CBool(mChkRequireStation.Value) And SelectedStationValue() = "" Then
-        ShowStatus "Select a configured station. This role requires a station inbox.", COLOR_WARNING
+    If mRequireStationInboxForRole And SelectedStationValue() = "" Then
+        ShowStatus "The Windows computer name could not be resolved for this station.", COLOR_WARNING
         Exit Sub
     End If
 
@@ -252,7 +262,7 @@ Private Sub mBtnOK_Click()
         selectedPath, _
         target, _
         SelectedStationValue(), _
-        CBool(mChkRequireStation.Value))
+        mRequireStationInboxForRole)
 
     If statusCode = NAS_OK Then
         mWasAccepted = True
@@ -271,10 +281,6 @@ Private Sub mLstTargets_Change()
     RefreshStationsForSelectedTarget
 End Sub
 
-Private Sub mChkRequireStation_Click()
-    UpdateStationHelp
-End Sub
-
 Private Sub ScanRoot()
     Dim targets As Collection
     Dim item As Variant
@@ -287,6 +293,9 @@ Private Sub ScanRoot()
         Exit Sub
     End If
 
+    ShowStatus "Scanning the connected warehouse root...", COLOR_INFO
+    Me.Repaint
+    DoEvents
     statusCode = modNasConnection.TryRevalidateRememberedRoot(rootPath)
     If statusCode <> NAS_OK Then
         ShowStatus modNasConnection.GetConnectionStatus(), COLOR_WARNING
@@ -309,58 +318,17 @@ Private Sub ScanRoot()
 End Sub
 
 Private Sub RefreshStationsForSelectedTarget()
-    Dim stations As Collection
-    Dim station As Variant
-    Dim priorStation As String
-
-    If mCboStation Is Nothing Then Exit Sub
-    priorStation = SelectedStationValue()
-    mCboStation.Clear
-    If mLstTargets Is Nothing Or mLstTargets.ListIndex < 0 Then Exit Sub
-
-    Set stations = modNasConnection.ListRuntimeStationsForConnection(CStr(mLstTargets.Value))
-    For Each station In stations
-        mCboStation.AddItem CStr(station)
-    Next station
-
-    If priorStation <> "" Then SelectStationIfListed priorStation
-    If mCboStation.ListIndex < 0 And mCboStation.ListCount = 1 Then mCboStation.ListIndex = 0
-
-    If CBool(mChkRequireStation.Value) And mCboStation.ListCount = 0 Then
-        ShowStatus "This role requires a station inbox, but the selected runtime has no configured station.", COLOR_ERROR
-    ElseIf CBool(mChkRequireStation.Value) And mCboStation.ListIndex < 0 Then
-        ShowStatus "Select the station where this Excel session is running.", COLOR_WARNING
-    End If
+    If mTxtStation Is Nothing Then Exit Sub
+    mTxtStation.Value = modStationIdentity.CurrentComputerStationId()
 End Sub
 
 Private Function SelectedStationValue() As String
-    On Error Resume Next
-    If Not mCboStation Is Nothing Then
-        If mCboStation.ListIndex >= 0 Then
-            SelectedStationValue = Trim$(CStr(mCboStation.List(mCboStation.ListIndex)))
-        End If
-    End If
-    On Error GoTo 0
+    SelectedStationValue = modStationIdentity.CurrentComputerStationId()
 End Function
 
-Private Sub SelectStationIfListed(ByVal stationId As String)
-    Dim i As Long
-
-    For i = 0 To mCboStation.ListCount - 1
-        If StrComp(Trim$(CStr(mCboStation.List(i))), Trim$(stationId), vbTextCompare) = 0 Then
-            mCboStation.ListIndex = i
-            Exit Sub
-        End If
-    Next i
-End Sub
-
 Private Sub UpdateStationHelp()
-    If mLblStationHelp Is Nothing Or mChkRequireStation Is Nothing Then Exit Sub
-    If CBool(mChkRequireStation.Value) Then
-        mLblStationHelp.Caption = "Required for Production, Receiving, and Shipping."
-    Else
-        mLblStationHelp.Caption = "Optional for Admin/read-only access."
-    End If
+    If mLblStationHelp Is Nothing Then Exit Sub
+    mLblStationHelp.Caption = "Windows computer name; used automatically after sign-in."
 End Sub
 
 Private Sub ShowStatus(ByVal messageText As String, ByVal foreColor As Long)

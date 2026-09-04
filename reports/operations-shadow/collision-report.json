@@ -1,7 +1,7 @@
 {
     "schemaVersion":  "1.0.0",
     "reportType":  "operations-shadow-collisions",
-    "generatedAtUtc":  "2026-07-27T23:30:00Z",
+    "generatedAtUtc":  "2026-08-31T00:32:54Z",
     "sourceRoots":  [
                         "src/Operations",
                         "src/Receiving",
@@ -11,12 +11,11 @@
     "excludedFileNames":  [
                               "modReceivingAutoOpen.bas",
                               "modProductionAutoOpen.bas",
-                              "modShippingAutoOpen.bas",
-                              "ufDynItemSearchTemplate.frm"
+                              "modShippingAutoOpen.bas"
                           ],
     "summary":  {
-                    "componentCount":  44,
-                    "publicProcedureCount":  363,
+                    "componentCount":  39,
+                    "publicProcedureCount":  463,
                     "ribbonCallbackCount":  4,
                     "componentCollisionCount":  0,
                     "publicProcedureCollisionCount":  0,

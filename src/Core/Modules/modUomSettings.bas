@@ -2,8 +2,17 @@ Attribute VB_Name = "modUomSettings"
 Option Explicit
 
 Private Const CONFIG_KEY_UOM_CATALOG As String = "UomCatalog"
+Private Const CONFIG_KEY_UOM_CONVERSION_CATALOG As String = "UomConversionCatalog"
+Private Const CONFIG_KEY_UOM_CONVERSION_CATALOG_VERSION As String = "UomConversionCatalogVersion"
 Private Const UOM_DELIMITER As String = "|"
 Private Const DEFAULT_UOMS As String = "EA|LB|LBS|OZ|KG|G|GAL|QT|PT|L|ML|CS"
+Private Const UOM_RECORD_DELIMITER As String = "~"
+Private Const DEFAULT_UOM_CONVERSION_CATALOG As String = _
+    "EA~DISCRETE~EA~1~FALSE~TRUE|CS~PACKAGING~CS~1~FALSE~TRUE|" & _
+    "LB~MASS~LB~1~TRUE~TRUE|LBS~MASS~LB~1~TRUE~TRUE|OZ~MASS~LB~16~TRUE~TRUE|" & _
+    "KG~MASS~LB~2.2046226218~TRUE~TRUE|G~MASS~LB~453.59237~TRUE~TRUE|" & _
+    "GAL~VOLUME~GAL~1~TRUE~TRUE|QT~VOLUME~GAL~4~TRUE~TRUE|PT~VOLUME~GAL~8~TRUE~TRUE|" & _
+    "L~VOLUME~GAL~3.785411784~TRUE~TRUE|ML~VOLUME~GAL~3785.411784~TRUE~TRUE"
 
 Public Function GetConfiguredUoms() As Variant
     Dim uoms As Collection
@@ -73,6 +82,254 @@ End Function
 
 Public Function NormalizeConfiguredUomName(ByVal uomName As String) As String
     NormalizeConfiguredUomName = NormalizeUomName(uomName)
+End Function
+
+Public Function UomRequiresWholeQuantity(ByVal uomName As String) As Boolean
+    UomRequiresWholeQuantity = _
+        (StrComp(NormalizeUomName(uomName), "EA", vbTextCompare) = 0)
+End Function
+
+Public Function ValidateQuantityForUom(ByVal quantity As Double, _
+                                       ByVal uomName As String, _
+                                       Optional ByRef report As String = "") As Boolean
+    Dim normalizedUom As String
+
+    normalizedUom = NormalizeUomName(uomName)
+    If UomRequiresWholeQuantity(normalizedUom) Then
+        If Abs(quantity - Fix(quantity)) > 0.0000001 Then
+            report = "UOM EA requires a whole quantity; fractional EA is not allowed."
+            Exit Function
+        End If
+    End If
+    ValidateQuantityForUom = True
+End Function
+
+Public Function GetUomConversion(ByVal fromUom As String, ByVal toUom As String, _
+                                 ByRef factorOut As Double, _
+                                 Optional ByRef catalogVersionOut As String = "", _
+                                 Optional ByRef report As String = "") As Boolean
+    Dim records As Collection
+    Dim source As Object
+    Dim target As Object
+
+    fromUom = NormalizeUomName(fromUom)
+    toUom = NormalizeUomName(toUom)
+    If fromUom = "" Or toUom = "" Then
+        report = "Both source and requirement UOM are required."
+        Exit Function
+    End If
+    Set records = ConfiguredUomConversionRecords()
+    Set source = FindUomConversionRecord(records, fromUom)
+    Set target = FindUomConversionRecord(records, toUom)
+    If source Is Nothing Or target Is Nothing Then
+        report = "No UOM Catalog row exists for " & IIf(source Is Nothing, fromUom, toUom) & "."
+        Exit Function
+    End If
+    If Not CBool(source("Enabled")) Or Not CBool(target("Enabled")) Then
+        report = "The required UOM Catalog row is disabled."
+        Exit Function
+    End If
+    If StrComp(fromUom, toUom, vbTextCompare) = 0 Then
+        factorOut = 1#
+    Else
+        If Not CBool(source("Convertible")) Or Not CBool(target("Convertible")) Then
+            report = "UOM conversion is not enabled for " & fromUom & " or " & toUom & "."
+            Exit Function
+        End If
+        If StrComp(CStr(source("Dimension")), CStr(target("Dimension")), vbTextCompare) <> 0 _
+           Or StrComp(CStr(source("BaseUom")), CStr(target("BaseUom")), vbTextCompare) <> 0 Then
+            report = "UOM conversion requires matching Dimension and Base UOM."
+            Exit Function
+        End If
+        factorOut = CDbl(target("UnitsPerBase")) / CDbl(source("UnitsPerBase"))
+    End If
+    If factorOut <= 0# Then
+        report = "The UOM Catalog conversion factor is invalid."
+        Exit Function
+    End If
+    catalogVersionOut = CStr(modConfig.GetLong(CONFIG_KEY_UOM_CONVERSION_CATALOG_VERSION, 1))
+    GetUomConversion = True
+End Function
+
+Public Function TestUomCatalogConversionContract() As String
+    Dim factor As Double
+    Dim versionText As String
+    Dim report As String
+    Dim lbToOz As Boolean
+    Dim sameUom As Boolean
+    Dim eaRejected As Boolean
+
+    lbToOz = GetUomConversion("LB", "OZ", factor, versionText, report) _
+        And Abs(factor - 16#) < 0.0000001
+    sameUom = GetUomConversion("LBS", "LB", factor, versionText, report) _
+        And Abs(factor - 1#) < 0.0000001
+    eaRejected = Not GetUomConversion("EA", "OZ", factor, versionText, report)
+    TestUomCatalogConversionContract = IIf(lbToOz And sameUom And eaRejected, "OK", "FAIL") & _
+        "|LbToOz=" & CStr(lbToOz) & "|LbsToLb=" & CStr(sameUom) & _
+        "|EaRejected=" & CStr(eaRejected)
+End Function
+
+Public Function GetUomCatalogRows() As Variant
+    Dim records As Collection
+    Dim result() As Variant
+    Dim index As Long
+    Dim record As Object
+
+    Set records = ConfiguredUomConversionRecords()
+    If records Is Nothing Or records.Count = 0 Then Exit Function
+    ReDim result(1 To records.Count, 1 To 7)
+    For index = 1 To records.Count
+        Set record = records(index)
+        result(index, 1) = record("UOM")
+        result(index, 2) = record("Dimension")
+        result(index, 3) = record("BaseUom")
+        result(index, 4) = record("UnitsPerBase")
+        result(index, 5) = record("Convertible")
+        result(index, 6) = record("Enabled")
+        result(index, 7) = ""
+    Next index
+    GetUomCatalogRows = result
+End Function
+
+Public Function PublishUomCatalogRows(ByVal rows As Variant, _
+                                      Optional ByRef report As String = "") As Boolean
+    Dim records As Object
+    Dim rowIndex As Long
+    Dim uomName As String
+    Dim dimension As String
+    Dim baseUom As String
+    Dim unitsPerBase As Double
+    Dim convertible As Boolean
+    Dim enabled As Boolean
+    Dim packedConversions As String
+    Dim packedUoms As String
+    Dim key As Variant
+    Dim record As Variant
+    Dim baseRecord As Variant
+    Dim nextVersion As Long
+    Dim currentUoms As String
+    Dim currentConversions As String
+
+    If Not IsArray(rows) Then
+        report = "Select a populated UOM Catalog table."
+        Exit Function
+    End If
+    Set records = CreateObject("Scripting.Dictionary")
+    records.CompareMode = vbTextCompare
+    For rowIndex = LBound(rows, 1) To UBound(rows, 1)
+        uomName = NormalizeUomName(CStr(rows(rowIndex, 1)))
+        dimension = UCase$(Trim$(CStr(rows(rowIndex, 2))))
+        baseUom = NormalizeUomName(CStr(rows(rowIndex, 3)))
+        If uomName = "" And dimension = "" And baseUom = "" Then GoTo NextRow
+        If uomName = "" Or dimension = "" Or baseUom = "" Or Not IsNumeric(rows(rowIndex, 4)) Then
+            report = "Every UOM Catalog row needs UOM, Dimension, Base UOM, and positive Units Per Base UOM."
+            Exit Function
+        End If
+        unitsPerBase = CDbl(rows(rowIndex, 4))
+        If unitsPerBase <= 0# Then
+            report = "Units Per Base UOM must be positive for " & uomName & "."
+            Exit Function
+        End If
+        If records.Exists(uomName) Then
+            report = "Duplicate UOM Catalog row " & uomName & "."
+            Exit Function
+        End If
+        convertible = (StrComp(Trim$(CStr(rows(rowIndex, 5))), "TRUE", vbTextCompare) = 0)
+        enabled = (StrComp(Trim$(CStr(rows(rowIndex, 6))), "TRUE", vbTextCompare) = 0)
+        If (uomName = "EA" Or uomName = "CS") And convertible Then
+            report = uomName & " cannot be a globally convertible UOM."
+            Exit Function
+        End If
+        records.Add uomName, Array(dimension, baseUom, unitsPerBase, convertible, enabled)
+NextRow:
+    Next rowIndex
+    If records.Count = 0 Then
+        report = "The UOM Catalog requires at least one row."
+        Exit Function
+    End If
+    For Each key In records.Keys
+        record = records(key)
+        If Not records.Exists(CStr(record(1))) Then
+            report = "Base UOM " & CStr(record(1)) & " is missing for " & CStr(key) & "."
+            Exit Function
+        End If
+        baseRecord = records(CStr(record(1)))
+        If StrComp(CStr(baseRecord(0)), CStr(record(0)), vbTextCompare) <> 0 Then
+            report = "Base UOM dimension must match for " & CStr(key) & "."
+            Exit Function
+        End If
+        If StrComp(CStr(key), CStr(record(1)), vbTextCompare) = 0 And Abs(CDbl(record(2)) - 1#) > 0.0000001 Then
+            report = "Base UOM " & CStr(key) & " must use Units Per Base UOM of 1."
+            Exit Function
+        End If
+    Next key
+    For Each key In records.Keys
+        record = records(key)
+        If packedConversions <> "" Then packedConversions = packedConversions & UOM_DELIMITER
+        packedConversions = packedConversions & CStr(key) & UOM_RECORD_DELIMITER & CStr(record(0)) & _
+            UOM_RECORD_DELIMITER & CStr(record(1)) & UOM_RECORD_DELIMITER & _
+            Replace$(CStr(record(2)), ",", ".") & UOM_RECORD_DELIMITER & _
+            CStr(CBool(record(3))) & UOM_RECORD_DELIMITER & CStr(CBool(record(4)))
+        If packedUoms <> "" Then packedUoms = packedUoms & UOM_DELIMITER
+        packedUoms = packedUoms & CStr(key)
+    Next key
+    currentUoms = modConfig.GetString(CONFIG_KEY_UOM_CATALOG, DEFAULT_UOMS)
+    currentConversions = modConfig.GetString(CONFIG_KEY_UOM_CONVERSION_CATALOG, "")
+    If currentConversions = "" Then currentConversions = DEFAULT_UOM_CONVERSION_CATALOG
+    If StrComp(currentUoms, packedUoms, vbTextCompare) = 0 And _
+       StrComp(currentConversions, packedConversions, vbTextCompare) = 0 Then
+        report = "UOM Catalog version " & CStr(modConfig.GetLong( _
+            CONFIG_KEY_UOM_CONVERSION_CATALOG_VERSION, 1)) & " is unchanged."
+        PublishUomCatalogRows = True
+        Exit Function
+    End If
+    If Not modConfig.UpdateConfigValue(CONFIG_KEY_UOM_CATALOG, packedUoms, report) Then Exit Function
+    If Not modConfig.UpdateConfigValue(CONFIG_KEY_UOM_CONVERSION_CATALOG, packedConversions, report) Then Exit Function
+    nextVersion = modConfig.GetLong(CONFIG_KEY_UOM_CONVERSION_CATALOG_VERSION, 1) + 1
+    If Not modConfig.UpdateConfigValue(CONFIG_KEY_UOM_CONVERSION_CATALOG_VERSION, CStr(nextVersion), report) Then Exit Function
+    report = "UOM Catalog version " & CStr(nextVersion) & " published."
+    PublishUomCatalogRows = True
+End Function
+
+Private Function ConfiguredUomConversionRecords() As Collection
+    Dim packed As String
+    Dim rows As Variant
+    Dim rowValue As Variant
+    Dim fields As Variant
+    Dim record As Object
+
+    packed = Trim$(modConfig.GetString(CONFIG_KEY_UOM_CONVERSION_CATALOG, ""))
+    If packed = "" Then packed = DEFAULT_UOM_CONVERSION_CATALOG
+    Set ConfiguredUomConversionRecords = New Collection
+    rows = Split(packed, UOM_DELIMITER)
+    For Each rowValue In rows
+        fields = Split(CStr(rowValue), UOM_RECORD_DELIMITER)
+        If UBound(fields) >= 5 Then
+            Set record = CreateObject("Scripting.Dictionary")
+            record.CompareMode = vbTextCompare
+            record("UOM") = NormalizeUomName(CStr(fields(0)))
+            record("Dimension") = UCase$(Trim$(CStr(fields(1))))
+            record("BaseUom") = NormalizeUomName(CStr(fields(2)))
+            If IsNumeric(fields(3)) Then record("UnitsPerBase") = CDbl(fields(3)) Else record("UnitsPerBase") = 0#
+            record("Convertible") = (StrComp(Trim$(CStr(fields(4))), "TRUE", vbTextCompare) = 0)
+            record("Enabled") = (StrComp(Trim$(CStr(fields(5))), "TRUE", vbTextCompare) = 0)
+            If record("UOM") <> "" Then ConfiguredUomConversionRecords.Add record
+        End If
+    Next rowValue
+End Function
+
+Private Function FindUomConversionRecord(ByVal records As Collection, ByVal uomName As String) As Object
+    Dim rawRecord As Variant
+    Dim record As Object
+
+    If records Is Nothing Then Exit Function
+    For Each rawRecord In records
+        Set record = rawRecord
+        If StrComp(CStr(record("UOM")), uomName, vbTextCompare) = 0 Then
+            Set FindUomConversionRecord = record
+            Exit Function
+        End If
+    Next rawRecord
 End Function
 
 Private Function ConfiguredUomCollection() As Collection

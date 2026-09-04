@@ -39,6 +39,7 @@ Public Function LoadAuth(Optional ByVal whId As String = "") As Boolean
     Dim openedTransient As Boolean
     Dim loUsers As ListObject
     Dim loCaps As ListObject
+    Dim schemaWasPresent As Boolean
 
     InitializeState
 
@@ -49,12 +50,18 @@ Public Function LoadAuth(Optional ByVal whId As String = "") As Boolean
         GoTo FailSoft
     End If
     openedTransient = Not WorkbookWasAlreadyOpenAuth(preOpen, wb)
-    If openedTransient Then HideWorkbookWindowsAuth wb
+    If openedTransient Then
+        HideWorkbookWindowsAuth wb
+        wb.Saved = True
+    End If
     mAuthWorkbook = wb.Name
 
-    If Not EnsureAuthSchema(wb, whId, modConfig.GetString("ProcessorServiceUserId", "svc_processor")) Then
-        AddValidationIssue "ERROR", "AUTH_SELF_HEAL_FAILED", "Failed to create/repair auth tables."
-        GoTo FailSoft
+    schemaWasPresent = modRuntimeWorkbooks.RuntimeWorkbookSchemaPresentForRead(wb, "AUTH")
+    If Not schemaWasPresent Then
+        If Not EnsureAuthSchema(wb, whId, modConfig.GetString("ProcessorServiceUserId", "svc_processor"), , False) Then
+            AddValidationIssue "ERROR", "AUTH_SELF_HEAL_FAILED", "Failed to create/repair auth tables."
+            GoTo FailSoft
+        End If
     End If
 
     Set loUsers = FindListObjectByName(wb, "tblUsers")
@@ -89,13 +96,14 @@ FailLoad:
     Resume FailSoft
 
 CleanExit:
-    CloseTransientAuthAfterLoad wb, openedTransient
+    CloseTransientAuthAfterLoad wb, openedTransient, Not schemaWasPresent
 End Function
 
 Public Function EnsureAuthSchema(Optional ByVal targetWb As Workbook = Nothing, _
                                  Optional ByVal warehouseId As String = "", _
                                  Optional ByVal processorServiceUserId As String = "", _
-                                 Optional ByRef report As String = "") As Boolean
+                                 Optional ByRef report As String = "", _
+                                 Optional ByVal formatSurface As Boolean = True) As Boolean
     On Error GoTo FailEnsure
 
     Dim wb As Workbook
@@ -108,7 +116,7 @@ Public Function EnsureAuthSchema(Optional ByVal targetWb As Workbook = Nothing, 
 
     If Not EnsureAuthTables(wb) Then GoTo FailSoft
     SeedAuthDefaults wb, warehouseId, processorServiceUserId
-    FormatAuthSurface wb
+    If formatSurface Then FormatAuthSurface wb
 
     EnsureAuthSchema = True
     Exit Function
@@ -176,7 +184,11 @@ Public Function ValidateUserCredentialForTarget(ByVal userId As String, _
     End If
 
     priorRootOverride = modRuntimeWorkbooks.GetCoreDataRootOverride()
-    If SafeTrim(target.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    If Not currentTarget Is Nothing Then
+        If SafeTrim(currentTarget.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride currentTarget.RuntimeRoot
+    ElseIf SafeTrim(target.RuntimeRoot) <> "" Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    End If
     configLoaded = modConfig.LoadConfig(target.WarehouseId, target.StationId)
     authLoaded = LoadAuth(target.WarehouseId)
     RestoreRootOverrideAuth priorRootOverride
@@ -201,17 +213,28 @@ Public Function ValidateUserCredentialForTarget(ByVal userId As String, _
         ValidateUserCredentialForTarget = AUTH_USER_NOT_FOUND
         Exit Function
     End If
-    If Not ValidateUserCredentialForCapability(normalizedUser, secretText, normalizedCapability) Then
-        If normalizedCapability <> "" Then
-            If UserSecretMatchesAuth(normalizedUser, secretText) Then
-                SetAuthFailureStatus AUTH_NO_CAPABILITIES
-                ValidateUserCredentialForTarget = AUTH_NO_CAPABILITIES
-                Exit Function
-            End If
-        End If
+    If Not UserSecretMatchesAuth(normalizedUser, secretText) Then
         SetAuthFailureStatus AUTH_CREDENTIAL_REJECTED
         ValidateUserCredentialForTarget = AUTH_CREDENTIAL_REJECTED
         Exit Function
+    End If
+    If TryTransitionLegacyS1CapabilitiesForCurrentComputer(normalizedUser, normalizedCapability, target) Then
+        priorRootOverride = modRuntimeWorkbooks.GetCoreDataRootOverride()
+        If SafeTrim(target.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+        authLoaded = LoadAuth(target.WarehouseId)
+        RestoreRootOverrideAuth priorRootOverride
+        If Not authLoaded Then
+            SetAuthFailureStatus AUTH_WORKBOOK_UNREADABLE
+            ValidateUserCredentialForTarget = AUTH_WORKBOOK_UNREADABLE
+            Exit Function
+        End If
+    End If
+    If normalizedCapability <> "" Then
+        If Not HasEffectiveCapabilityAuth(normalizedUser, normalizedCapability, target.WarehouseId, target.StationId, Now) Then
+            SetAuthFailureStatus AUTH_NO_CAPABILITIES
+            ValidateUserCredentialForTarget = AUTH_NO_CAPABILITIES
+            Exit Function
+        End If
     End If
 
     mCurrentUserId = normalizedUser
@@ -219,7 +242,11 @@ Public Function ValidateUserCredentialForTarget(ByVal userId As String, _
     mSignedInWarehouseId = target.WarehouseId
     mSignedInStationId = target.StationId
     mSignedInAt = Now
-    If SafeTrim(target.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    If Not currentTarget Is Nothing Then
+        If SafeTrim(currentTarget.RuntimeRoot) <> "" Then modRuntimeWorkbooks.SetCoreDataRootOverride currentTarget.RuntimeRoot
+    ElseIf SafeTrim(target.RuntimeRoot) <> "" Then
+        modRuntimeWorkbooks.SetCoreDataRootOverride target.RuntimeRoot
+    End If
     SetAuthSessionStatus AUTH_OK
     On Error Resume Next
     modRoleEventWriter.SetCurrentUserId normalizedUser
@@ -809,6 +836,136 @@ Private Function UserSecretMatchesAuth(ByVal userId As String, ByVal secretText 
     UserSecretMatchesAuth = (StrComp(expectedHash, HashUserCredential(secretText), vbTextCompare) = 0)
 End Function
 
+Private Function TryTransitionLegacyS1CapabilitiesForCurrentComputer(ByVal userId As String, _
+                                                                     ByVal requiredCapability As String, _
+                                                                     ByVal target As WarehouseTarget) As Boolean
+    Const LEGACY_STATION_ID As String = "S1"
+
+    On Error GoTo CleanFail
+
+    Dim computerStation As String
+    Dim runtimeRoot As String
+    Dim authPath As String
+    Dim stations As Collection
+    Dim wb As Workbook
+    Dim loCaps As ListObject
+    Dim entry As Object
+    Dim entryCapability As String
+    Dim entryWarehouse As String
+    Dim rowIndex As Long
+    Dim openedForTransition As Boolean
+    Dim transitioned As Boolean
+    Dim nowTs As Date
+
+    If target Is Nothing Then Exit Function
+    userId = SafeTrim(userId)
+    requiredCapability = UCase$(SafeTrim(requiredCapability))
+    computerStation = SafeTrim(modStationIdentity.CurrentComputerStationId())
+    If userId = "" Or computerStation = "" Then Exit Function
+    If StrComp(SafeTrim(target.StationId), computerStation, vbTextCompare) <> 0 Then Exit Function
+    If StrComp(computerStation, LEGACY_STATION_ID, vbTextCompare) = 0 Then Exit Function
+
+    runtimeRoot = SafeTrim(target.RuntimeRoot)
+    If runtimeRoot = "" Or SafeTrim(mAuthWorkbook) = "" Then Exit Function
+    Set stations = modNasConnection.ListRuntimeStationsForConnection(runtimeRoot)
+    If Not TextCollectionContainsAuth(stations, LEGACY_STATION_ID) Then Exit Function
+
+    nowTs = Now
+    If requiredCapability <> "" Then
+        If Not HasEffectiveCapabilityAuth(userId, requiredCapability, target.WarehouseId, LEGACY_STATION_ID, nowTs) Then Exit Function
+    End If
+
+    If Right$(runtimeRoot, 1) = "\" Then
+        authPath = runtimeRoot & SafeTrim(mAuthWorkbook)
+    Else
+        authPath = runtimeRoot & "\" & SafeTrim(mAuthWorkbook)
+    End If
+    If Len(Dir$(authPath, vbNormal)) = 0 Then Exit Function
+
+    Set wb = FindOpenWorkbookByFullNameAuth(authPath)
+    If wb Is Nothing Then
+        Set wb = Application.Workbooks.Open(authPath, False, False)
+        openedForTransition = True
+    End If
+    If wb Is Nothing Or wb.ReadOnly Then GoTo CleanExit
+    Set loCaps = FindListObjectByName(wb, "tblCapabilities")
+    If loCaps Is Nothing Then GoTo CleanExit
+
+    For Each entry In mAllowCaps
+        If StrComp(SafeTrim(entry("UserId")), userId, vbTextCompare) <> 0 Then GoTo NextEntry
+        If StrComp(SafeTrim(entry("StationId")), LEGACY_STATION_ID, vbTextCompare) <> 0 Then GoTo NextEntry
+        entryCapability = UCase$(SafeTrim(entry("Capability")))
+        entryWarehouse = SafeTrim(entry("WarehouseId"))
+        If entryCapability = "" Then GoTo NextEntry
+        If Not WarehouseScopeMatchesAuth(entryWarehouse, target.WarehouseId) Then GoTo NextEntry
+        If Not IsWithinDateRange(entry("ValidFrom"), entry("ValidTo"), nowTs) Then GoTo NextEntry
+        If Not HasEffectiveCapabilityAuth(userId, entryCapability, target.WarehouseId, LEGACY_STATION_ID, nowTs) Then GoTo NextEntry
+        If HasCapabilityMatch(mDenyCaps, userId, entryCapability, target.WarehouseId, target.StationId, nowTs) Then GoTo NextEntry
+        If FindScopedCapabilityRowForTransition(loCaps, userId, entryCapability, target.WarehouseId, target.StationId) > 0 Then GoTo NextEntry
+
+        EnsureCapabilityRow loCaps, userId, entryCapability, entryWarehouse, target.StationId, "ACTIVE"
+        rowIndex = FindCapabilityRow(loCaps, userId, entryCapability, entryWarehouse, target.StationId)
+        If rowIndex > 0 Then
+            loCaps.DataBodyRange.Cells(rowIndex, loCaps.ListColumns("ValidFrom").Index).Value = entry("ValidFrom")
+            loCaps.DataBodyRange.Cells(rowIndex, loCaps.ListColumns("ValidTo").Index).Value = entry("ValidTo")
+            transitioned = True
+        End If
+NextEntry:
+    Next entry
+
+    If transitioned Then
+        FormatAuthSurface wb
+        SaveAuthWorkbookIfWritable wb
+    End If
+    TryTransitionLegacyS1CapabilitiesForCurrentComputer = transitioned
+
+CleanExit:
+    If openedForTransition And Not wb Is Nothing Then
+        On Error Resume Next
+        wb.Close SaveChanges:=False
+        On Error GoTo 0
+    End If
+    Exit Function
+
+CleanFail:
+    TryTransitionLegacyS1CapabilitiesForCurrentComputer = False
+    Resume CleanExit
+End Function
+
+Private Function FindScopedCapabilityRowForTransition(ByVal lo As ListObject, _
+                                                       ByVal userId As String, _
+                                                       ByVal capability As String, _
+                                                       ByVal warehouseId As String, _
+                                                       ByVal stationId As String) As Long
+    Dim rowIndex As Long
+    Dim rowWarehouse As String
+
+    If lo Is Nothing Or lo.DataBodyRange Is Nothing Then Exit Function
+    For rowIndex = 1 To lo.ListRows.Count
+        If StrComp(SafeTrim(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("UserId").Index).Value), userId, vbTextCompare) <> 0 Then GoTo NextRow
+        If StrComp(UCase$(SafeTrim(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Capability").Index).Value)), UCase$(capability), vbTextCompare) <> 0 Then GoTo NextRow
+        If StrComp(SafeTrim(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("StationId").Index).Value), stationId, vbTextCompare) <> 0 Then GoTo NextRow
+        rowWarehouse = SafeTrim(lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("WarehouseId").Index).Value)
+        If WarehouseScopeMatchesAuth(rowWarehouse, warehouseId) Then
+            FindScopedCapabilityRowForTransition = rowIndex
+            Exit Function
+        End If
+NextRow:
+    Next rowIndex
+End Function
+
+Private Function TextCollectionContainsAuth(ByVal values As Collection, ByVal expectedValue As String) As Boolean
+    Dim valueIn As Variant
+
+    If values Is Nothing Then Exit Function
+    For Each valueIn In values
+        If StrComp(SafeTrim(valueIn), SafeTrim(expectedValue), vbTextCompare) = 0 Then
+            TextCollectionContainsAuth = True
+            Exit Function
+        End If
+    Next valueIn
+End Function
+
 Private Sub ApplyCurrentTargetRootForAuth(ByVal warehouseId As String, ByVal stationId As String)
     Dim target As WarehouseTarget
     Dim resolvedWh As String
@@ -1157,13 +1314,15 @@ Private Sub HideWorkbookWindowsAuth(ByVal wb As Workbook)
     On Error GoTo 0
 End Sub
 
-Private Sub CloseTransientAuthAfterLoad(ByVal wb As Workbook, ByVal openedTransient As Boolean)
+Private Sub CloseTransientAuthAfterLoad(ByVal wb As Workbook, _
+                                        ByVal openedTransient As Boolean, _
+                                        Optional ByVal saveRepairs As Boolean = True)
     If Not openedTransient Then Exit Sub
     If wb Is Nothing Then Exit Sub
 
     On Error Resume Next
-    HideWorkbookWindowsAuth wb
-    If Not wb.ReadOnly Then
+    If Not saveRepairs Then wb.Saved = True
+    If saveRepairs And Not wb.ReadOnly Then
         If wb.Saved = False Then wb.Save
     End If
     wb.Close SaveChanges:=False
@@ -1219,14 +1378,16 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     Dim i As Long
     Dim dataRange As Range
     Dim startCell As Range
+    Dim surfaceEditable As Boolean
 
     Set ws = EnsureWorksheet(wb, sheetName)
-    EnsureWorksheetEditableAuth ws
     On Error Resume Next
     Set lo = ws.ListObjects(tableName)
     On Error GoTo 0
 
     If lo Is Nothing Then
+        EnsureWorksheetEditableAuth ws
+        surfaceEditable = True
         Set startCell = GetNextTableStartCell(ws)
         For i = LBound(headers) To UBound(headers)
             startCell.Offset(0, i - LBound(headers)).Value = headers(i)
@@ -1239,6 +1400,10 @@ Private Sub EnsureListObjectWithHeaders(ByVal wb As Workbook, _
     End If
 
     For i = LBound(headers) To UBound(headers)
+        If GetColumnIndex(lo, CStr(headers(i))) = 0 And Not surfaceEditable Then
+            EnsureWorksheetEditableAuth ws
+            surfaceEditable = True
+        End If
         EnsureListColumn lo, CStr(headers(i))
     Next i
 End Sub
@@ -1302,10 +1467,22 @@ Private Sub EnsureUserRow(ByVal lo As ListObject, ByVal userId As String, ByVal 
         End If
     End If
 
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("UserId").Index).Value = userId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("DisplayName").Index).Value = displayName
-    If rowWasCreated Then lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("PinHash").Index).Value = ""
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Status").Index).Value = "Active"
+    SetAuthCellIfDifferent lo, rowIndex, "UserId", userId
+    SetAuthCellIfDifferent lo, rowIndex, "DisplayName", displayName
+    If rowWasCreated Then SetAuthCellIfDifferent lo, rowIndex, "PinHash", ""
+    SetAuthCellIfDifferent lo, rowIndex, "Status", "Active"
+End Sub
+
+Private Sub SetAuthCellIfDifferent(ByVal lo As ListObject, _
+                                   ByVal rowIndex As Long, _
+                                   ByVal columnName As String, _
+                                   ByVal valueOut As Variant)
+    Dim targetCell As Range
+
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, lo.ListColumns(columnName).Index)
+    If StrComp(SafeTrim(targetCell.Value), SafeTrim(valueOut), vbTextCompare) <> 0 Then
+        targetCell.Value = valueOut
+    End If
 End Sub
 
 Private Function FindAuthUserRow(ByVal lo As ListObject, ByVal userId As String) As Long
@@ -1357,11 +1534,11 @@ Private Sub EnsureCapabilityRow(ByVal lo As ListObject, _
         AddValidationIssue "WARN", "AUTH_CAPABILITY_CREATED", userId & "." & capability & " created."
     End If
 
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("UserId").Index).Value = userId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Capability").Index).Value = capability
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("WarehouseId").Index).Value = warehouseId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("StationId").Index).Value = stationId
-    lo.DataBodyRange.Cells(rowIndex, lo.ListColumns("Status").Index).Value = statusVal
+    SetAuthCellIfDifferent lo, rowIndex, "UserId", userId
+    SetAuthCellIfDifferent lo, rowIndex, "Capability", capability
+    SetAuthCellIfDifferent lo, rowIndex, "WarehouseId", warehouseId
+    SetAuthCellIfDifferent lo, rowIndex, "StationId", stationId
+    SetAuthCellIfDifferent lo, rowIndex, "Status", statusVal
 End Sub
 
 Private Function FindCapabilityRow(ByVal lo As ListObject, _

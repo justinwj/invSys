@@ -87,16 +87,16 @@ End Function
 Public Function ListDesignsBridge(Optional ByVal designsWb As Workbook = Nothing, _
                                   Optional ByVal statusFilter As String = "") As Variant
     On Error GoTo CleanFail
-    ListDesignsBridge = Application.Run( _
-        ResolveDesignsDomainMacroName("modDesignsBridgeApi.ListDesignsBridgeResult"), designsWb, statusFilter)
+    ListDesignsBridge = RunDesignsQueryBridge( _
+        "LIST_DESIGNS", statusFilter, "", "", designsWb)
 CleanFail:
 End Function
 
 Public Function GetDesignBOMBridge(ByVal designId As String, ByVal designVersion As String, _
                                    Optional ByVal designsWb As Workbook = Nothing) As Variant
     On Error GoTo CleanFail
-    GetDesignBOMBridge = Application.Run( _
-        ResolveDesignsDomainMacroName("modDesignsBridgeApi.GetBOMBridgeResult"), designId, designVersion, designsWb)
+    GetDesignBOMBridge = RunDesignsQueryBridge( _
+        "GET_BOM", designId, designVersion, "", designsWb)
 CleanFail:
 End Function
 
@@ -105,10 +105,66 @@ Public Function GetDesignBOMForStatusBridge(ByVal designId As String, _
                                             ByVal requiredStatus As String, _
                                             Optional ByVal designsWb As Workbook = Nothing) As Variant
     On Error GoTo CleanFail
-    GetDesignBOMForStatusBridge = Application.Run( _
-        ResolveDesignsDomainMacroName("modDesignsBridgeApi.GetBOMForStatusBridgeResult"), _
-        designId, designVersion, requiredStatus, designsWb)
+    GetDesignBOMForStatusBridge = RunDesignsQueryBridge( _
+        "GET_BOM_FOR_STATUS", designId, designVersion, requiredStatus, designsWb)
 CleanFail:
+End Function
+
+Public Function ListProcessesBridge(Optional ByVal designsWb As Workbook = Nothing, _
+                                    Optional ByVal statusFilter As String = "") As Variant
+    On Error GoTo CleanFail
+    Dim queryResult As Variant
+    queryResult = RunDesignsQueryBridge( _
+        "LIST_PROCESSES", statusFilter, "", "", designsWb)
+    ListProcessesBridge = queryResult
+CleanFail:
+End Function
+
+Public Function GetProcessVersionBridge(ByVal processId As String, _
+                                        ByVal processVersion As String, _
+                                        Optional ByVal designsWb As Workbook = Nothing) As String
+    On Error GoTo CleanFail
+    GetProcessVersionBridge = CStr(RunDesignsQueryBridge( _
+        "GET_PROCESS_VERSION", processId, processVersion, "", designsWb))
+CleanFail:
+End Function
+
+Public Function ListRecipesBridge(Optional ByVal designsWb As Workbook = Nothing, _
+                                  Optional ByVal statusFilter As String = "") As Variant
+    On Error GoTo CleanFail
+    statusFilter = Trim$(statusFilter)
+    ListRecipesBridge = RunDesignsQueryBridge( _
+        "LIST_RECIPES", statusFilter, "", "", designsWb)
+CleanFail:
+End Function
+
+Public Function GetRecipeGraphBridge(ByVal recipeId As String, _
+                                     ByVal recipeVersion As String, _
+                                     Optional ByVal designsWb As Workbook = Nothing) As String
+    On Error GoTo CleanFail
+    GetRecipeGraphBridge = CStr(RunDesignsQueryBridge( _
+        "GET_RECIPE_GRAPH", recipeId, recipeVersion, "", designsWb))
+CleanFail:
+End Function
+
+Public Function ValidateReleasedRecipeBridgeEncoded(ByVal recipeId As String, _
+                                                    ByVal recipeVersion As String, _
+                                                    Optional ByVal designsWb As Workbook = Nothing) As String
+    On Error GoTo CleanFail
+    recipeId = Trim$(recipeId)
+    ValidateReleasedRecipeBridgeEncoded = CStr(RunDesignsQueryBridge( _
+        "VALIDATE_RELEASED_RECIPE", recipeId, recipeVersion, "", designsWb))
+CleanFail:
+End Function
+
+Private Function RunDesignsQueryBridge(ByVal queryName As String, _
+                                       ByVal arg1 As String, _
+                                       ByVal arg2 As String, _
+                                       ByVal arg3 As String, _
+                                       ByVal designsWb As Workbook) As Variant
+    RunDesignsQueryBridge = Application.Run( _
+        ResolveDesignsDomainMacroName("modDesignsBridgeApi.ReadDesignsQueryBridgeResult"), _
+        queryName, arg1, arg2, arg3, designsWb)
 End Function
 
 Public Function DiagnoseDesignsDomainBridge() As String

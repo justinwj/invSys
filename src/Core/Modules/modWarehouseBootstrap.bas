@@ -802,7 +802,7 @@ Private Function ResolveLocalOperatorRootBootstrap(ByVal warehouseId As String, 
     whSegment = SafePathSegmentBootstrap(warehouseId)
     stSegment = SafePathSegmentBootstrap(stationId)
     If whSegment = "" Then Exit Function
-    If stSegment = "" Then stSegment = "S1"
+    If stSegment = "" Then stSegment = SafePathSegmentBootstrap(modStationIdentity.CurrentComputerStationId())
 
     If Trim$(mLocalOperatorRootOverride) <> "" Then
         localRoot = Trim$(mLocalOperatorRootOverride) & "\" & whSegment & "\" & stSegment

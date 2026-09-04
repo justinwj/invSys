@@ -9,6 +9,8 @@ Private Const TABLE_INBOX_RECEIVE As String = "tblInboxReceive"
 Private Const TABLE_INBOX_SHIP As String = "tblInboxShip"
 Private Const TABLE_INBOX_PROD As String = "tblInboxProd"
 Private Const ROLE_EVENT_TYPE_RECEIVE As String = "RECEIVE"
+Private Const ROLE_EVENT_TYPE_RETURN As String = "RETURN"
+Private Const ROLE_EVENT_TYPE_DUMP As String = "DUMP"
 Private Const ROLE_EVENT_TYPE_SHIP As String = "SHIP"
 Private Const ROLE_EVENT_TYPE_SHIP_RESERVE As String = "SHIP_RESERVE"
 Private Const ROLE_EVENT_TYPE_SHIP_RELEASE As String = "SHIP_RELEASE"
@@ -23,6 +25,12 @@ Private Const ROLE_EVENT_TYPE_INVENTORY_CREATE As String = "INVENTORY_CREATE"
 Private Const ROLE_EVENT_TYPE_DESIGN_CREATE As String = "DESIGN_CREATE"
 Private Const ROLE_EVENT_TYPE_DESIGN_RELEASE As String = "DESIGN_RELEASE"
 Private Const ROLE_EVENT_TYPE_DESIGN_OBSOLETE As String = "DESIGN_OBSOLETE"
+Private Const ROLE_EVENT_TYPE_PROCESS_SAVE As String = "PROCESS_SAVE"
+Private Const ROLE_EVENT_TYPE_PROCESS_RELEASE As String = "PROCESS_RELEASE"
+Private Const ROLE_EVENT_TYPE_PROCESS_OBSOLETE As String = "PROCESS_OBSOLETE"
+Private Const ROLE_EVENT_TYPE_RECIPE_SAVE As String = "RECIPE_SAVE"
+Private Const ROLE_EVENT_TYPE_RECIPE_RELEASE As String = "RECIPE_RELEASE"
+Private Const ROLE_EVENT_TYPE_RECIPE_OBSOLETE As String = "RECIPE_OBSOLETE"
 Private Const SETTINGS_APP As String = "invSys"
 Private Const SETTINGS_SECTION_RUNTIME As String = "Runtime"
 Private Const SETTINGS_CURRENT_USER_ID As String = "CurrentUserId"
@@ -66,11 +74,18 @@ Public Sub PromptSetCurrentUserForCapability(Optional ByVal requiredCapability A
     Dim statusCode As NasStatusCode
     Dim authStatus As AuthStatusCode
     Dim requireNasTarget As Boolean
+    Dim prerequisiteMessage As String
+
+    If Not InvSysSignInPrerequisiteRole(prerequisiteMessage) Then
+        MsgBox prerequisiteMessage, vbExclamation, "invSys Sign In"
+        modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
+        Exit Sub
+    End If
 
     requireNasTarget = CapabilityRequiresNasTargetRole(requiredCapability)
     Set target = ResolveRoleWarehouseTarget(requireNasTarget, statusCode)
     If target Is Nothing Then
-        MsgBox "Warehouse storage is not connected. Use Connect Server or Runtime Context before signing in.", vbExclamation, "invSys Current User"
+        MsgBox "No warehouse is selected. Use Send To after Server Sign In, then use invSys Sign In.", vbExclamation, "invSys Sign In"
         modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
         Exit Sub
     End If
@@ -86,6 +101,40 @@ Public Sub PromptSetCurrentUserForCapability(Optional ByVal requiredCapability A
     MsgBox "Current invSys user: " & CurrentInvSysUserDisplayRole(), vbInformation, "invSys Current User"
 End Sub
 
+Public Function InvSysSignInPrerequisiteForAutomation() As String
+    Dim prerequisiteMessage As String
+
+    If InvSysSignInPrerequisiteRole(prerequisiteMessage) Then
+        InvSysSignInPrerequisiteForAutomation = "READY|ServerConnected=True"
+    Else
+        InvSysSignInPrerequisiteForAutomation = "BLOCKED|" & prerequisiteMessage
+    End If
+End Function
+
+Private Function InvSysSignInPrerequisiteRole(ByRef prerequisiteMessage As String) As Boolean
+    If Not modNasConnection.HasConnectedUncRoot() Then
+        prerequisiteMessage = "Warehouse storage is not connected. Use Server Sign In before invSys Sign In."
+        Exit Function
+    End If
+    InvSysSignInPrerequisiteRole = True
+End Function
+
+Public Sub ToggleCurrentInvSysUserForCapability(Optional ByVal requiredCapability As String = "")
+    If modAuth.IsSignedIn() Then
+        SignOutCurrentUser
+    Else
+        PromptSetCurrentUserForCapability requiredCapability
+    End If
+End Sub
+
+Public Sub ToggleServerSessionForCapability(Optional ByVal requiredCapability As String = "")
+    If modNasConnection.HasConnectedUncRoot() Then
+        SignOutServerSession
+    Else
+        ConnectWarehouseStorageForCapability requiredCapability
+    End If
+End Sub
+
 Public Sub ShowCurrentUser()
     MsgBox "Current invSys user: " & CurrentInvSysUserDisplayRole(), vbInformation, "invSys Current User"
 End Sub
@@ -97,6 +146,11 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
     Dim statusCode As NasStatusCode
     Dim requireNasTarget As Boolean
     Dim requireStationInbox As Boolean
+    Dim progressStarted As Boolean
+    Dim previousCursor As XlMousePointer
+    Dim previousStatusBar As Variant
+
+    On Error GoTo ConnectionError
 
     requireNasTarget = CapabilityRequiresNasTargetRole(requiredCapability)
     requireStationInbox = CapabilityRequiresStationInboxRole(requiredCapability)
@@ -106,11 +160,13 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
             Set target = modNasConnection.GetCurrentTarget()
             modRibbonRuntimeStatus.InvalidateWarehouseTargets
             modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
-            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then GoTo CleanExit
         End If
         GoTo ConnectionFailed
     End If
 
+    BeginServerConnectionProgressRole previousCursor, previousStatusBar
+    progressStarted = True
     If modNasConnection.ConnectKnownWarehouseServer(connectedRoot, statusText, True) Then
         Set target = ResolveConnectedRoleWarehouseTarget(connectedRoot, requireNasTarget, requireStationInbox, statusCode)
         modRibbonRuntimeStatus.InvalidateWarehouseTargets
@@ -122,15 +178,19 @@ Public Sub ConnectWarehouseStorageForCapability(Optional ByVal requiredCapabilit
                    "Use Send To to choose the NAS warehouse. If it is not listed, use Admin > View Warehouses to inspect the server root.", _
                    vbExclamation, "invSys Warehouse Storage"
         End If
-        Exit Sub
+        GoTo CleanExit
     End If
 
+    If progressStarted Then
+        EndServerConnectionProgressRole previousCursor, previousStatusBar
+        progressStarted = False
+    End If
     If ShouldPromptForServerCredentialsRole(statusText) Then
         If modNasConnection.ShowWarehouseConnectionPromptForTarget(ServerCredentialPromptRole(statusText), requireStationInbox) Then
             Set target = modNasConnection.GetCurrentTarget()
             modRibbonRuntimeStatus.InvalidateWarehouseTargets
             modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
-            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then Exit Sub
+            If RoleWarehouseTargetAllowed(target, requireNasTarget, requireStationInbox) Then GoTo CleanExit
         End If
     End If
 
@@ -142,6 +202,28 @@ ConnectionFailed:
            "Status: " & ValueOrPlaceholderRole(statusText) & vbCrLf & vbCrLf & _
            "Use Admin/setup to add or repair the warehouse server root, then try Connect Server again.", _
            vbExclamation, "invSys Warehouse Storage"
+CleanExit:
+    If progressStarted Then EndServerConnectionProgressRole previousCursor, previousStatusBar
+    Exit Sub
+
+ConnectionError:
+    statusText = Err.Description
+    Resume ConnectionFailed
+End Sub
+
+Private Sub BeginServerConnectionProgressRole(ByRef previousCursor As XlMousePointer, _
+                                              ByRef previousStatusBar As Variant)
+    previousCursor = Application.Cursor
+    previousStatusBar = Application.StatusBar
+    Application.Cursor = xlWait
+    Application.StatusBar = "Server Sign In: connecting to warehouse storage..."
+    DoEvents
+End Sub
+
+Private Sub EndServerConnectionProgressRole(ByVal previousCursor As XlMousePointer, _
+                                            ByVal previousStatusBar As Variant)
+    Application.Cursor = previousCursor
+    Application.StatusBar = previousStatusBar
 End Sub
 
 Private Function ManualServerCredentialPromptRole() As String
@@ -240,11 +322,46 @@ Public Sub SignOutCurrentUser()
     SetCurrentUserId vbNullString
     modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
     If modAuth.IsSignedIn() Or Trim$(modAuth.GetCurrentUserId()) <> "" Or Trim$(GetCurrentUserOverride()) <> "" Then
-        MsgBox "Sign out did not complete. Close and reopen Excel, then try again.", vbExclamation, "invSys Current User"
+        MsgBox "invSys Sign Out did not complete. Close and reopen Excel, then try again.", vbExclamation, "invSys Sign Out"
     Else
-        MsgBox "Signed out of invSys. Warehouse storage remains selected.", vbInformation, "invSys Current User"
+        MsgBox "Signed out of invSys. Warehouse storage remains connected.", vbInformation, "invSys Sign Out"
     End If
 End Sub
+
+Public Sub SignOutServerSession()
+    Call ApplyServerSignOutRole(True, True)
+End Sub
+
+Public Function SignOutServerSessionForAutomation(Optional ByVal disconnectWindowsSession As Boolean = False) As String
+    If ApplyServerSignOutRole(False, disconnectWindowsSession) Then
+        SignOutServerSessionForAutomation = "OK|ServerDisconnected=True|InvSysSignedIn=False|TargetSelected=False"
+    Else
+        SignOutServerSessionForAutomation = "FAIL|" & modNasConnection.GetConnectionStatus()
+    End If
+End Function
+
+Private Function ApplyServerSignOutRole(ByVal showMessage As Boolean, _
+                                        ByVal disconnectWindowsSession As Boolean) As Boolean
+    Dim disconnectResult As String
+
+    modAuth.SignOut
+    SetCurrentUserId vbNullString
+    disconnectResult = modNasConnection.DisconnectCurrentNasSession(disconnectWindowsSession)
+    modRibbonRuntimeStatus.InvalidateWarehouseTargets
+    modRibbonRuntimeStatus.InvalidateCurrentUserRibbons
+
+    ApplyServerSignOutRole = _
+        (Not modAuth.IsSignedIn()) And _
+        (Not modNasConnection.HasConnectedUncRoot()) And _
+        (Not modNasConnection.IsTargetResolved())
+
+    If Not showMessage Then Exit Function
+    If ApplyServerSignOutRole Then
+        MsgBox "Signed out of invSys and disconnected from the warehouse server.", vbInformation, "Server Sign Out"
+    Else
+        MsgBox "Server Sign Out did not complete." & vbCrLf & vbCrLf & disconnectResult, vbExclamation, "Server Sign Out"
+    End If
+End Function
 
 Private Function ValidateCurrentUserCredential(ByVal userId As String, _
                                                ByVal pinText As String, _
@@ -447,7 +564,7 @@ Public Function DescribeInboxPendingRows(ByVal eventType As String, _
     openedTransient = Not WorkbookWasAlreadyOpenRole(openPaths, wbInbox)
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -564,6 +681,112 @@ Public Function QueueReceiveEventServer(Optional ByVal warehouseId As String = "
                                         Optional ByVal attributesJson As String = "") As Boolean
     If Trim$(systemKeyOut) = "" Then systemKeyOut = CreateSystemKey()
     QueueReceiveEventServer = QueueEventCore(ROLE_EVENT_TYPE_RECEIVE, warehouseId, stationId, userId, sku, qty, location, noteVal, "", "", "", "", 0, Nothing, eventIdOut, errorMessage, perfRunId, False, True, "", "", systemKeyOut, conditionValue, attributesJson)
+End Function
+
+Public Function QueueReceiveEventBatchServer(ByVal warehouseId As String, _
+                                             ByVal stationId As String, _
+                                             ByVal userId As String, _
+                                             ByVal batchJsonLines As String, _
+                                             Optional ByRef errorMessage As String = "", _
+                                             Optional ByRef acceptedCount As Long = 0) As Boolean
+    On Error GoTo Failed
+
+    Dim resolvedWh As String
+    Dim resolvedSt As String
+    Dim resolvedUser As String
+    Dim lines As Variant
+    Dim lineValue As Variant
+    Dim payload As Object
+    Dim rows As Collection
+    Dim rowValues As Object
+    Dim parseReport As String
+    Dim mergedCount As Long
+    Dim mergeReport As String
+    Dim qtyValue As Double
+    Dim eventId As String
+    Dim systemKey As String
+    Dim sku As String
+    Dim locationValue As String
+    Dim eventType As String
+
+    acceptedCount = 0
+    If Not EnsureContextResolved(resolvedWh, resolvedSt, warehouseId, stationId, errorMessage) Then Exit Function
+    resolvedUser = Trim$(userId)
+    If resolvedUser = "" Then resolvedUser = ResolveCurrentUserId()
+    If resolvedUser = "" Then
+        errorMessage = "Unable to resolve current user identity."
+        Exit Function
+    End If
+    If Not modAuth.LoadAuth(resolvedWh) Then
+        errorMessage = "Auth load failed: " & modAuth.ValidateAuth()
+        Exit Function
+    End If
+    If Not modAuth.HasProvisionedCapabilityForSystem( _
+        "RECEIVE_POST", resolvedUser, resolvedWh, resolvedSt) Then
+        errorMessage = "Current user lacks RECEIVE_POST capability."
+        Exit Function
+    End If
+
+    Set rows = New Collection
+    lines = Split(Replace$(batchJsonLines, vbCrLf, vbLf), vbLf)
+    For Each lineValue In lines
+        If Trim$(CStr(lineValue)) <> "" Then
+            parseReport = ""
+            Set payload = ParseJsonObjectRole(Trim$(CStr(lineValue)), parseReport)
+            If payload Is Nothing Then
+                errorMessage = "Invalid Receiving batch payload: " & parseReport
+                Exit Function
+            End If
+            eventId = Trim$(CStr(payload("EventID")))
+            eventType = ROLE_EVENT_TYPE_RECEIVE
+            If payload.Exists("EventType") Then eventType = UCase$(Trim$(CStr(payload("EventType"))))
+            Select Case eventType
+                Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
+                Case Else
+                    errorMessage = "Receiving batch row EventType must be RECEIVE, RETURN, or DUMP."
+                    Exit Function
+            End Select
+            systemKey = Trim$(CStr(payload("System_Key")))
+            sku = Trim$(CStr(payload("SKU")))
+            locationValue = Trim$(CStr(payload("Location")))
+            If payload.Exists("Qty") Then
+                If IsNumeric(payload("Qty")) Then qtyValue = CDbl(payload("Qty")) Else qtyValue = 0
+            Else
+                qtyValue = 0
+            End If
+            If eventId = "" Or systemKey = "" Or sku = "" Or qtyValue <= 0 Or locationValue = "" Then
+                errorMessage = "Receiving batch row requires EventID, System_Key, SKU, positive Qty, and Location." & _
+                    " EventID=" & CStr(eventId <> "") & _
+                    "; System_Key=" & CStr(systemKey <> "") & _
+                    "; SKU=" & CStr(sku <> "") & _
+                    "; PositiveQty=" & CStr(qtyValue > 0) & _
+                    "; Location=" & CStr(locationValue <> "")
+                Exit Function
+            End If
+            Set rowValues = BuildInboxRowValuesRole( _
+                eventId, "", "", eventType, Now, resolvedWh, resolvedSt, _
+                resolvedUser, "", sku, qtyValue, locationValue, _
+                Trim$(CStr(payload("Note"))), "", "", "", systemKey, _
+                Trim$(CStr(payload("Condition"))), Trim$(CStr(payload("AttributesJson"))))
+            rows.Add rowValues
+        End If
+    Next lineValue
+    If rows.Count = 0 Then
+        errorMessage = "Receiving batch contains no rows."
+        Exit Function
+    End If
+
+    If Not MergeRowsIntoNasInboxRole( _
+        rows, ROLE_EVENT_TYPE_RECEIVE, resolvedWh, resolvedSt, mergedCount, mergeReport) Then
+        errorMessage = mergeReport
+        Exit Function
+    End If
+    acceptedCount = rows.Count
+    QueueReceiveEventBatchServer = True
+    Exit Function
+
+Failed:
+    errorMessage = Err.Description
 End Function
 
 Public Function QueuePayloadEvent(ByVal eventType As String, _
@@ -946,7 +1169,7 @@ Private Function QueueEventCore(ByVal eventType As String, _
     If openedTransient Then HideWorkbookWindowsRole wbInbox
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, report) Then
                 errorMessage = report
                 GoTo CleanExit
@@ -1358,6 +1581,8 @@ End Function
 Private Function ShouldStageEventLocallyRole(ByVal eventType As String) As Boolean
     Select Case UCase$(Trim$(eventType))
         Case ROLE_EVENT_TYPE_RECEIVE, _
+             ROLE_EVENT_TYPE_RETURN, _
+             ROLE_EVENT_TYPE_DUMP, _
              ROLE_EVENT_TYPE_SHIP, _
              ROLE_EVENT_TYPE_SHIP_RESERVE, _
              ROLE_EVENT_TYPE_SHIP_RELEASE, _
@@ -1368,6 +1593,12 @@ Private Function ShouldStageEventLocallyRole(ByVal eventType As String) As Boole
              ROLE_EVENT_TYPE_DESIGN_CREATE, _
              ROLE_EVENT_TYPE_DESIGN_RELEASE, _
              ROLE_EVENT_TYPE_DESIGN_OBSOLETE, _
+             ROLE_EVENT_TYPE_PROCESS_SAVE, _
+             ROLE_EVENT_TYPE_PROCESS_RELEASE, _
+             ROLE_EVENT_TYPE_PROCESS_OBSOLETE, _
+             ROLE_EVENT_TYPE_RECIPE_SAVE, _
+             ROLE_EVENT_TYPE_RECIPE_RELEASE, _
+             ROLE_EVENT_TYPE_RECIPE_OBSOLETE, _
              ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
              ROLE_EVENT_TYPE_MIGRATION_SEED, _
              ROLE_EVENT_TYPE_INVENTORY_CREATE
@@ -1507,7 +1738,7 @@ Private Function MergeRowsIntoNasInboxRole(ByVal rows As Collection, _
     If openedTransient Then HideWorkbookWindowsRole wbInbox
 
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             If Not modProcessor.EnsureReceiveInboxSchema(wbInbox, schemaReport) Then
                 report = schemaReport
                 GoTo CleanExit
@@ -1518,7 +1749,9 @@ Private Function MergeRowsIntoNasInboxRole(ByVal rows As Collection, _
                 GoTo CleanExit
             End If
         Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_INVENTORY_CREATE, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
-             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE, _
+             ROLE_EVENT_TYPE_PROCESS_SAVE, ROLE_EVENT_TYPE_PROCESS_RELEASE, ROLE_EVENT_TYPE_PROCESS_OBSOLETE, _
+             ROLE_EVENT_TYPE_RECIPE_SAVE, ROLE_EVENT_TYPE_RECIPE_RELEASE, ROLE_EVENT_TYPE_RECIPE_OBSOLETE
             If Not modProcessor.EnsureProductionInboxSchema(wbInbox, schemaReport) Then
                 report = schemaReport
                 GoTo CleanExit
@@ -2442,37 +2675,43 @@ End Function
 
 Private Function InboxWorkbookNameRole(ByVal eventType As String, ByVal stationId As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             InboxWorkbookNameRole = "invSys.Inbox.Receiving." & stationId & ".xlsb"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxWorkbookNameRole = "invSys.Inbox.Shipping." & stationId & ".xlsb"
         Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_INVENTORY_CREATE, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
-             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE, _
+             ROLE_EVENT_TYPE_PROCESS_SAVE, ROLE_EVENT_TYPE_PROCESS_RELEASE, ROLE_EVENT_TYPE_PROCESS_OBSOLETE, _
+             ROLE_EVENT_TYPE_RECIPE_SAVE, ROLE_EVENT_TYPE_RECIPE_RELEASE, ROLE_EVENT_TYPE_RECIPE_OBSOLETE
             InboxWorkbookNameRole = "invSys.Inbox.Production." & stationId & ".xlsb"
     End Select
 End Function
 
 Private Function InboxTableNameRole(ByVal eventType As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             InboxTableNameRole = TABLE_INBOX_RECEIVE
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             InboxTableNameRole = TABLE_INBOX_SHIP
         Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_INVENTORY_CREATE, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST, _
-             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE
+             ROLE_EVENT_TYPE_DESIGN_CREATE, ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE, _
+             ROLE_EVENT_TYPE_PROCESS_SAVE, ROLE_EVENT_TYPE_PROCESS_RELEASE, ROLE_EVENT_TYPE_PROCESS_OBSOLETE, _
+             ROLE_EVENT_TYPE_RECIPE_SAVE, ROLE_EVENT_TYPE_RECIPE_RELEASE, ROLE_EVENT_TYPE_RECIPE_OBSOLETE
             InboxTableNameRole = TABLE_INBOX_PROD
     End Select
 End Function
 
 Private Function CapabilityForEventTypeRole(ByVal eventType As String) As String
     Select Case UCase$(Trim$(eventType))
-        Case ROLE_EVENT_TYPE_RECEIVE
+        Case ROLE_EVENT_TYPE_RECEIVE, ROLE_EVENT_TYPE_RETURN, ROLE_EVENT_TYPE_DUMP
             CapabilityForEventTypeRole = "RECEIVE_POST"
         Case ROLE_EVENT_TYPE_SHIP, ROLE_EVENT_TYPE_SHIP_RESERVE, ROLE_EVENT_TYPE_SHIP_RELEASE, ROLE_EVENT_TYPE_BOX_BUILD, ROLE_EVENT_TYPE_BOX_UNBOX
             CapabilityForEventTypeRole = "SHIP_POST"
         Case ROLE_EVENT_TYPE_ADMIN_SHIPMENT_RECONCILE
             CapabilityForEventTypeRole = "ADMIN_MAINT"
-        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_DESIGN_CREATE
+        Case ROLE_EVENT_TYPE_PROD_CONSUME, ROLE_EVENT_TYPE_PROD_COMPLETE, ROLE_EVENT_TYPE_DESIGN_CREATE, _
+             ROLE_EVENT_TYPE_PROCESS_SAVE, ROLE_EVENT_TYPE_PROCESS_RELEASE, ROLE_EVENT_TYPE_PROCESS_OBSOLETE, _
+             ROLE_EVENT_TYPE_RECIPE_SAVE, ROLE_EVENT_TYPE_RECIPE_RELEASE, ROLE_EVENT_TYPE_RECIPE_OBSOLETE
             CapabilityForEventTypeRole = "PROD_POST"
         Case ROLE_EVENT_TYPE_DESIGN_RELEASE, ROLE_EVENT_TYPE_DESIGN_OBSOLETE, ROLE_EVENT_TYPE_MIGRATION_SEED, ROLE_EVENT_TYPE_INVENTORY_CREATE, ROLE_EVENT_TYPE_ADMIN_INVENTORY_ADJUST
             CapabilityForEventTypeRole = "ADMIN_MAINT"
@@ -2706,10 +2945,14 @@ End Function
 
 Private Sub SetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String, ByVal valueIn As Variant)
     Dim idx As Long
+    Dim targetCell As Range
 
     idx = GetColumnIndexRole(lo, columnName)
     If idx = 0 Then Exit Sub
-    lo.DataBodyRange.Cells(rowIndex, idx).Value = valueIn
+    Set targetCell = lo.DataBodyRange.Cells(rowIndex, idx)
+    If StrComp(columnName, "DesignId", vbTextCompare) = 0 Then _
+        targetCell.NumberFormat = "@"
+    targetCell.Value2 = valueIn
 End Sub
 
 Private Function GetTableRowValueRole(ByVal lo As ListObject, ByVal rowIndex As Long, ByVal columnName As String) As Variant

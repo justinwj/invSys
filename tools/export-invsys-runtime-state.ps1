@@ -9,11 +9,59 @@ param(
 
     [string]$SchemaPath = "",
 
+    [Int64]$ExcelHwnd = 0,
+
     [switch]$IncludeRowValues
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0
+
+if ($null -eq ("InvSysRuntimeNative" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class InvSysRuntimeNative
+{
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("oleacc.dll")]
+    public static extern int AccessibleObjectFromWindow(
+        IntPtr hwnd,
+        int objectId,
+        ref Guid iid,
+        [In, Out, MarshalAs(UnmanagedType.IUnknown)] ref object nativeObject);
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumChildWindows(
+        IntPtr hWnd,
+        EnumWindowsProc callback,
+        IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetClassName(
+        IntPtr hWnd,
+        System.Text.StringBuilder text,
+        int maxCount);
+
+    public static IntPtr FindExcelGridWindow(IntPtr mainWindow)
+    {
+        IntPtr found = IntPtr.Zero;
+        EnumChildWindows(mainWindow, delegate(IntPtr candidate, IntPtr ignored) {
+            var className = new System.Text.StringBuilder(256);
+            GetClassName(candidate, className, className.Capacity);
+            if (string.Equals(className.ToString(), "EXCEL7", StringComparison.Ordinal)) {
+                found = candidate;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+"@
+}
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
@@ -318,10 +366,56 @@ function Get-ComTableRows {
     return $rows.ToArray()
 }
 
+function Get-ExcelApplicationForHwnd {
+    param([Int64]$Hwnd)
+
+    if ($Hwnd -le 0) {
+        throw "Excel window handle must be positive."
+    }
+
+    $nativeObject = $null
+    $excel = $null
+    $gridWindow = [InvSysRuntimeNative]::FindExcelGridWindow([IntPtr]$Hwnd)
+    if ($gridWindow -eq [IntPtr]::Zero) {
+        throw "Could not locate an Excel automation child window for handle $Hwnd."
+    }
+    $dispatchId = [Guid]::Parse("00020400-0000-0000-C000-000000000046")
+    $result = [InvSysRuntimeNative]::AccessibleObjectFromWindow(
+        $gridWindow,
+        -16,
+        [ref]$dispatchId,
+        [ref]$nativeObject)
+    if ($result -ne 0 -or $null -eq $nativeObject) {
+        throw "Could not attach to Excel window handle $Hwnd."
+    }
+
+    try {
+        try {
+            $excel = $nativeObject.Application
+        }
+        catch {
+            $excel = $nativeObject
+            $nativeObject = $null
+        }
+        return $excel
+    }
+    finally {
+        if ($null -ne $nativeObject -and
+            [Runtime.InteropServices.Marshal]::IsComObject($nativeObject)) {
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($nativeObject)
+        }
+    }
+}
+
 function Get-LiveRawInput {
     $excel = $null
     try {
-        $excel = [Runtime.InteropServices.Marshal]::GetActiveObject("Excel.Application")
+        if ($ExcelHwnd -gt 0) {
+            $excel = Get-ExcelApplicationForHwnd -Hwnd $ExcelHwnd
+        }
+        else {
+            $excel = [Runtime.InteropServices.Marshal]::GetActiveObject("Excel.Application")
+        }
     }
     catch {
         return [ordered]@{
@@ -874,7 +968,7 @@ if ($legacyAddins.Count -gt 0) {
         context = (($legacyAddins | ForEach-Object { $_.name }) -join ", ")
     })
 }
-if (@($safeAddins | Where-Object { $_.packageRole -eq "OPERATIONS" }).Count -gt 0 -and
+if ((@($safeAddins | Where-Object { $_.packageRole -eq "OPERATIONS" })).Count -gt 0 -and
     $legacyAddins.Count -gt 0) {
     $warnings.Add([ordered]@{
         code = "OPERATIONS_LEGACY_COEXISTENCE"
@@ -1037,8 +1131,8 @@ $markdown.Add("")
 $markdown.Add("- Schema: 1.1.0")
 $markdown.Add("- Capture: " + $ReportTimestampUtc)
 $markdown.Add("- Inspection mode: " + $runtime.safety.inspectionMode)
-$markdown.Add("- Loaded invSys add-ins: " + @($runtime.loadedAddins).Count)
-$markdown.Add("- Open workbooks: " + @($runtime.openWorkbooks).Count)
+$markdown.Add("- Loaded invSys add-ins: " + (@($runtime.loadedAddins)).Count)
+$markdown.Add("- Open workbooks: " + (@($runtime.openWorkbooks)).Count)
 $markdown.Add("- Warehouse / station: " +
     $runtime.runtimeResolution.warehouseId + " / " +
     $runtime.runtimeResolution.stationId)
@@ -1049,7 +1143,7 @@ $markdown.Add("- Redacted fields: " + $runtime.redaction.redactedFieldCount)
 $markdown.Add("- Excel started by tool: False")
 $markdown.Add("- Mutating actions invoked: 0")
 $markdown.Add("- Inspected files unchanged: " +
-    @($runtime.safety.inspectedFiles).Count + "/" + @($runtime.safety.inspectedFiles).Count)
+    (@($runtime.safety.inspectedFiles)).Count + "/" + (@($runtime.safety.inspectedFiles)).Count)
 $markdown.Add("")
 $markdown.Add("## Loaded add-ins")
 $markdown.Add("")
@@ -1064,7 +1158,7 @@ foreach ($addin in @($runtime.loadedAddins)) {
 $markdown.Add("")
 $markdown.Add("## Warnings")
 $markdown.Add("")
-if (@($runtime.warnings).Count -eq 0) {
+if ((@($runtime.warnings)).Count -eq 0) {
     $markdown.Add("- None.")
 }
 else {
@@ -1077,8 +1171,8 @@ Write-Utf8NoBom -Path $markdownPath -Content ($markdown -join "`n")
 
 Write-Host "Read-only invSys runtime extraction complete."
 Write-Host ("Inspection mode: " + $runtime.safety.inspectionMode)
-Write-Host ("Loaded add-ins: " + @($runtime.loadedAddins).Count)
-Write-Host ("Open workbooks: " + @($runtime.openWorkbooks).Count)
+Write-Host ("Loaded add-ins: " + (@($runtime.loadedAddins)).Count)
+Write-Host ("Open workbooks: " + (@($runtime.openWorkbooks)).Count)
 Write-Host ("Redacted fields: " + $runtime.redaction.redactedFieldCount)
 Write-Host ("Mutating actions: " + $runtime.safety.mutatingActionsInvoked)
 Write-Host ("Output: " + $resolvedOutput)

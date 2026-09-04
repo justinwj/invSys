@@ -286,7 +286,7 @@ Private Sub AddWarehouseDirectoryOptionAdmin(ByVal options As Collection, _
     runtimeRoot = NormalizePathAdmin(runtimeRoot)
     statusText = SafeTrimAdmin(statusText)
     If warehouseId = "" Or runtimeRoot = "" Then Exit Sub
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
 
     optionKey = UCase$(warehouseId) & "|" & UCase$(stationId) & "|" & UCase$(runtimeRoot)
     If optionKeys.Exists(optionKey) Then Exit Sub
@@ -1255,14 +1255,14 @@ Private Sub AddConfigWorkbookToWarehouseDirectory(ByVal loDirectory As ListObjec
     sharePointRoot = NormalizePathAdmin(SafeTrimAdmin(GetCellByColumnAdmin(loWh, 1, "PathSharePointRoot")))
 
     If loSt Is Nothing Or loSt.DataBodyRange Is Nothing Then
-        AddWarehouseDirectoryRow loDirectory, seen, whId, "S1", whName, rootPath, configPath, processorUser, sharePointRoot, "", ""
+        AddWarehouseDirectoryRow loDirectory, seen, whId, modStationIdentity.CurrentComputerStationId(), whName, rootPath, configPath, processorUser, sharePointRoot, "", ""
         Exit Sub
     End If
 
     For stationRow = 1 To loSt.ListRows.Count
         stationId = SafeTrimAdmin(GetCellByColumnAdmin(loSt, stationRow, "StationId"))
         roleDefault = SafeTrimAdmin(GetCellByColumnAdmin(loSt, stationRow, "RoleDefault"))
-        If stationId = "" Then stationId = "S1"
+        If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
         AddWarehouseDirectoryRow loDirectory, seen, whId, stationId, whName, rootPath, _
                                  configPath, processorUser, sharePointRoot, roleDefault, _
                                  SafeTrimAdmin(GetCellByColumnAdmin(loSt, stationRow, "PathInboxRoot"))
@@ -1290,7 +1290,7 @@ Private Sub AddWarehouseDirectoryRow(ByVal loDirectory As ListObject, _
     warehouseId = SafeTrimAdmin(warehouseId)
     stationId = SafeTrimAdmin(stationId)
     If warehouseId = "" Then Exit Sub
-    If stationId = "" Then stationId = "S1"
+    If stationId = "" Then stationId = modStationIdentity.CurrentComputerStationId()
     rootPath = NormalizePathAdmin(rootPath)
     configPath = NormalizePathAdmin(configPath)
     pathInboxRoot = NormalizePathAdmin(pathInboxRoot)

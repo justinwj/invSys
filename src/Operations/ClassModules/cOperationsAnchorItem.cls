@@ -18,6 +18,9 @@ Private mStartingHeight As Double
 Private mStartingWidth As Double
 Private mParentStartingHeight As Double
 Private mParentStartingWidth As Double
+Private mUseProportionalVertical As Boolean
+Private mVerticalTopFactor As Double
+Private mVerticalHeightFactor As Double
 
 Public Sub CaptureAnchor(ByVal targetControl As Object, ByVal anchorMask As Long)
     If targetControl Is Nothing Then
@@ -39,6 +42,21 @@ Public Sub CaptureAnchor(ByVal targetControl As Object, ByVal anchorMask As Long
     mStartingWidth = CDbl(targetControl.Width)
     mParentStartingHeight = ParentInsideExtent(mParent, False)
     mParentStartingWidth = ParentInsideExtent(mParent, True)
+End Sub
+
+Public Sub CaptureProportionalVerticalAnchor(ByVal targetControl As Object, _
+                                             ByVal horizontalAnchorMask As Long, _
+                                             ByVal verticalTopFactor As Double, _
+                                             ByVal verticalHeightFactor As Double)
+    If verticalTopFactor < 0 Or verticalHeightFactor < 0 Then
+        Err.Raise vbObjectError + 7524, "cOperationsAnchorItem.CaptureProportionalVerticalAnchor", _
+                  "Vertical layout factors must be nonnegative."
+    End If
+
+    CaptureAnchor targetControl, horizontalAnchorMask
+    mUseProportionalVertical = True
+    mVerticalTopFactor = verticalTopFactor
+    mVerticalHeightFactor = verticalHeightFactor
 End Sub
 
 Public Sub ApplyAnchoredControl()
@@ -64,7 +82,10 @@ Public Sub ApplyAnchoredControl()
         newLeft = mStartingLeft + widthDelta
     End If
 
-    If HasAnchor(OPERATIONS_ANCHOR_TOP) And HasAnchor(OPERATIONS_ANCHOR_BOTTOM) Then
+    If mUseProportionalVertical Then
+        newTop = mStartingTop + heightDelta * mVerticalTopFactor
+        newHeight = Nonnegative(mStartingHeight + heightDelta * mVerticalHeightFactor)
+    ElseIf HasAnchor(OPERATIONS_ANCHOR_TOP) And HasAnchor(OPERATIONS_ANCHOR_BOTTOM) Then
         newHeight = Nonnegative(mStartingHeight + heightDelta)
     ElseIf (Not HasAnchor(OPERATIONS_ANCHOR_TOP)) And HasAnchor(OPERATIONS_ANCHOR_BOTTOM) Then
         newTop = mStartingTop + heightDelta

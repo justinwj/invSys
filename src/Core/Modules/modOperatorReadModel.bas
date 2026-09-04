@@ -438,7 +438,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     Dim batchMs As Long
     Dim surfaceMs As Long
     Dim refreshMs As Long
-    Dim publishReport As String
     Dim stagingReport As String
     Dim stagingStationId As String
 
@@ -483,12 +482,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
         GoTo CleanExit
     End If
     queuedWorkHandled = BatchReportHandledQueuedRowsReadModel(processedCount, batchReport)
-    If processedCount > 0 Then
-        If Not modInventoryDomainBridge.PublishInventorySnapshotBridge(resolvedWarehouseId, Nothing, publishReport) Then
-            If publishReport = "" Then publishReport = "Snapshot publish failed."
-        End If
-    End If
-
     segmentTimer = Timer
     If FindListObjectReadModel(wb, TABLE_INVSYS) Is Nothing _
        And FindListObjectReadModel(wb, "invSysData_Shipping") Is Nothing _
@@ -509,7 +502,6 @@ Public Function RunBatchAndRefreshOperatorWorkbook(Optional ByVal targetWb As Wo
     If PerfIsTransactionActiveSafeReadModel() Then MarkSegmentSafeReadModel "LocalReadModelRefresh"
 
     report = "Processed=" & CStr(processedCount) & "; StagingReport=" & stagingReport & "; BatchReport=" & batchReport
-    If publishReport <> "" Then report = report & "; PublishWarning=" & publishReport
     report = report & "; RefreshReport=" & refreshReport & "; " & _
              FormatRuntimeTimingReadModel(ElapsedMillisecondsReadModel(totalTimer), batchMs, surfaceMs, refreshMs)
     LogDiagnosticSafeReadModel "RUNTIME", "RunBatchAndRefresh|Workbook=" & wb.Name & "|WarehouseId=" & resolvedWarehouseId & "|Processed=" & CStr(processedCount) & "|StagingReport=" & stagingReport & "|BatchReport=" & batchReport & "|RefreshReport=" & refreshReport & "|TotalMs=" & CStr(ElapsedMillisecondsReadModel(totalTimer)) & "|BatchMs=" & CStr(batchMs) & "|SurfaceMs=" & CStr(surfaceMs) & "|RefreshMs=" & CStr(refreshMs)
@@ -1004,13 +996,18 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
     EnsureInvSysRowsForSnapshot loInv, snapshotRows
     If loInv.DataBodyRange Is Nothing Then Exit Sub
 
-    For rowIndex = 1 To loInv.ListRows.Count
+    For rowIndex = loInv.ListRows.Count To 1 Step -1
         sku = ResolveInvSysSku(loInv, rowIndex)
         SyncDisplayAliases loInv, rowIndex
         systemKey = Trim$(CStr(GetReadModelValue(loInv, rowIndex, "System_Key")))
         Set payload = ResolveSnapshotPayloadForInvSysReadModel(snapshotRows, systemKey)
 
         If Not payload Is Nothing Then
+            If StrComp(ResolveSnapshotTextPayloadReadModel(payload, "InventoryState"), _
+                    "RETIRED", vbTextCompare) = 0 Then
+                loInv.ListRows(rowIndex).Delete
+                GoTo ContinueApplyRow
+            End If
             qtyOnHand = ResolveSnapshotNumberPayloadReadModel(payload, "QtyOnHand")
             qtyAvailable = ResolveSnapshotNumberPayloadReadModel(payload, "QtyAvailable")
             locationSummary = ResolveSnapshotTextPayloadReadModel(payload, "LocationSummary")
@@ -1025,6 +1022,7 @@ Private Sub ApplySnapshotToInvSys(ByVal loInv As ListObject, _
                                 CStr(GetReadModelValue(loInv, rowIndex, "LocationSummary")), _
                                 GetReadModelValue(loInv, rowIndex, "LAST EDITED"), refreshUtc, snapshotId, sourceType, isStale
         End If
+ContinueApplyRow:
     Next rowIndex
 End Sub
 
@@ -1038,6 +1036,9 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
 
     For Each key In snapshotRows.Keys
         If Trim$(CStr(key)) <> "" Then
+            Set payload = snapshotRows(CStr(key))
+            If StrComp(ResolveSnapshotTextPayloadReadModel(payload, "InventoryState"), _
+                    "RETIRED", vbTextCompare) = 0 Then GoTo ContinueSnapshotKey
             rowIndex = FindInvSysRowBySystemKeyReadModel(loInv, CStr(key))
             If rowIndex = 0 Then
                 rowIndex = AppendInvSysRow(loInv)
@@ -1051,6 +1052,7 @@ Private Sub EnsureInvSysRowsForSnapshot(ByVal loInv As ListObject, ByVal snapsho
                 End If
             End If
         End If
+ContinueSnapshotKey:
     Next key
 End Sub
 

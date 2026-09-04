@@ -118,7 +118,25 @@
       "procedurePattern": "RetainedCompatibilityShim",
       "sourcePathPattern": "tests/tooling/fixtures/static/.*",
       "reason": "Synthetic explicitly retained compatibility shim."
+    },
+    {
+      "id": "production.chai-fork-convergence-packaged-test",
+      "rootKind": "CROSS_XLAM_BRIDGE",
+      "matchType": "EXACT",
+      "componentPattern": "mProduction",
+      "procedurePattern": "RunChaiForkConvergenceRunActionContractTest",
+      "sourcePathPattern": "src/Production/Modules/mProduction.bas",
+      "reason": "The packaged launcher validator invokes this public primitive report across the XLAM automation boundary to prove the four-Process Chai operator path."
     }
   ],
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "production.chai-fork-convergence-form-contract",
+      "componentPattern": "frmProduction",
+      "procedurePattern": "TestChaiForkConvergenceRunActionContract",
+      "disposition": "RETAIN",
+      "reason": "The public form-action acceptance seam deliberately composes the four Process stages, Refresh/navigation checks, exact routed keys, co-product balance, and Viewer-visible event assertions. Splitting it would weaken the one-run D13 proof.",
+      "reviewedBy": "Plan 022 Slice 4ax/4ay review"
+    }
+  ]
 }
